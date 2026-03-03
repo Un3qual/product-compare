@@ -96,7 +96,7 @@ test/
 
 Boundary model:
 
-- Top-level boundaries: `YourApp`, `YourApp.Application`, `YourAppWeb`, `YourAppGQL`, `YourSchemas`.
+- Top-level boundaries: `YourApp`, `YourApp.Application`, `YourAppWeb`, `YourAppGQL`, `YourAppSchemas`.
 - Context boundaries depend on `Infra` + `Schemas`, not on web/GraphQL transport.
 - Export only stable context entrypoints.
 
@@ -187,7 +187,7 @@ Rules:
 - `use Absinthe.Relay.Schema, flavor: :modern`.
 - Root query must include `node field`.
 - Implement strict node type resolution in `node interface`.
-- Decode IDs through a single helper (like `LCGQL.Relay.decode_global_id/3`).
+- Decode IDs through a single helper (like `YourAppGQL.Relay.decode_global_id/3`).
   - enforce expected node type
   - reject raw numeric IDs
 - Use `node object(...)` for refetchable domain entities.
