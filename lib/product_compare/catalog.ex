@@ -70,10 +70,23 @@ defmodule ProductCompare.Catalog do
     if is_nil(value) do
       {:error, :primary_type_taxon_required}
     else
-      case Taxonomy.ensure_taxon_in_taxonomy(value, "type") do
-        {:ok, :type} -> :ok
+      with {:ok, primary_type_taxon_id} <- normalize_integer_id(value),
+           {:ok, :type} <- Taxonomy.ensure_taxon_in_taxonomy(primary_type_taxon_id, "type") do
+        :ok
+      else
         _ -> {:error, :primary_type_taxon_must_be_type_taxon}
       end
     end
   end
+
+  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
+
+  defp normalize_integer_id(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> {:ok, parsed}
+      _ -> :error
+    end
+  end
+
+  defp normalize_integer_id(_value), do: :error
 end

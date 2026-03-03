@@ -219,9 +219,10 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  defp normalize_typed_value(%Attribute{data_type: :enum}, typed_value) do
-    with {:ok, enum_option_id} <- fetch_typed_value(typed_value, :enum_option_id) do
-      {:ok, %{enum_option_id: enum_option_id}}
+  defp normalize_typed_value(%Attribute{data_type: :enum} = attribute, typed_value) do
+    with {:ok, enum_option_id} <- fetch_typed_value(typed_value, :enum_option_id),
+         {:ok, validated_enum_option_id} <- validate_enum_option_id(enum_option_id, attribute) do
+      {:ok, %{enum_option_id: validated_enum_option_id}}
     end
   end
 
@@ -242,6 +243,16 @@ defmodule ProductCompare.Specs do
       {:ok, %{value_json: value_json}}
     end
   end
+
+  defp validate_enum_option_id(enum_option_id, %Attribute{enum_set_id: enum_set_id})
+       when not is_nil(enum_set_id) do
+    case Repo.get(EnumOption, enum_option_id) do
+      %EnumOption{enum_set_id: ^enum_set_id} -> {:ok, enum_option_id}
+      _ -> {:error, :invalid_enum_option}
+    end
+  end
+
+  defp validate_enum_option_id(_enum_option_id, _attribute), do: {:error, :invalid_enum_option}
 
   defp fetch_typed_value(typed_value, key) do
     case get_value(typed_value, key) do

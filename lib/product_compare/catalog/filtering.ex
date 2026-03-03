@@ -5,7 +5,6 @@ defmodule ProductCompare.Catalog.Filtering do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -40,79 +39,94 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_primary_type_filter(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp apply_primary_type_filter(query, filters) do
-    case Map.get(filters, :primary_type_taxon_id) do
+    case fetch_value(filters, :primary_type_taxon_id) do
       nil ->
         query
 
       taxon_id ->
-        type_ids =
-          if Map.get(filters, :include_type_descendants, false) do
-            Repo.all(
-              from c in TaxonClosure,
-                where: c.ancestor_id == ^taxon_id,
-                select: c.descendant_id
-            )
-          else
-            [taxon_id]
-          end
+        case normalize_integer_id(taxon_id) do
+          {:ok, normalized_taxon_id} ->
+            if fetch_value(filters, :include_type_descendants) == true do
+              exists_query =
+                from c in TaxonClosure,
+                  where: c.ancestor_id == ^normalized_taxon_id,
+                  where: c.descendant_id == parent_as(:product).primary_type_taxon_id
 
-        where(query, [product: p], p.primary_type_taxon_id in ^type_ids)
+              where(query, [product: _p], exists(exists_query))
+            else
+              where(query, [product: p], p.primary_type_taxon_id == ^normalized_taxon_id)
+            end
+
+          :error ->
+            query
+        end
     end
   end
 
   @spec apply_numeric_filters(Ecto.Query.t(), [numeric_filter()]) :: Ecto.Query.t()
   defp apply_numeric_filters(query, numeric_filters) do
     Enum.reduce(numeric_filters, query, fn filter, acc ->
-      attribute_id = Map.fetch!(filter, :attribute_id)
-      min = Map.get(filter, :min)
-      max = Map.get(filter, :max)
+      case normalize_integer_id(fetch_value(filter, :attribute_id)) do
+        {:ok, attribute_id} ->
+          min = fetch_value(filter, :min)
+          max = fetch_value(filter, :max)
 
-      exists_query =
-        from pacur in ProductAttributeCurrent,
-          join: pac in ProductAttributeClaim,
-          on: pac.id == pacur.claim_id,
-          where: pacur.product_id == parent_as(:product).id,
-          where: pac.attribute_id == ^attribute_id,
-          where: is_nil(^min) or pac.value_num_base >= ^min,
-          where: is_nil(^max) or pac.value_num_base <= ^max
+          exists_query =
+            from pacur in ProductAttributeCurrent,
+              join: pac in ProductAttributeClaim,
+              on: pac.id == pacur.claim_id,
+              where: pacur.product_id == parent_as(:product).id,
+              where: pac.attribute_id == ^attribute_id,
+              where: is_nil(^min) or pac.value_num_base >= ^min,
+              where: is_nil(^max) or pac.value_num_base <= ^max
 
-      where(acc, [product: _p], exists(exists_query))
+          where(acc, [product: _p], exists(exists_query))
+
+        :error ->
+          acc
+      end
     end)
   end
 
   @spec apply_bool_filters(Ecto.Query.t(), [bool_filter()]) :: Ecto.Query.t()
   defp apply_bool_filters(query, bool_filters) do
     Enum.reduce(bool_filters, query, fn filter, acc ->
-      attribute_id = Map.fetch!(filter, :attribute_id)
-      value = Map.fetch!(filter, :value)
+      value = fetch_value(filter, :value)
 
-      exists_query =
-        from pacur in ProductAttributeCurrent,
-          join: pac in ProductAttributeClaim,
-          on: pac.id == pacur.claim_id,
-          where: pacur.product_id == parent_as(:product).id,
-          where: pac.attribute_id == ^attribute_id,
-          where: pac.value_bool == ^value
+      with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
+           true <- is_boolean(value) do
+        exists_query =
+          from pacur in ProductAttributeCurrent,
+            join: pac in ProductAttributeClaim,
+            on: pac.id == pacur.claim_id,
+            where: pacur.product_id == parent_as(:product).id,
+            where: pac.attribute_id == ^attribute_id,
+            where: pac.value_bool == ^value
 
-      where(acc, [product: _p], exists(exists_query))
+        where(acc, [product: _p], exists(exists_query))
+      else
+        _ -> acc
+      end
     end)
   end
 
   @spec apply_enum_filters(Ecto.Query.t(), [enum_filter()]) :: Ecto.Query.t()
   defp apply_enum_filters(query, enum_filters) do
     Enum.reduce(enum_filters, query, fn filter, acc ->
-      attribute_id = Map.fetch!(filter, :attribute_id)
-      enum_option_id = Map.fetch!(filter, :enum_option_id)
+      with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
+           {:ok, enum_option_id} <- normalize_integer_id(fetch_value(filter, :enum_option_id)) do
+        exists_query =
+          from pacur in ProductAttributeCurrent,
+            join: pac in ProductAttributeClaim,
+            on: pac.id == pacur.claim_id,
+            where: pacur.product_id == parent_as(:product).id,
+            where: pac.attribute_id == ^attribute_id,
+            where: pac.enum_option_id == ^enum_option_id
 
-      exists_query =
-        from pacur in ProductAttributeCurrent,
-          join: pac in ProductAttributeClaim,
-          on: pac.id == pacur.claim_id,
-          where: pacur.product_id == parent_as(:product).id,
-          where: pac.attribute_id == ^attribute_id,
-          where: pac.enum_option_id == ^enum_option_id
-
-      where(acc, [product: _p], exists(exists_query))
+        where(acc, [product: _p], exists(exists_query))
+      else
+        _ -> acc
+      end
     end)
   end
 
@@ -132,4 +146,20 @@ defmodule ProductCompare.Catalog.Filtering do
 
     where(query, [product: _p], exists(exists_query))
   end
+
+  defp fetch_value(map, key) when is_map(map),
+    do: Map.get(map, key, Map.get(map, Atom.to_string(key)))
+
+  defp fetch_value(_map, _key), do: nil
+
+  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
+
+  defp normalize_integer_id(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> {:ok, parsed}
+      _ -> :error
+    end
+  end
+
+  defp normalize_integer_id(_value), do: :error
 end

@@ -13,38 +13,52 @@ defmodule ProductCompare.Affiliate do
 
   @spec upsert_network(map()) :: {:ok, AffiliateNetwork.t()} | {:error, Ecto.Changeset.t()}
   def upsert_network(attrs) do
-    name = Map.get(attrs, :name) || Map.get(attrs, "name")
+    now = DateTime.utc_now()
+    changeset = AffiliateNetwork.changeset(%AffiliateNetwork{}, attrs)
+    update_fields = Map.take(changeset.changes, [:homepage_url]) |> Map.to_list()
 
-    case Repo.get_by(AffiliateNetwork, name: name) do
-      nil -> %AffiliateNetwork{} |> AffiliateNetwork.changeset(attrs) |> Repo.insert()
-      network -> network |> AffiliateNetwork.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:name],
+      returning: true
+    )
   end
 
   @spec upsert_program(map()) :: {:ok, AffiliateProgram.t()} | {:error, Ecto.Changeset.t()}
   def upsert_program(attrs) do
-    network_id = Map.get(attrs, :affiliate_network_id) || Map.get(attrs, "affiliate_network_id")
-    merchant_id = Map.get(attrs, :merchant_id) || Map.get(attrs, "merchant_id")
+    now = DateTime.utc_now()
+    changeset = AffiliateProgram.changeset(%AffiliateProgram{}, attrs)
+    update_fields = Map.take(changeset.changes, [:program_code, :status]) |> Map.to_list()
 
-    query =
-      from p in AffiliateProgram,
-        where: p.affiliate_network_id == ^network_id and p.merchant_id == ^merchant_id
-
-    case Repo.one(query) do
-      nil -> %AffiliateProgram{} |> AffiliateProgram.changeset(attrs) |> Repo.insert()
-      program -> program |> AffiliateProgram.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:affiliate_network_id, :merchant_id],
+      returning: true
+    )
   end
 
   @spec upsert_link(map()) :: {:ok, AffiliateLink.t()} | {:error, Ecto.Changeset.t()}
   def upsert_link(attrs) do
-    merchant_product_id =
-      Map.get(attrs, :merchant_product_id) || Map.get(attrs, "merchant_product_id")
+    now = DateTime.utc_now()
+    changeset = AffiliateLink.changeset(%AffiliateLink{}, attrs)
 
-    case Repo.get_by(AffiliateLink, merchant_product_id: merchant_product_id) do
-      nil -> %AffiliateLink{} |> AffiliateLink.changeset(attrs) |> Repo.insert()
-      link -> link |> AffiliateLink.changeset(attrs) |> Repo.update()
-    end
+    update_fields =
+      Map.take(changeset.changes, [
+        :affiliate_network_id,
+        :original_url,
+        :affiliate_url,
+        :last_verified_at
+      ])
+      |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:merchant_product_id],
+      returning: true
+    )
   end
 
   @spec create_coupon(map()) :: {:ok, Coupon.t()} | {:error, Ecto.Changeset.t()}

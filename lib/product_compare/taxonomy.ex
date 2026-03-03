@@ -255,10 +255,14 @@ defmodule ProductCompare.Taxonomy do
   defp validate_parent_taxonomy(nil, _taxonomy_id), do: :ok
 
   defp validate_parent_taxonomy(parent_id, taxonomy_id) do
-    case Repo.get(Taxon, parent_id) do
-      nil -> {:error, :parent_not_found}
-      %Taxon{taxonomy_id: ^taxonomy_id} -> :ok
-      _ -> {:error, :parent_taxonomy_mismatch}
+    with {:ok, normalized_taxonomy_id} <- normalize_integer_id(taxonomy_id) do
+      case Repo.get(Taxon, parent_id) do
+        nil -> {:error, :parent_not_found}
+        %Taxon{taxonomy_id: ^normalized_taxonomy_id} -> :ok
+        _ -> {:error, :parent_taxonomy_mismatch}
+      end
+    else
+      :error -> {:error, :parent_taxonomy_mismatch}
     end
   end
 
@@ -274,6 +278,8 @@ defmodule ProductCompare.Taxonomy do
 
   defp ensure_not_cycle(_taxon_id, nil), do: :ok
 
+  defp ensure_not_cycle(taxon_id, taxon_id), do: {:error, :cycle_detected}
+
   defp ensure_not_cycle(taxon_id, new_parent_id) do
     query =
       from c in TaxonClosure,
@@ -282,4 +288,15 @@ defmodule ProductCompare.Taxonomy do
 
     if Repo.exists?(query), do: {:error, :cycle_detected}, else: :ok
   end
+
+  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
+
+  defp normalize_integer_id(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> {:ok, parsed}
+      _ -> :error
+    end
+  end
+
+  defp normalize_integer_id(_value), do: :error
 end

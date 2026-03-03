@@ -5,7 +5,7 @@ defmodule ProductCompare.Specs.UnitConversion do
 
   alias ProductCompareSchemas.Specs.Unit
 
-  @spec to_base(Decimal.t() | number(), Unit.t()) :: Decimal.t()
+  @spec to_base(Decimal.t() | number() | binary(), Unit.t()) :: Decimal.t()
   def to_base(value, %Unit{} = unit) do
     value
     |> to_decimal()

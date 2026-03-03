@@ -12,26 +12,34 @@ defmodule ProductCompare.Pricing do
 
   @spec upsert_merchant(map()) :: {:ok, Merchant.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant(attrs) do
-    name = Map.get(attrs, :name) || Map.get(attrs, "name")
+    now = DateTime.utc_now()
+    changeset = Merchant.changeset(%Merchant{}, attrs)
+    update_fields = Map.take(changeset.changes, [:domain]) |> Map.to_list()
 
-    case Repo.get_by(Merchant, name: name) do
-      nil -> %Merchant{} |> Merchant.changeset(attrs) |> Repo.insert()
-      merchant -> merchant |> Merchant.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:name],
+      returning: true
+    )
   end
 
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant_product(attrs) do
-    merchant_id = Map.get(attrs, :merchant_id) || Map.get(attrs, "merchant_id")
-    url = Map.get(attrs, :url) || Map.get(attrs, "url")
+    now = DateTime.utc_now()
+    changeset = MerchantProduct.changeset(%MerchantProduct{}, attrs)
 
-    query = from mp in MerchantProduct, where: mp.merchant_id == ^merchant_id and mp.url == ^url
+    update_fields =
+      Map.take(changeset.changes, [:product_id, :title, :currency, :in_stock, :affiliate_url])
+      |> Map.to_list()
 
-    case Repo.one(query) do
-      nil -> %MerchantProduct{} |> MerchantProduct.changeset(attrs) |> Repo.insert()
-      merchant_product -> merchant_product |> MerchantProduct.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:merchant_id, :url],
+      returning: true
+    )
   end
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
@@ -46,17 +54,17 @@ defmodule ProductCompare.Pricing do
     Repo.one(
       from pp in PricePoint,
         where: pp.merchant_product_id == ^merchant_product_id,
-        order_by: [desc: pp.observed_at],
+        order_by: [desc: pp.observed_at, desc: pp.id],
         limit: 1
     )
   end
 
-  @spec price_history(pos_integer(), %{
-          from: DateTime.t() | NaiveDateTime.t() | nil,
-          to: DateTime.t() | NaiveDateTime.t() | nil
-        }) ::
+  @spec price_history(pos_integer(), map()) ::
           [PricePoint.t()]
-  def price_history(merchant_product_id, %{from: from_dt, to: to_dt}) do
+  def price_history(merchant_product_id, filters \\ %{}) do
+    from_dt = get_filter_value(filters, :from)
+    to_dt = get_filter_value(filters, :to)
+
     PricePoint
     |> where([pp], pp.merchant_product_id == ^merchant_product_id)
     |> maybe_where_from(from_dt)
@@ -70,4 +78,9 @@ defmodule ProductCompare.Pricing do
 
   defp maybe_where_to(query, nil), do: query
   defp maybe_where_to(query, to_dt), do: where(query, [pp], pp.observed_at <= ^to_dt)
+
+  defp get_filter_value(filters, key) when is_map(filters),
+    do: Map.get(filters, key, Map.get(filters, Atom.to_string(key)))
+
+  defp get_filter_value(_filters, _key), do: nil
 end

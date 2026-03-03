@@ -10,12 +10,32 @@ defmodule ProductCompare.Discussions do
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
 
-  @spec list_threads_for_product(pos_integer()) :: [ProductThread.t()]
-  def list_threads_for_product(product_id) do
+  @default_page_limit 50
+  @max_page_limit 200
+
+  @spec list_threads_for_product(pos_integer(), keyword() | map()) :: [ProductThread.t()]
+  def list_threads_for_product(product_id, opts \\ []) do
+    {limit, offset} = normalize_pagination(opts)
+
     Repo.all(
       from t in ProductThread,
         where: t.product_id == ^product_id,
-        order_by: [desc: t.inserted_at]
+        order_by: [desc: t.inserted_at, desc: t.id],
+        limit: ^limit,
+        offset: ^offset
+    )
+  end
+
+  @spec list_posts_for_thread(pos_integer(), keyword() | map()) :: [ThreadPost.t()]
+  def list_posts_for_thread(thread_id, opts \\ []) do
+    {limit, offset} = normalize_pagination(opts)
+
+    Repo.all(
+      from p in ThreadPost,
+        where: p.thread_id == ^thread_id,
+        order_by: [asc: p.inserted_at, asc: p.id],
+        limit: ^limit,
+        offset: ^offset
     )
   end
 
@@ -70,4 +90,32 @@ defmodule ProductCompare.Discussions do
   @spec delete_review(ProductReview.t()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def delete_review(%ProductReview{} = review), do: Repo.delete(review)
+
+  defp normalize_pagination(opts) do
+    limit =
+      opts
+      |> get_pagination_value(:limit, @default_page_limit)
+      |> clamp_limit(@default_page_limit, @max_page_limit)
+
+    offset =
+      opts
+      |> get_pagination_value(:offset, 0)
+      |> clamp_non_negative(0)
+
+    {limit, offset}
+  end
+
+  defp get_pagination_value(opts, key, default) when is_list(opts),
+    do: Keyword.get(opts, key, default)
+
+  defp get_pagination_value(opts, key, default) when is_map(opts),
+    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
+
+  defp get_pagination_value(_opts, _key, default), do: default
+
+  defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
+  defp clamp_limit(_value, default, _max), do: default
+
+  defp clamp_non_negative(value, _default) when is_integer(value) and value >= 0, do: value
+  defp clamp_non_negative(_value, default), do: default
 end
