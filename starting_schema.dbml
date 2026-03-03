@@ -1,0 +1,558 @@
+// ------------------------------------------------------------
+// Product Comparison / Wiki Specs / Price Tracking (Postgres)
+// DBML = starting framework, not a strict contract.
+// It WILL evolve as requirements and implementation details change.
+// ------------------------------------------------------------
+
+Enum attribute_data_type {
+  bool
+  int
+  numeric
+  text
+  enum
+  date
+  timestamp
+  json
+}
+
+Enum claim_source_type {
+  scrape
+  user
+  import
+  derived
+}
+
+Enum claim_status {
+  proposed
+  accepted
+  rejected
+  superseded
+}
+
+Enum discount_type {
+  percent
+  amount
+  free_shipping
+  other
+}
+
+Enum taxon_assignment_source_type {
+  scrape
+  user
+  derived
+  editorial
+}
+
+// -------------------- Accounts (stub + reputation) --------------------
+
+Table users {
+  id         bigint [pk, increment]
+  email      citext [not null, unique, note: "Stub. Use CITEXT in Postgres for case-insensitive email."]
+  created_at timestamptz [not null, default: "now()"]
+}
+
+Table user_reputation {
+  user_id    bigint [pk, ref: > users.id]
+  points     bigint [not null, default: 0]
+  updated_at timestamptz [not null, default: "now()"]
+}
+
+Table reputation_events {
+  id         bigint [pk, increment]
+  user_id    bigint [not null, ref: > users.id]
+  delta      bigint [not null]
+  reason     text   [not null]
+  ref_table  text   [note: "Optional polymorphic reference (e.g. 'product_attribute_claims')."]
+  ref_id     bigint
+  created_at timestamptz [not null, default: "now()"]
+
+  indexes {
+    (user_id, created_at) [name: "rep_events_user_time_idx"]
+  }
+}
+
+// -------------------- Taxonomy (Hard Types + Soft Use-Cases) --------------------
+// - taxonomies: defines separate trees (e.g. 'type', 'use_case')
+// - taxons: nodes inside a tree (adjacency list)
+// - taxon_closure: optional but recommended for fast descendant/ancestor queries
+// - product_taxons: many-to-many membership with provenance (used for use_case tags)
+
+Table taxonomies {
+  id   bigint [pk, increment]
+  code text   [not null, unique, note: "e.g. 'type', 'use_case'"]
+  name text   [not null]
+}
+
+Table taxons {
+  id          bigint [pk, increment]
+  taxonomy_id bigint [not null, ref: > taxonomies.id]
+  parent_id   bigint [ref: > taxons.id, note: "Adjacency list for tree structure"]
+  code        text   [not null, note: "Stable identifier/slug within a taxonomy"]
+  name        text   [not null]
+
+  Note: "Use for BOTH: (1) hard type taxonomy (one primary leaf per product) and (2) soft use-case taxonomy (many per product)."
+
+  indexes {
+    (taxonomy_id, code)   [unique, name: "taxons_taxonomy_code_uq"]
+    (taxonomy_id, parent_id) [name: "taxons_taxonomy_parent_idx"]
+  }
+}
+
+// Optional but recommended: closure table to avoid recursive CTE cost at scale
+Table taxon_closure {
+  ancestor_id   bigint [not null, ref: > taxons.id]
+  descendant_id bigint [not null, ref: > taxons.id]
+  depth         int    [not null, note: "0=self, 1=child, ..."]
+
+  indexes {
+    (ancestor_id, descendant_id) [unique, name: "taxon_closure_anc_desc_uq"]
+    (descendant_id) [name: "taxon_closure_desc_idx"]
+    (ancestor_id, depth) [name: "taxon_closure_anc_depth_idx"]
+  }
+
+  Note: "Maintain via app logic (or triggers). Enables fast 'all descendants of X' queries."
+}
+
+// Optional: synonym/alias support (helps when tags get messy)
+Table taxon_aliases {
+  id       bigint [pk, increment]
+  taxon_id bigint [not null, ref: > taxons.id]
+  alias    text   [not null]
+
+  indexes {
+    (alias)   [unique, name: "taxon_aliases_alias_uq"]
+    (taxon_id) [name: "taxon_aliases_taxon_idx"]
+  }
+}
+
+// Many-to-many membership of products in non-primary taxonomies (notably use_case)
+Table product_taxons {
+  product_id   bigint [not null, ref: > products.id]
+  taxon_id     bigint [not null, ref: > taxons.id]
+  source_type  taxon_assignment_source_type [not null]
+  confidence   numeric
+  created_by   bigint [ref: > users.id]
+  created_at   timestamptz [not null, default: "now()"]
+
+  indexes {
+    (product_id, taxon_id) [unique, name: "product_taxons_product_taxon_uq"]
+    (taxon_id, product_id) [name: "product_taxons_taxon_product_idx"]
+  }
+
+  Note: "Use mainly for 'use_case' tags. Products can have many use_case taxons."
+}
+
+// -------------------- Catalog --------------------
+
+Table brands {
+  id   bigint [pk, increment]
+  name text   [not null, unique]
+}
+
+Table products {
+  id                    bigint [pk, increment]
+  brand_id              bigint [ref: > brands.id]
+  primary_type_taxon_id bigint [ref: > taxons.id, note: "Must reference a taxon in taxonomy 'type' (enforce in app/constraints)."]
+
+  name         text [not null]
+  model_number text
+  slug         text [not null, unique]
+  description  text
+
+  created_at   timestamptz [not null, default: "now()"]
+  updated_at   timestamptz [not null, default: "now()"]
+
+  Note: "Exactly one primary TYPE leaf per product. Use product_taxons for USE-CASE tags."
+
+  indexes {
+    (primary_type_taxon_id) [name: "products_primary_type_idx"]
+    (brand_id) [name: "products_brand_idx"]
+  }
+}
+
+// -------------------- Units + Dimensions --------------------
+// Goal: allow canonical filtering across units (inches vs cm, GHz vs MHz).
+// Convention: choose ONE base unit per dimension (length=mm, frequency=Hz, data_rate=bps, etc).
+
+Table dimensions {
+  id          bigint [pk, increment]
+  code        text   [not null, unique]
+  description text
+}
+
+Table units {
+  id                 bigint [pk, increment]
+  dimension_id       bigint [not null, ref: > dimensions.id]
+  code               text   [not null, note: "e.g. mm, in, hz, gbps"]
+  symbol             text
+  multiplier_to_base numeric [not null, default: 1, note: "value_base = value * multiplier_to_base + offset_to_base"]
+  offset_to_base     numeric [not null, default: 0]
+
+  indexes {
+    (dimension_id, code) [unique, name: "units_dimension_code_uq"]
+  }
+}
+
+// -------------------- Enum sets for attributes --------------------
+
+Table enum_sets {
+  id   bigint [pk, increment]
+  code text   [not null, unique]
+}
+
+Table enum_options {
+  id          bigint [pk, increment]
+  enum_set_id bigint [not null, ref: > enum_sets.id]
+  code        text   [not null]
+  label       text   [not null]
+  sort_order  int    [not null, default: 0]
+
+  indexes {
+    (enum_set_id, code) [unique, name: "enum_options_set_code_uq"]
+    (enum_set_id, sort_order) [name: "enum_options_set_sort_idx"]
+  }
+}
+
+// -------------------- Attribute catalog + applicability --------------------
+// Attributes are typed. Values are stored as claims with provenance + moderation.
+// Applicability is attached to TYPE taxons, and inherited down the type tree.
+
+Table attributes {
+  id           bigint [pk, increment]
+  code         text   [not null, unique, note: "Stable identifier e.g. 'refresh_rate'"]
+  display_name text   [not null]
+  data_type    attribute_data_type [not null]
+
+  dimension_id bigint [ref: > dimensions.id, note: "Only for numeric attributes"]
+  enum_set_id  bigint [ref: > enum_sets.id, note: "Only for enum attributes"]
+
+  is_multivalued boolean [not null, default: false]
+  is_filterable  boolean [not null, default: true]
+  is_derived     boolean [not null, default: false]
+
+  description text
+  created_at  timestamptz [not null, default: "now()"]
+
+  Note: "Typed, unit-aware attribute catalog."
+}
+
+// Attach attributes to TYPE taxons (not use_case).
+Table taxon_attributes {
+  taxon_id        bigint [not null, ref: > taxons.id]
+  attribute_id    bigint [not null, ref: > attributes.id]
+  is_required     boolean [not null, default: false]
+  sort_order      int     [not null, default: 0]
+  min_rep_to_edit bigint  [not null, default: 0]
+
+  indexes {
+    (taxon_id, attribute_id) [unique, name: "taxon_attributes_taxon_attr_uq"]
+  }
+
+  Note: "Attach attributes to TYPE taxons (e.g. Displays→resolution; Projector→throw_ratio). Inherit down via taxon_closure."
+}
+
+// -------------------- Sources / Artifacts / External IDs --------------------
+// Artifacts store raw scrape payloads or extracted text so claims can cite evidence.
+
+Table sources {
+  id     bigint [pk, increment]
+  kind   text   [not null, note: "manufacturer, retailer, affiliate_api, review_site, user_upload, ..."]
+  name   text   [not null]
+  domain text
+
+  indexes {
+    (kind, name) [unique, name: "sources_kind_name_uq"]
+  }
+}
+
+Table source_artifacts {
+  id           bigint [pk, increment]
+  source_id    bigint [ref: > sources.id]
+  url          text
+  fetched_at   timestamptz [not null, default: "now()"]
+  content_hash text
+  raw_json     json
+  raw_text     text
+
+  indexes {
+    (source_id, fetched_at) [name: "artifacts_source_fetched_idx"]
+  }
+}
+
+Table external_products {
+  id            bigint [pk, increment]
+  source_id     bigint [not null, ref: > sources.id]
+  external_id   text   [not null, note: "ASIN, vendor SKU, etc."]
+  product_id    bigint [ref: > products.id]
+  canonical_url text
+  last_seen_at  timestamptz [not null, default: "now()"]
+
+  indexes {
+    (source_id, external_id) [unique, name: "external_products_source_extid_uq"]
+    (product_id) [name: "external_products_product_idx"]
+  }
+}
+
+// -------------------- Spec Claims + Canonical “Current” Values --------------------
+// - product_attribute_claims is append-only with provenance.
+// - product_attribute_current points to the selected/accepted claim per product+attribute for fast filtering.
+// DBML cannot express partial indexes well; implement partial indexes in migrations for performance.
+
+Table product_attribute_claims {
+  id           bigint [pk, increment]
+  product_id   bigint [not null, ref: > products.id]
+  attribute_id bigint [not null, ref: > attributes.id]
+
+  source_type claim_source_type [not null]
+  status      claim_status      [not null, default: "proposed"]
+
+  created_by  bigint [ref: > users.id]
+  created_at  timestamptz [not null, default: "now()"]
+  confidence  numeric
+
+  // Exactly one typed value should be present per row (enforce via app validation + DB constraint/trigger later)
+  value_bool boolean
+  value_int  bigint
+
+  // Numeric: store entered value + unit, AND canonical base-unit value for filtering
+  value_num          numeric
+  unit_id            bigint [ref: > units.id]
+  value_num_base     numeric
+  value_num_base_min numeric
+  value_num_base_max numeric
+
+  value_text text
+  value_date date
+  value_ts   timestamptz
+
+  enum_option_id bigint [ref: > enum_options.id]
+  value_json     json
+
+  supersedes_claim_id bigint [ref: > product_attribute_claims.id]
+  derived_formula_id  bigint [ref: > derived_formulas.id]
+
+  indexes {
+    (product_id, attribute_id, created_at) [name: "pac_product_attr_time_idx"]
+    (attribute_id, status) [name: "pac_attr_status_idx"]
+    (attribute_id, value_num_base) [name: "pac_numeric_filter_idx"]
+    (attribute_id, enum_option_id) [name: "pac_enum_filter_idx"]
+    (attribute_id, value_bool) [name: "pac_bool_filter_idx"]
+  }
+
+  Note: "Append-only claims. Moderation promotes/points product_attribute_current at the chosen claim."
+}
+
+Table claim_evidence {
+  claim_id    bigint [not null, ref: > product_attribute_claims.id]
+  artifact_id bigint [not null, ref: > source_artifacts.id]
+  excerpt     text
+
+  indexes {
+    (claim_id, artifact_id) [unique, name: "claim_evidence_claim_artifact_uq"]
+  }
+
+  Note: "Link claims to raw evidence (scrape payload, PDF excerpt, etc.)."
+}
+
+Table product_attribute_current {
+  product_id   bigint [not null, ref: > products.id]
+  attribute_id bigint [not null, ref: > attributes.id]
+  claim_id     bigint [not null, ref: > product_attribute_claims.id]
+
+  selected_at timestamptz [not null, default: "now()"]
+  selected_by bigint [ref: > users.id]
+
+  indexes {
+    (product_id, attribute_id) [unique, name: "pacur_product_attr_uq"]
+    (claim_id) [unique, name: "pacur_claim_uq"]
+  }
+
+  Note: "Fast path for filtering. Exactly one selected claim per (product, attribute)."
+}
+
+// -------------------- Derived Specs --------------------
+// Derived formulas compute attributes from other attributes (e.g. panel height from diagonal + aspect ratio).
+// Derived output is written back as claims (source_type='derived').
+
+Table derived_formulas {
+  id           bigint [pk, increment]
+  attribute_id bigint [not null, ref: > attributes.id]
+  lang         text   [not null, note: "cel/sql/python/jsonlogic/etc."]
+  expression   text   [not null]
+  updated_at   timestamptz [not null, default: "now()"]
+
+  indexes {
+    (attribute_id) [unique, name: "derived_formulas_attribute_uq"]
+  }
+}
+
+Table derived_formula_deps {
+  formula_id              bigint [not null, ref: > derived_formulas.id]
+  depends_on_attribute_id bigint [not null, ref: > attributes.id]
+
+  indexes {
+    (formula_id, depends_on_attribute_id) [unique, name: "derived_formula_deps_uq"]
+  }
+}
+
+Table claim_dependencies {
+  claim_id            bigint [not null, ref: > product_attribute_claims.id]
+  depends_on_claim_id bigint [not null, ref: > product_attribute_claims.id]
+
+  indexes {
+    (claim_id, depends_on_claim_id) [unique, name: "claim_dependencies_uq"]
+  }
+
+  Note: "Optional lineage: which input claims were used to compute a derived claim."
+}
+
+// -------------------- Merchants / Offers / Price History --------------------
+
+Table merchants {
+  id     bigint [pk, increment]
+  name   text   [not null, unique]
+  domain text
+}
+
+Table merchant_products {
+  id          bigint [pk, increment]
+  merchant_id bigint [not null, ref: > merchants.id]
+  product_id  bigint [not null, ref: > products.id]
+
+  external_sku text
+  url          text   [not null]
+  currency     char(3) [not null]
+
+  last_seen_at timestamptz [not null, default: "now()"]
+  is_active    boolean [not null, default: true]
+
+  indexes {
+    (merchant_id, url) [unique, name: "merchant_products_merchant_url_uq"]
+    (product_id) [name: "merchant_products_product_idx"]
+  }
+
+  Note: "A listing/offer on a merchant site for a given product."
+}
+
+Table price_points {
+  id                  bigint [pk, increment]
+  merchant_product_id bigint [not null, ref: > merchant_products.id]
+  observed_at         timestamptz [not null, default: "now()"]
+
+  price    numeric [not null]
+  shipping numeric
+  in_stock boolean
+
+  artifact_id bigint [ref: > source_artifacts.id, note: "Optional evidence of the price scrape."]
+
+  indexes {
+    (merchant_product_id, observed_at) [name: "price_points_mp_time_idx"]
+  }
+}
+
+// -------------------- Affiliate + Coupons --------------------
+
+Table affiliate_networks {
+  id   bigint [pk, increment]
+  name text   [not null, unique]
+}
+
+Table affiliate_programs {
+  id                   bigint [pk, increment]
+  affiliate_network_id bigint [not null, ref: > affiliate_networks.id]
+  merchant_id          bigint [not null, ref: > merchants.id]
+  program_code         text
+  status               text
+
+  indexes {
+    (affiliate_network_id, merchant_id) [unique, name: "affiliate_programs_net_merchant_uq"]
+  }
+}
+
+Table affiliate_links {
+  id                   bigint [pk, increment]
+  merchant_product_id  bigint [not null, ref: > merchant_products.id]
+  affiliate_network_id bigint [ref: > affiliate_networks.id]
+
+  original_url     text [not null]
+  affiliate_url    text [not null]
+  last_verified_at timestamptz
+
+  indexes {
+    (merchant_product_id) [name: "affiliate_links_mp_idx"]
+  }
+}
+
+Table coupons {
+  id                   bigint [pk, increment]
+  merchant_id          bigint [not null, ref: > merchants.id]
+  affiliate_network_id bigint [ref: > affiliate_networks.id]
+
+  code          text [not null]
+  description   text
+  discount_type discount_type [not null, default: "other"]
+  discount_value numeric
+  currency      char(3)
+
+  valid_from timestamptz
+  valid_to   timestamptz
+  terms      text
+
+  artifact_id bigint [ref: > source_artifacts.id]
+
+  indexes {
+    (merchant_id, valid_to) [name: "coupons_merchant_validto_idx"]
+  }
+}
+
+// -------------------- Discussion + Reviews --------------------
+
+Table product_threads {
+  id         bigint [pk, increment]
+  product_id bigint [not null, ref: > products.id]
+  title      text [not null]
+  created_by bigint [ref: > users.id]
+  created_at timestamptz [not null, default: "now()"]
+
+  indexes {
+    (product_id, created_at) [name: "product_threads_product_time_idx"]
+  }
+}
+
+Table thread_posts {
+  id            bigint [pk, increment]
+  thread_id     bigint [not null, ref: > product_threads.id]
+  parent_post_id bigint [ref: > thread_posts.id]
+
+  user_id  bigint [ref: > users.id]
+  body_md  text   [not null]
+
+  created_at timestamptz [not null, default: "now()"]
+  updated_at timestamptz [not null, default: "now()"]
+
+  indexes {
+    (thread_id, created_at) [name: "thread_posts_thread_time_idx"]
+    (parent_post_id) [name: "thread_posts_parent_idx"]
+  }
+}
+
+Table product_reviews {
+  id                 bigint [pk, increment]
+  product_id         bigint [not null, ref: > products.id]
+  user_id            bigint [ref: > users.id]
+
+  rating             int [not null, note: "Enforce 1..5 in migration (CHECK constraint)."]
+  title              text
+  body_md            text
+
+  verified_purchase  boolean [not null, default: false]
+  merchant_product_id bigint [ref: > merchant_products.id]
+
+  created_at timestamptz [not null, default: "now()"]
+  updated_at timestamptz [not null, default: "now()"]
+
+  indexes {
+    (product_id) [name: "product_reviews_product_idx"]
+    (product_id, user_id) [unique, name: "product_reviews_product_user_uq"]
+  }
+}
