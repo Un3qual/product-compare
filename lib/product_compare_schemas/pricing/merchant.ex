@@ -17,7 +17,8 @@ defmodule ProductCompareSchemas.Pricing.Merchant do
   def changeset(merchant, attrs) do
     merchant
     |> cast(attrs, [:name, :domain])
-    |> validate_required([:name])
+    |> validate_required([:name, :domain])
     |> unique_constraint(:name)
+    |> unique_constraint(:domain)
   end
 end

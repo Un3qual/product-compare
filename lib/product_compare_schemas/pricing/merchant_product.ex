@@ -32,7 +32,13 @@ defmodule ProductCompareSchemas.Pricing.MerchantProduct do
       :is_active
     ])
     |> validate_required([:merchant_id, :product_id, :url, :currency])
-    |> validate_length(:currency, is: 3)
+    |> update_change(:currency, fn
+      nil -> nil
+      currency -> String.upcase(currency)
+    end)
+    |> validate_format(:currency, ~r/^[A-Z]{3}$/, message: "must be a valid ISO 4217 code")
     |> unique_constraint([:merchant_id, :url], name: :merchant_products_merchant_url_uq)
+    |> foreign_key_constraint(:merchant_id)
+    |> foreign_key_constraint(:product_id)
   end
 end

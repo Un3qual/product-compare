@@ -19,8 +19,17 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
   def changeset(current, attrs) do
     current
     |> cast(attrs, [:product_id, :attribute_id, :claim_id, :selected_by, :selected_at])
+    |> maybe_default_selected_at(current)
     |> validate_required([:product_id, :attribute_id, :claim_id])
     |> unique_constraint([:product_id, :attribute_id], name: :pacur_product_attr_uq)
     |> unique_constraint(:claim_id, name: :pacur_claim_uq)
+  end
+
+  defp maybe_default_selected_at(changeset, current) do
+    if is_nil(current.id) and is_nil(get_field(changeset, :selected_at)) do
+      put_change(changeset, :selected_at, DateTime.utc_now() |> DateTime.truncate(:microsecond))
+    else
+      changeset
+    end
   end
 end

@@ -19,6 +19,6 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
   def changeset(thread, attrs) do
     thread
     |> cast(attrs, [:product_id, :title, :created_by])
-    |> validate_required([:product_id, :title])
+    |> validate_required([:product_id, :title, :created_by])
   end
 end

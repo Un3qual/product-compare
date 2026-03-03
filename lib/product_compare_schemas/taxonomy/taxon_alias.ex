@@ -18,5 +18,6 @@ defmodule ProductCompareSchemas.Taxonomy.TaxonAlias do
     |> cast(attrs, [:taxon_id, :alias])
     |> validate_required([:taxon_id, :alias])
     |> unique_constraint(:alias, name: :taxon_aliases_alias_uq)
+    |> foreign_key_constraint(:taxon_id)
   end
 end

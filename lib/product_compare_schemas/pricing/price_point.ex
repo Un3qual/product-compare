@@ -28,5 +28,9 @@ defmodule ProductCompareSchemas.Pricing.PricePoint do
       :artifact_id
     ])
     |> validate_required([:merchant_product_id, :observed_at, :price])
+    |> validate_number(:price, greater_than_or_equal_to: 0)
+    |> validate_number(:shipping, greater_than_or_equal_to: 0)
+    |> foreign_key_constraint(:merchant_product_id)
+    |> foreign_key_constraint(:artifact_id)
   end
 end

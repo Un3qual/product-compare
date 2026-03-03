@@ -22,5 +22,7 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateProgram do
     |> unique_constraint([:affiliate_network_id, :merchant_id],
       name: :affiliate_programs_net_merchant_uq
     )
+    |> assoc_constraint(:affiliate_network)
+    |> assoc_constraint(:merchant)
   end
 end

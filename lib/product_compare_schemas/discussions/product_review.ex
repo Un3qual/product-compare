@@ -29,7 +29,7 @@ defmodule ProductCompareSchemas.Discussions.ProductReview do
       :body_md,
       :verified_purchase
     ])
-    |> validate_required([:product_id, :rating])
+    |> validate_required([:product_id, :user_id, :rating])
     |> validate_number(:rating, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> unique_constraint([:product_id, :user_id], name: :product_reviews_product_user_uq)
   end

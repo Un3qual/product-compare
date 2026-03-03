@@ -20,6 +20,8 @@ defmodule ProductCompareSchemas.Specs.TaxonAttribute do
     taxon_attribute
     |> cast(attrs, [:taxon_id, :attribute_id, :is_required, :sort_order, :min_rep_to_edit])
     |> validate_required([:taxon_id, :attribute_id])
+    |> validate_number(:sort_order, greater_than_or_equal_to: 0)
+    |> validate_number(:min_rep_to_edit, greater_than_or_equal_to: 0)
     |> unique_constraint([:taxon_id, :attribute_id], name: :taxon_attributes_taxon_attr_uq)
   end
 end

@@ -20,6 +20,7 @@ defmodule ProductCompareSchemas.Specs.SourceArtifact do
   def changeset(artifact, attrs) do
     artifact
     |> cast(attrs, [:source_id, :url, :fetched_at, :content_hash, :raw_json, :raw_text])
-    |> validate_required([:fetched_at])
+    |> validate_required([:source_id, :fetched_at])
+    |> foreign_key_constraint(:source_id)
   end
 end

@@ -17,6 +17,15 @@ defmodule ProductCompareSchemas.Specs.ClaimDependency do
     claim_dependency
     |> cast(attrs, [:claim_id, :depends_on_claim_id])
     |> validate_required([:claim_id, :depends_on_claim_id])
+    |> validate_not_self_dependency()
     |> unique_constraint([:claim_id, :depends_on_claim_id], name: :claim_dependencies_uq)
+  end
+
+  defp validate_not_self_dependency(changeset) do
+    if get_field(changeset, :claim_id) == get_field(changeset, :depends_on_claim_id) do
+      add_error(changeset, :depends_on_claim_id, "must not reference the same claim")
+    else
+      changeset
+    end
   end
 end
