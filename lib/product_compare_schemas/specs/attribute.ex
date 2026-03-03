@@ -41,6 +41,8 @@ defmodule ProductCompareSchemas.Specs.Attribute do
     |> validate_required([:code, :display_name, :data_type])
     |> unique_constraint(:code)
     |> validate_enum_set_consistency()
+    |> foreign_key_constraint(:dimension_id)
+    |> foreign_key_constraint(:enum_set_id)
   end
 
   defp validate_enum_set_consistency(changeset) do

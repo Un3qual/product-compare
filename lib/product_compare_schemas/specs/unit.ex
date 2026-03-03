@@ -28,5 +28,6 @@ defmodule ProductCompareSchemas.Specs.Unit do
         []
       end
     end)
+    |> foreign_key_constraint(:dimension_id)
   end
 end

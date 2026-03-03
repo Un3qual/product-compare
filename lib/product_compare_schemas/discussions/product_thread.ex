@@ -20,5 +20,7 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
     thread
     |> cast(attrs, [:product_id, :title, :created_by])
     |> validate_required([:product_id, :title, :created_by])
+    |> foreign_key_constraint(:product_id)
+    |> foreign_key_constraint(:created_by)
   end
 end

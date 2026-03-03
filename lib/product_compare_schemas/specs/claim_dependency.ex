@@ -19,6 +19,8 @@ defmodule ProductCompareSchemas.Specs.ClaimDependency do
     |> validate_required([:claim_id, :depends_on_claim_id])
     |> validate_not_self_dependency()
     |> unique_constraint([:claim_id, :depends_on_claim_id], name: :claim_dependencies_uq)
+    |> foreign_key_constraint(:claim_id)
+    |> foreign_key_constraint(:depends_on_claim_id)
   end
 
   defp validate_not_self_dependency(changeset) do

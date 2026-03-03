@@ -24,6 +24,9 @@ defmodule ProductCompareSchemas.Discussions.ThreadPost do
     |> cast(attrs, [:thread_id, :parent_post_id, :user_id, :body_md])
     |> validate_required([:thread_id, :body_md])
     |> validate_parent_thread_consistency()
+    |> foreign_key_constraint(:thread_id)
+    |> foreign_key_constraint(:parent_post_id)
+    |> foreign_key_constraint(:user_id)
   end
 
   defp validate_parent_thread_consistency(changeset) do

@@ -23,6 +23,10 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
     |> validate_required([:product_id, :attribute_id, :claim_id])
     |> unique_constraint([:product_id, :attribute_id], name: :pacur_product_attr_uq)
     |> unique_constraint(:claim_id, name: :pacur_claim_uq)
+    |> foreign_key_constraint(:product_id)
+    |> foreign_key_constraint(:attribute_id)
+    |> foreign_key_constraint(:claim_id)
+    |> foreign_key_constraint(:selected_by)
   end
 
   defp maybe_default_selected_at(changeset, current) do

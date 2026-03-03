@@ -45,6 +45,9 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     |> validate_required([:merchant_id, :code, :discount_type])
     |> validate_length(:currency, is: 3)
     |> validate_coupon_window()
+    |> foreign_key_constraint(:merchant_id)
+    |> foreign_key_constraint(:affiliate_network_id)
+    |> foreign_key_constraint(:artifact_id)
   end
 
   defp validate_coupon_window(changeset) do

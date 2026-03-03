@@ -23,5 +23,7 @@ defmodule ProductCompareSchemas.Specs.TaxonAttribute do
     |> validate_number(:sort_order, greater_than_or_equal_to: 0)
     |> validate_number(:min_rep_to_edit, greater_than_or_equal_to: 0)
     |> unique_constraint([:taxon_id, :attribute_id], name: :taxon_attributes_taxon_attr_uq)
+    |> foreign_key_constraint(:taxon_id)
+    |> foreign_key_constraint(:attribute_id)
   end
 end
