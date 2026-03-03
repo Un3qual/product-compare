@@ -1,0 +1,44 @@
+defmodule ProductCompareSchemas.Specs.Attribute do
+  use ProductCompareSchemas.Schema, :relational
+
+  @data_types [:bool, :int, :numeric, :text, :enum, :date, :timestamp, :json]
+
+  @type t :: %__MODULE__{}
+
+  schema "attributes" do
+    field :entropy_id, Ecto.UUID
+    field :code, :string
+    field :display_name, :string
+    field :data_type, Ecto.Enum, values: @data_types
+    field :is_multivalued, :boolean
+    field :is_filterable, :boolean
+    field :is_derived, :boolean
+    field :description, :string
+
+    belongs_to :dimension, ProductCompareSchemas.Specs.Dimension
+    belongs_to :enum_set, ProductCompareSchemas.Specs.EnumSet
+
+    timestamps(updated_at: false)
+  end
+
+  @spec data_types() :: [atom()]
+  def data_types, do: @data_types
+
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(attribute, attrs) do
+    attribute
+    |> cast(attrs, [
+      :code,
+      :display_name,
+      :data_type,
+      :dimension_id,
+      :enum_set_id,
+      :is_multivalued,
+      :is_filterable,
+      :is_derived,
+      :description
+    ])
+    |> validate_required([:code, :display_name, :data_type])
+    |> unique_constraint(:code)
+  end
+end
