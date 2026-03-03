@@ -29,3 +29,10 @@ product_compare-*.tar
 /.cache/
 /.hex/
 /.mix/
+
+# Local environment files (dotenv).
+.env
+.env.*
+.env.local
+.env.production
+.env.test

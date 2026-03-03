@@ -11,10 +11,8 @@ defmodule ProductCompare.Fixtures.TaxonomyFixtures do
 
   @spec taxon_fixture(map()) :: ProductCompareSchemas.Taxonomy.Taxon.t()
   def taxon_fixture(attrs) do
-    taxonomy_id =
-      Map.get(attrs, :taxonomy_id) ||
-        Map.get(attrs, "taxonomy_id") ||
-        taxonomy_fixture().id
+    attrs = atomize_keys(attrs)
+    taxonomy_id = Map.get(attrs, :taxonomy_id) || taxonomy_fixture().id
 
     params =
       attrs
@@ -28,4 +26,11 @@ defmodule ProductCompare.Fixtures.TaxonomyFixtures do
 
   @spec taxonomy_by_code!(String.t()) :: TaxonomySchema.t()
   def taxonomy_by_code!(code), do: Repo.get_by!(TaxonomySchema, code: code)
+
+  defp atomize_keys(attrs) do
+    Enum.reduce(attrs, %{}, fn
+      {key, value}, acc when is_atom(key) -> Map.put(acc, key, value)
+      {key, value}, acc when is_binary(key) -> Map.put(acc, String.to_atom(key), value)
+    end)
+  end
 end

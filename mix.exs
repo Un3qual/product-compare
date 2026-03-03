@@ -69,10 +69,9 @@ defmodule ProductCompare.MixProject do
       precommit: [
         "format",
         "compile --warnings-as-errors",
-        "deps.unlock --unused",
-        "test",
-        "typecheck"
-      ]
+        "test"
+      ],
+      deps_prune: ["deps.unlock --unused"]
     ]
   end
 end

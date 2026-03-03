@@ -50,9 +50,13 @@ upsert_taxon = fn taxonomy, code, name, parent ->
       taxon
 
     taxon ->
-      if taxon.parent_id != parent_id do
-        {:ok, _} = Taxonomy.move_taxon(taxon.id, parent_id)
-      end
+      taxon =
+        if taxon.parent_id != parent_id do
+          {:ok, moved_taxon} = Taxonomy.move_taxon(taxon.id, parent_id)
+          moved_taxon
+        else
+          taxon
+        end
 
       if taxon.name != name do
         taxon |> Ecto.Changeset.change(name: name) |> Repo.update!()

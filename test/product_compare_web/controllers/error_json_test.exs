@@ -1,5 +1,5 @@
 defmodule ProductCompareWeb.ErrorJSONTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ExUnit.Case, async: true
 
   test "renders 404" do
     assert ProductCompareWeb.ErrorJSON.render("404.json", %{}) == %{

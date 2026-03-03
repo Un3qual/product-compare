@@ -233,6 +233,12 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
     create constraint(
              :product_attribute_claims,
+             :product_attribute_claims_confidence_range,
+             check: "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)"
+           )
+
+    create constraint(
+             :product_attribute_claims,
              :product_attribute_claim_single_typed_value,
              check:
                "((CASE WHEN value_bool IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_int IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_num IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_text IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_date IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_ts IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN enum_option_id IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN value_json IS NOT NULL THEN 1 ELSE 0 END)) = 1"

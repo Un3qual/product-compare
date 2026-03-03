@@ -161,6 +161,52 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
     create index(:thread_posts, [:parent_post_id], name: :thread_posts_parent_idx)
     create unique_index(:thread_posts, [:entropy_id])
 
+    execute(
+      """
+      CREATE FUNCTION thread_posts_parent_thread_guard()
+      RETURNS trigger AS $$
+      DECLARE
+        parent_thread_id bigint;
+      BEGIN
+        IF NEW.parent_post_id IS NULL THEN
+          RETURN NEW;
+        END IF;
+
+        SELECT thread_id
+        INTO parent_thread_id
+        FROM thread_posts
+        WHERE id = NEW.parent_post_id;
+
+        IF parent_thread_id IS NULL THEN
+          RETURN NEW;
+        END IF;
+
+        IF parent_thread_id <> NEW.thread_id THEN
+          RAISE EXCEPTION 'parent_post_id must reference a post in the same thread'
+            USING ERRCODE = 'check_violation';
+        END IF;
+
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+      """,
+      """
+      DROP FUNCTION IF EXISTS thread_posts_parent_thread_guard();
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER thread_posts_parent_thread_guard_tg
+      BEFORE INSERT OR UPDATE OF thread_id, parent_post_id ON thread_posts
+      FOR EACH ROW
+      EXECUTE FUNCTION thread_posts_parent_thread_guard();
+      """,
+      """
+      DROP TRIGGER IF EXISTS thread_posts_parent_thread_guard_tg ON thread_posts;
+      """
+    )
+
     create table(:product_reviews) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false

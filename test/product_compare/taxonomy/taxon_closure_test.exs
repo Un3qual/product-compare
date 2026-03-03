@@ -6,7 +6,8 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
 
   describe "taxon closure maintenance" do
     test "list_descendants/1 returns full subtree with depths" do
-      taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")
 
       {:ok, root} = Taxonomy.create_taxon(%{taxonomy_id: taxonomy.id, code: "root", name: "Root"})
 
@@ -36,7 +37,8 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
     end
 
     test "move_taxon/2 re-parents subtree and updates closure paths" do
-      taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")
 
       {:ok, root_a} =
         Taxonomy.create_taxon(%{taxonomy_id: taxonomy.id, code: "root_a", name: "Root A"})
@@ -75,7 +77,8 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
     end
 
     test "move_taxon/2 rejects cycles" do
-      taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")
 
       {:ok, root} =
         Taxonomy.create_taxon(%{taxonomy_id: taxonomy.id, code: "cycle_root", name: "Root"})

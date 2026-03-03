@@ -59,7 +59,7 @@ Use the same shape with your product namespace:
 ```text
 lib/
   your_app.ex                  # top-level core boundary (contexts public API)
-  your_app_app.ex              # OTP Application + supervision tree
+  your_app/application.ex      # OTP Application + supervision tree
   your_app/
     accounts.ex
     content.ex
@@ -96,7 +96,7 @@ test/
 
 Boundary model:
 
-- Top-level boundaries: `YourApp`, `YourAppWeb`, `YourAppGQL`, `YourSchemas`, `YourAppApp`.
+- Top-level boundaries: `YourApp`, `YourApp.Application`, `YourAppWeb`, `YourAppGQL`, `YourSchemas`.
 - Context boundaries depend on `Infra` + `Schemas`, not on web/GraphQL transport.
 - Export only stable context entrypoints.
 

@@ -58,14 +58,18 @@ defmodule ProductCompare.Fixtures.SpecsFixtures do
           name: "Monitor"
         })
 
-    {:ok, brand} = Catalog.upsert_brand(%{name: "Brand #{System.unique_integer([:positive])}"})
+    brand_id =
+      Map.get(attrs, :brand_id) ||
+        case Catalog.upsert_brand(%{name: "Brand #{System.unique_integer([:positive])}"}) do
+          {:ok, brand} -> brand.id
+        end
 
     slug = Map.get(attrs, :slug, "product-#{System.unique_integer([:positive])}")
 
     {:ok, product} =
       attrs
       |> Map.drop([:primary_type_taxon])
-      |> Map.put_new(:brand_id, brand.id)
+      |> Map.put_new(:brand_id, brand_id)
       |> Map.put_new(:primary_type_taxon_id, primary_type_taxon.id)
       |> Map.put_new(:name, "Product #{slug}")
       |> Map.put_new(:slug, slug)
