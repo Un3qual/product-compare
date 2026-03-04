@@ -89,14 +89,14 @@ defmodule ProductCompare.ProductAttributeClaims.ValidationBackfillWorkflow do
         SELECT
           COUNT(*) FILTER (WHERE typed_value_count = 0) AS typed_value_missing,
           COUNT(*) FILTER (WHERE typed_value_count > 1) AS typed_value_multiple,
-          COUNT(*) FILTER (WHERE #{@confidence_out_of_range_condition}) AS confidence_out_of_range,
+          COUNT(*) FILTER (WHERE #{`@confidence_out_of_range_condition`}) AS confidence_out_of_range,
           COUNT(*) FILTER (
             WHERE typed_value_count <> 1
-               OR #{@confidence_out_of_range_condition}
+               OR #{`@confidence_out_of_range_condition`}
           ) AS total_violating_rows
         FROM (
-          SELECT id, confidence, #{@typed_value_count_expression} AS typed_value_count
-          FROM #{table}
+          SELECT id, confidence, #{`@typed_value_count_expression`} AS typed_value_count
+          FROM "#{table}"
         ) claims
         """,
         []
