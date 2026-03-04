@@ -99,6 +99,40 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
                Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
     end
 
+    test "rejects product_attribute_current writes with mismatched claim scope" do
+      product = SpecsFixtures.product_fixture(%{slug: "pacur-scope-product-a"})
+      other_product = SpecsFixtures.product_fixture(%{slug: "pacur-scope-product-b"})
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "pacur_scope_attribute",
+          display_name: "PACUR Scope Attribute",
+          data_type: :bool
+        })
+
+      moderator = AccountsFixtures.user_fixture()
+
+      {:ok, claim} =
+        Specs.propose_claim(other_product.id, attribute.id, %{value_bool: true}, %{
+          source_type: :user,
+          created_by: moderator.id
+        })
+
+      {:ok, _} = Specs.accept_claim(claim.id, moderator.id)
+
+      assert {:error, changeset} =
+               %ProductAttributeCurrent{}
+               |> ProductAttributeCurrent.changeset(%{
+                 product_id: product.id,
+                 attribute_id: attribute.id,
+                 claim_id: claim.id,
+                 selected_by: moderator.id
+               })
+               |> Repo.insert()
+
+      assert "must belong to the same product and attribute" in errors_on(changeset).claim_id
+    end
+
     test "concurrent selection still leaves a single current row" do
       product = SpecsFixtures.product_fixture(%{slug: "concurrent-swap-product"})
 

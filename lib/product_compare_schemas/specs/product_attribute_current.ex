@@ -1,6 +1,9 @@
 defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Specs.ProductAttributeClaim
+
   @type t :: %__MODULE__{}
 
   schema "product_attribute_current" do
@@ -21,6 +24,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
     |> cast(attrs, [:product_id, :attribute_id, :claim_id, :selected_by, :selected_at])
     |> maybe_default_selected_at(current)
     |> validate_required([:product_id, :attribute_id, :claim_id])
+    |> validate_claim_scope()
     |> unique_constraint([:product_id, :attribute_id], name: :pacur_product_attr_uq)
     |> unique_constraint(:claim_id, name: :pacur_claim_uq)
     |> foreign_key_constraint(:product_id)
@@ -34,6 +38,29 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
       put_change(changeset, :selected_at, DateTime.utc_now() |> DateTime.truncate(:microsecond))
     else
       changeset
+    end
+  end
+
+  defp validate_claim_scope(changeset) do
+    product_id = get_field(changeset, :product_id)
+    attribute_id = get_field(changeset, :attribute_id)
+    claim_id = get_field(changeset, :claim_id)
+
+    cond do
+      is_nil(product_id) or is_nil(attribute_id) or is_nil(claim_id) ->
+        changeset
+
+      true ->
+        case Repo.get(ProductAttributeClaim, claim_id) do
+          %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} ->
+            changeset
+
+          %ProductAttributeClaim{} ->
+            add_error(changeset, :claim_id, "must belong to the same product and attribute")
+
+          nil ->
+            changeset
+        end
     end
   end
 end
