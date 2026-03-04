@@ -27,12 +27,12 @@
 
 ### C) Core Workflows (MVP)
 
-- [ ] Taxonomy tree + closure maintenance + use-case tagging with guardrails.
+- [x] Taxonomy tree + closure maintenance + use-case tagging with guardrails.
 - [x] Unit/dimension conversion helper with base-unit normalization.
-- [ ] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
+- [x] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
 - [x] Product filtering query builder (type descendants, ranges, bool/enum/use-case filters).
 - [x] Pricing upsert/history workflows.
-- [ ] Discussions/reviews CRUD.
+- [x] Discussions/reviews CRUD.
 
 ### D) Seeds + Minimal Examples
 

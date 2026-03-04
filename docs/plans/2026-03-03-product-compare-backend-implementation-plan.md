@@ -24,43 +24,43 @@
 
 ### A) Repo Integration / Architecture
 
-- [ ] Initialize Nix environment and Phoenix project scaffolding.
-- [ ] Add Docker Compose for Postgres 18 and wire app config.
-- [ ] Establish context boundaries and module namespaces.
-- [ ] Add baseline aliases/check commands (`mix precommit`, `mix typecheck`).
+- [x] Initialize Nix environment and Phoenix project scaffolding.
+- [x] Add Docker Compose for Postgres 18 and wire app config.
+- [x] Establish context boundaries and module namespaces.
+- [x] Add baseline aliases/check commands (`mix precommit`, `mix typecheck`).
 
 ### B) Database Layer (Migrations + Schemas)
 
-- [ ] Implement ordered migrations by dependency layer.
-- [ ] Add all core constraints, FK rules, unique/partial indexes.
-- [ ] Implement Ecto schemas and `Ecto.Enum` fields.
-- [ ] Add changeset validations for typed value invariants.
+- [x] Implement ordered migrations by dependency layer.
+- [x] Add all core constraints, FK rules, unique/partial indexes.
+- [x] Implement Ecto schemas and `Ecto.Enum` fields.
+- [x] Add changeset validations for typed value invariants.
 
 ### C) Core Workflows (MVP)
 
-- [ ] Taxonomy tree + closure maintenance + use-case tagging.
-- [ ] Unit/dimension conversion helper and validation path.
-- [ ] Claims lifecycle + canonical current selection (atomic swap).
-- [ ] Filtering query builder over current claims.
+- [x] Taxonomy tree + closure maintenance + use-case tagging.
+- [x] Unit/dimension conversion helper and validation path.
+- [x] Claims lifecycle + canonical current selection (atomic swap).
+- [x] Filtering query builder over current claims.
 - [x] Pricing upsert/history workflows.
-- [ ] Discussions/reviews CRUD workflows.
+- [x] Discussions/reviews CRUD workflows.
 
 ### D) Seeds + Minimal Examples
 
-- [ ] Seed taxonomies, sample trees, attributes, enum options, units.
-- [ ] Seed sample products, claims/current values, merchant listing/prices.
-- [ ] Ensure seed idempotency and deterministic inserts.
+- [x] Seed taxonomies, sample trees, attributes, enum options, units.
+- [x] Seed sample products, claims/current values, merchant listing/prices.
+- [x] Ensure seed idempotency and deterministic inserts.
 
 ### E) Tests
 
-- [ ] Unit conversion correctness tests.
-- [ ] Taxon closure ancestor/descendant tests.
-- [ ] `product_attribute_current` uniqueness + atomic swap tests.
+- [x] Unit conversion correctness tests.
+- [x] Taxon closure ancestor/descendant tests.
+- [x] `product_attribute_current` uniqueness + atomic swap tests.
 
 ### F) Deliverable Plan Doc
 
-- [ ] Publish short execution checklist with migration order and boundaries.
-- [ ] Document intentional deferrals and expansion points.
+- [x] Publish short execution checklist with migration order and boundaries.
+- [x] Document intentional deferrals and expansion points.
 
 ---
 
