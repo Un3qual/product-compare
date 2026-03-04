@@ -158,7 +158,7 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfill do
 
   alias ProductCompare.ProductAttributeClaims.ValidationBackfillWorkflow
 
-  @shortdoc "Validate existing product_attribute_claim rows for typed value and confidence violations"
+  @shortdoc "Validate existing product_attribute_claims rows for typed value and confidence violations"
   @switches [sample_size: :integer, strict: :boolean]
   @aliases [s: :sample_size]
 

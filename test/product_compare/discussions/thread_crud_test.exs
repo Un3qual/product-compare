@@ -40,6 +40,31 @@ defmodule ProductCompare.Discussions.ThreadCrudTest do
       assert "can't be blank" in errors_on(changeset).title
     end
 
+    test "update_thread/2 does not allow changing product or creator ownership fields" do
+      user = AccountsFixtures.user_fixture()
+      other_user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "thread-update-ownership-product"})
+      other_product = SpecsFixtures.product_fixture(%{slug: "thread-update-ownership-other-product"})
+
+      {:ok, thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Original title",
+          created_by: user.id
+        })
+
+      assert {:ok, updated_thread} =
+               Discussions.update_thread(thread, %{
+                 title: "Updated title",
+                 product_id: other_product.id,
+                 created_by: other_user.id
+               })
+
+      assert updated_thread.title == "Updated title"
+      assert updated_thread.product_id == thread.product_id
+      assert updated_thread.created_by == thread.created_by
+    end
+
     test "delete_thread/1 deletes an existing thread" do
       user = AccountsFixtures.user_fixture()
       product = SpecsFixtures.product_fixture(%{slug: "thread-delete-product"})
