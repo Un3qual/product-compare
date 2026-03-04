@@ -19,12 +19,14 @@
 - [x] Establish context boundaries and public API modules.
 
 ### B) Database Layer (Migrations + Schemas)
+
 - [x] Create migrations in dependency-safe order, adapting DBML where simplification/constraints improve maintainability.
 - [x] Add `entropy_id uuid default uuidv7()` + unique index to relational tables per guide.
 - [x] Implement schemas with associations, changesets, and `Ecto.Enum` fields for domain enums.
 - [x] Add critical indexes for filter query performance and claim/current joins.
 
 ### C) Core Workflows (MVP)
+
 - [ ] Taxonomy tree + closure maintenance + use-case tagging with guardrails.
 - [x] Unit/dimension conversion helper with base-unit normalization.
 - [ ] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
@@ -33,16 +35,19 @@
 - [ ] Discussions/reviews CRUD.
 
 ### D) Seeds + Minimal Examples
+
 - [x] Seed taxonomies, sample trees, units, enums, attributes.
 - [x] Seed sample products, claims, current pointers, and pricing history.
 - [x] Keep seed flow deterministic and idempotent.
 
 ### E) Tests
+
 - [x] Unit conversion correctness tests.
 - [x] Taxon closure traversal tests.
 - [x] Current-claim uniqueness and atomic replacement tests.
 
 ### F) Deliverable Plan Artifact
+
 - [x] Maintain concise implementation checklist documenting migration order, module boundaries, and deferred scope.
 
 ---

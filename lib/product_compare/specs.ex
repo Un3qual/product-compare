@@ -370,10 +370,12 @@ defmodule ProductCompare.Specs do
         {:ok, nil}
 
       {base_value, nil} ->
-        {:ok, to_decimal(base_value)}
+        to_decimal(base_value)
 
       {nil, source_unit_value} ->
-        {:ok, UnitConversion.to_base(source_unit_value, unit)}
+        with {:ok, source_decimal} <- to_decimal(source_unit_value) do
+          {:ok, UnitConversion.to_base(source_decimal, unit)}
+        end
 
       {_base_value, _source_unit_value} ->
         {:error, {:conflicting_numeric_range_bound, base_key, source_unit_key}}
@@ -391,6 +393,16 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value), do: Decimal.new(value)
+  defp to_decimal(%Decimal{} = value), do: {:ok, value}
+  defp to_decimal(value) when is_integer(value), do: {:ok, Decimal.new(value)}
+  defp to_decimal(value) when is_float(value), do: {:ok, Decimal.from_float(value)}
+
+  defp to_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, ""} -> {:ok, decimal}
+      _ -> {:error, :invalid_decimal}
+    end
+  end
+
+  defp to_decimal(_value), do: {:error, :invalid_decimal_type}
 end
