@@ -2,7 +2,9 @@ defmodule ProductCompare.Repo.Migrations.ReplacePartialMerchantDomainIndex do
   use Ecto.Migration
 
   def change do
-    execute("DROP INDEX IF EXISTS merchants_domain_index")
+    alter table(:merchants) do
+      modify :domain, :text, null: false 
+    end
     create unique_index(:merchants, [:domain])
   end
 end
