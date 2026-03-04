@@ -44,8 +44,8 @@ defmodule ProductCompare.Specs.ProductAttributeClaimChangesetTest do
         )
 
       refute changeset.valid?
-      assert "must be present when numeric companion fields are provided" in
-               errors_on(changeset).value_num
+
+      assert "must be present when numeric companion fields are provided" in errors_on(changeset).value_num
     end
 
     test "requires unit and base numeric value when numeric claim is present" do

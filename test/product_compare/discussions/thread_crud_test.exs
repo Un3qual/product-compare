@@ -44,7 +44,9 @@ defmodule ProductCompare.Discussions.ThreadCrudTest do
       user = AccountsFixtures.user_fixture()
       other_user = AccountsFixtures.user_fixture()
       product = SpecsFixtures.product_fixture(%{slug: "thread-update-ownership-product"})
-      other_product = SpecsFixtures.product_fixture(%{slug: "thread-update-ownership-other-product"})
+
+      other_product =
+        SpecsFixtures.product_fixture(%{slug: "thread-update-ownership-other-product"})
 
       {:ok, thread} =
         Discussions.create_thread(%{

@@ -87,7 +87,9 @@ defmodule ProductCompareSchemas.Discussions.ThreadPost do
 
       true ->
         case Repo.get(__MODULE__, parent_id) do
-          nil -> false
+          nil ->
+            false
+
           %__MODULE__{parent_post_id: next_parent_id} ->
             parent_chain_contains_id?(next_parent_id, target_id, MapSet.put(visited, parent_id))
         end

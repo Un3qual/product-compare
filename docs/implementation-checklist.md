@@ -28,6 +28,17 @@
 - Deterministic seeds with sample monitors and price timeline.
 - Required tests for conversion, closure traversal, and current-claim atomic swap.
 
+## Verification Checkpoint (2026-03-04)
+
+- [x] `mix compile --warnings-as-errors` passes.
+- [x] `mix test` passes (`59 tests, 0 failures`).
+- [x] `mix typecheck` passes.
+- [x] `mix precommit` passes.
+- [x] `user_reputation` upsert regression test assertion aligns with schema timestamp model (`inserted_at` only).
+- [x] All current relational tables use bigint `id` plus `entropy_id` defaulting to `uuidv7()`.
+- [x] No UUID-primary-key exceptions are present in current migrations/schema macros.
+- [ ] Token-secret hashing and GraphQL Relay-specific checklist items remain deferred with the GraphQL/auth surface area.
+
 ## Deferred Scope
 
 - Scraping ingestion jobs and scheduling pipelines (Oban, retries, dead letters).
