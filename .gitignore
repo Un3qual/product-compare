@@ -33,6 +33,7 @@ product_compare-*.tar
 # Local environment files (dotenv).
 .env
 .env.*
+!.env.example
 .env.local
 .env.production
 .env.test

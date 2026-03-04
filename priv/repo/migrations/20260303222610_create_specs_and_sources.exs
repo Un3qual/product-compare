@@ -322,6 +322,12 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
              name: :claim_dependencies_uq
            )
 
+    create constraint(
+             :claim_dependencies,
+             :claim_dependencies_not_self,
+             check: "claim_id <> depends_on_claim_id"
+           )
+
     create unique_index(:claim_dependencies, [:entropy_id])
   end
 end

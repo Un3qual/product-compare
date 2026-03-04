@@ -64,12 +64,16 @@ defmodule ProductCompare.Discussions do
   @spec delete_post(ThreadPost.t()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
   def delete_post(%ThreadPost{} = post), do: Repo.delete(post)
 
-  @spec list_reviews_for_product(pos_integer()) :: [ProductReview.t()]
-  def list_reviews_for_product(product_id) do
+  @spec list_reviews_for_product(pos_integer(), keyword() | map()) :: [ProductReview.t()]
+  def list_reviews_for_product(product_id, opts \\ []) do
+    {limit, offset} = normalize_pagination(opts)
+
     Repo.all(
       from r in ProductReview,
         where: r.product_id == ^product_id,
-        order_by: [desc: r.inserted_at]
+        order_by: [desc: r.inserted_at, desc: r.id],
+        limit: ^limit,
+        offset: ^offset
     )
   end
 
@@ -128,10 +132,10 @@ defmodule ProductCompare.Discussions do
 
   defp parse_pagination_value(value, _default) when is_integer(value), do: value
 
-  defp parse_pagination_value(value, _default) when is_binary(value) do
+  defp parse_pagination_value(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {parsed, ""} -> parsed
-      _ -> value
+      _ -> default
     end
   end
 

@@ -19,58 +19,92 @@ defmodule ProductCompare.Specs do
 
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
-    code = get_value(attrs, :code)
+    now = DateTime.utc_now()
+    changeset = Dimension.changeset(%Dimension{}, attrs)
 
-    case Repo.get_by(Dimension, code: code) do
-      nil -> %Dimension{} |> Dimension.changeset(attrs) |> Repo.insert()
-      dimension -> dimension |> Dimension.changeset(attrs) |> Repo.update()
-    end
+    update_fields =
+      changeset.changes
+      |> Map.drop([:code])
+      |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:code],
+      returning: true
+    )
   end
 
   @spec upsert_unit(map()) :: {:ok, Unit.t()} | {:error, Ecto.Changeset.t()}
   def upsert_unit(attrs) do
-    dimension_id = get_value(attrs, :dimension_id)
-    code = get_value(attrs, :code)
+    now = DateTime.utc_now()
+    changeset = Unit.changeset(%Unit{}, attrs)
 
-    query = from u in Unit, where: u.dimension_id == ^dimension_id and u.code == ^code
+    update_fields =
+      changeset.changes
+      |> Map.drop([:dimension_id, :code])
+      |> Map.to_list()
 
-    case Repo.one(query) do
-      nil -> %Unit{} |> Unit.changeset(attrs) |> Repo.insert()
-      unit -> unit |> Unit.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:dimension_id, :code],
+      returning: true
+    )
   end
 
   @spec upsert_enum_set(map()) :: {:ok, EnumSet.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_set(attrs) do
-    code = get_value(attrs, :code)
+    now = DateTime.utc_now()
+    changeset = EnumSet.changeset(%EnumSet{}, attrs)
 
-    case Repo.get_by(EnumSet, code: code) do
-      nil -> %EnumSet{} |> EnumSet.changeset(attrs) |> Repo.insert()
-      enum_set -> enum_set |> EnumSet.changeset(attrs) |> Repo.update()
-    end
+    update_fields =
+      changeset.changes
+      |> Map.drop([:code])
+      |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:code],
+      returning: true
+    )
   end
 
   @spec upsert_enum_option(map()) :: {:ok, EnumOption.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_option(attrs) do
-    enum_set_id = get_value(attrs, :enum_set_id)
-    code = get_value(attrs, :code)
+    now = DateTime.utc_now()
+    changeset = EnumOption.changeset(%EnumOption{}, attrs)
 
-    query = from eo in EnumOption, where: eo.enum_set_id == ^enum_set_id and eo.code == ^code
+    update_fields =
+      changeset.changes
+      |> Map.drop([:enum_set_id, :code])
+      |> Map.to_list()
 
-    case Repo.one(query) do
-      nil -> %EnumOption{} |> EnumOption.changeset(attrs) |> Repo.insert()
-      enum_option -> enum_option |> EnumOption.changeset(attrs) |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:enum_set_id, :code],
+      returning: true
+    )
   end
 
   @spec upsert_attribute(map()) :: {:ok, Attribute.t()} | {:error, Ecto.Changeset.t()}
   def upsert_attribute(attrs) do
-    code = get_value(attrs, :code)
+    now = DateTime.utc_now()
+    changeset = Attribute.changeset(%Attribute{}, attrs)
 
-    case Repo.get_by(Attribute, code: code) do
-      nil -> %Attribute{} |> Attribute.changeset(attrs) |> Repo.insert()
-      attribute -> attribute |> Attribute.changeset(attrs) |> Repo.update()
-    end
+    update_fields =
+      changeset.changes
+      |> Map.drop([:code])
+      |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:code],
+      returning: true
+    )
   end
 
   @spec convert_to_base(Decimal.t() | number(), pos_integer()) ::
@@ -132,8 +166,15 @@ defmodule ProductCompare.Specs do
         nil ->
           {:error, :claim_not_found}
 
-        %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} = claim ->
+        %ProductAttributeClaim{
+          product_id: ^product_id,
+          attribute_id: ^attribute_id,
+          status: :accepted
+        } = claim ->
           {:ok, claim}
+
+        %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} ->
+          {:error, :claim_not_accepted}
 
         _ ->
           {:error, :claim_product_attribute_mismatch}
