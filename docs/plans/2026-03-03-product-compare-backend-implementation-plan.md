@@ -42,7 +42,7 @@
 - [ ] Unit/dimension conversion helper and validation path.
 - [ ] Claims lifecycle + canonical current selection (atomic swap).
 - [ ] Filtering query builder over current claims.
-- [ ] Pricing upsert/history workflows.
+- [x] Pricing upsert/history workflows.
 - [ ] Discussions/reviews CRUD workflows.
 
 ### D) Seeds + Minimal Examples
@@ -456,4 +456,3 @@ Concurrency:
 5. C4-C6 (query/p pricing/discussions)
 6. E (tests hardening)
 7. F (final docs trim + deferred scope confirmation)
-

@@ -29,7 +29,7 @@
 - [ ] Unit/dimension conversion helper with base-unit normalization.
 - [ ] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
 - [ ] Product filtering query builder (type descendants, ranges, bool/enum/use-case filters).
-- [ ] Pricing upsert/history workflows.
+- [x] Pricing upsert/history workflows.
 - [ ] Discussions/reviews CRUD.
 
 ### D) Seeds + Minimal Examples
@@ -478,4 +478,3 @@ Discussions/Reviews:
 - Embeddings/vector search and semantic recommendation layer.
 - Advanced moderation workflows and anti-abuse heuristics.
 - UI/search frontend concerns.
-
