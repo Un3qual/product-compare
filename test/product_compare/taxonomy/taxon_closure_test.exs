@@ -36,6 +36,37 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
              end)
     end
 
+    test "list_ancestors/1 returns ancestor chain with depths" do
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")
+
+      {:ok, root} =
+        Taxonomy.create_taxon(%{taxonomy_id: taxonomy.id, code: "root_a1", name: "Root"})
+
+      {:ok, child} =
+        Taxonomy.create_taxon(%{
+          taxonomy_id: taxonomy.id,
+          parent_id: root.id,
+          code: "child_a1",
+          name: "Child"
+        })
+
+      {:ok, grandchild} =
+        Taxonomy.create_taxon(%{
+          taxonomy_id: taxonomy.id,
+          parent_id: child.id,
+          code: "grandchild_a1",
+          name: "Grandchild"
+        })
+
+      ancestors = Taxonomy.list_ancestors(grandchild.id)
+
+      assert Enum.map(ancestors, &{&1.taxon.id, &1.depth}) == [
+               {child.id, 1},
+               {root.id, 2}
+             ]
+    end
+
     test "move_taxon/2 re-parents subtree and updates closure paths" do
       taxonomy =
         TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")

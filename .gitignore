@@ -29,6 +29,7 @@ product_compare-*.tar
 /.cache/
 /.hex/
 /.mix/
+/.worktrees/
 
 # Local environment files (dotenv).
 .env

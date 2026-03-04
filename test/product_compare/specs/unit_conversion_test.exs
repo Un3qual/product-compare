@@ -67,4 +67,184 @@ defmodule ProductCompare.Specs.UnitConversionTest do
                )
     end
   end
+
+  describe "propose_claim/4 numeric range handling" do
+    test "rejects conflicting base and unit-space range bounds" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_conflict_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_conflict_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_conflict_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-conflict-product"})
+
+      assert {:error, {:conflicting_numeric_range_bound, :value_num_base_min, :value_num_min}} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_base_min: Decimal.new("600"),
+                   value_num_min: Decimal.new("24")
+                 },
+                 %{source_type: :user}
+               )
+    end
+
+    test "normalizes numeric range bounds using the provided unit" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-normalization-product"})
+
+      assert {:ok, claim} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_min: Decimal.new("24"),
+                   value_num_max: Decimal.new("30")
+                 },
+                 %{source_type: :user}
+               )
+
+      assert Decimal.equal?(claim.value_num_base_min, Decimal.new("609.6"))
+      assert Decimal.equal?(claim.value_num_base_max, Decimal.new("762"))
+    end
+
+    test "rejects numeric claims when normalized range min exceeds max" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_bad_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_bad_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_bad_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-invalid-product"})
+
+      assert {:error, :invalid_numeric_range} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_min: Decimal.new("30"),
+                   value_num_max: Decimal.new("24")
+                 },
+                 %{source_type: :user}
+               )
+    end
+
+    test "rejects invalid decimal values for base-space range bounds" do
+      length_dimension =
+        SpecsFixtures.dimension_fixture(%{code: "length_for_invalid_base_range_decimal"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_invalid_base_range_decimal",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_invalid_base_range_decimal",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-invalid-base-decimal-product"})
+
+      assert {:error, :invalid_decimal} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_base_min: "not-a-decimal"
+                 },
+                 %{source_type: :user}
+               )
+    end
+
+    test "rejects invalid decimal values for unit-space range bounds" do
+      length_dimension =
+        SpecsFixtures.dimension_fixture(%{code: "length_for_invalid_unit_range_decimal"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_invalid_unit_range_decimal",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_invalid_unit_range_decimal",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-invalid-unit-decimal-product"})
+
+      assert {:error, :invalid_decimal} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_min: "still-not-a-decimal"
+                 },
+                 %{source_type: :user}
+               )
+    end
+  end
 end
