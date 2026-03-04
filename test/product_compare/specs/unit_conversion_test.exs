@@ -67,4 +67,79 @@ defmodule ProductCompare.Specs.UnitConversionTest do
                )
     end
   end
+
+  describe "propose_claim/4 numeric range handling" do
+    test "normalizes numeric range bounds using the provided unit" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-normalization-product"})
+
+      assert {:ok, claim} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_min: Decimal.new("24"),
+                   value_num_max: Decimal.new("30")
+                 },
+                 %{source_type: :user}
+               )
+
+      assert Decimal.equal?(claim.value_num_base_min, Decimal.new("609.6"))
+      assert Decimal.equal?(claim.value_num_base_max, Decimal.new("762"))
+    end
+
+    test "rejects numeric claims when normalized range min exceeds max" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_bad_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_bad_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_bad_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-invalid-product"})
+
+      assert {:error, :invalid_numeric_range} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_min: Decimal.new("30"),
+                   value_num_max: Decimal.new("24")
+                 },
+                 %{source_type: :user}
+               )
+    end
+  end
 end

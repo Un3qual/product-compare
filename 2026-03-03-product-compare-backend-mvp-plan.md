@@ -13,37 +13,37 @@
 ## Top-Level Task Checklist (A-F)
 
 ### A) Repo Integration / Architecture
-- [ ] Create Nix environment (latest stable Elixir/Erlang/Phoenix toolchain) and standard dev shell.
-- [ ] Generate Phoenix project configured for `:utc_datetime_usec`, bigint PK defaults, and Postgres.
-- [ ] Add Docker Compose for PostgreSQL 18 and wire app config to container env vars.
-- [ ] Establish context boundaries and public API modules.
+- [x] Create Nix environment (latest stable Elixir/Erlang/Phoenix toolchain) and standard dev shell.
+- [x] Generate Phoenix project configured for `:utc_datetime_usec`, bigint PK defaults, and Postgres.
+- [x] Add Docker Compose for PostgreSQL 18 and wire app config to container env vars.
+- [x] Establish context boundaries and public API modules.
 
 ### B) Database Layer (Migrations + Schemas)
-- [ ] Create migrations in dependency-safe order, adapting DBML where simplification/constraints improve maintainability.
-- [ ] Add `entropy_id uuid default uuidv7()` + unique index to relational tables per guide.
-- [ ] Implement schemas with associations, changesets, and `Ecto.Enum` fields for domain enums.
-- [ ] Add critical indexes for filter query performance and claim/current joins.
+- [x] Create migrations in dependency-safe order, adapting DBML where simplification/constraints improve maintainability.
+- [x] Add `entropy_id uuid default uuidv7()` + unique index to relational tables per guide.
+- [x] Implement schemas with associations, changesets, and `Ecto.Enum` fields for domain enums.
+- [x] Add critical indexes for filter query performance and claim/current joins.
 
 ### C) Core Workflows (MVP)
 - [ ] Taxonomy tree + closure maintenance + use-case tagging with guardrails.
-- [ ] Unit/dimension conversion helper with base-unit normalization.
+- [x] Unit/dimension conversion helper with base-unit normalization.
 - [ ] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
-- [ ] Product filtering query builder (type descendants, ranges, bool/enum/use-case filters).
+- [x] Product filtering query builder (type descendants, ranges, bool/enum/use-case filters).
 - [ ] Pricing upsert/history workflows.
 - [ ] Discussions/reviews CRUD.
 
 ### D) Seeds + Minimal Examples
-- [ ] Seed taxonomies, sample trees, units, enums, attributes.
-- [ ] Seed sample products, claims, current pointers, and pricing history.
-- [ ] Keep seed flow deterministic and idempotent.
+- [x] Seed taxonomies, sample trees, units, enums, attributes.
+- [x] Seed sample products, claims, current pointers, and pricing history.
+- [x] Keep seed flow deterministic and idempotent.
 
 ### E) Tests
-- [ ] Unit conversion correctness tests.
-- [ ] Taxon closure traversal tests.
-- [ ] Current-claim uniqueness and atomic replacement tests.
+- [x] Unit conversion correctness tests.
+- [x] Taxon closure traversal tests.
+- [x] Current-claim uniqueness and atomic replacement tests.
 
 ### F) Deliverable Plan Artifact
-- [ ] Maintain concise implementation checklist documenting migration order, module boundaries, and deferred scope.
+- [x] Maintain concise implementation checklist documenting migration order, module boundaries, and deferred scope.
 
 ---
 
@@ -478,4 +478,3 @@ Discussions/Reviews:
 - Embeddings/vector search and semantic recommendation layer.
 - Advanced moderation workflows and anti-abuse heuristics.
 - UI/search frontend concerns.
-

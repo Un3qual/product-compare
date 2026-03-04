@@ -91,7 +91,6 @@ defmodule ProductCompare.Specs do
 
   @spec upsert_attribute(map()) :: {:ok, Attribute.t()} | {:error, Ecto.Changeset.t()}
   def upsert_attribute(attrs) do
-    now = DateTime.utc_now()
     changeset = Attribute.changeset(%Attribute{}, attrs)
 
     update_fields =
@@ -101,7 +100,7 @@ defmodule ProductCompare.Specs do
 
     Repo.insert(
       changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
+      on_conflict: [set: update_fields],
       conflict_target: [:code],
       returning: true
     )
@@ -240,7 +239,22 @@ defmodule ProductCompare.Specs do
        ) do
     with {:ok, value_num} <- fetch_typed_value(typed_value, :value_num),
          {:ok, unit_id} <- fetch_typed_value(typed_value, :unit_id),
-         {:ok, unit} <- fetch_unit(unit_id, dimension_id) do
+         {:ok, unit} <- fetch_unit(unit_id, dimension_id),
+         {:ok, value_num_base_min} <-
+           normalize_numeric_range_bound(
+             typed_value,
+             :value_num_base_min,
+             :value_num_min,
+             unit
+           ),
+         {:ok, value_num_base_max} <-
+           normalize_numeric_range_bound(
+             typed_value,
+             :value_num_base_max,
+             :value_num_max,
+             unit
+           ),
+         :ok <- validate_numeric_range(value_num_base_min, value_num_base_max) do
       value_num_base = UnitConversion.to_base(value_num, unit)
 
       {:ok,
@@ -248,8 +262,8 @@ defmodule ProductCompare.Specs do
          value_num: value_num,
          unit_id: unit_id,
          value_num_base: value_num_base,
-         value_num_base_min: get_value(typed_value, :value_num_base_min),
-         value_num_base_max: get_value(typed_value, :value_num_base_max)
+         value_num_base_min: value_num_base_min,
+         value_num_base_max: value_num_base_max
        }}
     end
   end
@@ -349,4 +363,34 @@ defmodule ProductCompare.Specs do
         Map.get(map, Atom.to_string(key))
     end
   end
+
+  defp normalize_numeric_range_bound(typed_value, base_key, source_unit_key, unit) do
+    case {get_value(typed_value, base_key), get_value(typed_value, source_unit_key)} do
+      {nil, nil} ->
+        {:ok, nil}
+
+      {base_value, nil} ->
+        {:ok, to_decimal(base_value)}
+
+      {nil, source_unit_value} ->
+        {:ok, UnitConversion.to_base(source_unit_value, unit)}
+
+      {_base_value, _source_unit_value} ->
+        {:error, {:conflicting_numeric_range_bound, base_key, source_unit_key}}
+    end
+  end
+
+  defp validate_numeric_range(nil, _max), do: :ok
+  defp validate_numeric_range(_min, nil), do: :ok
+
+  defp validate_numeric_range(min, max) do
+    if Decimal.compare(min, max) == :gt do
+      {:error, :invalid_numeric_range}
+    else
+      :ok
+    end
+  end
+
+  defp to_decimal(%Decimal{} = value), do: value
+  defp to_decimal(value), do: Decimal.new(value)
 end
