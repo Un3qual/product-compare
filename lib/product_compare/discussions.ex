@@ -9,6 +9,7 @@ defmodule ProductCompare.Discussions do
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
+  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @default_page_limit 50
   @max_page_limit 200
@@ -74,16 +75,22 @@ defmodule ProductCompare.Discussions do
 
   @spec create_review(map()) :: {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def create_review(attrs) do
+    sanitized_attrs = drop_client_verified_purchase(attrs)
+    verified_purchase = derive_verified_purchase(sanitized_attrs)
+
     %ProductReview{}
-    |> ProductReview.changeset(attrs)
+    |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
     |> Repo.insert()
   end
 
   @spec update_review(ProductReview.t(), map()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def update_review(%ProductReview{} = review, attrs) do
+    sanitized_attrs = drop_client_verified_purchase(attrs)
+    verified_purchase = derive_verified_purchase(sanitized_attrs, review)
+
     review
-    |> ProductReview.changeset(attrs)
+    |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
     |> Repo.update()
   end
 
@@ -105,13 +112,79 @@ defmodule ProductCompare.Discussions do
     {limit, offset}
   end
 
-  defp get_pagination_value(opts, key, default) when is_list(opts),
-    do: Keyword.get(opts, key, default)
+  defp get_pagination_value(opts, key, default) when is_list(opts) do
+    opts
+    |> Keyword.get(key, default)
+    |> parse_pagination_value(default)
+  end
 
-  defp get_pagination_value(opts, key, default) when is_map(opts),
-    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
+  defp get_pagination_value(opts, key, default) when is_map(opts) do
+    opts
+    |> Map.get(key, Map.get(opts, Atom.to_string(key), default))
+    |> parse_pagination_value(default)
+  end
 
   defp get_pagination_value(_opts, _key, default), do: default
+
+  defp parse_pagination_value(value, _default) when is_integer(value), do: value
+
+  defp parse_pagination_value(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> parsed
+      _ -> default
+    end
+  end
+
+  defp parse_pagination_value(_value, default), do: default
+
+  defp drop_client_verified_purchase(attrs) when is_map(attrs) do
+    attrs
+    |> Map.delete(:verified_purchase)
+    |> Map.delete("verified_purchase")
+  end
+
+  defp drop_client_verified_purchase(attrs), do: attrs
+
+  defp derive_verified_purchase(attrs, review \\ nil) do
+    merchant_product_id =
+      get_attr_value(attrs, :merchant_product_id) ||
+        if(review, do: review.merchant_product_id, else: nil)
+
+    product_id =
+      get_attr_value(attrs, :product_id) ||
+        if(review, do: review.product_id, else: nil)
+
+    with {:ok, parsed_merchant_product_id} <- normalize_integer_id(merchant_product_id),
+         {:ok, parsed_product_id} <- normalize_integer_id(product_id),
+         true <- merchant_product_matches_product?(parsed_merchant_product_id, parsed_product_id) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp merchant_product_matches_product?(merchant_product_id, product_id) do
+    Repo.exists?(
+      from mp in MerchantProduct,
+        where: mp.id == ^merchant_product_id and mp.product_id == ^product_id
+    )
+  end
+
+  defp get_attr_value(attrs, key) when is_map(attrs),
+    do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+
+  defp get_attr_value(_attrs, _key), do: nil
+
+  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
+
+  defp normalize_integer_id(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> {:ok, parsed}
+      _ -> :error
+    end
+  end
+
+  defp normalize_integer_id(_value), do: :error
 
   defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
   defp clamp_limit(_value, default, _max), do: default

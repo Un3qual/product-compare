@@ -24,10 +24,15 @@ defmodule ProductCompareSchemas.Specs.ClaimDependency do
   end
 
   defp validate_not_self_dependency(changeset) do
-    if get_field(changeset, :claim_id) == get_field(changeset, :depends_on_claim_id) do
-      add_error(changeset, :depends_on_claim_id, "must not reference the same claim")
-    else
-      changeset
+    claim_id = get_field(changeset, :claim_id)
+    depends_on_claim_id = get_field(changeset, :depends_on_claim_id)
+
+    case {claim_id, depends_on_claim_id} do
+      {id, id} when not is_nil(id) ->
+        add_error(changeset, :depends_on_claim_id, "must not reference the same claim")
+
+      _ ->
+        changeset
     end
   end
 end

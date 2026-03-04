@@ -29,5 +29,7 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateLink do
     |> unique_constraint(:merchant_product_id, name: :affiliate_links_merchant_product_uq)
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:affiliate_network_id)
+    |> assoc_constraint(:merchant_product)
+    |> assoc_constraint(:affiliate_network)
   end
 end

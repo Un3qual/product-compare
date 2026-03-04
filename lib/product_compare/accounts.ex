@@ -69,13 +69,30 @@ defmodule ProductCompare.Accounts do
     )
   end
 
-  defp get_pagination_value(opts, key, default) when is_list(opts),
-    do: Keyword.get(opts, key, default)
+  defp get_pagination_value(opts, key, default) when is_list(opts) do
+    opts
+    |> Keyword.get(key, default)
+    |> parse_pagination_value(default)
+  end
 
-  defp get_pagination_value(opts, key, default) when is_map(opts),
-    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
+  defp get_pagination_value(opts, key, default) when is_map(opts) do
+    opts
+    |> Map.get(key, Map.get(opts, Atom.to_string(key), default))
+    |> parse_pagination_value(default)
+  end
 
   defp get_pagination_value(_opts, _key, default), do: default
+
+  defp parse_pagination_value(value, _default) when is_integer(value), do: value
+
+  defp parse_pagination_value(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> parsed
+      _ -> default
+    end
+  end
+
+  defp parse_pagination_value(_value, default), do: default
 
   defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
   defp clamp_limit(_value, default, _max), do: default
