@@ -14,6 +14,7 @@ defmodule ProductCompare.Accounts.ReputationUpsertTest do
       assert {:ok, updated_reputation} = Accounts.upsert_user_reputation(user.id, 250)
       assert updated_reputation.id == reputation.id
       assert updated_reputation.points == 250
+      assert updated_reputation.updated_at == reputation.updated_at
     end
   end
 end
