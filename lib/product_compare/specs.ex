@@ -329,10 +329,16 @@ defmodule ProductCompare.Specs do
       nil ->
         {:error, :claim_not_found}
 
-      claim ->
+      %ProductAttributeClaim{status: ^new_status} = claim ->
+        {:ok, claim}
+
+      %ProductAttributeClaim{status: :proposed} = claim ->
         claim
         |> ProductAttributeClaim.changeset(%{status: new_status})
         |> Repo.update()
+
+      %ProductAttributeClaim{} ->
+        {:error, :invalid_status_transition}
     end
   end
 

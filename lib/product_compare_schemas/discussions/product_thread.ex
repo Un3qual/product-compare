@@ -17,8 +17,10 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(thread, attrs) do
+    cast_fields = if is_nil(thread.id), do: [:product_id, :title, :created_by], else: [:title]
+
     thread
-    |> cast(attrs, [:product_id, :title, :created_by])
+    |> cast(attrs, cast_fields)
     |> validate_required([:product_id, :title, :created_by])
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:created_by)

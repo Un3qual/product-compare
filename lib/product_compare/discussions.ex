@@ -47,6 +47,18 @@ defmodule ProductCompare.Discussions do
     |> Repo.insert()
   end
 
+  @spec update_thread(ProductThread.t(), map()) ::
+          {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
+  def update_thread(%ProductThread{} = thread, attrs) do
+    thread
+    |> ProductThread.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @spec delete_thread(ProductThread.t()) ::
+          {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
+  def delete_thread(%ProductThread{} = thread), do: Repo.delete(thread)
+
   @spec create_post(map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
   def create_post(attrs) do
     %ThreadPost{}

@@ -51,6 +51,17 @@ Index context for filtering/query performance:
    - Add changeset tests for valid single-type payloads and invalid multi/empty payloads.
    - Keep filtering tests passing against canonical indexes and `product_attribute_current` joins.
 
+## Implementation Status
+
+- [x] Migration checks are in place (`product_attribute_claim_single_typed_value`, `product_attribute_claims_confidence_range`).
+- [ ] Existing-row validation/backfill workflow has been executed for production-like import data.
+  - Implemented as `mix product_attribute_claims.validate_backfill` (dry-run validator).
+  - Local run on March 4, 2026 (`--sample-size 5`) reported zero violations; production-like dataset execution remains pending.
+- [x] Application validations are aligned (`ProductAttributeClaim.changeset/2`, `Specs.propose_claim/4`).
+- [x] Migration-level regression tests now assert SQL inserts fail for empty/multiple typed values and out-of-range confidence.
+- [x] Changeset-level typed-value tests exist for valid and invalid payloads.
+- [x] Filtering/index query-path regression checks now cover `filter_products/1` numeric/bool/enum/use-case behavior plus canonical PACUR->PAC EXPLAIN path/index expectations.
+
 ## Acceptance Criteria
 
 - Any insert/update with zero typed values is rejected.
