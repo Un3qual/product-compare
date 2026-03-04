@@ -54,6 +54,12 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
     create unique_index(:price_points, [:entropy_id])
 
+    create constraint(:price_points, :price_must_be_non_negative, check: "price >= 0")
+
+    create constraint(:price_points, :shipping_must_be_non_negative,
+             check: "shipping IS NULL OR shipping >= 0"
+           )
+
     create table(:affiliate_networks) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :name, :text, null: false
@@ -132,6 +138,21 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
              check: "discount_type IN ('percent', 'amount', 'free_shipping', 'other')"
            )
 
+    create constraint(:coupons, :coupons_discount_shape_check,
+             check: """
+             (
+               (discount_type = 'percent' AND discount_value IS NOT NULL AND discount_value >= 0 AND discount_value <= 100 AND currency IS NULL) OR
+               (discount_type = 'amount' AND discount_value IS NOT NULL AND discount_value >= 0 AND currency IS NOT NULL) OR
+               (discount_type = 'free_shipping' AND discount_value IS NULL AND currency IS NULL) OR
+               (discount_type = 'other')
+             )
+             """
+           )
+
+    create constraint(:coupons, :coupons_validity_window_check,
+             check: "valid_to IS NULL OR valid_from IS NULL OR valid_to >= valid_from"
+           )
+
     create table(:product_threads) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
@@ -164,15 +185,25 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
     create index(:thread_posts, [:parent_post_id], name: :thread_posts_parent_idx)
     create unique_index(:thread_posts, [:entropy_id])
 
+    create constraint(:thread_posts, :thread_posts_parent_not_self_check,
+             check: "parent_post_id IS NULL OR parent_post_id <> id"
+           )
+
     execute(
       """
       CREATE FUNCTION thread_posts_parent_thread_guard()
       RETURNS trigger AS $$
       DECLARE
         parent_thread_id bigint;
+        cycle_detected boolean;
       BEGIN
         IF NEW.parent_post_id IS NULL THEN
           RETURN NEW;
+        END IF;
+
+        IF NEW.parent_post_id = NEW.id THEN
+          RAISE EXCEPTION 'parent_post_id cannot reference the post itself'
+            USING ERRCODE = 'check_violation';
         END IF;
 
         SELECT thread_id
@@ -186,6 +217,28 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
         IF parent_thread_id <> NEW.thread_id THEN
           RAISE EXCEPTION 'parent_post_id must reference a post in the same thread'
+            USING ERRCODE = 'check_violation';
+        END IF;
+
+        WITH RECURSIVE parent_chain(id, parent_post_id, path) AS (
+          SELECT tp.id, tp.parent_post_id, ARRAY[tp.id]
+          FROM thread_posts tp
+          WHERE tp.id = NEW.parent_post_id
+          UNION ALL
+          SELECT tp.id, tp.parent_post_id, pc.path || tp.id
+          FROM thread_posts tp
+          JOIN parent_chain pc ON tp.id = pc.parent_post_id
+          WHERE NOT tp.id = ANY(pc.path)
+        )
+        SELECT EXISTS(
+          SELECT 1
+          FROM parent_chain
+          WHERE id = NEW.id
+        )
+        INTO cycle_detected;
+
+        IF cycle_detected THEN
+          RAISE EXCEPTION 'parent_post_id cannot create a cycle'
             USING ERRCODE = 'check_violation';
         END IF;
 
