@@ -71,14 +71,17 @@ defmodule ProductCompare.Catalog.Filtering do
           min = fetch_value(filter, :min)
           max = fetch_value(filter, :max)
 
-          exists_query =
+          base_exists_query =
             from pacur in ProductAttributeCurrent,
               join: pac in ProductAttributeClaim,
               on: pac.id == pacur.claim_id,
               where: pacur.product_id == parent_as(:product).id,
-              where: pac.attribute_id == ^attribute_id,
-              where: is_nil(^min) or pac.value_num_base >= ^min,
-              where: is_nil(^max) or pac.value_num_base <= ^max
+              where: pac.attribute_id == ^attribute_id
+
+          exists_query =
+            base_exists_query
+            |> maybe_apply_numeric_min(min)
+            |> maybe_apply_numeric_max(max)
 
           where(acc, [product: _p], exists(exists_query))
 
@@ -178,4 +181,14 @@ defmodule ProductCompare.Catalog.Filtering do
   end
 
   defp normalize_integer_id(_value), do: :error
+
+  defp maybe_apply_numeric_min(query, nil), do: query
+
+  defp maybe_apply_numeric_min(query, min),
+    do: where(query, [_pacur, pac], pac.value_num_base >= ^min)
+
+  defp maybe_apply_numeric_max(query, nil), do: query
+
+  defp maybe_apply_numeric_max(query, max),
+    do: where(query, [_pacur, pac], pac.value_num_base <= ^max)
 end
