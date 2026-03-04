@@ -1,6 +1,6 @@
 # Future Backend Agent Guide
 
-Use this document when building a new elixir backend. 
+Use this document when building a new elixir backend.
 Assume the product premise is already defined. This guide defines implementation
 conventions, architecture boundaries, and verification gates.
 
