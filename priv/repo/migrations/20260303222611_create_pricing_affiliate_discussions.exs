@@ -141,10 +141,9 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
     create constraint(:coupons, :coupons_discount_shape_check,
              check: """
              (
-               (discount_type = 'percent' AND discount_value IS NOT NULL AND discount_value >= 0 AND discount_value <= 100 AND currency IS NULL) OR
+               (discount_type = 'percent' AND discount_value IS NOT NULL AND discount_value >= 0 AND discount_value <= 100) OR
                (discount_type = 'amount' AND discount_value IS NOT NULL AND discount_value >= 0 AND currency IS NOT NULL) OR
-               (discount_type = 'free_shipping' AND discount_value IS NULL AND currency IS NULL) OR
-               (discount_type = 'other')
+               (discount_type IN ('free_shipping', 'other') AND discount_value IS NULL)
              )
              """
            )
