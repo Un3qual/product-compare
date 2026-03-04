@@ -61,8 +61,10 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
 
       ancestors = Taxonomy.list_ancestors(grandchild.id)
 
-      assert Enum.any?(ancestors, fn item -> item.taxon.id == child.id and item.depth == 1 end)
-      assert Enum.any?(ancestors, fn item -> item.taxon.id == root.id and item.depth == 2 end)
+      assert Enum.map(ancestors, &{&1.taxon.id, &1.depth}) == [
+               {child.id, 1},
+               {root.id, 2}
+             ]
     end
 
     test "move_taxon/2 re-parents subtree and updates closure paths" do

@@ -32,6 +32,22 @@ defmodule ProductCompare.Specs.ProductAttributeClaimChangesetTest do
       assert "must contain exactly one typed value" in errors_on(changeset).base
     end
 
+    test "rejects numeric companion fields when value_num is missing" do
+      changeset =
+        ProductAttributeClaim.changeset(
+          %ProductAttributeClaim{},
+          valid_attrs(%{
+            value_bool: true,
+            unit_id: 10,
+            value_num_base_min: Decimal.new("10")
+          })
+        )
+
+      refute changeset.valid?
+      assert "must be present when numeric companion fields are provided" in
+               errors_on(changeset).value_num
+    end
+
     test "requires unit and base numeric value when numeric claim is present" do
       changeset =
         ProductAttributeClaim.changeset(

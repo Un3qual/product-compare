@@ -69,6 +69,41 @@ defmodule ProductCompare.Specs.UnitConversionTest do
   end
 
   describe "propose_claim/4 numeric range handling" do
+    test "rejects conflicting base and unit-space range bounds" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_conflict_range"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_conflict_range",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_conflict_range",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "range-conflict-product"})
+
+      assert {:error, {:conflicting_numeric_range_bound, :value_num_base_min, :value_num_min}} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: Decimal.new("27"),
+                   unit_id: inch_unit.id,
+                   value_num_base_min: Decimal.new("600"),
+                   value_num_min: Decimal.new("24")
+                 },
+                 %{source_type: :user}
+               )
+    end
+
     test "normalizes numeric range bounds using the provided unit" do
       length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_range"})
 
