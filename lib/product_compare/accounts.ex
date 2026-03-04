@@ -29,12 +29,10 @@ defmodule ProductCompare.Accounts do
   @spec upsert_user_reputation(pos_integer(), integer()) ::
           {:ok, UserReputation.t()} | {:error, Ecto.Changeset.t()}
   def upsert_user_reputation(user_id, points) do
-    now = DateTime.utc_now()
-
     %UserReputation{}
     |> UserReputation.changeset(%{user_id: user_id, points: points})
     |> Repo.insert(
-      on_conflict: [set: [points: points, updated_at: now]],
+      on_conflict: [set: [points: points]],
       conflict_target: [:user_id],
       returning: true
     )

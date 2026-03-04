@@ -201,6 +201,16 @@ monitor_ultrawide =
     description: "Ultrawide monitor with 27-inch 16:9 height equivalent"
   })
 
+monitor_import_feed =
+  upsert_product.(%{
+    brand_id: acme_brand.id,
+    primary_type_taxon_id: monitor.id,
+    name: "Acme Vision 27I Import",
+    model_number: "AV27I",
+    slug: "acme-vision-27i-import",
+    description: "Import-feed sample monitor used to validate claim backfill workflow"
+  })
+
 {:ok, _} =
   Taxonomy.assign_use_case(monitor_16_9.id, gaming.id, admin.id, :editorial, Decimal.new("0.95"))
 
@@ -255,6 +265,7 @@ ensure_current_claim = fn product, attribute, typed_value, provenance ->
 end
 
 provenance = %{source_type: :user, created_by: admin.id, confidence: Decimal.new("0.9")}
+import_provenance = %{source_type: :import, created_by: admin.id, confidence: Decimal.new("0.88")}
 
 :ok =
   ensure_current_claim.(
@@ -307,6 +318,38 @@ provenance = %{source_type: :user, created_by: admin.id, confidence: Decimal.new
     diagonal_attr,
     %{value_num: Decimal.new("27"), unit_id: in_unit.id},
     provenance
+  )
+
+:ok =
+  ensure_current_claim.(
+    monitor_import_feed,
+    refresh_rate_attr,
+    %{value_num: Decimal.new("180"), unit_id: hz_unit.id},
+    import_provenance
+  )
+
+:ok =
+  ensure_current_claim.(
+    monitor_import_feed,
+    hdr_supported_attr,
+    %{value_bool: true},
+    import_provenance
+  )
+
+:ok =
+  ensure_current_claim.(
+    monitor_import_feed,
+    panel_tech_attr,
+    %{enum_option_id: panel_option_by_code.("ips").id},
+    import_provenance
+  )
+
+:ok =
+  ensure_current_claim.(
+    monitor_import_feed,
+    diagonal_attr,
+    %{value_num: Decimal.new("27"), unit_id: in_unit.id},
+    import_provenance
   )
 
 {:ok, merchant} = Pricing.upsert_merchant(%{name: "ExampleMart", domain: "examplemart.test"})
