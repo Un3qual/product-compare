@@ -16,12 +16,15 @@ defmodule ProductCompareSchemas.Accounts.ReputationEvent do
   end
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
-  def changeset(event, attrs), do: changeset(event, attrs, nil)
+  def changeset(event, attrs), do: do_changeset(event, attrs, nil)
 
-  @spec changeset(t(), map(), integer() | nil) :: Ecto.Changeset.t()
-  def changeset(event, attrs, user_id) do
+  @spec changeset_with_user(t(), map(), integer()) :: Ecto.Changeset.t()
+  def changeset_with_user(event, attrs, user_id), do: do_changeset(event, attrs, user_id)
+
+  @spec do_changeset(t(), map(), integer() | nil) :: Ecto.Changeset.t()
+  defp do_changeset(event, attrs, user_id) do
     event
-    |> cast(attrs, [:user_id, :delta, :reason, :ref_table, :ref_id])
+    |> cast(attrs, [:delta, :reason, :ref_table, :ref_id])
     |> maybe_put_user_id(user_id)
     |> validate_required([:user_id, :delta, :reason])
     |> foreign_key_constraint(:user_id)

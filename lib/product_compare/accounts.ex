@@ -40,10 +40,11 @@ defmodule ProductCompare.Accounts do
     )
   end
 
-  @spec add_reputation_event(map()) :: {:ok, ReputationEvent.t()} | {:error, Ecto.Changeset.t()}
-  def add_reputation_event(attrs) do
+  @spec add_reputation_event(pos_integer(), map()) ::
+          {:ok, ReputationEvent.t()} | {:error, Ecto.Changeset.t()}
+  def add_reputation_event(user_id, attrs) do
     %ReputationEvent{}
-    |> ReputationEvent.changeset(attrs)
+    |> ReputationEvent.changeset_with_user(attrs, user_id)
     |> Repo.insert()
   end
 

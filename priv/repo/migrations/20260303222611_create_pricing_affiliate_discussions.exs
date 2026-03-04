@@ -99,7 +99,10 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       timestamps(type: :utc_datetime_usec)
     end
 
-    create index(:affiliate_links, [:merchant_product_id], name: :affiliate_links_mp_idx)
+    create unique_index(:affiliate_links, [:merchant_product_id],
+             name: :affiliate_links_merchant_product_uq
+           )
+
     create unique_index(:affiliate_links, [:entropy_id])
 
     create table(:coupons) do

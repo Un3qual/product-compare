@@ -26,5 +26,8 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateLink do
       :last_verified_at
     ])
     |> validate_required([:merchant_product_id, :original_url, :affiliate_url])
+    |> unique_constraint(:merchant_product_id, name: :affiliate_links_merchant_product_uq)
+    |> foreign_key_constraint(:merchant_product_id)
+    |> foreign_key_constraint(:affiliate_network_id)
   end
 end
