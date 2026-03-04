@@ -49,9 +49,14 @@ defmodule ProductCompareSchemas.Accounts.ReputationEvent do
         add_error(changeset, :ref_id, "must be set when ref_table is present")
 
       {table, id} when not is_nil(table) and not is_nil(id) ->
-        changeset
-        |> add_error(:ref_table, "must be a string")
-        |> add_error(:ref_id, "must be an integer")
+        changeset =
+          if not is_binary(table),
+            do: add_error(changeset, :ref_table, "must be a string"),
+            else: changeset
+
+        if not is_integer(id),
+          do: add_error(changeset, :ref_id, "must be an integer"),
+          else: changeset
     end
   end
 end
