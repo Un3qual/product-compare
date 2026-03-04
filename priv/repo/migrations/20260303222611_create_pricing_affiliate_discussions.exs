@@ -196,6 +196,11 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
         parent_thread_id bigint;
         cycle_detected boolean;
       BEGIN
+        IF TG_OP = 'UPDATE' AND NEW.thread_id <> OLD.thread_id THEN
+          RAISE EXCEPTION 'thread_id cannot be changed once a post is created'
+            USING ERRCODE = 'check_violation';
+        END IF;
+
         IF NEW.parent_post_id IS NULL THEN
           RETURN NEW;
         END IF;

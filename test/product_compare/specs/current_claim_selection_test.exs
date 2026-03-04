@@ -32,6 +32,9 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
           created_by: moderator.id
         })
 
+      {:ok, claim_a} = Specs.accept_claim(claim_a.id, moderator.id)
+      {:ok, claim_b} = Specs.accept_claim(claim_b.id, moderator.id)
+
       assert {:ok, _} =
                Specs.select_current_claim(product.id, attribute.id, claim_a.id, moderator.id)
 
@@ -47,6 +50,28 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
                :count,
                :id
              ) == 1
+    end
+
+    test "rejects selecting a non-accepted claim" do
+      product = SpecsFixtures.product_fixture(%{slug: "claim-not-accepted-product"})
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "hdr_supported_not_accepted",
+          display_name: "HDR Supported",
+          data_type: :bool
+        })
+
+      moderator = AccountsFixtures.user_fixture()
+
+      {:ok, claim} =
+        Specs.propose_claim(product.id, attribute.id, %{value_bool: true}, %{
+          source_type: :user,
+          created_by: moderator.id
+        })
+
+      assert {:error, :claim_not_accepted} =
+               Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
     end
 
     test "rejects selecting claim for a different product/attribute" do
@@ -67,6 +92,8 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
           source_type: :user,
           created_by: moderator.id
         })
+
+      {:ok, _claim} = Specs.accept_claim(claim.id, moderator.id)
 
       assert {:error, :claim_product_attribute_mismatch} =
                Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
@@ -95,6 +122,9 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
           source_type: :user,
           created_by: moderator.id
         })
+
+      {:ok, _} = Specs.accept_claim(claim_a.id, moderator.id)
+      {:ok, _} = Specs.accept_claim(claim_b.id, moderator.id)
 
       parent = self()
 

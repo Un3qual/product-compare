@@ -85,10 +85,10 @@ defmodule ProductCompare.Accounts do
 
   defp parse_pagination_value(value, _default) when is_integer(value), do: value
 
-  defp parse_pagination_value(value, _default) when is_binary(value) do
+  defp parse_pagination_value(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {parsed, ""} -> parsed
-      _ -> value
+      _ -> default
     end
   end
 

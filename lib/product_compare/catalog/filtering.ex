@@ -134,17 +134,33 @@ defmodule ProductCompare.Catalog.Filtering do
   defp apply_use_case_filter(query, []), do: query
 
   defp apply_use_case_filter(query, use_case_taxon_ids) do
-    exists_query =
-      from pt in ProductTaxon,
-        join: t in Taxon,
-        on: t.id == pt.taxon_id,
-        join: tx in Taxonomy,
-        on: tx.id == t.taxonomy_id,
-        where: pt.product_id == parent_as(:product).id,
-        where: tx.code == "use_case",
-        where: pt.taxon_id in ^use_case_taxon_ids
+    validated_ids =
+      use_case_taxon_ids
+      |> Enum.reduce([], fn id, acc ->
+        case normalize_integer_id(id) do
+          {:ok, normalized} -> [normalized | acc]
+          :error -> acc
+        end
+      end)
+      |> Enum.reverse()
 
-    where(query, [product: _p], exists(exists_query))
+    case validated_ids do
+      [] ->
+        query
+
+      ids ->
+        exists_query =
+          from pt in ProductTaxon,
+            join: t in Taxon,
+            on: t.id == pt.taxon_id,
+            join: tx in Taxonomy,
+            on: tx.id == t.taxonomy_id,
+            where: pt.product_id == parent_as(:product).id,
+            where: tx.code == "use_case",
+            where: pt.taxon_id in ^ids
+
+        where(query, [product: _p], exists(exists_query))
+    end
   end
 
   defp fetch_value(map, key) when is_map(map),

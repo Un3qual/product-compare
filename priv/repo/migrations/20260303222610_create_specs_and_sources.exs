@@ -287,6 +287,47 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
     create unique_index(:product_attribute_current, [:claim_id], name: :pacur_claim_uq)
     create unique_index(:product_attribute_current, [:entropy_id])
 
+    execute(
+      """
+      CREATE FUNCTION pacur_claim_scope_guard()
+      RETURNS trigger AS $$
+      DECLARE
+        claim_product_id bigint;
+        claim_attribute_id bigint;
+      BEGIN
+        SELECT product_id, attribute_id
+        INTO claim_product_id, claim_attribute_id
+        FROM product_attribute_claims
+        WHERE id = NEW.claim_id;
+
+        IF claim_product_id IS NULL OR claim_attribute_id IS NULL THEN
+          RETURN NEW;
+        END IF;
+
+        IF claim_product_id <> NEW.product_id OR claim_attribute_id <> NEW.attribute_id THEN
+          RAISE EXCEPTION 'claim_id must belong to the same product_id and attribute_id'
+            USING ERRCODE = 'check_violation';
+        END IF;
+
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+      """,
+      "DROP FUNCTION IF EXISTS pacur_claim_scope_guard();"
+    )
+
+    execute(
+      """
+      CREATE TRIGGER pacur_claim_scope_guard_tg
+      BEFORE INSERT OR UPDATE OF claim_id, product_id, attribute_id ON product_attribute_current
+      FOR EACH ROW
+      EXECUTE FUNCTION pacur_claim_scope_guard();
+      """,
+      """
+      DROP TRIGGER IF EXISTS pacur_claim_scope_guard_tg ON product_attribute_current;
+      """
+    )
+
     create table(:derived_formula_deps) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
 
@@ -320,6 +361,12 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
     create unique_index(:claim_dependencies, [:claim_id, :depends_on_claim_id],
              name: :claim_dependencies_uq
+           )
+
+    create constraint(
+             :claim_dependencies,
+             :claim_dependencies_not_self,
+             check: "claim_id <> depends_on_claim_id"
            )
 
     create unique_index(:claim_dependencies, [:entropy_id])

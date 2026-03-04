@@ -31,7 +31,8 @@ defmodule ProductCompare.Pricing do
     changeset = MerchantProduct.changeset(%MerchantProduct{}, attrs)
 
     update_fields =
-      Map.take(changeset.changes, [:product_id, :title, :currency, :in_stock, :affiliate_url])
+      changeset.changes
+      |> Map.drop([:merchant_id, :url])
       |> Map.to_list()
 
     Repo.insert(
