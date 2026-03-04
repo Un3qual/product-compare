@@ -31,7 +31,7 @@
 - [x] Unit/dimension conversion helper with base-unit normalization.
 - [ ] Claim lifecycle (propose/accept/reject/select current) with transactional safety.
 - [x] Product filtering query builder (type descendants, ranges, bool/enum/use-case filters).
-- [ ] Pricing upsert/history workflows.
+- [x] Pricing upsert/history workflows.
 - [ ] Discussions/reviews CRUD.
 
 ### D) Seeds + Minimal Examples

@@ -14,14 +14,20 @@ defmodule ProductCompare.Pricing do
   def upsert_merchant(attrs) do
     now = DateTime.utc_now()
     changeset = Merchant.changeset(%Merchant{}, attrs)
-    update_fields = Map.take(changeset.changes, [:domain]) |> Map.to_list()
 
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:name],
-      returning: true
-    )
+    # Merchants are identified by either key in existing data flows:
+    # name-based imports and domain-based imports should converge to one row.
+    case upsert_merchant_on_name(changeset, now) do
+      {:error, %Ecto.Changeset{} = error_changeset} ->
+        if unique_error_on_field?(error_changeset, :domain) do
+          upsert_merchant_on_domain(changeset, now)
+        else
+          {:error, error_changeset}
+        end
+
+      result ->
+        result
+    end
   end
 
   @spec upsert_merchant_product(map()) ::
@@ -70,8 +76,30 @@ defmodule ProductCompare.Pricing do
     |> where([pp], pp.merchant_product_id == ^merchant_product_id)
     |> maybe_where_from(from_dt)
     |> maybe_where_to(to_dt)
-    |> order_by([pp], asc: pp.observed_at)
+    |> order_by([pp], asc: pp.observed_at, asc: pp.id)
     |> Repo.all()
+  end
+
+  defp upsert_merchant_on_name(changeset, now) do
+    update_fields = Map.take(changeset.changes, [:domain]) |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:name],
+      returning: true
+    )
+  end
+
+  defp upsert_merchant_on_domain(changeset, now) do
+    update_fields = Map.take(changeset.changes, [:name]) |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:domain],
+      returning: true
+    )
   end
 
   defp maybe_where_from(query, nil), do: query
@@ -84,4 +112,11 @@ defmodule ProductCompare.Pricing do
     do: Map.get(filters, key, Map.get(filters, Atom.to_string(key)))
 
   defp get_filter_value(_filters, _key), do: nil
+
+  defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
+    Enum.any?(errors, fn
+      {^field, {_message, opts}} -> opts[:constraint] == :unique
+      _ -> false
+    end)
+  end
 end
