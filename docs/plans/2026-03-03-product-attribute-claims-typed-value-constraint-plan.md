@@ -54,9 +54,10 @@ Index context for filtering/query performance:
 ## Implementation Status
 
 - [x] Migration checks are in place (`product_attribute_claim_single_typed_value`, `product_attribute_claims_confidence_range`).
-- [ ] Existing-row validation/backfill workflow has been executed for production-like import data.
+- [x] Existing-row validation/backfill workflow has been executed for production-like import data.
   - Implemented as `mix product_attribute_claims.validate_backfill` (dry-run validator).
-  - Local run on March 4, 2026 (`--sample-size 5`) reported zero violations; production-like dataset execution remains pending.
+  - Executed on March 4, 2026 after `mix ecto.reset`, which seeds import-like claims (`source_type: :import`) via `priv/repo/seeds.exs`.
+  - `mix product_attribute_claims.validate_backfill --sample-size 25 --strict` reported zero violations.
 - [x] Application validations are aligned (`ProductAttributeClaim.changeset/2`, `Specs.propose_claim/4`).
 - [x] Migration-level regression tests now assert SQL inserts fail for empty/multiple typed values and out-of-range confidence.
 - [x] Changeset-level typed-value tests exist for valid and invalid payloads.
