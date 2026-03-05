@@ -8,6 +8,7 @@
 4. `20260303222611_create_pricing_affiliate_discussions`
 5. `20260305001000_create_api_tokens`
 6. `20260305013000_backfill_api_token_prefixes`
+7. `20260305020000_reconcile_affiliate_links_unique_index`
 
 ## Context Boundaries
 
