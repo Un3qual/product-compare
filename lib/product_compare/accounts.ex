@@ -34,27 +34,8 @@ defmodule ProductCompare.Accounts do
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
           | {:error, Ecto.Changeset.t()}
   def create_api_token(user_id, attrs \\ %{}) do
-    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
-    plain_text_token = generate_api_token_secret()
-
-    token_attrs =
-      %{
-        user_id: user_id,
-        token_prefix: String.slice(plain_text_token, 0, @api_token_prefix_length),
-        token_hash: hash_api_token_secret(plain_text_token),
-        expires_at: default_api_token_expiry(fetch_attr(attrs, :expires_at), now)
-      }
-      |> maybe_put(:label, fetch_attr(attrs, :label))
-
-    case %ApiToken{}
-         |> ApiToken.changeset(token_attrs)
-         |> Repo.insert(returning: true) do
-      {:ok, api_token} ->
-        {:ok, %{plain_text_token: plain_text_token, api_token: api_token}}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+    now = current_time()
+    issue_api_token(user_id, attrs, now)
   end
 
   @spec authenticate_api_token(String.t(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
@@ -87,13 +68,17 @@ defmodule ProductCompare.Accounts do
     end
   end
 
-  @spec list_api_tokens(pos_integer()) :: [ApiToken.t()]
-  def list_api_tokens(user_id) do
-    Repo.all(
-      from token in ApiToken,
-        where: token.user_id == ^user_id,
-        order_by: [desc: token.inserted_at, desc: token.id]
+  @spec list_api_tokens(pos_integer(), keyword() | map()) :: [ApiToken.t()]
+  def list_api_tokens(user_id, opts \\ []) do
+    now = current_time()
+    status = token_list_status_filter(opts)
+
+    from(token in ApiToken,
+      where: token.user_id == ^user_id,
+      order_by: [desc: token.inserted_at, desc: token.id]
     )
+    |> maybe_apply_api_token_status_filter(status, now)
+    |> Repo.all()
   end
 
   @spec revoke_api_token(pos_integer(), Ecto.UUID.t()) ::
@@ -107,15 +92,42 @@ defmodule ProductCompare.Accounts do
         {:ok, token}
 
       %ApiToken{} = token ->
-        now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+        now = current_time()
 
-        token
-        |> Ecto.Changeset.change(revoked_at: now)
-        |> Repo.update()
+        revoke_api_token_record(token, now)
     end
   end
 
   def revoke_api_token(_user_id, _token_entropy_id), do: {:error, :not_found}
+
+  @spec rotate_api_token(pos_integer(), Ecto.UUID.t(), map()) ::
+          {:ok,
+           %{
+             plain_text_token: String.t(),
+             api_token: ApiToken.t(),
+             revoked_api_token: ApiToken.t()
+           }}
+          | {:error, :not_found | Ecto.Changeset.t()}
+  def rotate_api_token(user_id, token_entropy_id, attrs \\ %{})
+
+  def rotate_api_token(user_id, token_entropy_id, attrs) when is_binary(token_entropy_id) do
+    now = current_time()
+
+    case Repo.transaction(fn ->
+           rotate_api_token_transaction(user_id, token_entropy_id, attrs, now)
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  def rotate_api_token(_user_id, _token_entropy_id, _attrs), do: {:error, :not_found}
 
   @spec upsert_user_reputation(pos_integer(), integer()) ::
           {:ok, UserReputation.t()} | {:error, Ecto.Changeset.t()}
@@ -198,11 +210,147 @@ defmodule ProductCompare.Accounts do
     :ok
   end
 
+  defp issue_api_token(user_id, attrs, now) do
+    plain_text_token = generate_api_token_secret()
+
+    token_attrs =
+      %{
+        user_id: user_id,
+        token_prefix: String.slice(plain_text_token, 0, @api_token_prefix_length),
+        token_hash: hash_api_token_secret(plain_text_token),
+        expires_at: default_api_token_expiry(fetch_attr(attrs, :expires_at), now)
+      }
+      |> maybe_put(:label, fetch_attr(attrs, :label))
+
+    case %ApiToken{}
+         |> ApiToken.changeset(token_attrs)
+         |> Repo.insert(returning: true) do
+      {:ok, api_token} ->
+        {:ok, %{plain_text_token: plain_text_token, api_token: api_token}}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  defp rotate_api_token_transaction(user_id, token_entropy_id, attrs, now) do
+    case lock_api_token_for_rotation(user_id, token_entropy_id) do
+      nil ->
+        Repo.rollback(:not_found)
+
+      %ApiToken{} = token ->
+        if api_token_active?(token, now) do
+          with {:ok, revoked_token} <- revoke_api_token_record(token, now),
+               {:ok, replacement} <-
+                 issue_api_token(user_id, merge_rotation_defaults(attrs, token), now) do
+            Map.put(replacement, :revoked_api_token, revoked_token)
+          else
+            {:error, %Ecto.Changeset{} = changeset} ->
+              Repo.rollback(changeset)
+          end
+        else
+          Repo.rollback(:not_found)
+        end
+    end
+  end
+
+  defp lock_api_token_for_rotation(user_id, token_entropy_id) do
+    from(token in ApiToken,
+      where: token.user_id == ^user_id and token.entropy_id == ^token_entropy_id,
+      lock: "FOR UPDATE"
+    )
+    |> Repo.one()
+  end
+
+  defp revoke_api_token_record(token, now) do
+    token
+    |> Ecto.Changeset.change(revoked_at: now)
+    |> Repo.update()
+  end
+
+  defp merge_rotation_defaults(attrs, token) do
+    attrs
+    |> ensure_map()
+    |> maybe_put(:label, fetch_attr(attrs, :label) || token.label)
+  end
+
+  defp api_token_active?(%ApiToken{revoked_at: nil, expires_at: expires_at}, now) do
+    is_nil(expires_at) or DateTime.compare(expires_at, now) == :gt
+  end
+
+  defp api_token_active?(_token, _now), do: false
+
+  defp token_list_status_filter(opts) when is_list(opts) do
+    opts
+    |> Keyword.get(:status, :all)
+    |> normalize_api_token_status_filter()
+  end
+
+  defp token_list_status_filter(opts) when is_map(opts) do
+    opts
+    |> fetch_attr(:status)
+    |> normalize_api_token_status_filter()
+  end
+
+  defp token_list_status_filter(_opts), do: :all
+
+  defp normalize_api_token_status_filter(:active), do: :active
+  defp normalize_api_token_status_filter(:revoked), do: :revoked
+  defp normalize_api_token_status_filter(:all), do: :all
+
+  defp normalize_api_token_status_filter(status) when is_binary(status) do
+    status
+    |> String.downcase()
+    |> case do
+      "active" -> :active
+      "revoked" -> :revoked
+      "all" -> :all
+      _ -> :all
+    end
+  end
+
+  defp normalize_api_token_status_filter(_status), do: :all
+
+  defp maybe_apply_api_token_status_filter(query, :all, _now), do: query
+
+  defp maybe_apply_api_token_status_filter(query, :active, now) do
+    from token in query,
+      where: is_nil(token.revoked_at),
+      where: is_nil(token.expires_at) or token.expires_at > ^now
+  end
+
+  defp maybe_apply_api_token_status_filter(query, :revoked, _now) do
+    from token in query,
+      where: not is_nil(token.revoked_at)
+  end
+
+  defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
+
   defp default_api_token_expiry(%DateTime{} = expires_at, _now),
     do: DateTime.truncate(expires_at, :microsecond)
 
   defp default_api_token_expiry(_expires_at, now),
-    do: DateTime.add(now, @api_token_default_ttl_days * 24 * 60 * 60, :second)
+    do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
+
+  defp api_token_default_ttl_days do
+    case fetch_accounts_config(:api_token_default_ttl_days, @api_token_default_ttl_days) do
+      ttl_days when is_integer(ttl_days) and ttl_days > 0 -> ttl_days
+      _ -> @api_token_default_ttl_days
+    end
+  end
+
+  defp fetch_accounts_config(key, default) do
+    case Application.get_env(:product_compare, __MODULE__, []) do
+      config when is_list(config) ->
+        Keyword.get(config, key, default)
+
+      config when is_map(config) ->
+        Map.get(config, key, Map.get(config, Atom.to_string(key), default))
+
+      _ ->
+        default
+    end
+  end
 
   defp fetch_attr(attrs, key) when is_map(attrs) do
     Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
@@ -210,10 +358,15 @@ defmodule ProductCompare.Accounts do
 
   defp fetch_attr(_attrs, _key), do: nil
 
+  defp ensure_map(attrs) when is_map(attrs), do: attrs
+  defp ensure_map(_attrs), do: %{}
+
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp hash_api_token_secret(plain_text_token), do: :crypto.hash(:sha3_256, plain_text_token)
+
+  defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
 
   defp generate_api_token_secret do
     @api_token_secret_bytes

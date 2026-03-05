@@ -13,8 +13,11 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   @spec my_api_tokens(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def my_api_tokens(_parent, args, %{context: %{current_user: current_user}}) do
-    tokens = Accounts.list_api_tokens(current_user.id)
-    {:ok, Connection.from_list(tokens, args || %{})}
+    status_filter = Map.get(args || %{}, :status, :all)
+    tokens = Accounts.list_api_tokens(current_user.id, status: status_filter)
+    connection_args = Map.drop(args || %{}, [:status])
+
+    {:ok, Connection.from_list(tokens, connection_args)}
   end
 
   def my_api_tokens(_parent, _args, _resolution), do: {:error, "unauthorized"}
@@ -52,6 +55,33 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   end
 
   def revoke_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
+
+  @spec rotate_api_token(any(), %{token_id: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def rotate_api_token(_parent, %{token_id: token_id} = args, %{
+        context: %{current_user: current_user}
+      }) do
+    attrs =
+      args
+      |> Map.take([:label, :expires_at])
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    with {:ok, token_entropy_id} <- resolve_token_entropy_id(token_id) do
+      case Accounts.rotate_api_token(current_user.id, token_entropy_id, attrs) do
+        {:ok, %{plain_text_token: plain_text_token, api_token: api_token}} ->
+          {:ok, %{plain_text_token: plain_text_token, api_token: api_token}}
+
+        {:error, :not_found} ->
+          {:error, "token not found"}
+
+        {:error, changeset} ->
+          {:error, first_changeset_error(changeset)}
+      end
+    end
+  end
+
+  def rotate_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
 
   defp first_changeset_error(changeset) do
     {_field, {message, _opts}} = List.first(changeset.errors)

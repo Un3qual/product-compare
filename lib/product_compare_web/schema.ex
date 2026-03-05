@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.Schema do
     field :my_api_tokens, non_null(:api_token_connection) do
       arg(:first, :integer)
       arg(:after, :string)
+      arg(:status, :api_token_status_filter)
 
       resolve(&AuthResolver.my_api_tokens/3)
     end
@@ -35,6 +36,15 @@ defmodule ProductCompareWeb.Schema do
       arg(:token_id, non_null(:id))
 
       resolve(&AuthResolver.revoke_api_token/3)
+    end
+
+    @desc "Rotates one of the current authenticated user's API tokens."
+    field :rotate_api_token, :create_api_token_payload do
+      arg(:token_id, non_null(:id))
+      arg(:label, :string)
+      arg(:expires_at, :datetime)
+
+      resolve(&AuthResolver.rotate_api_token/3)
     end
   end
 
@@ -72,6 +82,12 @@ defmodule ProductCompareWeb.Schema do
   object :api_token_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:api_token)
+  end
+
+  enum :api_token_status_filter do
+    value(:active)
+    value(:revoked)
+    value(:all)
   end
 
   object :page_info do

@@ -197,6 +197,123 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
              } =
                response
     end
+
+    test "myApiTokens supports active/revoked/all filters", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:ok, %{plain_text_token: bootstrap_token}} =
+               Accounts.create_api_token(user.id, %{label: "bootstrap"})
+
+      assert {:ok, %{api_token: active_token}} =
+               Accounts.create_api_token(user.id, %{label: "active"})
+
+      assert {:ok, %{api_token: revoked_token}} =
+               Accounts.create_api_token(user.id, %{label: "revoked"})
+
+      assert {:ok, _revoked} = Accounts.revoke_api_token(user.id, revoked_token.entropy_id)
+
+      expired_at =
+        DateTime.utc_now()
+        |> DateTime.add(-60, :second)
+        |> DateTime.truncate(:microsecond)
+
+      assert {:ok, %{api_token: expired_token}} =
+               Accounts.create_api_token(user.id, %{label: "expired", expires_at: expired_at})
+
+      authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
+
+      query = """
+      query ListFilteredTokens($status: ApiTokenStatusFilter) {
+        myApiTokens(status: $status, first: 50) {
+          edges {
+            node {
+              id
+              label
+              revokedAt
+            }
+          }
+        }
+      }
+      """
+
+      assert %{"data" => %{"myApiTokens" => %{"edges" => all_edges}}} =
+               graphql(authed_conn, query, %{"status" => "ALL"})
+
+      assert Enum.map(all_edges, &get_in(&1, ["node", "id"])) ==
+               Enum.map(
+                 [
+                   expired_token,
+                   revoked_token,
+                   active_token,
+                   find_token_by_label(user.id, "bootstrap")
+                 ],
+                 &relay_id("ApiToken", &1.entropy_id)
+               )
+
+      assert %{"data" => %{"myApiTokens" => %{"edges" => active_edges}}} =
+               graphql(authed_conn, query, %{"status" => "ACTIVE"})
+
+      assert Enum.sort(Enum.map(active_edges, &get_in(&1, ["node", "label"]))) == [
+               "active",
+               "bootstrap"
+             ]
+
+      assert %{"data" => %{"myApiTokens" => %{"edges" => revoked_edges}}} =
+               graphql(authed_conn, query, %{"status" => "REVOKED"})
+
+      assert Enum.map(revoked_edges, &get_in(&1, ["node", "label"])) == ["revoked"]
+    end
+
+    test "rotateApiToken revokes old token and returns replacement", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:ok, %{plain_text_token: bootstrap_token}} =
+               Accounts.create_api_token(user.id, %{label: "bootstrap"})
+
+      assert {:ok, %{plain_text_token: old_plain_text_token, api_token: old_token}} =
+               Accounts.create_api_token(user.id, %{label: "old-label"})
+
+      authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
+      old_token_id = relay_id("ApiToken", old_token.entropy_id)
+
+      mutation = """
+      mutation RotateApiToken($tokenId: ID!, $label: String) {
+        rotateApiToken(tokenId: $tokenId, label: $label) {
+          plainTextToken
+          apiToken {
+            id
+            label
+            revokedAt
+          }
+        }
+      }
+      """
+
+      assert %{
+               "data" => %{
+                 "rotateApiToken" => %{
+                   "plainTextToken" => new_plain_text_token,
+                   "apiToken" => %{
+                     "id" => new_token_id,
+                     "label" => "rotated-label",
+                     "revokedAt" => nil
+                   }
+                 }
+               }
+             } =
+               graphql(authed_conn, mutation, %{
+                 "tokenId" => old_token_id,
+                 "label" => "rotated-label"
+               })
+
+      refute new_token_id == old_token_id
+      assert :error = Accounts.authenticate_api_token(old_plain_text_token)
+
+      assert {:ok, authed_user, _api_token} =
+               Accounts.authenticate_api_token(new_plain_text_token)
+
+      assert authed_user.id == user.id
+    end
   end
 
   defp graphql(conn, query, variables \\ %{}) do
