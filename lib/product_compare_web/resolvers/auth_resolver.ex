@@ -18,7 +18,10 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     query = Accounts.list_api_tokens_query(current_user.id, status: status_filter)
     connection_args = Map.drop(args || %{}, [:status])
 
-    {:ok, Connection.from_query(query, connection_args, Repo)}
+    case Connection.from_query(query, connection_args, Repo) do
+      {:ok, connection} -> {:ok, connection}
+      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
+    end
   end
 
   def my_api_tokens(_parent, _args, _resolution), do: {:error, "unauthorized"}

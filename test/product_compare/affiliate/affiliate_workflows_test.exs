@@ -118,6 +118,21 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
       assert Repo.aggregate(Coupon, :count, :id) == 1
     end
 
+    test "create_coupon/1 rejects discount_value for discount types without numeric values" do
+      merchant = merchant_fixture()
+
+      assert {:error, changeset} =
+               Affiliate.create_coupon(%{
+                 merchant_id: merchant.id,
+                 code: "SAVE-#{System.unique_integer([:positive])}",
+                 discount_type: :other,
+                 discount_value: Decimal.new("10.00")
+               })
+
+      assert "must be empty for other discounts" in errors_on(changeset).discount_value
+      assert Repo.aggregate(Coupon, :count, :id) == 0
+    end
+
     test "list_active_coupons/2 applies validity window semantics and deterministic ordering" do
       merchant = merchant_fixture()
       other_merchant = merchant_fixture()

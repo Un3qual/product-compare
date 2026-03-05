@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
+  alias ProductCompareWeb.Resolvers.CatalogResolver
 
   query do
     @desc "Returns the current authenticated user, if any."
@@ -27,6 +28,14 @@ defmodule ProductCompareWeb.Schema do
       arg(:input, non_null(:active_coupons_input))
 
       resolve(&AffiliateResolver.active_coupons/3)
+    end
+
+    @desc "Returns products ordered by primary key with cursor pagination."
+    field :products, :product_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&CatalogResolver.products/3)
     end
   end
 
@@ -125,19 +134,23 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :upsert_affiliate_network_payload do
-    field :network, non_null(:affiliate_network)
+    field :network, :affiliate_network
+    field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
   object :upsert_affiliate_program_payload do
-    field :program, non_null(:affiliate_program)
+    field :program, :affiliate_program
+    field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
   object :upsert_affiliate_link_payload do
-    field :link, non_null(:affiliate_link)
+    field :link, :affiliate_link
+    field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
   object :create_coupon_payload do
-    field :coupon, non_null(:coupon)
+    field :coupon, :coupon
+    field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
   object :active_coupons_payload do
@@ -308,6 +321,36 @@ defmodule ProductCompareWeb.Schema do
     field :has_previous_page, non_null(:boolean)
     field :start_cursor, :string
     field :end_cursor, :string
+  end
+
+  object :brand do
+    field :id, non_null(:id) do
+      resolve(fn brand, _, _ -> encode_required_global_id(:brand, brand.id) end)
+    end
+
+    field :name, non_null(:string)
+  end
+
+  object :product do
+    field :id, non_null(:id) do
+      resolve(fn product, _, _ -> encode_required_global_id(:product, product.id) end)
+    end
+
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
+    field :model_number, :string
+    field :description, :string
+    field :brand, :brand
+  end
+
+  object :product_connection do
+    field :edges, non_null(list_of(non_null(:product_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product)
   end
 
   defp encode_required_global_id(type, value) when is_integer(value) do

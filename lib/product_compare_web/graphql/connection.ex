@@ -7,73 +7,79 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @max_page_size 100
   @cursor_prefix "cursor:"
 
-  @spec from_list([term()], map()) :: map()
+  @spec from_list([term()], map()) :: {:ok, map()} | {:error, :invalid_cursor}
   def from_list(items, args) when is_list(items) and is_map(args) do
     first = args |> fetch_arg(:first, @default_page_size) |> normalize_page_size()
-    start_index = args |> fetch_arg(:after, nil) |> decode_start_index()
-    total_count = length(items)
 
-    page_items =
-      items
-      |> Enum.drop(start_index)
-      |> Enum.take(first)
+    with {:ok, start_index} <- args |> fetch_arg(:after, nil) |> decode_start_index() do
+      total_count = length(items)
 
-    edges =
-      page_items
-      |> Enum.with_index(start_index)
-      |> Enum.map(fn {node, absolute_index} ->
-        %{
-          cursor: encode_cursor(absolute_index),
-          node: node
-        }
-      end)
+      page_items =
+        items
+        |> Enum.drop(start_index)
+        |> Enum.take(first)
 
-    %{
-      edges: edges,
-      page_info: %{
-        has_next_page: total_count > start_index + length(edges),
-        has_previous_page: start_index > 0,
-        start_cursor: edge_cursor(List.first(edges)),
-        end_cursor: edge_cursor(List.last(edges))
-      }
-    }
+      edges =
+        page_items
+        |> Enum.with_index(start_index)
+        |> Enum.map(fn {node, absolute_index} ->
+          %{
+            cursor: encode_cursor(absolute_index),
+            node: node
+          }
+        end)
+
+      {:ok,
+       %{
+         edges: edges,
+         page_info: %{
+           has_next_page: total_count > start_index + length(edges),
+           has_previous_page: start_index > 0,
+           start_cursor: edge_cursor(List.first(edges)),
+           end_cursor: edge_cursor(List.last(edges))
+         }
+       }}
+    end
   end
 
-  @spec from_query(Ecto.Query.t(), map(), module()) :: map()
+  @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, :invalid_cursor}
   def from_query(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
     first = args |> fetch_arg(:first, @default_page_size) |> normalize_page_size()
-    start_index = args |> fetch_arg(:after, nil) |> decode_start_index()
-    fetch_limit = first + 1
 
-    query_rows =
-      query
-      |> offset(^start_index)
-      |> limit(^fetch_limit)
-      |> repo.all()
+    with {:ok, start_index} <- args |> fetch_arg(:after, nil) |> decode_start_index() do
+      fetch_limit = first + 1
 
-    has_next_page = length(query_rows) > first
-    page_items = Enum.take(query_rows, first)
+      query_rows =
+        query
+        |> offset(^start_index)
+        |> limit(^fetch_limit)
+        |> repo.all()
 
-    edges =
-      page_items
-      |> Enum.with_index(start_index)
-      |> Enum.map(fn {node, absolute_index} ->
-        %{
-          cursor: encode_cursor(absolute_index),
-          node: node
-        }
-      end)
+      has_next_page = length(query_rows) > first
+      page_items = Enum.take(query_rows, first)
 
-    %{
-      edges: edges,
-      page_info: %{
-        has_next_page: has_next_page,
-        has_previous_page: start_index > 0,
-        start_cursor: edge_cursor(List.first(edges)),
-        end_cursor: edge_cursor(List.last(edges))
-      }
-    }
+      edges =
+        page_items
+        |> Enum.with_index(start_index)
+        |> Enum.map(fn {node, absolute_index} ->
+          %{
+            cursor: encode_cursor(absolute_index),
+            node: node
+          }
+        end)
+
+      {:ok,
+       %{
+         edges: edges,
+         page_info: %{
+           has_next_page: has_next_page,
+           has_previous_page: start_index > 0,
+           start_cursor: edge_cursor(List.first(edges)),
+           end_cursor: edge_cursor(List.last(edges))
+         }
+       }}
+    end
   end
 
   defp edge_cursor(nil), do: nil
@@ -91,7 +97,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   defp encode_cursor(index), do: Base.encode64(@cursor_prefix <> Integer.to_string(index))
 
-  defp decode_start_index(nil), do: 0
+  defp decode_start_index(nil), do: {:ok, 0}
 
   defp decode_start_index(cursor) when is_binary(cursor) do
     with {:ok, decoded_cursor} <- Base.decode64(cursor),
@@ -99,11 +105,11 @@ defmodule ProductCompareWeb.GraphQL.Connection do
          index <- String.replace_prefix(decoded_cursor, @cursor_prefix, ""),
          {parsed_index, ""} <- Integer.parse(index),
          true <- parsed_index >= 0 do
-      parsed_index + 1
+      {:ok, parsed_index + 1}
     else
-      _ -> 0
+      _ -> {:error, :invalid_cursor}
     end
   end
 
-  defp decode_start_index(_cursor), do: 0
+  defp decode_start_index(_cursor), do: {:error, :invalid_cursor}
 end
