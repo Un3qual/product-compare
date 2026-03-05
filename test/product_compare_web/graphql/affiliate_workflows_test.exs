@@ -430,17 +430,20 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert Repo.aggregate(Coupon, :count, :id) == baseline_counts.coupon
     end
 
-    test "affiliate mutations reject raw IDs", %{conn: conn} do
+    test "affiliate mutations reject raw affiliate network IDs", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()
-      {:ok, existing_network} = Affiliate.upsert_network(%{name: "Raw Id Network"})
+      merchant_id = relay_id("Merchant", merchant.id)
+
+      {:ok, existing_network} =
+        Affiliate.upsert_network(%{name: "Raw Id Network #{System.unique_integer([:positive])}"})
 
       response =
         graphql(authed_conn, upsert_program_mutation(), %{
           "input" => %{
             "affiliateNetworkId" => existing_network.id,
-            "merchantId" => merchant.id,
-            "programCode" => "RAW-ID",
+            "merchantId" => merchant_id,
+            "programCode" => "RAW-NETWORK-ID",
             "status" => "active"
           }
         })
@@ -448,6 +451,31 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert %{
                "data" => %{"upsertAffiliateProgram" => nil},
                "errors" => [%{"message" => "invalid affiliate_network_id"} | _]
+             } = response
+    end
+
+    test "affiliate mutations reject raw merchant IDs", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+
+      {:ok, existing_network} =
+        Affiliate.upsert_network(%{name: "Raw Merchant Id #{System.unique_integer([:positive])}"})
+
+      affiliate_network_id = relay_id("AffiliateNetwork", existing_network.id)
+
+      response =
+        graphql(authed_conn, upsert_program_mutation(), %{
+          "input" => %{
+            "affiliateNetworkId" => affiliate_network_id,
+            "merchantId" => merchant.id,
+            "programCode" => "RAW-MERCHANT-ID",
+            "status" => "active"
+          }
+        })
+
+      assert %{
+               "data" => %{"upsertAffiliateProgram" => nil},
+               "errors" => [%{"message" => "invalid merchant_id"} | _]
              } = response
     end
   end
