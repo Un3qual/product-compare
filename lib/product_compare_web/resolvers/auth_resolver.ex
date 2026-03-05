@@ -83,10 +83,10 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
   def rotate_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
 
-  defp first_changeset_error(changeset) do
-    {_field, {message, _opts}} = List.first(changeset.errors)
-    message
-  end
+  defp first_changeset_error(%Ecto.Changeset{errors: [{_field, {message, _opts}} | _]}),
+    do: message
+
+  defp first_changeset_error(_changeset), do: "invalid payload"
 
   defp resolve_token_entropy_id(token_id) do
     case GlobalId.decode(token_id) do
