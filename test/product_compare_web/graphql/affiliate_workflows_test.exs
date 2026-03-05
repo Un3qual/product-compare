@@ -379,7 +379,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           "input" => %{"name" => "Unauthorized Network"}
         })
 
-      assert_unauthorized(response, "upsertAffiliateNetwork")
+      assert_mutation_unauthorized(response, "upsertAffiliateNetwork", "network")
 
       response =
         graphql(conn, upsert_program_mutation(), %{
@@ -391,7 +391,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           }
         })
 
-      assert_unauthorized(response, "upsertAffiliateProgram")
+      assert_mutation_unauthorized(response, "upsertAffiliateProgram", "program")
 
       response =
         graphql(conn, upsert_link_mutation(), %{
@@ -403,7 +403,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           }
         })
 
-      assert_unauthorized(response, "upsertAffiliateLink")
+      assert_mutation_unauthorized(response, "upsertAffiliateLink", "link")
 
       response =
         graphql(conn, create_coupon_mutation(), %{
@@ -415,14 +415,17 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           }
         })
 
-      assert_unauthorized(response, "createCoupon")
+      assert_mutation_unauthorized(response, "createCoupon", "coupon")
 
       response =
         graphql(conn, active_coupons_query(), %{
           "input" => %{"merchantId" => merchant_id}
         })
 
-      assert_unauthorized(response, "activeCoupons")
+      assert %{
+               "data" => %{"activeCoupons" => nil},
+               "errors" => [%{"message" => "unauthorized"} | _]
+             } = response
 
       assert Repo.aggregate(AffiliateNetwork, :count, :id) == baseline_counts.network
       assert Repo.aggregate(AffiliateProgram, :count, :id) == baseline_counts.program
@@ -449,8 +452,18 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
         })
 
       assert %{
-               "data" => %{"upsertAffiliateProgram" => nil},
-               "errors" => [%{"message" => "invalid affiliate_network_id"} | _]
+               "data" => %{
+                 "upsertAffiliateProgram" => %{
+                   "program" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ID",
+                       "field" => "affiliateNetworkId",
+                       "message" => "invalid affiliate network id"
+                     }
+                   ]
+                 }
+               }
              } = response
     end
 
@@ -474,8 +487,18 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
         })
 
       assert %{
-               "data" => %{"upsertAffiliateProgram" => nil},
-               "errors" => [%{"message" => "invalid merchant_id"} | _]
+               "data" => %{
+                 "upsertAffiliateProgram" => %{
+                   "program" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ID",
+                       "field" => "merchantId",
+                       "message" => "invalid merchant id"
+                     }
+                   ]
+                 }
+               }
              } = response
     end
 
@@ -495,20 +518,51 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
         })
 
       assert %{
-               "data" => %{"createCoupon" => nil},
-               "errors" => [%{"message" => "must be empty for other discounts"} | _]
+               "data" => %{
+                 "createCoupon" => %{
+                   "coupon" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ARGUMENT",
+                       "field" => "discount_value",
+                       "message" => "must be empty for other discounts"
+                     }
+                   ]
+                 }
+               }
+             } = response
+    end
+
+    test "activeCoupons rejects invalid cursor input", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+      merchant_id = relay_id("Merchant", merchant.id)
+
+      response =
+        graphql(authed_conn, active_coupons_query(), %{
+          "input" => %{"merchantId" => merchant_id, "first" => 10, "after" => "bad-cursor"}
+        })
+
+      assert %{
+               "data" => %{"activeCoupons" => nil},
+               "errors" => [%{"message" => "invalid cursor"} | _]
              } = response
     end
   end
 
-  defp assert_unauthorized(response, root_field) do
+  defp assert_mutation_unauthorized(response, root_field, entity_field) do
     assert %{
-             "data" => data,
-             "errors" => [%{"message" => "unauthorized"} | _]
+             "data" => data
            } = response
 
     assert is_map(data)
-    assert Map.get(data, root_field) == nil
+
+    assert %{
+             ^entity_field => nil,
+             "errors" => [
+               %{"code" => "UNAUTHORIZED", "message" => "unauthorized", "field" => nil}
+             ]
+           } = Map.fetch!(data, root_field)
   end
 
   defp authed_conn(conn) do
@@ -559,6 +613,11 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           id
           name
         }
+        errors {
+          code
+          message
+          field
+        }
       }
     }
     """
@@ -574,6 +633,11 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           merchantId
           programCode
           status
+        }
+        errors {
+          code
+          message
+          field
         }
       }
     }
@@ -592,6 +656,11 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           affiliateUrl
           lastVerifiedAt
         }
+        errors {
+          code
+          message
+          field
+        }
       }
     }
     """
@@ -609,6 +678,11 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           discountType
           discountValue
           currency
+        }
+        errors {
+          code
+          message
+          field
         }
       }
     }

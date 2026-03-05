@@ -11,6 +11,8 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :merchant
           | :merchant_product
           | :source_artifact
+          | :product
+          | :brand
 
   @type_names %{
     user: "User",
@@ -21,7 +23,9 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     coupon: "Coupon",
     merchant: "Merchant",
     merchant_product: "MerchantProduct",
-    source_artifact: "SourceArtifact"
+    source_artifact: "SourceArtifact",
+    product: "Product",
+    brand: "Brand"
   }
   @type_atoms Map.new(@type_names, fn {type_atom, type_name} -> {type_name, type_atom} end)
 

@@ -296,6 +296,32 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert Enum.map(revoked_edges, &get_in(&1, ["node", "label"])) == ["revoked"]
     end
 
+    test "myApiTokens rejects invalid cursor input", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:ok, %{plain_text_token: bootstrap_token}} =
+               Accounts.create_api_token(user.id, %{label: "bootstrap"})
+
+      authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
+
+      query = """
+      query InvalidCursor($after: String) {
+        myApiTokens(first: 10, after: $after) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }
+      """
+
+      assert %{
+               "data" => nil,
+               "errors" => [%{"message" => "invalid cursor", "path" => ["myApiTokens"]} | _]
+             } = graphql(authed_conn, query, %{"after" => "not-a-valid-cursor"})
+    end
+
     test "rotateApiToken revokes old token and returns replacement", %{conn: conn} do
       user = user_fixture()
 

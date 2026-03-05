@@ -64,10 +64,22 @@
 - [x] Affiliate context and GraphQL tests cover invalid coupon discount-shape inputs.
 - [x] `mix test test/product_compare/affiliate/affiliate_workflows_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs` passes (`12 tests, 0 failures`).
 
+## GraphQL Expansion + Strict Contract Checkpoint (2026-03-05)
+
+- [x] Affiliate mutations now return typed payload errors (`errors[]`) for unauthorized/invalid-ID/invalid-argument paths.
+- [x] Invalid cursors are rejected strictly for GraphQL connection-backed queries (`myApiTokens`, `activeCoupons`).
+- [x] Catalog read surface expanded with `products` connection query (stable ordering + Relay global IDs).
+- [x] Targeted GraphQL verification passes:
+  - `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/catalog_queries_test.exs` (`15 tests, 0 failures`).
+- [x] `mix compile --warnings-as-errors` passes.
+- [x] `mix typecheck` passes.
+- [x] `mix test` passes (`96 tests, 0 failures`).
+
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:
   - [MVP Scope Freeze (2026-03-05)](decisions/2026-03-05-mvp-scope-freeze.md)
+  - [GraphQL Contract Posture + Async Boundaries (2026-03-05)](decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md)
 - Scraping ingestion jobs and scheduling pipelines (Oban, retries, dead letters).
 - Derived formula execution engine and dependency-driven recomputation workers.
 - Affiliate API ingestion/normalization jobs.
