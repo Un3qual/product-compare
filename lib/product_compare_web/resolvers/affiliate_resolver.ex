@@ -8,7 +8,9 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   def upsert_affiliate_network(_parent, %{input: input}, %{
         context: %{current_user: _current_user}
       }) do
-    case Affiliate.upsert_network(Map.take(input, [:name])) do
+    attrs = Map.take(input, [:name, :homepage_url])
+
+    case Affiliate.upsert_network(attrs) do
       {:ok, network} ->
         {:ok, %{network: network}}
 
@@ -76,7 +78,12 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           {:ok, map()} | {:error, String.t()}
   def active_coupons(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
     with {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]) do
-      now = Map.get(attrs, :at, DateTime.utc_now())
+      now =
+        case Map.get(attrs, :at) do
+          %DateTime{} = at -> at
+          _ -> DateTime.utc_now()
+        end
+
       {:ok, %{coupons: Affiliate.list_active_coupons(merchant_id, now)}}
     end
   end

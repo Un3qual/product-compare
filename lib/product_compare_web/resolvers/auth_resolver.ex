@@ -92,7 +92,12 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     case GlobalId.decode(token_id) do
       {:ok, {:api_token, entropy_id}} -> {:ok, entropy_id}
       {:ok, {_other_type, _id}} -> {:error, "token not found"}
-      :error -> {:ok, token_id}
+      :error ->
+        case Ecto.UUID.cast(token_id) do
+          {:ok, uuid} -> {:ok, uuid}
+          :error -> {:error, "invalid token id"}
+        end
     end
+  end
   end
 end

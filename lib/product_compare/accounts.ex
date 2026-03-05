@@ -333,22 +333,13 @@ defmodule ProductCompare.Accounts do
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
 
   defp api_token_default_ttl_days do
-    case fetch_accounts_config(:api_token_default_ttl_days, @api_token_default_ttl_days) do
+    case Application.get_env(
+           :product_compare,
+           :api_token_default_ttl_days,
+           `@api_token_default_ttl_days`
+         ) do
       ttl_days when is_integer(ttl_days) and ttl_days > 0 -> ttl_days
-      _ -> @api_token_default_ttl_days
-    end
-  end
-
-  defp fetch_accounts_config(key, default) do
-    case Application.get_env(:product_compare, __MODULE__, []) do
-      config when is_list(config) ->
-        Keyword.get(config, key, default)
-
-      config when is_map(config) ->
-        Map.get(config, key, Map.get(config, Atom.to_string(key), default))
-
-      _ ->
-        default
+      _ -> `@api_token_default_ttl_days`
     end
   end
 
