@@ -2,6 +2,9 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @moduledoc false
 
   alias ProductCompare.Affiliate
+  alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.GlobalId
 
   @spec upsert_affiliate_network(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
@@ -84,7 +87,10 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           _ -> DateTime.utc_now()
         end
 
-      {:ok, %{coupons: Affiliate.list_active_coupons(merchant_id, now)}}
+      connection_args = Map.take(attrs, [:first, :after])
+      query = Affiliate.list_active_coupons_query(merchant_id, now)
+
+      {:ok, %{coupons: Connection.from_query(query, connection_args, Repo)}}
     end
   end
 
@@ -94,7 +100,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     Enum.reduce_while(id_fields, {:ok, attrs}, fn field, {:ok, acc} ->
       case Map.fetch(acc, field) do
         {:ok, value} ->
-          case cast_id(value) do
+          case cast_global_id(value, field) do
             {:ok, cast_value} ->
               {:cont, {:ok, Map.put(acc, field, cast_value)}}
 
@@ -108,17 +114,27 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     end)
   end
 
-  defp cast_id(nil), do: {:ok, nil}
-  defp cast_id(value) when is_integer(value) and value > 0, do: {:ok, value}
+  defp cast_global_id(nil, _field), do: {:ok, nil}
 
-  defp cast_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed_value, ""} when parsed_value > 0 -> {:ok, parsed_value}
+  defp cast_global_id(value, field) when is_binary(value) do
+    expected_type = field_type(field)
+
+    with {:ok, {^expected_type, local_id}} <- GlobalId.decode(value),
+         {parsed_value, ""} <- Integer.parse(local_id),
+         true <- parsed_value > 0 do
+      {:ok, parsed_value}
+    else
       _ -> :error
     end
   end
 
-  defp cast_id(_value), do: :error
+  defp cast_global_id(_value, _field), do: :error
+
+  defp field_type(:affiliate_network_id), do: :affiliate_network
+  defp field_type(:merchant_id), do: :merchant
+  defp field_type(:merchant_product_id), do: :merchant_product
+  defp field_type(:artifact_id), do: :source_artifact
+  defp field_type(_field), do: nil
 
   defp first_changeset_error(changeset) do
     {_field, {message, _opts}} = List.first(changeset.errors)

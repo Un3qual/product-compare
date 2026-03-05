@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Specs.SourceArtifact do
   use ProductCompareSchemas.Schema, :relational
 
   @type t :: %__MODULE__{}
+  @required_fields [:source_id, :fetched_at]
 
   schema "source_artifacts" do
     field :entropy_id, Ecto.UUID
@@ -20,7 +21,7 @@ defmodule ProductCompareSchemas.Specs.SourceArtifact do
   def changeset(artifact, attrs) do
     artifact
     |> cast(attrs, [:source_id, :url, :fetched_at, :content_hash, :raw_json, :raw_text])
-    |> validate_required([:source_id, :fetched_at])
+    |> validate_required(@required_fields)
     |> foreign_key_constraint(:source_id)
   end
 end

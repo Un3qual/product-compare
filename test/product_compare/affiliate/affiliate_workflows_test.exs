@@ -1,6 +1,8 @@
 defmodule ProductCompare.AffiliateWorkflowsTest do
   use ProductCompare.DataCase, async: true
 
+  import Ecto.Query
+
   alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -182,6 +184,64 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
                tie_earlier_code.id,
                tie_later_code.id,
                open_ended.id
+             ]
+    end
+
+    test "list_active_coupons_query/2 supports db-level pagination with deterministic ordering" do
+      merchant = merchant_fixture()
+      now = ~U[2026-01-15 12:00:00.000000Z]
+
+      first_coupon =
+        create_coupon!(%{
+          merchant_id: merchant.id,
+          code: "FIRST",
+          valid_from: DateTime.add(now, -3600, :second),
+          valid_to: DateTime.add(now, 1800, :second)
+        })
+
+      second_coupon =
+        create_coupon!(%{
+          merchant_id: merchant.id,
+          code: "SECOND-A",
+          valid_from: DateTime.add(now, -3000, :second),
+          valid_to: DateTime.add(now, 3600, :second)
+        })
+
+      third_coupon =
+        create_coupon!(%{
+          merchant_id: merchant.id,
+          code: "SECOND-B",
+          valid_from: DateTime.add(now, -2400, :second),
+          valid_to: DateTime.add(now, 3600, :second)
+        })
+
+      fourth_coupon =
+        create_coupon!(%{
+          merchant_id: merchant.id,
+          code: "OPEN"
+        })
+
+      query = Affiliate.list_active_coupons_query(merchant.id, now)
+
+      first_page =
+        query
+        |> limit(2)
+        |> Repo.all()
+
+      second_page =
+        query
+        |> offset(2)
+        |> limit(2)
+        |> Repo.all()
+
+      assert Enum.map(first_page, & &1.id) == [first_coupon.id, second_coupon.id]
+      assert Enum.map(second_page, & &1.id) == [third_coupon.id, fourth_coupon.id]
+
+      assert Enum.map(first_page ++ second_page, & &1.code) == [
+               "FIRST",
+               "SECOND-A",
+               "SECOND-B",
+               "OPEN"
              ]
     end
   end

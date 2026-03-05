@@ -46,14 +46,22 @@
 - [x] API token secrets are persisted as SHA3-derived material only (`token_hash` plus hash-derived `token_prefix`; raw token prefix no longer persisted).
 - [x] API-token GraphQL mutations require Relay global IDs for `tokenId`; raw UUID input is rejected.
 - [x] API-token GraphQL mutations return typed payloads with structured `errors` objects.
-- [ ] Affiliate GraphQL IDs are still raw/non-Relay and need global-ID migration.
-- [ ] `activeCoupons` still returns a list payload and has not been migrated to a connection shape.
+- [x] Affiliate GraphQL IDs now use Relay global IDs for affiliate entities and related ID inputs.
+- [x] `activeCoupons` now returns a connection payload (`edges` + `pageInfo`) with cursor pagination.
+
+## MVP Contract Consistency Checkpoint (2026-03-05)
+
+- [x] `source_artifacts.source_id` ownership is now enforced at DB level (`NOT NULL`) with reversible migration semantics and `ON DELETE CASCADE`.
+- [x] Source artifact schema tests cover required `source_id`/`fetched_at` and DB-level NULL rejection/cascade behavior.
+- [x] Affiliate network upsert conflict updates no longer reference unsupported dead fields.
 
 ## Deferred Scope
 
+- Scope freeze rationale and revisit triggers are documented in:
+  - [MVP Scope Freeze (2026-03-05)](decisions/2026-03-05-mvp-scope-freeze.md)
 - Scraping ingestion jobs and scheduling pipelines (Oban, retries, dead letters).
 - Derived formula execution engine and dependency-driven recomputation workers.
 - Affiliate API ingestion/normalization jobs.
 - Advanced moderation and anti-spam/reputation governance.
 - Embeddings/semantic search and frontend search UI.
-- Remaining GraphQL Relay hardening beyond API tokens (affiliate IDs and connection coverage).
+- Additional GraphQL hardening beyond currently shipped auth/affiliate surfaces.
