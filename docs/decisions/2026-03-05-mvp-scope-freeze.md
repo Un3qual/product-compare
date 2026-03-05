@@ -43,4 +43,4 @@ Reason:
 - This is core correctness work inside existing MVP scope.
 - It removes schema/migration/API mismatches that can cause avoidable validation failures or maintenance drift.
 
-Implementation plan: [2026-03-05-mvp-contract-consistency-cleanup-plan.md](/Users/admin/.codex/worktrees/a684/backend/docs/plans/2026-03-05-mvp-contract-consistency-cleanup-plan.md)
+Implementation plan: [2026-03-05-mvp-contract-consistency-cleanup-plan.md](../plans/2026-03-05-mvp-contract-consistency-cleanup-plan.md)
