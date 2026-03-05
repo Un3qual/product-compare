@@ -134,6 +134,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   defp field_type(:merchant_id), do: :merchant
   defp field_type(:merchant_product_id), do: :merchant_product
   defp field_type(:artifact_id), do: :source_artifact
+  defp field_type(_field), do: nil
 
   defp first_changeset_error(changeset) do
     {_field, {message, _opts}} = List.first(changeset.errors)
