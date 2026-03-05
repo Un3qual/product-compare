@@ -99,5 +99,4 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
         end
     end
   end
-  end
 end

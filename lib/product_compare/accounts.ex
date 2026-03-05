@@ -336,10 +336,10 @@ defmodule ProductCompare.Accounts do
     case Application.get_env(
            :product_compare,
            :api_token_default_ttl_days,
-           `@api_token_default_ttl_days`
+           @api_token_default_ttl_days
          ) do
       ttl_days when is_integer(ttl_days) and ttl_days > 0 -> ttl_days
-      _ -> `@api_token_default_ttl_days`
+      _ -> @api_token_default_ttl_days
     end
   end
 
