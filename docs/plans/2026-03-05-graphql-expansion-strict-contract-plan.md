@@ -75,9 +75,9 @@
 
 **Steps:**
 1. Run targeted suites for affiliate/auth/catalog GraphQL changes.
-2. Run `mix compile --warnings-as-errors`.
-3. Run `mix typecheck`.
-4. Run full `mix test` and record any unrelated known baseline failures.
+2. Execute `mix compile --warnings-as-errors`.
+3. Perform `mix typecheck`.
+4. Validate with full `mix test` and record any unrelated known baseline failures.
 5. Commit all plan/code/test/doc updates at milestone boundary.
 
 Verification note:

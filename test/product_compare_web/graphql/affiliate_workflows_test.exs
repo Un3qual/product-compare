@@ -524,7 +524,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                    "errors" => [
                      %{
                        "code" => "INVALID_ARGUMENT",
-                       "field" => "discount_value",
+                       "field" => "discountValue",
                        "message" => "must be empty for other discounts"
                      }
                    ]
@@ -546,6 +546,21 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert %{
                "data" => %{"activeCoupons" => nil},
                "errors" => [%{"message" => "invalid cursor"} | _]
+             } = response
+    end
+
+    test "activeCoupons rejects raw merchant IDs", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+
+      response =
+        graphql(authed_conn, active_coupons_query(), %{
+          "input" => %{"merchantId" => merchant.id}
+        })
+
+      assert %{
+               "data" => %{"activeCoupons" => nil},
+               "errors" => [%{"message" => "invalid merchant id"} | _]
              } = response
     end
   end

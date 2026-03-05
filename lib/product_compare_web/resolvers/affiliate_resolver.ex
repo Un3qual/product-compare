@@ -114,6 +114,15 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
         {:error, :invalid_cursor} ->
           {:error, "invalid cursor"}
       end
+    else
+      {:error, {:invalid_id, field}} ->
+        {:error, invalid_id_message(field)}
+
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+
+      _ ->
+        {:error, "invalid input"}
     end
   end
 
@@ -188,6 +197,19 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   defp graphql_field_name(:merchant_id), do: "merchantId"
   defp graphql_field_name(:merchant_product_id), do: "merchantProductId"
   defp graphql_field_name(:artifact_id), do: "artifactId"
-  defp graphql_field_name(field) when is_atom(field), do: Atom.to_string(field)
-  defp graphql_field_name(field) when is_binary(field), do: field
+
+  defp graphql_field_name(field) when is_atom(field),
+    do: field |> Atom.to_string() |> snake_to_camel()
+
+  defp graphql_field_name(field) when is_binary(field), do: snake_to_camel(field)
+
+  defp snake_to_camel(value) do
+    case String.split(value, "_") do
+      [single] ->
+        single
+
+      [first | rest] ->
+        first <> Enum.map_join(rest, "", &String.capitalize/1)
+    end
+  end
 end

@@ -21,7 +21,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                          "id" => first_id,
                          "slug" => "catalog-first",
                          "name" => "Catalog First",
-                         "brand" => %{"id" => _brand_id, "name" => _brand_name}
+                         "brand" => %{"id" => first_brand_id, "name" => _brand_name}
                        }
                      }
                    ],
@@ -38,6 +38,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert first_cursor == first_start_cursor
       assert first_cursor == first_end_cursor
       assert first_id == relay_id("Product", first_product.id)
+      assert first_brand_id == relay_id("Brand", first_product.brand_id)
 
       assert %{
                "data" => %{
@@ -47,7 +48,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                        "node" => %{
                          "id" => second_id,
                          "slug" => "catalog-second",
-                         "name" => "Catalog Second"
+                         "name" => "Catalog Second",
+                         "brand" => %{"id" => second_brand_id, "name" => _second_brand_name}
                        }
                      }
                    ],
@@ -60,6 +62,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, products_query(), %{"first" => 10, "after" => first_cursor})
 
       assert second_id == relay_id("Product", second_product.id)
+      assert second_brand_id == relay_id("Brand", second_product.brand_id)
     end
 
     test "products rejects invalid cursor input", %{conn: conn} do
