@@ -120,6 +120,8 @@ defmodule ProductCompareWeb.Schema do
   input_object :active_coupons_input do
     field :merchant_id, non_null(:id)
     field :at, :datetime
+    field :first, :integer
+    field :after, :string
   end
 
   object :upsert_affiliate_network_payload do
@@ -139,20 +141,34 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :active_coupons_payload do
-    field :coupons, non_null(list_of(non_null(:coupon)))
+    field :coupons, non_null(:coupon_connection)
   end
 
   object :affiliate_network do
-    field :id, non_null(:id)
+    field :id, non_null(:id) do
+      resolve(fn network, _, _ -> encode_required_global_id(:affiliate_network, network.id) end)
+    end
+
     field :name, non_null(:string)
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
   end
 
   object :affiliate_program do
-    field :id, non_null(:id)
-    field :affiliate_network_id, non_null(:id)
-    field :merchant_id, non_null(:id)
+    field :id, non_null(:id) do
+      resolve(fn program, _, _ -> encode_required_global_id(:affiliate_program, program.id) end)
+    end
+
+    field :affiliate_network_id, non_null(:id) do
+      resolve(fn program, _, _ ->
+        encode_required_global_id(:affiliate_network, program.affiliate_network_id)
+      end)
+    end
+
+    field :merchant_id, non_null(:id) do
+      resolve(fn program, _, _ -> encode_required_global_id(:merchant, program.merchant_id) end)
+    end
+
     field :program_code, :string
     field :status, :string
     field :inserted_at, non_null(:datetime)
@@ -160,9 +176,22 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :affiliate_link do
-    field :id, non_null(:id)
-    field :merchant_product_id, non_null(:id)
-    field :affiliate_network_id, :id
+    field :id, non_null(:id) do
+      resolve(fn link, _, _ -> encode_required_global_id(:affiliate_link, link.id) end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn link, _, _ ->
+        encode_required_global_id(:merchant_product, link.merchant_product_id)
+      end)
+    end
+
+    field :affiliate_network_id, :id do
+      resolve(fn link, _, _ ->
+        encode_optional_global_id(:affiliate_network, link.affiliate_network_id)
+      end)
+    end
+
     field :original_url, non_null(:string)
     field :affiliate_url, non_null(:string)
     field :last_verified_at, :datetime
@@ -171,10 +200,26 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :coupon do
-    field :id, non_null(:id)
-    field :merchant_id, non_null(:id)
-    field :affiliate_network_id, :id
-    field :artifact_id, :id
+    field :id, non_null(:id) do
+      resolve(fn coupon, _, _ -> encode_required_global_id(:coupon, coupon.id) end)
+    end
+
+    field :merchant_id, non_null(:id) do
+      resolve(fn coupon, _, _ -> encode_required_global_id(:merchant, coupon.merchant_id) end)
+    end
+
+    field :affiliate_network_id, :id do
+      resolve(fn coupon, _, _ ->
+        encode_optional_global_id(:affiliate_network, coupon.affiliate_network_id)
+      end)
+    end
+
+    field :artifact_id, :id do
+      resolve(fn coupon, _, _ ->
+        encode_optional_global_id(:source_artifact, coupon.artifact_id)
+      end)
+    end
+
     field :code, non_null(:string)
     field :description, :string
     field :discount_type, non_null(:coupon_discount_type)
@@ -185,6 +230,16 @@ defmodule ProductCompareWeb.Schema do
     field :terms, :string
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :coupon_connection do
+    field :edges, non_null(list_of(non_null(:coupon_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :coupon_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:coupon)
   end
 
   enum :coupon_discount_type do
@@ -254,4 +309,17 @@ defmodule ProductCompareWeb.Schema do
     field :start_cursor, :string
     field :end_cursor, :string
   end
+
+  defp encode_required_global_id(type, value) when is_integer(value) do
+    {:ok, GlobalId.encode(type, Integer.to_string(value))}
+  end
+
+  defp encode_required_global_id(type, value) when is_binary(value) do
+    {:ok, GlobalId.encode(type, value)}
+  end
+
+  defp encode_required_global_id(_type, _value), do: {:error, "invalid id"}
+
+  defp encode_optional_global_id(_type, nil), do: {:ok, nil}
+  defp encode_optional_global_id(type, value), do: encode_required_global_id(type, value)
 end

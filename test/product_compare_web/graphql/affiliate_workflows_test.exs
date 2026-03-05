@@ -24,6 +24,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
       one_hour = 3600
       two_hours = 7200
+      merchant_id = relay_id("Merchant", merchant.id)
+      merchant_product_id = relay_id("MerchantProduct", merchant_product.id)
 
       assert %{
                "data" => %{
@@ -38,6 +40,9 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                graphql(authed_conn, upsert_network_mutation(), %{
                  "input" => %{"name" => "Impact"}
                })
+
+      impact_network = Repo.get_by!(AffiliateNetwork, name: "Impact")
+      assert primary_network_id == relay_id("AffiliateNetwork", impact_network.id)
 
       assert %{
                "data" => %{
@@ -67,6 +72,9 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  "input" => %{"name" => "Partnerize"}
                })
 
+      partnerize_network = Repo.get_by!(AffiliateNetwork, name: "Partnerize")
+      assert secondary_network_id == relay_id("AffiliateNetwork", partnerize_network.id)
+
       assert %{
                "data" => %{
                  "upsertAffiliateProgram" => %{
@@ -83,14 +91,14 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                graphql(authed_conn, upsert_program_mutation(), %{
                  "input" => %{
                    "affiliateNetworkId" => primary_network_id,
-                   "merchantId" => merchant.id,
+                   "merchantId" => merchant_id,
                    "programCode" => "CJ-OLD",
                    "status" => "active"
                  }
                })
 
-      assert to_string(first_program_network_id) == to_string(primary_network_id)
-      assert to_string(first_program_merchant_id) == to_string(merchant.id)
+      assert first_program_network_id == primary_network_id
+      assert first_program_merchant_id == merchant_id
 
       assert %{
                "data" => %{
@@ -108,14 +116,14 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                graphql(authed_conn, upsert_program_mutation(), %{
                  "input" => %{
                    "affiliateNetworkId" => primary_network_id,
-                   "merchantId" => merchant.id,
+                   "merchantId" => merchant_id,
                    "programCode" => "CJ-NEW",
                    "status" => "paused"
                  }
                })
 
-      assert to_string(updated_program_network_id) == to_string(primary_network_id)
-      assert to_string(updated_program_merchant_id) == to_string(merchant.id)
+      assert updated_program_network_id == primary_network_id
+      assert updated_program_merchant_id == merchant_id
 
       first_verified_at = DateTime.to_iso8601(now)
       second_verified_at = now |> DateTime.add(one_hour, :second) |> DateTime.to_iso8601()
@@ -136,7 +144,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } =
                graphql(authed_conn, upsert_link_mutation(), %{
                  "input" => %{
-                   "merchantProductId" => merchant_product.id,
+                   "merchantProductId" => merchant_product_id,
                    "affiliateNetworkId" => primary_network_id,
                    "originalUrl" => "https://merchant.example.com/products/1",
                    "affiliateUrl" => "https://network.example.com/track/first",
@@ -144,8 +152,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  }
                })
 
-      assert to_string(first_link_merchant_product_id) == to_string(merchant_product.id)
-      assert to_string(first_link_network_id) == to_string(primary_network_id)
+      assert first_link_merchant_product_id == merchant_product_id
+      assert first_link_network_id == primary_network_id
 
       assert {:ok, parsed_first_link_verified_at, 0} =
                DateTime.from_iso8601(first_link_verified_at)
@@ -168,7 +176,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } =
                graphql(authed_conn, upsert_link_mutation(), %{
                  "input" => %{
-                   "merchantProductId" => merchant_product.id,
+                   "merchantProductId" => merchant_product_id,
                    "affiliateNetworkId" => secondary_network_id,
                    "originalUrl" => "https://merchant.example.com/products/1?ref=updated",
                    "affiliateUrl" => "https://network.example.com/track/second",
@@ -176,8 +184,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  }
                })
 
-      assert to_string(updated_link_merchant_product_id) == to_string(merchant_product.id)
-      assert to_string(updated_link_network_id) == to_string(secondary_network_id)
+      assert updated_link_merchant_product_id == merchant_product_id
+      assert updated_link_network_id == secondary_network_id
 
       assert {:ok, parsed_updated_link_verified_at, 0} =
                DateTime.from_iso8601(updated_link_verified_at)
@@ -196,6 +204,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                "data" => %{
                  "createCoupon" => %{
                    "coupon" => %{
+                     "id" => created_coupon_id,
                      "code" => "SAVE-20",
                      "merchantId" => created_coupon_merchant_id,
                      "affiliateNetworkId" => created_coupon_network_id,
@@ -208,7 +217,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } =
                graphql(authed_conn, create_coupon_mutation(), %{
                  "input" => %{
-                   "merchantId" => merchant.id,
+                   "merchantId" => merchant_id,
                    "affiliateNetworkId" => primary_network_id,
                    "code" => "SAVE-20",
                    "description" => "Twenty dollars off",
@@ -221,8 +230,34 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  }
                })
 
-      assert to_string(created_coupon_merchant_id) == to_string(merchant.id)
-      assert to_string(created_coupon_network_id) == to_string(primary_network_id)
+      assert created_coupon_merchant_id == merchant_id
+      assert created_coupon_network_id == primary_network_id
+
+      second_active_valid_to = DateTime.add(now, two_hours, :second) |> DateTime.to_iso8601()
+
+      assert %{
+               "data" => %{
+                 "createCoupon" => %{
+                   "coupon" => %{
+                     "id" => second_coupon_id,
+                     "code" => "SAVE-10",
+                     "merchantId" => ^merchant_id,
+                     "affiliateNetworkId" => ^primary_network_id
+                   }
+                 }
+               }
+             } =
+               graphql(authed_conn, create_coupon_mutation(), %{
+                 "input" => %{
+                   "merchantId" => merchant_id,
+                   "affiliateNetworkId" => primary_network_id,
+                   "code" => "SAVE-10",
+                   "discountType" => "PERCENT",
+                   "discountValue" => "10.00",
+                   "validFrom" => active_valid_from,
+                   "validTo" => second_active_valid_to
+                 }
+               })
 
       assert %{
                "data" => %{
@@ -235,7 +270,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } =
                graphql(authed_conn, create_coupon_mutation(), %{
                  "input" => %{
-                   "merchantId" => merchant.id,
+                   "merchantId" => merchant_id,
                    "affiliateNetworkId" => primary_network_id,
                    "code" => "FUTURE-COUPON",
                    "discountType" => "OTHER",
@@ -249,35 +284,88 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert %{
                "data" => %{
                  "activeCoupons" => %{
-                   "coupons" => coupons_at_now
+                   "coupons" => %{
+                     "edges" => [
+                       %{
+                         "cursor" => first_coupon_cursor,
+                         "node" => %{
+                           "id" => ^created_coupon_id,
+                           "code" => "SAVE-20",
+                           "discountType" => "AMOUNT"
+                         }
+                       }
+                     ],
+                     "pageInfo" => %{
+                       "hasNextPage" => true,
+                       "hasPreviousPage" => false,
+                       "startCursor" => first_start_cursor,
+                       "endCursor" => first_end_cursor
+                     }
+                   }
                  }
                }
              } =
                graphql(authed_conn, active_coupons_query(), %{
-                 "input" => %{"merchantId" => merchant.id, "at" => now_iso}
+                 "input" => %{"merchantId" => merchant_id, "at" => now_iso, "first" => 1}
                })
 
-      assert Enum.map(coupons_at_now, & &1["code"]) == ["SAVE-20"]
+      assert first_coupon_cursor == first_start_cursor
+      assert first_coupon_cursor == first_end_cursor
 
       assert %{
                "data" => %{
                  "activeCoupons" => %{
-                   "coupons" => coupons_without_at
+                   "coupons" => %{
+                     "edges" => [
+                       %{
+                         "node" => %{
+                           "id" => ^second_coupon_id,
+                           "code" => "SAVE-10",
+                           "discountType" => "PERCENT"
+                         }
+                       }
+                     ],
+                     "pageInfo" => %{
+                       "hasNextPage" => false,
+                       "hasPreviousPage" => true
+                     }
+                   }
                  }
                }
              } =
                graphql(authed_conn, active_coupons_query(), %{
-                 "input" => %{"merchantId" => merchant.id}
+                 "input" => %{
+                   "merchantId" => merchant_id,
+                   "at" => now_iso,
+                   "first" => 10,
+                   "after" => first_coupon_cursor
+                 }
                })
 
-      assert Enum.any?(coupons_without_at, &(&1["code"] == "SAVE-20"))
-      refute Enum.any?(coupons_without_at, &(&1["code"] == "FUTURE-COUPON"))
+      assert %{
+               "data" => %{
+                 "activeCoupons" => %{
+                   "coupons" => %{
+                     "edges" => coupons_without_at
+                   }
+                 }
+               }
+             } =
+               graphql(authed_conn, active_coupons_query(), %{
+                 "input" => %{"merchantId" => merchant_id}
+               })
+
+      assert Enum.map(coupons_without_at, &get_in(&1, ["node", "code"])) == ["SAVE-20", "SAVE-10"]
+      refute Enum.any?(coupons_without_at, &(get_in(&1, ["node", "code"]) == "FUTURE-COUPON"))
     end
 
     test "affiliate mutations and activeCoupons query require authentication", %{conn: conn} do
       merchant = merchant_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant})
       {:ok, existing_network} = Affiliate.upsert_network(%{name: "Existing Network"})
+      existing_network_id = relay_id("AffiliateNetwork", existing_network.id)
+      merchant_id = relay_id("Merchant", merchant.id)
+      merchant_product_id = relay_id("MerchantProduct", merchant_product.id)
 
       baseline_counts = %{
         network: Repo.aggregate(AffiliateNetwork, :count, :id),
@@ -296,8 +384,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       response =
         graphql(conn, upsert_program_mutation(), %{
           "input" => %{
-            "affiliateNetworkId" => existing_network.id,
-            "merchantId" => merchant.id,
+            "affiliateNetworkId" => existing_network_id,
+            "merchantId" => merchant_id,
             "programCode" => "CJ-NEW",
             "status" => "active"
           }
@@ -308,8 +396,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       response =
         graphql(conn, upsert_link_mutation(), %{
           "input" => %{
-            "merchantProductId" => merchant_product.id,
-            "affiliateNetworkId" => existing_network.id,
+            "merchantProductId" => merchant_product_id,
+            "affiliateNetworkId" => existing_network_id,
             "originalUrl" => "https://merchant.example.com/products/unauthorized",
             "affiliateUrl" => "https://network.example.com/track/unauthorized"
           }
@@ -320,8 +408,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       response =
         graphql(conn, create_coupon_mutation(), %{
           "input" => %{
-            "merchantId" => merchant.id,
-            "affiliateNetworkId" => existing_network.id,
+            "merchantId" => merchant_id,
+            "affiliateNetworkId" => existing_network_id,
             "code" => "UNAUTHORIZED-COUPON",
             "discountType" => "OTHER"
           }
@@ -331,7 +419,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       response =
         graphql(conn, active_coupons_query(), %{
-          "input" => %{"merchantId" => merchant.id}
+          "input" => %{"merchantId" => merchant_id}
         })
 
       assert_unauthorized(response, "activeCoupons")
@@ -340,6 +428,27 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert Repo.aggregate(AffiliateProgram, :count, :id) == baseline_counts.program
       assert Repo.aggregate(AffiliateLink, :count, :id) == baseline_counts.link
       assert Repo.aggregate(Coupon, :count, :id) == baseline_counts.coupon
+    end
+
+    test "affiliate mutations reject raw IDs", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+      {:ok, existing_network} = Affiliate.upsert_network(%{name: "Raw Id Network"})
+
+      response =
+        graphql(authed_conn, upsert_program_mutation(), %{
+          "input" => %{
+            "affiliateNetworkId" => existing_network.id,
+            "merchantId" => merchant.id,
+            "programCode" => "RAW-ID",
+            "status" => "active"
+          }
+        })
+
+      assert %{
+               "data" => %{"upsertAffiliateProgram" => nil},
+               "errors" => [%{"message" => "invalid affiliate_network_id"} | _]
+             } = response
     end
   end
 
@@ -462,9 +571,20 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     query ActiveCoupons($input: ActiveCouponsInput!) {
       activeCoupons(input: $input) {
         coupons {
-          id
-          code
-          discountType
+          edges {
+            cursor
+            node {
+              id
+              code
+              discountType
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
         }
       }
     }
@@ -476,4 +596,6 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
   end
+
+  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
 end

@@ -15,11 +15,10 @@ defmodule ProductCompare.Affiliate do
   def upsert_network(attrs) do
     now = DateTime.utc_now()
     changeset = AffiliateNetwork.changeset(%AffiliateNetwork{}, attrs)
-    update_fields = Map.take(changeset.changes, [:homepage_url]) |> Map.to_list()
 
     Repo.insert(
       changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
+      on_conflict: [set: [updated_at: now]],
       conflict_target: [:name],
       returning: true
     )

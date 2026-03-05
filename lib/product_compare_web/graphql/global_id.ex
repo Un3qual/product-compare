@@ -1,19 +1,37 @@
 defmodule ProductCompareWeb.GraphQL.GlobalId do
   @moduledoc false
 
+  @type type ::
+          :user
+          | :api_token
+          | :affiliate_network
+          | :affiliate_program
+          | :affiliate_link
+          | :coupon
+          | :merchant
+          | :merchant_product
+          | :source_artifact
+
   @type_names %{
     user: "User",
-    api_token: "ApiToken"
+    api_token: "ApiToken",
+    affiliate_network: "AffiliateNetwork",
+    affiliate_program: "AffiliateProgram",
+    affiliate_link: "AffiliateLink",
+    coupon: "Coupon",
+    merchant: "Merchant",
+    merchant_product: "MerchantProduct",
+    source_artifact: "SourceArtifact"
   }
   @type_atoms Map.new(@type_names, fn {type_atom, type_name} -> {type_name, type_atom} end)
 
-  @spec encode(:user | :api_token, String.t()) :: String.t()
+  @spec encode(type(), String.t()) :: String.t()
   def encode(type, local_id) when is_binary(local_id) do
     type_name = Map.fetch!(@type_names, type)
     Base.encode64("#{type_name}:#{local_id}")
   end
 
-  @spec decode(String.t()) :: {:ok, {:user | :api_token, String.t()}} | :error
+  @spec decode(String.t()) :: {:ok, {type(), String.t()}} | :error
   def decode(global_id) when is_binary(global_id) do
     with {:ok, decoded_id} <- Base.decode64(global_id),
          [type_name, local_id] <- String.split(decoded_id, ":", parts: 2),
