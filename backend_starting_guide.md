@@ -126,7 +126,7 @@ Rules:
   - `config :your_app, ..., generators: [timestamp_type: :utc_datetime_usec]`
 - Use shared schema macros:
   - `:relational` macro for bigint PK + foreign keys + microsecond timestamps
-  - `:uuid_primary_key` macro only for explicit exception tables
+  - Add a separate `:uuid_primary_key` macro only if explicit exception tables are required and documented
 - For every relational table:
   - `entropy_id uuid not null default uuidv7()`
   - unique index on `entropy_id`
@@ -274,3 +274,7 @@ Before opening a PR, verify all are true:
 - [ ] Mutations are viewer-scoped and return typed payload + structured errors.
 - [ ] Public functions touched in this change have `@spec`.
 - [ ] New schema modules define `@type t`.
+
+### Status Snapshot Location
+
+Keep this guide evergreen. Put time-sensitive status (dates, CI outputs, test counts) in PR notes or changelog entries, not in this reusable guide.

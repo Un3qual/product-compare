@@ -1,6 +1,7 @@
 defmodule ProductCompare.Accounts.ApiTokenTest do
   use ProductCompare.DataCase, async: false
 
+  alias Ecto.Adapters.SQL
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
@@ -77,6 +78,23 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       expected = 90 * 24 * 60 * 60
       delta = DateTime.diff(api_token.expires_at, now, :second)
       assert delta in (expected - 20)..(expected + 20)
+    end
+
+    test "database rejects token hashes that are not SHA3-256 length" do
+      user = user_fixture()
+
+      result =
+        SQL.query(
+          Repo,
+          """
+          INSERT INTO api_tokens (entropy_id, user_id, token_prefix, token_hash, inserted_at)
+          VALUES ($1, $2, $3, $4, now())
+          """,
+          [Ecto.UUID.dump!(Ecto.UUID.generate()), user.id, "deadbeef0000", <<1, 2, 3>>]
+        )
+
+      assert {:error, %Postgrex.Error{postgres: %{constraint: "api_tokens_hash_length_check"}}} =
+               result
     end
   end
 
