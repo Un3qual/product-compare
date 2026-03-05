@@ -57,6 +57,11 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
             tokenPrefix
             revokedAt
           }
+          errors {
+            code
+            message
+            field
+          }
         }
       }
       """
@@ -70,12 +75,19 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                      "label" => "CLI",
                      "tokenPrefix" => token_prefix,
                      "revokedAt" => nil
-                   }
+                   },
+                   "errors" => []
                  }
                }
              } = graphql(authed_conn, create_token_mutation, %{"label" => "CLI"})
 
-      assert token_prefix == String.slice(plain_text_token, 0, 12)
+      expected_prefix =
+        :crypto.hash(:sha3_256, plain_text_token)
+        |> Base.encode16(case: :lower)
+        |> binary_part(0, 12)
+
+      assert token_prefix == expected_prefix
+      refute token_prefix == String.slice(plain_text_token, 0, 12)
       assert {:ok, authed_user, _api_token} = Accounts.authenticate_api_token(plain_text_token)
       assert authed_user.id == user.id
 
@@ -161,8 +173,15 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       revoke_token_mutation = """
       mutation RevokeToken($tokenId: ID!) {
         revokeApiToken(tokenId: $tokenId) {
-          id
-          revokedAt
+          apiToken {
+            id
+            revokedAt
+          }
+          errors {
+            code
+            message
+            field
+          }
         }
       }
       """
@@ -170,8 +189,11 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert %{
                "data" => %{
                  "revokeApiToken" => %{
-                   "id" => ^token_id,
-                   "revokedAt" => revoked_at
+                   "apiToken" => %{
+                     "id" => ^token_id,
+                     "revokedAt" => revoked_at
+                   },
+                   "errors" => []
                  }
                }
              } = graphql(authed_conn, revoke_token_mutation, %{"tokenId" => token_id})
@@ -185,6 +207,10 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       mutation {
         createApiToken {
           plainTextToken
+          errors {
+            code
+            message
+          }
         }
       }
       """
@@ -192,8 +218,14 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       response = graphql(conn, mutation)
 
       assert %{
-               "data" => %{"createApiToken" => nil},
-               "errors" => [%{"message" => "unauthorized"} | _]
+               "data" => %{
+                 "createApiToken" => %{
+                   "plainTextToken" => nil,
+                   "errors" => [
+                     %{"code" => "UNAUTHORIZED", "message" => "unauthorized"}
+                   ]
+                 }
+               }
              } =
                response
     end
@@ -285,6 +317,11 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
             label
             revokedAt
           }
+          errors {
+            code
+            message
+            field
+          }
         }
       }
       """
@@ -297,7 +334,8 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                      "id" => new_token_id,
                      "label" => "rotated-label",
                      "revokedAt" => nil
-                   }
+                   },
+                   "errors" => []
                  }
                }
              } =
@@ -313,6 +351,48 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                Accounts.authenticate_api_token(new_plain_text_token)
 
       assert authed_user.id == user.id
+    end
+
+    test "token mutations reject raw UUID token IDs", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:ok, %{plain_text_token: bootstrap_token}} =
+               Accounts.create_api_token(user.id, %{label: "bootstrap"})
+
+      assert {:ok, %{api_token: token}} =
+               Accounts.create_api_token(user.id, %{label: "raw-uuid-token"})
+
+      authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
+
+      mutation = """
+      mutation RevokeToken($tokenId: ID!) {
+        revokeApiToken(tokenId: $tokenId) {
+          apiToken {
+            id
+          }
+          errors {
+            code
+            message
+            field
+          }
+        }
+      }
+      """
+
+      assert %{
+               "data" => %{
+                 "revokeApiToken" => %{
+                   "apiToken" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ID",
+                       "field" => "tokenId",
+                       "message" => "invalid token id"
+                     }
+                   ]
+                 }
+               }
+             } = graphql(authed_conn, mutation, %{"tokenId" => token.entropy_id})
     end
   end
 

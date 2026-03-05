@@ -32,7 +32,7 @@ defmodule ProductCompareWeb.Schema do
 
   mutation do
     @desc "Creates a new API token for the current authenticated user."
-    field :create_api_token, :create_api_token_payload do
+    field :create_api_token, non_null(:create_api_token_payload) do
       arg(:label, :string)
       arg(:expires_at, :datetime)
 
@@ -40,14 +40,14 @@ defmodule ProductCompareWeb.Schema do
     end
 
     @desc "Revokes one of the current authenticated user's API tokens."
-    field :revoke_api_token, :api_token do
+    field :revoke_api_token, non_null(:revoke_api_token_payload) do
       arg(:token_id, non_null(:id))
 
       resolve(&AuthResolver.revoke_api_token/3)
     end
 
     @desc "Rotates one of the current authenticated user's API tokens."
-    field :rotate_api_token, :create_api_token_payload do
+    field :rotate_api_token, non_null(:create_api_token_payload) do
       arg(:token_id, non_null(:id))
       arg(:label, :string)
       arg(:expires_at, :datetime)
@@ -195,8 +195,20 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :create_api_token_payload do
-    field :plain_text_token, non_null(:string)
-    field :api_token, non_null(:api_token)
+    field :plain_text_token, :string
+    field :api_token, :api_token
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :revoke_api_token_payload do
+    field :api_token, :api_token
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :mutation_error do
+    field :code, non_null(:string)
+    field :message, non_null(:string)
+    field :field, :string
   end
 
   object :user do
