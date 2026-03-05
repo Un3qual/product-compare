@@ -5,7 +5,14 @@ defmodule ProductCompareWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", ProductCompareWeb do
-    pipe_through :api
+  pipeline :graphql_api do
+    plug ProductCompareWeb.Plugs.AuthenticateApiToken
+    plug ProductCompareWeb.Plugs.PutAbsintheContext
+  end
+
+  scope "/api" do
+    pipe_through [:api, :graphql_api]
+
+    forward "/graphql", Absinthe.Plug, schema: ProductCompareWeb.Schema
   end
 end

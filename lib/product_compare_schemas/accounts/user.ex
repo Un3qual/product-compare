@@ -9,6 +9,7 @@ defmodule ProductCompareSchemas.Accounts.User do
 
     has_one :reputation, ProductCompareSchemas.Accounts.UserReputation
     has_many :reputation_events, ProductCompareSchemas.Accounts.ReputationEvent
+    has_many :api_tokens, ProductCompareSchemas.Accounts.ApiToken
 
     timestamps(updated_at: false)
   end
