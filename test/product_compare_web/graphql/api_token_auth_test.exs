@@ -44,7 +44,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                }
              } = graphql(authed_conn, viewer_query)
 
-      assert viewer_id == Accounts.get_user!(user.id).entropy_id
+      assert viewer_id == relay_id("User", Accounts.get_user!(user.id).entropy_id)
       assert viewer_email == user.email
 
       create_token_mutation = """
@@ -80,17 +80,83 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert authed_user.id == user.id
 
       list_tokens_query = """
-      query {
-        myApiTokens {
-          id
-          label
-          revokedAt
+      query ListTokens($first: Int, $after: String) {
+        myApiTokens(first: $first, after: $after) {
+          edges {
+            cursor
+            node {
+              id
+              label
+              revokedAt
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
         }
       }
       """
 
-      assert %{"data" => %{"myApiTokens" => tokens}} = graphql(authed_conn, list_tokens_query)
-      assert Enum.any?(tokens, &(&1["id"] == token_id && &1["label"] == "CLI"))
+      # Create more tokens to assert deterministic ordering through connection edges.
+      assert {:ok, %{api_token: _oldest_token}} =
+               Accounts.create_api_token(user.id, %{label: "oldest"})
+
+      assert {:ok, %{api_token: _newest_token}} =
+               Accounts.create_api_token(user.id, %{label: "newest"})
+
+      [first_expected_token | remaining_expected_tokens] = Accounts.list_api_tokens(user.id)
+
+      assert %{
+               "data" => %{
+                 "myApiTokens" => %{
+                   "edges" => [
+                     %{
+                       "cursor" => first_cursor,
+                       "node" => %{
+                         "id" => first_id,
+                         "label" => first_label,
+                         "revokedAt" => nil
+                       }
+                     }
+                   ],
+                   "pageInfo" => %{
+                     "hasNextPage" => true,
+                     "hasPreviousPage" => false,
+                     "startCursor" => first_start_cursor,
+                     "endCursor" => first_end_cursor
+                   }
+                 }
+               }
+             } = graphql(authed_conn, list_tokens_query, %{"first" => 1})
+
+      assert first_cursor == first_start_cursor
+      assert first_cursor == first_end_cursor
+      assert first_id == relay_id("ApiToken", first_expected_token.entropy_id)
+      assert first_label == first_expected_token.label
+
+      assert %{
+               "data" => %{
+                 "myApiTokens" => %{
+                   "edges" => remaining_edges,
+                   "pageInfo" => %{
+                     "hasNextPage" => false,
+                     "hasPreviousPage" => true
+                   }
+                 }
+               }
+             } =
+               graphql(authed_conn, list_tokens_query, %{"first" => 10, "after" => first_cursor})
+
+      remaining_labels = Enum.map(remaining_edges, &get_in(&1, ["node", "label"]))
+      assert remaining_labels == Enum.map(remaining_expected_tokens, & &1.label)
+
+      assert Enum.map(remaining_edges, &get_in(&1, ["node", "id"])) ==
+               Enum.map(remaining_expected_tokens, &relay_id("ApiToken", &1.entropy_id))
+
+      assert token_id == relay_id("ApiToken", find_token_by_label(user.id, "CLI").entropy_id)
 
       revoke_token_mutation = """
       mutation RevokeToken($tokenId: ID!) {
@@ -137,5 +203,13 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp relay_id(type, entropy_id), do: Base.encode64("#{type}:#{entropy_id}")
+
+  defp find_token_by_label(user_id, label) do
+    user_id
+    |> Accounts.list_api_tokens()
+    |> Enum.find(&(&1.label == label))
   end
 end

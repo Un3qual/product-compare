@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.Schema do
 
   import_types(Absinthe.Type.Custom)
 
+  alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Resolvers.AuthResolver
 
   query do
@@ -12,7 +13,10 @@ defmodule ProductCompareWeb.Schema do
     end
 
     @desc "Returns API tokens owned by the current authenticated user."
-    field :my_api_tokens, non_null(list_of(non_null(:api_token))) do
+    field :my_api_tokens, non_null(:api_token_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+
       resolve(&AuthResolver.my_api_tokens/3)
     end
   end
@@ -41,7 +45,7 @@ defmodule ProductCompareWeb.Schema do
 
   object :user do
     field :id, non_null(:id) do
-      resolve(fn user, _, _ -> {:ok, user.entropy_id} end)
+      resolve(fn user, _, _ -> {:ok, GlobalId.encode(:user, user.entropy_id)} end)
     end
 
     field :email, non_null(:string)
@@ -49,7 +53,7 @@ defmodule ProductCompareWeb.Schema do
 
   object :api_token do
     field :id, non_null(:id) do
-      resolve(fn api_token, _, _ -> {:ok, api_token.entropy_id} end)
+      resolve(fn api_token, _, _ -> {:ok, GlobalId.encode(:api_token, api_token.entropy_id)} end)
     end
 
     field :label, :string
@@ -58,5 +62,22 @@ defmodule ProductCompareWeb.Schema do
     field :expires_at, :datetime
     field :revoked_at, :datetime
     field :inserted_at, non_null(:datetime)
+  end
+
+  object :api_token_connection do
+    field :edges, non_null(list_of(non_null(:api_token_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :api_token_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:api_token)
+  end
+
+  object :page_info do
+    field :has_next_page, non_null(:boolean)
+    field :has_previous_page, non_null(:boolean)
+    field :start_cursor, :string
+    field :end_cursor, :string
   end
 end
