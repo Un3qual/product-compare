@@ -478,6 +478,27 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                "errors" => [%{"message" => "invalid merchant_id"} | _]
              } = response
     end
+
+    test "createCoupon returns validation errors for invalid discount shape", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+      merchant_id = relay_id("Merchant", merchant.id)
+
+      response =
+        graphql(authed_conn, create_coupon_mutation(), %{
+          "input" => %{
+            "merchantId" => merchant_id,
+            "code" => "INVALID-SHAPE",
+            "discountType" => "OTHER",
+            "discountValue" => "10.00"
+          }
+        })
+
+      assert %{
+               "data" => %{"createCoupon" => nil},
+               "errors" => [%{"message" => "must be empty for other discounts"} | _]
+             } = response
+    end
   end
 
   defp assert_unauthorized(response, root_field) do

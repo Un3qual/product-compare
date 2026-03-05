@@ -46,6 +46,8 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     |> validate_length(:currency, is: 3)
     |> validate_coupon_window()
     |> validate_discount_invariants()
+    |> check_constraint(:discount_value, name: :coupons_discount_shape_check)
+    |> check_constraint(:valid_to, name: :coupons_validity_window_check)
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:affiliate_network_id)
     |> foreign_key_constraint(:artifact_id)
@@ -69,6 +71,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
 
     changeset
     |> validate_discount_value_presence(discount_type, discount_value)
+    |> validate_discount_value_absence(discount_type, discount_value)
     |> validate_amount_currency(discount_type, currency)
     |> validate_discount_value_bounds(discount_type, discount_value)
   end
@@ -79,6 +82,13 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
   end
 
   defp validate_discount_value_presence(changeset, _discount_type, _discount_value), do: changeset
+
+  defp validate_discount_value_absence(changeset, discount_type, discount_value)
+       when discount_type in [:free_shipping, :other] and not is_nil(discount_value) do
+    add_error(changeset, :discount_value, "must be empty for #{discount_type} discounts")
+  end
+
+  defp validate_discount_value_absence(changeset, _discount_type, _discount_value), do: changeset
 
   defp validate_amount_currency(changeset, :amount, currency) when is_nil(currency) do
     add_error(changeset, :currency, "is required for amount discounts")

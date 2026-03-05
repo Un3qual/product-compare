@@ -6,9 +6,11 @@
 2. `20260303222608_create_accounts_taxonomy_catalog`
 3. `20260303222610_create_specs_and_sources`
 4. `20260303222611_create_pricing_affiliate_discussions`
-5. `20260305001000_create_api_tokens`
-6. `20260305013000_backfill_api_token_prefixes`
-7. `20260305020000_reconcile_affiliate_links_unique_index`
+5. `20260304143500_replace_partial_merchant_domain_index`
+6. `20260305001000_create_api_tokens`
+7. `20260305013000_backfill_api_token_prefixes`
+8. `20260305020000_reconcile_affiliate_links_unique_index`
+9. `20260305103000_tighten_source_artifacts_source_fk`
 
 ## Context Boundaries
 
@@ -54,6 +56,13 @@
 - [x] `source_artifacts.source_id` ownership is now enforced at DB level (`NOT NULL`) with reversible migration semantics and `ON DELETE CASCADE`.
 - [x] Source artifact schema tests cover required `source_id`/`fetched_at` and DB-level NULL rejection/cascade behavior.
 - [x] Affiliate network upsert conflict updates no longer reference unsupported dead fields.
+
+## Coupon Constraint Hardening Checkpoint (2026-03-05)
+
+- [x] `Coupon.changeset/2` now rejects non-NULL `discount_value` for `free_shipping`/`other` discounts.
+- [x] Coupon check constraints are mapped into changeset errors (`coupons_discount_shape_check`, `coupons_validity_window_check`) to avoid `Ecto.ConstraintError` in API paths.
+- [x] Affiliate context and GraphQL tests cover invalid coupon discount-shape inputs.
+- [x] `mix test test/product_compare/affiliate/affiliate_workflows_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs` passes (`12 tests, 0 failures`).
 
 ## Deferred Scope
 
