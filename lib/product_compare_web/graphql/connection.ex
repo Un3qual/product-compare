@@ -43,12 +43,12 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   defp fetch_arg(args, key, default),
     do: Map.get(args, key, Map.get(args, Atom.to_string(key), default))
 
-  defp normalize_page_size(nil), do: `@default_page_size`
+  defp normalize_page_size(nil), do: @default_page_size
 
   defp normalize_page_size(value) when is_integer(value) and value >= 0,
-    do: min(value, `@max_page_size`)
+    do: min(value, @max_page_size)
 
-  defp normalize_page_size(_value), do: `@default_page_size`
+  defp normalize_page_size(_value), do: @default_page_size
 
   defp encode_cursor(index), do: Base.encode64(@cursor_prefix <> Integer.to_string(index))
 
