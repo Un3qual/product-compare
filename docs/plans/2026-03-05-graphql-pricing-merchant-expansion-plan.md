@@ -1,6 +1,6 @@
 # GraphQL Pricing + Merchant Surface Expansion Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Implement this plan task-by-task using your preferred workflow or automation tooling.
 
 **Goal:** Add the next GraphQL read surface for merchant/merchant-product discovery and price history so clients can resolve IDs and retrieve current/historical pricing without out-of-band lookups.
 

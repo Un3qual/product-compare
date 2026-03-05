@@ -4,8 +4,10 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
+  alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
+  alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
@@ -258,6 +260,30 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                })
     end
 
+    test "products treats null optional list filters as omitted", %{conn: conn} do
+      product = SpecsFixtures.product_fixture(%{slug: "catalog-null-list-filters"})
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "numeric" => nil,
+                   "booleans" => nil,
+                   "enums" => nil,
+                   "useCaseTaxonIds" => nil
+                 }
+               })
+
+      assert Enum.any?(edges, fn edge ->
+               get_in(edge, ["node", "id"]) == relay_id("Product", product.id)
+             end)
+    end
+
     test "products filters by primary type taxon descendants when requested", %{conn: conn} do
       type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
 
@@ -306,6 +332,17 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                })
 
       assert only_id == relay_id("Product", matching_product.id)
+    end
+
+    test "taxonomy fixture updates name for existing taxonomy code", %{conn: _conn} do
+      taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+      renamed_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Device Type")
+
+      assert renamed_taxonomy.id == taxonomy.id
+      assert renamed_taxonomy.name == "Device Type"
+
+      persisted_taxonomy = Repo.get!(TaxonomySchema, taxonomy.id)
+      assert persisted_taxonomy.name == "Device Type"
     end
   end
 

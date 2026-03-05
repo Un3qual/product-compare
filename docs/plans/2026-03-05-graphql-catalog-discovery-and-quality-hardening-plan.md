@@ -1,6 +1,6 @@
 # GraphQL Catalog Discovery + Quality Hardening Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Implement this plan task-by-task using your preferred workflow or automation tooling.
 
 **Goal:** Expand the `products` GraphQL query into a catalog discovery surface with typed filters while hardening executable quality gates (`typecheck`, `precommit`, `ci`) to enforce stricter checks.
 

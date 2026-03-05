@@ -37,15 +37,17 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp normalize_filters(filters) when is_map(filters) do
     with {:ok, primary_type_taxon_id} <-
            cast_optional_global_id(fetch_value(filters, :primary_type_taxon_id), :taxon, "taxon"),
-         {:ok, numeric_filters} <- normalize_numeric_filters(fetch_value(filters, :numeric, [])),
+         {:ok, include_type_descendants} <-
+           normalize_boolean(fetch_value(filters, :include_type_descendants, false)),
+         {:ok, numeric_filters} <- normalize_numeric_filters(fetch_list_value(filters, :numeric)),
          {:ok, boolean_filters} <-
-           normalize_boolean_filters(fetch_value(filters, :booleans, [])),
-         {:ok, enum_filters} <- normalize_enum_filters(fetch_value(filters, :enums, [])),
+           normalize_boolean_filters(fetch_list_value(filters, :booleans)),
+         {:ok, enum_filters} <- normalize_enum_filters(fetch_list_value(filters, :enums)),
          {:ok, use_case_taxon_ids} <-
-           cast_global_id_list(fetch_value(filters, :use_case_taxon_ids, []), :taxon, "taxon") do
+           cast_global_id_list(fetch_list_value(filters, :use_case_taxon_ids), :taxon, "taxon") do
       normalized_filters =
         %{
-          include_type_descendants: fetch_value(filters, :include_type_descendants),
+          include_type_descendants: include_type_descendants,
           numeric: numeric_filters,
           booleans: boolean_filters,
           enums: enum_filters,
@@ -134,6 +136,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   @spec cast_global_id_list(any(), GlobalId.type(), String.t()) ::
           {:ok, [pos_integer()]} | {:error, String.t()}
+  defp cast_global_id_list(nil, _expected_type, _field_name), do: {:ok, []}
+
   defp cast_global_id_list(values, expected_type, field_name) when is_list(values) do
     Enum.reduce_while(values, {:ok, []}, fn value, {:ok, acc} ->
       case cast_required_global_id(value, expected_type, field_name) do
@@ -187,6 +191,19 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   @spec fetch_value(map(), atom(), any()) :: any()
   defp fetch_value(map, key, default \\ nil),
     do: Map.get(map, key, Map.get(map, Atom.to_string(key), default))
+
+  @spec fetch_list_value(map(), atom()) :: any()
+  defp fetch_list_value(map, key) do
+    case fetch_value(map, key, []) do
+      nil -> []
+      value -> value
+    end
+  end
+
+  @spec normalize_boolean(any()) :: {:ok, boolean()}
+  defp normalize_boolean(true), do: {:ok, true}
+  defp normalize_boolean(false), do: {:ok, false}
+  defp normalize_boolean(_value), do: {:ok, false}
 
   @spec maybe_put(map(), atom(), any()) :: map()
   defp maybe_put(map, _key, nil), do: map
