@@ -26,11 +26,17 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       assert {:ok, %{plain_text_token: plain_text_token, api_token: api_token}} =
                Accounts.create_api_token(user.id, %{label: "CLI"})
 
+      expected_prefix =
+        :crypto.hash(:sha3_256, plain_text_token)
+        |> Base.encode16(case: :lower)
+        |> binary_part(0, 12)
+
       assert is_binary(plain_text_token)
       assert byte_size(plain_text_token) > 20
       assert api_token.user_id == user.id
       assert api_token.label == "CLI"
-      assert api_token.token_prefix == String.slice(plain_text_token, 0, 12)
+      assert api_token.token_prefix == expected_prefix
+      refute api_token.token_prefix == String.slice(plain_text_token, 0, 12)
 
       persisted = Repo.get!(ApiToken, api_token.id)
 

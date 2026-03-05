@@ -24,7 +24,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   def my_api_tokens(_parent, _args, _resolution), do: {:error, "unauthorized"}
 
   @spec create_api_token(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()}
   def create_api_token(_parent, args, %{context: %{current_user: current_user}}) do
     attrs =
       args
@@ -34,31 +34,41 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
     case Accounts.create_api_token(current_user.id, attrs) do
       {:ok, result} ->
-        {:ok, result}
+        {:ok, Map.put(result, :errors, [])}
 
       {:error, changeset} ->
-        {:error, first_changeset_error(changeset)}
+        {:ok, create_rotate_error_payload("INVALID_ARGUMENT", first_changeset_error(changeset))}
     end
   end
 
-  def create_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
+  def create_api_token(_parent, _args, _resolution),
+    do: {:ok, create_rotate_error_payload("UNAUTHORIZED", "unauthorized")}
 
   @spec revoke_api_token(any(), %{token_id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, ProductCompareSchemas.Accounts.ApiToken.t()} | {:error, String.t()}
+          {:ok, map()}
   def revoke_api_token(_parent, %{token_id: token_id}, %{context: %{current_user: current_user}}) do
     with {:ok, token_entropy_id} <- resolve_token_entropy_id(token_id) do
       case Accounts.revoke_api_token(current_user.id, token_entropy_id) do
-        {:ok, token} -> {:ok, token}
-        {:error, :not_found} -> {:error, "token not found"}
-        {:error, _changeset} -> {:error, "invalid token payload"}
+        {:ok, token} ->
+          {:ok, %{api_token: token, errors: []}}
+
+        {:error, :not_found} ->
+          {:ok, revoke_error_payload("NOT_FOUND", "token not found")}
+
+        {:error, _changeset} ->
+          {:ok, revoke_error_payload("INVALID_ARGUMENT", "invalid token payload")}
       end
+    else
+      {:error, :invalid_id} ->
+        {:ok, revoke_error_payload("INVALID_ID", "invalid token id", "tokenId")}
     end
   end
 
-  def revoke_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
+  def revoke_api_token(_parent, _args, _resolution),
+    do: {:ok, revoke_error_payload("UNAUTHORIZED", "unauthorized")}
 
   @spec rotate_api_token(any(), %{token_id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()}
   def rotate_api_token(_parent, %{token_id: token_id} = args, %{
         context: %{current_user: current_user}
       }) do
@@ -71,18 +81,22 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     with {:ok, token_entropy_id} <- resolve_token_entropy_id(token_id) do
       case Accounts.rotate_api_token(current_user.id, token_entropy_id, attrs) do
         {:ok, %{plain_text_token: plain_text_token, api_token: api_token}} ->
-          {:ok, %{plain_text_token: plain_text_token, api_token: api_token}}
+          {:ok, %{plain_text_token: plain_text_token, api_token: api_token, errors: []}}
 
         {:error, :not_found} ->
-          {:error, "token not found"}
+          {:ok, create_rotate_error_payload("NOT_FOUND", "token not found")}
 
         {:error, changeset} ->
-          {:error, first_changeset_error(changeset)}
+          {:ok, create_rotate_error_payload("INVALID_ARGUMENT", first_changeset_error(changeset))}
       end
+    else
+      {:error, :invalid_id} ->
+        {:ok, create_rotate_error_payload("INVALID_ID", "invalid token id", "tokenId")}
     end
   end
 
-  def rotate_api_token(_parent, _args, _resolution), do: {:error, "unauthorized"}
+  def rotate_api_token(_parent, _args, _resolution),
+    do: {:ok, create_rotate_error_payload("UNAUTHORIZED", "unauthorized")}
 
   defp first_changeset_error(%Ecto.Changeset{errors: [{_field, {message, _opts}} | _]}),
     do: message
@@ -94,14 +108,27 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
       {:ok, {:api_token, entropy_id}} ->
         {:ok, entropy_id}
 
-      {:ok, {_other_type, _id}} ->
-        {:error, "token not found"}
-
-      :error ->
-        case Ecto.UUID.cast(token_id) do
-          {:ok, uuid} -> {:ok, uuid}
-          :error -> {:error, "invalid token id"}
-        end
+      _ ->
+        {:error, :invalid_id}
     end
+  end
+
+  defp create_rotate_error_payload(code, message, field \\ nil) do
+    %{
+      plain_text_token: nil,
+      api_token: nil,
+      errors: [mutation_error(code, message, field)]
+    }
+  end
+
+  defp revoke_error_payload(code, message, field \\ nil) do
+    %{
+      api_token: nil,
+      errors: [mutation_error(code, message, field)]
+    }
+  end
+
+  defp mutation_error(code, message, field) do
+    %{code: code, message: message, field: field}
   end
 end

@@ -218,12 +218,13 @@ defmodule ProductCompare.Accounts do
 
   defp issue_api_token(user_id, attrs, now) do
     plain_text_token = generate_api_token_secret()
+    token_hash = hash_api_token_secret(plain_text_token)
 
     token_attrs =
       %{
         user_id: user_id,
-        token_prefix: String.slice(plain_text_token, 0, @api_token_prefix_length),
-        token_hash: hash_api_token_secret(plain_text_token),
+        token_prefix: token_prefix_from_hash(token_hash),
+        token_hash: token_hash,
         expires_at: default_api_token_expiry(fetch_attr(attrs, :expires_at), now)
       }
       |> maybe_put(:label, fetch_attr(attrs, :label))
@@ -366,6 +367,12 @@ defmodule ProductCompare.Accounts do
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp hash_api_token_secret(plain_text_token), do: :crypto.hash(:sha3_256, plain_text_token)
+
+  defp token_prefix_from_hash(token_hash) do
+    token_hash
+    |> Base.encode16(case: :lower)
+    |> binary_part(0, @api_token_prefix_length)
+  end
 
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
 

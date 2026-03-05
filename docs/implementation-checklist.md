@@ -6,6 +6,9 @@
 2. `20260303222608_create_accounts_taxonomy_catalog`
 3. `20260303222610_create_specs_and_sources`
 4. `20260303222611_create_pricing_affiliate_discussions`
+5. `20260305001000_create_api_tokens`
+6. `20260305013000_backfill_api_token_prefixes`
+7. `20260305020000_reconcile_affiliate_links_unique_index`
 
 ## Context Boundaries
 
@@ -37,7 +40,14 @@
 - [x] `user_reputation` upsert regression test assertion aligns with schema timestamp model (`inserted_at` only).
 - [x] All current relational tables use bigint `id` plus `entropy_id` defaulting to `uuidv7()`.
 - [x] No UUID-primary-key exceptions are present in current migrations/schema macros.
-- [ ] Token-secret hashing and GraphQL Relay-specific checklist items remain deferred with the GraphQL/auth surface area.
+
+## GraphQL/Auth Hardening Checkpoint (2026-03-05)
+
+- [x] API token secrets are persisted as SHA3-derived material only (`token_hash` plus hash-derived `token_prefix`; raw token prefix no longer persisted).
+- [x] API-token GraphQL mutations require Relay global IDs for `tokenId`; raw UUID input is rejected.
+- [x] API-token GraphQL mutations return typed payloads with structured `errors` objects.
+- [ ] Affiliate GraphQL IDs are still raw/non-Relay and need global-ID migration.
+- [ ] `activeCoupons` still returns a list payload and has not been migrated to a connection shape.
 
 ## Deferred Scope
 
@@ -46,4 +56,4 @@
 - Affiliate API ingestion/normalization jobs.
 - Advanced moderation and anti-spam/reputation governance.
 - Embeddings/semantic search and frontend search UI.
-- Full GraphQL Relay API surface and auth lifecycle hardening.
+- Remaining GraphQL Relay hardening beyond API tokens (affiliate IDs and connection coverage).
