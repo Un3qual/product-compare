@@ -44,21 +44,21 @@ defmodule ProductCompare.Affiliate do
     now = DateTime.utc_now()
     changeset = AffiliateLink.changeset(%AffiliateLink{}, attrs)
 
-    with merchant_product_id when is_integer(merchant_product_id) <-
-           Ecto.Changeset.get_field(changeset, :merchant_product_id),
-         %AffiliateLink{} = existing_link <-
-           Repo.get_by(AffiliateLink, merchant_product_id: merchant_product_id) do
-      existing_link
-      |> AffiliateLink.changeset(attrs)
-      |> Ecto.Changeset.change(updated_at: now)
-      |> Repo.update()
-    else
-      nil ->
-        Repo.insert(changeset)
+    update_fields =
+      Map.take(changeset.changes, [
+        :affiliate_network_id,
+        :original_url,
+        :affiliate_url,
+        :last_verified_at
+      ])
+      |> Map.to_list()
 
-      _ ->
-        Repo.insert(changeset)
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:merchant_product_id],
+      returning: true
+    )
   end
 
   @spec create_coupon(map()) :: {:ok, Coupon.t()} | {:error, Ecto.Changeset.t()}
