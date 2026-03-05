@@ -1,7 +1,5 @@
 # MVP Contract Consistency Cleanup Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Align existing schema/context contracts with current database and API intent so baseline MVP workflows remain predictable and ingest-ready without adding deferred features.
 
 **Architecture:** Apply narrowly scoped, backward-compatible fixes in existing context/schema modules. Prefer contract alignment over introducing new infrastructure: update validations to match persisted schema intent, remove dead fields from upsert logic, and lock behavior with regression tests.
