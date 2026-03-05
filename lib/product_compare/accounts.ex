@@ -68,8 +68,8 @@ defmodule ProductCompare.Accounts do
     end
   end
 
-  @spec list_api_tokens(pos_integer(), keyword() | map()) :: [ApiToken.t()]
-  def list_api_tokens(user_id, opts \\ []) do
+  @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
+  def list_api_tokens_query(user_id, opts \\ []) do
     now = current_time()
     status = token_list_status_filter(opts)
 
@@ -78,6 +78,12 @@ defmodule ProductCompare.Accounts do
       order_by: [desc: token.inserted_at, desc: token.id]
     )
     |> maybe_apply_api_token_status_filter(status, now)
+  end
+
+  @spec list_api_tokens(pos_integer(), keyword() | map()) :: [ApiToken.t()]
+  def list_api_tokens(user_id, opts \\ []) do
+    user_id
+    |> list_api_tokens_query(opts)
     |> Repo.all()
   end
 
@@ -333,6 +339,18 @@ defmodule ProductCompare.Accounts do
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
 
   defp api_token_default_ttl_days do
+    module_config = Application.get_env(:product_compare, __MODULE__, [])
+
+    case Keyword.get(module_config, :api_token_default_ttl_days) do
+      ttl_days when is_integer(ttl_days) and ttl_days > 0 ->
+        ttl_days
+
+      _ ->
+        fetch_legacy_ttl_days()
+    end
+  end
+
+  defp fetch_legacy_ttl_days do
     case Application.get_env(
            :product_compare,
            :api_token_default_ttl_days,

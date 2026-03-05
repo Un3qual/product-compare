@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.Connection do
   @moduledoc false
 
+  import Ecto.Query
+
   @default_page_size 50
   @max_page_size 100
   @cursor_prefix "cursor:"
@@ -30,6 +32,43 @@ defmodule ProductCompareWeb.GraphQL.Connection do
       edges: edges,
       page_info: %{
         has_next_page: total_count > start_index + length(edges),
+        has_previous_page: start_index > 0,
+        start_cursor: edge_cursor(List.first(edges)),
+        end_cursor: edge_cursor(List.last(edges))
+      }
+    }
+  end
+
+  @spec from_query(Ecto.Query.t(), map(), module()) :: map()
+  def from_query(%Ecto.Query{} = query, args, repo)
+      when is_map(args) and is_atom(repo) do
+    first = args |> fetch_arg(:first, @default_page_size) |> normalize_page_size()
+    start_index = args |> fetch_arg(:after, nil) |> decode_start_index()
+    fetch_limit = first + 1
+
+    query_rows =
+      query
+      |> offset(^start_index)
+      |> limit(^fetch_limit)
+      |> repo.all()
+
+    has_next_page = length(query_rows) > first
+    page_items = Enum.take(query_rows, first)
+
+    edges =
+      page_items
+      |> Enum.with_index(start_index)
+      |> Enum.map(fn {node, absolute_index} ->
+        %{
+          cursor: encode_cursor(absolute_index),
+          node: node
+        }
+      end)
+
+    %{
+      edges: edges,
+      page_info: %{
+        has_next_page: has_next_page,
         has_previous_page: start_index > 0,
         start_cursor: edge_cursor(List.first(edges)),
         end_cursor: edge_cursor(List.last(edges))

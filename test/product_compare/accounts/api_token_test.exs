@@ -193,5 +193,20 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       assert Enum.map(Accounts.list_api_tokens(user.id, status: :unknown), & &1.id) == all_ids
       assert Enum.map(Accounts.list_api_tokens(user.id), & &1.id) == all_ids
     end
+
+    test "exposes paginatable token query for resolver-level connection pagination" do
+      user = user_fixture()
+
+      assert {:ok, %{api_token: newest_token}} =
+               Accounts.create_api_token(user.id, %{label: "newest"})
+
+      assert {:ok, %{api_token: oldest_token}} =
+               Accounts.create_api_token(user.id, %{label: "oldest"})
+
+      query = Accounts.list_api_tokens_query(user.id, status: :all)
+
+      assert %Ecto.Query{} = query
+      assert Enum.map(Repo.all(query), & &1.id) == [oldest_token.id, newest_token.id]
+    end
   end
 end

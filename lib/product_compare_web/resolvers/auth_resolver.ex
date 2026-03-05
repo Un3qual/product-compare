@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   @moduledoc false
 
   alias ProductCompare.Accounts
+  alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
 
@@ -14,10 +15,10 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
           {:ok, map()} | {:error, String.t()}
   def my_api_tokens(_parent, args, %{context: %{current_user: current_user}}) do
     status_filter = Map.get(args || %{}, :status, :all)
-    tokens = Accounts.list_api_tokens(current_user.id, status: status_filter)
+    query = Accounts.list_api_tokens_query(current_user.id, status: status_filter)
     connection_args = Map.drop(args || %{}, [:status])
 
-    {:ok, Connection.from_list(tokens, connection_args)}
+    {:ok, Connection.from_query(query, connection_args, Repo)}
   end
 
   def my_api_tokens(_parent, _args, _resolution), do: {:error, "unauthorized"}
@@ -90,8 +91,12 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
   defp resolve_token_entropy_id(token_id) do
     case GlobalId.decode(token_id) do
-      {:ok, {:api_token, entropy_id}} -> {:ok, entropy_id}
-      {:ok, {_other_type, _id}} -> {:error, "token not found"}
+      {:ok, {:api_token, entropy_id}} ->
+        {:ok, entropy_id}
+
+      {:ok, {_other_type, _id}} ->
+        {:error, "token not found"}
+
       :error ->
         case Ecto.UUID.cast(token_id) do
           {:ok, uuid} -> {:ok, uuid}
