@@ -75,7 +75,7 @@ defmodule ProductCompare.Affiliate do
         where: c.merchant_id == ^merchant_id,
         where: is_nil(c.valid_from) or c.valid_from <= ^now,
         where: is_nil(c.valid_to) or c.valid_to >= ^now,
-        order_by: [asc: c.valid_to]
+        order_by: [asc: c.valid_to, asc: c.code, asc: c.id]
     )
   end
 end

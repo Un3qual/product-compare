@@ -18,6 +18,8 @@ config :product_compare, ProductCompare.Repo,
   migration_primary_key: [name: :id, type: :bigserial],
   migration_foreign_key: [type: :bigint]
 
+config :product_compare, ProductCompare.Accounts, api_token_default_ttl_days: 90
+
 # Configure the endpoint
 config :product_compare, ProductCompareWeb.Endpoint,
   url: [host: "localhost"],

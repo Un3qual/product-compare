@@ -11,10 +11,18 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       product = SpecsFixtures.product_fixture(%{slug: "thread-immutability-product"})
 
       {:ok, thread_a} =
-        Discussions.create_thread(%{product_id: product.id, title: "Thread A", created_by: user.id})
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Thread A",
+          created_by: user.id
+        })
 
       {:ok, thread_b} =
-        Discussions.create_thread(%{product_id: product.id, title: "Thread B", created_by: user.id})
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Thread B",
+          created_by: user.id
+        })
 
       {:ok, post} =
         Discussions.create_post(%{thread_id: thread_a.id, user_id: user.id, body_md: "Root post"})
