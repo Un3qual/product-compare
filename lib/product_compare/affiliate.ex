@@ -67,14 +67,19 @@ defmodule ProductCompare.Affiliate do
     |> Repo.insert()
   end
 
+  @spec list_active_coupons_query(pos_integer(), DateTime.t()) :: Ecto.Query.t()
+  def list_active_coupons_query(merchant_id, now \\ DateTime.utc_now()) do
+    from c in Coupon,
+      where: c.merchant_id == ^merchant_id,
+      where: is_nil(c.valid_from) or c.valid_from <= ^now,
+      where: is_nil(c.valid_to) or c.valid_to >= ^now,
+      order_by: [asc: c.valid_to, asc: c.code, asc: c.id]
+  end
+
   @spec list_active_coupons(pos_integer(), DateTime.t()) :: [Coupon.t()]
   def list_active_coupons(merchant_id, now \\ DateTime.utc_now()) do
-    Repo.all(
-      from c in Coupon,
-        where: c.merchant_id == ^merchant_id,
-        where: is_nil(c.valid_from) or c.valid_from <= ^now,
-        where: is_nil(c.valid_to) or c.valid_to >= ^now,
-        order_by: [asc: c.valid_to, asc: c.code, asc: c.id]
-    )
+    merchant_id
+    |> list_active_coupons_query(now)
+    |> Repo.all()
   end
 end

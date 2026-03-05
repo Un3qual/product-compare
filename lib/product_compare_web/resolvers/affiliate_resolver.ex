@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @moduledoc false
 
   alias ProductCompare.Affiliate
+  alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
 
@@ -87,9 +88,9 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
         end
 
       connection_args = Map.take(attrs, [:first, :after])
-      coupons = Affiliate.list_active_coupons(merchant_id, now)
+      query = Affiliate.list_active_coupons_query(merchant_id, now)
 
-      {:ok, %{coupons: Connection.from_list(coupons, connection_args)}}
+      {:ok, %{coupons: Connection.from_query(query, connection_args, Repo)}}
     end
   end
 
