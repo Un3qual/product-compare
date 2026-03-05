@@ -147,7 +147,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     |> reverse_ok_list()
   end
 
-  defp cast_global_id_list(_values, _expected_type, _field_name), do: {:error, "invalid filter ids"}
+  defp cast_global_id_list(_values, _expected_type, _field_name),
+    do: {:error, "invalid filter ids"}
 
   @spec cast_required_global_id(any(), GlobalId.type(), String.t()) ::
           {:ok, pos_integer()} | {:error, String.t()}
@@ -178,7 +179,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   defp normalize_decimal(_value), do: {:error, "invalid numeric value"}
 
-  @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) :: {:ok, list()} | {:error, String.t()}
+  @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
+          {:ok, list()} | {:error, String.t()}
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _} = error), do: error
 

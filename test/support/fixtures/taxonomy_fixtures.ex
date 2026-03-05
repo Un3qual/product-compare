@@ -5,8 +5,14 @@ defmodule ProductCompare.Fixtures.TaxonomyFixtures do
 
   @spec taxonomy_fixture(String.t(), String.t()) :: TaxonomySchema.t()
   def taxonomy_fixture(code \\ "type", name \\ "Type") do
-    {:ok, taxonomy} = Taxonomy.upsert_taxonomy(%{code: code, name: name})
-    taxonomy
+    case Repo.get_by(TaxonomySchema, code: code) do
+      nil ->
+        {:ok, taxonomy} = Taxonomy.upsert_taxonomy(%{code: code, name: name})
+        taxonomy
+
+      taxonomy ->
+        taxonomy
+    end
   end
 
   @spec taxon_fixture(map()) :: ProductCompareSchemas.Taxonomy.Taxon.t()

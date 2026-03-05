@@ -13,7 +13,7 @@
 ## Checklist
 
 - [x] Task 1: Add catalog discovery filters to GraphQL `products` connection with strict ID handling.
-- [ ] Task 2: Strengthen quality gates in `mix` aliases and coverage settings.
+- [x] Task 2: Strengthen quality gates in `mix` aliases and coverage settings.
 - [ ] Task 3: Verification checkpoint and milestone commit.
 
 ## Task 1: Catalog Discovery Filters On `products`

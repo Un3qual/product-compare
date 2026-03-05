@@ -1,5 +1,5 @@
 defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -127,7 +127,9 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       {enum_attribute, option_a, option_b} = enum_attribute_with_options_fixture()
 
       matching_product = SpecsFixtures.product_fixture(%{slug: "catalog-filter-bool-enum-in"})
-      non_matching_product = SpecsFixtures.product_fixture(%{slug: "catalog-filter-bool-enum-out"})
+
+      non_matching_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-filter-bool-enum-out"})
 
       matching_product
       |> accept_claim!(bool_attribute, %{value_bool: true}, moderator)
@@ -200,10 +202,20 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       office_product = SpecsFixtures.product_fixture(%{slug: "catalog-use-case-office"})
 
       assert {:ok, _} =
-               Taxonomy.assign_use_case(gaming_product.id, gaming_taxon.id, moderator.id, :editorial)
+               Taxonomy.assign_use_case(
+                 gaming_product.id,
+                 gaming_taxon.id,
+                 moderator.id,
+                 :editorial
+               )
 
       assert {:ok, _} =
-               Taxonomy.assign_use_case(office_product.id, office_taxon.id, moderator.id, :editorial)
+               Taxonomy.assign_use_case(
+                 office_product.id,
+                 office_taxon.id,
+                 moderator.id,
+                 :editorial
+               )
 
       assert %{
                "data" => %{
@@ -299,7 +311,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   end
 
   defp numeric_attribute_with_unit_fixture do
-    dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("catalog-dim-numeric-filter")})
+    dimension =
+      SpecsFixtures.dimension_fixture(%{code: unique_code("catalog-dim-numeric-filter")})
 
     unit =
       SpecsFixtures.unit_fixture(%{
