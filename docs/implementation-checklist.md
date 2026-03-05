@@ -101,15 +101,16 @@
 ## GraphQL Catalog Discovery + Quality Gates Checkpoint (2026-03-05)
 
 - [x] `products` query now accepts typed `filters` input (`numeric`, `booleans`, `enums`, `useCaseTaxonIds`) with stable connection ordering.
+- [x] Catalog `primaryTypeTaxonId` filtering supports descendant matching (`includeTypeDescendants`) with GraphQL regression coverage.
 - [x] Catalog filter IDs are Relay global IDs only (`attribute`, `enum option`, `taxon`) and invalid IDs are rejected deterministically.
 - [x] GraphQL coverage exists for numeric, boolean, enum, use-case, invalid-ID, and invalid-cursor catalog query paths.
 - [x] `mix typecheck` now enforces `mix compile --warnings-as-errors --all-warnings`.
 - [x] `mix precommit` and `mix ci` now enforce coverage execution (`mix test --cover`) with project threshold set to `69`.
 - [x] Verification passes:
   - `mix typecheck`
-  - `mix test --cover` (`103 tests, 0 failures`, `69.56%`)
-  - `mix precommit` (`103 tests, 0 failures`)
-  - `mix ci` (`103 tests, 0 failures`)
+  - `mix test --cover` (`104 tests, 0 failures`, `70.11%`)
+  - `mix precommit` (`104 tests, 0 failures`)
+  - `mix ci` (`104 tests, 0 failures`)
 
 ## Deferred Scope
 

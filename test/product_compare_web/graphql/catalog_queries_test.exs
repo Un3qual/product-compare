@@ -257,6 +257,56 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  }
                })
     end
+
+    test "products filters by primary type taxon descendants when requested", %{conn: conn} do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      parent_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("catalog-type-parent"),
+          name: "Display"
+        })
+
+      child_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          parent_id: parent_taxon.id,
+          code: unique_code("catalog-type-child"),
+          name: "OLED Display"
+        })
+
+      matching_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "catalog-type-descendant-match",
+          primary_type_taxon: child_taxon
+        })
+
+      _non_matching_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-type-descendant-other"})
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "id" => only_id
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "primaryTypeTaxonId" => relay_id("Taxon", parent_taxon.id),
+                   "includeTypeDescendants" => true
+                 }
+               })
+
+      assert only_id == relay_id("Product", matching_product.id)
+    end
   end
 
   defp products_query do
