@@ -10,9 +10,11 @@ defmodule ProductCompareWeb.Plugs.AuthenticateApiToken do
   @behaviour Plug
 
   @impl Plug
+  @spec init(term()) :: term()
   def init(opts), do: opts
 
   @impl Plug
+  @spec call(Plug.Conn.t(), term()) :: Plug.Conn.t()
   def call(conn, _opts) do
     case bearer_token(conn) do
       {:ok, token} ->

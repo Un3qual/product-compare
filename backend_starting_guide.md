@@ -126,7 +126,7 @@ Rules:
   - `config :your_app, ..., generators: [timestamp_type: :utc_datetime_usec]`
 - Use shared schema macros:
   - `:relational` macro for bigint PK + foreign keys + microsecond timestamps
-  - `:uuid_primary_key` macro only for explicit exception tables
+  - Add a separate `:uuid_primary_key` macro only if explicit exception tables are required and documented
 - For every relational table:
   - `entropy_id uuid not null default uuidv7()`
   - unique index on `entropy_id`
@@ -274,3 +274,18 @@ Before opening a PR, verify all are true:
 - [ ] Mutations are viewer-scoped and return typed payload + structured errors.
 - [ ] Public functions touched in this change have `@spec`.
 - [ ] New schema modules define `@type t`.
+
+### Current Repository Status Snapshot (2026-03-05)
+
+- [x] `mix compile --warnings-as-errors` passes.
+- [x] `mix test` passes (`98 tests, 0 failures`).
+- [x] `mix typecheck` passes.
+- [x] `mix precommit` passes.
+- [x] New relational tables use `bigint id` + `entropy_id uuidv7`.
+- [x] UUID-primary-key exceptions are intentional and documented (current state: none exist).
+- [x] Token secrets are SHA3-hashed only; raw secrets are not persisted.
+- [x] GraphQL IDs are Relay global IDs only.
+- [x] GraphQL lists use connections with stable ordering.
+- [x] Mutations are viewer-scoped and return typed payload + structured errors.
+- [x] Public functions touched in this batch have `@spec`.
+- [x] New schema modules define `@type t`.

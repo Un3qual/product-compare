@@ -75,6 +75,18 @@
 - [x] `mix typecheck` passes.
 - [x] `mix test` passes (`96 tests, 0 failures`).
 
+## API Token Contract Hardening Checkpoint (2026-03-05)
+
+- [x] `api_tokens` now enforces SHA3 digest shape at DB layer (`api_tokens_hash_length_check`, `octet_length(token_hash) = 32`).
+- [x] API token DB regression test now asserts invalid hash length is rejected at insert time.
+- [x] API token schema maps `api_tokens_hash_length_check` and validates digest length before insert.
+- [x] Public plug entrypoints touched in this batch define explicit `@spec` contracts.
+- [x] Verification passes:
+  - `mix compile --warnings-as-errors`
+  - `mix typecheck`
+  - `mix test` (`98 tests, 0 failures`)
+  - `mix precommit` (`98 tests, 0 failures`)
+
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:
