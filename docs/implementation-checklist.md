@@ -87,6 +87,17 @@
   - `mix test` (`98 tests, 0 failures`)
   - `mix precommit` (`98 tests, 0 failures`)
 
+## GraphQL Token Response Cache-Control Hardening Checkpoint (2026-03-05)
+
+- [x] GraphQL pipeline now enforces `Cache-Control: no-store, private, max-age=0`.
+- [x] GraphQL pipeline now emits `Pragma: no-cache` and `Expires: 0`.
+- [x] GraphQL endpoint test covers non-cacheable response headers.
+- [x] Verification passes:
+  - `mix compile --warnings-as-errors`
+  - `mix typecheck`
+  - `mix test` (`99 tests, 0 failures`)
+  - `mix precommit` (`99 tests, 0 failures`)
+
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:

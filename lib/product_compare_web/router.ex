@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.Router do
   end
 
   pipeline :graphql_api do
+    plug ProductCompareWeb.Plugs.EnforceNoStoreGraphqlCache
     plug ProductCompareWeb.Plugs.AuthenticateApiToken
     plug ProductCompareWeb.Plugs.PutAbsintheContext
   end

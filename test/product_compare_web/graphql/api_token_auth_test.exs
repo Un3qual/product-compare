@@ -5,6 +5,23 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "/api/graphql authentication and token lifecycle" do
+    test "graphql responses are marked non-cacheable", %{conn: conn} do
+      conn =
+        post(conn, "/api/graphql", %{
+          "query" => """
+          query {
+            viewer {
+              id
+            }
+          }
+          """
+        })
+
+      assert get_resp_header(conn, "cache-control") == ["no-store, private, max-age=0"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+      assert get_resp_header(conn, "expires") == ["0"]
+    end
+
     test "viewer is nil without bearer token", %{conn: conn} do
       query = """
       query {
