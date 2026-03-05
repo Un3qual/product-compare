@@ -58,7 +58,7 @@
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:
-  - [MVP Scope Freeze (2026-03-05)](/Users/admin/.codex/worktrees/a684/backend/docs/decisions/2026-03-05-mvp-scope-freeze.md)
+  - [MVP Scope Freeze (2026-03-05)](decisions/2026-03-05-mvp-scope-freeze.md)
 - Scraping ingestion jobs and scheduling pipelines (Oban, retries, dead letters).
 - Derived formula execution engine and dependency-driven recomputation workers.
 - Affiliate API ingestion/normalization jobs.
