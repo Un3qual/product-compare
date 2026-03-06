@@ -112,6 +112,21 @@
   - `mix precommit` (`104 tests, 0 failures`)
   - `mix ci` (`104 tests, 0 failures`)
 
+## GraphQL Pricing + Merchant Checkpoint (2026-03-06)
+
+- [x] `merchants` and `merchantProducts` GraphQL discovery queries now exist with connection pagination.
+- [x] `merchantProducts` enforces Relay ID decoding for `productId`/`merchantId` and rejects invalid/raw IDs deterministically.
+- [x] `MerchantProduct.latestPrice` and `MerchantProduct.priceHistory(first, after, from, to)` are now exposed.
+- [x] Price-history pagination uses strict cursor handling and preserves stable ordering.
+- [x] `Accounts.create_user/1` now ensures `users.hashed_password` is non-null when callers omit password input; regression coverage added.
+- [x] Targeted pricing verification passes:
+  - `mix test test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/pricing_queries_test.exs` (`10 tests, 0 failures`).
+- [x] `mix compile --warnings-as-errors` passes.
+- [x] `mix typecheck` passes.
+- [x] `mix test` passes (`114 tests, 0 failures`).
+- [x] `mix precommit` passes (`114 tests, 0 failures`, `71.04%` coverage).
+- [x] `mix ci` passes (`114 tests, 0 failures`, `71.04%` coverage).
+
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:

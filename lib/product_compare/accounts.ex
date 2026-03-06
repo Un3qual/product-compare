@@ -19,6 +19,8 @@ defmodule ProductCompare.Accounts do
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
+    attrs = ensure_hashed_password(attrs)
+
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
@@ -206,6 +208,34 @@ defmodule ProductCompare.Accounts do
 
   defp clamp_non_negative(value, _default) when is_integer(value) and value >= 0, do: value
   defp clamp_non_negative(_value, default), do: default
+
+  # Accounts currently authenticate via API tokens. For user rows created
+  # without password input, generate a random 256-bit hex placeholder so
+  # `hashed_password` remains non-null and non-predictable.
+  defp ensure_hashed_password(attrs) when is_map(attrs) do
+    case Map.get(attrs, :hashed_password, Map.get(attrs, "hashed_password")) do
+      hashed_password when is_binary(hashed_password) and hashed_password != "" ->
+        attrs
+
+      _ ->
+        put_default_hashed_password(attrs)
+    end
+  end
+
+  defp ensure_hashed_password(_attrs), do: %{hashed_password: default_hashed_password()}
+
+  defp put_default_hashed_password(attrs) do
+    if Enum.any?(Map.keys(attrs), &is_binary/1) do
+      Map.put(attrs, "hashed_password", default_hashed_password())
+    else
+      Map.put(attrs, :hashed_password, default_hashed_password())
+    end
+  end
+
+  defp default_hashed_password do
+    :crypto.strong_rand_bytes(32)
+    |> Base.encode16(case: :lower)
+  end
 
   defp maybe_touch_api_token(token_id, now, opts) do
     if Keyword.get(opts, :touch_last_used?, true) do

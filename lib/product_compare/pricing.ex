@@ -30,6 +30,21 @@ defmodule ProductCompare.Pricing do
     end
   end
 
+  @spec list_merchants_query() :: Ecto.Query.t()
+  def list_merchants_query do
+    from merchant in Merchant,
+      order_by: [asc: merchant.id]
+  end
+
+  @spec list_merchants() :: [Merchant.t()]
+  def list_merchants do
+    list_merchants_query()
+    |> Repo.all()
+  end
+
+  @spec get_merchant!(pos_integer()) :: Merchant.t()
+  def get_merchant!(merchant_id), do: Repo.get!(Merchant, merchant_id)
+
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant_product(attrs) do
@@ -49,6 +64,34 @@ defmodule ProductCompare.Pricing do
     )
   end
 
+  @spec list_merchant_products_query(map()) :: Ecto.Query.t()
+  def list_merchant_products_query(filters) do
+    product_id = get_required_filter_value(filters, :product_id)
+    merchant_id = get_filter_value(filters, :merchant_id)
+    active_only = get_filter_value(filters, :active_only)
+
+    MerchantProduct
+    |> where([merchant_product], merchant_product.product_id == ^product_id)
+    |> maybe_where_merchant_id(merchant_id)
+    |> maybe_where_active_only(active_only)
+    |> order_by([merchant_product], asc: merchant_product.id)
+    |> preload([:merchant, :product])
+  end
+
+  @spec list_merchant_products(map()) :: [MerchantProduct.t()]
+  def list_merchant_products(filters) do
+    filters
+    |> list_merchant_products_query()
+    |> Repo.all()
+  end
+
+  @spec get_merchant_product!(pos_integer()) :: MerchantProduct.t()
+  def get_merchant_product!(merchant_product_id) do
+    MerchantProduct
+    |> Repo.get!(merchant_product_id)
+    |> Repo.preload([:merchant, :product])
+  end
+
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs) do
     %PricePoint{}
@@ -66,9 +109,8 @@ defmodule ProductCompare.Pricing do
     )
   end
 
-  @spec price_history(pos_integer(), map()) ::
-          [PricePoint.t()]
-  def price_history(merchant_product_id, filters \\ %{}) do
+  @spec price_history_query(pos_integer(), map()) :: Ecto.Query.t()
+  def price_history_query(merchant_product_id, filters \\ %{}) do
     from_dt = get_filter_value(filters, :from)
     to_dt = get_filter_value(filters, :to)
 
@@ -77,6 +119,13 @@ defmodule ProductCompare.Pricing do
     |> maybe_where_from(from_dt)
     |> maybe_where_to(to_dt)
     |> order_by([pp], asc: pp.observed_at, asc: pp.id)
+  end
+
+  @spec price_history(pos_integer(), map()) ::
+          [PricePoint.t()]
+  def price_history(merchant_product_id, filters \\ %{}) do
+    merchant_product_id
+    |> price_history_query(filters)
     |> Repo.all()
   end
 
@@ -108,10 +157,27 @@ defmodule ProductCompare.Pricing do
   defp maybe_where_to(query, nil), do: query
   defp maybe_where_to(query, to_dt), do: where(query, [pp], pp.observed_at <= ^to_dt)
 
+  defp maybe_where_merchant_id(query, nil), do: query
+
+  defp maybe_where_merchant_id(query, merchant_id),
+    do: where(query, [merchant_product], merchant_product.merchant_id == ^merchant_id)
+
+  defp maybe_where_active_only(query, true),
+    do: where(query, [merchant_product], merchant_product.is_active == true)
+
+  defp maybe_where_active_only(query, _active_only), do: query
+
   defp get_filter_value(filters, key) when is_map(filters),
     do: Map.get(filters, key, Map.get(filters, Atom.to_string(key)))
 
   defp get_filter_value(_filters, _key), do: nil
+
+  defp get_required_filter_value(filters, key) do
+    case get_filter_value(filters, key) do
+      nil -> raise ArgumentError, "missing required #{key} filter"
+      value -> value
+    end
+  end
 
   defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
     Enum.any?(errors, fn
