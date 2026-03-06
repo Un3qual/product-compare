@@ -210,7 +210,7 @@ defmodule ProductCompare.Accounts do
   defp clamp_non_negative(_value, default), do: default
 
   # Accounts currently authenticate via API tokens. For user rows created
-  # without password input, generate a random SHA-256 placeholder digest so
+  # without password input, generate a random 256-bit hex placeholder so
   # `hashed_password` remains non-null and non-predictable.
   defp ensure_hashed_password(attrs) when is_map(attrs) do
     case Map.get(attrs, :hashed_password, Map.get(attrs, "hashed_password")) do

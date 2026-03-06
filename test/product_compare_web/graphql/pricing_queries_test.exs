@@ -367,7 +367,13 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       assert latest_history_price_id == relay_id("PricePoint", latest_price.id)
 
       assert %{
-               "errors" => [%{"message" => "invalid cursor"} | _]
+               "errors" => [
+                 %{
+                   "message" => "invalid cursor",
+                   "path" => ["merchantProducts", "edges", 0, "node", "priceHistory"]
+                 }
+                 | _
+               ]
              } =
                graphql(
                  conn,

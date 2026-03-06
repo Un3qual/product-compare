@@ -469,7 +469,7 @@ defmodule ProductCompareWeb.Schema do
     field :observed_at, non_null(:datetime)
     field :price, non_null(:decimal)
     field :inserted_at, non_null(:datetime)
-    field :updated_at, non_null(:datetime)
+    field :updated_at, :datetime
   end
 
   object :price_point_connection do

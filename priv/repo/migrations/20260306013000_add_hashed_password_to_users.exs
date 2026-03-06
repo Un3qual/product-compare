@@ -8,7 +8,9 @@ defmodule ProductCompare.Repo.Migrations.AddHashedPasswordToUsers do
 
     execute("""
     UPDATE users
-    SET hashed_password = md5(id::text || COALESCE(email::text, '')) || md5(COALESCE(email::text, '') || id::text)
+    SET hashed_password =
+      md5(random()::text || clock_timestamp()::text || id::text) ||
+      md5(clock_timestamp()::text || random()::text || id::text)
     WHERE hashed_password IS NULL
     """)
 

@@ -54,6 +54,9 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
       {:error, :invalid_cursor} ->
         {:error, "invalid cursor"}
+
+      {:error, _reason} ->
+        {:error, "invalid pagination arguments"}
     end
   end
 
