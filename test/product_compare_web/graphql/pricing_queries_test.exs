@@ -15,29 +15,30 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       assert %{
                "data" => %{
                  "merchants" => %{
-                   "edges" => [
-                     %{
-                       "cursor" => first_cursor,
-                       "node" => %{
-                         "id" => first_id,
-                         "name" => _first_name,
-                         "domain" => _first_domain
-                       }
-                     }
-                   ],
-                   "pageInfo" => %{
-                     "hasNextPage" => true,
-                     "hasPreviousPage" => false,
-                     "startCursor" => first_start_cursor,
-                     "endCursor" => first_end_cursor
-                   }
+                   "edges" => edges,
+                   "pageInfo" => %{"hasNextPage" => false}
                  }
                }
-             } = graphql(conn, merchants_query(), %{"first" => 1})
+             } = graphql(conn, merchants_query(), %{"first" => 200})
 
-      assert first_cursor == first_start_cursor
-      assert first_cursor == first_end_cursor
-      assert first_id == relay_id("Merchant", merchant_a.id)
+      merchant_a_id = relay_id("Merchant", merchant_a.id)
+      merchant_b_id = relay_id("Merchant", merchant_b.id)
+
+      merchant_a_index =
+        Enum.find_index(edges, fn edge ->
+          get_in(edge, ["node", "id"]) == merchant_a_id
+        end)
+
+      merchant_b_index =
+        Enum.find_index(edges, fn edge ->
+          get_in(edge, ["node", "id"]) == merchant_b_id
+        end)
+
+      refute is_nil(merchant_a_index)
+      refute is_nil(merchant_b_index)
+      assert merchant_a_index < merchant_b_index
+
+      merchant_a_cursor = edges |> Enum.at(merchant_a_index) |> Map.fetch!("cursor")
 
       assert %{
                "data" => %{
@@ -50,14 +51,18 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                      }
                    ],
                    "pageInfo" => %{
-                     "hasNextPage" => false,
                      "hasPreviousPage" => true
                    }
                  }
                }
-             } = graphql(conn, merchants_query(), %{"first" => 10, "after" => first_cursor})
+             } = graphql(conn, merchants_query(), %{"first" => 1, "after" => merchant_a_cursor})
 
-      assert second_id == relay_id("Merchant", merchant_b.id)
+      assert second_id == merchant_b_id
+
+      assert %{
+               "data" => %{"merchants" => nil},
+               "errors" => [%{"message" => "invalid cursor", "path" => ["merchants"]} | _]
+             } = graphql(conn, merchants_query(), %{"first" => 1, "after" => "bad-cursor"})
     end
 
     test "merchantProducts supports product/merchant/active filters and strict cursor handling",

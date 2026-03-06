@@ -10,15 +10,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
           {:ok, map()} | {:error, String.t()}
   def merchants(_parent, args, _resolution) do
     query = Pricing.list_merchants_query()
-    connection_args = connection_args(args)
-
-    case Connection.from_query(query, connection_args, Repo) do
-      {:ok, connection} ->
-        {:ok, connection}
-
-      {:error, :invalid_cursor} ->
-        {:error, "invalid cursor"}
-    end
+    run_connection(query, connection_args(args))
   end
 
   @spec merchant_products(any(), map(), Absinthe.Resolution.t()) ::
@@ -26,15 +18,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   def merchant_products(_parent, %{input: input}, _resolution) do
     with {:ok, attrs} <- normalize_merchant_products_input(input) do
       query = Pricing.list_merchant_products_query(attrs)
-      connection_args = connection_args(attrs)
-
-      case Connection.from_query(query, connection_args, Repo) do
-        {:ok, connection} ->
-          {:ok, connection}
-
-        {:error, :invalid_cursor} ->
-          {:error, "invalid cursor"}
-      end
+      run_connection(query, connection_args(attrs))
     end
   end
 
@@ -57,7 +41,14 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
         to: fetch_value(args || %{}, :to)
       })
 
-    case Connection.from_query(query, connection_args(args), Repo) do
+    run_connection(query, connection_args(args))
+  end
+
+  def price_history(_merchant_product, _args, _resolution),
+    do: {:error, "invalid merchant product id"}
+
+  defp run_connection(query, args) do
+    case Connection.from_query(query, args, Repo) do
       {:ok, connection} ->
         {:ok, connection}
 
@@ -65,9 +56,6 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
         {:error, "invalid cursor"}
     end
   end
-
-  def price_history(_merchant_product, _args, _resolution),
-    do: {:error, "invalid merchant product id"}
 
   defp normalize_merchant_products_input(input) when is_map(input) do
     with {:ok, product_id} <-
