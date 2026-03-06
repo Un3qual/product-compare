@@ -14,11 +14,14 @@ defmodule ProductCompare.Accounts do
   @api_token_default_ttl_days 90
   @api_token_prefix_length 12
   @api_token_secret_bytes 32
+  @default_hashed_password "password-auth-not-enabled"
   @default_reputation_events_limit 50
   @max_reputation_events_limit 200
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
+    attrs = ensure_hashed_password(attrs)
+
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
@@ -206,6 +209,20 @@ defmodule ProductCompare.Accounts do
 
   defp clamp_non_negative(value, _default) when is_integer(value) and value >= 0, do: value
   defp clamp_non_negative(_value, default), do: default
+
+  # Accounts currently authenticate via API tokens; provide a stable placeholder
+  # hashed password so user rows satisfy the DB not-null constraint.
+  defp ensure_hashed_password(attrs) when is_map(attrs) do
+    case Map.get(attrs, :hashed_password, Map.get(attrs, "hashed_password")) do
+      hashed_password when is_binary(hashed_password) and hashed_password != "" ->
+        attrs
+
+      _ ->
+        Map.put(attrs, :hashed_password, @default_hashed_password)
+    end
+  end
+
+  defp ensure_hashed_password(_attrs), do: %{hashed_password: @default_hashed_password}
 
   defp maybe_touch_api_token(token_id, now, opts) do
     if Keyword.get(opts, :touch_last_used?, true) do

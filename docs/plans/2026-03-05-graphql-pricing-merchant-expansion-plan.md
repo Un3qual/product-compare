@@ -15,7 +15,7 @@
 - [x] Task 1: Add pricing read APIs in `ProductCompare.Pricing` for GraphQL resolver consumption.
 - [x] Task 2: Add GraphQL schema/resolver surface for merchant + merchant-product discovery.
 - [x] Task 3: Add GraphQL pricing history/latest-price fields with strict ID/cursor handling.
-- [ ] Task 4: Verification checkpoint + milestone commits + checklist update.
+- [x] Task 4: Verification checkpoint + milestone commits + checklist update.
 
 ## Task 1: Pricing Context Read APIs
 
@@ -186,6 +186,8 @@ git commit -m "feat: expose latest-price and price-history graphql fields"
 ```
 
 ## Task 4: Verification + Checklist Update
+
+**Current status (2026-03-06):** verification gate is green (`mix compile --warnings-as-errors`, `mix typecheck`, `mix test`, `mix precommit`, `mix ci`), and checkpoint docs are updated.
 
 **Files:**
 - Modify: `docs/implementation-checklist.md`
