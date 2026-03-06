@@ -34,6 +34,7 @@ defmodule ProductCompareWeb.Schema do
     field :products, :product_connection do
       arg(:first, :integer)
       arg(:after, :string)
+      arg(:filters, :product_filters_input)
 
       resolve(&CatalogResolver.products/3)
     end
@@ -131,6 +132,31 @@ defmodule ProductCompareWeb.Schema do
     field :at, :datetime
     field :first, :integer
     field :after, :string
+  end
+
+  input_object :product_numeric_filter_input do
+    field :attribute_id, non_null(:id)
+    field :min, :decimal
+    field :max, :decimal
+  end
+
+  input_object :product_boolean_filter_input do
+    field :attribute_id, non_null(:id)
+    field :value, non_null(:boolean)
+  end
+
+  input_object :product_enum_filter_input do
+    field :attribute_id, non_null(:id)
+    field :enum_option_id, non_null(:id)
+  end
+
+  input_object :product_filters_input do
+    field :primary_type_taxon_id, :id
+    field :include_type_descendants, :boolean
+    field :numeric, list_of(non_null(:product_numeric_filter_input))
+    field :booleans, list_of(non_null(:product_boolean_filter_input))
+    field :enums, list_of(non_null(:product_enum_filter_input))
+    field :use_case_taxon_ids, list_of(non_null(:id))
   end
 
   object :upsert_affiliate_network_payload do

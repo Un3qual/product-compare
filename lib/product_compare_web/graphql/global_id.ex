@@ -13,6 +13,9 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :source_artifact
           | :product
           | :brand
+          | :attribute
+          | :enum_option
+          | :taxon
 
   @type_names %{
     user: "User",
@@ -25,7 +28,10 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     merchant_product: "MerchantProduct",
     source_artifact: "SourceArtifact",
     product: "Product",
-    brand: "Brand"
+    brand: "Brand",
+    attribute: "Attribute",
+    enum_option: "EnumOption",
+    taxon: "Taxon"
   }
   @type_atoms Map.new(@type_names, fn {type_atom, type_name} -> {type_name, type_atom} end)
 

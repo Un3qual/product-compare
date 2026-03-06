@@ -10,6 +10,7 @@ defmodule ProductCompare.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      test_coverage: [summary: [threshold: 69]],
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -26,7 +27,7 @@ defmodule ProductCompare.MixProject do
 
   def cli do
     [
-      preferred_envs: [precommit: :test, typecheck: :test]
+      preferred_envs: [ci: :test, precommit: :test, typecheck: :test]
     ]
   end
 
@@ -66,12 +67,12 @@ defmodule ProductCompare.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      typecheck: ["compile --warnings-as-errors"],
-      ci: ["format --check-formatted", "compile --warnings-as-errors", "test"],
+      typecheck: ["compile --warnings-as-errors --all-warnings"],
+      ci: ["format --check-formatted", "typecheck", "test --cover"],
       precommit: [
         "format",
-        "compile --warnings-as-errors",
-        "test"
+        "typecheck",
+        "test --cover"
       ],
       deps_prune: ["deps.unlock --unused"]
     ]
