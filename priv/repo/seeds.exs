@@ -12,15 +12,24 @@ alias ProductCompareSchemas.Specs.EnumOption
 alias ProductCompareSchemas.Taxonomy.Taxon
 alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
-upsert_user = fn email ->
-  case Accounts.get_user_by_email(email) do
-    nil ->
-      {:ok, user} = Accounts.create_user(%{email: email})
-      user
+seed_user_password =
+  case System.get_env("SEED_USER_PASSWORD") do
+    password when is_binary(password) and password != "" ->
+      password
 
-    user ->
-      user
+    _ ->
+      if Code.ensure_loaded?(Mix) and Mix.env() in [:dev, :test] do
+        "supersecretpass123"
+      else
+        raise """
+        SEED_USER_PASSWORD must be set when seeding outside development and test environments.
+        """
+      end
   end
+
+upsert_user = fn email ->
+  {:ok, user} = Accounts.ensure_user_with_password(email, seed_user_password)
+  user
 end
 
 admin = upsert_user.("admin@example.com")
