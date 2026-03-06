@@ -13,7 +13,7 @@
 ## Checklist
 
 - [x] Task 1: Add pricing read APIs in `ProductCompare.Pricing` for GraphQL resolver consumption.
-- [ ] Task 2: Add GraphQL schema/resolver surface for merchant + merchant-product discovery.
+- [x] Task 2: Add GraphQL schema/resolver surface for merchant + merchant-product discovery.
 - [ ] Task 3: Add GraphQL pricing history/latest-price fields with strict ID/cursor handling.
 - [ ] Task 4: Verification checkpoint + milestone commits + checklist update.
 

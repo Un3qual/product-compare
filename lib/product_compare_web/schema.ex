@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.PricingResolver
 
   query do
     @desc "Returns the current authenticated user, if any."
@@ -37,6 +38,21 @@ defmodule ProductCompareWeb.Schema do
       arg(:filters, :product_filters_input)
 
       resolve(&CatalogResolver.products/3)
+    end
+
+    @desc "Returns merchants ordered by primary key with cursor pagination."
+    field :merchants, :merchant_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&PricingResolver.merchants/3)
+    end
+
+    @desc "Returns merchant products for a product with optional merchant and active filters."
+    field :merchant_products, :merchant_product_connection do
+      arg(:input, non_null(:merchant_products_input))
+
+      resolve(&PricingResolver.merchant_products/3)
     end
   end
 
@@ -130,6 +146,14 @@ defmodule ProductCompareWeb.Schema do
   input_object :active_coupons_input do
     field :merchant_id, non_null(:id)
     field :at, :datetime
+    field :first, :integer
+    field :after, :string
+  end
+
+  input_object :merchant_products_input do
+    field :product_id, non_null(:id)
+    field :merchant_id, :id
+    field :active_only, :boolean
     field :first, :integer
     field :after, :string
   end
@@ -357,6 +381,27 @@ defmodule ProductCompareWeb.Schema do
     field :name, non_null(:string)
   end
 
+  object :merchant do
+    field :id, non_null(:id) do
+      resolve(fn merchant, _, _ -> encode_required_global_id(:merchant, merchant.id) end)
+    end
+
+    field :name, non_null(:string)
+    field :domain, non_null(:string)
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  object :merchant_connection do
+    field :edges, non_null(list_of(non_null(:merchant_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :merchant_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:merchant)
+  end
+
   object :product do
     field :id, non_null(:id) do
       resolve(fn product, _, _ -> encode_required_global_id(:product, product.id) end)
@@ -367,6 +412,46 @@ defmodule ProductCompareWeb.Schema do
     field :model_number, :string
     field :description, :string
     field :brand, :brand
+  end
+
+  object :merchant_product do
+    field :id, non_null(:id) do
+      resolve(fn merchant_product, _, _ ->
+        encode_required_global_id(:merchant_product, merchant_product.id)
+      end)
+    end
+
+    field :merchant_id, non_null(:id) do
+      resolve(fn merchant_product, _, _ ->
+        encode_required_global_id(:merchant, merchant_product.merchant_id)
+      end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn merchant_product, _, _ ->
+        encode_required_global_id(:product, merchant_product.product_id)
+      end)
+    end
+
+    field :external_sku, :string
+    field :url, non_null(:string)
+    field :currency, non_null(:string)
+    field :last_seen_at, :datetime
+    field :is_active, non_null(:boolean)
+    field :merchant, :merchant
+    field :product, :product
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  object :merchant_product_connection do
+    field :edges, non_null(list_of(non_null(:merchant_product_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :merchant_product_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:merchant_product)
   end
 
   object :product_connection do
