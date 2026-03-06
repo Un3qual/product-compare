@@ -10,7 +10,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
           {:ok, map()} | {:error, String.t()}
   def merchants(_parent, args, _resolution) do
     query = Pricing.list_merchants_query()
-    connection_args = Map.take(args || %{}, [:first, :after])
+    connection_args = connection_args(args)
 
     case Connection.from_query(query, connection_args, Repo) do
       {:ok, connection} ->
@@ -26,7 +26,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   def merchant_products(_parent, %{input: input}, _resolution) do
     with {:ok, attrs} <- normalize_merchant_products_input(input) do
       query = Pricing.list_merchant_products_query(attrs)
-      connection_args = Map.take(attrs, [:first, :after])
+      connection_args = connection_args(attrs)
 
       case Connection.from_query(query, connection_args, Repo) do
         {:ok, connection} ->
@@ -37,6 +37,37 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
       end
     end
   end
+
+  @spec latest_price(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, ProductCompareSchemas.Pricing.PricePoint.t() | nil}
+  def latest_price(%{id: merchant_product_id}, _args, _resolution)
+      when is_integer(merchant_product_id) do
+    {:ok, Pricing.latest_price(merchant_product_id)}
+  end
+
+  def latest_price(_merchant_product, _args, _resolution), do: {:ok, nil}
+
+  @spec price_history(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def price_history(%{id: merchant_product_id}, args, _resolution)
+      when is_integer(merchant_product_id) do
+    query =
+      Pricing.price_history_query(merchant_product_id, %{
+        from: fetch_value(args || %{}, :from),
+        to: fetch_value(args || %{}, :to)
+      })
+
+    case Connection.from_query(query, connection_args(args), Repo) do
+      {:ok, connection} ->
+        {:ok, connection}
+
+      {:error, :invalid_cursor} ->
+        {:error, "invalid cursor"}
+    end
+  end
+
+  def price_history(_merchant_product, _args, _resolution),
+    do: {:error, "invalid merchant product id"}
 
   defp normalize_merchant_products_input(input) when is_map(input) do
     with {:ok, product_id} <-
@@ -73,6 +104,13 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   defp cast_optional_global_id(value, expected_type, field_name),
     do: cast_required_global_id(value, expected_type, field_name)
+
+  defp connection_args(args) do
+    %{
+      first: fetch_value(args || %{}, :first),
+      after: fetch_value(args || %{}, :after)
+    }
+  end
 
   defp fetch_value(map, key, default \\ nil),
     do: Map.get(map, key, Map.get(map, Atom.to_string(key), default))

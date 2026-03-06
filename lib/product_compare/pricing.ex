@@ -109,9 +109,8 @@ defmodule ProductCompare.Pricing do
     )
   end
 
-  @spec price_history(pos_integer(), map()) ::
-          [PricePoint.t()]
-  def price_history(merchant_product_id, filters \\ %{}) do
+  @spec price_history_query(pos_integer(), map()) :: Ecto.Query.t()
+  def price_history_query(merchant_product_id, filters \\ %{}) do
     from_dt = get_filter_value(filters, :from)
     to_dt = get_filter_value(filters, :to)
 
@@ -120,6 +119,13 @@ defmodule ProductCompare.Pricing do
     |> maybe_where_from(from_dt)
     |> maybe_where_to(to_dt)
     |> order_by([pp], asc: pp.observed_at, asc: pp.id)
+  end
+
+  @spec price_history(pos_integer(), map()) ::
+          [PricePoint.t()]
+  def price_history(merchant_product_id, filters \\ %{}) do
+    merchant_product_id
+    |> price_history_query(filters)
     |> Repo.all()
   end
 

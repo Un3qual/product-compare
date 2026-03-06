@@ -440,8 +440,46 @@ defmodule ProductCompareWeb.Schema do
     field :is_active, non_null(:boolean)
     field :merchant, :merchant
     field :product, :product
+    field :latest_price, :price_point, resolve: &PricingResolver.latest_price/3
+
+    field :price_history, :price_point_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:from, :datetime)
+      arg(:to, :datetime)
+
+      resolve(&PricingResolver.price_history/3)
+    end
+
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :price_point do
+    field :id, non_null(:id) do
+      resolve(fn price_point, _, _ -> encode_required_global_id(:price_point, price_point.id) end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn price_point, _, _ ->
+        encode_required_global_id(:merchant_product, price_point.merchant_product_id)
+      end)
+    end
+
+    field :observed_at, non_null(:datetime)
+    field :price, non_null(:decimal)
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  object :price_point_connection do
+    field :edges, non_null(list_of(non_null(:price_point_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :price_point_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:price_point)
   end
 
   object :merchant_product_connection do

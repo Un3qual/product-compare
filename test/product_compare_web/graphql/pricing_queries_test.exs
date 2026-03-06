@@ -237,6 +237,139 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  }
                })
     end
+
+    test "merchantProducts exposes latestPrice and priceHistory with filters and strict cursor handling",
+         %{
+           conn: conn,
+           test: test_name
+         } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-product"})
+
+      merchant =
+        merchant_fixture(%{name: unique_name("Merchant"), domain: unique_domain("history")})
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: true
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      one_hour_ago = DateTime.add(now, -3600, :second)
+      two_hours_ago = DateTime.add(now, -7200, :second)
+
+      {:ok, oldest_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: two_hours_ago,
+          price: Decimal.new("199.99")
+        })
+
+      {:ok, middle_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: one_hour_ago,
+          price: Decimal.new("149.99")
+        })
+
+      {:ok, latest_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: now,
+          price: Decimal.new("99.99")
+        })
+
+      variables = %{
+        "input" => %{
+          "productId" => relay_id("Product", product.id),
+          "merchantId" => relay_id("Merchant", merchant.id),
+          "first" => 1
+        },
+        "historyFirst" => 1,
+        "from" => DateTime.to_iso8601(one_hour_ago),
+        "to" => DateTime.to_iso8601(now)
+      }
+
+      assert %{
+               "data" => %{
+                 "merchantProducts" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "latestPrice" => %{
+                           "id" => latest_price_id,
+                           "price" => "99.99"
+                         },
+                         "priceHistory" => %{
+                           "edges" => [
+                             %{
+                               "cursor" => history_cursor,
+                               "node" => %{
+                                 "id" => middle_price_id,
+                                 "price" => "149.99"
+                               }
+                             }
+                           ],
+                           "pageInfo" => %{
+                             "hasNextPage" => true,
+                             "hasPreviousPage" => false
+                           }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               }
+             } = graphql(conn, merchant_product_pricing_query(), variables)
+
+      assert latest_price_id == relay_id("PricePoint", latest_price.id)
+      assert middle_price_id == relay_id("PricePoint", middle_price.id)
+      assert oldest_price.id < middle_price.id
+
+      assert %{
+               "data" => %{
+                 "merchantProducts" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "priceHistory" => %{
+                           "edges" => [
+                             %{
+                               "node" => %{
+                                 "id" => latest_history_price_id,
+                                 "price" => "99.99"
+                               }
+                             }
+                           ],
+                           "pageInfo" => %{
+                             "hasNextPage" => false,
+                             "hasPreviousPage" => true
+                           }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(
+                 conn,
+                 merchant_product_pricing_query(),
+                 Map.put(variables, "historyAfter", history_cursor)
+               )
+
+      assert latest_history_price_id == relay_id("PricePoint", latest_price.id)
+
+      assert %{
+               "errors" => [%{"message" => "invalid cursor"} | _]
+             } =
+               graphql(
+                 conn,
+                 merchant_product_pricing_query(),
+                 Map.put(variables, "historyAfter", "bad-cursor")
+               )
+    end
   end
 
   defp merchant_fixture(attrs \\ %{}) do
@@ -311,6 +444,47 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           hasPreviousPage
           startCursor
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_product_pricing_query do
+    """
+    query MerchantProductPricing(
+      $input: MerchantProductsInput!
+      $historyFirst: Int
+      $historyAfter: String
+      $from: DateTime
+      $to: DateTime
+    ) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            id
+            latestPrice {
+              id
+              observedAt
+              price
+            }
+            priceHistory(first: $historyFirst, after: $historyAfter, from: $from, to: $to) {
+              edges {
+                cursor
+                node {
+                  id
+                  observedAt
+                  price
+                }
+              }
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+              }
+            }
+          }
         }
       }
     }
