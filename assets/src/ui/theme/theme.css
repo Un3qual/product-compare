@@ -1,0 +1,12 @@
+:root {
+  --pc-surface: #ffffff;
+  --pc-text: #111827;
+  --pc-border: #e5e7eb;
+}
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background: var(--pc-surface);
+  color: var(--pc-text);
+}
