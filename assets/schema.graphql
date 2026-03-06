@@ -1,0 +1,12 @@
+schema {
+  query: Query
+}
+
+type Query {
+  viewer: User
+}
+
+type User {
+  id: ID!
+  email: String!
+}

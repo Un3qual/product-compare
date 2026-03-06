@@ -5,6 +5,7 @@ defmodule ProductCompare.Accounts do
 
   import Ecto.Query
 
+  alias ProductCompare.Accounts.UserAuth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
@@ -19,10 +20,23 @@ defmodule ProductCompare.Accounts do
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
-    attrs = ensure_hashed_password(attrs)
+    if password_provided?(attrs) do
+      %User{}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
+    else
+      attrs = ensure_hashed_password(attrs)
 
+      %User{}
+      |> User.changeset(attrs)
+      |> Repo.insert()
+    end
+  end
+
+  @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def register_user(attrs) do
     %User{}
-    |> User.changeset(attrs)
+    |> User.registration_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -31,6 +45,38 @@ defmodule ProductCompare.Accounts do
 
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email), do: Repo.get_by(User, email: String.downcase(email))
+
+  @spec ensure_user_with_password(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
+    normalized_email = String.downcase(email)
+
+    case get_user_by_email(normalized_email) do
+      nil ->
+        create_user(%{email: normalized_email, password: password})
+
+      %User{} = user ->
+        if user_missing_password_hash?(user) do
+          user
+          |> User.registration_changeset(%{email: normalized_email, password: password})
+          |> Repo.update()
+        else
+          {:ok, user}
+        end
+    end
+  end
+
+  @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
+  defdelegate authenticate_user_by_email_and_password(email, password), to: UserAuth
+
+  @spec generate_user_session_token(User.t()) :: String.t()
+  defdelegate generate_user_session_token(user), to: UserAuth
+
+  @spec get_user_by_session_token(String.t()) :: User.t() | nil
+  defdelegate get_user_by_session_token(token), to: UserAuth
+
+  @spec delete_user_session_token(String.t()) :: :ok
+  defdelegate delete_user_session_token(token), to: UserAuth
 
   @spec create_api_token(pos_integer(), map()) ::
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
@@ -203,6 +249,11 @@ defmodule ProductCompare.Accounts do
 
   defp parse_pagination_value(_value, default), do: default
 
+  defp user_missing_password_hash?(%User{hashed_password: hashed_password}) do
+    is_nil(hashed_password) or hashed_password == "" or
+      not String.starts_with?(hashed_password, "$argon2")
+  end
+
   defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
   defp clamp_limit(_value, default, _max), do: default
 
@@ -231,6 +282,15 @@ defmodule ProductCompare.Accounts do
       Map.put(attrs, :hashed_password, default_hashed_password())
     end
   end
+
+  defp password_provided?(attrs) when is_map(attrs) do
+    case Map.get(attrs, :password, Map.get(attrs, "password")) do
+      password when is_binary(password) and password != "" -> true
+      _ -> false
+    end
+  end
+
+  defp password_provided?(_attrs), do: false
 
   defp default_hashed_password do
     :crypto.strong_rand_bytes(32)
