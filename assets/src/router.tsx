@@ -20,7 +20,7 @@ export function createServerRouter(url: string) {
 function normalizeServerEntry(url: string) {
   try {
     const parsed = new URL(url, "http://localhost");
-    return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     return url.startsWith("/") ? url : "/";
   }

@@ -51,18 +51,23 @@ defmodule ProductCompare.Accounts do
   def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
     normalized_email = String.downcase(email)
 
-    case get_user_by_email(normalized_email) do
-      nil ->
-        create_user(%{email: normalized_email, password: password})
+    if blank_password?(password) do
+      {:error,
+       User.registration_changeset(%User{}, %{email: normalized_email, password: password})}
+    else
+      case get_user_by_email(normalized_email) do
+        nil ->
+          create_user(%{email: normalized_email, password: password})
 
-      %User{} = user ->
-        if user_missing_password_hash?(user) do
-          user
-          |> User.registration_changeset(%{email: normalized_email, password: password})
-          |> Repo.update()
-        else
-          {:ok, user}
-        end
+        %User{} = user ->
+          if user_missing_password_hash?(user) do
+            user
+            |> User.registration_changeset(%{email: normalized_email, password: password})
+            |> Repo.update()
+          else
+            {:ok, user}
+          end
+      end
     end
   end
 
@@ -291,6 +296,9 @@ defmodule ProductCompare.Accounts do
   end
 
   defp password_provided?(_attrs), do: false
+
+  defp blank_password?(password) when is_binary(password), do: String.trim(password) == ""
+  defp blank_password?(_password), do: true
 
   defp default_hashed_password do
     :crypto.strong_rand_bytes(32)

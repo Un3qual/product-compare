@@ -75,6 +75,13 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     assert Argon2.verify_pass(password, user.hashed_password)
   end
 
+  test "ensure_user_with_password rejects blank passwords" do
+    email = "blank-password@example.com"
+
+    assert {:error, changeset} = Accounts.ensure_user_with_password(email, "")
+    assert %{password: ["can't be blank"]} = errors_on(changeset)
+  end
+
   test "ensure_user_with_password does not rehash users that already have a password hash" do
     original_password = "supersecretpass123"
     attempted_replacement = "differentpassword456"

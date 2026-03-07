@@ -1,4 +1,9 @@
-export async function fetchGraphQL(query: string, variables: Record<string, unknown>) {
+import type { GraphQLResponse } from "relay-runtime";
+
+export async function fetchGraphQL(
+  query: string,
+  variables: Record<string, unknown>
+): Promise<GraphQLResponse> {
   let response: Response;
 
   try {
