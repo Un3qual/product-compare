@@ -7,5 +7,6 @@ export function loadAppQuery<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
   variables: TQuery["variables"]
 ) {
+  // Keep a thin wrapper so route loaders can centralize defaults here later.
   return loadQuery<TQuery>(environment, query, variables);
 }

@@ -2,11 +2,15 @@ schema {
   query: Query
 }
 
+interface Node {
+  id: ID!
+}
+
 type Query {
   viewer: User
 }
 
-type User {
+type User implements Node {
   id: ID!
   email: String!
 }

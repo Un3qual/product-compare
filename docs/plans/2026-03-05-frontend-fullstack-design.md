@@ -159,9 +159,9 @@ Deliver a production-ready web app with React + Vite + React Router v7 SSR on Bu
 
 ### M6: Quality Hardening
 
-- Add route-level error boundaries and fallback UX.
-- Add accessibility pass on auth, browse, detail, compare, saved pages.
-- Add test coverage for critical user flows and key edge cases.
+- Introduce route-level error boundaries and fallback UX.
+- Perform an accessibility pass on auth, browse, detail, compare, saved pages.
+- Expand test coverage for critical user flows and key edge cases.
 - Exit criteria: quality gates pass and release checklist is green.
 
 ### M7: Production Readiness

@@ -12,10 +12,12 @@ test("sends credentials for session auth", async () => {
     } as Response;
   }) as typeof fetch;
 
-  await fetchGraphQL("query Viewer { viewer { id } }", {});
-
-  expect(String(calls[0][0])).toContain("/api/graphql");
-  expect((calls[0][1] as RequestInit).credentials).toBe("include");
-
-  globalThis.fetch = originalFetch;
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {});
+    expect(calls).toHaveLength(1);
+    expect(String(calls[0][0])).toContain("/api/graphql");
+    expect((calls[0][1] as RequestInit).credentials).toBe("include");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

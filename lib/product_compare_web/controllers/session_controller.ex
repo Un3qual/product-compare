@@ -10,13 +10,7 @@ defmodule ProductCompareWeb.SessionController do
   def create(conn, %{"email" => email, "password" => password}) do
     case Accounts.authenticate_user_by_email_and_password(email, password) do
       nil ->
-        conn
-        |> put_status(:unauthorized)
-        |> put_view(AuthJSON)
-        |> render(:error,
-          code: @invalid_credentials_code,
-          message: @invalid_credentials_message
-        )
+        render_unauthorized(conn)
 
       user ->
         user_token = Accounts.generate_user_session_token(user)
@@ -31,13 +25,7 @@ defmodule ProductCompareWeb.SessionController do
   end
 
   def create(conn, _params) do
-    conn
-    |> put_status(:unauthorized)
-    |> put_view(AuthJSON)
-    |> render(:error,
-      code: @invalid_credentials_code,
-      message: @invalid_credentials_message
-    )
+    render_unauthorized(conn)
   end
 
   def delete(conn, _params) do
@@ -48,5 +36,15 @@ defmodule ProductCompareWeb.SessionController do
     conn
     |> configure_session(drop: true)
     |> json(%{ok: true})
+  end
+
+  defp render_unauthorized(conn) do
+    conn
+    |> put_status(:unauthorized)
+    |> put_view(AuthJSON)
+    |> render(:error,
+      code: @invalid_credentials_code,
+      message: @invalid_credentials_message
+    )
   end
 end
