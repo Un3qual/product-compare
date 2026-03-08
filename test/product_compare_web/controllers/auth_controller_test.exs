@@ -4,6 +4,22 @@ defmodule ProductCompareWeb.AuthControllerTest do
   alias ProductCompare.Accounts
   import ProductCompare.Fixtures.AccountsFixtures
 
+  setup do
+    endpoint_config = Application.get_env(:product_compare, ProductCompareWeb.Endpoint, [])
+
+    Application.put_env(
+      :product_compare,
+      ProductCompareWeb.Endpoint,
+      Keyword.put(endpoint_config, :trusted_origins, ["https://app.example.com"])
+    )
+
+    on_exit(fn ->
+      Application.put_env(:product_compare, ProductCompareWeb.Endpoint, endpoint_config)
+    end)
+
+    :ok
+  end
+
   describe "POST /api/auth/register" do
     test "requires password", %{conn: conn} do
       email = "register-#{System.unique_integer([:positive])}@example.com"
@@ -56,11 +72,29 @@ defmodule ProductCompareWeb.AuthControllerTest do
         |> delete("/api/auth/logout")
 
       assert %{"ok" => true} = json_response(conn, 200)
-      refute get_session(conn, :user_token)
+      assert conn.resp_cookies["_product_compare_key"].max_age == 0
     end
   end
 
   describe "POST /api/auth/login" do
+    test "accepts requests from a configured frontend origin", %{conn: conn} do
+      user = user_fixture(%{password: "supersecretpass123"})
+      user_email = user.email
+
+      conn =
+        conn
+        |> put_req_header("origin", "https://app.example.com")
+        |> post("/api/auth/login", %{
+          "email" => user.email,
+          "password" => "supersecretpass123"
+        })
+
+      assert %{"viewer" => %{"email" => ^user_email}} = json_response(conn, 200)
+      assert get_session(conn, :user_token)
+      assert get_resp_header(conn, "access-control-allow-origin") == ["https://app.example.com"]
+      assert get_resp_header(conn, "access-control-allow-credentials") == ["true"]
+    end
+
     test "sets session and returns viewer payload", %{conn: conn} do
       user = user_fixture(%{password: "supersecretpass123"})
       user_email = user.email
@@ -121,6 +155,25 @@ defmodule ProductCompareWeb.AuthControllerTest do
              } = json_response(conn, 403)
 
       refute get_session(conn, :user_token)
+    end
+
+    test "answers CORS preflight requests for configured frontend origins", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("origin", "https://app.example.com")
+        |> put_req_header("access-control-request-method", "POST")
+        |> put_req_header("access-control-request-headers", "content-type")
+        |> options("/api/auth/login")
+
+      assert response(conn, 204) == ""
+      assert get_resp_header(conn, "access-control-allow-origin") == ["https://app.example.com"]
+      assert get_resp_header(conn, "access-control-allow-credentials") == ["true"]
+
+      assert get_resp_header(conn, "access-control-allow-methods") == [
+               "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+             ]
+
+      assert get_resp_header(conn, "access-control-allow-headers") == ["content-type"]
     end
   end
 end

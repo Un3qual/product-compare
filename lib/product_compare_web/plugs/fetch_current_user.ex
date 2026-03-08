@@ -15,7 +15,7 @@ defmodule ProductCompareWeb.Plugs.FetchCurrentUser do
 
   @impl Plug
   def call(conn, opts) do
-    if same_origin_session_only?(opts) and not RequireSameOrigin.same_origin_request?(conn) do
+    if same_origin_session_only?(opts) and not RequireSameOrigin.trusted_request_origin?(conn) do
       conn
     else
       user_token = get_session(conn, :user_token)

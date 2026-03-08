@@ -1,6 +1,10 @@
 defmodule ProductCompareWeb.Router do
   use ProductCompareWeb, :router
 
+  pipeline :api_cors do
+    plug ProductCompareWeb.Plugs.AllowTrustedOrigins
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -25,8 +29,14 @@ defmodule ProductCompareWeb.Router do
     plug ProductCompareWeb.Plugs.PutAbsintheContext
   end
 
+  scope "/api", ProductCompareWeb do
+    pipe_through [:api_cors]
+
+    options "/*path", PreflightController, :options
+  end
+
   scope "/api/auth", ProductCompareWeb do
-    pipe_through [:api, :api_session, :same_origin_session_boundary]
+    pipe_through [:api_cors, :api, :api_session, :same_origin_session_boundary]
 
     post "/register", AuthController, :register
     post "/login", SessionController, :create
@@ -37,7 +47,7 @@ defmodule ProductCompareWeb.Router do
   end
 
   scope "/api" do
-    pipe_through [:api, :graphql_session, :graphql_api]
+    pipe_through [:api_cors, :api, :graphql_session, :graphql_api]
 
     forward "/graphql", Absinthe.Plug, schema: ProductCompareWeb.Schema
   end
