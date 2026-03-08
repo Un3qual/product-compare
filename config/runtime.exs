@@ -20,8 +20,27 @@ if System.get_env("PHX_SERVER") do
   config :product_compare, ProductCompareWeb.Endpoint, server: true
 end
 
+default_trusted_origins =
+  if config_env() == :prod do
+    ["https://app.example.com"]
+  else
+    ["http://127.0.0.1:5173", "http://localhost:5173"]
+  end
+
+trusted_origins =
+  case System.get_env("TRUSTED_FRONTEND_ORIGINS") do
+    nil ->
+      default_trusted_origins
+
+    value ->
+      value
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+  end
+
 config :product_compare, ProductCompareWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+  http: [port: String.to_integer(System.get_env("PORT", "4000"))],
+  trusted_origins: trusted_origins
 
 if config_env() == :prod do
   database_url =

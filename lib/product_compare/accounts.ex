@@ -5,6 +5,7 @@ defmodule ProductCompare.Accounts do
 
   import Ecto.Query
 
+  alias ProductCompare.Accounts.UserAuth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
@@ -19,10 +20,23 @@ defmodule ProductCompare.Accounts do
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
-    attrs = ensure_hashed_password(attrs)
+    if password_provided?(attrs) do
+      %User{}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
+    else
+      attrs = ensure_hashed_password(attrs)
 
+      %User{}
+      |> User.changeset(attrs)
+      |> Repo.insert()
+    end
+  end
+
+  @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def register_user(attrs) do
     %User{}
-    |> User.changeset(attrs)
+    |> User.registration_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -30,7 +44,119 @@ defmodule ProductCompare.Accounts do
   def get_user!(id), do: Repo.get!(User, id)
 
   @spec get_user_by_email(String.t()) :: User.t() | nil
-  def get_user_by_email(email), do: Repo.get_by(User, email: String.downcase(email))
+  def get_user_by_email(email), do: Repo.get_by(User, email: normalize_email(email))
+
+  @doc """
+  Ensures a user exists with a usable password hash.
+
+  If the user does not exist, this creates one with the supplied password. If the
+  existing user is missing a usable Argon2 password hash, this repairs the user
+  by setting the supplied password. If the existing user already has a usable
+  password hash, this returns `{:ok, user}` without verifying or updating the
+  supplied password.
+  """
+  @spec ensure_user_with_password(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
+    normalized_email = normalize_email(email)
+
+    if blank_password?(password) do
+      {:error,
+       User.registration_changeset(%User{}, %{email: normalized_email, password: password})}
+    else
+      case Repo.transaction(fn ->
+             ensure_user_with_password_transaction(normalized_email, password)
+           end) do
+        {:ok, %User{} = user} ->
+          {:ok, user}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:error, changeset}
+      end
+    end
+  end
+
+  defp ensure_user_with_password_transaction(normalized_email, password) do
+    case lock_user_by_email(normalized_email) do
+      nil ->
+        case create_user(%{email: normalized_email, password: password}) do
+          {:ok, %User{} = user} ->
+            user
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            if unique_email_error?(changeset) do
+              normalized_email
+              |> lock_user_by_email()
+              |> ensure_user_password_hash(normalized_email, password)
+            else
+              Repo.rollback(changeset)
+            end
+        end
+
+      %User{} = user ->
+        ensure_user_password_hash(user, normalized_email, password)
+    end
+  end
+
+  defp ensure_user_password_hash(nil, normalized_email, password) do
+    case create_user(%{email: normalized_email, password: password}) do
+      {:ok, %User{} = user} -> user
+      {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  defp ensure_user_password_hash(%User{} = user, normalized_email, password) do
+    if user_missing_password_hash?(user) do
+      case user
+           |> User.registration_changeset(%{email: normalized_email, password: password})
+           |> Repo.update() do
+        {:ok, %User{} = repaired_user} ->
+          repaired_user
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          Repo.rollback(changeset)
+      end
+    else
+      user
+    end
+  end
+
+  defp lock_user_by_email(email) do
+    Repo.one(
+      from user in User,
+        where: user.email == ^email,
+        lock: "FOR UPDATE"
+    )
+  end
+
+  defp unique_email_error?(%Ecto.Changeset{} = changeset) do
+    Enum.any?(changeset.errors, fn
+      {:email, {_message, options}} -> options[:constraint] == :unique
+      _other -> false
+    end)
+  end
+
+  defp normalize_email(email) when is_binary(email) do
+    User.normalize_email(email)
+  end
+
+  defp normalize_email(email) do
+    email
+    |> to_string()
+    |> User.normalize_email()
+  end
+
+  @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
+  defdelegate authenticate_user_by_email_and_password(email, password), to: UserAuth
+
+  @spec generate_user_session_token(User.t()) :: String.t()
+  defdelegate generate_user_session_token(user), to: UserAuth
+
+  @spec get_user_by_session_token(String.t()) :: User.t() | nil
+  defdelegate get_user_by_session_token(token), to: UserAuth
+
+  @spec delete_user_session_token(String.t()) :: :ok
+  defdelegate delete_user_session_token(token), to: UserAuth
 
   @spec create_api_token(pos_integer(), map()) ::
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
@@ -203,6 +329,11 @@ defmodule ProductCompare.Accounts do
 
   defp parse_pagination_value(_value, default), do: default
 
+  defp user_missing_password_hash?(%User{hashed_password: hashed_password}) do
+    is_nil(hashed_password) or hashed_password == "" or
+      not String.starts_with?(hashed_password, "$argon2")
+  end
+
   defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
   defp clamp_limit(_value, default, _max), do: default
 
@@ -231,6 +362,21 @@ defmodule ProductCompare.Accounts do
       Map.put(attrs, :hashed_password, default_hashed_password())
     end
   end
+
+  # Treat whitespace-only passwords as "provided" here so create_user/1 routes
+  # them through registration validation instead of silently creating a user
+  # with a placeholder hash.
+  defp password_provided?(attrs) when is_map(attrs) do
+    case Map.get(attrs, :password, Map.get(attrs, "password")) do
+      password when is_binary(password) and password != "" -> true
+      _ -> false
+    end
+  end
+
+  defp password_provided?(_attrs), do: false
+
+  defp blank_password?(password) when is_binary(password), do: String.trim(password) == ""
+  defp blank_password?(_password), do: true
 
   defp default_hashed_password do
     :crypto.strong_rand_bytes(32)

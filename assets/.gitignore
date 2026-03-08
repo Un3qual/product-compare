@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+
+src/__generated__/*
+!src/__generated__/.gitkeep
+
+.DS_Store
