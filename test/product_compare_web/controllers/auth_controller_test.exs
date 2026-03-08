@@ -9,7 +9,9 @@ defmodule ProductCompareWeb.AuthControllerTest do
       email = "register-#{System.unique_integer([:positive])}@example.com"
 
       conn =
-        post(conn, "/api/auth/register", %{
+        conn
+        |> put_req_header_same_origin()
+        |> post("/api/auth/register", %{
           "email" => email
         })
 
@@ -25,7 +27,9 @@ defmodule ProductCompareWeb.AuthControllerTest do
       user_email = user.email
 
       conn =
-        post(conn, "/api/auth/login", %{
+        conn
+        |> put_req_header_same_origin()
+        |> post("/api/auth/login", %{
           "email" => user.email,
           "password" => "supersecretpass123"
         })
@@ -38,7 +42,9 @@ defmodule ProductCompareWeb.AuthControllerTest do
       user = user_fixture(%{password: "supersecretpass123"})
 
       conn =
-        post(conn, "/api/auth/login", %{
+        conn
+        |> put_req_header_same_origin()
+        |> post("/api/auth/login", %{
           "email" => user.email,
           "password" => "wrong-password-123"
         })
@@ -51,6 +57,29 @@ defmodule ProductCompareWeb.AuthControllerTest do
                  }
                ]
              } = json_response(conn, 401)
+
+      refute get_session(conn, :user_token)
+    end
+
+    test "rejects cross-origin requests before setting a session", %{conn: conn} do
+      user = user_fixture(%{password: "supersecretpass123"})
+
+      conn =
+        conn
+        |> put_req_header("origin", "https://evil.example.com")
+        |> post("/api/auth/login", %{
+          "email" => user.email,
+          "password" => "supersecretpass123"
+        })
+
+      assert %{
+               "errors" => [
+                 %{
+                   "code" => "INVALID_ORIGIN",
+                   "message" => "cross-origin request rejected"
+                 }
+               ]
+             } = json_response(conn, 403)
 
       refute get_session(conn, :user_token)
     end

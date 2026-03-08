@@ -43,4 +43,19 @@ defmodule ProductCompareWeb.ConnCase do
     |> Phoenix.ConnTest.init_test_session(%{})
     |> Plug.Conn.put_session(:user_token, user_token)
   end
+
+  def put_req_header_same_origin(conn) do
+    Plug.Conn.put_req_header(conn, "origin", request_origin(conn))
+  end
+
+  defp request_origin(conn) do
+    scheme = Atom.to_string(conn.scheme)
+
+    %URI{scheme: scheme, host: conn.host, port: normalize_port(conn.scheme, conn.port)}
+    |> URI.to_string()
+  end
+
+  defp normalize_port(:http, 80), do: nil
+  defp normalize_port(:https, 443), do: nil
+  defp normalize_port(_scheme, port), do: port
 end

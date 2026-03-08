@@ -10,6 +10,10 @@ defmodule ProductCompareWeb.Router do
     plug ProductCompareWeb.Plugs.FetchCurrentUser
   end
 
+  pipeline :same_origin_session_boundary do
+    plug ProductCompareWeb.Plugs.RequireSameOrigin
+  end
+
   pipeline :graphql_api do
     plug ProductCompareWeb.Plugs.EnforceNoStoreGraphqlCache
     plug ProductCompareWeb.Plugs.AuthenticateApiToken
@@ -17,7 +21,7 @@ defmodule ProductCompareWeb.Router do
   end
 
   scope "/api/auth", ProductCompareWeb do
-    pipe_through [:api, :api_session]
+    pipe_through [:api, :api_session, :same_origin_session_boundary]
 
     post "/register", AuthController, :register
     post "/login", SessionController, :create

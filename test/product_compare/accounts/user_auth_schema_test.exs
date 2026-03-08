@@ -47,21 +47,28 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     email = "legacy@example.com"
     password = "supersecretpass123"
     placeholder_hash = String.duplicate("a", 64)
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
 
-    assert {:ok, legacy_user} =
-             %User{}
-             |> User.changeset(%{email: email, hashed_password: placeholder_hash})
-             |> Repo.insert()
+    assert {1, [%{id: legacy_user_id}]} =
+             Repo.insert_all(
+               User,
+               [%{email: email, hashed_password: placeholder_hash, inserted_at: now}],
+               returning: [:id]
+             )
+
+    legacy_user = Repo.get!(User, legacy_user_id)
 
     assert legacy_user.hashed_password == placeholder_hash
 
     assert {:ok, repaired_user} = Accounts.ensure_user_with_password(email, password)
+    persisted_user = Repo.get!(User, legacy_user.id)
 
     assert repaired_user.id == legacy_user.id
-    assert is_binary(repaired_user.hashed_password)
-    assert repaired_user.hashed_password != placeholder_hash
-    assert String.starts_with?(repaired_user.hashed_password, "$argon2")
-    assert Argon2.verify_pass(password, repaired_user.hashed_password)
+    assert repaired_user.hashed_password == persisted_user.hashed_password
+    assert is_binary(persisted_user.hashed_password)
+    assert persisted_user.hashed_password != placeholder_hash
+    assert String.starts_with?(persisted_user.hashed_password, "$argon2")
+    assert Argon2.verify_pass(password, persisted_user.hashed_password)
   end
 
   test "ensure_user_with_password creates missing users" do
@@ -116,10 +123,12 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     legacy_user = Repo.get!(User, legacy_user_id)
 
     assert {:ok, repaired_user} = Accounts.ensure_user_with_password(email, password)
+    persisted_user = Repo.get!(User, legacy_user.id)
 
     assert repaired_user.id == legacy_user.id
-    assert is_binary(repaired_user.hashed_password)
-    assert repaired_user.hashed_password != ""
-    assert Argon2.verify_pass(password, repaired_user.hashed_password)
+    assert repaired_user.hashed_password == persisted_user.hashed_password
+    assert is_binary(persisted_user.hashed_password)
+    assert persisted_user.hashed_password != ""
+    assert Argon2.verify_pass(password, persisted_user.hashed_password)
   end
 end

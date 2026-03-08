@@ -46,6 +46,15 @@ defmodule ProductCompare.Accounts do
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email), do: Repo.get_by(User, email: String.downcase(email))
 
+  @doc """
+  Ensures a user exists with a usable password hash.
+
+  If the user does not exist, this creates one with the supplied password. If the
+  existing user is missing a usable Argon2 password hash, this repairs the user
+  by setting the supplied password. If the existing user already has a usable
+  password hash, this returns `{:ok, user}` without verifying or updating the
+  supplied password.
+  """
   @spec ensure_user_with_password(String.t(), String.t()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
@@ -288,6 +297,9 @@ defmodule ProductCompare.Accounts do
     end
   end
 
+  # Treat whitespace-only passwords as "provided" here so create_user/1 routes
+  # them through registration validation instead of silently creating a user
+  # with a placeholder hash.
   defp password_provided?(attrs) when is_map(attrs) do
     case Map.get(attrs, :password, Map.get(attrs, "password")) do
       password when is_binary(password) and password != "" -> true
