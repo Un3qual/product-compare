@@ -10,6 +10,11 @@ defmodule ProductCompareWeb.Router do
     plug ProductCompareWeb.Plugs.FetchCurrentUser
   end
 
+  pipeline :graphql_session do
+    plug :fetch_session
+    plug ProductCompareWeb.Plugs.FetchCurrentUser, same_origin_only: true
+  end
+
   pipeline :same_origin_session_boundary do
     plug ProductCompareWeb.Plugs.RequireSameOrigin
   end
@@ -32,7 +37,7 @@ defmodule ProductCompareWeb.Router do
   end
 
   scope "/api" do
-    pipe_through [:api, :api_session, :graphql_api]
+    pipe_through [:api, :graphql_session, :graphql_api]
 
     forward "/graphql", Absinthe.Plug, schema: ProductCompareWeb.Schema
   end

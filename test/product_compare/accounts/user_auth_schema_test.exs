@@ -22,11 +22,11 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     assert %{password: ["should be at most 72 character(s)"]} = errors_on(changeset)
   end
 
-  test "registration changeset normalizes email and hashes password" do
+  test "registration changeset trims and normalizes email and hashes password" do
     password = "supersecretpass123"
 
     changeset =
-      User.registration_changeset(%User{}, %{email: "UPPER@Example.com", password: password})
+      User.registration_changeset(%User{}, %{email: " UPPER@Example.com ", password: password})
 
     assert changeset.valid?
     assert Ecto.Changeset.get_change(changeset, :email) == "upper@example.com"
@@ -60,7 +60,9 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
     assert legacy_user.hashed_password == placeholder_hash
 
-    assert {:ok, repaired_user} = Accounts.ensure_user_with_password(email, password)
+    assert {:ok, repaired_user} =
+             Accounts.ensure_user_with_password("  LEGACY@EXAMPLE.COM  ", password)
+
     persisted_user = Repo.get!(User, legacy_user.id)
 
     assert repaired_user.id == legacy_user.id
@@ -73,7 +75,7 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
   test "ensure_user_with_password creates missing users" do
     password = "supersecretpass123"
-    email = "NEW_USER@example.com"
+    email = "  NEW_USER@example.com  "
 
     assert {:ok, user} = Accounts.ensure_user_with_password(email, password)
 
@@ -87,6 +89,32 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
     assert {:error, changeset} = Accounts.ensure_user_with_password(email, "")
     assert %{password: ["can't be blank"]} = errors_on(changeset)
+  end
+
+  test "ensure_user_with_password returns the same user under concurrent create attempts" do
+    password = "supersecretpass123"
+    email = "  race-user@example.com  "
+    parent = self()
+
+    run_ensure = fn ->
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, parent, self())
+      Accounts.ensure_user_with_password(email, password)
+    end
+
+    task_one = Task.async(run_ensure)
+    task_two = Task.async(run_ensure)
+
+    assert {:ok, first_user} = Task.await(task_one)
+    assert {:ok, second_user} = Task.await(task_two)
+
+    assert first_user.id == second_user.id
+
+    assert 1 ==
+             Repo.aggregate(
+               from(user in User, where: user.email == ^"race-user@example.com"),
+               :count,
+               :id
+             )
   end
 
   test "ensure_user_with_password does not rehash users that already have a password hash" do

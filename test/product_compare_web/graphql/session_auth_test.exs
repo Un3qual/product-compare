@@ -7,7 +7,10 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     user = user_fixture(%{password: "supersecretpass123"})
     user_email = user.email
 
-    conn = log_in_user(conn, user)
+    conn =
+      conn
+      |> log_in_user(user)
+      |> put_req_header_same_origin()
 
     query = """
     query {
@@ -20,12 +23,32 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     assert %{"data" => %{"viewer" => %{"email" => ^user_email}}} = graphql(conn, query)
   end
 
+  test "cross-origin requests do not resolve viewer from the browser session", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> put_req_header("origin", "https://evil.example.com")
+
+    query = """
+    query {
+      viewer {
+        email
+      }
+    }
+    """
+
+    assert %{"data" => %{"viewer" => nil}} = graphql(conn, query)
+  end
+
   test "invalid bearer token does not fall back to session authentication", %{conn: conn} do
     user = user_fixture(%{password: "supersecretpass123"})
 
     conn =
       conn
       |> log_in_user(user)
+      |> put_req_header_same_origin()
       |> put_req_header("authorization", "Bearer definitely-invalid-token")
 
     query = """

@@ -13,7 +13,7 @@ defmodule ProductCompare.Accounts.UserAuthTest do
 
       assert %ProductCompareSchemas.Accounts.User{id: ^user_id} =
                Accounts.authenticate_user_by_email_and_password(
-                 user.email,
+                 "  #{String.upcase(user.email)}  ",
                  "supersecretpass123"
                )
     end

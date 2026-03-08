@@ -20,12 +20,19 @@ defmodule ProductCompareSchemas.Accounts.User do
     timestamps(updated_at: false)
   end
 
+  @spec normalize_email(String.t()) :: String.t()
+  def normalize_email(email) when is_binary(email) do
+    email
+    |> String.trim()
+    |> String.downcase()
+  end
+
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:email, :hashed_password, :confirmed_at])
     |> validate_required([:email, :hashed_password])
-    |> update_change(:email, &String.downcase/1)
+    |> update_change(:email, &normalize_email/1)
     |> unique_constraint(:email)
   end
 
@@ -35,7 +42,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> cast(attrs, [:email, :password])
     |> validate_required([:email, :password])
     |> validate_length(:password, min: 12, max: 72)
-    |> update_change(:email, &String.downcase/1)
+    |> update_change(:email, &normalize_email/1)
     |> put_hashed_password()
     |> unique_constraint(:email)
   end

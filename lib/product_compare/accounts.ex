@@ -44,7 +44,7 @@ defmodule ProductCompare.Accounts do
   def get_user!(id), do: Repo.get!(User, id)
 
   @spec get_user_by_email(String.t()) :: User.t() | nil
-  def get_user_by_email(email), do: Repo.get_by(User, email: String.downcase(email))
+  def get_user_by_email(email), do: Repo.get_by(User, email: normalize_email(email))
 
   @doc """
   Ensures a user exists with a usable password hash.
@@ -58,26 +58,92 @@ defmodule ProductCompare.Accounts do
   @spec ensure_user_with_password(String.t(), String.t()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
-    normalized_email = String.downcase(email)
+    normalized_email = normalize_email(email)
 
     if blank_password?(password) do
       {:error,
        User.registration_changeset(%User{}, %{email: normalized_email, password: password})}
     else
-      case get_user_by_email(normalized_email) do
-        nil ->
-          create_user(%{email: normalized_email, password: password})
+      case Repo.transaction(fn ->
+             ensure_user_with_password_transaction(normalized_email, password)
+           end) do
+        {:ok, %User{} = user} ->
+          {:ok, user}
 
-        %User{} = user ->
-          if user_missing_password_hash?(user) do
-            user
-            |> User.registration_changeset(%{email: normalized_email, password: password})
-            |> Repo.update()
-          else
-            {:ok, user}
-          end
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:error, changeset}
       end
     end
+  end
+
+  defp ensure_user_with_password_transaction(normalized_email, password) do
+    case lock_user_by_email(normalized_email) do
+      nil ->
+        case create_user(%{email: normalized_email, password: password}) do
+          {:ok, %User{} = user} ->
+            user
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            if unique_email_error?(changeset) do
+              normalized_email
+              |> lock_user_by_email()
+              |> ensure_user_password_hash(normalized_email, password)
+            else
+              Repo.rollback(changeset)
+            end
+        end
+
+      %User{} = user ->
+        ensure_user_password_hash(user, normalized_email, password)
+    end
+  end
+
+  defp ensure_user_password_hash(nil, normalized_email, password) do
+    case create_user(%{email: normalized_email, password: password}) do
+      {:ok, %User{} = user} -> user
+      {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  defp ensure_user_password_hash(%User{} = user, normalized_email, password) do
+    if user_missing_password_hash?(user) do
+      case user
+           |> User.registration_changeset(%{email: normalized_email, password: password})
+           |> Repo.update() do
+        {:ok, %User{} = repaired_user} ->
+          repaired_user
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          Repo.rollback(changeset)
+      end
+    else
+      user
+    end
+  end
+
+  defp lock_user_by_email(email) do
+    Repo.one(
+      from user in User,
+        where: user.email == ^email,
+        lock: "FOR UPDATE"
+    )
+  end
+
+  defp unique_email_error?(%Ecto.Changeset{} = changeset) do
+    Enum.any?(changeset.errors, fn
+      {:email, {_message, options}} -> options[:constraint] == :unique
+      _other -> false
+    end)
+  end
+
+  defp normalize_email(email) when is_binary(email) do
+    User.normalize_email(email)
+  end
+
+  defp normalize_email(email) do
+    email
+    |> to_string()
+    |> User.normalize_email()
   end
 
   @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil

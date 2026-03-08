@@ -15,7 +15,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   def authenticate_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     email
-    |> String.downcase()
+    |> User.normalize_email()
     |> fetch_user_for_auth()
     |> verify_password(password)
   end

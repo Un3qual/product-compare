@@ -19,6 +19,45 @@ defmodule ProductCompareWeb.AuthControllerTest do
       refute get_session(conn, :user_token)
       assert is_nil(Accounts.get_user_by_email(email))
     end
+
+    test "accepts forwarded https origins without requiring the upstream port", %{conn: conn} do
+      email = "register-forwarded-#{System.unique_integer([:positive])}@example.com"
+
+      conn =
+        %{conn | port: 4000}
+        |> put_req_header("x-forwarded-proto", "https")
+        |> put_req_header("origin", "https://www.example.com")
+        |> post("/api/auth/register", %{
+          "email" => email
+        })
+
+      assert %{"errors" => %{"password" => ["can't be blank"]}} = json_response(conn, 422)
+    end
+
+    test "registers a user and logs out with the issued session", %{conn: conn} do
+      email = "register-roundtrip-#{System.unique_integer([:positive])}@example.com"
+      password = "supersecretpass123"
+
+      conn =
+        conn
+        |> put_req_header_same_origin()
+        |> post("/api/auth/register", %{
+          "email" => email,
+          "password" => password
+        })
+
+      assert %{"viewer" => %{"email" => ^email}} = json_response(conn, 201)
+      assert get_session(conn, :user_token)
+
+      conn =
+        conn
+        |> recycle()
+        |> put_req_header_same_origin()
+        |> delete("/api/auth/logout")
+
+      assert %{"ok" => true} = json_response(conn, 200)
+      refute get_session(conn, :user_token)
+    end
   end
 
   describe "POST /api/auth/login" do

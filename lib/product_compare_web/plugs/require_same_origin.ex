@@ -38,7 +38,8 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
 
   def call(conn, _opts), do: conn
 
-  defp same_origin_request?(conn) do
+  @spec same_origin_request?(Plug.Conn.t()) :: boolean()
+  def same_origin_request?(conn) do
     case request_origin(conn) do
       nil -> false
       request_origin -> request_origin == expected_origin(conn)
@@ -63,10 +64,14 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
   end
 
   defp expected_origin(conn) do
+    scheme = forwarded_scheme(conn) || Atom.to_string(conn.scheme)
+    {host, forwarded_host_port} = forwarded_host(conn, scheme)
+    forwarded_port = forwarded_port(conn)
+
     %URI{
-      scheme: Atom.to_string(conn.scheme),
-      host: conn.host,
-      port: conn.port
+      scheme: scheme,
+      host: host || conn.host,
+      port: forwarded_port || forwarded_host_port || fallback_port(conn, scheme)
     }
     |> normalize_default_port()
     |> URI.to_string()
@@ -94,6 +99,66 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
         |> URI.to_string()
     end
   end
+
+  defp forwarded_scheme(conn) do
+    conn
+    |> get_req_header("x-forwarded-proto")
+    |> first_header_value()
+  end
+
+  defp forwarded_host(conn, scheme) do
+    case conn
+         |> get_req_header("x-forwarded-host")
+         |> first_header_value() do
+      nil ->
+        {nil, nil}
+
+      value ->
+        uri = URI.parse("#{scheme}://#{value}")
+        {uri.host, uri.port}
+    end
+  end
+
+  defp forwarded_port(conn) do
+    conn
+    |> get_req_header("x-forwarded-port")
+    |> first_header_value()
+    |> parse_port()
+  end
+
+  defp first_header_value([]), do: nil
+
+  defp first_header_value([value | _]) do
+    value
+    |> String.split(",", parts: 2)
+    |> List.first()
+    |> String.trim()
+    |> case do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp parse_port(nil), do: nil
+
+  defp parse_port(value) do
+    case Integer.parse(value) do
+      {port, ""} -> port
+      _ -> nil
+    end
+  end
+
+  defp fallback_port(conn, scheme) do
+    if forwarded_scheme(conn) do
+      default_port_for(scheme)
+    else
+      conn.port
+    end
+  end
+
+  defp default_port_for("http"), do: 80
+  defp default_port_for("https"), do: 443
+  defp default_port_for(_scheme), do: nil
 
   defp normalize_default_port(%URI{scheme: "http", port: 80} = uri), do: %{uri | port: nil}
   defp normalize_default_port(%URI{scheme: "https", port: 443} = uri), do: %{uri | port: nil}
