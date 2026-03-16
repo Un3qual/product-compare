@@ -361,57 +361,75 @@ git commit -m "feat(accounts): add credential auth and session token lifecycle"
 
 ---
 
-### Task 7: Add JSON Auth Endpoints and Session Plug Flow
+### Task 7: Add GraphQL Auth Mutations and Session Plug Flow
+
+> **Note:** This task was superseded by the GraphQL auth migration (2026-03-16). Browser auth now uses GraphQL mutations instead of REST endpoints. The REST-specific files mentioned below (session_controller.ex, auth_json.ex, routes under "/api/auth/login") are deprecated and have been replaced with GraphQL equivalents.
 
 **Files:**
-- Create: `lib/product_compare_web/controllers/auth_controller.ex`
-- Create: `lib/product_compare_web/controllers/session_controller.ex`
-- Create: `lib/product_compare_web/controllers/auth_json.ex`
+- Modify: `lib/product_compare_web/schema.ex` (GraphQL auth mutations)
+- Modify: `lib/product_compare_web/resolvers/auth_resolver.ex` (login, register, logout resolvers)
+- Create: `lib/product_compare_web/graphql/session_mutation_bridge.ex` (session management)
 - Create: `lib/product_compare_web/plugs/fetch_current_user.ex`
 - Modify: `lib/product_compare_web/router.ex`
 - Modify: `lib/product_compare_web/endpoint.ex`
-- Test: `test/product_compare_web/controllers/auth_controller_test.exs`
+- Test: `test/product_compare_web/graphql/session_auth_test.exs`
 
 **Step 1: Write the failing test**
 
 ```elixir
-test "login sets session and returns viewer payload", %{conn: conn} do
+test "login mutation sets session and returns viewer payload", %{conn: conn} do
   user = user_fixture(%{password: "supersecretpass123"})
-  conn = post(conn, "/api/auth/login", %{email: user.email, password: "supersecretpass123"})
-  assert %{"viewer" => %{"email" => ^user.email}} = json_response(conn, 200)
+  query = """
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      viewer { email }
+      errors { code message }
+    }
+  }
+  """
+  conn = graphql(conn, query, %{email: user.email, password: "supersecretpass123"})
+  assert %{"data" => %{"login" => %{"viewer" => %{"email" => email}}}} = json_response(conn, 200)
+  assert email == user.email
   assert get_session(conn, :user_token)
 end
 ```
 
 **Step 2: Run test to verify it fails**
 
-Run: `mix test test/product_compare_web/controllers/auth_controller_test.exs`
-Expected: FAIL with route/controller missing.
+Run: `mix test test/product_compare_web/graphql/session_auth_test.exs`
+Expected: FAIL with mutation not defined.
 
 **Step 3: Write minimal implementation**
 
 ```elixir
-scope "/api/auth", ProductCompareWeb do
-  pipe_through [:api]
-  post "/register", AuthController, :register
-  post "/login", SessionController, :create
-  delete "/logout", SessionController, :delete
-  post "/forgot-password", AuthController, :forgot_password
-  post "/reset-password", AuthController, :reset_password
-  post "/verify-email", AuthController, :verify_email
+# In schema.ex
+field :login, non_null(:auth_payload) do
+  arg :email, non_null(:string)
+  arg :password, non_null(:string)
+  resolve(&AuthResolver.login/3)
+end
+
+field :register, non_null(:auth_payload) do
+  arg :email, non_null(:string)
+  arg :password, non_null(:string)
+  resolve(&AuthResolver.register/3)
+end
+
+field :logout, non_null(:logout_payload) do
+  resolve(&AuthResolver.logout/3)
 end
 ```
 
 **Step 4: Run test to verify it passes**
 
-Run: `mix test test/product_compare_web/controllers/auth_controller_test.exs`
+Run: `mix test test/product_compare_web/graphql/session_auth_test.exs`
 Expected: PASS.
 
 **Step 5: Commit**
 
 ```bash
-git add lib/product_compare_web/controllers lib/product_compare_web/plugs/fetch_current_user.ex lib/product_compare_web/router.ex lib/product_compare_web/endpoint.ex test/product_compare_web/controllers/auth_controller_test.exs
-git commit -m "feat(web): add session-backed json auth endpoints"
+git add lib/product_compare_web/schema.ex lib/product_compare_web/resolvers/auth_resolver.ex lib/product_compare_web/graphql/session_mutation_bridge.ex lib/product_compare_web/plugs/fetch_current_user.ex lib/product_compare_web/router.ex lib/product_compare_web/endpoint.ex test/product_compare_web/graphql/session_auth_test.exs
+git commit -m "feat(graphql): add session-backed auth mutations"
 ```
 
 ---
@@ -570,6 +588,8 @@ git commit -m "feat(compare): add private saved comparison persistence and graph
 
 ### Task 11: Implement Frontend Auth Routes and Session UX
 
+> **Note:** This task was superseded by the GraphQL auth migration (2026-03-16). The loginAction now calls the GraphQL auth mutation instead of POSTing to "/api/auth/login". REST auth endpoints are deprecated.
+
 **Files:**
 - Create: `assets/src/routes/auth/login.tsx`
 - Create: `assets/src/routes/auth/register.tsx`
@@ -602,13 +622,26 @@ Expected: FAIL due to missing route/action wiring.
 
 ```ts
 export async function loginAction(formData: FormData) {
-  await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(Object.fromEntries(formData))
-  });
-  return redirect("/browse");
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  const mutation = `
+    mutation Login($email: String!, $password: String!) {
+      login(email: $email, password: $password) {
+        viewer { id email }
+        errors { code message }
+      }
+    }
+  `;
+
+  const response = await fetchGraphQL(mutation, { email, password });
+
+  if (response.data?.login?.viewer) {
+    return redirect("/browse");
+  }
+
+  // Handle errors
+  return { errors: response.data?.login?.errors ?? [] };
 }
 ```
 
@@ -621,7 +654,7 @@ Expected: PASS.
 
 ```bash
 git add assets/src/routes/auth assets/src/router.tsx assets/src/routes/root.tsx
-git commit -m "feat(frontend): implement auth routes and form actions"
+git commit -m "feat(frontend): implement auth routes with graphql mutations"
 ```
 
 ---

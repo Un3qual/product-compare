@@ -9,7 +9,15 @@ defmodule ProductCompareWeb.Endpoint do
     key: "_product_compare_key",
     signing_salt: "3TvIt6dp",
     same_site: "Lax"
-  ]
+  ] ++
+    if Mix.env() == :prod do
+      [
+        domain: ".example.com",
+        secure: true
+      ]
+    else
+      []
+    end
 
   # socket "/live", Phoenix.LiveView.Socket,
   #   websocket: [connect_info: [session: @session_options]],

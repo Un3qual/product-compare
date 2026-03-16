@@ -1,5 +1,6 @@
 schema {
   query: Query
+  mutation: Mutation
 }
 
 interface Node {
@@ -8,6 +9,28 @@ interface Node {
 
 type Query {
   viewer: User
+}
+
+type Mutation {
+  login(email: String!, password: String!): AuthPayload!
+  register(email: String!, password: String!): AuthPayload!
+  logout: LogoutPayload!
+}
+
+type AuthPayload {
+  viewer: User
+  errors: [MutationError!]!
+}
+
+type LogoutPayload {
+  ok: Boolean!
+  errors: [MutationError!]!
+}
+
+type MutationError {
+  code: String!
+  message: String!
+  field: String
 }
 
 type User implements Node {

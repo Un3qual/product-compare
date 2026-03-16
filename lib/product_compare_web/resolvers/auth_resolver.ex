@@ -228,9 +228,10 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   end
 
   defp atomize_key(key) do
-    String.to_existing_atom(key)
-  rescue
-    ArgumentError -> String.to_atom(key)
+    # Input comes from trusted Ecto changeset error interpolation options,
+    # so we can safely convert to atom. This is preferred over using
+    # exception-based control flow with String.to_existing_atom/1.
+    String.to_atom(key)
   end
 
   defp mutation_error(code, message, field) do

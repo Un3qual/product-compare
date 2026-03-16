@@ -1,30 +1,10 @@
 defmodule ProductCompareWeb.AuthController do
   use ProductCompareWeb, :controller
 
-  @not_implemented_error %{
-    errors: [
-      %{
-        code: "NOT_IMPLEMENTED",
-        message: "not implemented"
-      }
-    ]
-  }
-
-  def forgot_password(conn, _params) do
-    conn
-    |> put_status(:not_implemented)
-    |> json(@not_implemented_error)
-  end
-
-  def reset_password(conn, _params) do
-    conn
-    |> put_status(:not_implemented)
-    |> json(@not_implemented_error)
-  end
-
-  def verify_email(conn, _params) do
-    conn
-    |> put_status(:not_implemented)
-    |> json(@not_implemented_error)
-  end
+  # All browser-facing auth operations have been migrated to GraphQL mutations.
+  # See lib/product_compare_web/schema.ex and lib/product_compare_web/resolvers/auth_resolver.ex
+  # for the GraphQL auth implementation (login, register, logout).
+  #
+  # Future REST endpoints for forgot_password, reset_password, and verify_email
+  # should also be implemented as GraphQL mutations following the same pattern.
 end

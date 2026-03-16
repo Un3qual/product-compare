@@ -1,8 +1,7 @@
 # GraphQL Auth Migration Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
-**Goal:** Migrate frontend-facing browser auth from REST endpoints to GraphQL, starting in this PR with cookie-backed `login`, `register`, and `logout`.
+> **Goal:** Migrate frontend-facing browser auth from REST endpoints to GraphQL, starting in this PR with cookie-backed `login`, `register`, and `logout`.
 
 **Architecture:** Keep Phoenix as the session authority and move browser auth writes onto `/api/graphql`. Add typed GraphQL auth mutations plus a small request-scoped session bridge that applies session mutations to the Phoenix `conn` before the GraphQL response is finalized. Remove the frontend-facing REST routes for `login`, `register`, and `logout` once the GraphQL replacements are verified.
 
@@ -110,9 +109,9 @@ Expected: Still FAIL, but only because the auth mutations and resolvers are not 
 **Files:**
 - Modify: `lib/product_compare_web/schema.ex`
 - Modify: `lib/product_compare_web/resolvers/auth_resolver.ex`
-- Delete: `lib/product_compare_web/controllers/session_controller.ex`
+- Delete: `lib/product_compare_web/controllers/session_controller.ex` (N/A — not implemented)
 - Modify: `lib/product_compare_web/controllers/auth_controller.ex`
-- Delete: `lib/product_compare_web/controllers/auth_json.ex`
+- Delete: `lib/product_compare_web/controllers/auth_json.ex` (N/A — not implemented)
 - Modify: `lib/product_compare_web/router.ex`
 
 **Step 1: Add schema fields and payload types**
