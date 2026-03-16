@@ -23,13 +23,13 @@ defmodule ProductCompare.Accounts do
     if password_provided?(attrs) do
       %User{}
       |> User.registration_changeset(attrs)
-      |> Repo.insert()
+      |> insert_user()
     else
       attrs = ensure_hashed_password(attrs)
 
       %User{}
       |> User.changeset(attrs)
-      |> Repo.insert()
+      |> insert_user()
     end
   end
 
@@ -377,6 +377,18 @@ defmodule ProductCompare.Accounts do
 
   defp blank_password?(password) when is_binary(password), do: String.trim(password) == ""
   defp blank_password?(_password), do: true
+
+  defp insert_user(changeset) do
+    Repo.insert(changeset, transaction_insert_opts())
+  end
+
+  defp transaction_insert_opts do
+    if Repo.in_transaction?() do
+      [mode: :savepoint]
+    else
+      []
+    end
+  end
 
   defp default_hashed_password do
     :crypto.strong_rand_bytes(32)

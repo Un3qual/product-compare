@@ -1,5 +1,5 @@
 defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
 
   import ProductCompare.Fixtures.AccountsFixtures
 
@@ -76,6 +76,31 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     """
 
     assert %{"data" => %{"viewer" => %{"email" => ^user_email}}} = graphql(conn, query)
+  end
+
+  test "stale session tokens are cleared after a lookup miss", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> put_req_header_same_origin()
+
+    token = get_session(conn, :user_token)
+    assert :ok = ProductCompare.Accounts.delete_user_session_token(token)
+
+    query = """
+    query {
+      viewer {
+        email
+      }
+    }
+    """
+
+    conn = post(conn, "/api/graphql", %{query: query, variables: %{}})
+
+    assert %{"data" => %{"viewer" => nil}} = json_response(conn, 200)
+    refute get_session(conn, :user_token)
   end
 
   test "graphql preflight returns credentialed CORS headers for trusted frontend origins", %{

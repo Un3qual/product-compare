@@ -1,5 +1,5 @@
 defmodule ProductCompareWeb.AuthControllerTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Accounts
   import ProductCompare.Fixtures.AccountsFixtures
@@ -17,7 +17,7 @@ defmodule ProductCompareWeb.AuthControllerTest do
       Application.put_env(:product_compare, ProductCompareWeb.Endpoint, endpoint_config)
     end)
 
-    :ok
+    {:ok, endpoint_config: endpoint_config}
   end
 
   describe "POST /api/auth/register" do
@@ -36,18 +36,49 @@ defmodule ProductCompareWeb.AuthControllerTest do
       assert is_nil(Accounts.get_user_by_email(email))
     end
 
-    test "accepts forwarded https origins without requiring the upstream port", %{conn: conn} do
+    test "accepts configured public https origins without requiring the upstream port", %{
+      conn: conn,
+      endpoint_config: endpoint_config
+    } do
       email = "register-forwarded-#{System.unique_integer([:positive])}@example.com"
+
+      Application.put_env(
+        :product_compare,
+        ProductCompareWeb.Endpoint,
+        Keyword.put(endpoint_config, :url, scheme: "https", port: 443)
+      )
 
       conn =
         %{conn | port: 4000}
-        |> put_req_header("x-forwarded-proto", "https")
         |> put_req_header("origin", "https://www.example.com")
         |> post("/api/auth/register", %{
           "email" => email
         })
 
       assert %{"errors" => %{"password" => ["can't be blank"]}} = json_response(conn, 422)
+    end
+
+    test "ignores raw x-forwarded headers when validating the request origin", %{conn: conn} do
+      email = "register-forwarded-#{System.unique_integer([:positive])}@example.com"
+
+      conn =
+        %{conn | port: 4000}
+        |> put_req_header("origin", "https://evil.example.com")
+        |> put_req_header("x-forwarded-proto", "https")
+        |> put_req_header("x-forwarded-host", "evil.example.com")
+        |> put_req_header("x-forwarded-port", "443")
+        |> post("/api/auth/register", %{
+          "email" => email
+        })
+
+      assert %{
+               "errors" => [
+                 %{
+                   "code" => "INVALID_ORIGIN",
+                   "message" => "cross-origin request rejected"
+                 }
+               ]
+             } = json_response(conn, 403)
     end
 
     test "registers a user and logs out with the issued session", %{conn: conn} do

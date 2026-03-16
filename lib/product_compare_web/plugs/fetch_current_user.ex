@@ -22,7 +22,7 @@ defmodule ProductCompareWeb.Plugs.FetchCurrentUser do
 
       case Accounts.get_user_by_session_token(user_token) do
         nil ->
-          conn
+          if user_token, do: delete_session(conn, :user_token), else: conn
 
         current_user ->
           assign(conn, :current_user, current_user)

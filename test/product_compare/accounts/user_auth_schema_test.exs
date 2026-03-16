@@ -91,23 +91,17 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     assert %{password: ["can't be blank"]} = errors_on(changeset)
   end
 
-  test "ensure_user_with_password returns the same user under concurrent create attempts" do
+  test "ensure_user_with_password can continue after a unique-email insert failure" do
     password = "supersecretpass123"
     email = "  race-user@example.com  "
-    parent = self()
 
-    run_ensure = fn ->
-      Ecto.Adapters.SQL.Sandbox.allow(Repo, parent, self())
-      Accounts.ensure_user_with_password(email, password)
-    end
+    assert {:ok, _user} = Accounts.create_user(%{email: String.trim(email), password: password})
 
-    task_one = Task.async(run_ensure)
-    task_two = Task.async(run_ensure)
-
-    assert {:ok, first_user} = Task.await(task_one)
-    assert {:ok, second_user} = Task.await(task_two)
-
-    assert first_user.id == second_user.id
+    assert {:ok, user_id} =
+             Repo.transaction(fn ->
+               assert {:ok, user} = Accounts.ensure_user_with_password(email, password)
+               user.id
+             end)
 
     assert 1 ==
              Repo.aggregate(
@@ -115,6 +109,8 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
                :count,
                :id
              )
+
+    assert %User{id: ^user_id} = Accounts.get_user_by_email(email)
   end
 
   test "ensure_user_with_password does not rehash users that already have a password hash" do
