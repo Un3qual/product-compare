@@ -74,10 +74,24 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
+  session_cookie_domain =
+    case System.get_env("SESSION_COOKIE_DOMAIN") do
+      nil ->
+        if String.starts_with?(host, "api.") do
+          "." <> String.trim_leading(host, "api.")
+        else
+          "." <> host
+        end
+
+      value ->
+        value
+    end
+
   config :product_compare, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    session_options: [domain: session_cookie_domain, secure: true],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
