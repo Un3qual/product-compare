@@ -27,6 +27,7 @@ defmodule ProductCompareWeb.Router do
     plug ProductCompareWeb.Plugs.EnforceNoStoreGraphqlCache
     plug ProductCompareWeb.Plugs.AuthenticateApiToken
     plug ProductCompareWeb.Plugs.PutAbsintheContext
+    plug ProductCompareWeb.Plugs.ApplyGraphqlSessionMutations
   end
 
   scope "/api", ProductCompareWeb do
@@ -38,9 +39,6 @@ defmodule ProductCompareWeb.Router do
   scope "/api/auth", ProductCompareWeb do
     pipe_through [:api_cors, :api, :api_session, :same_origin_session_boundary]
 
-    post "/register", AuthController, :register
-    post "/login", SessionController, :create
-    delete "/logout", SessionController, :delete
     post "/forgot-password", AuthController, :forgot_password
     post "/reset-password", AuthController, :reset_password
     post "/verify-email", AuthController, :verify_email

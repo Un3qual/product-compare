@@ -57,6 +57,27 @@ defmodule ProductCompareWeb.Schema do
   end
 
   mutation do
+    @desc "Creates a new user session by registering an email/password account."
+    field :register, non_null(:auth_session_payload) do
+      arg(:email, non_null(:string))
+      arg(:password, non_null(:string))
+
+      resolve(&AuthResolver.register/3)
+    end
+
+    @desc "Creates a new user session from email/password credentials."
+    field :login, non_null(:auth_session_payload) do
+      arg(:email, non_null(:string))
+      arg(:password, non_null(:string))
+
+      resolve(&AuthResolver.login/3)
+    end
+
+    @desc "Deletes the current browser session."
+    field :logout, non_null(:logout_payload) do
+      resolve(&AuthResolver.logout/3)
+    end
+
     @desc "Creates a new API token for the current authenticated user."
     field :create_api_token, non_null(:create_api_token_payload) do
       arg(:label, :string)
@@ -315,6 +336,16 @@ defmodule ProductCompareWeb.Schema do
   object :create_api_token_payload do
     field :plain_text_token, :string
     field :api_token, :api_token
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :auth_session_payload do
+    field :viewer, :user
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :logout_payload do
+    field :ok, non_null(:boolean)
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 

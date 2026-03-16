@@ -15,10 +15,10 @@
 - [x] Design approved.
 - [x] Migration design doc written.
 - [x] Future-agent guardrails added.
-- [ ] PR checkpoint: docs committed.
-- [ ] PR checkpoint: failing GraphQL auth tests committed.
-- [ ] PR checkpoint: GraphQL auth implementation committed.
-- [ ] PR verification complete.
+- [x] PR checkpoint: docs committed.
+- [x] PR checkpoint: failing GraphQL auth tests committed.
+- [x] PR checkpoint: GraphQL auth implementation committed.
+- [x] PR verification complete.
 
 ### Task 1: Document the GraphQL-only auth contract
 

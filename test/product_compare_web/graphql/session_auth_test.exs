@@ -199,7 +199,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
              }
            } = json_response(conn, 200)
 
-    assert conn.resp_cookies["_product_compare_key"].max_age == 0
+    assert conn.private[:plug_session_info] == :drop
 
     viewer_conn =
       conn

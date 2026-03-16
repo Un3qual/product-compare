@@ -9,7 +9,7 @@ Move all frontend-facing browser auth flows to GraphQL while keeping Phoenix as 
 - [x] Contract confirmed: browser auth must be GraphQL-only.
 - [x] Session model confirmed: cookie-backed Phoenix session, not token-returning auth.
 - [x] Initial migration scope confirmed: `login`, `register`, `logout` in this PR.
-- [ ] This PR implemented and verified.
+- [x] This PR implemented and verified.
 - [ ] Follow-up GraphQL migration for `forgotPassword`, `resetPassword`, `verifyEmail`.
 - [ ] Legacy REST auth surface fully removed.
 - [ ] Frontend Relay auth mutations shipped end-to-end.
