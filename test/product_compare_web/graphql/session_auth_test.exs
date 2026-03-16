@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.Accounts
   import ProductCompare.Fixtures.AccountsFixtures
 
   setup do
@@ -78,6 +79,165 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     assert %{"data" => %{"viewer" => %{"email" => ^user_email}}} = graphql(conn, query)
   end
 
+  test "register creates a user, sets the session, and returns viewer", %{conn: conn} do
+    email = "register-#{System.unique_integer([:positive])}@example.com"
+    password = "supersecretpass123"
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(register_mutation(), %{"email" => email, "password" => password})
+
+    assert %{
+             "data" => %{
+               "register" => %{
+                 "viewer" => %{"email" => ^email},
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert get_session(conn, :user_token)
+    assert %{email: ^email} = Accounts.get_user_by_email(email)
+
+    viewer_conn =
+      conn
+      |> recycle()
+      |> put_req_header_same_origin()
+
+    assert %{"data" => %{"viewer" => %{"email" => ^email}}} = graphql(viewer_conn, viewer_query())
+  end
+
+  test "register returns typed validation errors without creating a session", %{conn: conn} do
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(register_mutation(), %{"email" => "bad-email", "password" => "short"})
+
+    assert %{
+             "data" => %{
+               "register" => %{
+                 "viewer" => nil,
+                 "errors" => errors
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert Enum.any?(errors, &(&1["code"] == "INVALID_ARGUMENT"))
+    refute get_session(conn, :user_token)
+    assert is_nil(Accounts.get_user_by_email("bad-email"))
+  end
+
+  test "login sets the session and returns viewer", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(login_mutation(), %{
+        "email" => user.email,
+        "password" => "supersecretpass123"
+      })
+
+    assert %{
+             "data" => %{
+               "login" => %{
+                 "viewer" => %{"email" => ^user_email},
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert get_session(conn, :user_token)
+  end
+
+  test "login returns typed credential errors without creating a session", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(login_mutation(), %{
+        "email" => user.email,
+        "password" => "wrong-password-123"
+      })
+
+    assert %{
+             "data" => %{
+               "login" => %{
+                 "viewer" => nil,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_CREDENTIALS",
+                     "message" => "invalid email or password",
+                     "field" => nil
+                   }
+                 ]
+               }
+             }
+           } = json_response(conn, 200)
+
+    refute get_session(conn, :user_token)
+  end
+
+  test "logout drops the current session and returns ok", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> put_req_header_same_origin()
+      |> graphql_request(logout_mutation())
+
+    assert %{
+             "data" => %{
+               "logout" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert conn.resp_cookies["_product_compare_key"].max_age == 0
+
+    viewer_conn =
+      conn
+      |> recycle()
+      |> put_req_header_same_origin()
+
+    assert %{"data" => %{"viewer" => nil}} = graphql(viewer_conn, viewer_query())
+  end
+
+  test "untrusted origins cannot use session-writing auth mutations", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+
+    conn =
+      conn
+      |> put_req_header("origin", "https://evil.example.com")
+      |> graphql_request(login_mutation(), %{
+        "email" => user.email,
+        "password" => "supersecretpass123"
+      })
+
+    assert %{
+             "data" => %{
+               "login" => %{
+                 "viewer" => nil,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_ORIGIN",
+                     "message" => "cross-origin request rejected",
+                     "field" => nil
+                   }
+                 ]
+               }
+             }
+           } = json_response(conn, 200)
+
+    refute get_session(conn, :user_token)
+  end
+
   test "stale session tokens are cleared after a lookup miss", %{conn: conn} do
     user = user_fixture(%{password: "supersecretpass123"})
 
@@ -153,9 +313,72 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
            } = json_response(conn, 401)
   end
 
+  defp login_mutation do
+    """
+    mutation Login($email: String!, $password: String!) {
+      login(email: $email, password: $password) {
+        viewer {
+          email
+        }
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp register_mutation do
+    """
+    mutation Register($email: String!, $password: String!) {
+      register(email: $email, password: $password) {
+        viewer {
+          email
+        }
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp logout_mutation do
+    """
+    mutation Logout {
+      logout {
+        ok
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp viewer_query do
+    """
+    query {
+      viewer {
+        email
+      }
+    }
+    """
+  end
+
+  defp graphql_request(conn, query, variables \\ %{}) do
+    post(conn, "/api/graphql", %{query: query, variables: variables})
+  end
+
   defp graphql(conn, query, variables \\ %{}) do
     conn
-    |> post("/api/graphql", %{query: query, variables: variables})
+    |> graphql_request(query, variables)
     |> json_response(200)
   end
 end
