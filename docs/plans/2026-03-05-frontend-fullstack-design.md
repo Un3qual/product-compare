@@ -1,5 +1,7 @@
 # ProductCompare Frontend Full-Stack Design (V1)
 
+> Auth contract update (2026-03-16): browser auth flows must use GraphQL mutations on `/api/graphql`, not REST endpoints under `/api/auth/*`.
+
 ## Goal
 
 Deliver a production-ready web app with React + Vite + React Router v7 SSR on Bun, using StyleX + Radix UI and Relay, integrated with the existing Phoenix backend, with email/password auth in V1 and OAuth deferred to V2.
@@ -28,7 +30,7 @@ Deliver a production-ready web app with React + Vite + React Router v7 SSR on Bu
 ### Runtime Topology
 
 - Bun service at `app.example.com` serves SSR HTML, static assets, and hydration runtime.
-- Phoenix service at `api.example.com` serves GraphQL and auth/session endpoints.
+- Phoenix service at `api.example.com` serves GraphQL, including browser auth/session mutations.
 - Reverse proxy routes hostnames to each service on a single VM.
 
 ### Request Flow

@@ -1,5 +1,7 @@
 # Frontend + Session Auth + Relay Implementation Plan
 
+> Auth contract correction (2026-03-16): replace any browser-facing `/api/auth/*` steps in this older plan with GraphQL mutations on `/api/graphql`. Do not add or keep frontend-facing REST auth endpoints for browser `login`, `register`, or `logout`.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Build the V1 web product for ProductCompare with Bun-only SSR (`app.example.com`), Phoenix API/session authority (`api.example.com`), StyleX + Radix UI, and Relay-based data flows.
