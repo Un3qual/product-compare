@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   findMutationError,
@@ -21,8 +21,12 @@ export function ResetPasswordRoute() {
   const [errors, setErrors] = useState<MutationError[]>(token ? [] : [missingTokenError]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const activeRequestVersion = useRef(0);
 
   useEffect(() => {
+    // Bump the active request marker so late responses from an older token do not
+    // overwrite the UI after navigation or a newer submit.
+    activeRequestVersion.current += 1;
     setErrors(token ? [] : [missingTokenError]);
     setMessage(null);
     setIsSubmitting(false);
@@ -38,6 +42,8 @@ export function ResetPasswordRoute() {
     }
 
     setIsSubmitting(true);
+    activeRequestVersion.current += 1;
+    const requestVersion = activeRequestVersion.current;
 
     const formData = new FormData(event.currentTarget);
 
@@ -47,6 +53,10 @@ export function ResetPasswordRoute() {
         String(formData.get("password") ?? "")
       );
 
+      if (requestVersion !== activeRequestVersion.current) {
+        return;
+      }
+
       if (result.ok && result.errors.length === 0) {
         setMessage("Your password has been updated.");
         return;
@@ -54,9 +64,15 @@ export function ResetPasswordRoute() {
 
       setErrors(result.errors);
     } catch (error) {
+      if (requestVersion !== activeRequestVersion.current) {
+        return;
+      }
+
       setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
     } finally {
-      setIsSubmitting(false);
+      if (requestVersion === activeRequestVersion.current) {
+        setIsSubmitting(false);
+      }
     }
   }
 
