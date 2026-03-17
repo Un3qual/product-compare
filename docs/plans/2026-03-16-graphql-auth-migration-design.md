@@ -34,15 +34,19 @@ The current branch introduced browser auth writes through REST endpoints under `
 
 - `viewer` returns the authenticated user or `null`.
 - `login(email, password)` authenticates credentials, renews the Phoenix session, and returns a typed payload.
-- `register(email, password)` creates the account, renews the Phoenix session, and returns a typed payload.
+- `register(email, password)` creates the account, renews the Phoenix session, optionally dispatches email verification instructions through the delivery hook, and returns a typed payload.
 - `logout` deletes the current session token when present, drops the Phoenix session cookie, and returns a typed payload.
+- `forgotPassword(email)` always returns a typed payload, and when the account exists it issues a reset token through the delivery hook without disclosing account existence.
+- `resetPassword(token, password)` consumes a single-use reset token atomically, rotates the stored password hash, clears existing sessions, and returns a typed payload.
+- `verifyEmail(token)` consumes a single-use verification token atomically, sets `confirmed_at`, and returns a typed payload.
 
 ### Payload Rules
 
 - `login` and `register` return `viewer` plus `errors[]`.
-- `logout` returns `ok` plus `errors[]`.
+- `logout`, `forgotPassword`, `resetPassword`, and `verifyEmail` return `ok` plus `errors[]`.
 - Validation failures use `INVALID_ARGUMENT`.
 - Credential failures use `INVALID_CREDENTIALS`.
+- Invalid or expired reset and verification tokens use `INVALID_TOKEN`.
 - Cross-origin session-writing attempts use `INVALID_ORIGIN`.
 
 ## Architecture

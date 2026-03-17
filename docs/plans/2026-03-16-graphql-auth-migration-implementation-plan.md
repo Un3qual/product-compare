@@ -174,9 +174,6 @@ Expected: PASS.
 - Modify: `lib/product_compare/accounts.ex`
 - Modify: `lib/product_compare/accounts/user_auth.ex`
 - Modify: `lib/product_compare_schemas/accounts/user.ex`
-- Modify later: `lib/product_compare_web/schema.ex`
-- Modify later: `lib/product_compare_web/resolvers/auth_resolver.ex`
-- Modify later: `assets/schema.graphql`
 - Modify later: frontend auth route files under `assets/src/routes/auth`
 
 **Progress:**

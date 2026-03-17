@@ -7,6 +7,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserSessionToken
 
+  @before_reset_user_password_transaction_hook :before_reset_user_password_transaction
   @confirm_context "confirm"
   @reset_password_context "reset_password"
   @session_context "session"
@@ -68,10 +69,10 @@ defmodule ProductCompare.Accounts.UserAuth do
   @spec confirm_user(String.t()) ::
           {:ok, User.t()} | {:error, :invalid_token | Ecto.Changeset.t()}
   def confirm_user(token) when is_binary(token) do
-    case get_user_by_email_token(token, @confirm_context) do
-      %User{} = user ->
-        with {:ok, confirmed_user} <-
-               Repo.transaction(fn ->
+    with {:ok, raw_token} <- decode_token(token) do
+      case Repo.transaction(fn ->
+             case consume_user_email_token(raw_token, @confirm_context) do
+               %User{} = user ->
                  case user
                       |> User.confirm_changeset()
                       |> Repo.update() do
@@ -82,12 +83,17 @@ defmodule ProductCompare.Accounts.UserAuth do
                    {:error, %Ecto.Changeset{} = changeset} ->
                      Repo.rollback(changeset)
                  end
-               end) do
-          {:ok, confirmed_user}
-        end
 
-      nil ->
-        {:error, :invalid_token}
+               nil ->
+                 Repo.rollback(:invalid_token)
+             end
+           end) do
+        {:ok, confirmed_user} -> {:ok, confirmed_user}
+        {:error, :invalid_token} -> {:error, :invalid_token}
+        {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+      end
+    else
+      :error -> {:error, :invalid_token}
     end
   end
 
@@ -119,10 +125,12 @@ defmodule ProductCompare.Accounts.UserAuth do
   @spec reset_user_password(String.t(), map()) ::
           {:ok, User.t()} | {:error, :invalid_token | Ecto.Changeset.t()}
   def reset_user_password(token, attrs) when is_binary(token) and is_map(attrs) do
-    case get_user_by_reset_password_token(token) do
-      %User{} = user ->
-        with {:ok, updated_user} <-
-               Repo.transaction(fn ->
+    with {:ok, raw_token} <- decode_token(token) do
+      run_test_hook(@before_reset_user_password_transaction_hook)
+
+      case Repo.transaction(fn ->
+             case consume_user_email_token(raw_token, @reset_password_context) do
+               %User{} = user ->
                  case user
                       |> User.password_changeset(attrs)
                       |> Repo.update() do
@@ -133,12 +141,17 @@ defmodule ProductCompare.Accounts.UserAuth do
                    {:error, %Ecto.Changeset{} = changeset} ->
                      Repo.rollback(changeset)
                  end
-               end) do
-          {:ok, updated_user}
-        end
 
-      nil ->
-        {:error, :invalid_token}
+               nil ->
+                 Repo.rollback(:invalid_token)
+             end
+           end) do
+        {:ok, updated_user} -> {:ok, updated_user}
+        {:error, :invalid_token} -> {:error, :invalid_token}
+        {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+      end
+    else
+      :error -> {:error, :invalid_token}
     end
   end
 
@@ -162,7 +175,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   end
 
   defp get_user_by_email_token(token, context) do
-    with {:ok, raw_token} <- Base.url_decode64(token, padding: false) do
+    with {:ok, raw_token} <- decode_token(token) do
       now = current_time()
 
       from(token_row in UserSessionToken,
@@ -180,7 +193,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   end
 
   defp get_user_by_token(token, context) do
-    with {:ok, raw_token} <- Base.url_decode64(token, padding: false) do
+    with {:ok, raw_token} <- decode_token(token) do
       now = current_time()
 
       from(token_row in UserSessionToken,
@@ -223,7 +236,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   end
 
   defp delete_token(token, context) do
-    case Base.url_decode64(token, padding: false) do
+    case decode_token(token) do
       {:ok, raw_token} ->
         from(token_row in UserSessionToken,
           where: token_row.context == ^context,
@@ -261,7 +274,41 @@ defmodule ProductCompare.Accounts.UserAuth do
     |> DateTime.add(validity_in_days * 24 * 60 * 60, :second)
   end
 
+  defp consume_user_email_token(raw_token, context) do
+    now = current_time()
+
+    case Repo.one(
+           from token_row in UserSessionToken,
+             join: user in assoc(token_row, :user),
+             where: token_row.context == ^context,
+             where: token_row.token_hash == ^token_hash(raw_token),
+             where: token_row.expires_at > ^now,
+             where: token_row.sent_to == user.email,
+             lock: "FOR UPDATE",
+             select: {token_row, user}
+         ) do
+      {%UserSessionToken{} = token_row, %User{} = user} ->
+        Repo.delete!(token_row)
+        user
+
+      nil ->
+        nil
+    end
+  end
+
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+  defp decode_token(token), do: Base.url_decode64(token, padding: false)
+
+  # Test-only hook for deterministically pausing callers before the reset
+  # password transaction races to consume a single-use token.
+  defp run_test_hook(hook_key) do
+    case Application.get_env(:product_compare, __MODULE__, [])
+         |> Keyword.get(hook_key) do
+      fun when is_function(fun, 0) -> fun.()
+      _other -> :ok
+    end
+  end
 
   defp token_hash(raw_token), do: :crypto.hash(:sha256, raw_token)
 end

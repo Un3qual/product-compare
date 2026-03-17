@@ -1,5 +1,5 @@
 defmodule ProductCompare.Accounts.UserEmailTokenTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
@@ -50,6 +50,80 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
       assert is_nil(Accounts.get_user_by_session_token(session_token))
       assert is_nil(Accounts.get_user_by_reset_password_token(token))
       assert Repo.aggregate(UserSessionToken, :count, :id) == 0
+    end
+
+    test "reset_user_password/2 only allows one successful use of a reset token" do
+      user = user_fixture(%{password: "supersecretpass123"})
+
+      original_config =
+        Application.get_env(:product_compare, ProductCompare.Accounts.UserAuth, [])
+
+      parent = self()
+
+      Application.put_env(
+        :product_compare,
+        ProductCompare.Accounts.UserAuth,
+        Keyword.put(original_config, :before_reset_user_password_transaction, fn ->
+          send(parent, {:before_reset_password_transaction, self()})
+
+          receive do
+            :continue -> :ok
+          after
+            1_000 -> raise "timed out waiting to resume reset_user_password/2"
+          end
+        end)
+      )
+
+      on_exit(fn ->
+        Application.put_env(:product_compare, ProductCompare.Accounts.UserAuth, original_config)
+      end)
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                 send(parent, {:reset_password_token, token})
+               end)
+
+      assert_receive {:reset_password_token, token}
+
+      task_a =
+        Task.async(fn ->
+          receive do
+            {:run, password} -> Accounts.reset_user_password(token, %{password: password})
+          end
+        end)
+
+      task_b =
+        Task.async(fn ->
+          receive do
+            {:run, password} -> Accounts.reset_user_password(token, %{password: password})
+          end
+        end)
+
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), task_a.pid)
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), task_b.pid)
+
+      send(task_a.pid, {:run, "supersecretpass456"})
+      send(task_b.pid, {:run, "supersecretpass789"})
+
+      assert_receive {:before_reset_password_transaction, gate_a}
+      assert_receive {:before_reset_password_transaction, gate_b}
+
+      send(gate_a, :continue)
+      send(gate_b, :continue)
+
+      results = [Task.await(task_a), Task.await(task_b)]
+
+      assert Enum.count(results, &match?({:ok, %User{}}, &1)) == 1
+      assert Enum.count(results, &(&1 == {:error, :invalid_token})) == 1
+
+      successful_passwords =
+        ["supersecretpass456", "supersecretpass789"]
+        |> Enum.filter(fn password ->
+          match?(%User{}, Accounts.authenticate_user_by_email_and_password(user.email, password))
+        end)
+
+      assert length(successful_passwords) == 1
+      assert is_nil(Accounts.get_user_by_reset_password_token(token))
     end
   end
 

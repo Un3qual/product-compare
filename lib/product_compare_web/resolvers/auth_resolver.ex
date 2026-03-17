@@ -269,9 +269,11 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   defp changeset_errors(%Ecto.Changeset{} = changeset) do
     changeset
     |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
+      opts_by_key = Map.new(opts, fn {k, v} -> {to_string(k), v} end)
+
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
-        opts
-        |> Keyword.get(atomize_key(key), key)
+        opts_by_key
+        |> Map.get(key, key)
         |> to_string()
       end)
     end)
@@ -303,13 +305,6 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
       api_token: nil,
       errors: [mutation_error(code, message, field)]
     }
-  end
-
-  defp atomize_key(key) do
-    # Input comes from trusted Ecto changeset error interpolation options,
-    # so we can safely convert to atom. This is preferred over using
-    # exception-based control flow with String.to_existing_atom/1.
-    String.to_atom(key)
   end
 
   defp mutation_error(code, message, field) do
