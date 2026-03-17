@@ -123,6 +123,30 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     assert %{"data" => %{"viewer" => %{"email" => ^email}}} = graphql(viewer_conn, viewer_query())
   end
 
+  test "register dispatches confirmation instructions when delivery is configured", %{conn: conn} do
+    email = "register-confirm-#{System.unique_integer([:positive])}@example.com"
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(register_mutation(), %{
+        "email" => email,
+        "password" => "supersecretpass123"
+      })
+
+    assert %{
+             "data" => %{
+               "register" => %{
+                 "viewer" => %{"email" => ^email},
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert_receive {:confirmation_token, ^email, token}
+    assert is_binary(token)
+  end
+
   test "register returns typed validation errors without creating a session", %{conn: conn} do
     conn =
       conn

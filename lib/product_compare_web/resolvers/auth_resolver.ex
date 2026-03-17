@@ -25,6 +25,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
       |> Accounts.generate_user_session_token()
       |> SessionMutationBridge.renew_session_with_user_token()
 
+      Accounts.deliver_user_confirmation_instructions(user)
       {:ok, auth_payload(user)}
     else
       {:error, :invalid_origin} ->

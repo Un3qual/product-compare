@@ -20,6 +20,7 @@
 - [x] PR verification complete.
 - [x] Phase 2 checkpoint: backend reset/confirmation token primitives committed.
 - [x] Phase 2 checkpoint: GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` committed.
+- [x] Phase 2 checkpoint: `register` dispatches verification instructions when a delivery hook exists.
 - [ ] Phase 2 checkpoint: auth token delivery transport committed.
 - [ ] Phase 2 checkpoint: frontend auth recovery and verification flows committed.
 
@@ -182,6 +183,7 @@ Expected: PASS.
 
 - [x] Add backend reset and confirmation token primitives on `users_tokens`.
 - [x] Add GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` with typed `ok/errors` payloads.
+- [x] Dispatch verification instructions from `register` when a delivery hook is configured.
 - [x] Keep `/api/auth/forgot-password`, `/api/auth/reset-password`, and `/api/auth/verify-email` removed and covered by router tests.
 - [ ] Wire reset and verification token delivery to a real mailer or notification transport.
 - [ ] Add frontend Relay auth routes and end-to-end coverage for recovery and verification.

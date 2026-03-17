@@ -68,6 +68,8 @@ The repo does not yet have a mailer. For reset and verification flows, the Accou
 layer should own token issuance and expose a small delivery hook so GraphQL can
 remain the browser contract without hard-coding a transport. Tests can capture
 issued tokens through that hook; production mail delivery can be wired later.
+`register` should issue verification instructions through the same hook when one
+is configured.
 
 ### Same-Origin Rules
 
