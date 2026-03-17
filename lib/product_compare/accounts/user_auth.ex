@@ -344,7 +344,8 @@ defmodule ProductCompare.Accounts.UserAuth do
 
       {:error, {:delivery_failed, failed_context, reason}} ->
         Logger.warning(
-          "delivery hook failed for #{failed_context} token: #{format_delivery_failure(reason)}"
+          "delivery hook failed for #{failed_context} token " <>
+            "(delivery_error=#{delivery_failure_kind(reason)})"
         )
 
         :ok
@@ -354,6 +355,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   defp invoke_delivery_fun(delivery_fun, token) do
     try do
       case delivery_fun.(token) do
+        :error -> {:error, :error}
         {:error, reason} -> {:error, reason}
         _other -> :ok
       end
@@ -364,15 +366,14 @@ defmodule ProductCompare.Accounts.UserAuth do
     end
   end
 
-  defp format_delivery_failure({:raised, error, _stacktrace}) when is_exception(error) do
-    Exception.message(error)
+  defp delivery_failure_kind({:raised, error, _stacktrace}) when is_exception(error) do
+    error.__struct__
+    |> Module.split()
+    |> List.last()
   end
 
-  defp format_delivery_failure({:caught, kind, reason}) do
-    "#{kind}: #{inspect(reason)}"
-  end
-
-  defp format_delivery_failure(reason), do: inspect(reason)
+  defp delivery_failure_kind({:caught, kind, _reason}), do: to_string(kind)
+  defp delivery_failure_kind(_reason), do: "returned_error"
 
   # Test-only hook for deterministically pausing callers before the reset
   # password transaction races to consume a single-use token.

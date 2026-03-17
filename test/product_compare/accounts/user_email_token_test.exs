@@ -5,6 +5,7 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserSessionToken
+  import ExUnit.CaptureLog
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "password reset tokens" do
@@ -59,6 +60,44 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
                end)
 
       assert %User{id: ^user_id} = Accounts.get_user_by_reset_password_token(original_token)
+    end
+
+    test "delivery hook atom errors preserve the prior reset token" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      user_id = user.id
+      parent = self()
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                 send(parent, {:reset_password_token, token})
+               end)
+
+      assert_receive {:reset_password_token, original_token}
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn _token ->
+                 :error
+               end)
+
+      assert %User{id: ^user_id} = Accounts.get_user_by_reset_password_token(original_token)
+    end
+
+    test "delivery hook warnings do not log reset token material" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      parent = self()
+
+      log =
+        capture_log(fn ->
+          assert :ok =
+                   Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                     send(parent, {:delivery_attempt_token, token})
+                     {:error, {:mailer_down, token}}
+                   end)
+        end)
+
+      assert_receive {:delivery_attempt_token, delivery_attempt_token}
+      assert log =~ "delivery hook failed for reset_password token"
+      refute log =~ delivery_attempt_token
     end
 
     test "reset_user_password/2 updates the password and clears all user tokens" do
