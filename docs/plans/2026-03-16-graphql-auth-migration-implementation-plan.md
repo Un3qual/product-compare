@@ -21,6 +21,7 @@
 - [x] Phase 2 checkpoint: backend reset/confirmation token primitives committed.
 - [x] Phase 2 checkpoint: GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` committed.
 - [x] Phase 2 checkpoint: `register` dispatches verification instructions when a delivery hook exists.
+- [x] Phase 2 checkpoint: frontend `login` and `register` routes committed.
 - [ ] Phase 2 checkpoint: auth token delivery transport committed.
 - [ ] Phase 2 checkpoint: frontend auth recovery and verification flows committed.
 

@@ -1,11 +1,27 @@
 import type { RouteObject } from "react-router-dom";
 import { createBrowserRouter, createMemoryRouter } from "react-router-dom";
-import { RootRoute } from "./routes/root";
+import { LoginRoute } from "./routes/auth/login";
+import { RegisterRoute } from "./routes/auth/register";
+import { RootLayout, RootRoute } from "./routes/root";
 
 const routes: RouteObject[] = [
   {
     path: "/",
-    element: <RootRoute />
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: <RootRoute />
+      },
+      {
+        path: "auth/login",
+        element: <LoginRoute />
+      },
+      {
+        path: "auth/register",
+        element: <RegisterRoute />
+      }
+    ]
   }
 ];
 

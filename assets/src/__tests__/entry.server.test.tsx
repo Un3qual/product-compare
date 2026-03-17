@@ -6,3 +6,7 @@ test("server render returns a promise that resolves to app markup", async () => 
   expect(html).toBeInstanceOf(Promise);
   await expect(html).resolves.toContain("Product Compare");
 });
+
+test("server render resolves auth route markup", async () => {
+  await expect(render("/auth/login")).resolves.toContain("Sign in");
+});
