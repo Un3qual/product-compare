@@ -206,13 +206,22 @@ function ensureFailureErrors(errors: MutationError[]) {
 }
 
 function isMutationError(value: unknown): value is MutationError {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as {
+    code?: unknown;
+    message?: unknown;
+    field?: unknown;
+  };
+
   return Boolean(
-    value &&
-      typeof value === "object" &&
-      "code" in value &&
-      "message" in value &&
-      typeof value.code === "string" &&
-      typeof value.message === "string"
+    typeof candidate.code === "string" &&
+      typeof candidate.message === "string" &&
+      (candidate.field === undefined ||
+        candidate.field === null ||
+        typeof candidate.field === "string")
   );
 }
 

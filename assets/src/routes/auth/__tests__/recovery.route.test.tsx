@@ -108,6 +108,7 @@ test("reset password route reads the token from the URL and submits the new pass
 
 test("reset password route clears stale success state when the token changes", async () => {
   const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  let view: ReturnType<typeof render> | null = null;
 
   fetchGraphQLMock.mockResolvedValue({
     data: {
@@ -120,34 +121,36 @@ test("reset password route clears stale success state when the token changes", a
 
   window.history.pushState({}, "", "/auth/reset-password?token=first-token");
 
-  const view = render(
-    <RelayEnvironmentProvider environment={createRelayEnvironment()}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-        </Routes>
-      </BrowserRouter>
-    </RelayEnvironmentProvider>
-  );
+  try {
+    view = render(
+      <RelayEnvironmentProvider environment={createRelayEnvironment()}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
+          </Routes>
+        </BrowserRouter>
+      </RelayEnvironmentProvider>
+    );
 
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "supersecretpass456" }
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+    fireEvent.change(screen.getByLabelText(/^new password$/i), {
+      target: { value: "supersecretpass456" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
-  expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
+    expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
 
-  await act(async () => {
-    window.history.pushState({}, "", "/auth/reset-password?token=second-token");
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  });
+    await act(async () => {
+      window.history.pushState({}, "", "/auth/reset-password?token=second-token");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
 
-  await waitFor(() => {
-    expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
-  });
-
-  view.unmount();
-  window.history.pushState({}, "", originalPath);
+    await waitFor(() => {
+      expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
+    });
+  } finally {
+    view?.unmount();
+    window.history.pushState({}, "", originalPath);
+  }
 
   expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
     originalPath
@@ -156,6 +159,7 @@ test("reset password route clears stale success state when the token changes", a
 
 test("reset password route ignores stale responses after the token changes", async () => {
   const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  let view: ReturnType<typeof render> | null = null;
 
   let resolveFirstRequest:
     | ((value: { data: { resetPassword: { ok: boolean; errors: never[] } } }) => void)
@@ -179,68 +183,70 @@ test("reset password route ignores stale responses after the token changes", asy
 
   window.history.pushState({}, "", "/auth/reset-password?token=first-token");
 
-  const view = render(
-    <RelayEnvironmentProvider environment={createRelayEnvironment()}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-        </Routes>
-      </BrowserRouter>
-    </RelayEnvironmentProvider>
-  );
-
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "supersecretpass456" }
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-  await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation ResetPassword"),
-      {
-        token: "first-token",
-        password: "supersecretpass456"
-      }
+  try {
+    view = render(
+      <RelayEnvironmentProvider environment={createRelayEnvironment()}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
+          </Routes>
+        </BrowserRouter>
+      </RelayEnvironmentProvider>
     );
-  });
 
-  await act(async () => {
-    window.history.pushState({}, "", "/auth/reset-password?token=second-token");
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  });
-
-  await act(async () => {
-    resolveFirstRequest?.({
-      data: {
-        resetPassword: {
-          ok: true,
-          errors: []
-        }
-      }
+    fireEvent.change(screen.getByLabelText(/^new password$/i), {
+      target: { value: "supersecretpass456" }
     });
-    await Promise.resolve();
-  });
+    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
-  await waitFor(() => {
-    expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
-  });
+    await waitFor(() => {
+      expect(fetchGraphQLMock).toHaveBeenCalledWith(
+        expect.stringContaining("mutation ResetPassword"),
+        {
+          token: "first-token",
+          password: "supersecretpass456"
+        }
+      );
+    });
 
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+    await act(async () => {
+      window.history.pushState({}, "", "/auth/reset-password?token=second-token");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
 
-  await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenLastCalledWith(
-      expect.stringContaining("mutation ResetPassword"),
-      {
-        token: "second-token",
-        password: "supersecretpass456"
-      }
-    );
-  });
+    await act(async () => {
+      resolveFirstRequest?.({
+        data: {
+          resetPassword: {
+            ok: true,
+            errors: []
+          }
+        }
+      });
+      await Promise.resolve();
+    });
 
-  expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
+    });
 
-  view.unmount();
-  window.history.pushState({}, "", originalPath);
+    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+    await waitFor(() => {
+      expect(fetchGraphQLMock).toHaveBeenLastCalledWith(
+        expect.stringContaining("mutation ResetPassword"),
+        {
+          token: "second-token",
+          password: "supersecretpass456"
+        }
+      );
+    });
+
+    expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
+  } finally {
+    view?.unmount();
+    window.history.pushState({}, "", originalPath);
+  }
 
   expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
     originalPath
