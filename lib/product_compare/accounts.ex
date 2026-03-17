@@ -17,6 +17,7 @@ defmodule ProductCompare.Accounts do
   @api_token_secret_bytes 32
   @default_reputation_events_limit 50
   @max_reputation_events_limit 200
+  @ensure_user_with_password_before_create_hook :ensure_user_with_password_before_create
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
@@ -79,6 +80,8 @@ defmodule ProductCompare.Accounts do
   defp ensure_user_with_password_transaction(normalized_email, password) do
     case lock_user_by_email(normalized_email) do
       nil ->
+        run_before_ensure_user_with_password_create_hook(normalized_email)
+
         case create_user(%{email: normalized_email, password: password}) do
           {:ok, %User{} = user} ->
             user
@@ -144,6 +147,15 @@ defmodule ProductCompare.Accounts do
     email
     |> to_string()
     |> User.normalize_email()
+  end
+
+  # Test-only hook for deterministically exercising the create-vs-create race branch.
+  defp run_before_ensure_user_with_password_create_hook(email) do
+    case Application.get_env(:product_compare, __MODULE__, [])
+         |> Keyword.get(@ensure_user_with_password_before_create_hook) do
+      fun when is_function(fun, 1) -> fun.(email)
+      _other -> :ok
+    end
   end
 
   @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil

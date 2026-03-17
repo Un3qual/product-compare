@@ -1,5 +1,5 @@
 defmodule ProductCompare.Accounts.UserAuthSchemaTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
@@ -93,24 +93,69 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
   test "ensure_user_with_password can continue after a unique-email insert failure" do
     password = "supersecretpass123"
-    email = "  race-user@example.com  "
+    normalized_email = "race-user-#{System.unique_integer([:positive])}@example.com"
+    email = "  #{normalized_email}  "
+    placeholder_hash = String.duplicate("a", 64)
+    original_config = Application.get_env(:product_compare, Accounts, [])
+    parent = self()
 
-    assert {:ok, _user} = Accounts.create_user(%{email: String.trim(email), password: password})
+    Application.put_env(
+      :product_compare,
+      Accounts,
+      Keyword.put(original_config, :ensure_user_with_password_before_create, fn hooked_email ->
+        send(parent, {:before_create, hooked_email, self()})
 
-    assert {:ok, user_id} =
-             Repo.transaction(fn ->
-               assert {:ok, user} = Accounts.ensure_user_with_password(email, password)
-               user.id
+        receive do
+          :continue_create -> :ok
+        after
+          1_000 -> flunk("timed out waiting to resume create_user")
+        end
+      end)
+    )
+
+    on_exit(fn ->
+      Application.put_env(:product_compare, Accounts, original_config)
+    end)
+
+    task =
+      Task.async(fn ->
+        receive do
+          :start -> Accounts.ensure_user_with_password(email, password)
+        end
+      end)
+
+    Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), task.pid)
+    send(task.pid, :start)
+
+    assert_receive {:before_create, ^normalized_email, hook_pid}
+
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    assert {1, [%{id: user_id}]} =
+             Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+               Repo.insert_all(
+                 User,
+                 [
+                   %{email: normalized_email, hashed_password: placeholder_hash, inserted_at: now}
+                 ],
+                 returning: [:id]
+               )
              end)
+
+    send(hook_pid, :continue_create)
+
+    assert {:ok, %User{id: ^user_id} = user} = Task.await(task)
 
     assert 1 ==
              Repo.aggregate(
-               from(user in User, where: user.email == ^"race-user@example.com"),
+               from(user in User, where: user.email == ^normalized_email),
                :count,
                :id
              )
 
     assert %User{id: ^user_id} = Accounts.get_user_by_email(email)
+    refute user.hashed_password == placeholder_hash
+    assert Argon2.verify_pass(password, user.hashed_password)
   end
 
   test "ensure_user_with_password does not rehash users that already have a password hash" do

@@ -36,14 +36,6 @@ defmodule ProductCompareWeb.Router do
     options "/*path", PreflightController, :options
   end
 
-  scope "/api/auth", ProductCompareWeb do
-    pipe_through [:api_cors, :api, :api_session, :same_origin_session_boundary]
-
-    post "/forgot-password", AuthController, :forgot_password
-    post "/reset-password", AuthController, :reset_password
-    post "/verify-email", AuthController, :verify_email
-  end
-
   scope "/api" do
     pipe_through [:api_cors, :api, :graphql_session, :graphql_api]
 
