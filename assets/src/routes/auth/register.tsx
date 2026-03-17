@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   findMutationError,
+  sanitizeTransportError,
   type MutationError,
   registerWithPassword
 } from "./actions";
@@ -33,7 +34,7 @@ export function RegisterRoute() {
 
       setErrors(result.errors);
     } catch (error) {
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: formatUnknownError(error) }]);
+      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,8 +70,4 @@ export function RegisterRoute() {
       </form>
     </AuthFormShell>
   );
-}
-
-function formatUnknownError(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
 }

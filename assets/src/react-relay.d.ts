@@ -1,8 +1,17 @@
 declare module "react-relay" {
   import type { ComponentType, ReactNode } from "react";
-  import type { Environment, OperationType } from "relay-runtime";
+  import type {
+    Environment,
+    GraphQLTaggedNode as RelayGraphQLTaggedNode,
+    OperationType
+  } from "relay-runtime";
 
-  export type GraphQLTaggedNode = unknown;
+  export type GraphQLTaggedNode = RelayGraphQLTaggedNode;
+
+  export interface PreloadedQuery<TQuery extends OperationType> {
+    readonly variables: TQuery["variables"];
+    dispose(): void;
+  }
 
   export const RelayEnvironmentProvider: ComponentType<{
     children?: ReactNode;
@@ -13,5 +22,5 @@ declare module "react-relay" {
     environment: Environment,
     query: GraphQLTaggedNode,
     variables: TQuery["variables"]
-  ): unknown;
+  ): PreloadedQuery<TQuery>;
 }

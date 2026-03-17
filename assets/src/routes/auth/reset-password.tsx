@@ -1,8 +1,9 @@
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   findMutationError,
+  sanitizeTransportError,
   type MutationError,
   resetPassword
 } from "./actions";
@@ -20,6 +21,12 @@ export function ResetPasswordRoute() {
   const [errors, setErrors] = useState<MutationError[]>(token ? [] : [missingTokenError]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setErrors(token ? [] : [missingTokenError]);
+    setMessage(null);
+    setIsSubmitting(false);
+  }, [token]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +54,7 @@ export function ResetPasswordRoute() {
 
       setErrors(result.errors);
     } catch (error) {
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: formatUnknownError(error) }]);
+      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
     } finally {
       setIsSubmitting(false);
     }
@@ -74,8 +81,4 @@ export function ResetPasswordRoute() {
       </form>
     </AuthFormShell>
   );
-}
-
-function formatUnknownError(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
 }

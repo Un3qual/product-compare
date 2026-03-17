@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AuthActionResult,
+  sanitizeTransportError,
   type MutationError,
   verifyEmail
 } from "./actions";
@@ -53,7 +54,7 @@ export function VerifyEmailRoute() {
       } catch (error) {
         if (!cancelled) {
           setErrors([
-            { code: "NETWORK_ERROR", field: null, message: formatUnknownError(error) }
+            { code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }
           ]);
         }
       } finally {
@@ -84,10 +85,6 @@ export function VerifyEmailRoute() {
       <p>{isLoading ? "Checking your verification link…" : "Verification status is ready."}</p>
     </AuthFormShell>
   );
-}
-
-function formatUnknownError(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
 }
 
 export function resetVerifyEmailRequestCache() {

@@ -22,8 +22,14 @@ export interface AuthActionResult {
   errors: MutationError[];
 }
 
+const transportErrorMessage = "Request failed. Please try again.";
+
 export function findMutationError(errors: MutationError[], field: string) {
   return errors.find((error) => error.field === field)?.message ?? null;
+}
+
+export function sanitizeTransportError(_error: unknown) {
+  return transportErrorMessage;
 }
 
 const LOGIN_MUTATION = `

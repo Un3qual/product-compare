@@ -126,7 +126,7 @@ export function AuthFormShell({
         </header>
 
         {visibleErrors.length > 0 ? (
-          <ul {...stylex.props(styles.errorList)} aria-live="polite">
+          <ul {...stylex.props(styles.errorList)} aria-live="assertive" role="alert">
             {visibleErrors.map((error) => (
               <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
                 {error.message}
@@ -136,7 +136,7 @@ export function AuthFormShell({
         ) : null}
 
         {successMessage ? (
-          <p {...stylex.props(styles.success)} aria-live="polite">
+          <p {...stylex.props(styles.success)} aria-live="polite" role="status">
             {successMessage}
           </p>
         ) : null}

@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import {
   findMutationError,
+  sanitizeTransportError,
   type MutationError,
   requestPasswordReset
 } from "./actions";
@@ -33,7 +34,7 @@ export function ForgotPasswordRoute() {
 
       setErrors(result.errors);
     } catch (error) {
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: formatUnknownError(error) }]);
+      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
     } finally {
       setIsSubmitting(false);
     }
@@ -63,8 +64,4 @@ export function ForgotPasswordRoute() {
       </form>
     </AuthFormShell>
   );
-}
-
-function formatUnknownError(error: unknown) {
-  return error instanceof Error ? error.message : "Request failed";
 }
