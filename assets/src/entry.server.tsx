@@ -27,13 +27,15 @@ export async function render(url: string): Promise<string> {
 }
 
 async function waitForAllReady(stream: ReactReadableStream) {
+  const safeAllReady = stream.allReady.catch(() => {});
+
   const timeout = new Promise<never>((_, reject) => {
     const timer = setTimeout(() => {
       void stream.cancel();
       reject(new Error("timed out streaming server render"));
     }, STREAM_ABORT_DELAY_MS);
 
-    stream.allReady.finally(() => clearTimeout(timer));
+    void safeAllReady.finally(() => clearTimeout(timer));
   });
 
   await Promise.race([stream.allReady, timeout]);

@@ -38,6 +38,32 @@ test("uses the current browser host for the local Phoenix endpoint during dev", 
   );
 });
 
+test("forwards SSR cookies to the GraphQL request", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+
+  globalThis.fetch = (async (...args: unknown[]) => {
+    calls.push(args);
+    return {
+      ok: true,
+      json: async () => ({ data: {} })
+    } as Response;
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, { cookieString: "session=abc" });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).credentials).toBeUndefined();
+    expect((calls[0][1] as RequestInit).headers).toMatchObject({
+      "content-type": "application/json",
+      cookie: "session=abc"
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("requires VITE_API_BASE_URL outside local dev", () => {
   expect(() => resolveGraphQLEndpoint({ isDev: false })).toThrow(
     "VITE_API_BASE_URL must be set outside local development"
