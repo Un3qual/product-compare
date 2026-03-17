@@ -22,6 +22,10 @@ export interface AuthActionResult {
   errors: MutationError[];
 }
 
+export function findMutationError(errors: MutationError[], field: string) {
+  return errors.find((error) => error.field === field)?.message ?? null;
+}
+
 const LOGIN_MUTATION = `
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {

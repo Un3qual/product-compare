@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import {
+  findMutationError,
   type MutationError,
   requestPasswordReset
 } from "./actions";
@@ -42,6 +43,7 @@ export function ForgotPasswordRoute() {
     <AuthFormShell
       description="Request a password-reset link through the GraphQL recovery flow."
       errors={errors}
+      fieldNames={["email"]}
       footerLinks={[
         { label: "Sign in", to: "/auth/login" },
         { label: "Create account", to: "/auth/register" }
@@ -50,7 +52,13 @@ export function ForgotPasswordRoute() {
       title="Reset your password"
     >
       <form onSubmit={handleSubmit}>
-        <AuthField autoComplete="email" label="Email" name="email" type="email" />
+        <AuthField
+          autoComplete="email"
+          error={findMutationError(errors, "email")}
+          label="Email"
+          name="email"
+          type="email"
+        />
         <AuthSubmitButton disabled={isSubmitting}>Send reset link</AuthSubmitButton>
       </form>
     </AuthFormShell>

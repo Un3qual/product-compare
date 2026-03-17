@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RelayEnvironmentProvider } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -5,7 +6,10 @@ import { createRelayEnvironment } from "../../../relay/environment";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import { ForgotPasswordRoute } from "../forgot-password";
 import { ResetPasswordRoute } from "../reset-password";
-import { VerifyEmailRoute } from "../verify-email";
+import {
+  resetVerifyEmailRequestCache,
+  VerifyEmailRoute
+} from "../verify-email";
 
 vi.mock("../../../relay/fetch-graphql", () => ({
   fetchGraphQL: vi.fn()
@@ -13,8 +17,8 @@ vi.mock("../../../relay/fetch-graphql", () => ({
 
 const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 
-function renderRoute(initialEntry: string) {
-  render(
+function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
+  const content = (
     <RelayEnvironmentProvider environment={createRelayEnvironment()}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
@@ -25,10 +29,15 @@ function renderRoute(initialEntry: string) {
       </MemoryRouter>
     </RelayEnvironmentProvider>
   );
+
+  render(
+    options?.strictMode ? <StrictMode>{content}</StrictMode> : content
+  );
 }
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
+  resetVerifyEmailRequestCache();
 });
 
 test("forgot password route submits the email and shows the privacy-safe success state", async () => {
@@ -110,4 +119,21 @@ test("verify email route consumes the URL token and reports success", async () =
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+});
+
+test("verify email route only submits a single-use token once in strict mode", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      verifyEmail: {
+        ok: true,
+        errors: []
+      }
+    }
+  });
+
+  renderRoute("/auth/verify-email?token=confirm-token", { strictMode: true });
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  });
 });

@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  findMutationError,
   type MutationError,
   resetPassword
 } from "./actions";
@@ -56,6 +57,7 @@ export function ResetPasswordRoute() {
     <AuthFormShell
       description="Choose a new password after the reset link proves your identity."
       errors={errors}
+      fieldNames={["password"]}
       footerLinks={[{ label: "Back to sign in", to: "/auth/login" }]}
       successMessage={message}
       title="Set a new password"
@@ -63,6 +65,7 @@ export function ResetPasswordRoute() {
       <form onSubmit={handleSubmit}>
         <AuthField
           autoComplete="new-password"
+          error={findMutationError(errors, "password")}
           label="New password"
           name="password"
           type="password"

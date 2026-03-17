@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  type AuthActionResult,
   type MutationError,
   verifyEmail
 } from "./actions";
 import { AuthFormShell } from "./form-shell";
+
+const verificationRequests = new Map<string, Promise<AuthActionResult>>();
 
 const missingTokenError: MutationError = {
   code: "INVALID_TOKEN",
@@ -24,11 +27,18 @@ export function VerifyEmailRoute() {
 
     async function consumeVerificationToken() {
       if (!token) {
+        setIsLoading(false);
+        setMessage(null);
+        setErrors([missingTokenError]);
         return;
       }
 
       try {
-        const result = await verifyEmail(token);
+        setIsLoading(true);
+        setMessage(null);
+        setErrors([]);
+
+        const result = await verifyEmailOnce(token);
 
         if (cancelled) {
           return;
@@ -78,4 +88,22 @@ export function VerifyEmailRoute() {
 
 function formatUnknownError(error: unknown) {
   return error instanceof Error ? error.message : "Request failed";
+}
+
+export function resetVerifyEmailRequestCache() {
+  verificationRequests.clear();
+}
+
+function verifyEmailOnce(token: string) {
+  const existingRequest = verificationRequests.get(token);
+
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  // Verification tokens are single-use. Reusing the same in-flight or settled
+  // promise keeps StrictMode re-mounts from burning the token twice in dev.
+  const request = verifyEmail(token);
+  verificationRequests.set(token, request);
+  return request;
 }

@@ -101,6 +101,7 @@ interface AuthFormShellProps extends PropsWithChildren {
   description: string;
   errors?: MutationError[];
   footerLinks?: Array<{ label: string; to: string }>;
+  fieldNames?: string[];
   successMessage?: string | null;
   title: string;
 }
@@ -110,9 +111,12 @@ export function AuthFormShell({
   description,
   errors = [],
   footerLinks = [],
+  fieldNames = [],
   successMessage,
   title
 }: AuthFormShellProps) {
+  const visibleErrors = errors.filter((error) => !error.field || !fieldNames.includes(error.field));
+
   return (
     <section {...stylex.props(styles.section)}>
       <div {...stylex.props(styles.panel)}>
@@ -121,9 +125,9 @@ export function AuthFormShell({
           <p {...stylex.props(styles.copy)}>{description}</p>
         </header>
 
-        {errors.length > 0 ? (
+        {visibleErrors.length > 0 ? (
           <ul {...stylex.props(styles.errorList)} aria-live="polite">
-            {errors.map((error) => (
+            {visibleErrors.map((error) => (
               <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
                 {error.message}
               </li>
@@ -155,27 +159,39 @@ export function AuthFormShell({
 
 export function AuthField({
   autoComplete,
+  error,
   label,
   name,
   required = true,
   type = "text"
 }: {
   autoComplete?: string;
+  error?: string | null;
   label: string;
   name: string;
   required?: boolean;
   type?: string;
 }) {
+  const errorId = error ? `${name}-error` : undefined;
+
   return (
     <label {...stylex.props(styles.field)}>
       <span>{label}</span>
       <input
         {...stylex.props(styles.input)}
         autoComplete={autoComplete}
+        aria-describedby={errorId}
+        aria-invalid={error ? true : undefined}
+        id={name}
         name={name}
         required={required}
         type={type}
       />
+      {error ? (
+        <span id={errorId} {...stylex.props(styles.copy)} aria-live="polite">
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }

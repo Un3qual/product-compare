@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  findMutationError,
   type MutationError,
   registerWithPassword
 } from "./actions";
@@ -42,6 +43,7 @@ export function RegisterRoute() {
     <AuthFormShell
       description="Create an email/password account and let Phoenix establish the browser session."
       errors={errors}
+      fieldNames={["email", "password"]}
       footerLinks={[
         { label: "Sign in instead", to: "/auth/login" },
         { label: "Forgot password?", to: "/auth/forgot-password" }
@@ -49,9 +51,16 @@ export function RegisterRoute() {
       title="Create your account"
     >
       <form onSubmit={handleSubmit}>
-        <AuthField autoComplete="email" label="Email" name="email" type="email" />
+        <AuthField
+          autoComplete="email"
+          error={findMutationError(errors, "email")}
+          label="Email"
+          name="email"
+          type="email"
+        />
         <AuthField
           autoComplete="new-password"
+          error={findMutationError(errors, "password")}
           label="Password"
           name="password"
           type="password"

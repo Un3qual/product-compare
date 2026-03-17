@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  findMutationError,
   type MutationError,
   loginWithPassword
 } from "./actions";
@@ -42,6 +43,7 @@ export function LoginRoute() {
     <AuthFormShell
       description="Use your email and password to continue through the GraphQL auth flow."
       errors={errors}
+      fieldNames={["email", "password"]}
       footerLinks={[
         { label: "Create account", to: "/auth/register" },
         { label: "Forgot password?", to: "/auth/forgot-password" }
@@ -49,9 +51,16 @@ export function LoginRoute() {
       title="Sign in"
     >
       <form onSubmit={handleSubmit}>
-        <AuthField autoComplete="email" label="Email" name="email" type="email" />
+        <AuthField
+          autoComplete="email"
+          error={findMutationError(errors, "email")}
+          label="Email"
+          name="email"
+          type="email"
+        />
         <AuthField
           autoComplete="current-password"
+          error={findMutationError(errors, "password")}
           label="Password"
           name="password"
           type="password"

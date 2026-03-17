@@ -94,6 +94,8 @@ test("register route renders typed GraphQL validation errors", async () => {
 
   renderRoute("/auth/register");
 
+  const emailInput = screen.getByLabelText(/email/i);
+
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }
   });
@@ -103,5 +105,7 @@ test("register route renders typed GraphQL validation errors", async () => {
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
   expect(await screen.findByText("has already been taken")).toBeInTheDocument();
+  expect(emailInput).toHaveAttribute("aria-invalid", "true");
+  expect(emailInput).toHaveAttribute("aria-describedby", "email-error");
   expect(screen.getByRole("heading", { name: /create your account/i })).toBeInTheDocument();
 });
