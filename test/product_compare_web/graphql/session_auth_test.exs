@@ -5,7 +5,9 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
   import ProductCompare.Fixtures.AccountsFixtures
 
   setup do
+    parent = self()
     endpoint_config = Application.get_env(:product_compare, ProductCompareWeb.Endpoint, [])
+    accounts_config = Application.get_env(:product_compare, ProductCompare.Accounts, [])
 
     Application.put_env(
       :product_compare,
@@ -13,8 +15,21 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
       Keyword.put(endpoint_config, :trusted_origins, ["https://app.example.com"])
     )
 
+    Application.put_env(
+      :product_compare,
+      ProductCompare.Accounts,
+      accounts_config
+      |> Keyword.put(:deliver_user_confirmation_instructions, fn user, token ->
+        send(parent, {:confirmation_token, user.email, token})
+      end)
+      |> Keyword.put(:deliver_user_reset_password_instructions, fn user, token ->
+        send(parent, {:reset_password_token, user.email, token})
+      end)
+    )
+
     on_exit(fn ->
       Application.put_env(:product_compare, ProductCompareWeb.Endpoint, endpoint_config)
+      Application.put_env(:product_compare, ProductCompare.Accounts, accounts_config)
     end)
 
     :ok
@@ -238,6 +253,201 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     refute get_session(conn, :user_token)
   end
 
+  test "forgotPassword returns ok and issues a reset token for an existing user", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(forgot_password_mutation(), %{"email" => user.email})
+
+    assert %{
+             "data" => %{
+               "forgotPassword" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert_receive {:reset_password_token, ^user_email, token}
+    assert is_binary(token)
+  end
+
+  test "forgotPassword does not disclose whether the email exists", %{conn: conn} do
+    email = "missing-#{System.unique_integer([:positive])}@example.com"
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(forgot_password_mutation(), %{"email" => email})
+
+    assert %{
+             "data" => %{
+               "forgotPassword" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    refute_received {:reset_password_token, ^email, _token}
+  end
+
+  test "resetPassword updates the password, drops the current session, and returns ok", %{
+    conn: conn
+  } do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+
+    assert :ok = Accounts.deliver_user_reset_password_instructions(user)
+    assert_receive {:reset_password_token, ^user_email, token}
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> put_req_header_same_origin()
+      |> graphql_request(reset_password_mutation(), %{
+        "token" => token,
+        "password" => "supersecretpass456"
+      })
+
+    assert %{
+             "data" => %{
+               "resetPassword" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert conn.private[:plug_session_info] == :drop
+
+    assert is_nil(
+             Accounts.authenticate_user_by_email_and_password(user_email, "supersecretpass123")
+           )
+
+    assert %ProductCompareSchemas.Accounts.User{} =
+             Accounts.authenticate_user_by_email_and_password(user_email, "supersecretpass456")
+
+    viewer_conn =
+      conn
+      |> recycle()
+      |> put_req_header_same_origin()
+
+    assert %{"data" => %{"viewer" => nil}} = graphql(viewer_conn, viewer_query())
+  end
+
+  test "resetPassword returns INVALID_TOKEN errors for bad tokens", %{conn: conn} do
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(reset_password_mutation(), %{
+        "token" => "definitely-invalid-token",
+        "password" => "supersecretpass456"
+      })
+
+    assert %{
+             "data" => %{
+               "resetPassword" => %{
+                 "ok" => false,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_TOKEN",
+                     "message" => "invalid or expired token",
+                     "field" => "token"
+                   }
+                 ]
+               }
+             }
+           } = json_response(conn, 200)
+  end
+
+  test "verifyEmail confirms the user and returns ok", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+
+    assert :ok = Accounts.deliver_user_confirmation_instructions(user)
+    assert_receive {:confirmation_token, ^user_email, token}
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(verify_email_mutation(), %{"token" => token})
+
+    assert %{
+             "data" => %{
+               "verifyEmail" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    refute is_nil(Accounts.get_user!(user.id).confirmed_at)
+  end
+
+  test "verifyEmail returns INVALID_TOKEN errors for bad tokens", %{conn: conn} do
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(verify_email_mutation(), %{"token" => "definitely-invalid-token"})
+
+    assert %{
+             "data" => %{
+               "verifyEmail" => %{
+                 "ok" => false,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_TOKEN",
+                     "message" => "invalid or expired token",
+                     "field" => "token"
+                   }
+                 ]
+               }
+             }
+           } = json_response(conn, 200)
+  end
+
+  test "untrusted origins cannot use forgotPassword, resetPassword, or verifyEmail", %{conn: conn} do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+    assert :ok = Accounts.deliver_user_reset_password_instructions(user)
+    assert_receive {:reset_password_token, ^user_email, reset_token}
+    assert :ok = Accounts.deliver_user_confirmation_instructions(user)
+    assert_receive {:confirmation_token, ^user_email, confirmation_token}
+
+    for {mutation, variables, field_name} <- [
+          {forgot_password_mutation(), %{"email" => user.email}, "forgotPassword"},
+          {reset_password_mutation(),
+           %{"token" => reset_token, "password" => "supersecretpass456"}, "resetPassword"},
+          {verify_email_mutation(), %{"token" => confirmation_token}, "verifyEmail"}
+        ] do
+      response =
+        conn
+        |> recycle()
+        |> put_req_header("origin", "https://evil.example.com")
+        |> graphql_request(mutation, variables)
+        |> json_response(200)
+
+      assert %{
+               "data" => %{
+                 ^field_name => %{
+                   "ok" => false,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ORIGIN",
+                       "message" => "cross-origin request rejected",
+                       "field" => nil
+                     }
+                   ]
+                 }
+               }
+             } = response
+    end
+  end
+
   test "stale session tokens are cleared after a lookup miss", %{conn: conn} do
     user = user_fixture(%{password: "supersecretpass123"})
 
@@ -351,6 +561,51 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     """
     mutation Logout {
       logout {
+        ok
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp forgot_password_mutation do
+    """
+    mutation ForgotPassword($email: String!) {
+      forgotPassword(email: $email) {
+        ok
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp reset_password_mutation do
+    """
+    mutation ResetPassword($token: String!, $password: String!) {
+      resetPassword(token: $token, password: $password) {
+        ok
+        errors {
+          code
+          message
+          field
+        }
+      }
+    }
+    """
+  end
+
+  defp verify_email_mutation do
+    """
+    mutation VerifyEmail($token: String!) {
+      verifyEmail(token: $token) {
         ok
         errors {
           code

@@ -10,8 +10,9 @@ Move all frontend-facing browser auth flows to GraphQL while keeping Phoenix as 
 - [x] Session model confirmed: cookie-backed Phoenix session, not token-returning auth.
 - [x] Initial migration scope confirmed: `login`, `register`, `logout` in this PR.
 - [x] This PR implemented and verified.
-- [ ] Follow-up GraphQL migration for `forgotPassword`, `resetPassword`, `verifyEmail`.
-- [ ] Legacy REST auth surface fully removed.
+- [x] Backend GraphQL mutation surface added for `forgotPassword`, `resetPassword`, and `verifyEmail`.
+- [x] Legacy REST auth surface fully removed.
+- [ ] Auth email delivery integrated for reset and verification instructions.
 - [ ] Frontend Relay auth mutations shipped end-to-end.
 
 ## Problem
@@ -61,6 +62,13 @@ Recommended approach:
 
 This keeps the behavior explicit, testable, and isolated to GraphQL auth mutations.
 
+### Token Delivery Hook
+
+The repo does not yet have a mailer. For reset and verification flows, the Accounts
+layer should own token issuance and expose a small delivery hook so GraphQL can
+remain the browser contract without hard-coding a transport. Tests can capture
+issued tokens through that hook; production mail delivery can be wired later.
+
 ### Same-Origin Rules
 
 - Cookie-backed session reads already stay same-origin only for browser-origin requests.
@@ -79,6 +87,7 @@ This keeps the behavior explicit, testable, and isolated to GraphQL auth mutatio
 ### Phase 2: Remaining Browser Auth Flows
 
 - Add GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail`.
+- Keep reset and verification token issuance transport-agnostic until a mailer lands.
 - Add frontend Relay mutations for all auth workflows.
 - Remove remaining auth REST endpoints once GraphQL replacements exist.
 

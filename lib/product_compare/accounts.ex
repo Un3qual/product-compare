@@ -18,6 +18,8 @@ defmodule ProductCompare.Accounts do
   @default_reputation_events_limit 50
   @max_reputation_events_limit 200
   @ensure_user_with_password_before_create_hook :ensure_user_with_password_before_create
+  @deliver_user_confirmation_instructions_hook :deliver_user_confirmation_instructions
+  @deliver_user_reset_password_instructions_hook :deliver_user_reset_password_instructions
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
@@ -169,6 +171,37 @@ defmodule ProductCompare.Accounts do
 
   @spec delete_user_session_token(String.t()) :: :ok
   defdelegate delete_user_session_token(token), to: UserAuth
+
+  @spec deliver_user_confirmation_instructions(User.t()) :: :ok
+  def deliver_user_confirmation_instructions(%User{} = user) do
+    case configured_user_token_delivery(@deliver_user_confirmation_instructions_hook, user) do
+      nil -> :ok
+      delivery_fun -> UserAuth.deliver_user_confirmation_instructions(user, delivery_fun)
+    end
+  end
+
+  @spec deliver_user_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
+  defdelegate deliver_user_confirmation_instructions(user, delivery_fun), to: UserAuth
+
+  @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, term()}
+  defdelegate confirm_user(token), to: UserAuth
+
+  @spec deliver_user_reset_password_instructions(User.t()) :: :ok
+  def deliver_user_reset_password_instructions(%User{} = user) do
+    case configured_user_token_delivery(@deliver_user_reset_password_instructions_hook, user) do
+      nil -> :ok
+      delivery_fun -> UserAuth.deliver_user_reset_password_instructions(user, delivery_fun)
+    end
+  end
+
+  @spec deliver_user_reset_password_instructions(User.t(), (String.t() -> any())) :: :ok
+  defdelegate deliver_user_reset_password_instructions(user, delivery_fun), to: UserAuth
+
+  @spec get_user_by_reset_password_token(String.t()) :: User.t() | nil
+  defdelegate get_user_by_reset_password_token(token), to: UserAuth
+
+  @spec reset_user_password(String.t(), map()) :: {:ok, User.t()} | {:error, term()}
+  defdelegate reset_user_password(token, attrs), to: UserAuth
 
   @spec create_api_token(pos_integer(), map()) ::
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
@@ -565,6 +598,16 @@ defmodule ProductCompare.Accounts do
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  # Browser auth recovery flows stay mailer-agnostic here; production delivery
+  # can be injected later without changing the GraphQL contract or the token logic.
+  defp configured_user_token_delivery(hook, user) do
+    case Application.get_env(:product_compare, __MODULE__, [])
+         |> Keyword.get(hook) do
+      fun when is_function(fun, 2) -> &fun.(user, &1)
+      _other -> nil
+    end
+  end
 
   defp hash_api_token_secret(plain_text_token), do: :crypto.hash(:sha3_256, plain_text_token)
 

@@ -15,6 +15,9 @@ type Mutation {
   login(email: String!, password: String!): AuthSessionPayload!
   register(email: String!, password: String!): AuthSessionPayload!
   logout: LogoutPayload!
+  forgotPassword(email: String!): AuthActionPayload!
+  resetPassword(token: String!, password: String!): AuthActionPayload!
+  verifyEmail(token: String!): AuthActionPayload!
 }
 
 type AuthSessionPayload {
@@ -23,6 +26,11 @@ type AuthSessionPayload {
 }
 
 type LogoutPayload {
+  ok: Boolean!
+  errors: [MutationError!]!
+}
+
+type AuthActionPayload {
   ok: Boolean!
   errors: [MutationError!]!
 }

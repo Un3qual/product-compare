@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
   @invalid_credentials_message "invalid email or password"
   @invalid_origin_message "cross-origin request rejected"
+  @invalid_token_message "invalid or expired token"
 
   @spec viewer(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Accounts.User.t() | nil}
@@ -67,6 +68,57 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
       {:error, :invalid_origin} ->
         {:ok,
          %{ok: false, errors: [mutation_error("INVALID_ORIGIN", @invalid_origin_message, nil)]}}
+    end
+  end
+
+  @spec forgot_password(any(), %{email: String.t()}, Absinthe.Resolution.t()) :: {:ok, map()}
+  def forgot_password(_parent, %{email: email}, resolution) do
+    with :ok <- require_trusted_request_origin(resolution) do
+      if user = Accounts.get_user_by_email(email) do
+        Accounts.deliver_user_reset_password_instructions(user)
+      end
+
+      {:ok, ok_payload()}
+    else
+      {:error, :invalid_origin} ->
+        {:ok, action_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
+    end
+  end
+
+  @spec reset_password(any(), %{token: String.t(), password: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, map()}
+  def reset_password(_parent, %{token: token, password: password}, resolution) do
+    with :ok <- require_trusted_request_origin(resolution) do
+      case Accounts.reset_user_password(token, %{password: password}) do
+        {:ok, _user} ->
+          SessionMutationBridge.drop_session()
+          {:ok, ok_payload()}
+
+        {:error, :invalid_token} ->
+          {:ok, action_error_payload("INVALID_TOKEN", @invalid_token_message, "token")}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:ok, action_changeset_error_payload(changeset)}
+      end
+    else
+      {:error, :invalid_origin} ->
+        {:ok, action_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
+    end
+  end
+
+  @spec verify_email(any(), %{token: String.t()}, Absinthe.Resolution.t()) :: {:ok, map()}
+  def verify_email(_parent, %{token: token}, resolution) do
+    with :ok <- require_trusted_request_origin(resolution) do
+      case Accounts.confirm_user(token) do
+        {:ok, _user} ->
+          {:ok, ok_payload()}
+
+        {:error, :invalid_token} ->
+          {:ok, action_error_payload("INVALID_TOKEN", @invalid_token_message, "token")}
+      end
+    else
+      {:error, :invalid_origin} ->
+        {:ok, action_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
     end
   end
 
@@ -170,6 +222,13 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     }
   end
 
+  defp ok_payload do
+    %{
+      ok: true,
+      errors: []
+    }
+  end
+
   defp auth_error_payload(code, message, field \\ nil) do
     %{
       viewer: nil,
@@ -177,19 +236,16 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     }
   end
 
+  defp action_error_payload(code, message, field \\ nil) do
+    %{
+      ok: false,
+      errors: [mutation_error(code, message, field)]
+    }
+  end
+
   defp auth_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     errors =
-      changeset
-      |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
-        Regex.replace(~r"%{(\w+)}", message, fn _, key ->
-          opts
-          |> Keyword.get(atomize_key(key), key)
-          |> to_string()
-        end)
-      end)
-      |> Enum.flat_map(fn {field, messages} ->
-        Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
-      end)
+      changeset_errors(changeset)
 
     %{
       viewer: nil,
@@ -197,10 +253,31 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     }
   end
 
+  defp action_changeset_error_payload(%Ecto.Changeset{} = changeset) do
+    %{
+      ok: false,
+      errors: changeset_errors(changeset)
+    }
+  end
+
   defp first_changeset_error(%Ecto.Changeset{errors: [{_field, {message, _opts}} | _]}),
     do: message
 
   defp first_changeset_error(_changeset), do: "invalid payload"
+
+  defp changeset_errors(%Ecto.Changeset{} = changeset) do
+    changeset
+    |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        opts
+        |> Keyword.get(atomize_key(key), key)
+        |> to_string()
+      end)
+    end)
+    |> Enum.flat_map(fn {field, messages} ->
+      Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
+    end)
+  end
 
   defp resolve_token_entropy_id(token_id) do
     case GlobalId.decode(token_id) do

@@ -50,6 +50,21 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> unique_constraint(:email)
   end
 
+  @spec password_changeset(t(), map()) :: Ecto.Changeset.t()
+  def password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 12, max: 72)
+    |> put_hashed_password()
+  end
+
+  @spec confirm_changeset(t()) :: Ecto.Changeset.t()
+  def confirm_changeset(%__MODULE__{} = user) do
+    confirmed_at = user.confirmed_at || DateTime.utc_now() |> DateTime.truncate(:microsecond)
+    change(user, confirmed_at: confirmed_at)
+  end
+
   defp put_hashed_password(%Ecto.Changeset{valid?: false} = changeset), do: changeset
 
   defp put_hashed_password(changeset) do
