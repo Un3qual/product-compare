@@ -78,6 +78,28 @@ defmodule ProductCompareWeb.Schema do
       resolve(&AuthResolver.logout/3)
     end
 
+    @desc "Requests a password reset email for an existing account."
+    field :forgot_password, non_null(:auth_action_payload) do
+      arg(:email, non_null(:string))
+
+      resolve(&AuthResolver.forgot_password/3)
+    end
+
+    @desc "Resets an account password using a previously issued reset token."
+    field :reset_password, non_null(:auth_action_payload) do
+      arg(:token, non_null(:string))
+      arg(:password, non_null(:string))
+
+      resolve(&AuthResolver.reset_password/3)
+    end
+
+    @desc "Confirms an account email using a previously issued verification token."
+    field :verify_email, non_null(:auth_action_payload) do
+      arg(:token, non_null(:string))
+
+      resolve(&AuthResolver.verify_email/3)
+    end
+
     @desc "Creates a new API token for the current authenticated user."
     field :create_api_token, non_null(:create_api_token_payload) do
       arg(:label, :string)
@@ -345,6 +367,11 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :logout_payload do
+    field :ok, non_null(:boolean)
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :auth_action_payload do
     field :ok, non_null(:boolean)
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end

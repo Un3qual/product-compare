@@ -18,6 +18,11 @@
 - [x] PR checkpoint: failing GraphQL auth tests committed.
 - [x] PR checkpoint: GraphQL auth implementation committed.
 - [x] PR verification complete.
+- [x] Phase 2 checkpoint: backend reset/confirmation token primitives committed.
+- [x] Phase 2 checkpoint: GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` committed.
+- [x] Phase 2 checkpoint: `register` dispatches verification instructions when a delivery hook exists.
+- [ ] Phase 2 checkpoint: auth token delivery transport committed.
+- [ ] Phase 2 checkpoint: frontend auth recovery and verification flows committed.
 
 ### Task 1: Document the GraphQL-only auth contract
 
@@ -109,9 +114,6 @@ Expected: Still FAIL, but only because the auth mutations and resolvers are not 
 **Files:**
 - Modify: `lib/product_compare_web/schema.ex`
 - Modify: `lib/product_compare_web/resolvers/auth_resolver.ex`
-- Delete: `lib/product_compare_web/controllers/session_controller.ex` (N/A — not implemented)
-- Modify: `lib/product_compare_web/controllers/auth_controller.ex`
-- Delete: `lib/product_compare_web/controllers/auth_json.ex` (N/A — not implemented)
 - Modify: `lib/product_compare_web/router.ex`
 
 **Step 1: Add schema fields and payload types**
@@ -140,7 +142,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add lib/product_compare_web/graphql/session_mutation_bridge.ex lib/product_compare_web/plugs/apply_graphql_session_mutations.ex lib/product_compare_web/plugs/put_absinthe_context.ex lib/product_compare_web/router.ex lib/product_compare_web/schema.ex lib/product_compare_web/resolvers/auth_resolver.ex lib/product_compare_web/controllers/auth_controller.ex lib/product_compare_web/controllers/auth_json.ex lib/product_compare_web/controllers/session_controller.ex test/product_compare_web/graphql/session_auth_test.exs
+git add lib/product_compare_web/graphql/session_mutation_bridge.ex lib/product_compare_web/plugs/apply_graphql_session_mutations.ex lib/product_compare_web/plugs/put_absinthe_context.ex lib/product_compare_web/router.ex lib/product_compare_web/schema.ex lib/product_compare_web/resolvers/auth_resolver.ex test/product_compare_web/graphql/session_auth_test.exs
 git commit -m "feat(graphql): add cookie-backed auth mutations"
 ```
 
@@ -169,20 +171,38 @@ Expected: PASS.
 ### Task 6: Follow-up migration backlog
 
 **Files:**
-- Modify later: `lib/product_compare_web/schema.ex`
-- Modify later: `lib/product_compare_web/resolvers/auth_resolver.ex`
-- Delete later: remaining REST auth controller actions and routes
+- Modify: `lib/product_compare/accounts.ex`
+- Modify: `lib/product_compare/accounts/user_auth.ex`
+- Modify: `lib/product_compare_schemas/accounts/user.ex`
+- Modify later: frontend auth route files under `assets/src/routes/auth`
+
+**Progress:**
+
+- [x] Add backend reset and confirmation token primitives on `users_tokens`.
+- [x] Add GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` with typed `ok/errors` payloads.
+- [x] Dispatch verification instructions from `register` when a delivery hook is configured.
+- [x] Keep `/api/auth/forgot-password`, `/api/auth/reset-password`, and `/api/auth/verify-email` removed and covered by router tests.
+- [ ] Wire reset and verification token delivery to a real mailer or notification transport.
+- [ ] Add frontend Relay auth routes and end-to-end coverage for recovery and verification.
 
 **Step 1: Add GraphQL `forgotPassword`, `resetPassword`, `verifyEmail`**
 
 - Follow the same typed-payload pattern.
-- Keep the same same-origin and session rules where session writes occur.
+- Use `users_tokens` plus `confirmed_at` for reset and verification token consumption.
+- Require trusted browser origins for these GraphQL browser-auth mutations.
+- `resetPassword` drops the current session on success because password rotation invalidates all sessions.
 
-**Step 2: Remove remaining browser auth REST surface**
+**Step 2: Keep delivery transport-agnostic until a mailer exists**
 
-- Delete obsolete controller code after GraphQL replacements ship.
-- Update docs and frontend routes to point only at GraphQL.
+- Add a small Accounts-layer delivery hook for reset and verification tokens.
+- Tests can capture raw tokens through the hook.
+- If no delivery transport is configured, GraphQL request mutations remain safe no-ops instead of exposing raw tokens.
 
-**Step 3: Add end-to-end coverage**
+**Step 3: Remove remaining browser auth REST surface**
+
+- Already complete for `/api/auth/forgot-password`, `/api/auth/reset-password`, and `/api/auth/verify-email`.
+- Keep router coverage so those routes stay gone.
+
+**Step 4: Add end-to-end coverage**
 
 - Verify the final GraphQL-only browser auth path from the Bun frontend.
