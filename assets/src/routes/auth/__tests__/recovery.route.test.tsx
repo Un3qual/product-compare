@@ -201,6 +201,38 @@ test("verify email route retries after a transient failure on remount", async ()
   expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
 });
 
+test("verify email route retries after a resolved failed payload on remount", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        verifyEmail: {
+          ok: false,
+          errors: []
+        }
+      }
+    })
+    .mockResolvedValueOnce({
+      data: {
+        verifyEmail: {
+          ok: true,
+          errors: []
+        }
+      }
+    });
+
+  const firstView = renderRoute("/auth/verify-email?token=confirm-token");
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+
+  firstView.unmount();
+
+  renderRoute("/auth/verify-email?token=confirm-token");
+
+  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
+});
+
 test("verify email route only submits a single-use token once in strict mode", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {

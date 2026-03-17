@@ -153,3 +153,28 @@ test("login route hides top-level GraphQL error details behind a generic alert",
   expect(alert).toHaveTextContent("Request failed. Please try again.");
   expect(alert).not.toHaveTextContent("database stacktrace");
 });
+
+test("login route shows a generic alert when the session payload fails without errors", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      login: {
+        viewer: null,
+        errors: []
+      }
+    }
+  });
+
+  renderRoute("/auth/login");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: "supersecretpass123" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Request failed. Please try again."
+  );
+});

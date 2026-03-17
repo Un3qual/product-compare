@@ -130,19 +130,23 @@ export async function verifyEmail(token: string) {
 
 function parseSessionPayload(response: GraphQLResponse, fieldName: string): AuthSessionResult {
   const payload = readPayload(response, fieldName);
+  const viewer = isViewer(payload.viewer) ? payload.viewer : null;
+  const errors = normalizeErrors(payload.errors, response);
 
   return {
-    viewer: isViewer(payload.viewer) ? payload.viewer : null,
-    errors: normalizeErrors(payload.errors, response)
+    viewer,
+    errors: viewer ? errors : ensureFailureErrors(errors)
   };
 }
 
 function parseActionPayload(response: GraphQLResponse, fieldName: string): AuthActionResult {
   const payload = readPayload(response, fieldName);
+  const ok = payload.ok === true;
+  const errors = normalizeErrors(payload.errors, response);
 
   return {
-    ok: payload.ok === true,
-    errors: normalizeErrors(payload.errors, response)
+    ok,
+    errors: ok ? errors : ensureFailureErrors(errors)
   };
 }
 
@@ -185,6 +189,20 @@ function normalizeErrors(
   }
 
   return [];
+}
+
+function ensureFailureErrors(errors: MutationError[]) {
+  if (errors.length > 0) {
+    return errors;
+  }
+
+  return [
+    {
+      code: "UNKNOWN_ERROR",
+      field: null,
+      message: transportErrorMessage
+    }
+  ];
 }
 
 function isMutationError(value: unknown): value is MutationError {

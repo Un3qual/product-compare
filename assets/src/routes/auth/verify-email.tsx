@@ -100,11 +100,19 @@ function verifyEmailOnce(token: string) {
 
   // Verification tokens are single-use. Reusing successful in-flight or settled
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
-  // but transient failures must be evicted so later mounts can retry.
-  const request = verifyEmail(token).catch((error: unknown) => {
-    verificationRequests.delete(token);
-    throw error;
-  });
+  // but any failed outcome must be evicted so later mounts can retry.
+  const request = verifyEmail(token)
+    .then((result) => {
+      if (!result.ok || result.errors.length > 0) {
+        verificationRequests.delete(token);
+      }
+
+      return result;
+    })
+    .catch((error: unknown) => {
+      verificationRequests.delete(token);
+      throw error;
+    });
   verificationRequests.set(token, request);
   return request;
 }
