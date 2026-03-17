@@ -9,4 +9,6 @@ test("renders primary nav landmarks", () => {
   );
 
   expect(html).toContain('aria-label="Primary"');
+  expect(html).toContain('class="');
+  expect(html).not.toContain('style=');
 });

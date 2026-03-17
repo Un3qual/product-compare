@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { reactWithStyleX } from "./stylex-plugin";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [reactWithStyleX()],
   server: {
     port: 5173
   }
