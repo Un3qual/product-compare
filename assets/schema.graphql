@@ -12,12 +12,12 @@ type Query {
 }
 
 type Mutation {
-  login(email: String!, password: String!): AuthPayload!
-  register(email: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthSessionPayload!
+  register(email: String!, password: String!): AuthSessionPayload!
   logout: LogoutPayload!
 }
 
-type AuthPayload {
+type AuthSessionPayload {
   viewer: User
   errors: [MutationError!]!
 }

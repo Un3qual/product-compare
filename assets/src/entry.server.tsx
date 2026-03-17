@@ -9,7 +9,6 @@ type ReactReadableStream = ReadableStream & { allReady: Promise<void> };
 
 export async function render(url: string): Promise<string> {
   const relayEnvironment = createRelayEnvironment();
-  let renderError: unknown;
 
   const htmlStream: ReactReadableStream = await renderToReadableStream(
     <RelayEnvironmentProvider environment={relayEnvironment}>
@@ -17,16 +16,12 @@ export async function render(url: string): Promise<string> {
     </RelayEnvironmentProvider>,
     {
       onError(error) {
-        renderError = error;
+        console.error(error);
       }
     }
   );
 
   await waitForAllReady(htmlStream);
-
-  if (renderError) {
-    throw renderError;
-  }
 
   return new Response(htmlStream).text();
 }

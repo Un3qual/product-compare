@@ -20,12 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :product_compare, ProductCompareWeb.Endpoint, server: true
 end
 
+phx_host = System.get_env("PHX_HOST")
+
 default_trusted_origins =
-  if config_env() == :prod do
-    ["https://app.example.com"]
-  else
-    ["http://127.0.0.1:5173", "http://localhost:5173"]
-  end
+  ProductCompareWeb.RuntimeConfig.default_trusted_origins(config_env(), phx_host)
 
 trusted_origins =
   case System.get_env("TRUSTED_FRONTEND_ORIGINS") do
@@ -72,7 +70,7 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
+  host = ProductCompareWeb.RuntimeConfig.endpoint_host(phx_host)
 
   session_cookie_domain =
     case System.get_env("SESSION_COOKIE_DOMAIN") do

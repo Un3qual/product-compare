@@ -1,6 +1,7 @@
 import type { GraphQLResponse } from "relay-runtime";
 
-const DEFAULT_DEV_API_BASE_URL = "http://127.0.0.1:4000";
+const DEFAULT_DEV_API_BASE_URL = "http://localhost:4000";
+const DEFAULT_DEV_API_PORT = "4000";
 
 export interface SSRContext {
   request?: Request;
@@ -11,6 +12,7 @@ export interface SSRContext {
 interface ResolveGraphQLEndpointOptions {
   apiBaseUrl?: string | null;
   isDev?: boolean;
+  locationOrigin?: string | null;
 }
 
 export async function fetchGraphQL(
@@ -63,10 +65,31 @@ export function resolveGraphQLEndpoint(options: ResolveGraphQLEndpointOptions = 
   }
 
   if (options.isDev ?? import.meta.env.DEV) {
-    return `${DEFAULT_DEV_API_BASE_URL}/api/graphql`;
+    return `${resolveDevApiBaseUrl(options.locationOrigin)}/api/graphql`;
   }
 
   throw new Error("VITE_API_BASE_URL must be set outside local development");
+}
+
+function resolveDevApiBaseUrl(locationOrigin = currentLocationOrigin()) {
+  try {
+    const devApiUrl = new URL(locationOrigin ?? DEFAULT_DEV_API_BASE_URL);
+    devApiUrl.port = DEFAULT_DEV_API_PORT;
+    devApiUrl.pathname = "";
+    devApiUrl.search = "";
+    devApiUrl.hash = "";
+    return devApiUrl.origin;
+  } catch {
+    return DEFAULT_DEV_API_BASE_URL;
+  }
+}
+
+function currentLocationOrigin() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.location.origin;
 }
 
 function normalizeApiBaseUrl(value?: string | null) {

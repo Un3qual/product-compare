@@ -23,7 +23,19 @@ test("sends credentials for session auth", async () => {
 });
 
 test("uses the local Phoenix endpoint during dev when VITE_API_BASE_URL is unset", () => {
-  expect(resolveGraphQLEndpoint({ isDev: true })).toBe("http://127.0.0.1:4000/api/graphql");
+  expect(resolveGraphQLEndpoint({ isDev: true, locationOrigin: null })).toBe(
+    "http://localhost:4000/api/graphql"
+  );
+});
+
+test("uses the current browser host for the local Phoenix endpoint during dev", () => {
+  expect(
+    resolveGraphQLEndpoint({ isDev: true, locationOrigin: "http://127.0.0.1:5173" })
+  ).toBe("http://127.0.0.1:4000/api/graphql");
+
+  expect(resolveGraphQLEndpoint({ isDev: true, locationOrigin: "http://localhost:5173" })).toBe(
+    "http://localhost:4000/api/graphql"
+  );
 });
 
 test("requires VITE_API_BASE_URL outside local dev", () => {
