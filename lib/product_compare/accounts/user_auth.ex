@@ -10,6 +10,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   """
 
   import Ecto.Query
+  require Logger
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
@@ -76,17 +77,12 @@ defmodule ProductCompare.Accounts.UserAuth do
   @spec deliver_user_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
   def deliver_user_confirmation_instructions(%User{} = user, delivery_fun)
       when is_function(delivery_fun, 1) do
-    token =
-      issue_user_token(
-        user,
-        @confirm_context,
-        email_token_expiration(@confirm_validity_in_days),
-        sent_to: user.email,
-        replace_context?: true
-      )
-
-    delivery_fun.(token)
-    :ok
+    deliver_user_email_instructions(
+      user,
+      @confirm_context,
+      email_token_expiration(@confirm_validity_in_days),
+      delivery_fun
+    )
   end
 
   @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, :invalid_token}
@@ -122,17 +118,12 @@ defmodule ProductCompare.Accounts.UserAuth do
   @spec deliver_user_reset_password_instructions(User.t(), (String.t() -> any())) :: :ok
   def deliver_user_reset_password_instructions(%User{} = user, delivery_fun)
       when is_function(delivery_fun, 1) do
-    token =
-      issue_user_token(
-        user,
-        @reset_password_context,
-        email_token_expiration(@reset_password_validity_in_days),
-        sent_to: user.email,
-        replace_context?: true
-      )
-
-    delivery_fun.(token)
-    :ok
+    deliver_user_email_instructions(
+      user,
+      @reset_password_context,
+      email_token_expiration(@reset_password_validity_in_days),
+      delivery_fun
+    )
   end
 
   @spec get_user_by_reset_password_token(String.t()) :: User.t() | nil
@@ -229,17 +220,12 @@ defmodule ProductCompare.Accounts.UserAuth do
     end
   end
 
-  defp issue_user_token(%User{} = user, context, expires_at, opts) do
-    Repo.transaction(fn ->
-      if Keyword.get(opts, :replace_context?, false) do
-        clear_user_tokens(user.id, [context])
-      end
-
-      insert_user_token!(user, context, expires_at, opts)
-    end)
-    |> case do
-      {:ok, encoded_token} -> encoded_token
+  defp issue_user_token_in_transaction(%User{} = user, context, expires_at, opts) do
+    if Keyword.get(opts, :replace_context?, false) do
+      clear_user_tokens(user.id, [context])
     end
+
+    insert_user_token!(user, context, expires_at, opts)
   end
 
   defp insert_user_token!(%User{} = user, context, expires_at, opts \\ []) do
@@ -334,6 +320,59 @@ defmodule ProductCompare.Accounts.UserAuth do
         lock: "FOR UPDATE"
     )
   end
+
+  # Run the transport hook before commit so replace-context delivery failures
+  # roll back to the previously valid token instead of stranding the user.
+  defp deliver_user_email_instructions(%User{} = user, context, expires_at, delivery_fun) do
+    case Repo.transaction(fn ->
+           token =
+             issue_user_token_in_transaction(
+               user,
+               context,
+               expires_at,
+               sent_to: user.email,
+               replace_context?: true
+             )
+
+           case invoke_delivery_fun(delivery_fun, token) do
+             :ok -> :ok
+             {:error, reason} -> Repo.rollback({:delivery_failed, context, reason})
+           end
+         end) do
+      {:ok, :ok} ->
+        :ok
+
+      {:error, {:delivery_failed, failed_context, reason}} ->
+        Logger.warning(
+          "delivery hook failed for #{failed_context} token: #{format_delivery_failure(reason)}"
+        )
+
+        :ok
+    end
+  end
+
+  defp invoke_delivery_fun(delivery_fun, token) do
+    try do
+      case delivery_fun.(token) do
+        {:error, reason} -> {:error, reason}
+        _other -> :ok
+      end
+    rescue
+      error -> {:error, {:raised, error, __STACKTRACE__}}
+    catch
+      kind, reason -> {:error, {:caught, kind, reason}}
+    end
+  end
+
+  defp format_delivery_failure({:raised, error, _stacktrace}) when is_exception(error) do
+    Exception.message(error)
+  end
+
+  defp format_delivery_failure({:caught, kind, reason}) do
+    "#{kind}: #{inspect(reason)}"
+  end
+
+  defp format_delivery_failure(reason), do: inspect(reason)
 
   # Test-only hook for deterministically pausing callers before the reset
   # password transaction races to consume a single-use token.

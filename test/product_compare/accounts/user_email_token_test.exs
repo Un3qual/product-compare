@@ -8,6 +8,25 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "password reset tokens" do
+    test "delivery hook config raises when present but malformed" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      original_config = Application.get_env(:product_compare, ProductCompare.Accounts, [])
+
+      Application.put_env(
+        :product_compare,
+        ProductCompare.Accounts,
+        Keyword.put(original_config, :deliver_user_reset_password_instructions, :not_a_function)
+      )
+
+      on_exit(fn ->
+        Application.put_env(:product_compare, ProductCompare.Accounts, original_config)
+      end)
+
+      assert_raise ArgumentError,
+                   ~r/deliver_user_reset_password_instructions/,
+                   fn -> Accounts.deliver_user_reset_password_instructions(user) end
+    end
+
     test "delivers a reset password token that resolves back to the user" do
       user = user_fixture(%{password: "supersecretpass123"})
       user_id = user.id
@@ -20,6 +39,26 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
 
       assert_receive {:reset_password_token, token}
       assert %User{id: ^user_id} = Accounts.get_user_by_reset_password_token(token)
+    end
+
+    test "delivery hook errors preserve the prior reset token" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      user_id = user.id
+      parent = self()
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                 send(parent, {:reset_password_token, token})
+               end)
+
+      assert_receive {:reset_password_token, original_token}
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn _token ->
+                 {:error, :mailer_down}
+               end)
+
+      assert %User{id: ^user_id} = Accounts.get_user_by_reset_password_token(original_token)
     end
 
     test "reset_user_password/2 updates the password and clears all user tokens" do

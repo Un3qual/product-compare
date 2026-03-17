@@ -603,9 +603,16 @@ defmodule ProductCompare.Accounts do
   # can be injected later without changing the GraphQL contract or the token logic.
   defp configured_user_token_delivery(hook, user) do
     case Application.get_env(:product_compare, __MODULE__, [])
-         |> Keyword.get(hook) do
-      fun when is_function(fun, 2) -> &fun.(user, &1)
-      _other -> nil
+         |> Keyword.fetch(hook) do
+      :error ->
+        nil
+
+      {:ok, fun} when is_function(fun, 2) ->
+        &fun.(user, &1)
+
+      {:ok, invalid} ->
+        raise ArgumentError,
+              "expected #{inspect(__MODULE__)} #{inspect(hook)} hook to be a 2-arity function, got: #{inspect(invalid)}"
     end
   end
 

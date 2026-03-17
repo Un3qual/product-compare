@@ -319,6 +319,48 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     refute_received {:reset_password_token, ^email, _token}
   end
 
+  test "forgotPassword returns ok and preserves the prior token when delivery raises", %{
+    conn: conn
+  } do
+    user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
+    accounts_config = Application.get_env(:product_compare, ProductCompare.Accounts, [])
+
+    assert :ok = Accounts.deliver_user_reset_password_instructions(user)
+    assert_receive {:reset_password_token, ^user_email, original_token}
+
+    Application.put_env(
+      :product_compare,
+      ProductCompare.Accounts,
+      Keyword.put(accounts_config, :deliver_user_reset_password_instructions, fn _user, _token ->
+        raise "mailer down"
+      end)
+    )
+
+    on_exit(fn ->
+      Application.put_env(:product_compare, ProductCompare.Accounts, accounts_config)
+    end)
+
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(forgot_password_mutation(), %{"email" => user.email})
+
+    assert %{
+             "data" => %{
+               "forgotPassword" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert %ProductCompareSchemas.Accounts.User{id: user_id} = user
+
+    assert %ProductCompareSchemas.Accounts.User{id: ^user_id} =
+             Accounts.get_user_by_reset_password_token(original_token)
+  end
+
   test "resetPassword updates the password, drops the current session, and returns ok", %{
     conn: conn
   } do
