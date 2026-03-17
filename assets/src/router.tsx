@@ -1,7 +1,10 @@
 import type { RouteObject } from "react-router-dom";
 import { createBrowserRouter, createMemoryRouter } from "react-router-dom";
+import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
+import { ResetPasswordRoute } from "./routes/auth/reset-password";
+import { VerifyEmailRoute } from "./routes/auth/verify-email";
 import { RootLayout, RootRoute } from "./routes/root";
 
 const routes: RouteObject[] = [
@@ -20,6 +23,18 @@ const routes: RouteObject[] = [
       {
         path: "auth/register",
         element: <RegisterRoute />
+      },
+      {
+        path: "auth/forgot-password",
+        element: <ForgotPasswordRoute />
+      },
+      {
+        path: "auth/reset-password",
+        element: <ResetPasswordRoute />
+      },
+      {
+        path: "auth/verify-email",
+        element: <VerifyEmailRoute />
       }
     ]
   }

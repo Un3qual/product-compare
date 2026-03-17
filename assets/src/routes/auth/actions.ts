@@ -137,7 +137,13 @@ function parseActionPayload(response: GraphQLResponse, fieldName: string): AuthA
 }
 
 function readPayload(response: GraphQLResponse, fieldName: string) {
-  if (response.data && typeof response.data === "object" && !Array.isArray(response.data)) {
+  if (
+    !Array.isArray(response) &&
+    "data" in response &&
+    response.data &&
+    typeof response.data === "object" &&
+    !Array.isArray(response.data)
+  ) {
     const payload = (response.data as Record<string, unknown>)[fieldName];
 
     if (payload && typeof payload === "object" && !Array.isArray(payload)) {
@@ -160,8 +166,8 @@ function normalizeErrors(
     }
   }
 
-  if (Array.isArray(response.errors) && response.errors.length > 0) {
-    return response.errors.map((error) => ({
+  if (!Array.isArray(response) && "errors" in response && Array.isArray(response.errors)) {
+    return response.errors.map((error: { message: string }) => ({
       code: "GRAPHQL_ERROR",
       field: null,
       message: error.message

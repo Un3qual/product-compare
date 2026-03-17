@@ -10,3 +10,7 @@ test("server render returns a promise that resolves to app markup", async () => 
 test("server render resolves auth route markup", async () => {
   await expect(render("/auth/login")).resolves.toContain("Sign in");
 });
+
+test("server render resolves recovery route markup", async () => {
+  await expect(render("/auth/forgot-password")).resolves.toContain("Reset your password");
+});
