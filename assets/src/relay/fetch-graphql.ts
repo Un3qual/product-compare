@@ -33,8 +33,14 @@ export async function fetchGraphQL(
       ssrContext.request?.headers.get("cookie") ??
       ssrContext.headers?.cookie;
 
+    const trustedOrigin = resolveSSRRequestOrigin(ssrContext);
+
     if (cookieValue) {
       headers.cookie = cookieValue;
+    }
+
+    if (trustedOrigin) {
+      headers.origin = trustedOrigin;
     }
   }
 
@@ -104,4 +110,28 @@ function normalizeApiBaseUrl(value?: string | null) {
   }
 
   return normalized.replace(/\/+$/, "");
+}
+
+function resolveSSRRequestOrigin(ssrContext: SSRContext) {
+  return normalizeOrigin(
+    ssrContext.headers?.origin ??
+      ssrContext.request?.headers.get("origin") ??
+      ssrContext.request?.url ??
+      ssrContext.headers?.referer ??
+      ssrContext.request?.headers.get("referer")
+  );
+}
+
+function normalizeOrigin(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(value);
+
+    return parsed.origin;
+  } catch {
+    return null;
+  }
 }

@@ -64,6 +64,33 @@ test("forwards SSR cookies to the GraphQL request", async () => {
   }
 });
 
+test("derives and forwards a trusted origin for SSR requests", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+
+  globalThis.fetch = (async (...args: unknown[]) => {
+    calls.push(args);
+    return {
+      ok: true,
+      json: async () => ({ data: {} })
+    } as Response;
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, {
+      request: new Request("https://app.example.com/products")
+    });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).headers).toMatchObject({
+      "content-type": "application/json",
+      origin: "https://app.example.com"
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("requires VITE_API_BASE_URL outside local dev", () => {
   expect(() => resolveGraphQLEndpoint({ isDev: false })).toThrow(
     "VITE_API_BASE_URL must be set outside local development"

@@ -29,6 +29,31 @@ beforeEach(() => {
   renderToReadableStreamMock.mockReset();
 });
 
+test("server render passes SSR context into the Relay environment", async () => {
+  const ssrContext = {
+    request: new Request("https://app.example.com/products", {
+      headers: {
+        cookie: "session=abc"
+      }
+    })
+  };
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const { render } = await import("../entry.server");
+
+  await expect(render("/", ssrContext)).resolves.toContain("Product Compare");
+  expect(createRelayEnvironmentMock).toHaveBeenCalledWith(ssrContext);
+});
+
 test("server render keeps recoverable SSR errors from failing the response", async () => {
   const htmlStream = new ReadableStream({
     start(controller) {

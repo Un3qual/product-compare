@@ -2,13 +2,14 @@ import { renderToReadableStream } from "react-dom/server";
 import { RouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
 import { createRelayEnvironment } from "./relay/environment";
+import type { SSRContext } from "./relay/fetch-graphql";
 import { createServerRouter } from "./router";
 
 const STREAM_ABORT_DELAY_MS = 10_000;
 type ReactReadableStream = ReadableStream & { allReady: Promise<void> };
 
-export async function render(url: string): Promise<string> {
-  const relayEnvironment = createRelayEnvironment();
+export async function render(url: string, ssrContext?: SSRContext): Promise<string> {
+  const relayEnvironment = createRelayEnvironment(ssrContext);
 
   const htmlStream: ReactReadableStream = await renderToReadableStream(
     <RelayEnvironmentProvider environment={relayEnvironment}>
