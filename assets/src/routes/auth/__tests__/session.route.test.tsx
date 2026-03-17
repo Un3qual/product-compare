@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { GraphQLResponse } from "relay-runtime";
 import { RelayEnvironmentProvider } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { createRelayEnvironment } from "../../../relay/environment";
@@ -114,6 +115,28 @@ test("login route hides transport details behind a generic alert", async () => {
   fetchGraphQLMock.mockRejectedValue(
     new Error("GraphQL request failed (500): database stacktrace")
   );
+
+  renderRoute("/auth/login");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: "supersecretpass123" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+});
+
+test("login route hides top-level GraphQL error details behind a generic alert", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: null,
+    errors: [{ message: "GraphQL request failed (500): database stacktrace" }]
+  } as unknown as GraphQLResponse);
 
   renderRoute("/auth/login");
 

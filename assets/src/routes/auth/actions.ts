@@ -177,10 +177,10 @@ function normalizeErrors(
   }
 
   if (!Array.isArray(response) && "errors" in response && Array.isArray(response.errors)) {
-    return response.errors.map((error: { message: string }) => ({
+    return response.errors.map(() => ({
       code: "GRAPHQL_ERROR",
       field: null,
-      message: error.message
+      message: transportErrorMessage
     }));
   }
 

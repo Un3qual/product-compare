@@ -107,6 +107,8 @@ test("reset password route reads the token from the URL and submits the new pass
 });
 
 test("reset password route clears stale success state when the token changes", async () => {
+  const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
   fetchGraphQLMock.mockResolvedValue({
     data: {
       resetPassword: {
@@ -118,7 +120,7 @@ test("reset password route clears stale success state when the token changes", a
 
   window.history.pushState({}, "", "/auth/reset-password?token=first-token");
 
-  render(
+  const view = render(
     <RelayEnvironmentProvider environment={createRelayEnvironment()}>
       <BrowserRouter>
         <Routes>
@@ -143,6 +145,13 @@ test("reset password route clears stale success state when the token changes", a
   await waitFor(() => {
     expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
   });
+
+  view.unmount();
+  window.history.pushState({}, "", originalPath);
+
+  expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
+    originalPath
+  );
 });
 
 test("verify email route consumes the URL token and reports success", async () => {
