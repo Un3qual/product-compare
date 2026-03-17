@@ -1,0 +1,39 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+interface Node {
+  id: ID!
+}
+
+type Query {
+  viewer: User
+}
+
+type Mutation {
+  login(email: String!, password: String!): AuthSessionPayload!
+  register(email: String!, password: String!): AuthSessionPayload!
+  logout: LogoutPayload!
+}
+
+type AuthSessionPayload {
+  viewer: User
+  errors: [MutationError!]!
+}
+
+type LogoutPayload {
+  ok: Boolean!
+  errors: [MutationError!]!
+}
+
+type MutationError {
+  code: String!
+  message: String!
+  field: String
+}
+
+type User implements Node {
+  id: ID!
+  email: String!
+}

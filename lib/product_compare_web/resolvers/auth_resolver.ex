@@ -5,11 +5,70 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.SessionMutationBridge
+
+  @invalid_credentials_message "invalid email or password"
+  @invalid_origin_message "cross-origin request rejected"
 
   @spec viewer(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Accounts.User.t() | nil}
   def viewer(_parent, _args, %{context: %{current_user: current_user}}), do: {:ok, current_user}
   def viewer(_parent, _args, _resolution), do: {:ok, nil}
+
+  @spec register(any(), %{email: String.t(), password: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, map()}
+  def register(_parent, args, resolution) do
+    with :ok <- require_trusted_request_origin(resolution),
+         {:ok, user} <- Accounts.register_user(args) do
+      user
+      |> Accounts.generate_user_session_token()
+      |> SessionMutationBridge.renew_session_with_user_token()
+
+      {:ok, auth_payload(user)}
+    else
+      {:error, :invalid_origin} ->
+        {:ok, auth_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:ok, auth_changeset_error_payload(changeset)}
+    end
+  end
+
+  @spec login(any(), %{email: String.t(), password: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, map()}
+  def login(_parent, %{email: email, password: password}, resolution) do
+    with :ok <- require_trusted_request_origin(resolution),
+         user when not is_nil(user) <-
+           Accounts.authenticate_user_by_email_and_password(email, password) do
+      user
+      |> Accounts.generate_user_session_token()
+      |> SessionMutationBridge.renew_session_with_user_token()
+
+      {:ok, auth_payload(user)}
+    else
+      {:error, :invalid_origin} ->
+        {:ok, auth_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
+
+      nil ->
+        {:ok, auth_error_payload("INVALID_CREDENTIALS", @invalid_credentials_message)}
+    end
+  end
+
+  @spec logout(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
+  def logout(_parent, _args, resolution) do
+    with :ok <- require_trusted_request_origin(resolution) do
+      if user_token = get_in(resolution.context, [:session_user_token]) do
+        Accounts.delete_user_session_token(user_token)
+      end
+
+      SessionMutationBridge.drop_session()
+      {:ok, %{ok: true, errors: []}}
+    else
+      {:error, :invalid_origin} ->
+        {:ok,
+         %{ok: false, errors: [mutation_error("INVALID_ORIGIN", @invalid_origin_message, nil)]}}
+    end
+  end
 
   @spec my_api_tokens(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
@@ -101,6 +160,43 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   def rotate_api_token(_parent, _args, _resolution),
     do: {:ok, create_rotate_error_payload("UNAUTHORIZED", "unauthorized")}
 
+  defp require_trusted_request_origin(%{context: %{trusted_request_origin?: true}}), do: :ok
+  defp require_trusted_request_origin(_resolution), do: {:error, :invalid_origin}
+
+  defp auth_payload(user) do
+    %{
+      viewer: user,
+      errors: []
+    }
+  end
+
+  defp auth_error_payload(code, message, field \\ nil) do
+    %{
+      viewer: nil,
+      errors: [mutation_error(code, message, field)]
+    }
+  end
+
+  defp auth_changeset_error_payload(%Ecto.Changeset{} = changeset) do
+    errors =
+      changeset
+      |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
+        Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+          opts
+          |> Keyword.get(atomize_key(key), key)
+          |> to_string()
+        end)
+      end)
+      |> Enum.flat_map(fn {field, messages} ->
+        Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
+      end)
+
+    %{
+      viewer: nil,
+      errors: errors
+    }
+  end
+
   defp first_changeset_error(%Ecto.Changeset{errors: [{_field, {message, _opts}} | _]}),
     do: message
 
@@ -129,6 +225,13 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
       api_token: nil,
       errors: [mutation_error(code, message, field)]
     }
+  end
+
+  defp atomize_key(key) do
+    # Input comes from trusted Ecto changeset error interpolation options,
+    # so we can safely convert to atom. This is preferred over using
+    # exception-based control flow with String.to_existing_atom/1.
+    String.to_atom(key)
   end
 
   defp mutation_error(code, message, field) do

@@ -4,7 +4,7 @@ defmodule ProductCompareWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
-  @session_options [
+  @base_session_options [
     store: :cookie,
     key: "_product_compare_key",
     signing_salt: "3TvIt6dp",
@@ -12,8 +12,8 @@ defmodule ProductCompareWeb.Endpoint do
   ]
 
   # socket "/live", Phoenix.LiveView.Socket,
-  #   websocket: [connect_info: [session: @session_options]],
-  #   longpoll: [connect_info: [session: @session_options]]
+  #   websocket: [connect_info: [session: session_options()]],
+  #   longpoll: [connect_info: [session: session_options()]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -44,6 +44,20 @@ defmodule ProductCompareWeb.Endpoint do
 
   plug Plug.MethodOverride
   plug Plug.Head
-  plug Plug.Session, @session_options
+  plug :put_runtime_session
   plug ProductCompareWeb.Router
+
+  @spec session_options() :: Keyword.t()
+  def session_options do
+    runtime_session_options =
+      :product_compare
+      |> Application.get_env(__MODULE__, [])
+      |> Keyword.get(:session_options, [])
+
+    Keyword.merge(@base_session_options, runtime_session_options)
+  end
+
+  defp put_runtime_session(conn, _opts) do
+    Plug.Session.call(conn, Plug.Session.init(session_options()))
+  end
 end

@@ -20,8 +20,25 @@ if System.get_env("PHX_SERVER") do
   config :product_compare, ProductCompareWeb.Endpoint, server: true
 end
 
+phx_host = System.get_env("PHX_HOST")
+
+default_trusted_origins =
+  ProductCompareWeb.RuntimeConfig.default_trusted_origins(config_env(), phx_host)
+
+trusted_origins =
+  case System.get_env("TRUSTED_FRONTEND_ORIGINS") do
+    nil ->
+      default_trusted_origins
+
+    value ->
+      value
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+  end
+
 config :product_compare, ProductCompareWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+  http: [port: String.to_integer(System.get_env("PORT", "4000"))],
+  trusted_origins: trusted_origins
 
 if config_env() == :prod do
   database_url =
@@ -53,12 +70,26 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
+  host = ProductCompareWeb.RuntimeConfig.endpoint_host(phx_host)
+
+  session_cookie_domain =
+    case System.get_env("SESSION_COOKIE_DOMAIN") do
+      nil ->
+        if String.starts_with?(host, "api.") do
+          "." <> String.trim_leading(host, "api.")
+        else
+          "." <> host
+        end
+
+      value ->
+        value
+    end
 
   config :product_compare, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    session_options: [domain: session_cookie_domain, secure: true],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.

@@ -4,10 +4,19 @@ defmodule ProductCompareWeb.Plugs.AuthenticateApiToken do
   """
 
   import Plug.Conn
+  import Phoenix.Controller, only: [json: 2]
 
   alias ProductCompare.Accounts
 
   @behaviour Plug
+  @invalid_api_token_error %{
+    errors: [
+      %{
+        code: "INVALID_API_TOKEN",
+        message: "invalid API token"
+      }
+    ]
+  }
 
   @impl Plug
   @spec init(term()) :: term()
@@ -19,6 +28,9 @@ defmodule ProductCompareWeb.Plugs.AuthenticateApiToken do
     case bearer_token(conn) do
       {:ok, token} ->
         assign_authenticated_user(conn, token)
+
+      {:error, :invalid} ->
+        unauthorized(conn)
 
       :error ->
         conn
@@ -33,18 +45,34 @@ defmodule ProductCompareWeb.Plugs.AuthenticateApiToken do
         |> assign(:api_token, api_token)
 
       :error ->
-        conn
+        unauthorized(conn)
     end
   end
 
   defp bearer_token(conn) do
-    with [header | _] <- get_req_header(conn, "authorization"),
-         [scheme, token] <- String.split(header, ~r/\s+/, parts: 2),
-         true <- String.downcase(scheme) == "bearer",
-         true <- token != "" do
-      {:ok, token}
-    else
-      _ -> :error
+    case get_req_header(conn, "authorization") do
+      [] ->
+        :error
+
+      [header | _] ->
+        case String.split(header, ~r/\s+/, parts: 2) do
+          [scheme, token] ->
+            if String.downcase(scheme) == "bearer" and token != "" do
+              {:ok, token}
+            else
+              {:error, :invalid}
+            end
+
+          _ ->
+            {:error, :invalid}
+        end
     end
+  end
+
+  defp unauthorized(conn) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(@invalid_api_token_error)
+    |> halt()
   end
 end
