@@ -35,11 +35,11 @@ function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
     </RelayEnvironmentProvider>
   );
 
-  render(
+  const view = render(
     options?.strictMode ? <StrictMode>{content}</StrictMode> : content
   );
 
-  return router;
+  return { router, unmount: view.unmount };
 }
 
 beforeEach(() => {
@@ -174,6 +174,31 @@ test("verify email route consumes the URL token and reports success", async () =
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+});
+
+test("verify email route retries after a transient failure on remount", async () => {
+  fetchGraphQLMock
+    .mockRejectedValueOnce(new Error("temporary outage"))
+    .mockResolvedValueOnce({
+      data: {
+        verifyEmail: {
+          ok: true,
+          errors: []
+        }
+      }
+    });
+
+  const firstView = renderRoute("/auth/verify-email?token=confirm-token");
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+
+  firstView.unmount();
+
+  renderRoute("/auth/verify-email?token=confirm-token");
+
+  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
 });
 
 test("verify email route only submits a single-use token once in strict mode", async () => {
