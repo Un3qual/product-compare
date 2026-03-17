@@ -9,6 +9,11 @@
 
 ---
 
+## Active Routing Note
+
+- Use `docs/NEXT.md` to choose the next batch of work.
+- This plan defines scope and task details; it is not the default live queue.
+
 ## Progress
 
 - [x] Design approved.
@@ -22,9 +27,16 @@
 - [x] Phase 2 checkpoint: GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` committed.
 - [x] Phase 2 checkpoint: `register` dispatches verification instructions when a delivery hook exists.
 - [x] Phase 2 checkpoint: frontend `login` and `register` routes committed.
+- [x] Phase 2 checkpoint: frontend auth GraphQL action helpers plus route/unit coverage committed.
 - [ ] Phase 2 checkpoint: auth token delivery transport committed.
-- [x] Phase 2 checkpoint: frontend auth recovery and verification flows committed.
 - [ ] Phase 2 checkpoint: browser-level auth end-to-end coverage expanded.
+
+### Audited Scope Boundary (2026-03-17)
+
+- Frontend auth recovery and verification routes are already implemented under `assets/src/routes/auth`.
+- Remaining unshipped work from this migration is limited to:
+  - production token delivery transport integration.
+  - browser-level end-to-end coverage for the final auth flows.
 
 ### Task 1: Document the GraphQL-only auth contract
 

@@ -6,14 +6,18 @@ Move all frontend-facing browser auth flows to GraphQL while keeping Phoenix as 
 
 ## Status
 
-- [x] Contract confirmed: browser auth must be GraphQL-only.
-- [x] Session model confirmed: cookie-backed Phoenix session, not token-returning auth.
-- [x] Initial migration scope confirmed: `login`, `register`, `logout` in this PR.
-- [x] This PR implemented and verified.
-- [x] Backend GraphQL mutation surface added for `forgotPassword`, `resetPassword`, and `verifyEmail`.
-- [x] Legacy REST auth surface fully removed.
-- [ ] Auth email delivery integrated for reset and verification instructions.
-- [ ] Frontend Relay auth mutations shipped end-to-end.
+Active task routing now lives in `docs/NEXT.md`.
+
+### Audited State (2026-03-17)
+
+- Browser auth is GraphQL-only.
+- Phoenix remains the cookie-backed session authority.
+- Backend GraphQL mutation coverage exists for `login`, `register`, `logout`, `forgotPassword`, `resetPassword`, and `verifyEmail`.
+- Legacy browser auth REST routes are removed.
+- Frontend auth routes and GraphQL action helpers exist with route/unit coverage.
+- Remaining planned work:
+  - integrate a real delivery transport for reset and verification instructions.
+  - add browser-level end-to-end coverage for recovery and verification flows.
 
 ## Problem
 

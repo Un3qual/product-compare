@@ -1,5 +1,7 @@
 # ProductCompare Backend Implementation Checklist
 
+> Historical checkpoint log. Use `docs/NEXT.md` for active next-work routing.
+
 ## Migration Order
 
 1. `20260303222607_init_extensions`
