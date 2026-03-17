@@ -1,4 +1,4 @@
-import { fetchGraphQL } from "../fetch-graphql";
+import { fetchGraphQL, resolveGraphQLEndpoint } from "../fetch-graphql";
 
 test("sends credentials for session auth", async () => {
   const originalFetch = globalThis.fetch;
@@ -20,4 +20,14 @@ test("sends credentials for session auth", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("uses the local Phoenix endpoint during dev when VITE_API_BASE_URL is unset", () => {
+  expect(resolveGraphQLEndpoint({ isDev: true })).toBe("http://127.0.0.1:4000/api/graphql");
+});
+
+test("requires VITE_API_BASE_URL outside local dev", () => {
+  expect(() => resolveGraphQLEndpoint({ isDev: false })).toThrow(
+    "VITE_API_BASE_URL must be set outside local development"
+  );
 });

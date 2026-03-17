@@ -38,6 +38,17 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
     assert Argon2.verify_pass(password, hashed_password)
   end
 
+  test "registration changeset rejects malformed email addresses" do
+    changeset =
+      User.registration_changeset(%User{}, %{
+        email: "not-an-email",
+        password: "supersecretpass123"
+      })
+
+    refute changeset.valid?
+    assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
+  end
+
   test "schema redacts both password fields" do
     assert :password in User.__schema__(:redact_fields)
     assert :hashed_password in User.__schema__(:redact_fields)

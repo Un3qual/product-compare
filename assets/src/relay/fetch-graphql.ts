@@ -1,9 +1,16 @@
 import type { GraphQLResponse } from "relay-runtime";
 
+const DEFAULT_DEV_API_BASE_URL = "http://127.0.0.1:4000";
+
 export interface SSRContext {
   request?: Request;
   headers?: Record<string, string>;
   cookieString?: string;
+}
+
+interface ResolveGraphQLEndpointOptions {
+  apiBaseUrl?: string | null;
+  isDev?: boolean;
 }
 
 export async function fetchGraphQL(
@@ -30,7 +37,7 @@ export async function fetchGraphQL(
   }
 
   try {
-    response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/graphql`, {
+    response = await fetch(resolveGraphQLEndpoint(), {
       method: "POST",
       credentials: ssrContext ? undefined : "include", // credentials only for browser
       headers,
@@ -46,4 +53,32 @@ export async function fetchGraphQL(
   }
 
   return response.json();
+}
+
+export function resolveGraphQLEndpoint(options: ResolveGraphQLEndpointOptions = {}) {
+  const apiBaseUrl = normalizeApiBaseUrl(options.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL);
+
+  if (apiBaseUrl) {
+    return `${apiBaseUrl}/api/graphql`;
+  }
+
+  if (options.isDev ?? import.meta.env.DEV) {
+    return `${DEFAULT_DEV_API_BASE_URL}/api/graphql`;
+  }
+
+  throw new Error("VITE_API_BASE_URL must be set outside local development");
+}
+
+function normalizeApiBaseUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (normalized === "") {
+    return null;
+  }
+
+  return normalized.replace(/\/+$/, "");
 }

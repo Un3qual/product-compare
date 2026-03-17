@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Accounts.User do
   use ProductCompareSchemas.Schema, :relational
 
   @type t :: %__MODULE__{}
+  @email_format ~r/^[^\s]+@[^\s]+$/
 
   schema "users" do
     field :entropy_id, Ecto.UUID
@@ -33,6 +34,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> cast(attrs, [:email, :hashed_password, :confirmed_at])
     |> validate_required([:email, :hashed_password])
     |> update_change(:email, &normalize_email/1)
+    |> validate_format(:email, @email_format, message: "must have the @ sign and no spaces")
     |> unique_constraint(:email)
   end
 
@@ -43,6 +45,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> validate_required([:email, :password])
     |> validate_length(:password, min: 12, max: 72)
     |> update_change(:email, &normalize_email/1)
+    |> validate_format(:email, @email_format, message: "must have the @ sign and no spaces")
     |> put_hashed_password()
     |> unique_constraint(:email)
   end
