@@ -163,7 +163,7 @@ defmodule ProductCompare.Accounts do
   @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
   defdelegate authenticate_user_by_email_and_password(email, password), to: UserAuth
 
-  @spec generate_user_session_token(User.t()) :: String.t()
+  @spec generate_user_session_token(User.t()) :: String.t() | nil
   defdelegate generate_user_session_token(user), to: UserAuth
 
   @spec get_user_by_session_token(String.t()) :: User.t() | nil
@@ -183,7 +183,7 @@ defmodule ProductCompare.Accounts do
   @spec deliver_user_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
   defdelegate deliver_user_confirmation_instructions(user, delivery_fun), to: UserAuth
 
-  @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, term()}
+  @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, :invalid_token}
   defdelegate confirm_user(token), to: UserAuth
 
   @spec deliver_user_reset_password_instructions(User.t()) :: :ok

@@ -1,5 +1,13 @@
 defmodule ProductCompare.Accounts.UserAuth do
-  @moduledoc false
+  @moduledoc """
+  User authentication helpers for password-backed login and token issuance.
+
+  Session token creation re-checks the current password hash under a row lock so
+  auth state captured before a password reset cannot mint a fresh session after
+  the reset commits. Tests may also install zero-arity hooks in
+  `Application.get_env(:product_compare, __MODULE__)` to pause specific
+  concurrency windows deterministically.
+  """
 
   import Ecto.Query
 
@@ -30,9 +38,24 @@ defmodule ProductCompare.Accounts.UserAuth do
     nil
   end
 
-  @spec generate_user_session_token(User.t()) :: String.t()
+  @spec generate_user_session_token(User.t()) :: String.t() | nil
   def generate_user_session_token(%User{} = user) do
-    issue_user_token(user, @session_context, session_expiration())
+    case Repo.transaction(fn ->
+           case lock_user_for_session_issue(user.id) do
+             %User{} = current_user ->
+               if current_user.hashed_password == user.hashed_password do
+                 insert_user_token!(current_user, @session_context, session_expiration())
+               else
+                 Repo.rollback(:stale_authentication)
+               end
+
+             nil ->
+               Repo.rollback(:stale_authentication)
+           end
+         end) do
+      {:ok, encoded_token} -> encoded_token
+      {:error, :stale_authentication} -> nil
+    end
   end
 
   @spec get_user_by_session_token(String.t()) :: User.t() | nil
@@ -66,23 +89,21 @@ defmodule ProductCompare.Accounts.UserAuth do
     :ok
   end
 
-  @spec confirm_user(String.t()) ::
-          {:ok, User.t()} | {:error, :invalid_token | Ecto.Changeset.t()}
+  @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, :invalid_token}
   def confirm_user(token) when is_binary(token) do
     with {:ok, raw_token} <- decode_token(token) do
       case Repo.transaction(fn ->
              case consume_user_email_token(raw_token, @confirm_context) do
                %User{} = user ->
-                 case user
-                      |> User.confirm_changeset()
-                      |> Repo.update() do
-                   {:ok, confirmed_user} ->
-                     clear_user_tokens(user.id, [@confirm_context])
-                     confirmed_user
+                 # Confirmation only persists `confirmed_at` on an existing row, so
+                 # this path cannot produce user-validation errors.
+                 confirmed_user =
+                   user
+                   |> User.confirm_changeset()
+                   |> Repo.update!()
 
-                   {:error, %Ecto.Changeset{} = changeset} ->
-                     Repo.rollback(changeset)
-                 end
+                 clear_user_tokens(user.id, [@confirm_context])
+                 confirmed_user
 
                nil ->
                  Repo.rollback(:invalid_token)
@@ -90,7 +111,6 @@ defmodule ProductCompare.Accounts.UserAuth do
            end) do
         {:ok, confirmed_user} -> {:ok, confirmed_user}
         {:error, :invalid_token} -> {:error, :invalid_token}
-        {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
       end
     else
       :error -> {:error, :invalid_token}
@@ -209,7 +229,20 @@ defmodule ProductCompare.Accounts.UserAuth do
     end
   end
 
-  defp issue_user_token(%User{} = user, context, expires_at, opts \\ []) do
+  defp issue_user_token(%User{} = user, context, expires_at, opts) do
+    Repo.transaction(fn ->
+      if Keyword.get(opts, :replace_context?, false) do
+        clear_user_tokens(user.id, [context])
+      end
+
+      insert_user_token!(user, context, expires_at, opts)
+    end)
+    |> case do
+      {:ok, encoded_token} -> encoded_token
+    end
+  end
+
+  defp insert_user_token!(%User{} = user, context, expires_at, opts \\ []) do
     raw_token = :crypto.strong_rand_bytes(@token_bytes)
     encoded_token = Base.url_encode64(raw_token, padding: false)
     sent_to = Keyword.get(opts, :sent_to)
@@ -222,15 +255,9 @@ defmodule ProductCompare.Accounts.UserAuth do
       expires_at: expires_at
     }
 
-    Repo.transaction(fn ->
-      if Keyword.get(opts, :replace_context?, false) do
-        clear_user_tokens(user.id, [context])
-      end
-
-      %UserSessionToken{}
-      |> UserSessionToken.changeset(token_attrs)
-      |> Repo.insert!()
-    end)
+    %UserSessionToken{}
+    |> UserSessionToken.changeset(token_attrs)
+    |> Repo.insert!()
 
     encoded_token
   end
@@ -299,6 +326,14 @@ defmodule ProductCompare.Accounts.UserAuth do
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
 
   defp decode_token(token), do: Base.url_decode64(token, padding: false)
+
+  defp lock_user_for_session_issue(user_id) do
+    Repo.one(
+      from user in User,
+        where: user.id == ^user_id,
+        lock: "FOR UPDATE"
+    )
+  end
 
   # Test-only hook for deterministically pausing callers before the reset
   # password transaction races to consume a single-use token.

@@ -125,6 +125,37 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
       assert length(successful_passwords) == 1
       assert is_nil(Accounts.get_user_by_reset_password_token(token))
     end
+
+    test "reset_user_password/2 prevents stale pre-reset auth state from issuing a session" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      user_email = user.email
+      parent = self()
+
+      assert %User{} =
+               authenticated_user =
+               Accounts.authenticate_user_by_email_and_password(user_email, "supersecretpass123")
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                 send(parent, {:reset_password_token, token})
+               end)
+
+      assert_receive {:reset_password_token, token}
+
+      assert {:ok, %User{}} =
+               Accounts.reset_user_password(token, %{password: "supersecretpass456"})
+
+      assert is_nil(Accounts.generate_user_session_token(authenticated_user))
+
+      assert is_nil(
+               Accounts.authenticate_user_by_email_and_password(user_email, "supersecretpass123")
+             )
+
+      assert %User{} =
+               Accounts.authenticate_user_by_email_and_password(user_email, "supersecretpass456")
+
+      assert Repo.aggregate(UserSessionToken, :count, :id) == 0
+    end
   end
 
   describe "confirmation tokens" do

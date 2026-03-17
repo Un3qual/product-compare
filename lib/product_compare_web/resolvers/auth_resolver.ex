@@ -41,10 +41,9 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   def login(_parent, %{email: email, password: password}, resolution) do
     with :ok <- require_trusted_request_origin(resolution),
          user when not is_nil(user) <-
-           Accounts.authenticate_user_by_email_and_password(email, password) do
-      user
-      |> Accounts.generate_user_session_token()
-      |> SessionMutationBridge.renew_session_with_user_token()
+           Accounts.authenticate_user_by_email_and_password(email, password),
+         user_token when is_binary(user_token) <- Accounts.generate_user_session_token(user) do
+      SessionMutationBridge.renew_session_with_user_token(user_token)
 
       {:ok, auth_payload(user)}
     else
