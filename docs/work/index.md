@@ -24,20 +24,33 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
+- No unblocked active work is ready for execution.
+- The remaining auth-migration follow-up is blocked on a concrete production token-delivery decision.
+
+## Blocked / Needs Decision
+
 ### 1. GraphQL Auth Migration Follow-up
 
-- Status: active
+- Status: blocked pending transport decision
 - Priority: P1
 - Source of truth: `docs/work/graphql-auth-migration.md`
 - Historical context:
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
-- Last verified: 2026-03-17 at `fd29b13`
-- Next batch: rebaseline the remaining frontend auth work into a current execution doc, and keep delivery transport as a separate blocked track until a concrete transport decision exists.
+- Last verified: 2026-03-17 at `4f42fcc`
+- Next batch: create or update the transport decision/status doc so the remaining auth delivery work is explicitly implemented or deferred.
 - Why this is next:
-  - Backend GraphQL auth recovery and verification mutations already exist.
-  - The remaining frontend auth work is not yet tracked in a current execution doc.
+  - Browser auth GraphQL routes and browser-level coverage are now in place.
   - Production token delivery is still hook-only and lacks a chosen mailer or notification transport.
+
+## Recently Completed
+
+### Frontend Auth Browser Coverage
+
+- Status: completed on 2026-03-17
+- Source of truth: `docs/work/frontend-auth-browser-coverage.md`
+- Outcome:
+  - Added Playwright coverage for the existing frontend session, recovery, and verification routes.
 
 ## Needs Rebaseline Before Execution
 
