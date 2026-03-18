@@ -75,7 +75,6 @@ defmodule ProductCompare.Pricing do
     |> maybe_where_merchant_id(merchant_id)
     |> maybe_where_active_only(active_only)
     |> order_by([merchant_product], asc: merchant_product.id)
-    |> preload([:merchant, :product])
   end
 
   @spec list_merchant_products(map()) :: [MerchantProduct.t()]
@@ -83,6 +82,7 @@ defmodule ProductCompare.Pricing do
     filters
     |> list_merchant_products_query()
     |> Repo.all()
+    |> Repo.preload([:merchant, :product])
   end
 
   @spec get_merchant_product!(pos_integer()) :: MerchantProduct.t()
@@ -107,6 +107,15 @@ defmodule ProductCompare.Pricing do
         order_by: [desc: pp.observed_at, desc: pp.id],
         limit: 1
     )
+  end
+
+  @spec latest_prices_query(Ecto.Queryable.t(), [pos_integer()]) :: Ecto.Query.t()
+  def latest_prices_query(queryable \\ PricePoint, merchant_product_ids)
+      when is_list(merchant_product_ids) do
+    from pp in queryable,
+      where: pp.merchant_product_id in ^merchant_product_ids,
+      distinct: pp.merchant_product_id,
+      order_by: [asc: pp.merchant_product_id, desc: pp.observed_at, desc: pp.id]
   end
 
   @spec price_history_query(pos_integer(), map()) :: Ecto.Query.t()

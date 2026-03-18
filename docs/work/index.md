@@ -29,8 +29,7 @@ Open or update a PR only when the active work item is complete.
   - Priority: P1
   - Source of truth: `docs/work/graphql-dataloader-adoption.md`
   - Next batch:
-    - Batch the current hot field paths: `product.brand`, `merchant_product.merchant`, `merchant_product.product`, and `merchant_product.latest_price`.
-    - Lock batching with regression coverage.
+    - Lock batching with regression coverage for the new Dataloader-backed field paths.
 
 ## Blocked / Needs Decision
 

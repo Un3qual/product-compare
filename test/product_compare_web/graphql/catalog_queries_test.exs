@@ -39,6 +39,49 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert brand_id == relay_id("Brand", product.brand_id)
     end
 
+    test "product batches brand lookups across aliased selections", %{conn: conn} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "batched-product-first",
+          name: "Batched Product First"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "batched-product-second",
+          name: "Batched Product Second"
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, aliased_products_query(), %{
+            "firstSlug" => first_product.slug,
+            "secondSlug" => second_product.slug
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "firstProduct" => %{
+                   "id" => first_product_id,
+                   "slug" => "batched-product-first",
+                   "brand" => %{"id" => first_brand_id}
+                 },
+                 "secondProduct" => %{
+                   "id" => second_product_id,
+                   "slug" => "batched-product-second",
+                   "brand" => %{"id" => second_brand_id}
+                 }
+               }
+             } = response
+
+      assert first_product_id == relay_id("Product", first_product.id)
+      assert second_product_id == relay_id("Product", second_product.id)
+      assert first_brand_id == relay_id("Brand", first_product.brand_id)
+      assert second_brand_id == relay_id("Brand", second_product.brand_id)
+      assert length(queries) == 3
+    end
+
     test "product returns null for a non-existent slug", %{conn: conn} do
       assert %{
                "data" => %{
@@ -106,6 +149,48 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
       assert second_id == relay_id("Product", second_product.id)
       assert second_brand_id == relay_id("Brand", second_product.brand_id)
+    end
+
+    test "products batches brand lookups for connection nodes", %{conn: conn} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "catalog-batched-first",
+          name: "Catalog Batched First"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "catalog-batched-second",
+          name: "Catalog Batched Second"
+        })
+
+      third_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "catalog-batched-third",
+          name: "Catalog Batched Third"
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_query(), %{"first" => 3})
+        end)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } = response
+
+      product_ids =
+        edges
+        |> Enum.map(&get_in(&1, ["node", "id"]))
+
+      assert relay_id("Product", first_product.id) in product_ids
+      assert relay_id("Product", second_product.id) in product_ids
+      assert relay_id("Product", third_product.id) in product_ids
+      assert length(queries) == 2
     end
 
     test "products rejects invalid cursor input", %{conn: conn} do
@@ -428,10 +513,71 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp aliased_products_query do
+    """
+    query AliasedProducts($firstSlug: String!, $secondSlug: String!) {
+      firstProduct: product(slug: $firstSlug) {
+        id
+        slug
+        brand {
+          id
+        }
+      }
+      secondProduct: product(slug: $secondSlug) {
+        id
+        slug
+        brand {
+          id
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do
