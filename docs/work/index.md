@@ -24,17 +24,9 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- Frontend Radix Primitives
-  - Status: active
-  - Priority: P1
-  - Source of truth: `docs/work/frontend-radix-primitives.md`
-  - Next batch:
-    - Add the shared Radix primitive baseline and keep it StyleX-friendly.
-    - Migrate the app shell and root navigation to the new wrapper layer without changing the look and feel.
-    - Migrate the auth form shell to Radix-backed field primitives and preserve the current GraphQL auth behavior.
 - GraphQL Dataloader Adoption
   - Status: active
-  - Priority: P2
+  - Priority: P1
   - Source of truth: `docs/work/graphql-dataloader-adoption.md`
   - Next batch:
     - Wire request-scoped Dataloader into GraphQL.
@@ -47,6 +39,15 @@ Open or update a PR only when the active work item is complete.
 - The two active slices above are explicitly queued targeted follow-ons and are not blocked by that missing rebaseline entrypoint.
 
 ## Recently Completed
+
+### Frontend Radix Primitives
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/frontend-radix-primitives.md`
+- Outcome:
+  - Added a shared frontend Radix wrapper layer at `assets/src/ui/primitives/` for `Button`, `Label`, `Separator`, and `Slot`.
+  - Migrated the app shell, root navigation/actions, and shared auth form shell onto that wrapper layer while keeping existing route behavior and link semantics intact.
+  - Verification passed with `cd assets && bun x vitest run src/ui/__tests__/primitives.test.tsx src/ui/__tests__/app-providers.test.tsx src/ui/__tests__/app-shell.test.tsx src/routes/__tests__/root.route.test.tsx src/routes/auth/__tests__/form-shell.test.tsx src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx` and `cd assets && bun run check`.
 
 ### Frontend Compare Baseline
 

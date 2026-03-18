@@ -59,6 +59,16 @@ test("forgot password route submits the email and shows the privacy-safe success
 
   renderRoute("/auth/forgot-password");
 
+  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
+  expect(screen.getByRole("button", { name: /send reset link/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: /create account/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }
   });
@@ -87,6 +97,19 @@ test("reset password route reads the token from the URL and submits the new pass
   });
 
   renderRoute("/auth/reset-password?token=reset-token");
+
+  expect(screen.getByText("New password").closest("label")).toHaveAttribute(
+    "data-slot",
+    "label"
+  );
+  expect(screen.getByRole("button", { name: /update password/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: /back to sign in/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
     target: { value: "supersecretpass456" }

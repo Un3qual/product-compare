@@ -3,15 +3,22 @@
 ## Current Batch
 
 - Status: active
-- Batch: Frontend Radix Primitives queued first, GraphQL Dataloader Adoption queued second
+- Batch: GraphQL Dataloader Adoption
 - Source of truth: `docs/work/index.md`
-- Next step: execute Task 1 from `docs/plans/2026-03-18-frontend-radix-primitives-adoption-implementation-plan.md`, then move to `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
+- Next step: execute Task 1 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
 - Why this batch is active:
-  - `docs/work/index.md` now queues the frontend Radix slice at P1 and the GraphQL Dataloader slice at P2.
-  - Both targeted implementation plans were written against the current codebase and current historical architecture docs.
+  - The frontend Radix primitives batch is complete and recorded in `docs/work/frontend-radix-primitives.md`.
+  - `docs/work/index.md` now promotes the GraphQL Dataloader slice to the highest-priority active work item.
+  - The Dataloader implementation plan is already written against the current codebase and existing historical architecture docs.
   - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaseline work remains constrained even though these two targeted slices are now ready.
 
 ## Just Completed
+
+- Frontend Radix Primitives:
+  - Added `@radix-ui/react-label`, `@radix-ui/react-separator`, and `@radix-ui/react-slot` plus a shared wrapper layer in `assets/src/ui/primitives/`.
+  - Migrated `assets/src/ui/components/layout/app-shell.tsx`, `assets/src/routes/root.tsx`, and `assets/src/routes/auth/form-shell.tsx` onto the new wrapper layer without changing route behavior or GraphQL auth flows.
+  - Added focused primitive/auth-shell coverage in `assets/src/ui/__tests__/primitives.test.tsx` and `assets/src/routes/auth/__tests__/form-shell.test.tsx`, and updated the existing shell/root/session/recovery tests to prove the shared primitives are in use.
+  - Verified `cd assets && bun x vitest run src/ui/__tests__/primitives.test.tsx src/ui/__tests__/app-providers.test.tsx src/ui/__tests__/app-shell.test.tsx src/routes/__tests__/root.route.test.tsx src/routes/auth/__tests__/form-shell.test.tsx src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx` and `cd assets && bun run check`.
 
 - Queue planning refresh:
   - Added `docs/plans/2026-03-18-frontend-radix-primitives-adoption-implementation-plan.md` and `docs/work/frontend-radix-primitives.md` to make Radix-backed frontend primitives the next P1 slice.

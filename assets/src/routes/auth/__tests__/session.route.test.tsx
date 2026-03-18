@@ -54,6 +54,16 @@ test("login route submits credentials and redirects after a successful session r
 
   renderRoute("/auth/login");
 
+  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
+  expect(screen.getByRole("button", { name: /sign in/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: /create account/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }
   });
@@ -96,6 +106,16 @@ test("register route renders typed GraphQL validation errors", async () => {
   renderRoute("/auth/register");
 
   const emailInput = screen.getByLabelText(/email/i);
+
+  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
+  expect(screen.getByRole("button", { name: /create account/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: /sign in instead/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
 
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }

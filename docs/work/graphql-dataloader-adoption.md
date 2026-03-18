@@ -3,7 +3,7 @@
 ## Snapshot
 
 - Status: active
-- Priority: P2
+- Priority: P1
 - Source of truth: this file
 - Last verified: 2026-03-18 against the current working tree
 - Historical context:
@@ -23,7 +23,7 @@
 - `lib/product_compare_web/plugs/put_absinthe_context.ex` only injects auth/session data into Absinthe context today; there is no request-scoped loader.
 - `lib/product_compare_web/router.ex` forwards `/api/graphql` through `Absinthe.Plug` with the existing auth/session plugs.
 - `mix.lock` already shows Absinthe’s optional `dataloader` dependency, but `mix.exs` does not yet declare Dataloader as a direct app dependency.
-- `docs/work/index.md` still reports no active work items, so this file is the queued source of truth for the next backend slice.
+- `docs/work/index.md` now queues this slice as the highest-priority active work item after the frontend Radix primitives batch completed.
 
 ## Next batch
 
