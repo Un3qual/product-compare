@@ -11,6 +11,16 @@ export interface ProductDetail {
   brandName: string | null;
 }
 
+export type ProductDetailLoaderData =
+  | {
+      status: "ready";
+      product: ProductDetail;
+    }
+  | {
+      status: "not_found" | "error";
+      product: null;
+    };
+
 const PRODUCT_DETAIL_QUERY = `
   query ProductDetail($slug: String!) {
     product(slug: $slug) {
@@ -29,7 +39,7 @@ const PRODUCT_DETAIL_QUERY = `
 export async function loadProductDetail(
   slug: string,
   ssrContext?: SSRContext
-): Promise<ProductDetail> {
+): Promise<ProductDetail | null> {
   if (slug === "") {
     throw new Error("Product slug is required");
   }
@@ -38,6 +48,10 @@ export async function loadProductDetail(
 
   if (hasGraphQLErrors(response)) {
     throw new Error("GraphQL response contained errors");
+  }
+
+  if (isProductMissing(response)) {
+    return null;
   }
 
   const product = parseProductDetail(response);
@@ -52,11 +66,30 @@ export async function loadProductDetail(
 export async function productDetailLoader({
   params,
   request
-}: LoaderFunctionArgs): Promise<ProductDetail> {
-  return loadProductDetail(
-    params.slug ?? "",
-    typeof window === "undefined" ? { request } : undefined
-  );
+}: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
+  try {
+    const product = await loadProductDetail(
+      params.slug ?? "",
+      typeof window === "undefined" ? { request } : undefined
+    );
+
+    if (!product) {
+      return {
+        status: "not_found",
+        product: null
+      };
+    }
+
+    return {
+      status: "ready",
+      product
+    };
+  } catch {
+    return {
+      status: "error",
+      product: null
+    };
+  }
 }
 
 function parseProductDetail(response: GraphQLResponse): ProductDetail | null {
@@ -106,6 +139,24 @@ function hasGraphQLErrors(response: GraphQLResponse) {
   const errors = candidate.errors;
 
   return Array.isArray(errors) && errors.length > 0;
+}
+
+function isProductMissing(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  if (!("data" in response) || !response.data) {
+    return false;
+  }
+
+  if (typeof response.data !== "object" || Array.isArray(response.data)) {
+    return false;
+  }
+
+  const data = response.data as Record<string, unknown>;
+
+  return "product" in data && data.product === null;
 }
 
 function parseBrandName(brand: unknown) {

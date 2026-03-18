@@ -53,11 +53,14 @@ test("product detail loader requests and returns product detail by slug", async 
       context: undefined
     } as unknown as LoaderFunctionArgs)
   ).resolves.toEqual({
-    id: "product-1",
-    name: "Detail Product",
-    slug: "detail-product",
-    description: "A narrow product detail baseline.",
-    brandName: "Acme"
+    status: "ready",
+    product: {
+      id: "product-1",
+      name: "Detail Product",
+      slug: "detail-product",
+      description: "A narrow product detail baseline.",
+      brandName: "Acme"
+    }
   });
 
   expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
@@ -68,13 +71,50 @@ test("product detail loader requests and returns product detail by slug", async 
   );
 });
 
+test("product detail loader marks null product payloads as not found", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      product: null
+    }
+  });
+
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/missing-product"),
+      params: { slug: "missing-product" },
+      context: undefined
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "not_found",
+    product: null
+  });
+});
+
+test("product detail loader marks rejected requests as unavailable", async () => {
+  fetchGraphQLMock.mockRejectedValue(new Error("Network request failed: boom"));
+
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/detail-product"),
+      params: { slug: "detail-product" },
+      context: undefined
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "error",
+    product: null
+  });
+});
+
 test("renders the product detail returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue({
-    id: "product-1",
-    name: "Detail Product",
-    slug: "detail-product",
-    description: "A narrow product detail baseline.",
-    brandName: "Acme"
+    status: "ready",
+    product: {
+      id: "product-1",
+      name: "Detail Product",
+      slug: "detail-product",
+      description: "A narrow product detail baseline.",
+      brandName: "Acme"
+    }
   });
 
   render(<ProductDetailRoute />);
@@ -82,4 +122,26 @@ test("renders the product detail returned by the route loader", () => {
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
+});
+
+test("renders a not-found message when the product detail loader misses", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "not_found",
+    product: null
+  });
+
+  render(<ProductDetailRoute />);
+
+  expect(screen.getByText("Product not found.")).toBeInTheDocument();
+});
+
+test("renders an unavailable message when the product detail request fails", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    product: null
+  });
+
+  render(<ProductDetailRoute />);
+
+  expect(screen.getByText("Product unavailable.")).toBeInTheDocument();
 });
