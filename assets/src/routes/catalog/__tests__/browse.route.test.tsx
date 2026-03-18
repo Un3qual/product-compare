@@ -151,6 +151,31 @@ test("browse loader falls back to an empty list for null GraphQL payloads", asyn
   expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
 });
 
+test("browse loader marks GraphQL error payloads as unavailable", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      products: {
+        edges: []
+      }
+    },
+    errors: [
+      {
+        message: "resolver failed"
+      }
+    ]
+  });
+
+  await expect(
+    browseLoader({
+      request: new Request("https://app.example.com/products"),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({ status: "error", products: [] });
+
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+});
+
 test("browse loader marks the catalog unavailable when the request fails", async () => {
   fetchGraphQLMock.mockRejectedValue(new Error("Network request failed: boom"));
 

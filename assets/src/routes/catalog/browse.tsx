@@ -1,8 +1,8 @@
 import { useLoaderData } from "react-router-dom";
-import type { BrowseProductsLoaderData } from "./api";
+import { browseLoader } from "./api";
 
 export function BrowseRoute() {
-  const { products, status } = useLoaderData() as BrowseProductsLoaderData;
+  const { products, status } = useLoaderData<typeof browseLoader>();
 
   return (
     <section>

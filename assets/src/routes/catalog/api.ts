@@ -35,6 +35,11 @@ export interface BrowseProductsLoaderData {
 
 export async function loadBrowseProducts(ssrContext?: SSRContext): Promise<BrowseProduct[]> {
   const response = await fetchGraphQL(BROWSE_PRODUCTS_QUERY, { first: 12 }, ssrContext);
+
+  if (hasGraphQLErrors(response)) {
+    throw new Error("GraphQL response contained errors");
+  }
+
   return parseBrowseProducts(response);
 }
 
@@ -82,6 +87,17 @@ function readEdges(response: GraphQLResponse) {
   const edges = (products as Record<string, unknown>).edges;
 
   return Array.isArray(edges) ? edges : [];
+}
+
+function hasGraphQLErrors(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  const candidate = response as unknown as Record<string, unknown>;
+  const errors = candidate.errors;
+
+  return Array.isArray(errors) && errors.length > 0;
 }
 
 function parseBrowseProduct(edge: unknown): BrowseProduct | null {
