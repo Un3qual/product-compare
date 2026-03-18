@@ -14,8 +14,8 @@ Move all frontend-facing browser auth flows to GraphQL while keeping Phoenix as 
 - [x] This PR implemented and verified.
 - [x] Backend GraphQL mutation surface added for `forgotPassword`, `resetPassword`, and `verifyEmail`.
 - [x] Legacy REST auth surface fully removed.
-- [ ] Auth email delivery integrated for reset and verification instructions.
-- [ ] Frontend Relay auth mutations shipped end-to-end.
+- [x] Auth delivery status is explicitly deferred in `docs/decisions/2026-03-17-auth-token-delivery-deferral.md`.
+- [x] Frontend GraphQL auth routes shipped end-to-end with browser-level coverage.
 
 ## Problem
 

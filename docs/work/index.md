@@ -24,26 +24,34 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- No unblocked active work is ready for execution.
-- The remaining auth-migration follow-up is blocked on a concrete production token-delivery decision.
+### 1. Frontend Catalog Browse
+
+- Status: active
+- Priority: P1
+- Source of truth: `docs/work/frontend-catalog-browse.md`
+- Historical context:
+  - `docs/plans/2026-03-05-frontend-fullstack-design.md`
+  - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
+- Last verified: 2026-03-17 at `7fdb580`
+- Next batch: execute Task 1 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`.
+- Why this is next:
+  - Auth migration follow-up is now closed by an explicit transport deferral decision.
+  - The frontend has SSR, GraphQL transport, and auth foundations but still lacks a product-discovery route.
+  - The backend already exposes the paginated `products` GraphQL surface needed for a narrow first browse slice.
 
 ## Blocked / Needs Decision
 
-### 1. GraphQL Auth Migration Follow-up
-
-- Status: blocked pending transport decision
-- Priority: P1
-- Source of truth: `docs/work/graphql-auth-migration.md`
-- Historical context:
-  - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
-  - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
-- Last verified: 2026-03-17 at `4f42fcc`
-- Next batch: create or update the transport decision/status doc so the remaining auth delivery work is explicitly implemented or deferred.
-- Why this is next:
-  - Browser auth GraphQL routes and browser-level coverage are now in place.
-  - Production token delivery is still hook-only and lacks a chosen mailer or notification transport.
+- No blocked active work currently needs execution.
 
 ## Recently Completed
+
+### GraphQL Auth Migration Follow-up
+
+- Status: completed on 2026-03-17
+- Source of truth: `docs/work/graphql-auth-migration.md`
+- Outcome:
+  - Added `docs/decisions/2026-03-17-auth-token-delivery-deferral.md` to make the remaining transport gap explicit.
+  - Closed the auth migration follow-up doc without reopening browser-auth implementation scope.
 
 ### Frontend Auth Browser Coverage
 
@@ -52,16 +60,15 @@ Open or update a PR only when the active work item is complete.
 - Outcome:
   - Added Playwright coverage for the existing frontend session, recovery, and verification routes.
 
-## Needs Rebaseline Before Execution
+## Historical Plan Notes
 
 ### Frontend Fullstack Plan
 
-- Status: needs rebaseline
+- Status: rebaselined on 2026-03-17
 - Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
 - Reason:
-  - The dated task list predates the auth-migration follow-up and does not maintain current progress.
-  - The current frontend route surface is much smaller than the original plan assumes.
-  - Pull the next concrete batch into a `docs/work/*.md` file before using it as an execution queue.
+  - The older umbrella plan remains historical context only.
+  - The next concrete slice has now been rebaselined into `docs/work/frontend-catalog-browse.md`.
 
 ## Historical / Reference Only
 
