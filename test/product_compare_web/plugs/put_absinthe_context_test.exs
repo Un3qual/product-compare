@@ -26,8 +26,7 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContextTest do
                }
              } = conn.private[:absinthe]
 
-      assert is_map(loader)
-      assert Map.get(loader, :__struct__) == Dataloader
+      assert %Dataloader{} = loader
     end
   end
 end
