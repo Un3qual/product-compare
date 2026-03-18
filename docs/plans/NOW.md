@@ -5,15 +5,21 @@
 - Status: active
 - Batch: GraphQL Dataloader Adoption
 - Source of truth: `docs/work/index.md`
-- Next step: execute Task 2 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
+- Next step: execute Task 3 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
 - Why this batch is active:
   - The frontend Radix primitives batch is complete and recorded in `docs/work/frontend-radix-primitives.md`.
   - `docs/work/index.md` now promotes the GraphQL Dataloader slice to the highest-priority active work item.
-  - Task 1 request-plumbing work is complete, so Task 2 is now the next unblocked slice inside the same active work item.
+  - Tasks 1 and 2 are complete, so Task 3 is now the next unblocked slice inside the same active work item.
   - The Dataloader implementation plan is already written against the current codebase and existing historical architecture docs.
   - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaseline work remains constrained even though these two targeted slices are now ready.
 
 ## Just Completed
+
+- GraphQL Dataloader Adoption Task 2:
+  - Updated `lib/product_compare_web/schema.ex` to resolve `product.brand`, `merchant_product.merchant`, and `merchant_product.product` through Dataloader while keeping the GraphQL field contract unchanged.
+  - Updated `lib/product_compare_web/resolvers/pricing_resolver.ex` and `lib/product_compare_web/graphql/loader.ex` so `merchant_product.latest_price` now uses a bounded request-scoped batch instead of one `Pricing.latest_price/1` query per parent node.
+  - Removed GraphQL-only eager preloads from `lib/product_compare/catalog.ex`, `lib/product_compare_web/resolvers/catalog_resolver.ex`, and the GraphQL query path in `lib/product_compare/pricing.ex`, while keeping the shared pricing read helper preload contract intact, and added `Pricing.latest_prices_query/2` to support the custom latest-price batch.
+  - Extended `test/product_compare_web/graphql/catalog_queries_test.exs` and `test/product_compare_web/graphql/pricing_queries_test.exs` with multi-node payload and query-count regressions, and verified `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`.
 
 - GraphQL Dataloader Adoption Task 1:
   - Added `{:dataloader, "~> 2.0"}` to `mix.exs`, resolved `dataloader 2.0.2` into `mix.lock`, and created `lib/product_compare_web/graphql/loader.ex` for request-scoped catalog/pricing sources.

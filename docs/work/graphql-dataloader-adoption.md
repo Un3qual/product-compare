@@ -18,13 +18,14 @@
 ## Verified Current State
 
 - `mix.exs` now declares `:dataloader` as a direct dependency and `mix.lock` resolves `dataloader 2.0.2`.
-- `lib/product_compare_web/graphql/loader.ex` now builds request-scoped Ecto sources for `ProductCompare.Catalog` and `ProductCompare.Pricing`.
+- `lib/product_compare_web/graphql/loader.ex` now builds request-scoped Ecto sources for `ProductCompare.Catalog` and `ProductCompare.Pricing`, including a custom `latest_price` batch for `PricePoint`.
 - `lib/product_compare_web/plugs/put_absinthe_context.ex` now injects `:loader` into the Absinthe context while preserving `current_user`, `api_token`, `session_user_token`, and `trusted_request_origin?`.
-- `lib/product_compare_web/schema.ex` now keeps a request-local loader in `context/1` and registers `Absinthe.Middleware.Dataloader` in `plugins/0`.
+- `lib/product_compare_web/schema.ex` now keeps a request-local loader in `context/1`, registers `Absinthe.Middleware.Dataloader` in `plugins/0`, and resolves `product.brand`, `merchant_product.merchant`, and `merchant_product.product` through Dataloader with parent-value reuse enabled.
 - `test/product_compare_web/plugs/put_absinthe_context_test.exs` locks the loader presence and the existing auth/session/origin context shape.
-- `lib/product_compare_web/schema.ex` defines the existing GraphQL fields for `product`, `products`, `merchants`, `merchant_products`, and nested `merchant_product.latest_price`.
-- `lib/product_compare_web/resolvers/catalog_resolver.ex` preloads `brand` when loading a single product and preloads `brand` in the `products` query path.
-- `lib/product_compare_web/resolvers/pricing_resolver.ex` resolves `merchant_products` via `Pricing.list_merchant_products_query/1` and `merchant_product.latest_price` via `Pricing.latest_price/1` per parent node.
+- `lib/product_compare/catalog.ex` no longer preloads `brand` in `get_product_by_slug/1`, and `lib/product_compare_web/resolvers/catalog_resolver.ex` no longer joins/preloads `brand` in the GraphQL `products` query path.
+- `lib/product_compare/pricing.ex` no longer preloads `merchant` and `product` in `list_merchant_products_query/1` and now exposes `latest_prices_query/2` for bounded latest-price batching.
+- `lib/product_compare_web/resolvers/pricing_resolver.ex` now resolves `merchant_product.latest_price` through Dataloader instead of calling `Pricing.latest_price/1` per parent.
+- `test/product_compare_web/graphql/catalog_queries_test.exs` and `test/product_compare_web/graphql/pricing_queries_test.exs` now lock the multi-node payload shape and request query counts for the batched field paths.
 - `lib/product_compare_web/router.ex` forwards `/api/graphql` through `Absinthe.Plug` with the existing auth/session plugs.
 - `docs/work/index.md` now queues this slice as the highest-priority active work item after the frontend Radix primitives batch completed.
 
@@ -46,7 +47,7 @@ Every GraphQL request now gets a loader in context and the schema is wired to us
 **Verification:**
 `mix test test/product_compare_web/plugs/put_absinthe_context_test.exs`
 
-### 2. Batch the hot field paths
+### Completed: 2. Batch the hot field paths
 
 **Files:**
 - `lib/product_compare_web/resolvers/catalog_resolver.ex`
@@ -58,10 +59,10 @@ Every GraphQL request now gets a loader in context and the schema is wired to us
 - `test/product_compare_web/graphql/pricing_queries_test.exs`
 
 **Outcome:**
-The product and pricing graph stops doing one lookup per parent node for the fields that currently fan out.
+The product and pricing graph now resolves `product.brand`, `merchant_product.merchant`, `merchant_product.product`, and `merchant_product.latest_price` through request-scoped Dataloader batches instead of GraphQL-specific eager preloads or per-parent latest-price queries.
 
 **Verification:**
-`mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`
+`mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
 
 ### 3. Lock batching with regression coverage
 
@@ -83,5 +84,4 @@ A request-level test proves the batched graph stays bounded, and the work doc st
 - `sed -n '1,260p' lib/product_compare_web/resolvers/pricing_resolver.ex`
 - `sed -n '1,220p' lib/product_compare_web/plugs/put_absinthe_context.ex`
 - `sed -n '1,220p' lib/product_compare_web/router.ex`
-- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`
-- `mix test test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`

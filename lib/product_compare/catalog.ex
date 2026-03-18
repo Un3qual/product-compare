@@ -65,9 +65,7 @@ defmodule ProductCompare.Catalog do
   def get_product_by_slug(nil), do: nil
 
   def get_product_by_slug(slug) when is_binary(slug) do
-    Product
-    |> Repo.get_by(slug: slug)
-    |> Repo.preload(:brand)
+    Repo.get_by(Product, slug: slug)
   end
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do

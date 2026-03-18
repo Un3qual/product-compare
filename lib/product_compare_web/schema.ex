@@ -1,8 +1,11 @@
 defmodule ProductCompareWeb.Schema do
   use Absinthe.Schema
 
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
   import_types(Absinthe.Type.Custom)
 
+  alias ProductCompare.Catalog
+  alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Resolvers.AffiliateResolver
@@ -487,7 +490,7 @@ defmodule ProductCompareWeb.Schema do
     field :slug, non_null(:string)
     field :model_number, :string
     field :description, :string
-    field :brand, :brand
+    field :brand, :brand, resolve: dataloader(Catalog, use_parent: true)
   end
 
   object :merchant_product do
@@ -514,8 +517,8 @@ defmodule ProductCompareWeb.Schema do
     field :currency, non_null(:string)
     field :last_seen_at, :datetime
     field :is_active, non_null(:boolean)
-    field :merchant, :merchant
-    field :product, :product
+    field :merchant, :merchant, resolve: dataloader(Pricing, use_parent: true)
+    field :product, :product, resolve: dataloader(Pricing, use_parent: true)
     field :latest_price, :price_point, resolve: &PricingResolver.latest_price/3
 
     field :price_history, :price_point_connection do

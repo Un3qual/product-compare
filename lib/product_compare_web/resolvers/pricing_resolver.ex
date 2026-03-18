@@ -1,10 +1,13 @@
 defmodule ProductCompareWeb.Resolvers.PricingResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareSchemas.Pricing.PricePoint
 
   @spec merchants(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
@@ -24,9 +27,14 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   @spec latest_price(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Pricing.PricePoint.t() | nil}
-  def latest_price(%{id: merchant_product_id}, _args, _resolution)
+  def latest_price(%{id: merchant_product_id}, _args, %{context: %{loader: loader}})
       when is_integer(merchant_product_id) do
-    {:ok, Pricing.latest_price(merchant_product_id)}
+    loader
+    |> Dataloader.load(Pricing, {:one, PricePoint}, latest_price: merchant_product_id)
+    |> on_load(fn loader ->
+      {:ok,
+       Dataloader.get(loader, Pricing, {:one, PricePoint}, latest_price: merchant_product_id)}
+    end)
   end
 
   def latest_price(_merchant_product, _args, _resolution), do: {:ok, nil}

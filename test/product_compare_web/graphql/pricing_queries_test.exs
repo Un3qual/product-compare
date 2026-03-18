@@ -1,5 +1,5 @@
 defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -381,6 +381,84 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  Map.put(variables, "historyAfter", "bad-cursor")
                )
     end
+
+    test "merchantProducts batches merchant product and latest price lookups", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-batched-product"})
+
+      merchant_products =
+        1..4
+        |> Enum.map(fn index ->
+          merchant =
+            merchant_fixture(%{
+              name: unique_name("Batch Merchant #{index}"),
+              domain: unique_domain("batch-#{index}")
+            })
+
+          merchant_product =
+            merchant_product_fixture(%{
+              merchant: merchant,
+              product: product,
+              is_active: true
+            })
+
+          {:ok, latest_price} =
+            Pricing.add_price_point(%{
+              merchant_product_id: merchant_product.id,
+              observed_at:
+                DateTime.utc_now()
+                |> DateTime.add(index, :second)
+                |> DateTime.truncate(:microsecond),
+              price: Decimal.new("#{100 + index}.99")
+            })
+
+          {merchant_product, merchant, latest_price}
+        end)
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_products_with_nested_fields_query(), %{
+            "input" => %{
+              "productId" => relay_id("Product", product.id),
+              "first" => 10
+            }
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "merchantProducts" => %{
+                   "edges" => edges
+                 }
+               }
+             } = response
+
+      assert length(edges) == 4
+
+      Enum.each(merchant_products, fn {merchant_product, merchant, latest_price} ->
+        assert Enum.any?(edges, fn edge ->
+                 edge["node"] == %{
+                   "id" => relay_id("MerchantProduct", merchant_product.id),
+                   "merchant" => %{
+                     "id" => relay_id("Merchant", merchant.id),
+                     "name" => merchant.name
+                   },
+                   "product" => %{
+                     "id" => relay_id("Product", product.id),
+                     "slug" => product.slug
+                   },
+                   "latestPrice" => %{
+                     "id" => relay_id("PricePoint", latest_price.id),
+                     "price" => Decimal.to_string(latest_price.price)
+                   }
+                 }
+               end)
+      end)
+
+      assert length(queries) == 4
+    end
   end
 
   defp merchant_fixture(attrs \\ %{}) do
@@ -502,10 +580,76 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     """
   end
 
+  defp merchant_products_with_nested_fields_query do
+    """
+    query MerchantProductsWithNestedFields($input: MerchantProductsInput!) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            id
+            merchant {
+              id
+              name
+            }
+            product {
+              id
+              slug
+            }
+            latestPrice {
+              id
+              price
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
   end
 
   defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")

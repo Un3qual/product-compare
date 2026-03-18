@@ -1,8 +1,6 @@
 defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   @moduledoc false
 
-  import Ecto.Query
-
   alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
@@ -19,11 +17,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
           {:ok, map()} | {:error, String.t()}
   def products(_parent, args, _resolution) do
     with {:ok, filters} <- normalize_filters(fetch_value(args || %{}, :filters, %{})) do
-      query =
-        Product
-        |> join(:left, [p], brand in assoc(p, :brand))
-        |> preload([_p, brand], brand: brand)
-        |> Filtering.apply_filters(filters)
+      query = Filtering.apply_filters(Product, filters)
 
       connection_args = Map.take(args || %{}, [:first, :after])
 
