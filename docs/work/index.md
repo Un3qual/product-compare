@@ -32,11 +32,11 @@ Open or update a PR only when the active work item is complete.
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
-- Last verified: 2026-03-17 at `3f97b0f`
-- Next batch: execute Task 2 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`.
+- Last verified: 2026-03-17 at `337dd87`
+- Next batch: execute Task 3 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`.
 - Why this is next:
   - Auth migration follow-up is now closed by an explicit transport deferral decision.
-  - The frontend now has the `/products` route shell and browse entry point, but the page still renders placeholder content.
+  - The frontend now SSR-renders the first page of catalog products on `/products`, but it still lacks empty and unavailable states.
   - The backend already exposes the paginated `products` GraphQL surface needed for a narrow first browse slice.
 
 ## Blocked / Needs Decision

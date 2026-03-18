@@ -1,14 +1,21 @@
-import type { RouteObject } from "react-router-dom";
-import { createBrowserRouter, createMemoryRouter } from "react-router-dom";
+import type { HydrationState, RouteObject } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
 import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
+import { browseLoader } from "./routes/catalog/api";
 import { BrowseRoute } from "./routes/catalog/browse";
 import { RootLayout, RootRoute } from "./routes/root";
 
-const routes: RouteObject[] = [
+declare global {
+  interface Window {
+    __staticRouterHydrationData?: HydrationState;
+  }
+}
+
+export const routes: RouteObject[] = [
   {
     path: "/",
     element: <RootLayout />,
@@ -19,6 +26,7 @@ const routes: RouteObject[] = [
       },
       {
         path: "products",
+        loader: browseLoader,
         element: <BrowseRoute />
       },
       {
@@ -46,18 +54,7 @@ const routes: RouteObject[] = [
 ];
 
 export function createClientRouter() {
-  return createBrowserRouter(routes);
-}
-
-export function createServerRouter(url: string) {
-  return createMemoryRouter(routes, { initialEntries: [normalizeServerEntry(url)] });
-}
-
-function normalizeServerEntry(url: string) {
-  try {
-    const parsed = new URL(url, "http://localhost");
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return url.startsWith("/") ? url : "/";
-  }
+  return createBrowserRouter(routes, {
+    hydrationData: typeof window === "undefined" ? undefined : window.__staticRouterHydrationData
+  });
 }

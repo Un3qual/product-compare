@@ -2,11 +2,16 @@ import { vi } from "vitest";
 
 const {
   createRelayEnvironmentMock,
-  createServerRouterMock,
+  createStaticHandlerMock,
+  createStaticRouterMock,
   renderToReadableStreamMock
 } = vi.hoisted(() => ({
   createRelayEnvironmentMock: vi.fn(() => ({})),
-  createServerRouterMock: vi.fn(() => ({})),
+  createStaticHandlerMock: vi.fn(() => ({
+    dataRoutes: [],
+    query: vi.fn(async () => ({}))
+  })),
+  createStaticRouterMock: vi.fn(() => ({})),
   renderToReadableStreamMock: vi.fn()
 }));
 
@@ -18,14 +23,25 @@ vi.mock("../relay/environment", () => ({
   createRelayEnvironment: createRelayEnvironmentMock
 }));
 
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+
+  return {
+    ...actual,
+    createStaticHandler: createStaticHandlerMock,
+    createStaticRouter: createStaticRouterMock
+  };
+});
+
 vi.mock("../router", () => ({
-  createServerRouter: createServerRouterMock
+  routes: []
 }));
 
 beforeEach(() => {
   vi.resetModules();
   createRelayEnvironmentMock.mockClear();
-  createServerRouterMock.mockClear();
+  createStaticHandlerMock.mockClear();
+  createStaticRouterMock.mockClear();
   renderToReadableStreamMock.mockReset();
 });
 
@@ -52,6 +68,45 @@ test("server render passes SSR context into the Relay environment", async () => 
 
   await expect(render("/", ssrContext)).resolves.toContain("Product Compare");
   expect(createRelayEnvironmentMock).toHaveBeenCalledWith(ssrContext);
+  expect(createStaticHandlerMock).toHaveBeenCalled();
+});
+
+test("server render passes the incoming request URL and headers into the static handler query", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const ssrContext = {
+    request: new Request("https://app.example.com/products?featured=true", {
+      headers: {
+        cookie: "session=abc"
+      }
+    })
+  };
+
+  const { render } = await import("../entry.server");
+
+  await render("/products?featured=true", ssrContext);
+
+  expect(queryMock).toHaveBeenCalledTimes(1);
+
+  const request = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+  expect(request.url).toBe("https://app.example.com/products?featured=true");
+  expect(request.headers.get("cookie")).toBe("session=abc");
 });
 
 test("server render keeps recoverable SSR errors from failing the response", async () => {
