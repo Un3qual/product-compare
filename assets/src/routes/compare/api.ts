@@ -8,7 +8,7 @@ export type CompareRouteLoaderData =
       slugs: [];
     }
   | {
-      status: "too_many";
+      status: "too_many" | "not_found" | "error";
       slugs: string[];
     }
   | {
@@ -37,15 +37,30 @@ export async function compareLoader({
   }
 
   const ssrContext = typeof window === "undefined" ? { request } : undefined;
-  const productResults = await Promise.all(
-    slugs.map((slug) => loadProductDetail(slug, ssrContext))
-  );
 
-  return {
-    status: "ready",
-    slugs,
-    products: productResults.filter((product): product is ProductDetail => product !== null)
-  };
+  try {
+    const productResults = await Promise.all(
+      slugs.map((slug) => loadProductDetail(slug, ssrContext))
+    );
+
+    if (productResults.some((product) => product === null)) {
+      return {
+        status: "not_found",
+        slugs
+      };
+    }
+
+    return {
+      status: "ready",
+      slugs,
+      products: productResults.filter((product): product is ProductDetail => product !== null)
+    };
+  } catch {
+    return {
+      status: "error",
+      slugs
+    };
+  }
 }
 
 function parseSelectedSlugs(requestUrl: string) {

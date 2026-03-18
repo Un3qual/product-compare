@@ -24,20 +24,23 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- Frontend compare baseline
-  - Status: active
-  - Source of truth: `docs/work/frontend-compare-baseline.md`
-  - Current batch: Task 3 from `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
-  - Why now:
-    - Task 2 now renders basic compared product cards from the existing product-detail GraphQL path.
-    - The remaining compare baseline gap is route-local handling for missing and unavailable product loads.
-    - Saved-comparison persistence is still absent, so the rebaseline stays frontend-only and defers private saved sets.
+- No active work items are currently queued.
+- The next rebaseline cannot be created yet because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent.
 
 ## Blocked / Needs Decision
 
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so new rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
 
 ## Recently Completed
+
+### Frontend Compare Baseline
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/frontend-compare-baseline.md`
+- Outcome:
+  - `/compare` now SSR-renders up to three product cards from repeated `slug` query params using the existing GraphQL product-detail path.
+  - The route now distinguishes empty, over-limit, ready, missing-product, and unavailable states with focused compare-route coverage.
+  - Frontend verification passed with `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
 
 ### Frontend Product Offers Baseline
 
@@ -89,7 +92,7 @@ Open or update a PR only when the active work item is complete.
 - Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
 - Reason:
   - The older umbrella plan remains historical context only.
-  - Its browse, product-detail, and product-offers follow-ons are complete; frontend compare now lives in a dedicated current work doc and dated rebaseline plan.
+  - Its browse, product-detail, product-offers, and compare follow-ons are complete.
 
 ## Historical / Reference Only
 

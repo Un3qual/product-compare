@@ -137,6 +137,48 @@ test("compare loader requests selected product details and preserves URL order",
   );
 });
 
+test("compare loader returns not_found when any selected product is missing", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
+    .mockResolvedValueOnce({
+      data: {
+        product: null
+      }
+    });
+
+  await expect(
+    compareLoader({
+      request: new Request(
+        "https://app.example.com/compare?slug=detail-product&slug=missing-product"
+      ),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "not_found",
+    slugs: ["detail-product", "missing-product"]
+  });
+});
+
+test("compare loader returns error when any selected product request fails", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
+    .mockRejectedValueOnce(new Error("Network request failed: boom"));
+
+  await expect(
+    compareLoader({
+      request: new Request(
+        "https://app.example.com/compare?slug=detail-product&slug=broken-product"
+      ),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "error",
+    slugs: ["detail-product", "broken-product"]
+  });
+});
+
 test("renders an empty-state message when no products are selected", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
@@ -188,4 +230,28 @@ test("renders compared product cards returned by the route loader", () => {
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+});
+
+test("renders a not-found message when any selected product is missing", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "not_found",
+    slugs: ["detail-product", "missing-product"]
+  });
+
+  render(<CompareRoute />);
+
+  expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  expect(screen.getByText("One or more selected products were not found.")).toBeInTheDocument();
+});
+
+test("renders an unavailable message when compare loading fails", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    slugs: ["detail-product", "broken-product"]
+  });
+
+  render(<CompareRoute />);
+
+  expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  expect(screen.getByText("Comparison unavailable.")).toBeInTheDocument();
 });

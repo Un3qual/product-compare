@@ -30,6 +30,10 @@ export function CompareRoute() {
       <h1>Compare products</h1>
       {loaderData.status === "empty" ? <p>Choose up to 3 products to compare.</p> : null}
       {loaderData.status === "too_many" ? <p>You can compare up to 3 products.</p> : null}
+      {loaderData.status === "not_found" ? (
+        <p>One or more selected products were not found.</p>
+      ) : null}
+      {loaderData.status === "error" ? <p>Comparison unavailable.</p> : null}
     </section>
   );
 }
