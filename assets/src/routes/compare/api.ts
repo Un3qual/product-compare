@@ -1,4 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import type { ProductDetail } from "../products/api";
+import { loadProductDetail } from "../products/api";
 
 export type CompareRouteLoaderData =
   | {
@@ -6,8 +8,13 @@ export type CompareRouteLoaderData =
       slugs: [];
     }
   | {
-      status: "too_many" | "ready";
+      status: "too_many";
       slugs: string[];
+    }
+  | {
+      status: "ready";
+      slugs: string[];
+      products: ProductDetail[];
     };
 
 export async function compareLoader({
@@ -29,9 +36,15 @@ export async function compareLoader({
     };
   }
 
+  const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const productResults = await Promise.all(
+    slugs.map((slug) => loadProductDetail(slug, ssrContext))
+  );
+
   return {
     status: "ready",
-    slugs
+    slugs,
+    products: productResults.filter((product): product is ProductDetail => product !== null)
   };
 }
 

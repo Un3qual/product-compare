@@ -27,10 +27,10 @@ Open or update a PR only when the active work item is complete.
 - Frontend compare baseline
   - Status: active
   - Source of truth: `docs/work/frontend-compare-baseline.md`
-  - Current batch: Task 2 from `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
+  - Current batch: Task 3 from `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
   - Why now:
-    - Browse, product detail, and active-offers frontend slices are complete.
-    - The next milestone in the frontend architecture is comparison, and the current codebase already has enough GraphQL surface for a narrow route-local baseline.
+    - Task 2 now renders basic compared product cards from the existing product-detail GraphQL path.
+    - The remaining compare baseline gap is route-local handling for missing and unavailable product loads.
     - Saved-comparison persistence is still absent, so the rebaseline stays frontend-only and defers private saved sets.
 
 ## Blocked / Needs Decision
