@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContext do
 
   import Plug.Conn, only: [get_session: 2]
 
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Plugs.RequireSameOrigin
 
   @behaviour Plug
@@ -22,11 +23,13 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContext do
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
       |> Map.new()
 
-    context =
+    base_context =
       Map.merge(auth_context, %{
         session_user_token: get_session(conn, :user_token),
         trusted_request_origin?: RequireSameOrigin.trusted_request_origin?(conn)
       })
+
+    context = Map.put(base_context, :loader, Loader.new(base_context))
 
     Absinthe.Plug.put_options(conn, context: context)
   end

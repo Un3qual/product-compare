@@ -52,7 +52,8 @@ defmodule ProductCompare.MixProject do
       {:bandit, "~> 1.5"},
       {:argon2_elixir, "~> 4.0"},
       {:absinthe, "~> 1.7"},
-      {:absinthe_plug, "~> 1.5"}
+      {:absinthe_plug, "~> 1.5"},
+      {:dataloader, "~> 2.0"}
     ]
   end
 
