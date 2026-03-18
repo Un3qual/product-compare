@@ -24,12 +24,27 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- No active work items are currently queued.
-- The next rebaseline cannot be created yet because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent.
+- Frontend Radix Primitives
+  - Status: active
+  - Priority: P1
+  - Source of truth: `docs/work/frontend-radix-primitives.md`
+  - Next batch:
+    - Add the shared Radix primitive baseline and keep it StyleX-friendly.
+    - Migrate the app shell and root navigation to the new wrapper layer without changing the look and feel.
+    - Migrate the auth form shell to Radix-backed field primitives and preserve the current GraphQL auth behavior.
+- GraphQL Dataloader Adoption
+  - Status: active
+  - Priority: P2
+  - Source of truth: `docs/work/graphql-dataloader-adoption.md`
+  - Next batch:
+    - Wire request-scoped Dataloader into GraphQL.
+    - Batch the current hot field paths: `product.brand`, `merchant_product.merchant`, `merchant_product.product`, and `merchant_product.latest_price`.
+    - Lock batching with regression coverage.
 
 ## Blocked / Needs Decision
 
-- `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so new rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
+- `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
+- The two active slices above are explicitly queued targeted follow-ons and are not blocked by that missing rebaseline entrypoint.
 
 ## Recently Completed
 

@@ -2,16 +2,20 @@
 
 ## Current Batch
 
-- Status: blocked
-- Batch: none queued
+- Status: active
+- Batch: Frontend Radix Primitives queued first, GraphQL Dataloader Adoption queued second
 - Source of truth: `docs/work/index.md`
-- Next step: restore `docs/plans/INDEX.md` and `ARCHITECTURE.md`, then create the next implementation plan from the active architecture source
-- Why no batch is active:
-  - Frontend compare baseline Task 3 is complete, so no active work item remains under `docs/work/index.md`.
-  - The repo-level fallback for planning the next slice is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
-  - Saved-comparison persistence and later frontend rebaselines remain deferred until the planning entrypoints are restored.
+- Next step: execute Task 1 from `docs/plans/2026-03-18-frontend-radix-primitives-adoption-implementation-plan.md`, then move to `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
+- Why this batch is active:
+  - `docs/work/index.md` now queues the frontend Radix slice at P1 and the GraphQL Dataloader slice at P2.
+  - Both targeted implementation plans were written against the current codebase and current historical architecture docs.
+  - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaseline work remains constrained even though these two targeted slices are now ready.
 
 ## Just Completed
+
+- Queue planning refresh:
+  - Added `docs/plans/2026-03-18-frontend-radix-primitives-adoption-implementation-plan.md` and `docs/work/frontend-radix-primitives.md` to make Radix-backed frontend primitives the next P1 slice.
+  - Added `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md` and `docs/work/graphql-dataloader-adoption.md` to make request-scoped GraphQL batching the queued P2 slice.
 
 - Frontend compare baseline Task 3:
   - Updated `assets/src/routes/compare/api.ts` to return route-local `not_found` and `error` states when any selected product is missing or its product-detail request fails.
