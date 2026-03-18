@@ -15,8 +15,8 @@
 ## Progress
 
 - [x] Compare route shell, root navigation entry, and selection guards committed.
-- [ ] Compare route ready-state product cards committed.
-- [ ] Compare route missing/unavailable handling and slice verification committed.
+- [x] Compare route ready-state product cards committed.
+- [x] Compare route missing/unavailable handling and slice verification committed.
 
 ### Task 1: Add the compare route shell, navigation link, and selection guards
 

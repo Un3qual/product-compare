@@ -2,17 +2,28 @@
 
 ## Current Batch
 
-- Status: active
-- Batch: Frontend compare baseline Task 2
-- Source of truth: `docs/work/frontend-compare-baseline.md`
-- Implementation plan: `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
-- Next step: load and render up to three compared product cards from the existing product-detail GraphQL path with focused route tests first
-- Why this is current:
-  - Task 1 shipped the `/compare` route shell, compare navigation links, and route-local empty/over-limit guards.
-  - The current codebase already exposes `loadProductDetail/2`, so Task 2 can stay frontend-only while rendering basic comparison cards.
-  - Saved-comparison persistence is still absent, so the compare milestone continues to defer private saved sets.
+- Status: blocked
+- Batch: none queued
+- Source of truth: `docs/work/index.md`
+- Next step: restore `docs/plans/INDEX.md` and `ARCHITECTURE.md`, then create the next implementation plan from the active architecture source
+- Why no batch is active:
+  - Frontend compare baseline Task 3 is complete, so no active work item remains under `docs/work/index.md`.
+  - The repo-level fallback for planning the next slice is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
+  - Saved-comparison persistence and later frontend rebaselines remain deferred until the planning entrypoints are restored.
 
 ## Just Completed
+
+- Frontend compare baseline Task 3:
+  - Updated `assets/src/routes/compare/api.ts` to return route-local `not_found` and `error` states when any selected product is missing or its product-detail request fails.
+  - Updated `assets/src/routes/compare/index.tsx` to render `One or more selected products were not found.` and `Comparison unavailable.` inside the compare shell.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` to cover missing-product and unavailable compare states alongside the existing empty, over-limit, and ready cases.
+  - Verified `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
+
+- Frontend compare baseline Task 2:
+  - Updated `assets/src/routes/compare/api.ts` to reuse `loadProductDetail/2` for up to three selected slugs and return ready-state products in URL order.
+  - Updated `assets/src/routes/compare/index.tsx` to render basic comparison cards with product name, brand, slug, and description.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` to cover ready-state loading order and compare-card rendering.
+  - Verified `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx` and `cd assets && bun run typecheck`.
 
 - Frontend compare baseline Task 1:
   - Added `assets/src/routes/compare/api.ts` and `assets/src/routes/compare/index.tsx` for the `/compare` route-local loader and shell.
