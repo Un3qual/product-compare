@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: blocked pending transport decision
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-17 at `fd29b13`
+- Last verified: 2026-03-17 at `4f42fcc`
 - Historical context:
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
@@ -18,13 +18,17 @@
 
 - Backend GraphQL auth mutations exist for `register`, `login`, `logout`, `forgotPassword`, `resetPassword`, and `verifyEmail` in `lib/product_compare_web/schema.ex`.
 - Accounts still uses injectable delivery hooks and explicitly remains mailer-agnostic in `lib/product_compare/accounts.ex`.
-- The current frontend route surface is still minimal: `assets/src/routes/root.tsx` is the only non-test route file under `assets/src/routes`.
+- Frontend auth routes already exist in `assets/src/routes/auth` for `login`, `register`, `forgot-password`, `reset-password`, and `verify-email`.
+- Route-level frontend coverage already exists in `assets/src/routes/auth/__tests__/session.route.test.tsx` and `assets/src/routes/auth/__tests__/recovery.route.test.tsx`.
+- Browser-level frontend coverage now includes `assets/tests/e2e/auth.spec.ts` alongside `assets/tests/e2e/smoke.spec.ts`.
 
 ## Completed
 
 - GraphQL-only browser auth contract is documented.
 - Cookie-backed `register`, `login`, and `logout` GraphQL flows shipped.
 - GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` shipped with typed payloads.
+- Frontend auth session, recovery, and verification routes shipped with unit coverage.
+- Frontend auth browser-level Playwright coverage shipped.
 - Legacy browser-facing REST auth endpoints were removed.
 
 ## Open Tracks
@@ -41,24 +45,23 @@
 
 ### 2. Frontend Recovery And Verification Flows
 
-- Status: needs rebaseline before implementation
+- Status: completed
 - Current state:
-  - The backend GraphQL mutations are available.
-  - The frontend app has not yet grown beyond the root shell route.
-  - The older fullstack plan is too broad to act as the current execution queue.
-- Unblock by:
-  - writing a narrow frontend auth work doc scoped to the current `assets/` app, or
-  - rebaselining the relevant section of the dated frontend fullstack plan into an active `docs/work/*.md` file.
+  - The backend GraphQL mutations are available and the frontend routes are implemented.
+  - Browser-level coverage for those flows now lives in `assets/tests/e2e/auth.spec.ts`.
+  - The execution log for that batch remains in `docs/work/frontend-auth-browser-coverage.md`.
 
 ## Next Batch
 
-1. Rebaseline the remaining frontend auth work into a current `docs/work/*.md` execution doc with explicit files, tests, and milestone boundaries.
-2. Decide whether production token delivery should be implemented now or explicitly deferred in a decision doc.
-3. Once either track is unblocked, replace this section with the concrete implementation batch instead of broad follow-up bullets.
+1. Create or update a decision/status doc for production reset/verification delivery so the blocked transport track becomes explicit work instead of an implied TODO.
+2. Keep browser auth execution closed unless that transport decision reopens frontend requirements.
+3. Once transport is implemented or explicitly deferred, close this follow-up doc and `docs/work/index.md` together.
 
 ## Verification Commands
 
 - `sed -n '1,220p' docs/work/index.md`
 - `sed -n '1,260p' docs/work/graphql-auth-migration.md`
+- `sed -n '1,260p' docs/work/frontend-auth-browser-coverage.md`
 - `rg -n "forgot_password|reset_password|verify_email" lib/product_compare_web/schema.ex`
-- `find assets/src/routes -maxdepth 3 -type f | sort`
+- `find assets/src/routes -maxdepth 4 -type f | sort`
+- `find assets/tests -maxdepth 3 -type f | sort`
