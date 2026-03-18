@@ -52,7 +52,7 @@ Open or update a PR only when the active work item is complete.
 - Source of truth: `docs/work/frontend-product-detail.md`
 - Outcome:
   - `/products/:slug` now SSR-renders basic product details from GraphQL.
-  - The route now distinguishes product ready, not-found, and unavailable states with focused route regression coverage.
+  - The route now distinguishes product-ready, not-found, and unavailable states with focused route regression coverage.
   - Browse product names now navigate into the detail route from `/products`.
 
 ### GraphQL Auth Migration Follow-up
