@@ -11,10 +11,21 @@ export interface ProductDetail {
   brandName: string | null;
 }
 
+export interface ProductOffer {
+  id: string;
+  merchantName: string;
+  url: string;
+  priceText: string | null;
+}
+
+export type ProductOffersStatus = "ready" | "empty" | "error";
+
 export type ProductDetailLoaderData =
   | {
       status: "ready";
       product: ProductDetail;
+      offersStatus: ProductOffersStatus;
+      offers: ProductOffer[];
     }
   | {
       status: "not_found" | "error";
@@ -31,6 +42,28 @@ const PRODUCT_DETAIL_QUERY = `
       brand {
         id
         name
+      }
+    }
+  }
+`;
+
+const PRODUCT_OFFERS_QUERY = `
+  query ProductOffers($input: MerchantProductsInput!) {
+    merchantProducts(input: $input) {
+      edges {
+        node {
+          id
+          url
+          currency
+          merchant {
+            id
+            name
+          }
+          latestPrice {
+            id
+            price
+          }
+        }
       }
     }
   }
@@ -63,15 +96,43 @@ export async function loadProductDetail(
   return product;
 }
 
+async function loadProductOffers(
+  productId: string,
+  ssrContext?: SSRContext
+): Promise<ProductOffer[]> {
+  const response = await fetchGraphQL(
+    PRODUCT_OFFERS_QUERY,
+    {
+      input: {
+        productId,
+        activeOnly: true,
+        first: 6
+      }
+    },
+    ssrContext
+  );
+
+  if (hasGraphQLErrors(response)) {
+    throw new Error("GraphQL response contained errors");
+  }
+
+  const offers = parseProductOffers(response);
+
+  if (offers === null) {
+    throw new Error("Product offers payload was malformed");
+  }
+
+  return offers;
+}
+
 export async function productDetailLoader({
   params,
   request
 }: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
   try {
-    const product = await loadProductDetail(
-      params.slug ?? "",
-      typeof window === "undefined" ? { request } : undefined
-    );
+    const ssrContext = typeof window === "undefined" ? { request } : undefined;
+
+    const product = await loadProductDetail(params.slug ?? "", ssrContext);
 
     if (!product) {
       return {
@@ -79,10 +140,21 @@ export async function productDetailLoader({
         product: null
       };
     }
+    let offersStatus: ProductOffersStatus = "ready";
+    let offers: ProductOffer[] = [];
+
+    try {
+      offers = await loadProductOffers(product.id, ssrContext);
+      offersStatus = offers.length === 0 ? "empty" : "ready";
+    } catch {
+      offersStatus = "error";
+    }
 
     return {
       status: "ready",
-      product
+      product,
+      offersStatus,
+      offers
     };
   } catch {
     return {
@@ -167,4 +239,106 @@ function parseBrandName(brand: unknown) {
   const candidate = brand as Record<string, unknown>;
 
   return typeof candidate.name === "string" ? candidate.name : null;
+}
+
+function parseProductOffers(response: GraphQLResponse): ProductOffer[] | null {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return null;
+  }
+
+  if (!("data" in response) || !response.data) {
+    return null;
+  }
+
+  if (typeof response.data !== "object" || Array.isArray(response.data)) {
+    return null;
+  }
+
+  const merchantProducts = (response.data as Record<string, unknown>).merchantProducts;
+
+  if (!merchantProducts || typeof merchantProducts !== "object" || Array.isArray(merchantProducts)) {
+    return null;
+  }
+
+  const edges = (merchantProducts as Record<string, unknown>).edges;
+
+  if (!Array.isArray(edges)) {
+    return null;
+  }
+
+  return edges.flatMap((edge) => {
+    if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
+      return [];
+    }
+
+    const node = (edge as Record<string, unknown>).node;
+
+    if (!node || typeof node !== "object" || Array.isArray(node)) {
+      return [];
+    }
+
+    const candidate = node as Record<string, unknown>;
+    const merchantName = parseMerchantName(candidate.merchant);
+    const priceText = formatPriceText(candidate.latestPrice, candidate.currency);
+    const safeUrl = normalizeOfferUrl(candidate.url);
+
+    if (typeof candidate.id !== "string" || !safeUrl || !merchantName) {
+      return [];
+    }
+
+    return [
+      {
+        id: candidate.id,
+        merchantName,
+        url: safeUrl,
+        priceText
+      }
+    ];
+  });
+}
+
+function parseMerchantName(merchant: unknown) {
+  if (!merchant || typeof merchant !== "object" || Array.isArray(merchant)) {
+    return null;
+  }
+
+  const candidate = merchant as Record<string, unknown>;
+
+  return typeof candidate.name === "string" ? candidate.name : null;
+}
+
+function formatPriceText(latestPrice: unknown, currency: unknown) {
+  if (!latestPrice || typeof latestPrice !== "object" || Array.isArray(latestPrice)) {
+    return null;
+  }
+
+  if (typeof currency !== "string") {
+    return null;
+  }
+
+  const candidate = latestPrice as Record<string, unknown>;
+
+  if (typeof candidate.price === "string" && candidate.price !== "") {
+    return `${candidate.price} ${currency}`;
+  }
+
+  if (typeof candidate.price === "number" && Number.isFinite(candidate.price)) {
+    return `${candidate.price.toFixed(2)} ${currency}`;
+  }
+
+  return null;
+}
+
+function normalizeOfferUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
 }

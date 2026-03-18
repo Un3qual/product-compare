@@ -24,27 +24,23 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-### 1. Frontend Product Offers Baseline
-
-- Status: active
-- Priority: P1
-- Source of truth: `docs/work/frontend-product-offers.md`
-- Historical context:
-  - `docs/plans/2026-03-05-frontend-fullstack-design.md`
-  - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
-  - `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`
-- Last verified: 2026-03-18 at `ca3197b` + working tree
-- Next batch: execute Task 1 from `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`.
-- Why this is next:
-  - `/products/:slug` now has product detail success and fallback states, but it still omits the pricing data that makes the route useful beyond navigation.
-  - The backend already exposes `merchantProducts(input:)` with `latestPrice`, so the next narrow slice can stay frontend-only and add active-offer rendering without widening the backend contract.
-  - The older fullstack detail milestone still includes price history and coupons, but the immediate unblocked follow-on is a terse active-offers baseline.
+- No active work is currently queued.
 
 ## Blocked / Needs Decision
 
-- No blocked active work currently needs execution.
+- The next implementation batch is not yet defined.
+- The repo-policy fallback path for creating the next plan is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
 
 ## Recently Completed
+
+### Frontend Product Offers Baseline
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/frontend-product-offers.md`
+- Outcome:
+  - `/products/:slug` now renders an `Active offers` section from the existing GraphQL pricing surface.
+  - The detail route now distinguishes offer-ready, offer-empty, and offer-unavailable states without regressing product-ready, not-found, or unavailable handling.
+  - Verification passed with `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
 
 ### Frontend Product Detail Baseline
 
@@ -87,7 +83,7 @@ Open or update a PR only when the active work item is complete.
 - Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
 - Reason:
   - The older umbrella plan remains historical context only.
-  - The next concrete slice has now been rebaselined into `docs/work/frontend-product-detail.md`.
+  - Its product-detail and product-offers follow-ons are now complete, so the next concrete slice needs a new rebaseline before execution.
 
 ## Historical / Reference Only
 

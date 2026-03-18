@@ -2,17 +2,29 @@
 
 ## Current Batch
 
-- Status: ready
-- Batch: Frontend product offers baseline
-- Source of truth: `docs/work/frontend-product-offers.md`
-- Implementation plan: `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`
-- Next step: execute Task 1 from `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`
+- Status: blocked
+- Batch: Await next implementation rebaseline
+- Source of truth: `docs/work/index.md`
+- Implementation plan: none selected
+- Next step: define the next active work item before further execution
 - Why this is current:
-  - `/products/:slug` now covers product success and fallback states, but the route still has no pricing/offers content.
-  - The backend already exposes `merchantProducts(input:)` with `latestPrice`, so the next narrow slice can add active offers without widening the GraphQL schema first.
-  - Price history charts and coupons remain deferred; the immediate batch is the smallest useful detail-route follow-on.
+  - Frontend product offers baseline is complete.
+  - No `docs/work/*.md` item is still marked active.
+  - The repo-policy fallback for selecting the next batch is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
 
 ## Just Completed
+
+- Frontend product offers baseline Task 2:
+  - Updated `assets/src/routes/products/api.ts` to preserve product-ready state while returning local offer `ready`, `empty`, and `error` states.
+  - Updated `assets/src/routes/products/detail.tsx` to render `No active offers yet.` and `Offers unavailable.` inside the product detail shell.
+  - Extended `assets/src/routes/products/__tests__/detail.route.test.tsx` to cover empty and unavailable offer states without collapsing the page to `Product unavailable.`.
+  - Verified `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
+
+- Frontend product offers baseline Task 1:
+  - Updated `assets/src/routes/products/api.ts` to fetch `merchantProducts(input:)` after the product lookup succeeds and normalize active offer link/price data for the route.
+  - Updated `assets/src/routes/products/detail.tsx` to render an `Active offers` section on `/products/:slug` when offers are present.
+  - Extended `assets/src/routes/products/__tests__/detail.route.test.tsx` to cover the second GraphQL request and success-state offer rendering.
+  - Verified `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`.
 
 - Frontend product detail baseline Task 3:
   - Updated `assets/src/routes/products/api.ts` to return route-local `ready`, `not_found`, and `error` states for product detail loading.

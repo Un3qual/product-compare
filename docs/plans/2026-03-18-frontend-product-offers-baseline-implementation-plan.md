@@ -14,8 +14,8 @@
 
 ## Progress
 
-- [ ] Product-detail loader fetches active merchant offers and renders the success state.
-- [ ] Offer empty/unavailable states and slice verification committed.
+- [x] Product-detail loader fetches active merchant offers and renders the success state.
+- [x] Offer empty/unavailable states and slice verification committed.
 
 ### Task 1: Add active offers to the product-detail loader and route
 
