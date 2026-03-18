@@ -69,6 +69,7 @@ test("browse loader requests and returns the first page of products", async () =
       context: undefined
     } as LoaderFunctionArgs)
   ).resolves.toEqual({
+    status: "ready",
     products: [
       {
         id: "product-1",
@@ -120,7 +121,7 @@ test("browse loader forwards the SSR request to fetchGraphQL", async () => {
         params: {},
         context: undefined
       } as LoaderFunctionArgs)
-    ).resolves.toEqual({ products: [] });
+    ).resolves.toEqual({ status: "ready", products: [] });
 
     expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
       1,
@@ -145,13 +146,28 @@ test("browse loader falls back to an empty list for null GraphQL payloads", asyn
       params: {},
       context: undefined
     } as LoaderFunctionArgs)
-  ).resolves.toEqual({ products: [] });
+  ).resolves.toEqual({ status: "ready", products: [] });
+
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+});
+
+test("browse loader marks the catalog unavailable when the request fails", async () => {
+  fetchGraphQLMock.mockRejectedValue(new Error("Network request failed: boom"));
+
+  await expect(
+    browseLoader({
+      request: new Request("https://app.example.com/products"),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({ status: "error", products: [] });
 
   expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
 });
 
 test("renders the browse products returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue({
+    status: "ready",
     products: [
       {
         id: "product-1",
@@ -175,4 +191,26 @@ test("renders the browse products returned by the route loader", () => {
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
+});
+
+test("renders an empty-state message when no products are available", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    products: []
+  });
+
+  render(<BrowseRoute />);
+
+  expect(screen.getByText("No products available yet.")).toBeInTheDocument();
+});
+
+test("renders an unavailable-state message when the catalog request fails", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    products: []
+  });
+
+  render(<BrowseRoute />);
+
+  expect(screen.getByText("Catalog unavailable.")).toBeInTheDocument();
 });

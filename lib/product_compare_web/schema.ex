@@ -31,6 +31,13 @@ defmodule ProductCompareWeb.Schema do
       resolve(&AffiliateResolver.active_coupons/3)
     end
 
+    @desc "Returns a single product by slug."
+    field :product, :product do
+      arg(:slug, non_null(:string))
+
+      resolve(&CatalogResolver.product/3)
+    end
+
     @desc "Returns products ordered by primary key with cursor pagination."
     field :products, :product_connection do
       arg(:first, :integer)

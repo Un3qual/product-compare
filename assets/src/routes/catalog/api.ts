@@ -29,6 +29,7 @@ const BROWSE_PRODUCTS_QUERY = `
 `;
 
 export interface BrowseProductsLoaderData {
+  status: "ready" | "error";
   products: BrowseProduct[];
 }
 
@@ -38,9 +39,17 @@ export async function loadBrowseProducts(ssrContext?: SSRContext): Promise<Brows
 }
 
 export async function browseLoader({ request }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
-  return {
-    products: await loadBrowseProducts(typeof window === "undefined" ? { request } : undefined)
-  };
+  try {
+    return {
+      status: "ready",
+      products: await loadBrowseProducts(typeof window === "undefined" ? { request } : undefined)
+    };
+  } catch {
+    return {
+      status: "error",
+      products: []
+    };
+  }
 }
 
 function parseBrowseProducts(response: GraphQLResponse): BrowseProduct[] {

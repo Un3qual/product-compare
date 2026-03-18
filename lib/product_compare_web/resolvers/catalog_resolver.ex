@@ -3,11 +3,17 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   import Ecto.Query
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Catalog.Product
+
+  @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
+  def product(_parent, args, _resolution) do
+    {:ok, Catalog.get_product_by_slug(fetch_value(args || %{}, :slug))}
+  end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
