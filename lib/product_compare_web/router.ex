@@ -40,5 +40,6 @@ defmodule ProductCompareWeb.Router do
     pipe_through [:api_cors, :api, :graphql_session, :graphql_api]
 
     forward "/graphql", Absinthe.Plug, schema: ProductCompareWeb.Schema
+    forward "/graphiql", Absinthe.Plug.GraphiQL, schema: ProductCompareWeb.Schema, interface: :simple
   end
 end
