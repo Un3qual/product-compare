@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: blocked pending transport decision
+- Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-17 at `4f42fcc`
+- Last verified: 2026-03-17 at `7fdb580`
 - Historical context:
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
@@ -18,6 +18,7 @@
 
 - Backend GraphQL auth mutations exist for `register`, `login`, `logout`, `forgotPassword`, `resetPassword`, and `verifyEmail` in `lib/product_compare_web/schema.ex`.
 - Accounts still uses injectable delivery hooks and explicitly remains mailer-agnostic in `lib/product_compare/accounts.ex`.
+- An explicit transport deferral decision now lives in `docs/decisions/2026-03-17-auth-token-delivery-deferral.md`.
 - Frontend auth routes already exist in `assets/src/routes/auth` for `login`, `register`, `forgot-password`, `reset-password`, and `verify-email`.
 - Route-level frontend coverage already exists in `assets/src/routes/auth/__tests__/session.route.test.tsx` and `assets/src/routes/auth/__tests__/recovery.route.test.tsx`.
 - Browser-level frontend coverage now includes `assets/tests/e2e/auth.spec.ts` alongside `assets/tests/e2e/smoke.spec.ts`.
@@ -30,32 +31,16 @@
 - Frontend auth session, recovery, and verification routes shipped with unit coverage.
 - Frontend auth browser-level Playwright coverage shipped.
 - Legacy browser-facing REST auth endpoints were removed.
+- Production reset/verification delivery is explicitly deferred in `docs/decisions/2026-03-17-auth-token-delivery-deferral.md`.
 
 ## Open Tracks
 
-### 1. Delivery Transport
-
-- Status: blocked pending a transport choice
-- Current state:
-  - Reset and verification tokens can be issued through configured delivery hooks.
-  - No production mailer or notification dependency is present in `mix.exs`.
-- Unblock by:
-  - choosing a concrete transport and wiring it, or
-  - recording an explicit deferral decision so the work no longer sits as an implied TODO.
-
-### 2. Frontend Recovery And Verification Flows
-
-- Status: completed
-- Current state:
-  - The backend GraphQL mutations are available and the frontend routes are implemented.
-  - Browser-level coverage for those flows now lives in `assets/tests/e2e/auth.spec.ts`.
-  - The execution log for that batch remains in `docs/work/frontend-auth-browser-coverage.md`.
+- None. Reopen this work only if a concrete production delivery transport is chosen.
 
 ## Next Batch
 
-1. Create or update a decision/status doc for production reset/verification delivery so the blocked transport track becomes explicit work instead of an implied TODO.
-2. Keep browser auth execution closed unless that transport decision reopens frontend requirements.
-3. Once transport is implemented or explicitly deferred, close this follow-up doc and `docs/work/index.md` together.
+1. No further batch lives in this doc.
+2. Return to `docs/work/index.md` for the current active work queue.
 
 ## Verification Commands
 

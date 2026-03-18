@@ -24,9 +24,9 @@
 - [x] Phase 2 checkpoint: GraphQL `forgotPassword`, `resetPassword`, and `verifyEmail` committed.
 - [x] Phase 2 checkpoint: `register` dispatches verification instructions when a delivery hook exists.
 - [x] Phase 2 checkpoint: frontend `login` and `register` routes committed.
-- [ ] Phase 2 checkpoint: auth token delivery transport committed.
+- [x] Phase 2 checkpoint: auth token delivery status explicitly deferred in `docs/decisions/2026-03-17-auth-token-delivery-deferral.md`.
 - [x] Phase 2 checkpoint: frontend auth recovery and verification flows committed.
-- [ ] Phase 2 checkpoint: browser-level auth end-to-end coverage expanded.
+- [x] Phase 2 checkpoint: browser-level auth end-to-end coverage expanded.
 
 ### Task 1: Document the GraphQL-only auth contract
 
@@ -187,8 +187,8 @@ Expected: PASS.
 - [x] Dispatch verification instructions from `register` when a delivery hook is configured.
 - [x] Keep `/api/auth/forgot-password`, `/api/auth/reset-password`, and `/api/auth/verify-email` removed and covered by router tests.
 - [x] Add frontend auth routes for `login`, `register`, `forgotPassword`, `resetPassword`, and `verifyEmail` with SSR/unit coverage.
-- [ ] Wire reset and verification token delivery to a real mailer or notification transport.
-- [ ] Expand frontend auth browser-level end-to-end coverage for recovery and verification.
+- [x] Record an explicit transport deferral decision for reset and verification delivery.
+- [x] Expand frontend auth browser-level end-to-end coverage for recovery and verification.
 
 **Step 1: Add GraphQL `forgotPassword`, `resetPassword`, `verifyEmail`**
 
