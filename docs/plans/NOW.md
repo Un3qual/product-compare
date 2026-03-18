@@ -2,19 +2,28 @@
 
 ## Current Batch
 
-- Status: in progress
-- Batch: Frontend catalog browse
-- Source of truth: `docs/work/frontend-catalog-browse.md`
-- Implementation plan: `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
-- Next step: execute Task 3 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
+- Status: ready
+- Batch: Frontend product detail baseline
+- Source of truth: `docs/work/frontend-product-detail.md`
+- Implementation plan: `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
+- Next step: execute Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
 - Why this is current:
-  - The auth migration follow-up is now closed by an explicit transport deferral decision.
-  - The frontend now loads and SSR-renders the first `products(first: 12)` page on `/products`.
-  - The remaining browse gap is route-level handling for empty and unavailable catalog states.
-  - The backend already exposes the paginated `products` GraphQL query needed for a first browse slice.
+  - `/products` now has a stable SSR browse entry point and needs a next-hop detail destination for each product row.
+  - The browse loader already returns each product's `slug`, `name`, and `brandName`, which is enough to wire readable detail URLs without widening the list query.
+  - The backend now has a single-product GraphQL query by slug, but the frontend still has no `/products/:slug` route or browse-to-detail navigation.
 
 ## Just Completed
 
+- Frontend product detail baseline Task 1:
+  - Added `product(slug: String!)` to `lib/product_compare_web/schema.ex`.
+  - Added `ProductCompare.Catalog.get_product_by_slug/1` and `CatalogResolver.product/3`.
+  - Extended `test/product_compare_web/graphql/catalog_queries_test.exs` with single-product query coverage.
+  - Verified `mix test test/product_compare_web/graphql/catalog_queries_test.exs`.
+- Frontend catalog browse Task 3:
+  - Added route-local `"ready"` and `"error"` loader states in `assets/src/routes/catalog/api.ts`.
+  - Rendered empty and unavailable copy in `assets/src/routes/catalog/browse.tsx`.
+  - Extended `assets/src/routes/catalog/__tests__/browse.route.test.tsx` to cover success, empty, and unavailable states.
+  - Verified `cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx`, `bun run typecheck`, and `bun run test:unit`.
 - Frontend catalog browse Task 2:
   - Added `assets/src/routes/catalog/api.ts` to load and normalize the first catalog page from GraphQL.
   - Switched `/products` to route-loader data in `assets/src/router.tsx` and `assets/src/routes/catalog/browse.tsx`.

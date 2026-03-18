@@ -24,20 +24,21 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-### 1. Frontend Catalog Browse
+### 1. Frontend Product Detail Baseline
 
 - Status: active
 - Priority: P1
-- Source of truth: `docs/work/frontend-catalog-browse.md`
+- Source of truth: `docs/work/frontend-product-detail.md`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
-  - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
-- Last verified: 2026-03-17 at `337dd87`
-- Next batch: execute Task 3 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`.
+  - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
+  - `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
+- Last verified: 2026-03-17 at `fec8e92` + working tree
+- Next batch: execute Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`.
 - Why this is next:
-  - Auth migration follow-up is now closed by an explicit transport deferral decision.
-  - The frontend now SSR-renders the first page of catalog products on `/products`, but it still lacks empty and unavailable states.
-  - The backend already exposes the paginated `products` GraphQL surface needed for a narrow first browse slice.
+  - The frontend now has a stable SSR browse entry point at `/products` with success, empty, and unavailable states.
+  - Browse rows already carry `slug` and brand data, so the next narrow slice can add product-detail navigation without widening the list query.
+  - The backend now has a single-product GraphQL query by slug, but the frontend still lacks `/products/:slug` route wiring and browse-to-detail navigation.
 
 ## Blocked / Needs Decision
 
@@ -60,6 +61,15 @@ Open or update a PR only when the active work item is complete.
 - Outcome:
   - Added Playwright coverage for the existing frontend session, recovery, and verification routes.
 
+### Frontend Catalog Browse
+
+- Status: completed on 2026-03-17
+- Source of truth: `docs/work/frontend-catalog-browse.md`
+- Outcome:
+  - `/products` now SSR-renders the first catalog page from GraphQL.
+  - The route now handles empty and unavailable catalog states with focused route regression coverage.
+  - Frontend verification passed with `cd assets && bun run typecheck` and `cd assets && bun run test:unit`.
+
 ## Historical Plan Notes
 
 ### Frontend Fullstack Plan
@@ -68,7 +78,7 @@ Open or update a PR only when the active work item is complete.
 - Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
 - Reason:
   - The older umbrella plan remains historical context only.
-  - The next concrete slice has now been rebaselined into `docs/work/frontend-catalog-browse.md`.
+  - The next concrete slice has now been rebaselined into `docs/work/frontend-product-detail.md`.
 
 ## Historical / Reference Only
 

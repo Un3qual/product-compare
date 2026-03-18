@@ -1,21 +1,27 @@
 import { useLoaderData } from "react-router-dom";
-import type { BrowseProductsLoaderData } from "./api";
+import { browseLoader } from "./api";
 
 export function BrowseRoute() {
-  const { products } = useLoaderData() as BrowseProductsLoaderData;
+  const { products, status } = useLoaderData<typeof browseLoader>();
 
   return (
     <section>
       <h1>Browse products</h1>
-      <ul>
-        {products.map((product) => (
-          <li key={product.id}>
-            <h2>{product.name}</h2>
-            <p>{product.slug}</p>
-            <p>{product.brandName ?? "Unknown brand"}</p>
-          </li>
-        ))}
-      </ul>
+      {status === "error" ? (
+        <p>Catalog unavailable.</p>
+      ) : products.length === 0 ? (
+        <p>No products available yet.</p>
+      ) : (
+        <ul>
+          {products.map((product) => (
+            <li key={product.id}>
+              <h2>{product.name}</h2>
+              <p>{product.slug}</p>
+              <p>{product.brandName ?? "Unknown brand"}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

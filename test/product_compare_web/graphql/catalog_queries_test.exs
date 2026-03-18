@@ -10,6 +10,43 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
+    test "product returns a single product by slug", %{conn: conn} do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "detail-product",
+          name: "Detail Product",
+          description: "A detailed product description.",
+          model_number: "DP-1000"
+        })
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "id" => product_id,
+                   "slug" => "detail-product",
+                   "name" => "Detail Product",
+                   "description" => "A detailed product description.",
+                   "modelNumber" => "DP-1000",
+                   "brand" => %{
+                     "id" => brand_id,
+                     "name" => _brand_name
+                   }
+                 }
+               }
+             } = graphql(conn, product_query(), %{"slug" => "detail-product"})
+
+      assert product_id == relay_id("Product", product.id)
+      assert brand_id == relay_id("Brand", product.brand_id)
+    end
+
+    test "product returns null for a non-existent slug", %{conn: conn} do
+      assert %{
+               "data" => %{
+                 "product" => nil
+               }
+             } = graphql(conn, product_query(), %{"slug" => "non-existent-slug"})
+    end
+
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{slug: "catalog-first", name: "Catalog First"})
@@ -367,6 +404,24 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
           hasPreviousPage
           startCursor
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp product_query do
+    """
+    query Product($slug: String!) {
+      product(slug: $slug) {
+        id
+        name
+        slug
+        modelNumber
+        description
+        brand {
+          id
+          name
         }
       }
     }

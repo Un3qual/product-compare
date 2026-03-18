@@ -29,18 +29,32 @@ const BROWSE_PRODUCTS_QUERY = `
 `;
 
 export interface BrowseProductsLoaderData {
+  status: "ready" | "error";
   products: BrowseProduct[];
 }
 
 export async function loadBrowseProducts(ssrContext?: SSRContext): Promise<BrowseProduct[]> {
   const response = await fetchGraphQL(BROWSE_PRODUCTS_QUERY, { first: 12 }, ssrContext);
+
+  if (hasGraphQLErrors(response)) {
+    throw new Error("GraphQL response contained errors");
+  }
+
   return parseBrowseProducts(response);
 }
 
 export async function browseLoader({ request }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
-  return {
-    products: await loadBrowseProducts(typeof window === "undefined" ? { request } : undefined)
-  };
+  try {
+    return {
+      status: "ready",
+      products: await loadBrowseProducts(typeof window === "undefined" ? { request } : undefined)
+    };
+  } catch {
+    return {
+      status: "error",
+      products: []
+    };
+  }
 }
 
 function parseBrowseProducts(response: GraphQLResponse): BrowseProduct[] {
@@ -73,6 +87,17 @@ function readEdges(response: GraphQLResponse) {
   const edges = (products as Record<string, unknown>).edges;
 
   return Array.isArray(edges) ? edges : [];
+}
+
+function hasGraphQLErrors(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  const candidate = response as unknown as Record<string, unknown>;
+  const errors = candidate.errors;
+
+  return Array.isArray(errors) && errors.length > 0;
 }
 
 function parseBrowseProduct(edge: unknown): BrowseProduct | null {

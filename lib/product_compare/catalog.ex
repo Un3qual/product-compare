@@ -61,6 +61,15 @@ defmodule ProductCompare.Catalog do
   @spec get_product!(pos_integer()) :: Product.t()
   def get_product!(id), do: Repo.get!(Product, id)
 
+  @spec get_product_by_slug(String.t() | nil) :: Product.t() | nil
+  def get_product_by_slug(nil), do: nil
+
+  def get_product_by_slug(slug) when is_binary(slug) do
+    Product
+    |> Repo.get_by(slug: slug)
+    |> Repo.preload(:brand)
+  end
+
   defp validate_primary_type_taxon(attrs, product \\ nil) do
     value =
       Map.get(attrs, :primary_type_taxon_id) ||
