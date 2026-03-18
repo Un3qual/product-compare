@@ -1,5 +1,14 @@
 # Repository Guidance
 
+## Execution Entry Point
+
+- Start plan discovery at `docs/work/index.md`.
+- Treat `docs/work/*.md` as the source of truth for active execution status, priority, blockers, and the next batch of work.
+- Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links them as the current active work item.
+- Verify the selected batch against the codebase before assuming an unchecked item is still unimplemented.
+- Update the relevant `docs/work/*.md` file when batch status, blockers, or priorities change.
+- Commit only at milestone boundaries that include the related code/test/doc changes; do not make standalone checkbox-only or docs-only progress commits.
+
 ## Auth Contract
 
 - Frontend-facing browser auth flows must use GraphQL over `/api/graphql`.
@@ -11,6 +20,7 @@
 
 - The repository is migrating all browser auth flows from legacy REST endpoints to GraphQL.
 - For the current migration plan and phased scope, read:
+  - `docs/work/graphql-auth-migration.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
 - If you touch auth during this migration, update those docs when the scope or completion state changes.

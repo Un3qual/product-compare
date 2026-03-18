@@ -1,5 +1,7 @@
 # ProductCompare Backend Implementation Checklist
 
+> Current execution status lives under `docs/work/`. This file is a checkpoint log, not the active work queue.
+
 ## Migration Order
 
 1. `20260303222607_init_extensions`
