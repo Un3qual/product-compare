@@ -2,6 +2,7 @@ import type { PropsWithChildren } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./actions";
+import { Button, Label, Slot } from "../../ui/primitives";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = stylex.create({
@@ -141,14 +142,14 @@ export function AuthFormShell({
           </p>
         ) : null}
 
-        <div {...stylex.props(styles.form)}>{children}</div>
+        <Slot {...stylex.props(styles.form)}>{children}</Slot>
 
         {footerLinks.length > 0 ? (
           <footer {...stylex.props(styles.footer)}>
             {footerLinks.map((link) => (
-              <Link key={link.to} to={link.to} {...stylex.props(styles.link)}>
-                {link.label}
-              </Link>
+              <Button key={link.to} asChild {...stylex.props(styles.link)}>
+                <Link to={link.to}>{link.label}</Link>
+              </Button>
             ))}
           </footer>
         ) : null}
@@ -175,8 +176,8 @@ export function AuthField({
   const errorId = error ? `${name}-error` : undefined;
 
   return (
-    <label {...stylex.props(styles.field)}>
-      <span>{label}</span>
+    <div {...stylex.props(styles.field)}>
+      <Label htmlFor={name}>{label}</Label>
       <input
         {...stylex.props(styles.input)}
         autoComplete={autoComplete}
@@ -192,7 +193,7 @@ export function AuthField({
           {error}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -201,12 +202,12 @@ export function AuthSubmitButton({
   disabled
 }: PropsWithChildren<{ disabled?: boolean }>) {
   return (
-    <button
+    <Button
       {...stylex.props(styles.button, disabled && styles.buttonDisabled)}
       disabled={disabled}
       type="submit"
     >
       {children}
-    </button>
+    </Button>
   );
 }

@@ -1,6 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { Link, Outlet } from "react-router-dom";
 import { AppShell } from "../ui/components/layout/app-shell";
+import { Button } from "../ui/primitives";
 import { AppProviders } from "../ui/providers/app-providers";
 
 const styles = stylex.create({
@@ -47,22 +48,22 @@ export function RootLayout() {
       <AppShell
         navigation={
           <div {...stylex.props(styles.navigation)}>
-            <Link to="/" {...stylex.props(styles.title)}>
-              Product Compare
-            </Link>
+            <Button asChild {...stylex.props(styles.title)}>
+              <Link to="/">Product Compare</Link>
+            </Button>
             <div {...stylex.props(styles.navigationLinks)}>
-              <Link to="/products" {...stylex.props(styles.link)}>
-                Browse products
-              </Link>
-              <Link to="/compare" {...stylex.props(styles.link)}>
-                Compare products
-              </Link>
-              <Link to="/auth/login" {...stylex.props(styles.link)}>
-                Sign in
-              </Link>
-              <Link to="/auth/register" {...stylex.props(styles.link)}>
-                Create account
-              </Link>
+              <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/products">Browse products</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/compare">Compare products</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/auth/login">Sign in</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/auth/register">Create account</Link>
+              </Button>
             </div>
           </div>
         }
@@ -81,18 +82,18 @@ export function RootRoute() {
         <p>GraphQL-backed browser auth flows now live alongside the frontend routes.</p>
       </div>
       <div {...stylex.props(styles.actions)}>
-        <Link to="/products" {...stylex.props(styles.link)}>
-          Browse products
-        </Link>
-        <Link to="/compare" {...stylex.props(styles.link)}>
-          Compare products
-        </Link>
-        <Link to="/auth/login" {...stylex.props(styles.link)}>
-          Sign in
-        </Link>
-        <Link to="/auth/register" {...stylex.props(styles.link)}>
-          Create account
-        </Link>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/products">Browse products</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/compare">Compare products</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/auth/login">Sign in</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/auth/register">Create account</Link>
+        </Button>
       </div>
     </section>
   );

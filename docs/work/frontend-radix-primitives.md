@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed on 2026-03-18
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-18 at working tree
+- Last verified: 2026-03-18 after frontend verification
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -16,21 +16,20 @@
   - The app shell, root navigation, and auth form shell have focused tests that cover the new primitives without regressing existing route behavior.
   - The frontend verification commands pass after the migration.
 
-## Verified Current State
+## Final State
 
-- `assets/package.json` currently only includes `@radix-ui/react-direction` from Radix, and `assets/src/ui/providers/app-providers.tsx` only wraps `DirectionProvider`.
-- `assets/src/ui/components/layout/app-shell.tsx` still uses hand-rolled StyleX markup for the primary nav.
-- `assets/src/routes/root.tsx` still renders the home shell and primary links with plain `Link` elements and StyleX classes.
-- `assets/src/routes/auth/form-shell.tsx` still implements labels, fields, and submit controls manually instead of using shared Radix-backed primitives.
-- Existing frontend tests already cover the shell and auth routes in `assets/src/ui/__tests__/app-shell.test.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/routes/auth/__tests__/session.route.test.tsx`, and `assets/src/routes/auth/__tests__/recovery.route.test.tsx`.
-- Historical planning already established StyleX + Radix as the intended frontend direction, so this slice should tighten the implementation around that direction rather than reopen the visual system.
+- `assets/package.json` and `assets/bun.lock` now include `@radix-ui/react-label`, `@radix-ui/react-separator`, and `@radix-ui/react-slot` alongside the existing Radix direction provider.
+- `assets/src/ui/primitives/` now provides thin local `Button`, `Label`, `Separator`, and `Slot` wrappers that keep StyleX className usage intact and expose stable local imports for route components and tests.
+- `assets/src/ui/components/layout/app-shell.tsx` now renders a shared `Separator`, and `assets/src/routes/root.tsx` now routes primary-nav and home action links through the shared `Button` wrapper without changing link semantics.
+- `assets/src/routes/auth/form-shell.tsx` now uses the shared `Label`, `Button`, and `Slot` primitives so the auth shell keeps its current GraphQL flow while centralizing field/action accessibility behavior.
+- Frontend coverage now includes `assets/src/ui/__tests__/primitives.test.tsx` and `assets/src/routes/auth/__tests__/form-shell.test.tsx`, plus updated shell/root/session/recovery tests that prove the shared primitive layer is actually in use.
 
-## Next Batch
+## Completed Batch
 
-1. Add the shared Radix primitive baseline and keep it StyleX-friendly.
-2. Migrate the app shell and root navigation to the new wrapper layer without changing the look and feel.
-3. Migrate the auth form shell to Radix-backed field primitives and preserve the current GraphQL auth behavior.
-4. Run the focused frontend verification commands and record any deferred follow-up primitives separately.
+1. Added the shared Radix primitive baseline and kept it StyleX-friendly.
+2. Migrated the app shell and root navigation to the wrapper layer without changing the link semantics or layout language.
+3. Migrated the auth form shell to Radix-backed field primitives while preserving the current GraphQL auth behavior.
+4. Ran the focused frontend verification commands and the full frontend `check` gate.
 
 ## Verification Commands
 
@@ -48,6 +47,4 @@
 - `sed -n '1,240p' assets/src/routes/auth/__tests__/session.route.test.tsx`
 - `sed -n '1,260p' assets/src/routes/auth/__tests__/recovery.route.test.tsx`
 - `cd assets && bun x vitest run src/ui/__tests__/primitives.test.tsx src/ui/__tests__/app-providers.test.tsx src/ui/__tests__/app-shell.test.tsx src/routes/__tests__/root.route.test.tsx src/routes/auth/__tests__/form-shell.test.tsx src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run test:unit`
 - `cd assets && bun run check`
