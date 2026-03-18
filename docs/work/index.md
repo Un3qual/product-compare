@@ -24,19 +24,23 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- GraphQL Dataloader Adoption
-  - Status: active
-  - Priority: P1
-  - Source of truth: `docs/work/graphql-dataloader-adoption.md`
-  - Next batch:
-    - Lock batching with regression coverage for the new Dataloader-backed field paths.
+- None. `docs/work/graphql-dataloader-adoption.md` completed on 2026-03-18, and no next unblocked batch is currently queued.
 
 ## Blocked / Needs Decision
 
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
-- The two active slices above are explicitly queued targeted follow-ons and are not blocked by that missing rebaseline entrypoint.
+- No replacement active slice is queued until those repo-level planning entrypoints exist again.
 
 ## Recently Completed
+
+### GraphQL Dataloader Adoption
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/graphql-dataloader-adoption.md`
+- Outcome:
+  - Added a request-level GraphQL batching regression test at `test/product_compare_web/graphql/dataloader_batching_test.exs`.
+  - Locked the relevant SQL envelope for one request spanning aliased `product` selections plus `merchantProducts`: three `products` selects and one each for `brands`, `merchant_products`, `merchants`, and `price_points`.
+  - Verification passed with `mix test test/product_compare_web/graphql/dataloader_batching_test.exs`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix test test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`.
 
 ### Frontend Radix Primitives
 
