@@ -2,17 +2,23 @@
 
 ## Current Batch
 
-- Status: blocked
-- Batch: Await next implementation rebaseline
-- Source of truth: `docs/work/index.md`
-- Implementation plan: none selected
-- Next step: define the next active work item before further execution
+- Status: active
+- Batch: Frontend compare baseline Task 2
+- Source of truth: `docs/work/frontend-compare-baseline.md`
+- Implementation plan: `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
+- Next step: load and render up to three compared product cards from the existing product-detail GraphQL path with focused route tests first
 - Why this is current:
-  - Frontend product offers baseline is complete.
-  - No `docs/work/*.md` item is still marked active.
-  - The repo-policy fallback for selecting the next batch is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
+  - Task 1 shipped the `/compare` route shell, compare navigation links, and route-local empty/over-limit guards.
+  - The current codebase already exposes `loadProductDetail/2`, so Task 2 can stay frontend-only while rendering basic comparison cards.
+  - Saved-comparison persistence is still absent, so the compare milestone continues to defer private saved sets.
 
 ## Just Completed
+
+- Frontend compare baseline Task 1:
+  - Added `assets/src/routes/compare/api.ts` and `assets/src/routes/compare/index.tsx` for the `/compare` route-local loader and shell.
+  - Registered the compare route in `assets/src/router.tsx` and added `Compare products` links to `assets/src/routes/root.tsx`.
+  - Added focused compare-route coverage in `assets/src/routes/compare/__tests__/compare.route.test.tsx` and expanded `assets/src/routes/__tests__/root.route.test.tsx`.
+  - Verified `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && bun run typecheck`.
 
 - Frontend product offers baseline Task 2:
   - Updated `assets/src/routes/products/api.ts` to preserve product-ready state while returning local offer `ready`, `empty`, and `error` states.

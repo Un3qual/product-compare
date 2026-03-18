@@ -24,12 +24,18 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- No active work is currently queued.
+- Frontend compare baseline
+  - Status: active
+  - Source of truth: `docs/work/frontend-compare-baseline.md`
+  - Current batch: Task 2 from `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
+  - Why now:
+    - Browse, product detail, and active-offers frontend slices are complete.
+    - The next milestone in the frontend architecture is comparison, and the current codebase already has enough GraphQL surface for a narrow route-local baseline.
+    - Saved-comparison persistence is still absent, so the rebaseline stays frontend-only and defers private saved sets.
 
 ## Blocked / Needs Decision
 
-- The next implementation batch is not yet defined.
-- The repo-policy fallback path for creating the next plan is blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
+- `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so new rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
 
 ## Recently Completed
 
@@ -83,7 +89,7 @@ Open or update a PR only when the active work item is complete.
 - Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
 - Reason:
   - The older umbrella plan remains historical context only.
-  - Its product-detail and product-offers follow-ons are now complete, so the next concrete slice needs a new rebaseline before execution.
+  - Its browse, product-detail, and product-offers follow-ons are complete; frontend compare now lives in a dedicated current work doc and dated rebaseline plan.
 
 ## Historical / Reference Only
 
