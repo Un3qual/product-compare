@@ -37,30 +37,36 @@ export async function compareLoader({
   }
 
   const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const productResults = await Promise.allSettled(
+    slugs.map((slug) => loadProductDetail(slug, ssrContext))
+  );
 
-  try {
-    const productResults = await Promise.all(
-      slugs.map((slug) => loadProductDetail(slug, ssrContext))
-    );
-
-    if (productResults.some((product) => product === null)) {
-      return {
-        status: "not_found",
-        slugs
-      };
-    }
-
-    return {
-      status: "ready",
-      slugs,
-      products: productResults.filter((product): product is ProductDetail => product !== null)
-    };
-  } catch {
+  if (productResults.some((result) => result.status === "rejected")) {
     return {
       status: "error",
       slugs
     };
   }
+
+  const fulfilledResults = productResults.filter(
+    (result): result is PromiseFulfilledResult<ProductDetail | null> =>
+      result.status === "fulfilled"
+  );
+
+  if (fulfilledResults.some((result) => result.value === null)) {
+    return {
+      status: "not_found",
+      slugs
+    };
+  }
+
+  return {
+    status: "ready",
+    slugs,
+    products: fulfilledResults.flatMap((result) =>
+      result.value === null ? [] : [result.value]
+    )
+  };
 }
 
 function parseSelectedSlugs(requestUrl: string) {

@@ -137,6 +137,62 @@ test("compare loader requests selected product details and preserves URL order",
   );
 });
 
+test("compare loader forwards the request when running in server mode", async () => {
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+  const originalWindow = globalThis.window;
+
+  vi.stubGlobal("window", undefined);
+  fetchGraphQLMock
+    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
+    .mockResolvedValueOnce(buildProductDetailResponse(SECOND_PRODUCT));
+
+  try {
+    await expect(
+      compareLoader({
+        request,
+        params: {},
+        context: undefined
+      } as LoaderFunctionArgs)
+    ).resolves.toEqual({
+      status: "ready",
+      slugs: ["detail-product", "second-product"],
+      products: [
+        {
+          id: DETAIL_PRODUCT.id,
+          name: DETAIL_PRODUCT.name,
+          slug: DETAIL_PRODUCT.slug,
+          description: DETAIL_PRODUCT.description,
+          brandName: DETAIL_PRODUCT.brand.name
+        },
+        {
+          id: SECOND_PRODUCT.id,
+          name: SECOND_PRODUCT.name,
+          slug: SECOND_PRODUCT.slug,
+          description: SECOND_PRODUCT.description,
+          brandName: SECOND_PRODUCT.brand.name
+        }
+      ]
+    });
+  } finally {
+    vi.stubGlobal("window", originalWindow);
+  }
+
+  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+    1,
+    expect.stringContaining("query ProductDetail"),
+    { slug: "detail-product" },
+    { request }
+  );
+  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+    2,
+    expect.stringContaining("query ProductDetail"),
+    { slug: "second-product" },
+    { request }
+  );
+});
+
 test("compare loader returns not_found when any selected product is missing", async () => {
   fetchGraphQLMock
     .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
@@ -176,6 +232,29 @@ test("compare loader returns error when any selected product request fails", asy
   ).resolves.toEqual({
     status: "error",
     slugs: ["detail-product", "broken-product"]
+  });
+});
+
+test("compare loader returns error when a rejected request is mixed with a missing product", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        product: null
+      }
+    })
+    .mockRejectedValueOnce(new Error("Network request failed: boom"));
+
+  await expect(
+    compareLoader({
+      request: new Request(
+        "https://app.example.com/compare?slug=missing-product&slug=broken-product"
+      ),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "error",
+    slugs: ["missing-product", "broken-product"]
   });
 });
 
