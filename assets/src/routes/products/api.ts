@@ -15,7 +15,7 @@ export interface ProductOffer {
   id: string;
   merchantName: string;
   url: string;
-  priceText: string;
+  priceText: string | null;
 }
 
 export type ProductOffersStatus = "ready" | "empty" | "error";
@@ -275,12 +275,7 @@ function parseProductOffers(response: GraphQLResponse): ProductOffer[] {
     const merchantName = parseMerchantName(candidate.merchant);
     const priceText = formatPriceText(candidate.latestPrice, candidate.currency);
 
-    if (
-      typeof candidate.id !== "string" ||
-      typeof candidate.url !== "string" ||
-      !merchantName ||
-      !priceText
-    ) {
+    if (typeof candidate.id !== "string" || typeof candidate.url !== "string" || !merchantName) {
       return [];
     }
 

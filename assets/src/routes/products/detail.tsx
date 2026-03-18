@@ -31,7 +31,7 @@ export function ProductDetailRoute() {
             {loaderData.offers.map((offer) => (
               <li key={offer.id}>
                 <a href={offer.url}>{offer.merchantName}</a>
-                <p>{offer.priceText}</p>
+                {offer.priceText ? <p>{offer.priceText}</p> : null}
               </li>
             ))}
           </ul>

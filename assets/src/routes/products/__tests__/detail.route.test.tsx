@@ -233,6 +233,70 @@ test("product detail loader keeps the product ready when offers fail", async () 
   });
 });
 
+test("product detail loader preserves active offers without latest price", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        product: {
+          id: "UHJvZHVjdDox",
+          name: "Detail Product",
+          slug: "detail-product",
+          description: "A narrow product detail baseline.",
+          brand: {
+            id: "brand-1",
+            name: "Acme"
+          }
+        }
+      }
+    })
+    .mockResolvedValueOnce({
+      data: {
+        merchantProducts: {
+          edges: [
+            {
+              node: {
+                id: "merchant-product-1",
+                url: "https://merchant.example.com/detail-product",
+                currency: "USD",
+                merchant: {
+                  id: "merchant-1",
+                  name: "Acme"
+                },
+                latestPrice: null
+              }
+            }
+          ]
+        }
+      }
+    });
+
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/detail-product"),
+      params: { slug: "detail-product" },
+      context: undefined
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    product: {
+      id: "UHJvZHVjdDox",
+      name: "Detail Product",
+      slug: "detail-product",
+      description: "A narrow product detail baseline.",
+      brandName: "Acme"
+    },
+    offersStatus: "ready",
+    offers: [
+      {
+        id: "merchant-product-1",
+        merchantName: "Acme",
+        url: "https://merchant.example.com/detail-product",
+        priceText: null
+      }
+    ]
+  });
+});
+
 test("renders the product detail returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -265,6 +329,37 @@ test("renders the product detail returned by the route loader", () => {
     "https://merchant.example.com/detail-product"
   );
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
+});
+
+test("renders an offer without a latest price", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    product: {
+      id: "product-1",
+      name: "Detail Product",
+      slug: "detail-product",
+      description: "A narrow product detail baseline.",
+      brandName: "Acme"
+    },
+    offersStatus: "ready",
+    offers: [
+      {
+        id: "merchant-product-1",
+        merchantName: "Acme",
+        url: "https://merchant.example.com/detail-product",
+        priceText: null
+      }
+    ]
+  });
+
+  render(<ProductDetailRoute />);
+
+  expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/detail-product"
+  );
+  expect(screen.queryByText("199.99 USD")).not.toBeInTheDocument();
 });
 
 test("renders an empty-offers message when no active offers exist", () => {
