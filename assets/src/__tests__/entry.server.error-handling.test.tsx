@@ -190,3 +190,49 @@ test("server render keeps recoverable SSR errors from failing the response", asy
     consoleErrorSpy.mockRestore();
   }
 });
+
+test("server render logs and falls back when request URL resolution fails", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  try {
+    const { render } = await import("../entry.server");
+    const request = {
+      headers: new Headers(),
+      method: "GET",
+      url: "not a valid url"
+    } as unknown as Request;
+
+    await expect(render("http://[invalid", { request })).resolves.toContain("Product Compare");
+
+    const queryRequest = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+    expect(queryRequest.url).toBe("http://localhost/");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Failed to resolve server URL",
+      expect.objectContaining({
+        url: "http://[invalid",
+        baseUrl: "not a valid url",
+        error: expect.any(TypeError)
+      })
+    );
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});

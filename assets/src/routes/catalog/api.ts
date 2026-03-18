@@ -52,7 +52,11 @@ function parseBrowseProducts(response: GraphQLResponse): BrowseProduct[] {
 }
 
 function readEdges(response: GraphQLResponse) {
-  if (Array.isArray(response) || !("data" in response) || !response.data) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return [];
+  }
+
+  if (!("data" in response) || !response.data) {
     return [];
   }
 

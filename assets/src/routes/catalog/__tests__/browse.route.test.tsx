@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { useLoaderData } from "react-router-dom";
@@ -85,14 +85,67 @@ test("browse loader requests and returns the first page of products", async () =
     ]
   });
 
-  await waitFor(() => {
+  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+    1,
+    expect.stringContaining("query BrowseProducts"),
+    { first: 12 },
+    undefined
+  );
+
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+});
+
+test("browse loader forwards the SSR request to fetchGraphQL", async () => {
+  const originalWindow = globalThis.window;
+
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      products: {
+        edges: []
+      }
+    }
+  });
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: undefined
+  });
+
+  try {
+    const request = new Request("https://app.example.com/products");
+
+    await expect(
+      browseLoader({
+        request,
+        params: {},
+        context: undefined
+      } as LoaderFunctionArgs)
+    ).resolves.toEqual({ products: [] });
+
     expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining("query BrowseProducts"),
       { first: 12 },
-      undefined
+      { request }
     );
-  });
+  } finally {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow
+    });
+  }
+});
+
+test("browse loader falls back to an empty list for null GraphQL payloads", async () => {
+  fetchGraphQLMock.mockResolvedValue(null as never);
+
+  await expect(
+    browseLoader({
+      request: new Request("https://app.example.com/products"),
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({ products: [] });
 
   expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
 });

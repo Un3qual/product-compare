@@ -69,9 +69,16 @@ function createServerRequest(url: string, ssrContext?: SSRContext) {
 }
 
 function resolveServerUrl(url: string, fallback?: string) {
+  const baseUrl = fallback ?? "http://localhost";
+
   try {
-    return new URL(url, fallback ?? "http://localhost").toString();
-  } catch {
+    return new URL(url, baseUrl).toString();
+  } catch (error) {
+    console.error("Failed to resolve server URL", {
+      url,
+      baseUrl,
+      error
+    });
     return "http://localhost/";
   }
 }
