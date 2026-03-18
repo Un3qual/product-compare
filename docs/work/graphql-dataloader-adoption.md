@@ -17,17 +17,20 @@
 
 ## Verified Current State
 
+- `mix.exs` now declares `:dataloader` as a direct dependency and `mix.lock` resolves `dataloader 2.0.2`.
+- `lib/product_compare_web/graphql/loader.ex` now builds request-scoped Ecto sources for `ProductCompare.Catalog` and `ProductCompare.Pricing`.
+- `lib/product_compare_web/plugs/put_absinthe_context.ex` now injects `:loader` into the Absinthe context while preserving `current_user`, `api_token`, `session_user_token`, and `trusted_request_origin?`.
+- `lib/product_compare_web/schema.ex` now keeps a request-local loader in `context/1` and registers `Absinthe.Middleware.Dataloader` in `plugins/0`.
+- `test/product_compare_web/plugs/put_absinthe_context_test.exs` locks the loader presence and the existing auth/session/origin context shape.
 - `lib/product_compare_web/schema.ex` defines the existing GraphQL fields for `product`, `products`, `merchants`, `merchant_products`, and nested `merchant_product.latest_price`.
 - `lib/product_compare_web/resolvers/catalog_resolver.ex` preloads `brand` when loading a single product and preloads `brand` in the `products` query path.
 - `lib/product_compare_web/resolvers/pricing_resolver.ex` resolves `merchant_products` via `Pricing.list_merchant_products_query/1` and `merchant_product.latest_price` via `Pricing.latest_price/1` per parent node.
-- `lib/product_compare_web/plugs/put_absinthe_context.ex` only injects auth/session data into Absinthe context today; there is no request-scoped loader.
 - `lib/product_compare_web/router.ex` forwards `/api/graphql` through `Absinthe.Plug` with the existing auth/session plugs.
-- `mix.lock` already shows Absinthe’s optional `dataloader` dependency, but `mix.exs` does not yet declare Dataloader as a direct app dependency.
 - `docs/work/index.md` now queues this slice as the highest-priority active work item after the frontend Radix primitives batch completed.
 
 ## Next batch
 
-### 1. Wire request-scoped Dataloader into GraphQL
+### Completed: 1. Wire request-scoped Dataloader into GraphQL
 
 **Files:**
 - `mix.exs`
@@ -38,7 +41,7 @@
 - `test/product_compare_web/plugs/put_absinthe_context_test.exs`
 
 **Outcome:**
-Every GraphQL request gets a loader in context and schema fields can opt into batching without disturbing auth/session plumbing.
+Every GraphQL request now gets a loader in context and the schema is wired to use Dataloader middleware without disturbing the existing auth/session plumbing.
 
 **Verification:**
 `mix test test/product_compare_web/plugs/put_absinthe_context_test.exs`

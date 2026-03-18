@@ -5,14 +5,21 @@
 - Status: active
 - Batch: GraphQL Dataloader Adoption
 - Source of truth: `docs/work/index.md`
-- Next step: execute Task 1 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
+- Next step: execute Task 2 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
 - Why this batch is active:
   - The frontend Radix primitives batch is complete and recorded in `docs/work/frontend-radix-primitives.md`.
   - `docs/work/index.md` now promotes the GraphQL Dataloader slice to the highest-priority active work item.
+  - Task 1 request-plumbing work is complete, so Task 2 is now the next unblocked slice inside the same active work item.
   - The Dataloader implementation plan is already written against the current codebase and existing historical architecture docs.
   - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaseline work remains constrained even though these two targeted slices are now ready.
 
 ## Just Completed
+
+- GraphQL Dataloader Adoption Task 1:
+  - Added `{:dataloader, "~> 2.0"}` to `mix.exs`, resolved `dataloader 2.0.2` into `mix.lock`, and created `lib/product_compare_web/graphql/loader.ex` for request-scoped catalog/pricing sources.
+  - Updated `lib/product_compare_web/plugs/put_absinthe_context.ex` to inject `:loader` while preserving `current_user`, `api_token`, `session_user_token`, and `trusted_request_origin?`.
+  - Updated `lib/product_compare_web/schema.ex` to preserve the loader in `context/1` and prepend `Absinthe.Middleware.Dataloader` in `plugins/0`.
+  - Added `test/product_compare_web/plugs/put_absinthe_context_test.exs` to lock the request context shape and verified `mix test test/product_compare_web/plugs/put_absinthe_context_test.exs`.
 
 - Frontend Radix Primitives:
   - Added `@radix-ui/react-label`, `@radix-ui/react-separator`, and `@radix-ui/react-slot` plus a shared wrapper layer in `assets/src/ui/primitives/`.

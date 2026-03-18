@@ -4,10 +4,21 @@ defmodule ProductCompareWeb.Schema do
   import_types(Absinthe.Type.Custom)
 
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+
+  @impl true
+  def context(context) do
+    Map.put_new_lazy(context, :loader, fn -> Loader.new(context) end)
+  end
+
+  @impl true
+  def plugins do
+    [Absinthe.Middleware.Dataloader] ++ Absinthe.Plugin.defaults()
+  end
 
   query do
     @desc "Returns the current authenticated user, if any."
