@@ -1,5 +1,7 @@
 # GraphQL Auth Migration Implementation Plan
 
+> Active execution status moved to `docs/work/graphql-auth-migration.md`. Use that file to choose the next batch; keep this dated plan as the historical implementation baseline.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 > **Goal:** Migrate frontend-facing browser auth from REST endpoints to GraphQL, starting in this PR with cookie-backed `login`, `register`, and `logout`.
 

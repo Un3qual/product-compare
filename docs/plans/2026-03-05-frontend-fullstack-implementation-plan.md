@@ -1,5 +1,7 @@
 # Frontend + Session Auth + Relay Implementation Plan
 
+> This dated plan now needs rebaselining before further execution. Start at `docs/work/index.md`, then move the next concrete frontend batch into a current `docs/work/*.md` file before implementing it.
+
 > Auth contract correction (2026-03-16): replace any browser-facing `/api/auth/*` steps in this older plan with GraphQL mutations on `/api/graphql`. Do not add or keep frontend-facing REST auth endpoints for browser `login`, `register`, or `logout`.
 >
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

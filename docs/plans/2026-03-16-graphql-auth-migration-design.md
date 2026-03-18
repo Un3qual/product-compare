@@ -1,5 +1,7 @@
 # GraphQL Auth Migration Design
 
+> Active execution status moved to `docs/work/graphql-auth-migration.md`. Keep this dated design doc as the contract/background reference and update the work doc when choosing the next batch.
+
 ## Goal
 
 Move all frontend-facing browser auth flows to GraphQL while keeping Phoenix as the source of truth for cookie-backed sessions.
