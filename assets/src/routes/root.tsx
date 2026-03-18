@@ -51,6 +51,9 @@ export function RootLayout() {
               Product Compare
             </Link>
             <div {...stylex.props(styles.navigationLinks)}>
+              <Link to="/products" {...stylex.props(styles.link)}>
+                Browse products
+              </Link>
               <Link to="/auth/login" {...stylex.props(styles.link)}>
                 Sign in
               </Link>
@@ -75,6 +78,9 @@ export function RootRoute() {
         <p>GraphQL-backed browser auth flows now live alongside the frontend routes.</p>
       </div>
       <div {...stylex.props(styles.actions)}>
+        <Link to="/products" {...stylex.props(styles.link)}>
+          Browse products
+        </Link>
         <Link to="/auth/login" {...stylex.props(styles.link)}>
           Sign in
         </Link>

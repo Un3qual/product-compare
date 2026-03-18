@@ -2,11 +2,16 @@ import { vi } from "vitest";
 
 const {
   createRelayEnvironmentMock,
-  createServerRouterMock,
+  createStaticHandlerMock,
+  createStaticRouterMock,
   renderToReadableStreamMock
 } = vi.hoisted(() => ({
   createRelayEnvironmentMock: vi.fn(() => ({})),
-  createServerRouterMock: vi.fn(() => ({})),
+  createStaticHandlerMock: vi.fn(() => ({
+    dataRoutes: [],
+    query: vi.fn(async () => ({}))
+  })),
+  createStaticRouterMock: vi.fn(() => ({})),
   renderToReadableStreamMock: vi.fn()
 }));
 
@@ -18,14 +23,31 @@ vi.mock("../relay/environment", () => ({
   createRelayEnvironment: createRelayEnvironmentMock
 }));
 
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+
+  return {
+    ...actual,
+    createStaticHandler: createStaticHandlerMock,
+    createStaticRouter: createStaticRouterMock
+  };
+});
+
 vi.mock("../router", () => ({
-  createServerRouter: createServerRouterMock
+  routes: []
 }));
 
 beforeEach(() => {
   vi.resetModules();
-  createRelayEnvironmentMock.mockClear();
-  createServerRouterMock.mockClear();
+  createRelayEnvironmentMock.mockReset();
+  createRelayEnvironmentMock.mockImplementation(() => ({}));
+  createStaticHandlerMock.mockReset();
+  createStaticHandlerMock.mockImplementation(() => ({
+    dataRoutes: [],
+    query: vi.fn(async () => ({}))
+  }));
+  createStaticRouterMock.mockReset();
+  createStaticRouterMock.mockImplementation(() => ({}));
   renderToReadableStreamMock.mockReset();
 });
 
@@ -52,6 +74,94 @@ test("server render passes SSR context into the Relay environment", async () => 
 
   await expect(render("/", ssrContext)).resolves.toContain("Product Compare");
   expect(createRelayEnvironmentMock).toHaveBeenCalledWith(ssrContext);
+  expect(createStaticHandlerMock).toHaveBeenCalled();
+});
+
+test("server render passes the incoming request URL and headers into the static handler query", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const ssrContext = {
+    request: new Request("https://app.example.com/products?featured=true", {
+      headers: {
+        cookie: "session=abc"
+      }
+    })
+  };
+
+  const { render } = await import("../entry.server");
+
+  await render("/products?featured=true", ssrContext);
+
+  expect(queryMock).toHaveBeenCalledTimes(1);
+
+  const request = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+  expect(request.url).toBe("https://app.example.com/products?featured=true");
+  expect(request.headers.get("cookie")).toBe("session=abc");
+});
+
+test("server render preserves cookieString when building the static-handler request", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const { render } = await import("../entry.server");
+
+  await render("/products", {
+    cookieString: "session=from-cookie-string"
+  });
+
+  const request = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+  expect(request.headers.get("cookie")).toBe("session=from-cookie-string");
+});
+
+test("server render returns redirect responses from the static handler unchanged", async () => {
+  const redirectResponse = new Response(null, {
+    status: 302,
+    headers: {
+      location: "/auth/login"
+    }
+  });
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: vi.fn(async () => redirectResponse)
+  });
+
+  const { render } = await import("../entry.server");
+
+  await expect(render("/products")).resolves.toBe(redirectResponse);
+  expect(createStaticRouterMock).not.toHaveBeenCalled();
+  expect(renderToReadableStreamMock).not.toHaveBeenCalled();
 });
 
 test("server render keeps recoverable SSR errors from failing the response", async () => {
@@ -76,6 +186,52 @@ test("server render keeps recoverable SSR errors from failing the response", asy
 
     await expect(render("/")).resolves.toContain("Product Compare");
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("server render logs and falls back when request URL resolution fails", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  try {
+    const { render } = await import("../entry.server");
+    const request = {
+      headers: new Headers(),
+      method: "GET",
+      url: "not a valid url"
+    } as unknown as Request;
+
+    await expect(render("http://[invalid", { request })).resolves.toContain("Product Compare");
+
+    const queryRequest = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+    expect(queryRequest.url).toBe("http://localhost/");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Failed to resolve server URL",
+      expect.objectContaining({
+        url: "http://[invalid",
+        baseUrl: "not a valid url",
+        error: expect.any(TypeError)
+      })
+    );
   } finally {
     consoleErrorSpy.mockRestore();
   }

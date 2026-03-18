@@ -12,8 +12,8 @@
 
 ## Progress
 
-- [ ] Browse route shell and navigation committed.
-- [ ] Product-list data loader and typed route rendering committed.
+- [x] Browse route shell and navigation committed.
+- [x] Product-list data loader and typed route rendering committed.
 - [ ] Empty/error-state coverage and route regression verification committed.
 
 ### Task 1: Add the browse route shell and navigation entry point

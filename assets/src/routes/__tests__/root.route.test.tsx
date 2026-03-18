@@ -9,4 +9,6 @@ test("renders product compare shell title", () => {
     </MemoryRouter>
   );
   expect(html).toContain("Product Compare");
+  expect(html).toContain("Browse products");
+  expect(html).toContain('href="/products"');
 });
