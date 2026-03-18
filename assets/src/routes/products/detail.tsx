@@ -20,6 +20,23 @@ export function ProductDetailRoute() {
       <h1>{product.name}</h1>
       <p>{product.brandName ?? "Unknown brand"}</p>
       {product.description ? <p>{product.description}</p> : null}
+      <section>
+        <h2>Active offers</h2>
+        {loaderData.offersStatus === "error" ? (
+          <p>Offers unavailable.</p>
+        ) : loaderData.offersStatus === "empty" ? (
+          <p>No active offers yet.</p>
+        ) : (
+          <ul>
+            {loaderData.offers.map((offer) => (
+              <li key={offer.id}>
+                <a href={offer.url}>{offer.merchantName}</a>
+                <p>{offer.priceText}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </section>
   );
 }
