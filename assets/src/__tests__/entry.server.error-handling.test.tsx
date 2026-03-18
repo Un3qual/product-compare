@@ -39,9 +39,15 @@ vi.mock("../router", () => ({
 
 beforeEach(() => {
   vi.resetModules();
-  createRelayEnvironmentMock.mockClear();
-  createStaticHandlerMock.mockClear();
-  createStaticRouterMock.mockClear();
+  createRelayEnvironmentMock.mockReset();
+  createRelayEnvironmentMock.mockImplementation(() => ({}));
+  createStaticHandlerMock.mockReset();
+  createStaticHandlerMock.mockImplementation(() => ({
+    dataRoutes: [],
+    query: vi.fn(async () => ({}))
+  }));
+  createStaticRouterMock.mockReset();
+  createStaticRouterMock.mockImplementation(() => ({}));
   renderToReadableStreamMock.mockReset();
 });
 
@@ -107,6 +113,55 @@ test("server render passes the incoming request URL and headers into the static 
 
   expect(request.url).toBe("https://app.example.com/products?featured=true");
   expect(request.headers.get("cookie")).toBe("session=abc");
+});
+
+test("server render preserves cookieString when building the static-handler request", async () => {
+  const queryMock = vi.fn(async () => ({}));
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: queryMock
+  });
+
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("<div>Product Compare</div>"));
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+
+  const { render } = await import("../entry.server");
+
+  await render("/products", {
+    cookieString: "session=from-cookie-string"
+  });
+
+  const request = (queryMock.mock.calls as unknown[][])[0]?.[0] as Request;
+
+  expect(request.headers.get("cookie")).toBe("session=from-cookie-string");
+});
+
+test("server render returns redirect responses from the static handler unchanged", async () => {
+  const redirectResponse = new Response(null, {
+    status: 302,
+    headers: {
+      location: "/auth/login"
+    }
+  });
+
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: vi.fn(async () => redirectResponse)
+  });
+
+  const { render } = await import("../entry.server");
+
+  await expect(render("/products")).resolves.toBe(redirectResponse);
+  expect(createStaticRouterMock).not.toHaveBeenCalled();
+  expect(renderToReadableStreamMock).not.toHaveBeenCalled();
 });
 
 test("server render keeps recoverable SSR errors from failing the response", async () => {

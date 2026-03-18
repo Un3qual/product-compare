@@ -8,13 +8,13 @@ import { routes } from "./router";
 const STREAM_ABORT_DELAY_MS = 10_000;
 type ReactReadableStream = ReadableStream & { allReady: Promise<void> };
 
-export async function render(url: string, ssrContext?: SSRContext): Promise<string> {
+export async function render(url: string, ssrContext?: SSRContext): Promise<Response | string> {
   const relayEnvironment = createRelayEnvironment(ssrContext);
   const handler = createStaticHandler(routes);
   const context = await handler.query(createServerRequest(url, ssrContext));
 
   if (context instanceof Response) {
-    throw new Error(`Unexpected response during server render: ${context.status}`);
+    return context;
   }
 
   const router = createStaticRouter(handler.dataRoutes, context);
@@ -57,6 +57,10 @@ function createServerRequest(url: string, ssrContext?: SSRContext) {
   request?.headers.forEach((value, key) => {
     headers.set(key, value);
   });
+
+  if (ssrContext?.cookieString) {
+    headers.set("cookie", ssrContext.cookieString);
+  }
 
   return new Request(resolveServerUrl(url, request?.url), {
     method: request?.method ?? "GET",
