@@ -40,4 +40,4 @@
 - `sed -n '1,260p' docs/work/frontend-product-detail.md`
 - `sed -n '1,260p' docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
 - `rg -n "field :product|object :product" lib/product_compare_web/schema.ex`
-- `rg -n "get_product!|list_merchant_products" lib/product_compare lib/product_compare_web`
+- `rg -n "get_product_by_slug|get_product!|list_merchant_products" lib/product_compare lib/product_compare_web`

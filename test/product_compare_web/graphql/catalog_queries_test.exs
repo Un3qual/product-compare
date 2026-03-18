@@ -39,6 +39,14 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert brand_id == relay_id("Brand", product.brand_id)
     end
 
+    test "product returns null for a non-existent slug", %{conn: conn} do
+      assert %{
+               "data" => %{
+                 "product" => nil
+               }
+             } = graphql(conn, product_query(), %{"slug" => "non-existent-slug"})
+    end
+
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{slug: "catalog-first", name: "Catalog First"})
