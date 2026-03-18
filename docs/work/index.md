@@ -24,27 +24,36 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-### 1. Frontend Product Detail Baseline
+### 1. Frontend Product Offers Baseline
 
 - Status: active
 - Priority: P1
-- Source of truth: `docs/work/frontend-product-detail.md`
+- Source of truth: `docs/work/frontend-product-offers.md`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
-  - `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
-- Last verified: 2026-03-17 at `fec8e92` + working tree
-- Next batch: execute Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`.
+  - `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`
+- Last verified: 2026-03-18 at `ca3197b` + working tree
+- Next batch: execute Task 1 from `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`.
 - Why this is next:
-  - The frontend now has a stable SSR browse entry point at `/products` with success, empty, and unavailable states.
-  - Browse rows already carry `slug` and brand data, so the next narrow slice can add product-detail navigation without widening the list query.
-  - The backend now has a single-product GraphQL query by slug, but the frontend still lacks `/products/:slug` route wiring and browse-to-detail navigation.
+  - `/products/:slug` now has product detail success and fallback states, but it still omits the pricing data that makes the route useful beyond navigation.
+  - The backend already exposes `merchantProducts(input:)` with `latestPrice`, so the next narrow slice can stay frontend-only and add active-offer rendering without widening the backend contract.
+  - The older fullstack detail milestone still includes price history and coupons, but the immediate unblocked follow-on is a terse active-offers baseline.
 
 ## Blocked / Needs Decision
 
 - No blocked active work currently needs execution.
 
 ## Recently Completed
+
+### Frontend Product Detail Baseline
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/frontend-product-detail.md`
+- Outcome:
+  - `/products/:slug` now SSR-renders basic product details from GraphQL.
+  - The route now distinguishes product-ready, not-found, and unavailable states with focused route regression coverage.
+  - Browse product names now navigate into the detail route from `/products`.
 
 ### GraphQL Auth Migration Follow-up
 

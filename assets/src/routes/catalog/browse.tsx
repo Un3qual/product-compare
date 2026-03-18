@@ -1,4 +1,4 @@
-import { useLoaderData } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { browseLoader } from "./api";
 
 export function BrowseRoute() {
@@ -15,7 +15,9 @@ export function BrowseRoute() {
         <ul>
           {products.map((product) => (
             <li key={product.id}>
-              <h2>{product.name}</h2>
+              <h2>
+                <Link to={`/products/${product.slug}`}>{product.name}</Link>
+              </h2>
               <p>{product.slug}</p>
               <p>{product.brandName ?? "Unknown brand"}</p>
             </li>
