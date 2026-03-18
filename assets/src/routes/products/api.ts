@@ -116,7 +116,13 @@ async function loadProductOffers(
     throw new Error("GraphQL response contained errors");
   }
 
-  return parseProductOffers(response);
+  const offers = parseProductOffers(response);
+
+  if (offers === null) {
+    throw new Error("Product offers payload was malformed");
+  }
+
+  return offers;
 }
 
 export async function productDetailLoader({
@@ -235,29 +241,29 @@ function parseBrandName(brand: unknown) {
   return typeof candidate.name === "string" ? candidate.name : null;
 }
 
-function parseProductOffers(response: GraphQLResponse): ProductOffer[] {
+function parseProductOffers(response: GraphQLResponse): ProductOffer[] | null {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
-    return [];
+    return null;
   }
 
   if (!("data" in response) || !response.data) {
-    return [];
+    return null;
   }
 
   if (typeof response.data !== "object" || Array.isArray(response.data)) {
-    return [];
+    return null;
   }
 
   const merchantProducts = (response.data as Record<string, unknown>).merchantProducts;
 
   if (!merchantProducts || typeof merchantProducts !== "object" || Array.isArray(merchantProducts)) {
-    return [];
+    return null;
   }
 
   const edges = (merchantProducts as Record<string, unknown>).edges;
 
   if (!Array.isArray(edges)) {
-    return [];
+    return null;
   }
 
   return edges.flatMap((edge) => {
@@ -274,8 +280,9 @@ function parseProductOffers(response: GraphQLResponse): ProductOffer[] {
     const candidate = node as Record<string, unknown>;
     const merchantName = parseMerchantName(candidate.merchant);
     const priceText = formatPriceText(candidate.latestPrice, candidate.currency);
+    const safeUrl = normalizeOfferUrl(candidate.url);
 
-    if (typeof candidate.id !== "string" || typeof candidate.url !== "string" || !merchantName) {
+    if (typeof candidate.id !== "string" || !safeUrl || !merchantName) {
       return [];
     }
 
@@ -283,7 +290,7 @@ function parseProductOffers(response: GraphQLResponse): ProductOffer[] {
       {
         id: candidate.id,
         merchantName,
-        url: candidate.url,
+        url: safeUrl,
         priceText
       }
     ];
@@ -320,4 +327,18 @@ function formatPriceText(latestPrice: unknown, currency: unknown) {
   }
 
   return null;
+}
+
+function normalizeOfferUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
 }

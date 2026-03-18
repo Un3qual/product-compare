@@ -18,9 +18,9 @@
 
 ## Verified Current State
 
-- `assets/src/routes/products/api.ts` now preserves route-local `ready`, `not_found`, and `error` states for product detail loading while adding offer-local `ready`, `empty`, and `error` states after the product lookup succeeds.
-- `assets/src/routes/products/detail.tsx` now renders an `Active offers` section on `/products/:slug` for offer success, empty, and unavailable states without collapsing the product detail shell.
-- `assets/src/routes/products/__tests__/detail.route.test.tsx` now covers offer success, empty, and unavailable states alongside the existing missing-product and unavailable-detail cases.
+- `assets/src/routes/products/api.ts` preserves route-local `ready`, `not_found`, and `error` states for product detail loading while adding offer-local `ready`, `empty`, and `error` states after the product lookup succeeds.
+- `assets/src/routes/products/detail.tsx` renders an `Active offers` section on `/products/:slug` for offer success, empty, and unavailable states without collapsing the product detail shell.
+- `assets/src/routes/products/__tests__/detail.route.test.tsx` covers offer success, empty, and unavailable states alongside the existing missing-product and unavailable-detail cases.
 - The backend already exposes `merchantProducts(input:)` with `merchant`, `latestPrice`, and `priceHistory` fields in `lib/product_compare_web/schema.ex`.
 - `test/product_compare_web/graphql/pricing_queries_test.exs` continues to cover the reused pricing GraphQL surface, so this completed slice stayed frontend-only.
 - The detail loader now issues a second GraphQL request for `merchantProducts(input:)` after the product lookup succeeds and normalizes offer link and latest-price text for rendering plus local offer fallback handling.

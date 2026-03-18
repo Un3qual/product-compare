@@ -24,51 +24,80 @@ vi.mock("react-router-dom", async () => {
 
 const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const DETAIL_PRODUCT = {
+  id: "UHJvZHVjdDox",
+  name: "Detail Product",
+  slug: "detail-product",
+  description: "A narrow product detail baseline.",
+  brand: {
+    id: "brand-1",
+    name: "Acme"
+  }
+} as const;
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
   useLoaderDataMock.mockReset();
 });
 
+function buildProductDetailResponse() {
+  return {
+    data: {
+      product: {
+        ...DETAIL_PRODUCT
+      }
+    }
+  };
+}
+
+function buildOfferResponse(
+  edges: Array<{
+    node: {
+      id: string;
+      url: string;
+      currency: string;
+      merchant: {
+        id: string;
+        name: string;
+      };
+      latestPrice: {
+        id: string;
+        price: number;
+      } | null;
+    };
+  }>
+) {
+  return {
+    data: {
+      merchantProducts: {
+        edges
+      }
+    }
+  };
+}
+
 test("product detail loader requests and returns product detail by slug", async () => {
   fetchGraphQLMock
-    .mockResolvedValueOnce({
-      data: {
-        product: {
-          id: "UHJvZHVjdDox",
-          name: "Detail Product",
-          slug: "detail-product",
-          description: "A narrow product detail baseline.",
-          brand: {
-            id: "brand-1",
-            name: "Acme"
+    .mockResolvedValueOnce(buildProductDetailResponse())
+    .mockResolvedValueOnce(
+      buildOfferResponse([
+        {
+          node: {
+            id: "merchant-product-1",
+            url: "https://merchant.example.com/detail-product",
+            currency: "USD",
+            merchant: {
+              id: "merchant-1",
+              name: "Acme"
+            },
+            latestPrice: {
+              id: "price-1",
+              price: 199.99
+            }
           }
         }
-      }
-    })
-    .mockResolvedValueOnce({
-      data: {
-        merchantProducts: {
-          edges: [
-            {
-              node: {
-                id: "merchant-product-1",
-                url: "https://merchant.example.com/detail-product",
-                currency: "USD",
-                merchant: {
-                  id: "merchant-1",
-                  name: "Acme"
-                },
-                latestPrice: {
-                  id: "price-1",
-                  price: 199.99
-                }
-              }
-            }
-          ]
-        }
-      }
-    });
+      ])
+    );
 
   await expect(
     productDetailLoader({
@@ -79,11 +108,11 @@ test("product detail loader requests and returns product detail by slug", async 
   ).resolves.toEqual({
     status: "ready",
     product: {
-      id: "UHJvZHVjdDox",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "ready",
     offers: [
@@ -151,27 +180,12 @@ test("product detail loader marks rejected requests as unavailable", async () =>
   });
 });
 
-test("product detail loader marks an empty offers response as empty", async () => {
+test("product detail loader marks malformed offers payloads as unavailable", async () => {
   fetchGraphQLMock
+    .mockResolvedValueOnce(buildProductDetailResponse())
     .mockResolvedValueOnce({
       data: {
-        product: {
-          id: "UHJvZHVjdDox",
-          name: "Detail Product",
-          slug: "detail-product",
-          description: "A narrow product detail baseline.",
-          brand: {
-            id: "brand-1",
-            name: "Acme"
-          }
-        }
-      }
-    })
-    .mockResolvedValueOnce({
-      data: {
-        merchantProducts: {
-          edges: []
-        }
+        merchantProducts: null
       }
     });
 
@@ -184,34 +198,21 @@ test("product detail loader marks an empty offers response as empty", async () =
   ).resolves.toEqual({
     status: "ready",
     product: {
-      id: "UHJvZHVjdDox",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
-    offersStatus: "empty",
+    offersStatus: "error",
     offers: []
   });
 });
 
-test("product detail loader keeps the product ready when offers fail", async () => {
+test("product detail loader marks an empty offers response as empty", async () => {
   fetchGraphQLMock
-    .mockResolvedValueOnce({
-      data: {
-        product: {
-          id: "UHJvZHVjdDox",
-          name: "Detail Product",
-          slug: "detail-product",
-          description: "A narrow product detail baseline.",
-          brand: {
-            id: "brand-1",
-            name: "Acme"
-          }
-        }
-      }
-    })
-    .mockRejectedValueOnce(new Error("Network request failed: offers boom"));
+    .mockResolvedValueOnce(buildProductDetailResponse())
+    .mockResolvedValueOnce(buildOfferResponse([]));
 
   await expect(
     productDetailLoader({
@@ -222,11 +223,36 @@ test("product detail loader keeps the product ready when offers fail", async () 
   ).resolves.toEqual({
     status: "ready",
     product: {
-      id: "UHJvZHVjdDox",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
+    },
+    offersStatus: "empty",
+    offers: []
+  });
+});
+
+test("product detail loader keeps the product ready when offers fail", async () => {
+  fetchGraphQLMock.mockResolvedValueOnce(buildProductDetailResponse()).mockRejectedValueOnce(
+    new Error("Network request failed: offers boom")
+  );
+
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/detail-product"),
+      params: { slug: "detail-product" },
+      context: undefined
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    product: {
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "error",
     offers: []
@@ -235,40 +261,23 @@ test("product detail loader keeps the product ready when offers fail", async () 
 
 test("product detail loader preserves active offers without latest price", async () => {
   fetchGraphQLMock
-    .mockResolvedValueOnce({
-      data: {
-        product: {
-          id: "UHJvZHVjdDox",
-          name: "Detail Product",
-          slug: "detail-product",
-          description: "A narrow product detail baseline.",
-          brand: {
-            id: "brand-1",
-            name: "Acme"
+    .mockResolvedValueOnce(buildProductDetailResponse())
+    .mockResolvedValueOnce(
+      buildOfferResponse([
+        {
+          node: {
+            id: "merchant-product-1",
+            url: "https://merchant.example.com/detail-product",
+            currency: "USD",
+            merchant: {
+              id: "merchant-1",
+              name: "Acme"
+            },
+            latestPrice: null
           }
         }
-      }
-    })
-    .mockResolvedValueOnce({
-      data: {
-        merchantProducts: {
-          edges: [
-            {
-              node: {
-                id: "merchant-product-1",
-                url: "https://merchant.example.com/detail-product",
-                currency: "USD",
-                merchant: {
-                  id: "merchant-1",
-                  name: "Acme"
-                },
-                latestPrice: null
-              }
-            }
-          ]
-        }
-      }
-    });
+      ])
+    );
 
   await expect(
     productDetailLoader({
@@ -279,11 +288,11 @@ test("product detail loader preserves active offers without latest price", async
   ).resolves.toEqual({
     status: "ready",
     product: {
-      id: "UHJvZHVjdDox",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "ready",
     offers: [
@@ -297,15 +306,58 @@ test("product detail loader preserves active offers without latest price", async
   });
 });
 
+test("product detail loader drops offers with unsafe urls", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce(buildProductDetailResponse())
+    .mockResolvedValueOnce(
+      buildOfferResponse([
+        {
+          node: {
+            id: "merchant-product-1",
+            url: "javascript:alert(1)",
+            currency: "USD",
+            merchant: {
+              id: "merchant-1",
+              name: "Acme"
+            },
+            latestPrice: {
+              id: "price-1",
+              price: 199.99
+            }
+          }
+        }
+      ])
+    );
+
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/detail-product"),
+      params: { slug: "detail-product" },
+      context: undefined
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    product: {
+      id: DETAIL_PRODUCT.id,
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
+    },
+    offersStatus: "empty",
+    offers: []
+  });
+});
+
 test("renders the product detail returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     product: {
       id: "product-1",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "ready",
     offers: [
@@ -336,10 +388,10 @@ test("renders an offer without a latest price", () => {
     status: "ready",
     product: {
       id: "product-1",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "ready",
     offers: [
@@ -367,10 +419,10 @@ test("renders an empty-offers message when no active offers exist", () => {
     status: "ready",
     product: {
       id: "product-1",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "empty",
     offers: []
@@ -387,10 +439,10 @@ test("renders an unavailable-offers message without collapsing the product detai
     status: "ready",
     product: {
       id: "product-1",
-      name: "Detail Product",
-      slug: "detail-product",
-      description: "A narrow product detail baseline.",
-      brandName: "Acme"
+      name: DETAIL_PRODUCT.name,
+      slug: DETAIL_PRODUCT.slug,
+      description: DETAIL_PRODUCT.description,
+      brandName: DETAIL_PRODUCT.brand.name
     },
     offersStatus: "error",
     offers: []
