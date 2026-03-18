@@ -33,12 +33,12 @@ Open or update a PR only when the active work item is complete.
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
   - `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
-- Last verified: 2026-03-17 at `fec8e92` + working tree
-- Next batch: execute Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`.
+- Last verified: 2026-03-18 at `3c6bd7a` + working tree
+- Next batch: execute Task 3 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`.
 - Why this is next:
-  - The frontend now has a stable SSR browse entry point at `/products` with success, empty, and unavailable states.
-  - Browse rows already carry `slug` and brand data, so the next narrow slice can add product-detail navigation without widening the list query.
-  - The backend now has a single-product GraphQL query by slug, but the frontend still lacks `/products/:slug` route wiring and browse-to-detail navigation.
+  - `/products/:slug` now has a narrow success-path loader and route shell wired into the frontend router.
+  - Browse product names now link into the detail route, so the next gap is route-local handling for missing products and unavailable detail requests.
+  - The remaining slice is still narrow and self-contained: loader status shaping, fallback copy, and verification.
 
 ## Blocked / Needs Decision
 

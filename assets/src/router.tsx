@@ -7,6 +7,8 @@ import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
 import { browseLoader } from "./routes/catalog/api";
 import { BrowseRoute } from "./routes/catalog/browse";
+import { productDetailLoader } from "./routes/products/api";
+import { ProductDetailRoute } from "./routes/products/detail";
 import { RootLayout, RootRoute } from "./routes/root";
 
 declare global {
@@ -28,6 +30,11 @@ export const routes: RouteObject[] = [
         path: "products",
         loader: browseLoader,
         element: <BrowseRoute />
+      },
+      {
+        path: "products/:slug",
+        loader: productDetailLoader,
+        element: <ProductDetailRoute />
       },
       {
         path: "auth/login",

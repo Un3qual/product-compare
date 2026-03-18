@@ -15,7 +15,7 @@
 ## Progress
 
 - [x] Single-product GraphQL query and regression coverage committed.
-- [ ] Product-detail route loader, shell, and browse links committed.
+- [x] Product-detail route loader, shell, and browse links committed.
 - [ ] Missing/unavailable-state coverage and slice verification committed.
 
 ### Task 1: Add a single-product GraphQL query by slug

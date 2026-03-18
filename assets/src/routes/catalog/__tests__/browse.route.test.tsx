@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { browseLoader } from "../api";
 import { BrowseRoute } from "../browse";
 
@@ -209,10 +209,17 @@ test("renders the browse products returned by the route loader", () => {
     ]
   });
 
-  render(<BrowseRoute />);
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
-  expect(screen.getByText("Catalog First")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Catalog First" })).toHaveAttribute(
+    "href",
+    "/products/catalog-first"
+  );
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
@@ -224,7 +231,11 @@ test("renders an empty-state message when no products are available", () => {
     products: []
   });
 
-  render(<BrowseRoute />);
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
 
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
 });
@@ -235,7 +246,11 @@ test("renders an unavailable-state message when the catalog request fails", () =
     products: []
   });
 
-  render(<BrowseRoute />);
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
 
   expect(screen.getByText("Catalog unavailable.")).toBeInTheDocument();
 });

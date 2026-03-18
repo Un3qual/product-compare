@@ -6,14 +6,19 @@
 - Batch: Frontend product detail baseline
 - Source of truth: `docs/work/frontend-product-detail.md`
 - Implementation plan: `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
-- Next step: execute Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
+- Next step: execute Task 3 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
 - Why this is current:
-  - `/products` now has a stable SSR browse entry point and needs a next-hop detail destination for each product row.
-  - The browse loader already returns each product's `slug`, `name`, and `brandName`, which is enough to wire readable detail URLs without widening the list query.
-  - The backend now has a single-product GraphQL query by slug, but the frontend still has no `/products/:slug` route or browse-to-detail navigation.
+  - `/products/:slug` now exists as an SSR-safe frontend route with a narrow success-path GraphQL loader.
+  - Browse product names now navigate into the detail route without widening the catalog list query.
+  - The remaining unblocked work is the route-local missing-product and unavailable-state handling plus slice verification.
 
 ## Just Completed
 
+- Frontend product detail baseline Task 2:
+  - Added `assets/src/routes/products/api.ts` and `assets/src/routes/products/detail.tsx` for the `/products/:slug` loader and route shell.
+  - Registered the detail route in `assets/src/router.tsx` and linked browse product names to it from `assets/src/routes/catalog/browse.tsx`.
+  - Added focused detail-route tests and browse-link coverage in `assets/src/routes/products/__tests__/detail.route.test.tsx` and `assets/src/routes/catalog/__tests__/browse.route.test.tsx`.
+  - Verified `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx src/routes/catalog/__tests__/browse.route.test.tsx`.
 - Frontend product detail baseline Task 1:
   - Added `product(slug: String!)` to `lib/product_compare_web/schema.ex`.
   - Added `ProductCompare.Catalog.get_product_by_slug/1` and `CatalogResolver.product/3`.
