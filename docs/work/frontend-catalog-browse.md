@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-17 at `7fdb580`
+- Last verified: 2026-03-17 at `3f97b0f`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -18,21 +18,21 @@
 
 ## Verified Current State
 
-- `assets/src/router.tsx` currently mounts only `/` plus the auth routes under `/auth/*`.
-- `assets/src/routes/root.tsx` links to auth entry points only and does not expose a browse route yet.
+- `assets/src/router.tsx` now mounts `/products` alongside `/` and the auth routes under `/auth/*`.
+- `assets/src/routes/root.tsx` now exposes `Browse products` links from both the app navigation and the home action row.
+- `assets/src/routes/catalog/browse.tsx` now renders an SSR-safe route shell with the initial browse heading and placeholder copy.
 - The frontend already has Bun SSR, route-level tests, and a shared GraphQL transport helper in `assets/src/relay/fetch-graphql.ts`.
 - The backend already exposes the paginated `products` query in `lib/product_compare_web/schema.ex` with coverage in `test/product_compare_web/graphql/catalog_queries_test.exs`.
-- No `assets/src/routes/catalog` directory exists yet.
 
 ## Completed
 
 - Rebaselined the next frontend slice into a current implementation plan at `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`.
+- Completed Task 1 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md` by adding the `/products` route shell, root browse links, and focused route tests.
 
 ## Next Batch
 
-1. Execute Task 1 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md` to add the browse route shell and root navigation entry point.
-2. Continue with Task 2 for the typed products loader once the route shell exists.
-3. Finish with Task 3 to cover empty/unavailable states and close this slice.
+1. Execute Task 2 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md` to add the typed `products(first: 12)` loader and render the first catalog slice on `/products`.
+2. Finish with Task 3 to cover empty/unavailable states and close this slice.
 
 ## Verification Commands
 

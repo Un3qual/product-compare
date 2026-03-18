@@ -5,6 +5,7 @@ import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
 import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
+import { BrowseRoute } from "./routes/catalog/browse";
 import { RootLayout, RootRoute } from "./routes/root";
 
 const routes: RouteObject[] = [
@@ -15,6 +16,10 @@ const routes: RouteObject[] = [
       {
         index: true,
         element: <RootRoute />
+      },
+      {
+        path: "products",
+        element: <BrowseRoute />
       },
       {
         path: "auth/login",

@@ -12,7 +12,7 @@
 
 ## Progress
 
-- [ ] Browse route shell and navigation committed.
+- [x] Browse route shell and navigation committed.
 - [ ] Product-list data loader and typed route rendering committed.
 - [ ] Empty/error-state coverage and route regression verification committed.
 
