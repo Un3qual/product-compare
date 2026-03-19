@@ -2,18 +2,22 @@
 
 ## Current Batch
 
-- Status: active
-- Batch: GraphQL Dataloader Adoption
+- Status: blocked
+- Batch: none queued
 - Source of truth: `docs/work/index.md`
-- Next step: execute Task 3 from `docs/plans/2026-03-18-graphql-dataloader-adoption-implementation-plan.md`
-- Why this batch is active:
-  - The frontend Radix primitives batch is complete and recorded in `docs/work/frontend-radix-primitives.md`.
-  - `docs/work/index.md` now promotes the GraphQL Dataloader slice to the highest-priority active work item.
-  - Tasks 1 and 2 are complete, so Task 3 is now the next unblocked slice inside the same active work item.
-  - The Dataloader implementation plan is already written against the current codebase and existing historical architecture docs.
-  - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaseline work remains constrained even though these two targeted slices are now ready.
+- Next step: restore the repo-level planning entrypoints in `docs/plans/INDEX.md` and `ARCHITECTURE.md` so the next implementation batch can be created and queued.
+- Why no current batch is queued:
+  - GraphQL Dataloader Adoption Task 3 is complete and recorded in `docs/work/graphql-dataloader-adoption.md`.
+  - `docs/work/index.md` no longer lists an active work item after that completion.
+  - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent, so the repo-level fallback for generating the next implementation plan is blocked.
 
 ## Just Completed
+
+- GraphQL Dataloader Adoption Task 3:
+  - Added `test/product_compare_web/graphql/dataloader_batching_test.exs` to exercise aliased `product` selections and `merchantProducts` in one request while capturing only the relevant SQL tables.
+  - Locked the bounded request shape at three `products` selects plus one each for `brands`, `merchant_products`, `merchants`, and `price_points`, so regressions back to per-node batching fan-out fail in one focused test.
+  - Updated `docs/work/graphql-dataloader-adoption.md` and `docs/work/index.md` to close the work item and record that no next unblocked batch is queued.
+  - Verified `mix test test/product_compare_web/graphql/dataloader_batching_test.exs`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix test test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`.
 
 - GraphQL Dataloader Adoption Task 2:
   - Updated `lib/product_compare_web/schema.ex` to resolve `product.brand`, `merchant_product.merchant`, and `merchant_product.product` through Dataloader while keeping the GraphQL field contract unchanged.
