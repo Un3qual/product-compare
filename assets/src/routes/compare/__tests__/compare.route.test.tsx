@@ -438,7 +438,11 @@ test("saved comparisons loader requests the current user's sets and forwards the
               ]
             }
           }
-        ]
+        ],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
       }
     }
   });
@@ -471,6 +475,103 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 });
 
+test("saved comparisons loader follows pagination cursors until all saved sets are loaded", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-1",
+                name: "Desk setup",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: DETAIL_PRODUCT.id,
+                      slug: DETAIL_PRODUCT.slug,
+                      name: DETAIL_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true,
+            endCursor: "cursor-1"
+          }
+        }
+      }
+    })
+    .mockResolvedValueOnce({
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-2",
+                name: "Office setup",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: SECOND_PRODUCT.id,
+                      slug: SECOND_PRODUCT.slug,
+                      name: SECOND_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: "cursor-2"
+          }
+        }
+      }
+    });
+
+  await expect(
+    savedComparisonsLoader({
+      request,
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [DETAIL_PRODUCT.slug]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: [SECOND_PRODUCT.slug]
+      }
+    ]
+  });
+
+  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+    1,
+    expect.stringContaining("query MySavedComparisonSets"),
+    { first: 20 },
+    undefined
+  );
+  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+    2,
+    expect.stringContaining("query MySavedComparisonSets"),
+    { first: 20, after: "cursor-1" },
+    undefined
+  );
+});
+
 test("saved comparisons route renders persisted sets with reopen links", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -495,6 +596,37 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
     "href",
     `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`
   );
+});
+
+test("compare route exposes a named region for the compare shell", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: ["detail-product", "second-product"],
+    products: [
+      {
+        id: DETAIL_PRODUCT.id,
+        name: DETAIL_PRODUCT.name,
+        slug: DETAIL_PRODUCT.slug,
+        description: DETAIL_PRODUCT.description,
+        brandName: DETAIL_PRODUCT.brand.name
+      },
+      {
+        id: SECOND_PRODUCT.id,
+        name: SECOND_PRODUCT.name,
+        slug: SECOND_PRODUCT.slug,
+        description: SECOND_PRODUCT.description,
+        brandName: SECOND_PRODUCT.brand.name
+      }
+    ]
+  });
+
+  render(<CompareRoute />);
+
+  expect(
+    screen.getByRole("region", {
+      name: "Compare products"
+    })
+  ).toBeInTheDocument();
 });
 
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {

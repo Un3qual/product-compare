@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
 
@@ -35,10 +36,14 @@ export interface CompareShellProps extends PropsWithChildren {
 }
 
 export function CompareShell({ actions, children, title }: CompareShellProps) {
+  const titleId = useId();
+
   return (
-    <section {...stylex.props(styles.page)}>
+    <section aria-labelledby={titleId} {...stylex.props(styles.page)}>
       <header {...stylex.props(styles.header)}>
-        <h1 {...stylex.props(styles.title)}>{title}</h1>
+        <h1 id={titleId} {...stylex.props(styles.title)}>
+          {title}
+        </h1>
         {actions ? <div {...stylex.props(styles.actions)}>{actions}</div> : null}
       </header>
       {children}

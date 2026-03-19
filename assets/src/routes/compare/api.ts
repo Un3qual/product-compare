@@ -67,8 +67,8 @@ const CREATE_SAVED_COMPARISON_SET_MUTATION = `
 `;
 
 const MY_SAVED_COMPARISON_SETS_QUERY = `
-  query MySavedComparisonSets($first: Int) {
-    mySavedComparisonSets(first: $first) {
+  query MySavedComparisonSets($first: Int, $after: String) {
+    mySavedComparisonSets(first: $first, after: $after) {
       edges {
         node {
           id
@@ -83,9 +83,15 @@ const MY_SAVED_COMPARISON_SETS_QUERY = `
           }
         }
       }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 `;
+
+const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
 
 const DELETE_SAVED_COMPARISON_SET_MUTATION = `
   mutation DeleteSavedComparisonSet($savedComparisonSetId: ID!) {
@@ -174,26 +180,48 @@ export async function savedComparisonsLoader({
   const ssrContext = typeof window === "undefined" ? { request } : undefined;
 
   try {
-    const response = await fetchGraphQL(
-      MY_SAVED_COMPARISON_SETS_QUERY,
-      { first: 20 },
-      ssrContext
-    );
+    const savedSets: SavedComparisonSetSummary[] = [];
+    let after: string | undefined;
 
-    if (isUnauthorizedSavedComparisonsResponse(response)) {
-      return {
-        status: "unauthorized",
-        savedSets: []
-      };
-    }
+    while (true) {
+      const response = await fetchGraphQL(
+        MY_SAVED_COMPARISON_SETS_QUERY,
+        after === undefined
+          ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
+          : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
+        ssrContext
+      );
 
-    const savedSets = parseSavedComparisonSets(response);
+      if (isUnauthorizedSavedComparisonsResponse(response)) {
+        return {
+          status: "unauthorized",
+          savedSets: []
+        };
+      }
 
-    if (savedSets === null) {
-      return {
-        status: "error",
-        savedSets: []
-      };
+      const page = parseSavedComparisonSetsPage(response);
+
+      if (page === null) {
+        return {
+          status: "error",
+          savedSets: []
+        };
+      }
+
+      savedSets.push(...page.savedSets);
+
+      if (!page.hasNextPage) {
+        break;
+      }
+
+      if (!page.endCursor) {
+        return {
+          status: "error",
+          savedSets: []
+        };
+      }
+
+      after = page.endCursor;
     }
 
     return {
@@ -261,7 +289,13 @@ function readMutationPayload(response: GraphQLResponse, fieldName: string) {
   return {};
 }
 
-function parseSavedComparisonSets(response: GraphQLResponse): SavedComparisonSetSummary[] | null {
+function parseSavedComparisonSetsPage(
+  response: GraphQLResponse
+): {
+  savedSets: SavedComparisonSetSummary[];
+  hasNextPage: boolean;
+  endCursor: string | null;
+} | null {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return null;
   }
@@ -287,6 +321,7 @@ function parseSavedComparisonSets(response: GraphQLResponse): SavedComparisonSet
   }
 
   const savedSets: SavedComparisonSetSummary[] = [];
+  const pageInfo = (connection as Record<string, unknown>).pageInfo;
 
   for (const edge of edges) {
     const savedSet = parseSavedComparisonSetEdge(edge);
@@ -298,7 +333,28 @@ function parseSavedComparisonSets(response: GraphQLResponse): SavedComparisonSet
     savedSets.push(savedSet);
   }
 
-  return savedSets;
+  if (!pageInfo || typeof pageInfo !== "object" || Array.isArray(pageInfo)) {
+    return null;
+  }
+
+  const candidatePageInfo = pageInfo as Record<string, unknown>;
+
+  if (typeof candidatePageInfo.hasNextPage !== "boolean") {
+    return null;
+  }
+
+  if (
+    candidatePageInfo.endCursor !== null &&
+    typeof candidatePageInfo.endCursor !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    savedSets,
+    hasNextPage: candidatePageInfo.hasNextPage,
+    endCursor: candidatePageInfo.endCursor
+  };
 }
 
 function parseSavedComparisonSetEdge(edge: unknown): SavedComparisonSetSummary | null {
