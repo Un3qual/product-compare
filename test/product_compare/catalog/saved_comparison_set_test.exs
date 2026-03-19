@@ -67,5 +67,43 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
                  ]
                })
     end
+
+    test "rejects malformed product ids before querying" do
+      user = AccountsFixtures.user_fixture()
+
+      assert {:error, :invalid_product_id} =
+               Catalog.create_saved_comparison_set(user.id, %{
+                 name: "Malformed set",
+                 product_ids: [1, "2", -3]
+               })
+    end
+  end
+
+  describe "delete_saved_comparison_set/2" do
+    test "returns not_found for invalid entropy ids" do
+      user = AccountsFixtures.user_fixture()
+
+      assert {:error, :not_found} =
+               Catalog.delete_saved_comparison_set(user.id, "not-a-uuid")
+    end
+
+    test "deletes an owned set and becomes not_found on repeat delete" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-delete-repeat"})
+
+      assert {:ok, saved_set} =
+               Catalog.create_saved_comparison_set(user.id, %{
+                 name: "Delete once",
+                 product_ids: [product.id]
+               })
+
+      assert {:ok, deleted_saved_set} =
+               Catalog.delete_saved_comparison_set(user.id, saved_set.entropy_id)
+
+      assert deleted_saved_set.id == saved_set.id
+
+      assert {:error, :not_found} =
+               Catalog.delete_saved_comparison_set(user.id, saved_set.entropy_id)
+    end
   end
 end

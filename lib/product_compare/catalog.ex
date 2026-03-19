@@ -77,6 +77,7 @@ defmodule ProductCompare.Catalog do
              Ecto.Changeset.t()
              | :duplicate_products
              | :empty_products
+             | :invalid_product_id
              | :product_not_found
              | :too_many_products}
   def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids})
@@ -117,12 +118,22 @@ defmodule ProductCompare.Catalog do
           {:ok, SavedComparisonSet.t()} | {:error, :not_found}
   def delete_saved_comparison_set(user_id, entropy_id)
       when is_integer(user_id) and is_binary(entropy_id) do
-    case Repo.get_by(SavedComparisonSet, user_id: user_id, entropy_id: entropy_id) do
-      nil ->
-        {:error, :not_found}
+    with {:ok, validated_entropy_id} <- Ecto.UUID.cast(entropy_id),
+         %SavedComparisonSet{} = saved_comparison_set <-
+           Repo.get_by(SavedComparisonSet,
+             user_id: user_id,
+             entropy_id: validated_entropy_id
+           ) do
+      case Repo.delete(saved_comparison_set, stale_error_field: :id) do
+        {:ok, deleted_saved_comparison_set} ->
+          {:ok, deleted_saved_comparison_set}
 
-      saved_comparison_set ->
-        Repo.delete(saved_comparison_set)
+        {:error, _changeset} ->
+          {:error, :not_found}
+      end
+    else
+      :error -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
@@ -168,6 +179,9 @@ defmodule ProductCompare.Catalog do
 
   defp normalize_saved_comparison_product_ids(product_ids) when is_list(product_ids) do
     cond do
+      Enum.any?(product_ids, &(not is_integer(&1) or &1 <= 0)) ->
+        {:error, :invalid_product_id}
+
       length(product_ids) > 3 ->
         {:error, :too_many_products}
 
