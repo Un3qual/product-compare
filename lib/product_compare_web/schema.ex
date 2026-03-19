@@ -61,6 +61,14 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.products/3)
     end
 
+    @desc "Returns the current authenticated user's saved comparison sets."
+    field :my_saved_comparison_sets, :saved_comparison_set_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&CatalogResolver.my_saved_comparison_sets/3)
+    end
+
     @desc "Returns merchants ordered by primary key with cursor pagination."
     field :merchants, :merchant_connection do
       arg(:first, :integer)
@@ -172,6 +180,20 @@ defmodule ProductCompareWeb.Schema do
 
       resolve(&AffiliateResolver.create_coupon/3)
     end
+
+    @desc "Creates a private saved comparison set for the current authenticated user."
+    field :create_saved_comparison_set, non_null(:saved_comparison_set_payload) do
+      arg(:input, non_null(:create_saved_comparison_set_input))
+
+      resolve(&CatalogResolver.create_saved_comparison_set/3)
+    end
+
+    @desc "Deletes one of the current authenticated user's saved comparison sets."
+    field :delete_saved_comparison_set, non_null(:saved_comparison_set_payload) do
+      arg(:saved_comparison_set_id, non_null(:id))
+
+      resolve(&CatalogResolver.delete_saved_comparison_set/3)
+    end
   end
 
   input_object :upsert_affiliate_network_input do
@@ -247,6 +269,11 @@ defmodule ProductCompareWeb.Schema do
     field :use_case_taxon_ids, list_of(non_null(:id))
   end
 
+  input_object :create_saved_comparison_set_input do
+    field :name, non_null(:string)
+    field :product_ids, non_null(list_of(non_null(:id)))
+  end
+
   object :upsert_affiliate_network_payload do
     field :network, :affiliate_network
     field :errors, non_null(list_of(non_null(:mutation_error)))
@@ -264,6 +291,11 @@ defmodule ProductCompareWeb.Schema do
 
   object :create_coupon_payload do
     field :coupon, :coupon
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :saved_comparison_set_payload do
+    field :saved_comparison_set, :saved_comparison_set
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -432,6 +464,38 @@ defmodule ProductCompareWeb.Schema do
   object :api_token_connection do
     field :edges, non_null(list_of(non_null(:api_token_edge)))
     field :page_info, non_null(:page_info)
+  end
+
+  object :saved_comparison_set do
+    field :id, non_null(:id) do
+      resolve(fn saved_comparison_set, _, _ ->
+        encode_required_global_id(:saved_comparison_set, saved_comparison_set.entropy_id)
+      end)
+    end
+
+    field :name, non_null(:string)
+
+    field :items, non_null(list_of(non_null(:saved_comparison_item))),
+      resolve: dataloader(Catalog, use_parent: true)
+
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  object :saved_comparison_item do
+    field :position, non_null(:integer)
+    field :product, non_null(:product), resolve: dataloader(Catalog, use_parent: true)
+    field :inserted_at, non_null(:datetime)
+  end
+
+  object :saved_comparison_set_connection do
+    field :edges, non_null(list_of(non_null(:saved_comparison_set_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :saved_comparison_set_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:saved_comparison_set)
   end
 
   object :api_token_edge do

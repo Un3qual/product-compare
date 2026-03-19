@@ -4,12 +4,15 @@ defmodule ProductCompare.Catalog do
   """
 
   import Ecto.Query
+  alias Ecto.Multi
 
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.SavedComparisonItem
+  alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
   @spec list_products() :: [Product.t()]
   def list_products do
@@ -66,6 +69,114 @@ defmodule ProductCompare.Catalog do
 
   def get_product_by_slug(slug) when is_binary(slug) do
     Repo.get_by(Product, slug: slug)
+  end
+
+  @spec create_saved_comparison_set(pos_integer(), %{name: String.t(), product_ids: [pos_integer()]}) ::
+          {:ok, SavedComparisonSet.t()}
+          | {:error,
+             Ecto.Changeset.t()
+             | :duplicate_products
+             | :empty_products
+             | :product_not_found
+             | :too_many_products}
+  def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids})
+      when is_integer(user_id) and is_binary(name) and is_list(product_ids) do
+    with {:ok, normalized_product_ids} <- normalize_saved_comparison_product_ids(product_ids),
+         :ok <- ensure_products_exist(normalized_product_ids) do
+      Multi.new()
+      |> Multi.insert(
+        :saved_comparison_set,
+        SavedComparisonSet.changeset(%SavedComparisonSet{}, %{user_id: user_id, name: name})
+      )
+      |> Multi.run(:saved_comparison_items, fn repo, %{saved_comparison_set: saved_comparison_set} ->
+        insert_saved_comparison_items(repo, saved_comparison_set.id, normalized_product_ids)
+      end)
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{saved_comparison_set: saved_comparison_set}} ->
+          {:ok, load_saved_comparison_set!(saved_comparison_set.id)}
+
+        {:error, :saved_comparison_set, changeset, _changes} ->
+          {:error, changeset}
+
+        {:error, :saved_comparison_items, changeset, _changes} ->
+          {:error, changeset}
+      end
+    end
+  end
+
+  @spec list_saved_comparison_sets_query(pos_integer()) :: Ecto.Query.t()
+  def list_saved_comparison_sets_query(user_id) when is_integer(user_id) do
+    from(saved_comparison_set in SavedComparisonSet,
+      where: saved_comparison_set.user_id == ^user_id,
+      order_by: [desc: saved_comparison_set.inserted_at, desc: saved_comparison_set.id]
+    )
+  end
+
+  @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
+          {:ok, SavedComparisonSet.t()} | {:error, :not_found}
+  def delete_saved_comparison_set(user_id, entropy_id)
+      when is_integer(user_id) and is_binary(entropy_id) do
+    case Repo.get_by(SavedComparisonSet, user_id: user_id, entropy_id: entropy_id) do
+      nil ->
+        {:error, :not_found}
+
+      saved_comparison_set ->
+        Repo.delete(saved_comparison_set)
+    end
+  end
+
+  defp insert_saved_comparison_items(repo, saved_comparison_set_id, product_ids) do
+    Enum.reduce_while(Enum.with_index(product_ids, 1), {:ok, []}, fn {product_id, position},
+                                                                     {:ok, items} ->
+      changeset =
+        SavedComparisonItem.changeset(%SavedComparisonItem{}, %{
+          saved_comparison_set_id: saved_comparison_set_id,
+          product_id: product_id,
+          position: position
+        })
+
+      case repo.insert(changeset) do
+        {:ok, saved_comparison_item} ->
+          {:cont, {:ok, [saved_comparison_item | items]}}
+
+        {:error, changeset} ->
+          {:halt, {:error, changeset}}
+      end
+    end)
+    |> case do
+      {:ok, items} -> {:ok, Enum.reverse(items)}
+      {:error, _} = error -> error
+    end
+  end
+
+  defp ensure_products_exist(product_ids) do
+    count =
+      from(product in Product, where: product.id in ^product_ids)
+      |> Repo.aggregate(:count)
+
+    if count == length(product_ids), do: :ok, else: {:error, :product_not_found}
+  end
+
+  defp load_saved_comparison_set!(saved_comparison_set_id) do
+    SavedComparisonSet
+    |> Repo.get!(saved_comparison_set_id)
+    |> Repo.preload(items: [:product])
+  end
+
+  defp normalize_saved_comparison_product_ids([]), do: {:error, :empty_products}
+
+  defp normalize_saved_comparison_product_ids(product_ids) when is_list(product_ids) do
+    cond do
+      length(product_ids) > 3 ->
+        {:error, :too_many_products}
+
+      Enum.uniq(product_ids) != product_ids ->
+        {:error, :duplicate_products}
+
+      true ->
+        {:ok, product_ids}
+    end
   end
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do

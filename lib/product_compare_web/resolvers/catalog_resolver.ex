@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, _resolution) do
@@ -30,6 +31,110 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       end
     end
   end
+
+  @spec my_saved_comparison_sets(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def my_saved_comparison_sets(_parent, args, %{context: %{current_user: current_user}}) do
+    query = Catalog.list_saved_comparison_sets_query(current_user.id)
+    connection_args = Map.take(args || %{}, [:first, :after])
+
+    case Connection.from_query(query, connection_args, Repo) do
+      {:ok, connection} ->
+        {:ok, connection}
+
+      {:error, :invalid_cursor} ->
+        {:error, "invalid cursor"}
+    end
+  end
+
+  def my_saved_comparison_sets(_parent, _args, _resolution), do: {:error, "unauthorized"}
+
+  @spec create_saved_comparison_set(any(), %{input: map()}, Absinthe.Resolution.t()) ::
+          {:ok, map()}
+  def create_saved_comparison_set(_parent, %{input: input}, %{context: %{current_user: current_user}}) do
+    with {:ok, product_ids} <-
+           cast_global_id_list(fetch_list_value(input, :product_ids), :product, "product") do
+      attrs = %{
+        name: fetch_value(input, :name),
+        product_ids: product_ids
+      }
+
+      case Catalog.create_saved_comparison_set(current_user.id, attrs) do
+        {:ok, %SavedComparisonSet{} = saved_comparison_set} ->
+          {:ok, %{saved_comparison_set: saved_comparison_set, errors: []}}
+
+        {:error, :product_not_found} ->
+          {:ok, saved_comparison_error_payload("NOT_FOUND", "product not found", "productIds")}
+
+        {:error, :empty_products} ->
+          {:ok,
+           saved_comparison_error_payload(
+             "INVALID_ARGUMENT",
+             "at least one product is required",
+             "productIds"
+           )}
+
+        {:error, :duplicate_products} ->
+          {:ok,
+           saved_comparison_error_payload(
+             "INVALID_ARGUMENT",
+             "duplicate products are not allowed",
+             "productIds"
+           )}
+
+        {:error, :too_many_products} ->
+          {:ok,
+           saved_comparison_error_payload(
+             "INVALID_ARGUMENT",
+             "you can save up to 3 products",
+             "productIds"
+           )}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:ok, saved_comparison_changeset_error_payload(changeset)}
+      end
+    else
+      {:error, _message} ->
+        {:ok, saved_comparison_error_payload("INVALID_ID", "invalid product id", "productIds")}
+    end
+  end
+
+  def create_saved_comparison_set(_parent, _args, _resolution),
+    do: {:ok, saved_comparison_error_payload("UNAUTHORIZED", "unauthorized")}
+
+  @spec delete_saved_comparison_set(any(), %{saved_comparison_set_id: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, map()}
+  def delete_saved_comparison_set(
+        _parent,
+        %{saved_comparison_set_id: saved_comparison_set_id},
+        %{context: %{current_user: current_user}}
+      ) do
+    with {:ok, entropy_id} <-
+           cast_required_entropy_global_id(
+             saved_comparison_set_id,
+             :saved_comparison_set,
+             "saved comparison set"
+           ) do
+      case Catalog.delete_saved_comparison_set(current_user.id, entropy_id) do
+        {:ok, %SavedComparisonSet{} = saved_comparison_set} ->
+          {:ok, %{saved_comparison_set: saved_comparison_set, errors: []}}
+
+        {:error, :not_found} ->
+          {:ok, saved_comparison_error_payload("NOT_FOUND", "saved comparison set not found")}
+      end
+    else
+      {:error, _message} ->
+        {:ok,
+         saved_comparison_error_payload(
+           "INVALID_ID",
+           "invalid saved comparison set id",
+           "savedComparisonSetId"
+         )}
+    end
+  end
+
+  def delete_saved_comparison_set(_parent, _args, _resolution),
+    do: {:ok, saved_comparison_error_payload("UNAUTHORIZED", "unauthorized")}
 
   @spec normalize_filters(map() | nil) :: {:ok, map()} | {:error, String.t()}
   defp normalize_filters(nil), do: {:ok, %{}}
@@ -169,6 +274,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp cast_required_global_id(_value, _expected_type, field_name),
     do: {:error, "invalid #{field_name} id"}
 
+  @spec cast_required_entropy_global_id(any(), GlobalId.type(), String.t()) ::
+          {:ok, Ecto.UUID.t()} | {:error, String.t()}
+  defp cast_required_entropy_global_id(value, expected_type, field_name) when is_binary(value) do
+    with {:ok, {^expected_type, entropy_id}} <- GlobalId.decode(value),
+         {:ok, normalized_entropy_id} <- Ecto.UUID.cast(entropy_id) do
+      {:ok, normalized_entropy_id}
+    else
+      _ -> {:error, "invalid #{field_name} id"}
+    end
+  end
+
+  defp cast_required_entropy_global_id(_value, _expected_type, field_name),
+    do: {:error, "invalid #{field_name} id"}
+
   @spec normalize_decimal(any()) :: {:ok, Decimal.t() | number() | nil} | {:error, String.t()}
   defp normalize_decimal(nil), do: {:ok, nil}
   defp normalize_decimal(%Decimal{} = value), do: {:ok, value}
@@ -208,4 +327,38 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   @spec maybe_put(map(), atom(), any()) :: map()
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp saved_comparison_changeset_error_payload(%Ecto.Changeset{} = changeset) do
+    %{
+      saved_comparison_set: nil,
+      errors: changeset_errors(changeset)
+    }
+  end
+
+  defp saved_comparison_error_payload(code, message, field \\ nil) do
+    %{
+      saved_comparison_set: nil,
+      errors: [mutation_error(code, message, field)]
+    }
+  end
+
+  defp changeset_errors(%Ecto.Changeset{} = changeset) do
+    changeset
+    |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
+      opts_by_key = Map.new(opts, fn {k, v} -> {to_string(k), v} end)
+
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        opts_by_key
+        |> Map.get(key, key)
+        |> to_string()
+      end)
+    end)
+    |> Enum.flat_map(fn {field, messages} ->
+      Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
+    end)
+  end
+
+  defp mutation_error(code, message, field) do
+    %{code: code, message: message, field: field}
+  end
 end

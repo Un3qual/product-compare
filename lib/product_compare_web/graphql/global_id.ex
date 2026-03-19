@@ -4,6 +4,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
   @type type ::
           :user
           | :api_token
+          | :saved_comparison_set
           | :affiliate_network
           | :affiliate_program
           | :affiliate_link
@@ -21,6 +22,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
   @type_names %{
     user: "User",
     api_token: "ApiToken",
+    saved_comparison_set: "SavedComparisonSet",
     affiliate_network: "AffiliateNetwork",
     affiliate_program: "AffiliateProgram",
     affiliate_link: "AffiliateLink",

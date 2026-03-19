@@ -129,6 +129,15 @@
 - [x] `mix precommit` passes (`114 tests, 0 failures`, `71.04%` coverage).
 - [x] `mix ci` passes (`114 tests, 0 failures`, `71.04%` coverage).
 
+## Saved Comparisons Backend Checkpoint (2026-03-18)
+
+- [x] `saved_comparison_sets` and `saved_comparison_items` now persist owner-scoped private compare sets with ordered product rows.
+- [x] Catalog exposes create/list/delete saved-comparison APIs with deterministic empty, duplicate, missing, and over-limit validation.
+- [x] GraphQL now exposes `mySavedComparisonSets`, `createSavedComparisonSet`, and `deleteSavedComparisonSet` with Relay ID handling and typed mutation errors.
+- [x] Verification passes:
+  - `mix test test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs` (`51 tests, 0 failures`).
+  - `mix typecheck` passes.
+
 ## Deferred Scope
 
 - Scope freeze rationale and revisit triggers are documented in:

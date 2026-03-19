@@ -2,16 +2,22 @@
 
 ## Current Batch
 
-- Status: blocked
-- Batch: none queued
-- Source of truth: `docs/work/index.md`
-- Next step: restore the repo-level planning entrypoints in `docs/plans/INDEX.md` and `ARCHITECTURE.md` so the next implementation batch can be created and queued.
-- Why no current batch is queued:
-  - GraphQL Dataloader Adoption Task 3 is complete and recorded in `docs/work/graphql-dataloader-adoption.md`.
-  - `docs/work/index.md` no longer lists an active work item after that completion.
-  - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent, so the repo-level fallback for generating the next implementation plan is blocked.
+- Status: ready
+- Batch: Frontend Saved Comparisons UI, Task 1
+- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
+- Next step: add the compare-route save action and create-mutation wiring.
+- Why this batch is current:
+  - The backend saved-comparisons contract is complete and verified.
+  - The compare route is the existing selection entrypoint, so save-from-compare is the next narrow frontend increment.
+  - The following saved-set route work depends on persisted sets existing from the frontend path.
 
 ## Just Completed
+
+- Saved Comparisons Backend:
+  - Added `priv/repo/migrations/20260318120000_create_saved_comparison_sets.exs` plus the new saved comparison schema modules under `lib/product_compare_schemas/catalog/`.
+  - Extended `lib/product_compare/catalog.ex`, `lib/product_compare_web/resolvers/catalog_resolver.ex`, `lib/product_compare_web/schema.ex`, and `lib/product_compare_web/graphql/global_id.ex` with owner-scoped saved comparison persistence and GraphQL query/mutation support.
+  - Added focused coverage in `test/product_compare/catalog/saved_comparison_set_test.exs` and `test/product_compare_web/graphql/saved_comparisons_test.exs`.
+  - Verified `mix test test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs` and `mix typecheck`.
 
 - GraphQL Dataloader Adoption Task 3:
   - Added `test/product_compare_web/graphql/dataloader_batching_test.exs` to exercise aliased `product` selections and `merchantProducts` in one request while capturing only the relevant SQL tables.

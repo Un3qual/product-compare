@@ -24,14 +24,25 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- None. `docs/work/graphql-dataloader-adoption.md` completed on 2026-03-18, and no next unblocked batch is currently queued.
+- `docs/work/frontend-saved-comparisons-ui.md`
+  - Status: active
+  - Priority: P1
+  - Next batch: add the compare-route save action on top of the new saved-comparisons GraphQL contract.
 
 ## Blocked / Needs Decision
 
-- `docs/plans/INDEX.md` and `ARCHITECTURE.md` are still absent, so broader rebaselines continue to use `docs/plans/2026-03-05-frontend-fullstack-design.md` plus the current codebase as the active architecture source.
-- No replacement active slice is queued until those repo-level planning entrypoints exist again.
+- None. The frontend saved-comparisons UI is now unblocked by the completed backend contract.
 
 ## Recently Completed
+
+### Saved Comparisons Backend
+
+- Status: completed on 2026-03-18
+- Source of truth: `docs/work/saved-comparisons-backend.md`
+- Outcome:
+  - Added owner-scoped `saved_comparison_sets` and `saved_comparison_items` persistence with ordered product items.
+  - Added catalog APIs and GraphQL query/mutation support for listing, creating, and deleting private saved comparison sets.
+  - Verification passed with `mix test test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs` and `mix typecheck`.
 
 ### GraphQL Dataloader Adoption
 
