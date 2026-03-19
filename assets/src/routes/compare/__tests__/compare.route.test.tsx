@@ -362,6 +362,8 @@ test("compare route saves the current ready-state selection", async () => {
       }
     );
   });
+
+  expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
 });
 
 test("renders a not-found message when any selected product is missing", () => {
@@ -541,7 +543,7 @@ test("saved comparisons route removes a deleted set from the list", async () => 
     expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByText("No saved comparisons yet.")).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
 });
 
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {

@@ -19,17 +19,14 @@ export function SavedComparisonsRoute() {
       const result = await deleteSavedComparisonSet(savedComparisonSetId);
 
       if (result.savedComparisonSetId) {
-        setSavedSets((currentSavedSets) => {
-          const nextSavedSets = currentSavedSets.filter(
-            (savedSet) => savedSet.id !== result.savedComparisonSetId
-          );
+        const nextSavedSets = savedSets.filter(
+          (savedSet) => savedSet.id !== result.savedComparisonSetId
+        );
 
-          setStatusMessage(
-            nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
-          );
-
-          return nextSavedSets;
-        });
+        setSavedSets(nextSavedSets);
+        setStatusMessage(
+          nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
+        );
         return;
       }
 
