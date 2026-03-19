@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Add A Shared Compare Route Shell
+## Task 1: Add A Shared Compare Route Shell
 
 **Files:**
 - Create: `assets/src/routes/compare/compare-shell.tsx`
@@ -71,7 +71,7 @@ git add assets/src/routes/compare/compare-shell.tsx assets/src/routes/compare/in
 git commit -m "feat(frontend): harden compare route shell"
 ```
 
-### Task 2: Add Route-Level Compare Error Boundaries
+## Task 2: Add Route-Level Compare Error Boundaries
 
 **Files:**
 - Create: `assets/src/routes/compare/error-boundary.tsx`
@@ -139,7 +139,7 @@ git add assets/src/routes/compare/error-boundary.tsx assets/src/router.tsx asset
 git commit -m "feat(frontend): add compare route error boundaries"
 ```
 
-### Task 3: Verify Compare Route Hardening
+## Task 3: Verify Compare Route Hardening
 
 **Files:**
 - Modify: `docs/work/frontend-compare-saved-hardening.md`
