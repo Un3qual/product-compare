@@ -6,9 +6,8 @@ import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
-  const [savedSets, setSavedSets] = useState(loaderData.savedSets);
+  const [viewState, setViewState] = useState(() => buildSavedComparisonsViewState(loaderData));
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState(() => buildSavedComparisonsStatus(loaderData));
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleDelete(savedComparisonSetId: string) {
@@ -19,14 +18,17 @@ export function SavedComparisonsRoute() {
       const result = await deleteSavedComparisonSet(savedComparisonSetId);
 
       if (result.savedComparisonSetId) {
-        const nextSavedSets = savedSets.filter(
-          (savedSet) => savedSet.id !== result.savedComparisonSetId
-        );
+        setViewState((currentViewState) => {
+          const nextSavedSets = currentViewState.savedSets.filter(
+            (savedSet) => savedSet.id !== result.savedComparisonSetId
+          );
 
-        setSavedSets(nextSavedSets);
-        setStatusMessage(
-          nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
-        );
+          return {
+            savedSets: nextSavedSets,
+            statusMessage:
+              nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
+          };
+        });
         return;
       }
 
@@ -41,13 +43,13 @@ export function SavedComparisonsRoute() {
   return (
     <CompareShell title="Saved comparisons">
       <p aria-live="polite" role="status">
-        {statusMessage}
+        {viewState.statusMessage}
       </p>
       {deleteError ? <p role="alert">{deleteError}</p> : null}
       {loaderData.status === "unauthorized" ? <Link to="/auth/login">Sign in</Link> : null}
-      {savedSets.length > 0 ? (
+      {viewState.savedSets.length > 0 ? (
         <ul aria-label="Saved comparison sets">
-          {savedSets.map((savedSet) => (
+          {viewState.savedSets.map((savedSet) => (
             <li key={savedSet.id}>
               <article>
                 <h2>{savedSet.name}</h2>
@@ -95,4 +97,11 @@ function buildSavedComparisonsStatus(loaderData: SavedComparisonsRouteLoaderData
   }
 
   return "Saved comparison sets loaded.";
+}
+
+function buildSavedComparisonsViewState(loaderData: SavedComparisonsRouteLoaderData) {
+  return {
+    savedSets: loaderData.savedSets,
+    statusMessage: buildSavedComparisonsStatus(loaderData)
+  };
 }

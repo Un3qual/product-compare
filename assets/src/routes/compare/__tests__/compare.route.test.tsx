@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
@@ -45,6 +45,21 @@ const SECOND_PRODUCT = {
     name: "Bravo"
   }
 } as const;
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return {
+    promise,
+    resolve,
+    reject
+  };
+}
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
@@ -541,6 +556,97 @@ test("saved comparisons route removes a deleted set from the list", async () => 
 
   await waitFor(() => {
     expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+  });
+
+  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+});
+
+test("saved comparisons route applies overlapping delete responses against the latest list state", async () => {
+  const firstDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: string;
+        } | null;
+        errors: [];
+      };
+    };
+  }>();
+  const secondDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: string;
+        } | null;
+        errors: [];
+      };
+    };
+  }>();
+
+  fetchGraphQLMock
+    .mockImplementationOnce(() => firstDelete.promise)
+    .mockImplementationOnce(() => secondDelete.promise);
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: [DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
+
+  fireEvent.click(deleteButtons[0]);
+  fireEvent.click(deleteButtons[1]);
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
+  });
+
+  await act(async () => {
+    secondDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-2"
+          },
+          errors: []
+        }
+      }
+    });
+  });
+
+  await act(async () => {
+    firstDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-1"
+          },
+          errors: []
+        }
+      }
+    });
+  });
+
+  await waitFor(() => {
+    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+    expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
   });
 
   expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
