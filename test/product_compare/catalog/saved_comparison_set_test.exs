@@ -2,7 +2,6 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
   use ProductCompare.DataCase, async: false
 
   alias ProductCompare.Catalog
-  alias ProductCompare.Repo
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
 
@@ -18,14 +17,10 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
                  product_ids: [second_product.id, first_product.id]
                })
 
-      persisted =
-        saved_set
-        |> Repo.preload(items: [:product])
+      assert saved_set.user_id == user.id
+      assert saved_set.name == "Desk setup"
 
-      assert persisted.user_id == user.id
-      assert persisted.name == "Desk setup"
-
-      assert Enum.map(persisted.items, &{&1.position, &1.product_id}) == [
+      assert Enum.map(saved_set.items, &{&1.position, &1.product_id}) == [
                {1, second_product.id},
                {2, first_product.id}
              ]
