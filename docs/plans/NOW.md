@@ -3,15 +3,21 @@
 ## Current Batch
 
 - Status: ready
-- Batch: Frontend Saved Comparisons UI, Task 1
+- Batch: Frontend Saved Comparisons UI, Task 2
 - Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
-- Next step: add the compare-route save action and create-mutation wiring.
+- Next step: add the `/compare/saved` route plus reopen/delete wiring.
 - Why this batch is current:
-  - The backend saved-comparisons contract is complete and verified.
-  - The compare route is the existing selection entrypoint, so save-from-compare is the next narrow frontend increment.
-  - The following saved-set route work depends on persisted sets existing from the frontend path.
+  - The compare route now persists ready-state selections through the saved-comparison GraphQL mutation.
+  - The remaining unblocked scope on this work item is the authenticated saved-set list plus reopen/delete UI.
+  - Task 2 stays contained to the compare route files, router/root registration, and focused frontend tests.
 
 ## Just Completed
+
+- Frontend Saved Comparisons UI, Task 1:
+  - Updated `assets/src/routes/compare/api.ts` with a route-local `createSavedComparisonSet(...)` helper that calls the GraphQL mutation and normalizes typed/save-failure errors.
+  - Updated `assets/src/routes/compare/index.tsx` to render a ready-state `Save comparison` action, derive a saved-set name from the current products, and show local success/error feedback.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` to assert the compare route submits the current product relay IDs through `CreateSavedComparisonSet`.
+  - Verified `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 - Saved Comparisons Backend:
   - Added `priv/repo/migrations/20260318120000_create_saved_comparison_sets.exs` plus the new saved comparison schema modules under `lib/product_compare_schemas/catalog/`.
