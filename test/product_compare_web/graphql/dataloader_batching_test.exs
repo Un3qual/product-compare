@@ -236,8 +236,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   end
 
   defp merchant_product_fixture(attrs) do
-    merchant = Map.get(attrs, :merchant, merchant_fixture())
-    product = Map.get(attrs, :product, SpecsFixtures.product_fixture())
+    merchant = Map.get(attrs, :merchant) || merchant_fixture()
+    product = Map.get(attrs, :product) || SpecsFixtures.product_fixture()
     suffix = System.unique_integer([:positive])
 
     params =
