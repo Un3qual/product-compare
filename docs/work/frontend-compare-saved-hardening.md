@@ -19,11 +19,11 @@
 
 ## Verified Current State
 
-- `assets/src/routes/compare/compare-shell.tsx` now provides a shared responsive shell for both compare routes.
-- `assets/src/routes/compare/index.tsx` now uses the shared shell and exposes save-success feedback through a polite `role="status"` region.
-- `assets/src/routes/compare/saved.tsx` now uses the shared shell, exposes a named saved-set list plus polite status messaging, and keeps overlapping delete state race-safe with per-row pending tracking.
+- `assets/src/routes/compare/compare-shell.tsx` provides a shared responsive shell for both compare routes.
+- `assets/src/routes/compare/index.tsx` uses the shared shell and exposes save-success feedback through a polite `role="status"` region.
+- `assets/src/routes/compare/saved.tsx` uses the shared shell, exposes a named saved-set list plus polite status messaging, and keeps overlapping delete state race-safe with per-row pending tracking.
 - `assets/src/router.tsx` still mounts both `/compare` and `/compare/saved`, but neither route registers a compare-scoped `errorElement` yet.
-- `assets/src/routes/compare/__tests__/compare.route.test.tsx` now covers the shared-shell accessibility semantics, compare save status messaging, and overlapping delete regressions, but it does not yet cover route-level error boundaries.
+- `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the shared-shell accessibility semantics, compare save status messaging, and overlapping delete regressions, but it does not yet cover route-level error boundaries.
 
 ## Next Batch
 
@@ -32,7 +32,7 @@
 - Why this batch:
   - The shared shell and accessibility semantics are now in place, so the remaining hardening gap is unexpected-failure handling at the route boundary.
   - Task 2 keeps the work tightly scoped to the compare route surface, router registration, and focused compare route tests.
-  - Advancing NOW to Task 2 keeps this work item moving without reopening unrelated route/UI scope.
+  - Advancing to Task 2 keeps this work item moving without reopening unrelated route/UI scope.
 
 ## Planned Follow-Up
 

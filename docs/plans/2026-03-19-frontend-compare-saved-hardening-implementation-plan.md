@@ -81,24 +81,27 @@ git commit -m "feat(frontend): harden compare route shell"
 **Step 1: Write the failing test**
 
 ```tsx
-test("saved comparisons route renders a route-level fallback when the loader throws", async () => {
+test.each([
+  ["/compare", "Compare"],
+  ["/compare/saved", "Saved comparisons"]
+])("route-level fallback renders for %s when the loader throws", async (path, title) => {
   const router = createMemoryRouter(
     [
       {
-        path: "/compare/saved",
+        path,
         loader: () => {
           throw new Error("boom");
         },
-        element: <SavedComparisonsRoute />,
-        errorElement: <CompareRouteErrorBoundary title="Saved comparisons" />
+        element: path === "/compare" ? <CompareRoute /> : <SavedComparisonsRoute />,
+        errorElement: <CompareRouteErrorBoundary title={title} />
       }
     ],
-    { initialEntries: ["/compare/saved"] }
+    { initialEntries: [path] }
   );
 
   render(<RouterProvider router={router} />);
 
-  expect(await screen.findByText("Saved comparisons unavailable.")).toBeInTheDocument();
+  expect(await screen.findByText(`${title} unavailable.`)).toBeInTheDocument();
 });
 ```
 
@@ -110,6 +113,12 @@ Expected: FAIL because the compare routes do not yet register a compare-scoped e
 **Step 3: Write minimal implementation**
 
 ```tsx
+{
+  path: "compare",
+  loader: compareLoader,
+  element: <CompareRoute />,
+  errorElement: <CompareRouteErrorBoundary title="Compare" />
+},
 {
   path: "compare/saved",
   loader: savedComparisonsLoader,
@@ -135,7 +144,7 @@ git commit -m "feat(frontend): add compare route error boundaries"
 **Files:**
 - Modify: `docs/work/frontend-compare-saved-hardening.md`
 - Modify: `docs/work/index.md`
-- Modify: `docs/plans/NOW.md`
+- Modify: `docs/plans/INDEX.md`
 
 **Step 1: Run focused verification**
 
@@ -152,12 +161,12 @@ Expected: PASS.
 ```md
 - Mark Task 1 and Task 2 complete in `docs/work/frontend-compare-saved-hardening.md`.
 - Close `docs/work/index.md` or advance it if new frontend queue follows immediately.
-- Update `docs/plans/NOW.md` with the next unblocked batch or mark the queue empty.
+- Update `docs/plans/INDEX.md` so the active queue reflects the close-out and any next queued plan.
 ```
 
 **Step 4: Commit**
 
 ```bash
-git add docs/work/frontend-compare-saved-hardening.md docs/work/index.md docs/plans/NOW.md
+git add docs/work/frontend-compare-saved-hardening.md docs/work/index.md docs/plans/INDEX.md
 git commit -m "docs: close compare route hardening batch"
 ```
