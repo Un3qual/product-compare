@@ -27,7 +27,7 @@ Open or update a PR only when the active work item is complete.
 - `docs/work/frontend-compare-saved-hardening.md`
   - Status: active
   - Priority: P2
-  - Next batch: add the shared compare/saved route shell with responsive layout and accessible status semantics.
+  - Next batch: add compare-scoped route error boundaries for `/compare` and `/compare/saved`.
 
 ## Blocked / Needs Decision
 

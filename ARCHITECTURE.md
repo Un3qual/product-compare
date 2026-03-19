@@ -28,9 +28,8 @@
 
 ## Active Gap
 
-- The compare and saved-comparisons routes still use thin baseline markup with no shared responsive shell.
 - Unexpected compare-route loader or render failures still fall back to generic router behavior because compare-scoped error boundaries are not registered yet.
 
 ## Next Planned Slice
 
-- Harden `/compare` and `/compare/saved` with a shared responsive shell, accessible status messaging, and compare-scoped route error boundaries.
+- Add compare-scoped route error boundaries for `/compare` and `/compare/saved`, on top of the new shared shell and accessible status messaging.

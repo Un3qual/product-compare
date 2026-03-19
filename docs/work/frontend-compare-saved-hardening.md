@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-19 at `a194ef0` + working tree
+- Last verified: 2026-03-19 at `53cfe47` + working tree
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -19,28 +19,29 @@
 
 ## Verified Current State
 
-- `assets/src/routes/compare/index.tsx` still renders the compare route directly from route-local loader data and save mutation state, but it does not yet use a shared compare-shell component.
-- `assets/src/routes/compare/saved.tsx` now lists saved sets, reopens them into `/compare`, deletes them from local state, and prompts unauthenticated users to sign in, but it still uses bare markup and route-local copy only.
-- `assets/src/router.tsx` now mounts both `/compare` and `/compare/saved`, but neither route registers a compare-scoped `errorElement`.
-- `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers loader, save, list, reopen, delete, and unauthorized states, but it does not yet lock route-shell accessibility semantics or route-level error boundaries.
+- `assets/src/routes/compare/compare-shell.tsx` now provides a shared responsive shell for both compare routes.
+- `assets/src/routes/compare/index.tsx` now uses the shared shell and exposes save-success feedback through a polite `role="status"` region.
+- `assets/src/routes/compare/saved.tsx` now uses the shared shell, exposes a named saved-set list plus polite status messaging, and keeps overlapping delete state race-safe with per-row pending tracking.
+- `assets/src/router.tsx` still mounts both `/compare` and `/compare/saved`, but neither route registers a compare-scoped `errorElement` yet.
+- `assets/src/routes/compare/__tests__/compare.route.test.tsx` now covers the shared-shell accessibility semantics, compare save status messaging, and overlapping delete regressions, but it does not yet cover route-level error boundaries.
 
 ## Next Batch
 
 - Status: ready
-- Batch: Task 1 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
+- Batch: Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
 - Why this batch:
-  - The saved-comparisons UI is now shipped, so the next unblocked gap is quality hardening rather than new data plumbing.
-  - A shared compare-shell component keeps the responsive/accessibility work contained to the compare route surface before adding boundary wiring.
-  - Task 1 stays scoped to `assets/src/routes/compare/` and the existing compare route tests.
+  - The shared shell and accessibility semantics are now in place, so the remaining hardening gap is unexpected-failure handling at the route boundary.
+  - Task 2 keeps the work tightly scoped to the compare route surface, router registration, and focused compare route tests.
+  - Advancing NOW to Task 2 keeps this work item moving without reopening unrelated route/UI scope.
 
 ## Planned Follow-Up
 
-- Task 2 adds compare-scoped route error boundaries after the shared shell and semantics land.
 - Close this work doc after Task 2 verification unless new compare/saved UI scope is opened.
 
 ## Verification Commands
 
 - `sed -n '1,260p' assets/src/routes/compare/index.tsx`
+- `sed -n '1,260p' assets/src/routes/compare/compare-shell.tsx`
 - `sed -n '1,260p' assets/src/routes/compare/saved.tsx`
 - `sed -n '1,260p' assets/src/router.tsx`
 - `sed -n '1,360p' assets/src/routes/compare/__tests__/compare.route.test.tsx`

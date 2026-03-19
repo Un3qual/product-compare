@@ -3,15 +3,21 @@
 ## Current Batch
 
 - Status: ready
-- Batch: Frontend Compare And Saved Routes Hardening, Task 1
+- Batch: Frontend Compare And Saved Routes Hardening, Task 2
 - Source of truth: `docs/work/frontend-compare-saved-hardening.md`
-- Next step: add the shared compare/saved route shell with responsive layout and accessible status feedback.
+- Next step: add compare-scoped route error boundaries for `/compare` and `/compare/saved`.
 - Why this batch is current:
-  - The saved-comparisons UI is now complete, so the next unblocked slice is route-quality hardening rather than new compare data plumbing.
-  - The plan index now promotes compare/saved hardening as the active queue item, with no older active batch remaining.
-  - Task 1 stays contained to the compare route modules and focused frontend tests before route-boundary wiring follows.
+  - Task 1 landed the shared compare shell plus route-local accessibility semantics, so the remaining unblocked slice is route-boundary failure handling.
+  - The active work doc now records Task 1 as complete and narrows the remaining scope to compare-scoped `errorElement` wiring and tests.
+  - Task 2 stays contained to the compare route modules, router registration, and focused compare route verification.
 
 ## Just Completed
+
+- Frontend Compare And Saved Routes Hardening, Task 1:
+  - Added `assets/src/routes/compare/compare-shell.tsx` and migrated `assets/src/routes/compare/index.tsx` plus `assets/src/routes/compare/saved.tsx` onto the shared shell.
+  - Added polite compare-save and saved-set status messaging, then hardened the saved-set delete flow with latest-state updates, per-row pending tracking, and loader-state sync.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` to cover the named saved-set list, compare save status messaging, and overlapping delete regressions.
+  - Verified `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 - Frontend Saved Comparisons UI, Task 2:
   - Added `assets/src/routes/compare/saved.tsx` plus `savedComparisonsLoader(...)` and `deleteSavedComparisonSet(...)` in `assets/src/routes/compare/api.ts` to load, reopen, and delete private saved sets against the existing GraphQL contract.
