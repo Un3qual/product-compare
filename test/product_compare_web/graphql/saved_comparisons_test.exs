@@ -186,6 +186,45 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                  "savedComparisonSetId" => relay_id("SavedComparisonSet", Ecto.UUID.generate())
                })
     end
+
+    test "deleteSavedComparisonSet returns not_found for an authenticated non-owner", %{
+      conn: conn
+    } do
+      owner = AccountsFixtures.user_fixture()
+      other_user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-delete-non-owner-product"})
+
+      assert {:ok, saved_set} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "Owner set",
+                 product_ids: [product.id]
+               })
+
+      conn =
+        conn
+        |> log_in_user(other_user)
+        |> put_req_header_same_origin()
+
+      assert %{
+               "data" => %{
+                 "deleteSavedComparisonSet" => %{
+                   "savedComparisonSet" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "NOT_FOUND",
+                       "message" => "saved comparison set not found",
+                       "field" => nil
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, delete_saved_comparison_set_mutation(), %{
+                 "savedComparisonSetId" => relay_id("SavedComparisonSet", saved_set.entropy_id)
+               })
+
+      assert Repo.get(SavedComparisonSet, saved_set.id)
+    end
   end
 
   defp graphql(conn, query, variables) do

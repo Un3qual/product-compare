@@ -20,10 +20,11 @@
 
 ## Verified Current State
 
-- `priv/repo/migrations/20260318120000_create_saved_comparison_sets.exs` now creates owner-scoped saved comparison set and item tables.
-- `lib/product_compare/catalog.ex` now exposes create/list/delete saved-comparison helpers alongside the existing product and brand APIs.
-- `lib/product_compare_web/schema.ex` now exposes saved-comparison query, mutation, and object types.
-- `lib/product_compare_web/resolvers/catalog_resolver.ex` now handles saved-comparison query and mutation flows in addition to catalog browse/detail.
+Changes include:
+- `priv/repo/migrations/20260318120000_create_saved_comparison_sets.exs` creates owner-scoped saved comparison set and item tables.
+- `lib/product_compare/catalog.ex` exposes create/list/delete saved-comparison helpers alongside the existing product and brand APIs.
+- `lib/product_compare_web/schema.ex` exposes saved-comparison query, mutation, and object types.
+- `lib/product_compare_web/resolvers/catalog_resolver.ex` handles saved-comparison query and mutation flows in addition to catalog browse/detail.
 - `assets/src/routes/compare/index.tsx` and `assets/src/routes/compare/api.ts` are still frontend-only today, which is why the next queued slice is the frontend saved-comparisons UI.
 
 ## Completed
