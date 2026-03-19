@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- Status: active
-- Priority: P1
+- Status: blocked on frontend Relay route-data adoption
+- Priority: P2
 - Source of truth: this file
 - Last verified: 2026-03-19 at `83a267a` + working tree
 - Historical context:
@@ -11,6 +11,7 @@
   - `docs/plans/INDEX.md`
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+  - `docs/work/frontend-relay-route-data.md`
   - `docs/work/saved-comparisons-backend.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.
@@ -25,19 +26,21 @@
 - `assets/src/routes/compare/__tests__/compare.route.test.tsx` now covers the save-action mutation wiring alongside the existing compare loader and render states.
 - `assets/src/router.tsx` still mounts `/compare` only; there is no `/compare/saved` route yet.
 - `assets/src/routes/root.tsx` still links to `/compare` but not to any saved-set surface.
+- The repo now has an active queue rebaseline in `docs/work/frontend-relay-route-data.md` so new compare-route work does not deepen the manual route-local GraphQL helper pattern.
 
 ## Next Batch
 
-- Status: ready
-- Batch: Task 2 from `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+- Status: blocked by queue rebaseline
+- Batch: Resume Task 2 from `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
 - Why this batch:
-  - The compare route now persists ready-state selections, so the saved-set route has real frontend-created data to render.
-  - The remaining saved-comparisons UI scope is the authenticated list, reopen, and delete flow on top of the existing GraphQL contract.
-  - The work stays contained to the compare route modules, router/root registration, and focused frontend tests.
+  - The compare route now persists ready-state selections, so the saved-set route still has real frontend-created data to render once resumed.
+  - User-directed reprioritization moved Relay route-data adoption ahead of new compare-route surfaces so the saved-set route can land on the new Relay query/mutation path instead of the current manual helpers.
+  - The backend contract remains ready; this is a frontend sequencing change, not a backend blocker.
 
 ## Planned Follow-Up
 
-- Close this work doc after Task 2 verification unless new saved-comparison UI scope is opened.
+- Re-open this work item as the next frontend feature slice after the Relay adoption work doc closes.
+- When resumed, rebaseline Task 2 onto the compare route's Relay query/mutation modules before adding `/compare/saved`.
 
 ## Verification Commands
 

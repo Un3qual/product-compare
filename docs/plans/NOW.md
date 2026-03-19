@@ -3,15 +3,20 @@
 ## Current Batch
 
 - Status: ready
-- Batch: Frontend Saved Comparisons UI, Task 2
-- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
-- Next step: add the `/compare/saved` route plus reopen/delete wiring.
+- Batch: Frontend Relay Route-Data Adoption, Task 1
+- Source of truth: `docs/work/frontend-relay-route-data.md`
+- Next step: add Relay SSR hydration/preload primitives so the route migrations can stop depending on manual GraphQL DTO loaders.
 - Why this batch is current:
-  - The compare route now persists ready-state selections through the saved-comparison GraphQL mutation.
-  - The remaining unblocked scope on this work item is the authenticated saved-set list plus reopen/delete UI.
-  - Task 2 stays contained to the compare route files, router/root registration, and focused frontend tests.
+  - The frontend already ships a Relay provider and compiler config, but browse/detail/compare/auth still bypass normal Relay APIs through route-local `api.ts` and `actions.ts` modules.
+  - The missing SSR hydration/preload layer is the smallest unblocking slice that lets the repo migrate route-by-route instead of keeping two competing data patterns indefinitely.
+  - User-directed queue reprioritization moved Relay adoption ahead of the saved-comparisons route so the next compare-route feature lands on the new path instead of extending the old one.
 
 ## Just Completed
+
+- Queue rebaseline for Relay adoption:
+  - Added `docs/plans/2026-03-19-frontend-relay-route-data-design.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`, and `docs/work/frontend-relay-route-data.md` to make full frontend Relay adoption the active queue item.
+  - Updated `docs/work/index.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` so the source-of-truth queue now puts Relay route-data adoption ahead of the saved-comparisons UI follow-up.
+  - Rebased `docs/work/frontend-saved-comparisons-ui.md` behind the new Relay work item so `/compare/saved` can land on the same data path as the rest of the frontend routes.
 
 - Frontend Saved Comparisons UI, Task 1:
   - Updated `assets/src/routes/compare/api.ts` with a route-local `createSavedComparisonSet(...)` helper that calls the GraphQL mutation and normalizes typed/save-failure errors.

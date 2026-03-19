@@ -24,14 +24,15 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- `docs/work/frontend-saved-comparisons-ui.md`
+- `docs/work/frontend-relay-route-data.md`
   - Status: active
   - Priority: P1
-  - Next batch: add the `/compare/saved` route with reopen/delete UI on top of the verified compare save action.
+  - Next batch: add Relay SSR hydration/preload primitives, then migrate route data off the manual `api.ts` GraphQL wrappers.
 
 ## Blocked / Needs Decision
 
-- None. The frontend saved-comparisons UI is now unblocked by the completed backend contract.
+- `docs/work/frontend-saved-comparisons-ui.md`
+  - Reason: user-directed queue reprioritization moved Relay route-data adoption ahead of new compare-route UI so the frontend stops extending the manual GraphQL helper pattern.
 
 ## Recently Completed
 

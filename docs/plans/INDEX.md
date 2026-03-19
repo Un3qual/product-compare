@@ -7,17 +7,22 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 - `ARCHITECTURE.md`
 - `docs/plans/2026-03-05-frontend-fullstack-design.md`
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
+- `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
 
 ## Active Queue
 
-1. `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+1. `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
    - Status: active
-   - Scope: add compare-save UX plus a saved-set route that lists, reopens, and deletes persisted comparison sets from the new backend contract.
+   - Scope: move the frontend off manual route-local GraphQL helpers and onto Relay preloaded queries, Relay mutations, and SSR store hydration.
 
 ## Next Candidate After Active Queue
 
-1. Frontend quality hardening follow-up
-   - Depends on the saved-comparisons UI landing first.
+1. `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+   - Depends on the compare route Relay migration landing first.
+   - Intended scope: add the `/compare/saved` route plus reopen/delete UI on top of the new Relay compare pattern.
+
+2. Frontend quality hardening follow-up
+   - Depends on the Relay migration and saved-comparisons UI landing first.
    - Intended scope: route-level error-boundary, accessibility, and responsive hardening for compare and saved-set routes.
 
 ## Historical Reference
