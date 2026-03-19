@@ -1,14 +1,51 @@
+import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import type { CompareRouteLoaderData } from "./api";
-import { compareLoader } from "./api";
+import { compareLoader, createSavedComparisonSet } from "./api";
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function handleSave() {
+    if (loaderData.status !== "ready") {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage(null);
+    setSaveError(null);
+
+    try {
+      const result = await createSavedComparisonSet({
+        name: buildSavedComparisonName(loaderData.products),
+        productIds: loaderData.products.map((product) => product.id)
+      });
+
+      if (result.savedComparisonSetId) {
+        setSaveMessage("Comparison saved.");
+        return;
+      }
+
+      setSaveError(result.errors[0]?.message ?? "Request failed. Please try again.");
+    } catch {
+      setSaveError("Request failed. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (loaderData.status === "ready") {
     return (
       <section>
         <h1>Compare products</h1>
+        <button disabled={isSaving} onClick={() => void handleSave()} type="button">
+          {isSaving ? "Saving comparison..." : "Save comparison"}
+        </button>
+        {saveMessage ? <p>{saveMessage}</p> : null}
+        {saveError ? <p role="alert">{saveError}</p> : null}
         <ul>
           {loaderData.products.map((product) => (
             <li key={product.id}>
@@ -36,4 +73,24 @@ export function CompareRoute() {
       {loaderData.status === "error" ? <p>Comparison unavailable.</p> : null}
     </section>
   );
+}
+
+function buildSavedComparisonName(
+  products: Array<{
+    name: string;
+  }>
+) {
+  const productNames = products
+    .map((product) => product.name.trim())
+    .filter((name) => name !== "");
+
+  if (productNames.length === 0) {
+    return "Saved comparison";
+  }
+
+  if (productNames.length === 1) {
+    return `${productNames[0]} comparison`;
+  }
+
+  return productNames.join(" vs ");
 }

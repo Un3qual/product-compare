@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { useLoaderData } from "react-router-dom";
@@ -309,6 +309,58 @@ test("renders compared product cards returned by the route loader", () => {
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+});
+
+test("compare route saves the current ready-state selection", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1",
+          name: "Detail Product vs Second Product",
+          items: []
+        },
+        errors: []
+      }
+    }
+  });
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: ["detail-product", "second-product"],
+    products: [
+      {
+        id: DETAIL_PRODUCT.id,
+        name: DETAIL_PRODUCT.name,
+        slug: DETAIL_PRODUCT.slug,
+        description: DETAIL_PRODUCT.description,
+        brandName: DETAIL_PRODUCT.brand.name
+      },
+      {
+        id: SECOND_PRODUCT.id,
+        name: SECOND_PRODUCT.name,
+        slug: SECOND_PRODUCT.slug,
+        description: SECOND_PRODUCT.description,
+        brandName: SECOND_PRODUCT.brand.name
+      }
+    ]
+  });
+
+  render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("mutation CreateSavedComparisonSet"),
+      {
+        input: {
+          name: "Detail Product vs Second Product",
+          productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id]
+        }
+      }
+    );
+  });
 });
 
 test("renders a not-found message when any selected product is missing", () => {

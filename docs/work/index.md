@@ -27,7 +27,7 @@ Open or update a PR only when the active work item is complete.
 - `docs/work/frontend-saved-comparisons-ui.md`
   - Status: active
   - Priority: P1
-  - Next batch: add the compare-route save action on top of the new saved-comparisons GraphQL contract.
+  - Next batch: add the `/compare/saved` route with reopen/delete UI on top of the verified compare save action.
 
 ## Blocked / Needs Decision
 
