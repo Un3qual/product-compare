@@ -480,6 +480,22 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
   );
 });
 
+test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [{ id: "saved-set-1", name: "Desk setup", slugs: ["desk", "chair"] }]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("list", { name: "Saved comparison sets" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+});
+
 test("saved comparisons route removes a deleted set from the list", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import type { SavedComparisonsRouteLoaderData } from "./api";
 import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
+import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
   const [savedSets, setSavedSets] = useState(loaderData.savedSets);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState(() => buildSavedComparisonsStatus(loaderData));
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleDelete(savedComparisonSetId: string) {
@@ -17,9 +19,17 @@ export function SavedComparisonsRoute() {
       const result = await deleteSavedComparisonSet(savedComparisonSetId);
 
       if (result.savedComparisonSetId) {
-        setSavedSets((currentSavedSets) =>
-          currentSavedSets.filter((savedSet) => savedSet.id !== result.savedComparisonSetId)
-        );
+        setSavedSets((currentSavedSets) => {
+          const nextSavedSets = currentSavedSets.filter(
+            (savedSet) => savedSet.id !== result.savedComparisonSetId
+          );
+
+          setStatusMessage(
+            nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
+          );
+
+          return nextSavedSets;
+        });
         return;
       }
 
@@ -32,22 +42,14 @@ export function SavedComparisonsRoute() {
   }
 
   return (
-    <section>
-      <h1>Saved comparisons</h1>
-      {loaderData.status === "unauthorized" ? (
-        <p>
-          Sign in to view saved comparisons. <Link to="/auth/login">Sign in</Link>
-        </p>
-      ) : null}
-      {loaderData.status === "error" ? <p>Saved comparisons unavailable.</p> : null}
+    <CompareShell title="Saved comparisons">
+      <p aria-live="polite" role="status">
+        {statusMessage}
+      </p>
       {deleteError ? <p role="alert">{deleteError}</p> : null}
-      {loaderData.status !== "unauthorized" &&
-      loaderData.status !== "error" &&
-      savedSets.length === 0 ? (
-        <p>No saved comparisons yet.</p>
-      ) : null}
+      {loaderData.status === "unauthorized" ? <Link to="/auth/login">Sign in</Link> : null}
       {savedSets.length > 0 ? (
-        <ul>
+        <ul aria-label="Saved comparison sets">
           {savedSets.map((savedSet) => (
             <li key={savedSet.id}>
               <article>
@@ -68,7 +70,7 @@ export function SavedComparisonsRoute() {
           ))}
         </ul>
       ) : null}
-    </section>
+    </CompareShell>
   );
 }
 
@@ -80,4 +82,20 @@ function buildSavedComparisonHref(slugs: string[]) {
   }
 
   return `/compare?${searchParams.toString()}`;
+}
+
+function buildSavedComparisonsStatus(loaderData: SavedComparisonsRouteLoaderData) {
+  if (loaderData.status === "unauthorized") {
+    return "Sign in to view saved comparisons.";
+  }
+
+  if (loaderData.status === "error") {
+    return "Saved comparisons unavailable.";
+  }
+
+  if (loaderData.savedSets.length === 0) {
+    return "No saved comparisons yet.";
+  }
+
+  return "Saved comparison sets loaded.";
 }
