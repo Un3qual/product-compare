@@ -5,7 +5,7 @@
 - Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-18 at `821067e` + working tree
+- Last verified: 2026-03-18 (UTC) at commit `821067e` (clean working tree)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -51,5 +51,6 @@ Changes include:
 - `sed -n '1,320p' lib/product_compare_web/resolvers/catalog_resolver.ex`
 - `sed -n '1,360p' lib/product_compare_web/schema.ex`
 - `rg -n "saved comparison|saved_comparison" lib test assets/src priv/repo/migrations`
+- `rg -n "saved comparison|saved_comparison|savedComparison" lib/product_compare_web/router.ex lib/product_compare_web/controllers`
 - `mix test test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
 - `mix typecheck`
