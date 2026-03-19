@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import type { SavedComparisonsRouteLoaderData } from "./api";
 import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
@@ -7,11 +7,19 @@ import { CompareShell } from "./compare-shell";
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
   const [viewState, setViewState] = useState(() => buildSavedComparisonsViewState(loaderData));
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setViewState(buildSavedComparisonsViewState(loaderData));
+  }, [loaderData.savedSets, loaderData.status]);
+
   async function handleDelete(savedComparisonSetId: string) {
-    setDeletingId(savedComparisonSetId);
+    setPendingDeleteIds((currentPendingDeleteIds) =>
+      currentPendingDeleteIds.includes(savedComparisonSetId)
+        ? currentPendingDeleteIds
+        : [...currentPendingDeleteIds, savedComparisonSetId]
+    );
     setDeleteError(null);
 
     try {
@@ -36,7 +44,9 @@ export function SavedComparisonsRoute() {
     } catch {
       setDeleteError("Request failed. Please try again.");
     } finally {
-      setDeletingId(null);
+      setPendingDeleteIds((currentPendingDeleteIds) =>
+        currentPendingDeleteIds.filter((pendingDeleteId) => pendingDeleteId !== savedComparisonSetId)
+      );
     }
   }
 
@@ -58,11 +68,13 @@ export function SavedComparisonsRoute() {
                   <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
                 </p>
                 <button
-                  disabled={deletingId === savedSet.id}
+                  disabled={pendingDeleteIds.includes(savedSet.id)}
                   onClick={() => void handleDelete(savedSet.id)}
                   type="button"
                 >
-                  {deletingId === savedSet.id ? "Deleting comparison..." : "Delete comparison"}
+                  {pendingDeleteIds.includes(savedSet.id)
+                    ? "Deleting comparison..."
+                    : "Delete comparison"}
                 </button>
               </article>
             </li>

@@ -652,6 +652,97 @@ test("saved comparisons route applies overlapping delete responses against the l
   expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
 });
 
+test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
+  const firstDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: string;
+        } | null;
+        errors: [];
+      };
+    };
+  }>();
+  const secondDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: string;
+        } | null;
+        errors: [];
+      };
+    };
+  }>();
+
+  fetchGraphQLMock
+    .mockImplementationOnce(() => firstDelete.promise)
+    .mockImplementationOnce(() => secondDelete.promise);
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: [DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
+
+  fireEvent.click(deleteButtons[0]);
+  fireEvent.click(deleteButtons[1]);
+
+  await waitFor(() => {
+    expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);
+  });
+
+  await act(async () => {
+    firstDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-1"
+          },
+          errors: []
+        }
+      }
+    });
+  });
+
+  expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
+
+  await act(async () => {
+    secondDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-2"
+          },
+          errors: []
+        }
+      }
+    });
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  });
+});
+
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "unauthorized",
