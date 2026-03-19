@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { useLoaderData } from "react-router-dom";
-import { compareLoader } from "../api";
+import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { compareLoader, savedComparisonsLoader } from "../api";
 import { CompareRoute } from "../index";
+import { SavedComparisonsRoute } from "../saved";
 
 const { useLoaderDataMock } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn()
@@ -385,4 +386,160 @@ test("renders an unavailable message when compare loading fails", () => {
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByText("Comparison unavailable.")).toBeInTheDocument();
+});
+
+test("saved comparisons loader requests the current user's sets and forwards the SSR request", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+  const originalWindow = globalThis.window;
+
+  vi.stubGlobal("window", undefined);
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Desk setup",
+              items: [
+                {
+                  position: 2,
+                  product: {
+                    id: DETAIL_PRODUCT.id,
+                    slug: DETAIL_PRODUCT.slug,
+                    name: DETAIL_PRODUCT.name
+                  }
+                },
+                {
+                  position: 1,
+                  product: {
+                    id: SECOND_PRODUCT.id,
+                    slug: SECOND_PRODUCT.slug,
+                    name: SECOND_PRODUCT.name
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  try {
+    await expect(
+      savedComparisonsLoader({
+        request,
+        params: {},
+        context: undefined
+      } as LoaderFunctionArgs)
+    ).resolves.toEqual({
+      status: "ready",
+      savedSets: [
+        {
+          id: "saved-set-1",
+          name: "Desk setup",
+          slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        }
+      ]
+    });
+  } finally {
+    vi.stubGlobal("window", originalWindow);
+  }
+
+  expect(fetchGraphQLMock).toHaveBeenCalledWith(
+    expect.stringContaining("query MySavedComparisonSets"),
+    { first: 20 },
+    { request }
+  );
+});
+
+test("saved comparisons route renders persisted sets with reopen links", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("heading", { name: "Saved comparisons" })).toBeInTheDocument();
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`
+  );
+});
+
+test("saved comparisons route removes a deleted set from the list", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    }
+  });
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("mutation DeleteSavedComparisonSet"),
+      {
+        savedComparisonSetId: "saved-set-1"
+      },
+      undefined
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+  });
+
+  expect(screen.getByText("No saved comparisons yet.")).toBeInTheDocument();
+});
+
+test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "unauthorized",
+    savedSets: []
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Sign in to view saved comparisons.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
 });

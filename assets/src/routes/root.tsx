@@ -59,6 +59,9 @@ export function RootLayout() {
                 <Link to="/compare">Compare products</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/compare/saved">Saved comparisons</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/auth/login">Sign in</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
@@ -87,6 +90,9 @@ export function RootRoute() {
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/compare">Compare products</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/compare/saved">Saved comparisons</Link>
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/auth/login">Sign in</Link>

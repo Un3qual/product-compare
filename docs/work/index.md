@@ -24,16 +24,25 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- `docs/work/frontend-saved-comparisons-ui.md`
+- `docs/work/frontend-compare-saved-hardening.md`
   - Status: active
-  - Priority: P1
-  - Next batch: add the `/compare/saved` route with reopen/delete UI on top of the verified compare save action.
+  - Priority: P2
+  - Next batch: add the shared compare/saved route shell with responsive layout and accessible status semantics.
 
 ## Blocked / Needs Decision
 
 - None. The frontend saved-comparisons UI is now unblocked by the completed backend contract.
 
 ## Recently Completed
+
+### Frontend Saved Comparisons UI
+
+- Status: completed on 2026-03-19
+- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
+- Outcome:
+  - `/compare` now saves ready-state selections through `createSavedComparisonSet`.
+  - `/compare/saved` now lists private saved sets, reopens them back into `/compare` with repeated `slug` params, and deletes them from the UI.
+  - Frontend verification passed with `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 ### Saved Comparisons Backend
 

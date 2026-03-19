@@ -10,16 +10,16 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+1. `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
    - Status: active
-   - Scope: add compare-save UX plus a saved-set route that lists, reopens, and deletes persisted comparison sets from the new backend contract.
+   - Scope: harden the compare and saved-comparisons routes with a shared shell, accessibility feedback semantics, and route-level error boundaries.
 
 ## Next Candidate After Active Queue
 
-1. Frontend quality hardening follow-up
-   - Depends on the saved-comparisons UI landing first.
-   - Intended scope: route-level error-boundary, accessibility, and responsive hardening for compare and saved-set routes.
+1. None queued
 
 ## Historical Reference
 
+- `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+  - Completed on 2026-03-19.
 - Earlier dated plans in `docs/plans/` remain historical context unless `docs/work/index.md` promotes one into active execution.

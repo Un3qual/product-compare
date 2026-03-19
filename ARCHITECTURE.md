@@ -18,6 +18,7 @@
 - `/products` ships a GraphQL-backed browse baseline.
 - `/products/:slug` ships product detail and active-offer baselines.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params.
+- `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
 
 ## Current Delivered Backend Baseline
 
@@ -27,10 +28,9 @@
 
 ## Active Gap
 
-- The backend contract for private saved comparison sets now exists, but the frontend still lacks the save/list/reopen/delete UX that consumes it.
-- The compare route remains save-less today, and there is still no `/compare/saved` route for authenticated users.
+- The compare and saved-comparisons routes still use thin baseline markup with no shared responsive shell.
+- Unexpected compare-route loader or render failures still fall back to generic router behavior because compare-scoped error boundaries are not registered yet.
 
 ## Next Planned Slice
 
-- Add frontend saved-comparison UX on top of the new GraphQL contract.
-- That next slice should cover compare-route save actions plus a saved-set route for listing, reopening, and deleting persisted compare sets.
+- Harden `/compare` and `/compare/saved` with a shared responsive shell, accessible status messaging, and compare-scoped route error boundaries.

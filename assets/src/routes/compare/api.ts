@@ -20,6 +20,17 @@ export interface CreateSavedComparisonSetResult {
   errors: CompareMutationError[];
 }
 
+export interface SavedComparisonSetSummary {
+  id: string;
+  name: string;
+  slugs: string[];
+}
+
+export interface DeleteSavedComparisonSetResult {
+  savedComparisonSetId: string | null;
+  errors: CompareMutationError[];
+}
+
 export type CompareRouteLoaderData =
   | {
       status: "empty";
@@ -35,9 +46,50 @@ export type CompareRouteLoaderData =
       products: ProductDetail[];
     };
 
+export interface SavedComparisonsRouteLoaderData {
+  status: "ready" | "empty" | "unauthorized" | "error";
+  savedSets: SavedComparisonSetSummary[];
+}
+
 const CREATE_SAVED_COMPARISON_SET_MUTATION = `
   mutation CreateSavedComparisonSet($input: CreateSavedComparisonSetInput!) {
     createSavedComparisonSet(input: $input) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+const MY_SAVED_COMPARISON_SETS_QUERY = `
+  query MySavedComparisonSets($first: Int) {
+    mySavedComparisonSets(first: $first) {
+      edges {
+        node {
+          id
+          name
+          items {
+            position
+            product {
+              id
+              slug
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const DELETE_SAVED_COMPARISON_SET_MUTATION = `
+  mutation DeleteSavedComparisonSet($savedComparisonSetId: ID!) {
+    deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {
       savedComparisonSet {
         id
       }
@@ -106,13 +158,73 @@ export async function createSavedComparisonSet(
   input: CreateSavedComparisonSetInput
 ): Promise<CreateSavedComparisonSetResult> {
   const response = await fetchGraphQL(CREATE_SAVED_COMPARISON_SET_MUTATION, { input });
-  const payload = readCreateSavedComparisonSetPayload(response);
+  const payload = readMutationPayload(response, "createSavedComparisonSet");
   const savedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
   const errors = normalizeMutationErrors(payload.errors, response);
 
   return {
     savedComparisonSetId,
     errors: savedComparisonSetId ? errors : ensureFailureErrors(errors)
+  };
+}
+
+export async function savedComparisonsLoader({
+  request
+}: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
+  const ssrContext = typeof window === "undefined" ? { request } : undefined;
+
+  try {
+    const response = await fetchGraphQL(
+      MY_SAVED_COMPARISON_SETS_QUERY,
+      { first: 20 },
+      ssrContext
+    );
+
+    if (isUnauthorizedSavedComparisonsResponse(response)) {
+      return {
+        status: "unauthorized",
+        savedSets: []
+      };
+    }
+
+    const savedSets = parseSavedComparisonSets(response);
+
+    if (savedSets === null) {
+      return {
+        status: "error",
+        savedSets: []
+      };
+    }
+
+    return {
+      status: savedSets.length === 0 ? "empty" : "ready",
+      savedSets
+    };
+  } catch {
+    return {
+      status: "error",
+      savedSets: []
+    };
+  }
+}
+
+export async function deleteSavedComparisonSet(
+  savedComparisonSetId: string
+): Promise<DeleteSavedComparisonSetResult> {
+  const response = await fetchGraphQL(
+    DELETE_SAVED_COMPARISON_SET_MUTATION,
+    {
+      savedComparisonSetId
+    },
+    undefined
+  );
+  const payload = readMutationPayload(response, "deleteSavedComparisonSet");
+  const deletedSavedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
+  const errors = normalizeMutationErrors(payload.errors, response);
+
+  return {
+    savedComparisonSetId: deletedSavedComparisonSetId,
+    errors: deletedSavedComparisonSetId ? errors : ensureFailureErrors(errors)
   };
 }
 
@@ -131,7 +243,7 @@ function parseSelectedSlugs(requestUrl: string) {
   return Array.from(selected);
 }
 
-function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
+function readMutationPayload(response: GraphQLResponse, fieldName: string) {
   if (
     !Array.isArray(response) &&
     "data" in response &&
@@ -139,7 +251,7 @@ function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
     typeof response.data === "object" &&
     !Array.isArray(response.data)
   ) {
-    const payload = (response.data as Record<string, unknown>).createSavedComparisonSet;
+    const payload = (response.data as Record<string, unknown>)[fieldName];
 
     if (payload && typeof payload === "object" && !Array.isArray(payload)) {
       return payload as Record<string, unknown>;
@@ -147,6 +259,145 @@ function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
   }
 
   return {};
+}
+
+function parseSavedComparisonSets(response: GraphQLResponse): SavedComparisonSetSummary[] | null {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return null;
+  }
+
+  if (!("data" in response) || !response.data) {
+    return null;
+  }
+
+  if (typeof response.data !== "object" || Array.isArray(response.data)) {
+    return null;
+  }
+
+  const connection = (response.data as Record<string, unknown>).mySavedComparisonSets;
+
+  if (!connection || typeof connection !== "object" || Array.isArray(connection)) {
+    return null;
+  }
+
+  const edges = (connection as Record<string, unknown>).edges;
+
+  if (!Array.isArray(edges)) {
+    return null;
+  }
+
+  const savedSets: SavedComparisonSetSummary[] = [];
+
+  for (const edge of edges) {
+    const savedSet = parseSavedComparisonSetEdge(edge);
+
+    if (!savedSet) {
+      return null;
+    }
+
+    savedSets.push(savedSet);
+  }
+
+  return savedSets;
+}
+
+function parseSavedComparisonSetEdge(edge: unknown): SavedComparisonSetSummary | null {
+  if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
+    return null;
+  }
+
+  const node = (edge as Record<string, unknown>).node;
+
+  if (!node || typeof node !== "object" || Array.isArray(node)) {
+    return null;
+  }
+
+  const candidate = node as Record<string, unknown>;
+
+  if (typeof candidate.id !== "string" || typeof candidate.name !== "string") {
+    return null;
+  }
+
+  const slugs = parseSavedComparisonItems(candidate.items);
+
+  if (slugs === null) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    slugs
+  };
+}
+
+function parseSavedComparisonItems(items: unknown): string[] | null {
+  if (!Array.isArray(items)) {
+    return null;
+  }
+
+  const parsedItems = items.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return null;
+    }
+
+    const candidate = item as Record<string, unknown>;
+    const product = candidate.product;
+
+    if (
+      typeof candidate.position !== "number" ||
+      !product ||
+      typeof product !== "object" ||
+      Array.isArray(product)
+    ) {
+      return null;
+    }
+
+    return {
+      position: candidate.position,
+      slug: typeof (product as Record<string, unknown>).slug === "string"
+        ? ((product as Record<string, unknown>).slug as string)
+        : null
+    };
+  });
+
+  if (parsedItems.some((item) => item === null || item.slug === null)) {
+    return null;
+  }
+
+  const validItems = parsedItems as Array<{
+    position: number;
+    slug: string;
+  }>;
+
+  return validItems
+    .sort((left, right) => left.position - right.position)
+    .map((item) => item.slug);
+}
+
+function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  if (!("errors" in response) || !Array.isArray(response.errors)) {
+    return false;
+  }
+
+  return response.errors.some((error) => {
+    if (!error || typeof error !== "object" || Array.isArray(error)) {
+      return false;
+    }
+
+    const candidate = error as unknown as Record<string, unknown>;
+
+    return (
+      typeof candidate.message === "string" &&
+      candidate.message.toLowerCase() === "unauthorized" &&
+      Array.isArray(candidate.path) &&
+      candidate.path[0] === "mySavedComparisonSets"
+    );
+  });
 }
 
 function readSavedComparisonSetId(savedComparisonSet: unknown) {
