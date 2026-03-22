@@ -2,14 +2,15 @@
 
 ## Snapshot
 
-- Status: active
+- Status: blocked on frontend Relay route-data adoption
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-19 at `53cfe47` + working tree
+- Last verified: 2026-03-22 after merge-conflict review
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
   - `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
+  - `docs/work/frontend-relay-route-data.md`
   - `docs/work/frontend-saved-comparisons-ui.md`
 - Definition of done:
   - `/compare` and `/compare/saved` share a responsive route shell rather than ad-hoc markup.
@@ -27,16 +28,16 @@
 
 ## Next Batch
 
-- Status: ready
-- Batch: Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
+- Status: blocked by queue rebaseline
+- Batch: Resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
 - Why this batch:
-  - The shared shell and accessibility semantics are now in place, so the remaining hardening gap is unexpected-failure handling at the route boundary.
-  - Task 2 keeps the work tightly scoped to the compare route surface, router registration, and focused compare route tests.
-  - Advancing to Task 2 keeps this work item moving without reopening unrelated route/UI scope.
+  - Task 1 already landed the shared shell plus route-local status semantics, so the remaining hardening gap is compare-scoped route-boundary failure handling.
+  - `/compare` and `/compare/saved` still depend on the manual `assets/src/routes/compare/api.ts` helper path, so deferring Task 2 avoids polishing a route surface that will soon change data-layer shape.
+  - Once Relay adoption re-establishes the compare routes on the long-term path, Task 2 can stay tightly scoped to compare-scoped `errorElement` wiring and focused regression tests.
 
 ## Planned Follow-Up
 
-- Close this work doc after Task 2 verification unless new compare/saved UI scope is opened.
+- Re-open this work item as the next compare-route polish slice once the compare and saved-comparisons routes stop depending on the manual helper path.
 
 ## Verification Commands
 

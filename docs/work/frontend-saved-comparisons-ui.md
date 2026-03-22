@@ -3,14 +3,16 @@
 ## Snapshot
 
 - Status: completed
-- Priority: P1
+- Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-19 at `a194ef0` + working tree
+- Last verified: 2026-03-22 after merge-conflict review
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
+  - `docs/work/frontend-relay-route-data.md`
+  - `docs/work/frontend-compare-saved-hardening.md`
   - `docs/work/saved-comparisons-backend.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.
@@ -38,7 +40,8 @@
 
 ## Planned Follow-Up
 
-- Follow-on quality hardening moved to `docs/work/frontend-compare-saved-hardening.md`.
+- Follow-on route hardening moved to `docs/work/frontend-compare-saved-hardening.md`.
+- Relay route-data adoption remains the active queue in `docs/work/frontend-relay-route-data.md` so the current compare/saved manual helper path can be migrated before more compare-route polish resumes.
 
 ## Verification Commands
 

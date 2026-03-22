@@ -24,14 +24,15 @@ Open or update a PR only when the active work item is complete.
 
 ## Active Work
 
-- `docs/work/frontend-compare-saved-hardening.md`
+- `docs/work/frontend-relay-route-data.md`
   - Status: active
-  - Priority: P2
-  - Next batch: add compare-scoped route error boundaries for `/compare` and `/compare/saved`.
+  - Priority: P1
+  - Next batch: add Relay SSR hydration/preload primitives, then migrate route data off the manual `api.ts` GraphQL wrappers.
 
 ## Blocked / Needs Decision
 
-- None. The frontend saved-comparisons UI is now unblocked by the completed backend contract.
+- `docs/work/frontend-compare-saved-hardening.md`
+  - Reason: the shared compare shell and saved-set status semantics have landed, but the remaining compare-scoped error-boundary follow-up is deferred until Relay route-data adoption re-establishes `/compare` and `/compare/saved` on the long-term data path.
 
 ## Recently Completed
 
