@@ -171,9 +171,6 @@ git commit -m "feat: extend graphql node lookup to owner-scoped entities"
 
 **Files:**
 - Modify: `docs/work/graphql-relay-contract-hardening.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/NOW.md`
-- Modify: `docs/plans/INDEX.md`
 
 **Step 1: Update the work doc**
 
@@ -185,13 +182,13 @@ Run: `mix test test/product_compare_web/graphql/node_query_test.exs test/product
 
 Expected: PASS.
 
-**Step 3: Update shared queue docs**
+**Step 3: Hand the shared-doc update back to the coordinator**
 
-Move the backend lane to completed or advance it to the next backend batch, depending on the remaining scope after Tasks 1 and 2.
+Do not edit `docs/work/index.md`, `docs/plans/NOW.md`, or `docs/plans/INDEX.md` from the backend lane worker. Instead, leave the backend lane work doc ready for coordinator pickup and record what changed, what passed, and whether the backend lane should move to `completed` or advance to the next backend batch.
 
 **Step 4: Commit**
 
 ```bash
-git add docs/work/graphql-relay-contract-hardening.md docs/work/index.md docs/plans/NOW.md docs/plans/INDEX.md
-git commit -m "docs: close graphql relay contract hardening lane"
+git add docs/work/graphql-relay-contract-hardening.md
+git commit -m "docs: close graphql relay contract hardening lane work doc"
 ```
