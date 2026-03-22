@@ -41,7 +41,7 @@
 ## Parallel Lane Ownership
 
 - Lane: frontend
-- Owned paths: `assets/**`, this file, and `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Owned paths: `assets/**`, this file, `docs/work/frontend-saved-comparisons-ui.md`, and `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 - Coordinator-owned docs: `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md`
 - Stop and record a blocker here if this batch requires `lib/**`, `priv/**`, backend GraphQL tests, or another lane's owned paths.
 

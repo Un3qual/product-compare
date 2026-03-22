@@ -46,7 +46,7 @@ Commit only lane-local milestone changes.
   - Status: active
   - Priority: P1
   - Next batch: add Relay SSR hydration/preload primitives, then migrate route data off the manual `api.ts` GraphQL wrappers.
-  - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+  - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 
 - Backend lane
   - Work doc: `docs/work/graphql-relay-contract-hardening.md`
