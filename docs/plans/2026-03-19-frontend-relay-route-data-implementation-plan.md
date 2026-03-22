@@ -29,11 +29,16 @@ Add a Relay SSR test that dehydrates a populated environment into serializable r
 
 ```ts
 test("dehydrateRelayEnvironment returns the populated record source", async () => {
-  const environment = createRelayEnvironment();
-  primeRelayRecord(environment, "client:root", { __id: "client:root" });
+  const environment = createRelayEnvironment({
+    records: {
+      "client:root": { __id: "client:root", __typename: "__Root" }
+    }
+  });
 
   expect(dehydrateRelayEnvironment(environment)).toEqual(
-    expect.objectContaining({ "client:root": expect.any(Object) })
+    expect.objectContaining({
+      "client:root": expect.objectContaining({ __id: "client:root" })
+    })
   );
 });
 ```
@@ -52,7 +57,11 @@ Expected: FAIL because the Relay environment cannot yet dehydrate/hydrate record
 
 **Step 3: Write the minimal implementation**
 
-Add a small SSR utility that can create an environment from optional records and extract the populated record source back out for serialization.
+Extend `assets/src/relay/environment.ts` with `CreateRelayEnvironmentOptions` (`records?: RecordMap`, `ssrContext?: SSRContext`) so `createRelayEnvironment({ records, ssrContext })` can seed a `RecordSource` during SSR hydration.
+
+Add `assets/src/relay/ssr.ts` with `dehydrateRelayEnvironment(environment: Environment): RecordMap`, have `entry.server.tsx` serialize that payload into the existing bootstrap script, and have `entry.client.tsx` parse the bootstrap records before handing them back into `createRelayEnvironment({ records })`.
+
+Add `assets/src/relay/route-preload.ts` with a thin `preloadRouteQuery<TQuery extends OperationType>(environment, query, variables)` wrapper that delegates to `loadAppQuery(...)` so route loaders can register preloaded operations through one route-facing API and hand the returned preloaded query to route components.
 
 ```ts
 export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = {}) {
@@ -68,6 +77,22 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
     }),
     store: new Store(recordSource)
   });
+}
+```
+
+```ts
+export function dehydrateRelayEnvironment(environment: Environment): RecordMap {
+  return environment.getStore().getSource().toJSON();
+}
+```
+
+```ts
+export function preloadRouteQuery<TQuery extends OperationType>(
+  environment: Environment,
+  query: GraphQLTaggedNode,
+  variables: TQuery["variables"]
+) {
+  return loadAppQuery<TQuery>(environment, query, variables);
 }
 ```
 
@@ -434,7 +459,7 @@ Expected: FAIL if the transport helper still carries route-specific assumptions 
 
 **Step 3: Write the minimal implementation**
 
-Trim `fetchGraphQL` to a pure Relay network helper, delete any dead route parsing helpers left behind by the migration, and update the work docs to close this slice and re-open the saved-comparisons UI as the next route feature on top of the new Relay path.
+Trim `fetchGraphQL` to shared Relay network concerns only: endpoint resolution, JSON request shaping, and SSR cookie/origin forwarding for Relay operations. As Tasks 2-5 delete the route-local `api.ts` and auth action helpers, remove any route-specific request parsing, ad hoc header shaping, and direct route-tree `fetchGraphQL` call sites so the route tree goes through Relay loaders, preloaded queries, and mutations instead.
 
 **Step 4: Run the full frontend verification**
 
