@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Add Relay SSR hydration and route-preload primitives
+## Task 1: Add Relay SSR hydration and route-preload primitives
 
 **Files:**
 - Create: `assets/src/relay/ssr.ts`
@@ -92,7 +92,7 @@ git add assets/src/relay/ssr.ts assets/src/relay/route-preload.ts assets/src/rel
 git commit -m "feat(frontend): add relay ssr hydration primitives"
 ```
 
-### Task 2: Migrate the browse route to a Relay preloaded query
+## Task 2: Migrate the browse route to a Relay preloaded query
 
 **Files:**
 - Delete: `assets/src/routes/catalog/api.ts`
@@ -170,7 +170,7 @@ git rm assets/src/routes/catalog/api.ts
 git commit -m "feat(frontend): migrate browse route to relay"
 ```
 
-### Task 3: Migrate the product detail and offers route to Relay
+## Task 3: Migrate the product detail and offers route to Relay
 
 **Files:**
 - Delete: `assets/src/routes/products/api.ts`
@@ -262,7 +262,7 @@ git rm assets/src/routes/products/api.ts
 git commit -m "feat(frontend): migrate product detail route to relay"
 ```
 
-### Task 4: Migrate the compare route and save mutation to Relay
+## Task 4: Migrate the compare route and save mutation to Relay
 
 **Files:**
 - Delete: `assets/src/routes/compare/api.ts`
@@ -320,7 +320,7 @@ git rm assets/src/routes/compare/api.ts
 git commit -m "feat(frontend): migrate compare route to relay"
 ```
 
-### Task 5: Migrate auth mutations to Relay and trim the remaining manual fetch helpers
+## Task 5: Migrate auth mutations to Relay and trim the remaining manual fetch helpers
 
 **Files:**
 - Delete: `assets/src/routes/auth/actions.ts`
@@ -342,6 +342,9 @@ git commit -m "feat(frontend): migrate compare route to relay"
 - Modify: `assets/src/routes/auth/verify-email.tsx`
 - Modify: `assets/src/routes/auth/__tests__/session.route.test.tsx`
 - Modify: `assets/src/routes/auth/__tests__/recovery.route.test.tsx`
+- Modify: `docs/work/graphql-auth-migration.md`
+- Modify: `docs/plans/2026-03-16-graphql-auth-migration-design.md`
+- Modify: `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
 
 **Step 1: Write the failing tests**
 
@@ -393,12 +396,12 @@ Expected: PASS.
 **Step 6: Commit**
 
 ```bash
-git add assets/src/routes/auth/mutations assets/src/routes/auth/errors.ts assets/src/__generated__/LoginMutation.graphql.ts assets/src/__generated__/RegisterMutation.graphql.ts assets/src/__generated__/ForgotPasswordMutation.graphql.ts assets/src/__generated__/ResetPasswordMutation.graphql.ts assets/src/__generated__/VerifyEmailMutation.graphql.ts assets/src/routes/auth/login.tsx assets/src/routes/auth/register.tsx assets/src/routes/auth/forgot-password.tsx assets/src/routes/auth/reset-password.tsx assets/src/routes/auth/verify-email.tsx assets/src/routes/auth/__tests__/session.route.test.tsx assets/src/routes/auth/__tests__/recovery.route.test.tsx
+git add assets/src/routes/auth/mutations assets/src/routes/auth/errors.ts assets/src/__generated__/LoginMutation.graphql.ts assets/src/__generated__/RegisterMutation.graphql.ts assets/src/__generated__/ForgotPasswordMutation.graphql.ts assets/src/__generated__/ResetPasswordMutation.graphql.ts assets/src/__generated__/VerifyEmailMutation.graphql.ts assets/src/routes/auth/login.tsx assets/src/routes/auth/register.tsx assets/src/routes/auth/forgot-password.tsx assets/src/routes/auth/reset-password.tsx assets/src/routes/auth/verify-email.tsx assets/src/routes/auth/__tests__/session.route.test.tsx assets/src/routes/auth/__tests__/recovery.route.test.tsx docs/work/graphql-auth-migration.md docs/plans/2026-03-16-graphql-auth-migration-design.md docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md
 git rm assets/src/routes/auth/actions.ts
 git commit -m "refactor(frontend): move auth flows onto relay mutations"
 ```
 
-### Task 6: Remove dead manual-fetch plumbing, refresh docs, and requeue saved comparisons on top of Relay
+## Task 6: Remove dead manual-fetch plumbing, refresh docs, and requeue saved comparisons on top of Relay
 
 **Files:**
 - Modify: `assets/src/relay/fetch-graphql.ts`
