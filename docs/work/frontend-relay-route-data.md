@@ -38,6 +38,13 @@
   - Landing the hydration primitives first keeps the route migrations incremental and avoids a one-shot rewrite.
   - Requeuing saved-comparisons UI behind this slice prevents new frontend routes from entrenching the current manual `api.ts` GraphQL pattern.
 
+## Parallel Lane Ownership
+
+- Lane: frontend
+- Owned paths: `assets/**`, this file, and `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Coordinator-owned docs: `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md`
+- Stop and record a blocker here if this batch requires `lib/**`, `priv/**`, backend GraphQL tests, or another lane's owned paths.
+
 ## Planned Follow-Up
 
 - Re-open `docs/work/frontend-saved-comparisons-ui.md` as the next frontend feature slice once compare-route Relay adoption is complete.
