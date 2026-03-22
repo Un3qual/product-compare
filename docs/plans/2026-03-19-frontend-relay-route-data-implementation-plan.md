@@ -59,9 +59,9 @@ Expected: FAIL because the Relay environment cannot yet dehydrate/hydrate record
 
 Extend `assets/src/relay/environment.ts` with `CreateRelayEnvironmentOptions` (`records?: RecordMap`, `ssrContext?: SSRContext`) so `createRelayEnvironment({ records, ssrContext })` can seed a `RecordSource` during SSR hydration.
 
-Add `assets/src/relay/ssr.ts` with `dehydrateRelayEnvironment(environment: Environment): RecordMap`, have `entry.server.tsx` serialize that payload into the existing bootstrap script, and have `entry.client.tsx` parse the bootstrap records before handing them back into `createRelayEnvironment({ records })`.
+Add `assets/src/relay/ssr.ts` with `dehydrateRelayEnvironment(environment: Environment): RecordMap`, have `entry.server.tsx` serialize that payload into a non-executable `application/json` script tag or an equivalently HTML-safe escaped bootstrap payload, and have `entry.client.tsx` parse the bootstrap records before handing them back into `createRelayEnvironment({ records })`.
 
-Add `assets/src/relay/route-preload.ts` with a thin `preloadRouteQuery<TQuery extends OperationType>(environment, query, variables)` wrapper that delegates to `loadAppQuery(...)` so route loaders can register preloaded operations through one route-facing API and hand the returned preloaded query to route components.
+Add `assets/src/relay/route-preload.ts` with a thin `preloadRouteQuery<TQuery extends OperationType>(environment, query, variables)` wrapper that delegates to `loadAppQuery(...)` on the server, but returns a serializable preload descriptor such as `{ __relayQuery: { operationName, variables, text? } }` so route loaders can hand that descriptor to components and let the client-side hydration path recreate or look up the `PreloadedQuery` against the hydrated Relay environment.
 
 ```ts
 export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = {}) {
@@ -86,17 +86,7 @@ export function dehydrateRelayEnvironment(environment: Environment): RecordMap {
 }
 ```
 
-```ts
-export function preloadRouteQuery<TQuery extends OperationType>(
-  environment: Environment,
-  query: GraphQLTaggedNode,
-  variables: TQuery["variables"]
-) {
-  return loadAppQuery<TQuery>(environment, query, variables);
-}
-```
-
-Serialize the records into a stable bootstrap payload in `entry.server.tsx`, restore them in `entry.client.tsx`, and add a small route-preload helper so later route loaders have one place to register preloaded operations.
+Serialize the records into a stable, non-executable bootstrap payload in `entry.server.tsx`, restore them in `entry.client.tsx`, and add a small route-preload helper so later route loaders have one place to register preloaded operations and return a serializable query descriptor.
 
 **Step 4: Run the tests to verify they pass**
 
