@@ -186,9 +186,6 @@ Expected: PASS.
 
 Do not edit `docs/work/index.md`, `docs/plans/NOW.md`, or `docs/plans/INDEX.md` from the backend lane worker. Instead, leave the backend lane work doc ready for coordinator pickup and record what changed, what passed, and whether the backend lane should move to `completed` or advance to the next backend batch.
 
-**Step 4: Commit**
+**Step 4: Fold the work-doc update into a real milestone commit**
 
-```bash
-git add docs/work/graphql-relay-contract-hardening.md
-git commit -m "docs: close graphql relay contract hardening lane work doc"
-```
+Do not create a standalone docs-only commit for `docs/work/graphql-relay-contract-hardening.md`. If the lane closes in the same session as Task 2, amend that task's final milestone so the work-doc update ships with the related code and verification. Otherwise, leave the work doc ready for coordinator pickup and let the coordinator include it in the next non-doc-only integration commit.
