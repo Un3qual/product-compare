@@ -214,7 +214,7 @@ export async function savedComparisonsLoader({
         break;
       }
 
-      if (!page.endCursor) {
+      if (!page.endCursor || page.endCursor === after) {
         return {
           status: "error",
           savedSets: []
