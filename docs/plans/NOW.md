@@ -3,15 +3,20 @@
 ## Current Batch
 
 - Status: ready
-- Batch: Frontend Compare And Saved Routes Hardening, Task 2
-- Source of truth: `docs/work/frontend-compare-saved-hardening.md`
-- Next step: add compare-scoped route error boundaries for `/compare` and `/compare/saved`.
+- Batch: Frontend Relay Route-Data Adoption, Task 1
+- Source of truth: `docs/work/frontend-relay-route-data.md`
+- Next step: add Relay SSR hydration/preload primitives so the route migrations can stop depending on manual GraphQL DTO loaders.
 - Why this batch is current:
-  - Task 1 landed the shared compare shell plus route-local accessibility semantics, so the remaining unblocked slice is route-boundary failure handling.
-  - The active work doc now records Task 1 as complete and narrows the remaining scope to compare-scoped `errorElement` wiring and tests.
-  - Task 2 stays contained to the compare route modules, router registration, and focused compare route verification.
+  - The frontend already ships a Relay provider, compiler config, and network layer, but `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows still depend on manual route-local GraphQL helpers.
+  - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
+  - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
 
 ## Just Completed
+
+- Queue rebaseline for Relay adoption:
+  - Added `docs/plans/2026-03-19-frontend-relay-route-data-design.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`, and `docs/work/frontend-relay-route-data.md` to make full frontend Relay adoption the active queue item.
+  - Updated `docs/work/index.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` so the source-of-truth queue now puts Relay route-data adoption ahead of the remaining compare/saved follow-up work.
+  - Rebased the compare-route follow-up docs behind the Relay work item so the remaining compare/saved hardening can land on the long-term data path instead of extending the current manual helper layer.
 
 - Frontend Compare And Saved Routes Hardening, Task 1:
   - Added `assets/src/routes/compare/compare-shell.tsx` and migrated `assets/src/routes/compare/index.tsx` plus `assets/src/routes/compare/saved.tsx` onto the shared shell.
