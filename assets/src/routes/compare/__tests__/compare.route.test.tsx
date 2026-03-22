@@ -693,6 +693,48 @@ test("saved comparisons route removes a deleted set from the list", async () => 
   expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
 });
 
+test("saved comparisons route keeps the set visible when delete fails and clears pending state", async () => {
+  fetchGraphQLMock.mockRejectedValueOnce(new Error("Network request failed: boom"));
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const deleteButton = screen.getByRole("button", { name: "Delete comparison" });
+
+  fireEvent.click(deleteButton);
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("mutation DeleteSavedComparisonSet"),
+      {
+        savedComparisonSetId: "saved-set-1"
+      },
+      undefined
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+});
+
 test("saved comparisons route applies overlapping delete responses against the latest list state", async () => {
   const firstDelete = createDeferred<{
     data: {
