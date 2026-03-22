@@ -40,7 +40,7 @@ test("saved comparisons route exposes a named saved-set list and polite feedback
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx`
+Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
 Expected: FAIL because the compare routes do not yet share a shell, name the saved-set list, or expose a live feedback region.
 
 **Step 3: Write minimal implementation**
@@ -61,7 +61,7 @@ export function CompareShell({ title, actions, children }: CompareShellProps) {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx`
+Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -107,7 +107,7 @@ test.each([
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx`
+Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
 Expected: FAIL because the compare routes do not yet register a compare-scoped error boundary.
 
 **Step 3: Write minimal implementation**
@@ -129,7 +129,7 @@ Expected: FAIL because the compare routes do not yet register a compare-scoped e
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx`
+Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -148,19 +148,19 @@ git commit -m "feat(frontend): add compare route error boundaries"
 
 **Step 1: Run focused verification**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx`
+Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx`
 Expected: PASS with the compare-route hardening coverage green.
 
 **Step 2: Run typecheck**
 
-Run: `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`
+Run: `cd assets && bun run typecheck`
 Expected: PASS.
 
 **Step 3: Update the work docs**
 
 ```md
 - Mark Task 1 and Task 2 complete in `docs/work/frontend-compare-saved-hardening.md`.
-- Close `docs/work/index.md` or advance it if new frontend queue follows immediately.
+- Update the state of `docs/work/index.md` or advance it if new frontend queue follows immediately.
 - Update `docs/plans/INDEX.md` so the active queue reflects the close-out and any next queued plan.
 ```
 

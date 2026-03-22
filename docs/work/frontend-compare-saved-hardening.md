@@ -46,5 +46,5 @@
 - `sed -n '1,260p' assets/src/routes/compare/saved.tsx`
 - `sed -n '1,260p' assets/src/router.tsx`
 - `sed -n '1,360p' assets/src/routes/compare/__tests__/compare.route.test.tsx`
-- `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx`
-- `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`
+- `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
