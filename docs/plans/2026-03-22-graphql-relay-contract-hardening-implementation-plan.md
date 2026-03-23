@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Add `node(id: ID!)` for public catalog and pricing entities
+## Task 1: Add `node(id: ID!)` for public catalog and pricing entities
 
 **Files:**
 - Create: `lib/product_compare_web/resolvers/node_resolver.ex`
@@ -133,7 +133,7 @@ git add lib/product_compare/catalog.ex lib/product_compare/pricing.ex lib/produc
 git commit -m "feat: add graphql node lookup for catalog and pricing records"
 ```
 
-### Task 2: Extend `node(id: ID!)` to owner-scoped entities
+## Task 2: Extend `node(id: ID!)` to owner-scoped entities
 
 **Files:**
 - Modify: `lib/product_compare/catalog.ex`
@@ -264,7 +264,7 @@ git add lib/product_compare/catalog.ex lib/product_compare/accounts.ex lib/produ
 git commit -m "feat: extend graphql node lookup to owner-scoped entities"
 ```
 
-### Task 3: Verify the backend lane and close the work doc
+## Task 3: Verify the backend lane and close the work doc
 
 **Files:**
 - Modify: `docs/work/graphql-relay-contract-hardening.md`
