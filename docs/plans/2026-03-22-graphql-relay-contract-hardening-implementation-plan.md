@@ -62,9 +62,9 @@ Expected: FAIL because the schema does not currently expose a root `node` field 
 Add read helpers to the existing context modules, then decode the root node ID in a dedicated resolver and fetch only the supported public types.
 
 ```elixir
-def node(_parent, %{id: id}, resolution) do
+def node(_parent, %{id: id}, _resolution) do
   with {:ok, {type, local_id}} <- decode_node_id(id),
-       {:ok, record} <- fetch_public_node(type, local_id, resolution) do
+       {:ok, record} <- fetch_public_node(type, local_id) do
     {:ok, record}
   else
     :not_found -> {:ok, nil}
@@ -78,17 +78,16 @@ defp decode_node_id(id) do
     :error ->
       {:error, :invalid_id}
 
-    {:ok, {type, local_id}} ->
-      # Pattern-match the decoded type against the allowlist of allowed public types
-      # before calling fetch_public_node to produce the documented error mappings
-      if type in [:product, :brand, :merchant, :merchant_product, :saved_comparison_set, :api_token] do
-        {:ok, {type, local_id}}
-      else
-        {:error, :unsupported_type}
-      end
+    {:ok, {type, local_id}} when type in [:product, :brand, :merchant, :merchant_product] ->
+      {:ok, {type, local_id}}
+
+    {:ok, {_type, _local_id}} ->
+      {:error, :unsupported_type}
   end
 end
 ```
+
+Keep the Task 1 flow explicit: `node/3` should call `decode_node_id/1`, map malformed base64 or unknown global-ID format to `{:error, :invalid_id}`, reject any decoded type outside the public allowlist with `{:error, :unsupported_type}`, and only then call `fetch_public_node/2`. Owner-scoped types stay out of this batch and are added in Task 2.
 
 Expose the field in `schema.ex`:
 
@@ -106,10 +105,10 @@ union :node_result do
   types([:product, :brand, :merchant, :merchant_product])
 
   resolve_type(fn
-    %ProductCompare.Catalog.Product{}, _ -> :product
-    %ProductCompare.Catalog.Brand{}, _ -> :brand
-    %ProductCompare.Pricing.Merchant{}, _ -> :merchant
-    %ProductCompare.Pricing.MerchantProduct{}, _ -> :merchant_product
+    %ProductCompareSchemas.Catalog.Product{}, _ -> :product
+    %ProductCompareSchemas.Catalog.Brand{}, _ -> :brand
+    %ProductCompareSchemas.Pricing.Merchant{}, _ -> :merchant
+    %ProductCompareSchemas.Pricing.MerchantProduct{}, _ -> :merchant_product
     _, _ -> nil
   end)
 end
@@ -175,26 +174,24 @@ union :node_result do
   types([:product, :brand, :merchant, :merchant_product, :saved_comparison_set, :api_token])
 
   resolve_type(fn
-    %ProductCompare.Catalog.Product{}, _ -> :product
-    %ProductCompare.Catalog.Brand{}, _ -> :brand
-    %ProductCompare.Pricing.Merchant{}, _ -> :merchant
-    %ProductCompare.Pricing.MerchantProduct{}, _ -> :merchant_product
-    %ProductCompare.Catalog.SavedComparisonSet{}, _ -> :saved_comparison_set
-    %ProductCompare.Accounts.ApiToken{}, _ -> :api_token
+    %ProductCompareSchemas.Catalog.Product{}, _ -> :product
+    %ProductCompareSchemas.Catalog.Brand{}, _ -> :brand
+    %ProductCompareSchemas.Pricing.Merchant{}, _ -> :merchant
+    %ProductCompareSchemas.Pricing.MerchantProduct{}, _ -> :merchant_product
+    %ProductCompareSchemas.Catalog.SavedComparisonSet{}, _ -> :saved_comparison_set
+    %ProductCompareSchemas.Accounts.ApiToken{}, _ -> :api_token
     _, _ -> nil
   end)
 end
 ```
 
-In `NodeResolver.node/3`, dispatch between public types and owner-scoped types by pattern-matching the type in the fetch helper. Update `fetch_public_node/3` to delegate to owner-scoped helpers for `:saved_comparison_set` and `:api_token`:
+Extend `decode_node_id/1` so Task 2's allowlist adds `:saved_comparison_set` and `:api_token`, then dispatch in `NodeResolver.node/3` between public lookups and owner-scoped lookups before fetching records. Keep the owner-scoped path nil-safe for anonymous and unauthorized requests:
 
 ```elixir
-defp fetch_public_node(:product, id, _resolution), do: # existing public fetch
-defp fetch_public_node(:brand, id, _resolution), do: # existing public fetch
-defp fetch_public_node(:merchant, id, _resolution), do: # existing public fetch
-defp fetch_public_node(:merchant_product, id, _resolution), do: # existing public fetch
-defp fetch_public_node(:saved_comparison_set, id, resolution), do: fetch_owner_scoped_node(:saved_comparison_set, id, resolution)
-defp fetch_public_node(:api_token, id, resolution), do: fetch_owner_scoped_node(:api_token, id, resolution)
+defp fetch_node(type, local_id, _resolution)
+     when type in [:product, :brand, :merchant, :merchant_product] do
+  fetch_public_node(type, local_id)
+end
 
 defp fetch_owner_scoped_node(:saved_comparison_set, entropy_id, %{context: %{current_user: user}}) do
   case Catalog.get_saved_comparison_set_for_user(user, entropy_id) do
@@ -204,43 +201,49 @@ defp fetch_owner_scoped_node(:saved_comparison_set, entropy_id, %{context: %{cur
 end
 
 defp fetch_owner_scoped_node(:saved_comparison_set, _entropy_id, _resolution) do
-  # current_user is missing (anonymous request)
   {:ok, nil}
 end
 
-defp fetch_owner_scoped_node(:api_token, id, %{context: %{current_user: user}}) do
-  case Accounts.get_api_token_for_user(user, id) do
+defp fetch_node(type, local_id, resolution) when type in [:saved_comparison_set, :api_token] do
+  fetch_owner_scoped_node(type, local_id, resolution)
+end
+
+defp fetch_owner_scoped_node(:api_token, token_entropy_id, %{context: %{current_user: user}}) do
+  case Accounts.get_api_token_for_user(user, token_entropy_id) do
     nil -> {:ok, nil}
     record -> {:ok, record}
   end
 end
 
-defp fetch_owner_scoped_node(:api_token, _id, _resolution) do
-  # current_user is missing (anonymous request)
+defp fetch_owner_scoped_node(:api_token, _token_entropy_id, _resolution) do
   {:ok, nil}
 end
 ```
 
-Implement the context helpers to read current_user from resolution.context and verify ownership:
+Pattern-match `%{context: %{current_user: user}}` in the resolver for the authenticated path. If `current_user` is missing or the record belongs to someone else, return `{:ok, nil}` so owner-scoped node lookups stay invisible to anonymous and cross-user requests.
+
+Implement the context helpers that the resolver calls to verify ownership:
 
 ```elixir
 # In lib/product_compare/catalog.ex
 def get_saved_comparison_set_for_user(user, entropy_id) do
   SavedComparisonSet
   |> where([s], s.entropy_id == ^entropy_id and s.user_id == ^user.id)
-  |> preload(items: :product)
+  |> preload(items: [:product])
   |> Repo.one()
 end
 ```
 
 ```elixir
 # In lib/product_compare/accounts.ex
-def get_api_token_for_user(user, id) do
+def get_api_token_for_user(user, token_entropy_id) do
   ApiToken
-  |> where([t], t.id == ^id and t.user_id == ^user.id)
+  |> where([t], t.entropy_id == ^token_entropy_id and t.user_id == ^user.id)
   |> Repo.one()
 end
 ```
+
+Make `Catalog.get_saved_comparison_set_for_user/2` mirror the ownership check already used in `delete_saved_comparison_set/2`, and preload `items: [:product]` so the node resolver returns the same shape expected by the saved-comparisons GraphQL surface.
 
 **Step 4: Run the tests to verify they pass**
 
