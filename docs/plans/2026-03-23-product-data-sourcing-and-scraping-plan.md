@@ -122,9 +122,9 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ## Phase Plan
 
-## Phase 0 — Governance + Source Selection (1 week)
+### Phase 0 — Governance + Source Selection (1 week)
 
-### Deliverables
+#### Deliverables
 
 - Approved source shortlist (minimum: 2 Tier-1 providers).
 - Minimal provider onboarding checklist for initial operation (expanded governance review deferred).
@@ -134,15 +134,15 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   - `merchant_identifier`
   - price/availability payload and observed timestamp
 
-### Exit criteria
+#### Exit criteria
 
 - One signed-off ADR choosing initial execution mode:
   - **A:** sync import pilot, or
   - **B:** Oban-first ingestion.
 
-## Phase 1 — Tier-1 Connector MVP (2–3 weeks)
+### Phase 1 — Tier-1 Connector MVP (2–3 weeks)
 
-### Scope
+#### Scope
 
 - Implement **one** connector end-to-end (recommended: eBay Browse API).
 - Build ingestion pipeline:
@@ -151,21 +151,21 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   3. Upsert Catalog/Pricing
   4. Record ingestion run outcome
 
-### Required behaviors
+#### Required behaviors
 
 - Idempotent upsert by `(source, external_product_id)` and `(merchant, canonical_url_or_listing_key)`.
 - Deterministic mapping errors (reject + reason code).
 - Last-write-wins with `observed_at` guards for price staleness.
 
-### Validation
+#### Validation
 
 - Fixture tests for parser/normalizer.
 - Integration test replaying same payload twice with no duplicates.
 - Failure-path test coverage for auth failure, rate-limit response, malformed payload.
 
-## Phase 2 — Reliability & Operations (1–2 weeks)
+### Phase 2 — Reliability & Operations (1–2 weeks)
 
-### Scope
+#### Scope
 
 - Add job orchestration (if not already selected in Phase 0):
   - queue partition by source
@@ -176,20 +176,20 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   - fetched vs normalized vs persisted counts
   - failure categories
 
-### SLO targets (initial)
+#### SLO targets (initial)
 
 - Ingestion pipeline success rate >= 99% per run for valid payloads.
 - Alert if source run failure rate > 5% for 3 consecutive runs.
 - Alert if no successful run in 2x scheduled interval.
 
-## Phase 3 — Expand Connectors + Controlled Scraping (ongoing)
+### Phase 3 — Expand Connectors + Controlled Scraping (ongoing)
 
-### Scope
+#### Scope
 
 - Add second and third Tier-1/2 connectors.
 - Only introduce Tier-3 direct scraping for explicit gap coverage.
 
-### Direct scraping gate (must all pass)
+#### Direct scraping gate (must all pass)
 
 1. No viable official API/feed for required data.
 2. Legal/compliance review approved.

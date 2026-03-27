@@ -107,6 +107,16 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 **Schema conventions note:** All tables below follow existing schema conventions: each table uses an integer surrogate primary key named `id` (of type `:id`), and foreign key columns are named `<table>_id` (also of type `:id`). Nullable foreign keys are denoted with `?` (e.g., `click_session_id?`, `program_id?`, `product_id?`) and are `:id` columns that allow null. Special public identifiers (e.g., `click_id` as a public UUID in `commerce_click_sessions`) are additional UUID columns and are not the table primary key or foreign key. When a downstream table needs both the internal relationship and the public click reference, keep them separate (for example `click_session_id?` plus `public_click_id?`). This applies to all tables: `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`.
 
+**Unique constraints (idempotency keys):**
+
+| Table | Unique constraint | Purpose |
+|---|---|---|
+| `commerce_click_sessions` | `click_id` (UUID) | Prevents duplicate click session creation; used as the public-facing idempotency key |
+| `commerce_conversions` | `network_conversion_ref` | Ensures each network-reported conversion is ingested exactly once |
+| `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
+| `commerce_link_variants` | `(commerce_link_id, variant_key)` | One variant per key per canonical link |
+| `commerce_revenue_daily` | `(date, merchant_id, product_id, channel, network)` | One aggregate row per dimension combination per day |
+
 ## 1) Link inventory and routing
 
 - `commerce_links`
@@ -121,7 +131,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 - `commerce_click_sessions`
   - one row per outbound click event
-  - fields: `click_id` (public UUID), `user_id?`, `anonymous_id`, `source_surface` (web, api, extension), `referrer`, `user_agent_hash`, `ip_hash`, `created_at`
+  - fields: `click_id` (public UUID), `commerce_link_id` (FK to `commerce_links`), `user_id?`, `anonymous_id`, `source_surface` (web, api, extension), `referrer`, `user_agent_hash`, `ip_hash`, `created_at`
 
 - `commerce_click_events`
   - detailed event stream (optional if we keep single-table in phase 1)
@@ -132,20 +142,28 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 - `commerce_conversions`
   - one row per confirmed purchase/action
   - fields:
-    - `conversion_id` (internal)
+    - `id` (internal surrogate PK, per schema conventions)
     - `network_conversion_ref` (external unique)
     - `click_session_id?` (nullable FK to `commerce_click_sessions` for unattributed/late conversions)
     - `public_click_id?` (nullable public UUID or network-subid reference captured before internal click-session resolution)
     - `merchant_id`, `program_id?`, `product_id?`, `merchant_product_id?`
     - `status` (`pending`, `approved`, `reversed`, `paid`)
     - `currency`, `order_amount`, `commission_amount`, `commission_rate?`
+    - `attribution_confidence` (`high` | `low` | `unmatched`) — reflects match quality; weak matches (merchant + time window + amount) are flagged `low`, unresolved conversions are `unmatched`
+    - `data_freshness_at` (timestamp of the most recent network/report update for this conversion)
     - `purchased_at`, `reported_at`
 
 ## 4) Price-paid facts
 
 - `purchase_price_facts`
-  - normalized price snapshot at purchase time
-  - fields: `conversion_id`, `listed_price_at_click?`, `reported_paid_price`, `shipping_amount?`, `tax_amount?`, `discount_amount?`, `currency`
+  - normalized price snapshot at purchase time, enriched with the nearest internal price observation
+  - fields:
+    - `conversion_id` (FK to `commerce_conversions`)
+    - `listed_price_at_click?`, `reported_paid_price`, `shipping_amount?`, `tax_amount?`, `discount_amount?`, `currency`
+    - `price_observation_id?` (FK to internal price observation used for enrichment)
+    - `observed_at?` (timestamp of the matched price observation)
+    - `observed_price?` (internal price at `observed_at`)
+    - `price_delta?` (difference between `reported_paid_price` and `observed_price`)
 
 ## 5) Revenue aggregates/materializations
 
@@ -155,7 +173,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 ## Tracking Flows
 
-## Flow A — Outbound link redirect (owned hop)
+### Flow A — Outbound link redirect (owned hop)
 
 1. User clicks offer CTA.
 2. App routes through owned redirect endpoint (`/r/:click_id`).
@@ -167,18 +185,19 @@ Benefits:
 - uniform tracking for affiliate + non-affiliate links,
 - easier extension parity later.
 
-## Flow B — Network postback / conversion ingest
+### Flow B — Network postback / conversion ingest
 
 1. Network sends webhook/postback or report export row.
 2. Ingestion normalizes payload into `commerce_conversions`.
 3. Match against public `click_id`/subid/reference where available, then hydrate `click_session_id` when resolution succeeds.
 4. Upsert conversion status transitions (pending -> approved -> paid / reversed).
 
-## Flow C — Price-paid enrichment
+### Flow C — Price-paid enrichment
 
 1. On conversion ingest, parse paid amount and currency.
-2. Join nearest internal price observation around click/purchase timestamp.
-3. Write `purchase_price_facts` for analytics and public transparency views.
+2. Join nearest internal price observation around the conversion's `purchased_at` timestamp (preferred) or `reported_at` (fallback when `purchased_at` is absent). Use a maximum staleness window of 24 hours before and after the reference timestamp; select the observation closest in time within that window.
+3. If no price observation exists within the staleness window, write the `purchase_price_facts` row with `price_observation_id`, `observed_at`, `observed_price`, and `price_delta` set to null. The row is still created so that `reported_paid_price` and cost fields are available for aggregate reporting.
+4. Write `purchase_price_facts` for analytics and public transparency views.
 
 ## Attribution Strategy (Phase 1)
 
@@ -232,25 +251,25 @@ Recommended extension principles:
 
 ## Rollout Plan
 
-## Phase 0 — Schema + contracts (1–2 weeks)
+### Phase 0 — Schema + contracts (1–2 weeks)
 
-- Add core tables (`commerce_links`, `commerce_click_sessions`, `commerce_conversions`, `purchase_price_facts`).
-- Add base context APIs for create click + ingest conversion + aggregation reads.
-- Add idempotency constraints (`network_conversion_ref`, `click_id`).
+- Create core tables (`commerce_links`, `commerce_click_sessions`, `commerce_conversions`, `purchase_price_facts`).
+- Expose base context APIs for create click, ingest conversion, and aggregation reads.
+- Enforce idempotency constraints on `network_conversion_ref` and `click_id` (see unique constraints table above).
 
-## Phase 1 — First network integration (2 weeks)
+### Phase 1 — First network integration (2 weeks)
 
 - Implement one affiliate network conversion ingest path.
 - Wire outbound redirect endpoint for selected offer links.
 - Validate click->conversion match rate and status lifecycle.
 
-## Phase 2 — Revenue + price-paid reporting (1–2 weeks)
+### Phase 2 — Revenue + price-paid reporting (1–2 weeks)
 
 - Build daily aggregate jobs/materialized views.
 - Add internal dashboard and GraphQL read models.
 - Add public-safe summary endpoint/query (initial, minimal controls).
 
-## Phase 3 — Extension-ready hardening (ongoing)
+### Phase 3 — Extension-ready hardening (ongoing)
 
 - Add channel dimension + token model for extension clients.
 - Publish OSS extension API contract and auth model.
