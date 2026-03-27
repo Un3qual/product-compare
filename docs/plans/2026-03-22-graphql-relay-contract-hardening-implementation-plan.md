@@ -62,9 +62,9 @@ Expected: FAIL because the schema does not currently expose a root `node` field 
 Add read helpers to the existing context modules, then decode the root node ID in a dedicated resolver and fetch only the supported public types.
 
 ```elixir
-def node(_parent, %{id: id}, _resolution) do
+def node(_parent, %{id: id}, resolution) do
   with {:ok, {type, local_id}} <- decode_node_id(id),
-       {:ok, record} <- fetch_public_node(type, local_id) do
+       {:ok, record} <- fetch_node(type, local_id, resolution) do
     {:ok, record}
   else
     :not_found -> {:ok, nil}
@@ -85,6 +85,48 @@ defp decode_node_id(id) do
       {:error, :unsupported_type}
   end
 end
+
+defp fetch_public_node(:product, id) do
+  case Catalog.get_product(id) do
+    nil -> :not_found
+    record -> {:ok, record}
+  end
+end
+
+defp fetch_public_node(:brand, id) do
+  case Catalog.get_brand(id) do
+    nil -> :not_found
+    record -> {:ok, record}
+  end
+end
+
+defp fetch_public_node(:merchant, id) do
+  case Pricing.get_merchant(id) do
+    nil -> :not_found
+    record -> {:ok, record}
+  end
+end
+
+defp fetch_public_node(:merchant_product, id) do
+  case Pricing.get_merchant_product(id) do
+    nil -> :not_found
+    record -> {:ok, record}
+  end
+end
+```
+
+Add the simple context helpers in the Catalog and Pricing modules:
+
+```elixir
+# In lib/product_compare/catalog.ex
+def get_product(id), do: Repo.get(Product, id)
+def get_brand(id), do: Repo.get(Brand, id)
+```
+
+```elixir
+# In lib/product_compare/pricing.ex
+def get_merchant(id), do: Repo.get(Merchant, id)
+def get_merchant_product(id), do: Repo.get(MerchantProduct, id)
 ```
 
 Keep the Task 1 flow explicit: `node/3` should call `decode_node_id/1`, map malformed base64 or unknown global-ID format to `{:error, :invalid_id}`, reject any decoded type outside the public allowlist with `{:error, :unsupported_type}`, and only then call `fetch_public_node/2`. Owner-scoped types stay out of this batch and are added in Task 2.
