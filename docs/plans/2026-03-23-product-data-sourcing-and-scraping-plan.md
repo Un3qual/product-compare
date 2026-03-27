@@ -83,7 +83,6 @@ Use this order to minimize legal/operational risk while reaching useful catalog 
 | Amazon PA-API | Associates-linked API account | request-rate scales with attributed shipped revenue | strict associates and API license compliance, low initial request rate | Medium-High | Medium |
 | Direct merchant scraping | crawler + parser | configurable | must obey terms/robots + anti-bot + layout drift | High | High |
 
-
 ## CJ Approved-Account Track (fallback source path)
 
 ### Why CJ remains useful as a fallback
@@ -235,13 +234,13 @@ ProductCompare.Ingestion.Sources.Adapter
 
 ## Detailed Implementation Backlog
 
-1. Add ingestion context skeleton (`ProductCompare.Ingestion`) and adapter behavior.
-2. Add ingestion-run persistence table (`ingestion_runs`) and record-level error table (`ingestion_errors`).
+1. Scaffold ingestion context skeleton (`ProductCompare.Ingestion`) and adapter behavior.
+2. Create ingestion-run persistence table (`ingestion_runs`) and record-level error table (`ingestion_errors`).
 3. Implement first connector with fixtures.
 4. Wire write path into existing Catalog/Pricing upsert APIs.
-5. Add telemetry events and dashboards.
-6. Add runbook (`docs/runbooks/ingestion-first-source.md`).
-7. Add ADR documenting sync-vs-Oban boundary and revisit trigger.
+5. Instrument telemetry events and dashboards.
+6. Write runbook (`docs/runbooks/ingestion-first-source.md`).
+7. Draft ADR documenting sync-vs-Oban boundary and revisit trigger.
 
 ## Risks and Mitigations
 
@@ -260,7 +259,6 @@ ProductCompare.Ingestion.Sources.Adapter
 2. Create ADR: `docs/decisions/2026-03-23-ingestion-execution-boundary.md`.
 3. Scaffold ingestion context and adapter behavior with one fixture-based parser test.
 4. Update `docs/work/product-data-scraping.md` status from `drafting` to `active` once source is chosen.
-
 
 ## Deferred Until Further Notice
 

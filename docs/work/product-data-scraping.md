@@ -62,7 +62,6 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - `sed -n '1,220p' docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
 - `rg -n "scraping|ingestion|Oban|Browse API|PA-API|Awin|Best Buy" docs`
 
-
 ## Deferred note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.

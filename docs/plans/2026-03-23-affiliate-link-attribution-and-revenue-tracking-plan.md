@@ -70,7 +70,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
    - push callbacks/postbacks (impact, Awin)
    - API/report pulls (Rakuten, Amazon)
    - feed/SFTP imports (CJ and merchant feeds)
-2. Keep `commerce_conversions` source-agnostic with source-specific raw payload snapshots.
+2. Keep `commerce_conversions` network-neutral (the `source_network` discriminator identifies the origin, but all networks share the same schema) with source-specific raw payload snapshots.
 3. Add `attribution_confidence` and `data_freshness_at` to reflect delayed report arrivals.
 4. Model product catalog ingestion and conversion ingestion as independent pipelines joined on merchant/program/product keys.
 
@@ -112,16 +112,16 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 | Table | Unique constraint | Purpose |
 |---|---|---|
 | `commerce_click_sessions` | `click_id` (UUID) | Prevents duplicate click session creation; used as the public-facing idempotency key |
-| `commerce_conversions` | `network_conversion_ref` | Ensures each network-reported conversion is ingested exactly once |
+| `commerce_conversions` | `(source_network, network_conversion_ref)` | Ensures each network-reported conversion is ingested exactly once; composite key prevents cross-network collisions on external reference values |
 | `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
 | `commerce_link_variants` | `(commerce_link_id, variant_key)` | One variant per key per canonical link |
-| `commerce_revenue_daily` | `(date, merchant_id, product_id, channel, network)` | One aggregate row per dimension combination per day |
+| `commerce_revenue_daily` | `(date, COALESCE(merchant_id, 0), COALESCE(product_id, 0), channel, network)` | One aggregate row per dimension combination per day; uses `COALESCE` sentinel values in a unique index to ensure NULL-safe uniqueness (PostgreSQL treats each NULL as distinct in standard unique constraints) |
 
 ## 1) Link inventory and routing
 
 - `commerce_links`
   - canonical outbound destination + merchant/program metadata
-  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network`, `campaign_params`, `is_active`
+  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network` (same enum as `commerce_conversions.source_network`), `campaign_params`, `is_active`
 
 - `commerce_link_variants`
   - network-specific variants for the same canonical destination
@@ -143,7 +143,8 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
   - one row per confirmed purchase/action
   - fields:
     - `id` (internal surrogate PK, per schema conventions)
-    - `network_conversion_ref` (external unique)
+    - `source_network` (e.g., `impact`, `awin`, `rakuten`, `cj`, `amazon_associates`) — identifies the originating affiliate network
+    - `network_conversion_ref` (external reference; unique per `source_network` — see composite unique constraint above)
     - `click_session_id?` (nullable FK to `commerce_click_sessions` for unattributed/late conversions)
     - `public_click_id?` (nullable public UUID or network-subid reference captured before internal click-session resolution)
     - `merchant_id`, `program_id?`, `product_id?`, `merchant_product_id?`
@@ -168,7 +169,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 ## 5) Revenue aggregates/materializations
 
 - `commerce_revenue_daily`
-  - dimensions: `date`, `merchant_id?`, `product_id?`, `channel`, `network`
+  - dimensions: `date`, `merchant_id?`, `product_id?`, `channel`, `network` (same enum as `source_network`)
   - metrics: clicks, conversions, conversion_rate, gross_order_value, commission_revenue, avg_paid_price
 
 ## Tracking Flows
@@ -255,7 +256,7 @@ Recommended extension principles:
 
 - Create core tables (`commerce_links`, `commerce_click_sessions`, `commerce_conversions`, `purchase_price_facts`).
 - Expose base context APIs for create click, ingest conversion, and aggregation reads.
-- Enforce idempotency constraints on `network_conversion_ref` and `click_id` (see unique constraints table above).
+- Enforce idempotency constraints: composite `(source_network, network_conversion_ref)` on conversions, `click_id` UUID on click sessions (see unique constraints table above).
 
 ### Phase 1 — First network integration (2 weeks)
 
@@ -266,14 +267,14 @@ Recommended extension principles:
 ### Phase 2 — Revenue + price-paid reporting (1–2 weeks)
 
 - Build daily aggregate jobs/materialized views.
-- Add internal dashboard and GraphQL read models.
-- Add public-safe summary endpoint/query (initial, minimal controls).
+- Wire internal dashboard and GraphQL read models.
+- Expose public-safe summary endpoint/query (initial, minimal controls).
 
 ### Phase 3 — Extension-ready hardening (ongoing)
 
-- Add channel dimension + token model for extension clients.
+- Introduce channel dimension + token model for extension clients.
 - Publish OSS extension API contract and auth model.
-- Add anti-abuse controls and rate limits.
+- Layer in anti-abuse controls and rate limits.
 
 ## Success Metrics
 
@@ -289,9 +290,8 @@ Recommended extension principles:
 2. Create migrations for core commerce attribution tables.
 3. Implement click redirect endpoint + tests.
 4. Run source-field mapping spike (Impact + CJ + Awin) and produce normalized conversion field dictionary (captured from authenticated docs + sample payloads).
-5. Add first conversion ingest adapter and idempotent upsert tests.
-6. Add merchant/product daily aggregate query and baseline dashboard JSON contract.
-
+5. Build first conversion ingest adapter and idempotent upsert tests.
+6. Wire merchant/product daily aggregate query and baseline dashboard JSON contract.
 
 ## Deferred Until Further Notice
 
