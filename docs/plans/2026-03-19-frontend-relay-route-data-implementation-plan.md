@@ -398,16 +398,13 @@ git rm assets/src/routes/auth/actions.ts
 git commit -m "refactor(frontend): move auth flows onto relay mutations"
 ```
 
-### Task 6: Remove dead manual-fetch plumbing, refresh docs, and requeue saved comparisons on top of Relay
+### Task 6: Remove dead manual-fetch plumbing and leave the lane docs ready for coordinator handoff
 
 **Files:**
 - Modify: `assets/src/relay/fetch-graphql.ts`
 - Modify: `assets/src/relay/__tests__/fetch-graphql.test.ts`
 - Modify: `docs/work/frontend-relay-route-data.md`
 - Modify: `docs/work/frontend-saved-comparisons-ui.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/NOW.md`
-- Modify: `ARCHITECTURE.md`
 
 **Step 1: Write the failing tests**
 
@@ -431,7 +428,7 @@ Expected: FAIL if the transport helper still carries route-specific assumptions 
 
 **Step 3: Write the minimal implementation**
 
-Trim `fetchGraphQL` to a pure Relay network helper, delete any dead route parsing helpers left behind by the migration, and update the work docs to close this slice and re-open the saved-comparisons UI as the next route feature on top of the new Relay path.
+Trim `fetchGraphQL` to a pure Relay network helper, delete any dead route parsing helpers left behind by the migration, and update the frontend lane docs to close this slice and re-open the saved-comparisons UI as the next route feature on top of the new Relay path.
 
 **Step 4: Run the full frontend verification**
 
@@ -445,9 +442,13 @@ Run: `cd assets && bun x vitest run src/__tests__/entry.server.test.tsx src/rout
 
 Expected: PASS.
 
-**Step 6: Commit**
+**Step 6: Hand the shared-doc refresh back to the coordinator**
+
+Do not edit `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, or `ARCHITECTURE.md` from the frontend lane worker. Leave `docs/work/frontend-relay-route-data.md` and `docs/work/frontend-saved-comparisons-ui.md` ready for coordinator pickup, with enough detail for the coordinator to update the shared queue docs after reviewing the lane result.
+
+**Step 7: Commit**
 
 ```bash
-git add assets/src/relay/fetch-graphql.ts assets/src/relay/__tests__/fetch-graphql.test.ts docs/work/frontend-relay-route-data.md docs/work/frontend-saved-comparisons-ui.md docs/work/index.md docs/plans/NOW.md ARCHITECTURE.md
+git add assets/src/relay/fetch-graphql.ts assets/src/relay/__tests__/fetch-graphql.test.ts docs/work/frontend-relay-route-data.md docs/work/frontend-saved-comparisons-ui.md
 git commit -m "docs(frontend): close relay route-data adoption slice"
 ```
