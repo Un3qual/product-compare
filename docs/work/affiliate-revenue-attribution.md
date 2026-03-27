@@ -5,7 +5,7 @@
 - Status: drafting
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-23
+- Last verified: 2026-03-27
 - Detailed plan:
   - `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
 - Objective:

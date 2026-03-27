@@ -1,5 +1,7 @@
 # Product Data Sourcing & Scraping Plan (2026-03-23)
 
+**ACTIVE WORK:** See `docs/work/product-data-scraping.md` (product-data-scraping work document) and `docs/work/index.md` (work index) for current execution status and next steps. This dated plan doc is historical context only.
+
 ## Purpose
 
 Define **where** product data should come from and **how** we should ingest it in phased order, balancing implementation cost, freshness, and coverage for a functioning product.

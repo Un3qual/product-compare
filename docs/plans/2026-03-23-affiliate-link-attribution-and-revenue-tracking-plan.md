@@ -172,6 +172,89 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
   - dimensions: `date`, `merchant_id?`, `product_id?`, `channel`, `network` (same enum as `source_network`)
   - metrics: clicks, conversions, conversion_rate, gross_order_value, commission_revenue, avg_paid_price
 
+## Migration and Coexistence Strategy: `commerce_*` vs Existing `affiliate_*` Tables
+
+### Canonical source decision
+
+The new `commerce_*` domain (comprising `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`) will become the **canonical source of truth** for all outbound link tracking, click attribution, conversion recording, and revenue aggregation going forward.
+
+The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` tables will be **deprecated** after a migration and dual-write period, and eventually dropped once all references are migrated.
+
+### Data mapping document: field mappings between `affiliate_*` and `commerce_*`
+
+| Legacy (`affiliate_*`) field | New (`commerce_*`) field | Mapping notes |
+|---|---|---|
+| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; use business key (destination URL + program) for correlation |
+| `affiliate_links.url` | `commerce_links.destination_url` | Direct mapping |
+| `affiliate_links.affiliate_program_id` | `commerce_links.program_id` | Foreign key to programs table (will be unified) |
+| `affiliate_links.merchant_id` | `commerce_links.merchant_id` | Direct mapping |
+| `affiliate_links.network` | `commerce_links.network` | Direct mapping; enum values align with `commerce_conversions.source_network` |
+| `affiliate_links.tracking_params` | `commerce_links.campaign_params` | JSON field with same structure |
+| `affiliate_links.active` | `commerce_links.is_active` | Boolean flag, direct mapping |
+| `affiliate_programs.*` | (unified `programs` table) | Program metadata will be consolidated into a shared `programs` table or equivalent that supports both affiliate and non-affiliate programs |
+| `affiliate_networks.*` | `commerce_links.network` enum + config | Network metadata moves to application config or a lightweight `commerce_network_configs` reference table; `commerce_links.network` and `commerce_conversions.source_network` use the same enum |
+
+### Migration/backfill plan: idempotent scripts to populate `commerce_*` from `affiliate_*` (and vice-versa if needed)
+
+**Phase 0 (Baseline):** Create `commerce_*` schema and deploy empty tables.
+
+**Phase 1 (Backfill):** Run idempotent migration script that:
+
+1. Inserts rows into `commerce_links` from `affiliate_links` using `(destination_url, program_id, merchant_id)` as the business key.
+2. Uses `ON CONFLICT (destination_url, program_id) DO UPDATE` (or equivalent upsert with a composite unique constraint) to ensure repeated runs are safe.
+3. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
+4. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
+
+**Phase 2 (Dual-write):** Application code writes new link inventory and click sessions to **both** `affiliate_*` and `commerce_*` tables for a transition period (detailed below).
+
+**Phase 3 (Cutover):** Application switches to `commerce_*` as the read source; `affiliate_*` tables become write-only for rollback safety.
+
+**Phase 4 (Deprecation):** After validation, stop dual-write and mark `affiliate_*` tables as deprecated; schedule drop after retention window.
+
+### Dual-write/feature-flag rollout approach
+
+**Dual-write implementation:**
+
+- **Links:** When creating or updating outbound links, write to both `affiliate_links` (legacy) and `commerce_links` (new) using the same transaction.
+- **Click sessions:** When recording a click, write to both `affiliate_clicks` (if exists) and `commerce_click_sessions` using the same `click_id` UUID as the correlation key.
+- **Conversions:** When ingesting a network conversion, write to both legacy conversion tracking (if exists) and `commerce_conversions`.
+- **Consistency guarantee:** Use database transactions to ensure both writes succeed or both roll back; if dual-write fails, alert and fall back to legacy-only write to prevent data loss.
+
+**Feature flag strategy:**
+
+- `commerce_attribution_write_enabled` (default: `true` after Phase 1 backfill) — controls whether new writes go to `commerce_*` tables.
+- `commerce_attribution_read_enabled` (default: `false` initially, `true` after Phase 2 validation) — controls whether application reads from `commerce_*` or legacy `affiliate_*`.
+- `affiliate_legacy_write_enabled` (default: `true` during dual-write, `false` after cutover) — controls whether writes still go to `affiliate_*`.
+
+**Reconciliation jobs:**
+
+- **Click reconciliation:** Nightly job compares `affiliate_clicks` and `commerce_click_sessions` using `click_id` (the shared public UUID) as the join key; alerts on mismatches (count, timestamp drift, missing rows).
+- **Conversion reconciliation:** Nightly job compares legacy conversion records and `commerce_conversions` using `(source_network, network_conversion_ref)` as the composite unique key; alerts on status divergence or missing conversions.
+- **Idempotency enforcement:** Both tables enforce their own unique constraints (`click_id` for click sessions, `(source_network, network_conversion_ref)` for conversions) so duplicate ingestion is prevented at the database level.
+
+### Deprecation timeline for `affiliate_*` to prevent long-term drift and conflicting truth sources
+
+| Milestone | Target date (relative to Phase 0) | Actions |
+|---|---|---|
+| Phase 0: Schema deployed | Week 0 | `commerce_*` tables exist but unused |
+| Phase 1: Backfill complete | Week 1 | Historical `affiliate_links` data copied into `commerce_links` |
+| Phase 2: Dual-write active | Weeks 2–4 | All new writes go to both systems; reconciliation jobs run nightly |
+| Phase 3: Read cutover | Week 5 | Application switches primary reads to `commerce_*`; `affiliate_*` becomes write-only for rollback safety |
+| Phase 4: Write cutover | Week 6 | Stop writing to `affiliate_*`; mark tables as deprecated in schema comments |
+| Phase 5: Retention window | Weeks 7–10 | Retain `affiliate_*` tables for emergency rollback and audit; no active writes or reads |
+| Phase 6: Drop legacy tables | Week 11+ | After stakeholder signoff, drop `affiliate_links`, `affiliate_programs`, `affiliate_networks`, and any related legacy tables |
+
+**Success criteria before deprecation:**
+
+- Reconciliation job reports < 0.1% row-count mismatch between `affiliate_*` and `commerce_*` for 7 consecutive days.
+- Zero critical incidents attributed to `commerce_*` read path in production.
+- All downstream analytics, reporting, and payout workflows migrated to `commerce_*` queries.
+
+**Rollback safety:**
+
+- During Phases 2–5, keep both systems operational so we can revert the read flag if `commerce_*` queries fail or produce incorrect results.
+- After Phase 6 (drop), rollback is no longer possible; this gate requires explicit eng + product signoff.
+
 ## Tracking Flows
 
 ### Flow A — Outbound link redirect (owned hop)
@@ -203,8 +286,8 @@ Benefits:
 ## Attribution Strategy (Phase 1)
 
 - Primary: last-click deterministic attribution using `click_id`/subid.
-- Fallback: weak matching (merchant + time window + amount) flagged as `confidence=low`.
-- Unmatched conversions preserved for aggregate revenue but excluded from “price paid by click” analyses.
+- Fallback: weak matching (merchant + time window + amount) flagged as `attribution_confidence=low`.
+- Unmatched conversions preserved for aggregate revenue but excluded from "price paid by click" analyses.
 
 ## API / GraphQL Surface (Proposed)
 
