@@ -84,15 +84,15 @@ Use this order to minimize legal/operational risk while reaching useful catalog 
 | Direct merchant scraping | crawler + parser | configurable | must obey terms/robots + anti-bot + layout drift | High | High |
 
 
-## CJ-Specific Execution Track (because account is already approved)
+## CJ Approved-Account Track (fallback source path)
 
-### Why CJ first
+### Why CJ remains useful as a fallback
 
-- Existing approved account removes a major onboarding blocker.
-- CJ provides product-catalog surfaces (Product Search and Product Feeds docs) suitable for affiliate comparison ingestion.
-- Merchant breadth in CJ can also accelerate **new merchant discovery** while ingestion is being built.
+- Existing approved account removes a major onboarding blocker when eBay coverage or quota is insufficient.
+- CJ provides product-catalog surfaces (Product Search and Product Feeds docs) suitable for fallback ingestion and validation.
+- Merchant breadth in CJ can also accelerate **new merchant discovery** while the primary eBay path is being built.
 
-### CJ connector spike checklist (3–5 days)
+### CJ fallback connector spike checklist (3–5 days)
 
 1. Confirm which CJ data path is available for this account:
    - REST Product Search docs: `developers.cj.com/docs/rest-apis/product-search`
