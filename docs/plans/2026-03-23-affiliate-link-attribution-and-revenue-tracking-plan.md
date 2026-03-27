@@ -105,7 +105,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 ## Domain Model Additions (Proposed)
 
-**Schema conventions note:** All tables below follow existing schema conventions: each table uses an integer surrogate primary key named `id` (of type `:id`), and foreign key columns are named `<table>_id` (also of type `:id`). Nullable foreign keys are denoted with `?` (e.g., `click_id?`, `program_id?`, `product_id?`) and are `:id` columns that allow null. Special public identifiers (e.g., `click_id` as a public UUID in `commerce_click_sessions`) are additional UUID columns and are not the table primary key. This applies to all tables: `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`.
+**Schema conventions note:** All tables below follow existing schema conventions: each table uses an integer surrogate primary key named `id` (of type `:id`), and foreign key columns are named `<table>_id` (also of type `:id`). Nullable foreign keys are denoted with `?` (e.g., `click_session_id?`, `program_id?`, `product_id?`) and are `:id` columns that allow null. Special public identifiers (e.g., `click_id` as a public UUID in `commerce_click_sessions`) are additional UUID columns and are not the table primary key or foreign key. When a downstream table needs both the internal relationship and the public click reference, keep them separate (for example `click_session_id?` plus `public_click_id?`). This applies to all tables: `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`.
 
 ## 1) Link inventory and routing
 
@@ -134,7 +134,8 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
   - fields:
     - `conversion_id` (internal)
     - `network_conversion_ref` (external unique)
-    - `click_id?` (nullable for unattributed/late conversions)
+    - `click_session_id?` (nullable FK to `commerce_click_sessions` for unattributed/late conversions)
+    - `public_click_id?` (nullable public UUID or network-subid reference captured before internal click-session resolution)
     - `merchant_id`, `program_id?`, `product_id?`, `merchant_product_id?`
     - `status` (`pending`, `approved`, `reversed`, `paid`)
     - `currency`, `order_amount`, `commission_amount`, `commission_rate?`
@@ -170,7 +171,7 @@ Benefits:
 
 1. Network sends webhook/postback or report export row.
 2. Ingestion normalizes payload into `commerce_conversions`.
-3. Match against `click_id`/subid/reference where available.
+3. Match against public `click_id`/subid/reference where available, then hydrate `click_session_id` when resolution succeeds.
 4. Upsert conversion status transitions (pending -> approved -> paid / reversed).
 
 ## Flow C — Price-paid enrichment
