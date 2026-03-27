@@ -1,5 +1,7 @@
 # Affiliate / Commerce Attribution, Revenue, and Price-Paid Tracking Plan (2026-03-23)
 
+Execution status and next steps live in `docs/work/affiliate-revenue-attribution.md` and `docs/work/index.md`; dated `docs/plans/*` docs are historical context unless linked from the work index.
+
 ## Purpose
 
 Define how to track:
@@ -32,6 +34,14 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 - Keep only minimal implementation requirements needed for baseline operation and legal compliance.
 - Defer advanced privacy controls (retention automation, anonymization policy tuning, public transparency policy UX, governance dashboards).
 - Track deferred items explicitly and do not block schema/API scaffolding on them.
+- Phase 0 baseline controls required before production traffic:
+  - retain raw click/conversion payload snapshots for at least 30 days for reconciliation, then automatically delete or anonymize them by day 90 unless legal or finance retention requires longer,
+  - publish explicit consent/legal-basis notes for attribution storage and provide an opt-out flow for non-essential telemetry,
+  - apply role-based access control and least-privilege defaults to ingest and admin surfaces,
+  - record audit logs with tamper-evident records for attribution-data access and changes,
+  - require encryption in transit for redirect/ingest flows and encryption at rest for persisted raw payloads,
+  - handle DSAR/deletion requests within a 30-day SLA,
+  - Owner: Ryan (acting compliance lead).
 
 ## External Data Availability Research (Networks + Merchants)
 
@@ -193,8 +203,15 @@ Benefits:
 ## Privacy, Legal, and Trust Guardrails (Deferred for now)
 
 - **Deferred until further notice:** privacy-governance hardening tasks are not in the current execution batch.
-- Keep only baseline safeguards required to operate safely and legally in initial rollout.
-- Re-activate full privacy/governance checklist in a follow-up work item once core attribution + conversion plumbing is functional.
+- Baseline minimums remain in force before production traffic:
+  - retain raw click/conversion payload snapshots for at least 30 days for reconciliation, then automatically delete or anonymize them by day 90 unless legal or finance retention requires longer,
+  - publish explicit consent/legal-basis notes for attribution storage and provide an opt-out flow for non-essential telemetry,
+  - apply role-based access control and least-privilege defaults to ingest and admin surfaces,
+  - record audit logs with tamper-evident records for attribution-data access and changes,
+  - require encryption in transit for redirect/ingest flows and encryption at rest for persisted raw payloads,
+  - handle DSAR/deletion requests within a 30-day SLA,
+  - Owner: Ryan (acting compliance lead).
+- Re-activate the full privacy/governance checklist in a follow-up work item once core attribution + conversion plumbing is functional.
 
 ## “Ethical Honey” Extension Readiness (Future-facing)
 

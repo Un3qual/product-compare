@@ -50,9 +50,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     - Target date: 2026-04-03
     - Unblock criteria: First connector choice documented in ADR with rationale; owner assigned to connector spike
   - **Compliance signoff checklist process**
-    - Owner: Legal/compliance reviewer
+    - Owner: Ryan (interim compliance coordinator)
     - Target date: 2026-04-03
-    - Unblock criteria: Minimal provider onboarding checklist drafted and approved for Tier-1 sources; legal signoff gate defined for Tier-3 scraping
+    - Unblock criteria: Minimal provider onboarding checklist drafted and approved for Tier-1 sources; named legal approver recorded before any Tier-3 scraping gate can open
 
 ## Verification Commands
 
