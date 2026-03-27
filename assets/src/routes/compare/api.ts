@@ -90,6 +90,7 @@ const MY_SAVED_COMPARISON_SETS_QUERY = `
 `;
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
+const SAVED_COMPARISON_SETS_MAX_PAGES = 50;
 
 const DELETE_SAVED_COMPARISON_SET_MUTATION = `
   mutation DeleteSavedComparisonSet($savedComparisonSetId: ID!) {
@@ -179,8 +180,14 @@ export async function savedComparisonsLoader({
   const ssrContext = typeof window === "undefined" ? { request } : undefined;
   const savedSets: SavedComparisonSetSummary[] = [];
   let after: string | undefined;
+  let pageCount = 0;
 
   while (true) {
+    if (pageCount >= SAVED_COMPARISON_SETS_MAX_PAGES) {
+      break;
+    }
+
+    pageCount += 1;
     const response = await fetchGraphQL(
       MY_SAVED_COMPARISON_SETS_QUERY,
       after === undefined

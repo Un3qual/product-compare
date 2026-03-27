@@ -38,8 +38,10 @@ export function CompareErrorBoundary() {
 
   return (
     <CompareShell title="Compare products">
-      <p>{errorMessage}</p>
-      <p>{retryGuidance}</p>
+      <div role="alert">
+        <p>{errorMessage}</p>
+        <p>{retryGuidance}</p>
+      </div>
     </CompareShell>
   );
 }
