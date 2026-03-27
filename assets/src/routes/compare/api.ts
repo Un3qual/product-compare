@@ -274,12 +274,16 @@ function readMutationPayload(response: GraphQLResponse, fieldName: string) {
   return {};
 }
 
-function parseSavedComparisonSetsPage(
-  response: GraphQLResponse
+function parseConnection<T>(
+  response: GraphQLResponse,
+  connectionKey: string,
+  edgeParser: (edge: unknown) => T | null
 ): {
-  savedSets: SavedComparisonSetSummary[];
-  hasNextPage: boolean;
-  endCursor: string | null;
+  items: T[];
+  pageInfo: {
+    hasNextPage: boolean;
+    endCursor: string | null;
+  };
 } | null {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return null;
@@ -293,7 +297,7 @@ function parseSavedComparisonSetsPage(
     return null;
   }
 
-  const connection = (response.data as Record<string, unknown>).mySavedComparisonSets;
+  const connection = (response.data as Record<string, unknown>)[connectionKey];
 
   if (!connection || typeof connection !== "object" || Array.isArray(connection)) {
     return null;
@@ -305,18 +309,19 @@ function parseSavedComparisonSetsPage(
     return null;
   }
 
-  const savedSets: SavedComparisonSetSummary[] = [];
-  const pageInfo = (connection as Record<string, unknown>).pageInfo;
+  const items: T[] = [];
 
   for (const edge of edges) {
-    const savedSet = parseSavedComparisonSetEdge(edge);
+    const item = edgeParser(edge);
 
-    if (!savedSet) {
+    if (!item) {
       return null;
     }
 
-    savedSets.push(savedSet);
+    items.push(item);
   }
+
+  const pageInfo = (connection as Record<string, unknown>).pageInfo;
 
   if (!pageInfo || typeof pageInfo !== "object" || Array.isArray(pageInfo)) {
     return null;
@@ -336,9 +341,35 @@ function parseSavedComparisonSetsPage(
   }
 
   return {
-    savedSets,
-    hasNextPage: candidatePageInfo.hasNextPage,
-    endCursor: candidatePageInfo.endCursor
+    items,
+    pageInfo: {
+      hasNextPage: candidatePageInfo.hasNextPage,
+      endCursor: candidatePageInfo.endCursor
+    }
+  };
+}
+
+function parseSavedComparisonSetsPage(
+  response: GraphQLResponse
+): {
+  savedSets: SavedComparisonSetSummary[];
+  hasNextPage: boolean;
+  endCursor: string | null;
+} | null {
+  const result = parseConnection(
+    response,
+    "mySavedComparisonSets",
+    parseSavedComparisonSetEdge
+  );
+
+  if (!result) {
+    return null;
+  }
+
+  return {
+    savedSets: result.items,
+    hasNextPage: result.pageInfo.hasNextPage,
+    endCursor: result.pageInfo.endCursor
   };
 }
 
