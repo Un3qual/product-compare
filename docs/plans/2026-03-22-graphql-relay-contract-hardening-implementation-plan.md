@@ -62,9 +62,9 @@ Expected: FAIL because the schema does not currently expose a root `node` field 
 Add read helpers to the existing context modules, then decode the root node ID in a dedicated resolver and fetch only the supported public types.
 
 ```elixir
-def node(_parent, %{id: id}, resolution) do
+def node(_parent, %{id: id}, _resolution) do
   with {:ok, {type, local_id}} <- decode_node_id(id),
-       {:ok, record} <- fetch_node(type, local_id, resolution) do
+       {:ok, record} <- fetch_public_node(type, local_id) do
     {:ok, record}
   else
     :not_found -> {:ok, nil}
@@ -79,10 +79,19 @@ defp decode_node_id(id) do
       {:error, :invalid_id}
 
     {:ok, {type, local_id}} when type in [:product, :brand, :merchant, :merchant_product] ->
-      {:ok, {type, local_id}}
+      with {:ok, parsed_id} <- parse_public_local_id(local_id) do
+        {:ok, {type, parsed_id}}
+      end
 
     {:ok, {_type, _local_id}} ->
       {:error, :unsupported_type}
+  end
+end
+
+defp parse_public_local_id(local_id) when is_binary(local_id) do
+  case Integer.parse(local_id) do
+    {parsed_id, ""} when parsed_id > 0 -> {:ok, parsed_id}
+    _ -> {:error, :invalid_id}
   end
 end
 
@@ -129,7 +138,7 @@ def get_merchant(id), do: Repo.get(Merchant, id)
 def get_merchant_product(id), do: Repo.get(MerchantProduct, id)
 ```
 
-Keep the Task 1 flow explicit: `node/3` should call `decode_node_id/1`, map malformed base64 or unknown global-ID format to `{:error, :invalid_id}`, reject any decoded type outside the public allowlist with `{:error, :unsupported_type}`, and only then call `fetch_public_node/2`. Owner-scoped types stay out of this batch and are added in Task 2.
+Keep the Task 1 flow explicit: `node/3` should call `decode_node_id/1`, map malformed base64 or unknown global-ID format to `{:error, :invalid_id}`, reject any decoded type outside the public allowlist with `{:error, :unsupported_type}`, parse the public integer-backed local IDs before any `Repo.get/2` call, and only then call `fetch_public_node/2`. Owner-scoped types stay out of this batch and are added in Task 2.
 
 Expose the field in `schema.ex`:
 
@@ -209,6 +218,21 @@ Expected: FAIL because the resolver only supports public entity types after Task
 
 **Step 3: Write the minimal implementation**
 
+Refactor `node/3` so Task 2 switches from the public-only fetch helper to a dispatcher that can pass `resolution` into owner-scoped lookups:
+
+```elixir
+def node(_parent, %{id: id}, resolution) do
+  with {:ok, {type, local_id}} <- decode_node_id(id),
+       {:ok, record} <- fetch_node(type, local_id, resolution) do
+    {:ok, record}
+  else
+    :not_found -> {:ok, nil}
+    {:error, :invalid_id} -> {:error, "invalid node id"}
+    {:error, :unsupported_type} -> {:error, "invalid node id"}
+  end
+end
+```
+
 Update the GraphQL union `:node_result` to include `:saved_comparison_set` and `:api_token`:
 
 ```elixir
@@ -227,7 +251,7 @@ union :node_result do
 end
 ```
 
-Extend `decode_node_id/1` so Task 2's allowlist adds `:saved_comparison_set` and `:api_token`, then dispatch in `NodeResolver.node/3` between public lookups and owner-scoped lookups before fetching records. Keep the owner-scoped path nil-safe for anonymous and unauthorized requests:
+Extend `decode_node_id/1` so Task 2's allowlist adds `:saved_comparison_set` and `:api_token`. Keep `parse_public_local_id/1` only on the public integer-backed IDs; the owner-scoped entropy IDs stay in their string form and are validated by the owner-scoped helpers. Then dispatch in `NodeResolver.node/3` between public lookups and owner-scoped lookups before fetching records. Keep the owner-scoped path nil-safe for anonymous and unauthorized requests:
 
 ```elixir
 defp fetch_node(type, local_id, _resolution)
