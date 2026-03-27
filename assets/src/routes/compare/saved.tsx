@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import type { SavedComparisonsRouteLoaderData } from "./api";
+import type { SavedComparisonSetSummary, SavedComparisonsRouteLoaderData } from "./api";
 import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
+  const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -21,7 +22,13 @@ export function SavedComparisonsRoute() {
       const result = await deleteSavedComparisonSet(savedComparisonSetId);
 
       if (result.savedComparisonSetId) {
-        // Deletion successful - router will refetch and update loaderData
+        const deletedSavedSetId = result.savedComparisonSetId;
+
+        setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
+          currentDeletedSavedSetIds.includes(deletedSavedSetId)
+            ? currentDeletedSavedSetIds
+            : [...currentDeletedSavedSetIds, deletedSavedSetId]
+        );
         return;
       }
 
@@ -35,7 +42,7 @@ export function SavedComparisonsRoute() {
     }
   }
 
-  const viewState = buildSavedComparisonsViewState(loaderData);
+  const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds);
 
   return (
     <CompareShell title="Saved comparisons">
@@ -82,21 +89,43 @@ function buildSavedComparisonHref(slugs: string[]) {
   return `/compare?${searchParams.toString()}`;
 }
 
-function buildSavedComparisonsStatus(loaderData: SavedComparisonsRouteLoaderData) {
+function buildSavedComparisonsStatus(
+  loaderData: SavedComparisonsRouteLoaderData,
+  visibleSavedSets: SavedComparisonSetSummary[],
+  hasLocalDeletion: boolean
+) {
   if (loaderData.status === "unauthorized") {
     return "Sign in to view saved comparisons.";
   }
 
-  if (loaderData.savedSets.length === 0) {
+  if (visibleSavedSets.length === 0) {
     return "No saved comparisons yet.";
+  }
+
+  if (hasLocalDeletion) {
+    return "Comparison deleted.";
   }
 
   return "Saved comparison sets loaded.";
 }
 
-function buildSavedComparisonsViewState(loaderData: SavedComparisonsRouteLoaderData) {
+function buildSavedComparisonsViewState(
+  loaderData: SavedComparisonsRouteLoaderData,
+  deletedSavedSetIds: string[]
+) {
+  const locallyDeletedSavedSetIds = deletedSavedSetIds.filter((deletedSavedSetId) =>
+    loaderData.savedSets.some((savedSet) => savedSet.id === deletedSavedSetId)
+  );
+  const savedSets = loaderData.savedSets.filter(
+    (savedSet) => !locallyDeletedSavedSetIds.includes(savedSet.id)
+  );
+
   return {
-    savedSets: loaderData.savedSets,
-    statusMessage: buildSavedComparisonsStatus(loaderData)
+    savedSets,
+    statusMessage: buildSavedComparisonsStatus(
+      loaderData,
+      savedSets,
+      locallyDeletedSavedSetIds.length > 0
+    )
   };
 }
