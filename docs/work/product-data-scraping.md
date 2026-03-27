@@ -31,7 +31,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Recommendation
 
-- Start with a single Tier-1 connector MVP (**recommended default: CJ**, since an approved account already exists) to validate normalization and idempotent upserts.
+- Start with a single Tier-1 connector MVP (**recommended default: eBay Browse API**; use CJ only if eBay quota/coverage unavailable) to validate normalization and idempotent upserts.
 - Run a weekly CJ-driven merchant discovery loop (candidate export -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - Keep legal/compliance review as a hard gate for any Tier-3 scraping activation.
@@ -40,13 +40,19 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 - Status: ready once first source is selected
 - Batch:
-  1. Choose the first connector (CJ/eBay/BestBuy/Awin/Amazon), defaulting to CJ unless blocked by missing API/feed scope.
+  1. Choose the first connector (CJ/eBay/BestBuy/Awin/Amazon), defaulting to eBay Browse API unless blocked by quota/coverage constraints (use CJ only if eBay unavailable).
   2. Draft ADR for ingestion execution mode (sync pilot vs Oban-first).
   3. Scaffold `ProductCompare.Ingestion` adapter boundary and fixture-based parser tests.
   4. Promote this work doc from `drafting` to `active` when source choice + ADR exist.
-- Blockers:
-  - First-source selection and ownership are not yet assigned.
-  - Compliance signoff checklist process not yet documented.
+- Blockers (Note: blockers in "drafting" state require named owner, target date, and unblock criteria to be considered active and tracked):
+  - **First-source selection and ownership**
+    - Owner: TBD (assign engineering lead)
+    - Target date: TBD (recommend within 1 week of plan approval)
+    - Unblock criteria: First connector choice documented in ADR with rationale; owner assigned to connector spike
+  - **Compliance signoff checklist process**
+    - Owner: TBD (assign legal/compliance point-of-contact)
+    - Target date: TBD (recommend within 1 week of plan approval)
+    - Unblock criteria: Minimal provider onboarding checklist drafted and approved for Tier-1 sources; legal signoff gate defined for Tier-3 scraping
 
 ## Verification Commands
 

@@ -63,7 +63,7 @@ Use this order to minimize legal/operational risk while reaching useful catalog 
 1. Merchant CSV/XML feeds (if partnership allows)
 2. GTIN-oriented catalog enrichment via provider/standard datasets
 
-**Why second:** often high quality and low parsing cost, but onboarding is partner-by-partner.
+**Why second:** often high-quality and low parsing cost, but onboarding is partner-by-partner.
 
 ### Tier 3 (selective): Direct web extraction from merchant pages
 
@@ -256,7 +256,7 @@ ProductCompare.Ingestion.Sources.Adapter
 
 ## Immediate Next Batch (actionable)
 
-1. Pick first connector (**recommended default: CJ**, given approved account).
+1. Pick first connector (**recommended default: eBay Browse API**; use CJ only if eBay quota/coverage unavailable).
 2. Create ADR: `docs/decisions/2026-03-23-ingestion-execution-boundary.md`.
 3. Scaffold ingestion context and adapter behavior with one fixture-based parser test.
 4. Update `docs/work/product-data-scraping.md` status from `drafting` to `active` once source is chosen.
