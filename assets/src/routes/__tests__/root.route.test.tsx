@@ -18,6 +18,10 @@ test("root layout renders primitive-backed links in the primary navigation", () 
     "data-slot",
     "button"
   );
+  expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
 });
 
 test("root route keeps home actions as links while using the shared button wrapper", () => {
@@ -33,6 +37,10 @@ test("root route keeps home actions as links while using the shared button wrapp
     "button"
   );
   expect(screen.getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "data-slot",
     "button"
   );

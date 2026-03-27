@@ -20,13 +20,24 @@ export interface CreateSavedComparisonSetResult {
   errors: CompareMutationError[];
 }
 
+export interface SavedComparisonSetSummary {
+  id: string;
+  name: string;
+  slugs: string[];
+}
+
+export interface DeleteSavedComparisonSetResult {
+  savedComparisonSetId: string | null;
+  errors: CompareMutationError[];
+}
+
 export type CompareRouteLoaderData =
   | {
       status: "empty";
       slugs: [];
     }
   | {
-      status: "too_many" | "not_found" | "error";
+      status: "too_many" | "not_found";
       slugs: string[];
     }
   | {
@@ -35,9 +46,54 @@ export type CompareRouteLoaderData =
       products: ProductDetail[];
     };
 
+export interface SavedComparisonsRouteLoaderData {
+  status: "ready" | "empty" | "unauthorized";
+  savedSets: SavedComparisonSetSummary[];
+}
+
 const CREATE_SAVED_COMPARISON_SET_MUTATION = `
   mutation CreateSavedComparisonSet($input: CreateSavedComparisonSetInput!) {
     createSavedComparisonSet(input: $input) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+const MY_SAVED_COMPARISON_SETS_QUERY = `
+  query MySavedComparisonSets($first: Int, $after: String) {
+    mySavedComparisonSets(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          name
+          items {
+            position
+            product {
+              slug
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
+
+const DELETE_SAVED_COMPARISON_SET_MUTATION = `
+  mutation DeleteSavedComparisonSet($savedComparisonSetId: ID!) {
+    deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {
       savedComparisonSet {
         id
       }
@@ -74,11 +130,12 @@ export async function compareLoader({
     slugs.map((slug) => loadProductDetail(slug, ssrContext))
   );
 
-  if (productResults.some((result) => result.status === "rejected")) {
-    return {
-      status: "error",
-      slugs
-    };
+  const rejectedResult = productResults.find((result) => result.status === "rejected");
+
+  if (rejectedResult && rejectedResult.status === "rejected") {
+    throw rejectedResult.reason instanceof Error
+      ? rejectedResult.reason
+      : new Error("Product fetch failed");
   }
 
   const fulfilledResults = productResults.filter(
@@ -106,13 +163,81 @@ export async function createSavedComparisonSet(
   input: CreateSavedComparisonSetInput
 ): Promise<CreateSavedComparisonSetResult> {
   const response = await fetchGraphQL(CREATE_SAVED_COMPARISON_SET_MUTATION, { input });
-  const payload = readCreateSavedComparisonSetPayload(response);
+  const payload = readMutationPayload(response, "createSavedComparisonSet");
   const savedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
   const errors = normalizeMutationErrors(payload.errors, response);
 
   return {
     savedComparisonSetId,
     errors: savedComparisonSetId ? errors : ensureFailureErrors(errors)
+  };
+}
+
+export async function savedComparisonsLoader({
+  request
+}: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
+  const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const savedSets: SavedComparisonSetSummary[] = [];
+  let after: string | undefined;
+
+  while (true) {
+    const response = await fetchGraphQL(
+      MY_SAVED_COMPARISON_SETS_QUERY,
+      after === undefined
+        ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
+        : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
+      ssrContext
+    );
+
+    if (isUnauthorizedSavedComparisonsResponse(response)) {
+      return {
+        status: "unauthorized",
+        savedSets: []
+      };
+    }
+
+    const page = parseSavedComparisonSetsPage(response);
+
+    if (page === null) {
+      throw new Error("Failed to parse saved comparison sets response");
+    }
+
+    savedSets.push(...page.savedSets);
+
+    if (!page.hasNextPage) {
+      break;
+    }
+
+    if (!page.endCursor || page.endCursor === after) {
+      throw new Error("Invalid pagination cursor");
+    }
+
+    after = page.endCursor;
+  }
+
+  return {
+    status: savedSets.length === 0 ? "empty" : "ready",
+    savedSets
+  };
+}
+
+export async function deleteSavedComparisonSet(
+  savedComparisonSetId: string
+): Promise<DeleteSavedComparisonSetResult> {
+  const response = await fetchGraphQL(
+    DELETE_SAVED_COMPARISON_SET_MUTATION,
+    {
+      savedComparisonSetId
+    },
+    undefined
+  );
+  const payload = readMutationPayload(response, "deleteSavedComparisonSet");
+  const deletedSavedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
+  const errors = normalizeMutationErrors(payload.errors, response);
+
+  return {
+    savedComparisonSetId: deletedSavedComparisonSetId,
+    errors: deletedSavedComparisonSetId ? errors : ensureFailureErrors(errors)
   };
 }
 
@@ -131,7 +256,7 @@ function parseSelectedSlugs(requestUrl: string) {
   return Array.from(selected);
 }
 
-function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
+function readMutationPayload(response: GraphQLResponse, fieldName: string) {
   if (
     !Array.isArray(response) &&
     "data" in response &&
@@ -139,7 +264,7 @@ function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
     typeof response.data === "object" &&
     !Array.isArray(response.data)
   ) {
-    const payload = (response.data as Record<string, unknown>).createSavedComparisonSet;
+    const payload = (response.data as Record<string, unknown>)[fieldName];
 
     if (payload && typeof payload === "object" && !Array.isArray(payload)) {
       return payload as Record<string, unknown>;
@@ -147,6 +272,173 @@ function readCreateSavedComparisonSetPayload(response: GraphQLResponse) {
   }
 
   return {};
+}
+
+function parseSavedComparisonSetsPage(
+  response: GraphQLResponse
+): {
+  savedSets: SavedComparisonSetSummary[];
+  hasNextPage: boolean;
+  endCursor: string | null;
+} | null {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return null;
+  }
+
+  if (!("data" in response) || !response.data) {
+    return null;
+  }
+
+  if (typeof response.data !== "object" || Array.isArray(response.data)) {
+    return null;
+  }
+
+  const connection = (response.data as Record<string, unknown>).mySavedComparisonSets;
+
+  if (!connection || typeof connection !== "object" || Array.isArray(connection)) {
+    return null;
+  }
+
+  const edges = (connection as Record<string, unknown>).edges;
+
+  if (!Array.isArray(edges)) {
+    return null;
+  }
+
+  const savedSets: SavedComparisonSetSummary[] = [];
+  const pageInfo = (connection as Record<string, unknown>).pageInfo;
+
+  for (const edge of edges) {
+    const savedSet = parseSavedComparisonSetEdge(edge);
+
+    if (!savedSet) {
+      return null;
+    }
+
+    savedSets.push(savedSet);
+  }
+
+  if (!pageInfo || typeof pageInfo !== "object" || Array.isArray(pageInfo)) {
+    return null;
+  }
+
+  const candidatePageInfo = pageInfo as Record<string, unknown>;
+
+  if (typeof candidatePageInfo.hasNextPage !== "boolean") {
+    return null;
+  }
+
+  if (
+    candidatePageInfo.endCursor !== null &&
+    typeof candidatePageInfo.endCursor !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    savedSets,
+    hasNextPage: candidatePageInfo.hasNextPage,
+    endCursor: candidatePageInfo.endCursor
+  };
+}
+
+function parseSavedComparisonSetEdge(edge: unknown): SavedComparisonSetSummary | null {
+  if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
+    return null;
+  }
+
+  const node = (edge as Record<string, unknown>).node;
+
+  if (!node || typeof node !== "object" || Array.isArray(node)) {
+    return null;
+  }
+
+  const candidate = node as Record<string, unknown>;
+
+  if (typeof candidate.id !== "string" || typeof candidate.name !== "string") {
+    return null;
+  }
+
+  const slugs = parseSavedComparisonItems(candidate.items);
+
+  if (slugs === null) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    slugs
+  };
+}
+
+function parseSavedComparisonItems(items: unknown): string[] | null {
+  if (!Array.isArray(items)) {
+    return null;
+  }
+
+  const parsedItems = items.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return null;
+    }
+
+    const candidate = item as Record<string, unknown>;
+    const product = candidate.product;
+
+    if (
+      typeof candidate.position !== "number" ||
+      !product ||
+      typeof product !== "object" ||
+      Array.isArray(product)
+    ) {
+      return null;
+    }
+
+    return {
+      position: candidate.position,
+      slug: typeof (product as Record<string, unknown>).slug === "string"
+        ? ((product as Record<string, unknown>).slug as string)
+        : null
+    };
+  });
+
+  if (parsedItems.some((item) => item === null || item.slug === null)) {
+    return null;
+  }
+
+  const validItems = parsedItems as Array<{
+    position: number;
+    slug: string;
+  }>;
+
+  return validItems
+    .sort((left, right) => left.position - right.position)
+    .map((item) => item.slug);
+}
+
+function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  if (!("errors" in response) || !Array.isArray(response.errors)) {
+    return false;
+  }
+
+  return response.errors.some((error) => {
+    if (!error || typeof error !== "object" || Array.isArray(error)) {
+      return false;
+    }
+
+    const candidate = error as unknown as Record<string, unknown>;
+
+    return (
+      typeof candidate.message === "string" &&
+      candidate.message.toLowerCase() === "unauthorized" &&
+      Array.isArray(candidate.path) &&
+      candidate.path[0] === "mySavedComparisonSets"
+    );
+  });
 }
 
 function readSavedComparisonSetId(savedComparisonSet: unknown) {

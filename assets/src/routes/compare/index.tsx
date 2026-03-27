@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import type { CompareRouteLoaderData } from "./api";
 import { compareLoader, createSavedComparisonSet } from "./api";
+import { CompareShell } from "./compare-shell";
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
@@ -39,12 +40,19 @@ export function CompareRoute() {
 
   if (loaderData.status === "ready") {
     return (
-      <section>
-        <h1>Compare products</h1>
-        <button disabled={isSaving} onClick={() => void handleSave()} type="button">
-          {isSaving ? "Saving comparison..." : "Save comparison"}
-        </button>
-        {saveMessage ? <p>{saveMessage}</p> : null}
+      <CompareShell
+        actions={
+          <button disabled={isSaving} onClick={() => void handleSave()} type="button">
+            {isSaving ? "Saving comparison..." : "Save comparison"}
+          </button>
+        }
+        title="Compare products"
+      >
+        {saveMessage ? (
+          <p aria-live="polite" role="status">
+            {saveMessage}
+          </p>
+        ) : null}
         {saveError ? <p role="alert">{saveError}</p> : null}
         <ul>
           {loaderData.products.map((product) => (
@@ -58,20 +66,18 @@ export function CompareRoute() {
             </li>
           ))}
         </ul>
-      </section>
+      </CompareShell>
     );
   }
 
   return (
-    <section>
-      <h1>Compare products</h1>
+    <CompareShell title="Compare products">
       {loaderData.status === "empty" ? <p>Choose up to 3 products to compare.</p> : null}
       {loaderData.status === "too_many" ? <p>You can compare up to 3 products.</p> : null}
       {loaderData.status === "not_found" ? (
         <p>One or more selected products were not found.</p>
       ) : null}
-      {loaderData.status === "error" ? <p>Comparison unavailable.</p> : null}
-    </section>
+    </CompareShell>
   );
 }
 

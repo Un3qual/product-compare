@@ -7,16 +7,28 @@
 - Source of truth: `docs/work/frontend-relay-route-data.md`
 - Next step: add Relay SSR hydration/preload primitives so the route migrations can stop depending on manual GraphQL DTO loaders.
 - Why this batch is current:
-  - The frontend already ships a Relay provider and compiler config, but browse/detail/compare/auth still bypass normal Relay APIs through route-local `api.ts` and `actions.ts` modules.
-  - The missing SSR hydration/preload layer is the smallest unblocking slice that lets the repo migrate route-by-route instead of keeping two competing data patterns indefinitely.
-  - User-directed queue reprioritization moved Relay adoption ahead of the saved-comparisons route so the next compare-route feature lands on the new path instead of extending the old one.
+  - The frontend already ships a Relay provider, compiler config, and network layer, but `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows still depend on manual route-local GraphQL helpers.
+  - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
+  - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
 
 ## Just Completed
 
 - Queue rebaseline for Relay adoption:
   - Added `docs/plans/2026-03-19-frontend-relay-route-data-design.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`, and `docs/work/frontend-relay-route-data.md` to make full frontend Relay adoption the active queue item.
-  - Updated `docs/work/index.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` so the source-of-truth queue now puts Relay route-data adoption ahead of the saved-comparisons UI follow-up.
-  - Rebased `docs/work/frontend-saved-comparisons-ui.md` behind the new Relay work item so `/compare/saved` can land on the same data path as the rest of the frontend routes.
+  - Updated `docs/work/index.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` so the source-of-truth queue now puts Relay route-data adoption ahead of the remaining compare/saved follow-up work.
+  - Rebased the compare-route follow-up docs behind the Relay work item so the remaining compare/saved hardening can land on the long-term data path instead of extending the current manual helper layer.
+
+- Frontend Compare And Saved Routes Hardening, Task 1:
+  - Added `assets/src/routes/compare/compare-shell.tsx` and migrated `assets/src/routes/compare/index.tsx` plus `assets/src/routes/compare/saved.tsx` onto the shared shell.
+  - Added polite compare-save and saved-set status messaging, then hardened the saved-set delete flow with latest-state updates, per-row pending tracking, and loader-state sync.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` to cover the named saved-set list, compare save status messaging, and overlapping delete regressions.
+  - Verified `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
+
+- Frontend Saved Comparisons UI, Task 2:
+  - Added `assets/src/routes/compare/saved.tsx` plus `savedComparisonsLoader(...)` and `deleteSavedComparisonSet(...)` in `assets/src/routes/compare/api.ts` to load, reopen, and delete private saved sets against the existing GraphQL contract.
+  - Updated `assets/src/router.tsx` and `assets/src/routes/root.tsx` to register `/compare/saved` and expose `Saved comparisons` navigation from the root layout and home actions.
+  - Extended `assets/src/routes/compare/__tests__/compare.route.test.tsx` and `assets/src/routes/__tests__/root.route.test.tsx` to cover the saved-set loader, reopen link, delete flow, unauthorized prompt, and root navigation wiring.
+  - Verified `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 - Frontend Saved Comparisons UI, Task 1:
   - Updated `assets/src/routes/compare/api.ts` with a route-local `createSavedComparisonSet(...)` helper that calls the GraphQL mutation and normalizes typed/save-failure errors.
