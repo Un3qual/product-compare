@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { compareLoader, savedComparisonsLoader } from "../api";
+import { compareLoader, isUnauthorizedSavedComparisonsResponse, savedComparisonsLoader } from "../api";
 import { CompareRoute } from "../index";
 import { SavedComparisonsRoute } from "../saved";
 
@@ -949,4 +949,250 @@ test("saved comparisons route prompts the user to sign in when the saved-set que
 
   expect(screen.getByText("Sign in to view saved comparisons.")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects an unauthorized GraphQL error targeting the saved sets field", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Unauthorized",
+          path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse returns false for unrelated GraphQL errors", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Internal server error",
+          path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
+  ).toBe(false);
+});
+
+test("isUnauthorizedSavedComparisonsResponse returns false for unauthorized errors on a different field path", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Unauthorized",
+          path: ["someOtherField"]
+        }
+      ]
+    })
+  ).toBe(false);
+});
+
+test("isUnauthorizedSavedComparisonsResponse returns false when the response has no errors array", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      data: {
+        mySavedComparisonSets: {
+          edges: [],
+          pageInfo: { hasNextPage: false, endCursor: null }
+        }
+      }
+    })
+  ).toBe(false);
+});
+
+test("saved comparisons loader throws when the GraphQL response cannot be parsed", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      mySavedComparisonSets: {
+        edges: "not-an-array"
+      }
+    }
+  });
+
+  await expect(
+    savedComparisonsLoader({
+      request,
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).rejects.toThrow("Failed to parse saved comparison sets response");
+});
+
+test("saved comparisons loader returns truncated flag when page cap is reached", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+
+  // Simulate a response where hasNextPage is always true so the loader hits the cap.
+  // We use mockImplementation to return the same paginated response for each call.
+  let callCount = 0;
+
+  fetchGraphQLMock.mockImplementation(() => {
+    callCount += 1;
+
+    return Promise.resolve({
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: `saved-set-${callCount}`,
+                name: `Set ${callCount}`,
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: DETAIL_PRODUCT.id,
+                      slug: DETAIL_PRODUCT.slug,
+                      name: DETAIL_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true,
+            endCursor: `cursor-${callCount}`
+          }
+        }
+      }
+    });
+  });
+
+  const result = await savedComparisonsLoader({
+    request,
+    params: {},
+    context: undefined
+  } as LoaderFunctionArgs);
+
+  expect(result.status).toBe("ready");
+  expect(result.truncated).toBe(true);
+  expect(result.savedSets).toHaveLength(50);
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(50);
+});
+
+test("saved comparisons loader returns empty status for zero saved sets with no truncation", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      mySavedComparisonSets: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    }
+  });
+
+  const result = await savedComparisonsLoader({
+    request,
+    params: {},
+    context: undefined
+  } as LoaderFunctionArgs);
+
+  expect(result).toEqual({
+    status: "empty",
+    savedSets: []
+  });
+  expect(result.truncated).toBeUndefined();
+});
+
+test("saved comparisons loader throws when pagination cursor does not advance", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-1",
+                name: "Set 1",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: DETAIL_PRODUCT.id,
+                      slug: DETAIL_PRODUCT.slug,
+                      name: DETAIL_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true,
+            endCursor: "cursor-1"
+          }
+        }
+      }
+    })
+    .mockResolvedValueOnce({
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-2",
+                name: "Set 2",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: SECOND_PRODUCT.id,
+                      slug: SECOND_PRODUCT.slug,
+                      name: SECOND_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true,
+            endCursor: "cursor-1"
+          }
+        }
+      }
+    });
+
+  await expect(
+    savedComparisonsLoader({
+      request,
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).rejects.toThrow("Invalid pagination cursor");
+});
+
+test("saved comparisons route shows a truncation notice when the loader reports truncated data", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    truncated: true,
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("note")).toHaveTextContent(
+    "Only your most recent saved comparisons are shown."
+  );
 });

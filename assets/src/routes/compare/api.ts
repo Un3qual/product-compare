@@ -49,6 +49,7 @@ export type CompareRouteLoaderData =
 export interface SavedComparisonsRouteLoaderData {
   status: "ready" | "empty" | "unauthorized";
   savedSets: SavedComparisonSetSummary[];
+  truncated?: boolean;
 }
 
 const CREATE_SAVED_COMPARISON_SET_MUTATION = `
@@ -182,8 +183,11 @@ export async function savedComparisonsLoader({
   let after: string | undefined;
   let pageCount = 0;
 
+  let truncated = false;
+
   while (true) {
     if (pageCount >= SAVED_COMPARISON_SETS_MAX_PAGES) {
+      truncated = true;
       break;
     }
 
@@ -224,7 +228,8 @@ export async function savedComparisonsLoader({
 
   return {
     status: savedSets.length === 0 ? "empty" : "ready",
-    savedSets
+    savedSets,
+    ...(truncated ? { truncated: true } : {})
   };
 }
 
@@ -454,7 +459,7 @@ function parseSavedComparisonItems(items: unknown): string[] | null {
     .map((item) => item.slug);
 }
 
-function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
+export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }

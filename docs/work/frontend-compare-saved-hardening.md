@@ -23,8 +23,9 @@
 - `assets/src/routes/compare/compare-shell.tsx` provides a shared responsive shell for both compare routes.
 - `assets/src/routes/compare/index.tsx` uses the shared shell and exposes save-success feedback through a polite `role="status"` region.
 - `assets/src/routes/compare/saved.tsx` uses the shared shell, exposes a named saved-set list plus polite status messaging, and keeps overlapping delete state race-safe with per-row pending tracking.
-- `assets/src/router.tsx` still mounts both `/compare` and `/compare/saved`, but neither route registers a compare-scoped `errorElement` yet.
-- `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the shared-shell accessibility semantics, compare save status messaging, and overlapping delete regressions, but it does not yet cover route-level error boundaries.
+- `assets/src/router.tsx` mounts both `/compare` and `/compare/saved` with a shared `CompareErrorBoundary` as the `errorElement` for each route.
+- `assets/src/routes/compare/error-boundary.tsx` provides differentiated error messages based on route error response status codes and network-related error signatures.
+- `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the shared-shell accessibility semantics, compare save status messaging, overlapping delete regressions, and loader-level regression tests for unauthorized, parse-failure, truncation, and cursor-safety paths.
 
 ## Next Batch
 

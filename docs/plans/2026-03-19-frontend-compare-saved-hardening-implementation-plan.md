@@ -80,6 +80,16 @@ git commit -m "feat(frontend): harden compare route shell"
 
 **Step 1: Write the failing test**
 
+Note: The compare route loaders have mixed failure modes. `compareLoader` throws
+when a product fetch is rejected (via `Promise.allSettled` + re-throw), and
+`savedComparisonsLoader` throws when the GraphQL response cannot be parsed or
+when the pagination cursor does not advance. Unauthorized responses are
+converted to a `{ status: "unauthorized" }` status object instead of throwing.
+The error boundary test below uses a synthetic throwing loader to verify that
+the `errorElement` wiring renders the boundary component. Separate loader-level
+tests cover the real throw paths (parse failure, stale cursor) and the
+status-object paths (unauthorized, empty).
+
 ```tsx
 test.each([
   ["/compare", "Compare"],
@@ -93,7 +103,7 @@ test.each([
           throw new Error("boom");
         },
         element: path === "/compare" ? <CompareRoute /> : <SavedComparisonsRoute />,
-        errorElement: <CompareRouteErrorBoundary title={title} />
+        errorElement: <CompareErrorBoundary />
       }
     ],
     { initialEntries: [path] }
@@ -101,7 +111,7 @@ test.each([
 
   render(<RouterProvider router={router} />);
 
-  expect(await screen.findByText(`${title} unavailable.`)).toBeInTheDocument();
+  expect(await screen.findByText("An unexpected error occurred while loading the comparison.")).toBeInTheDocument();
 });
 ```
 
@@ -117,13 +127,13 @@ Expected: FAIL because the compare routes do not yet register a compare-scoped e
   path: "compare",
   loader: compareLoader,
   element: <CompareRoute />,
-  errorElement: <CompareRouteErrorBoundary title="Compare" />
+  errorElement: <CompareErrorBoundary />
 },
 {
   path: "compare/saved",
   loader: savedComparisonsLoader,
   element: <SavedComparisonsRoute />,
-  errorElement: <CompareRouteErrorBoundary title="Saved comparisons" />
+  errorElement: <CompareErrorBoundary />
 }
 ```
 
