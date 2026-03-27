@@ -77,7 +77,6 @@ export function CompareRoute() {
       {loaderData.status === "not_found" ? (
         <p>One or more selected products were not found.</p>
       ) : null}
-      {loaderData.status === "error" ? <p>Comparison unavailable.</p> : null}
     </CompareShell>
   );
 }

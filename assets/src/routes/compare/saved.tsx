@@ -100,10 +100,6 @@ function buildSavedComparisonsStatus(loaderData: SavedComparisonsRouteLoaderData
     return "Sign in to view saved comparisons.";
   }
 
-  if (loaderData.status === "error") {
-    return "Saved comparisons unavailable.";
-  }
-
   if (loaderData.savedSets.length === 0) {
     return "No saved comparisons yet.";
   }

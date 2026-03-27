@@ -232,7 +232,7 @@ test("compare loader returns not_found when any selected product is missing", as
   });
 });
 
-test("compare loader returns error when any selected product request fails", async () => {
+test("compare loader throws when any selected product request fails", async () => {
   fetchGraphQLMock
     .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
     .mockRejectedValueOnce(new Error("Network request failed: boom"));
@@ -245,13 +245,10 @@ test("compare loader returns error when any selected product request fails", asy
       params: {},
       context: undefined
     } as LoaderFunctionArgs)
-  ).resolves.toEqual({
-    status: "error",
-    slugs: ["detail-product", "broken-product"]
-  });
+  ).rejects.toThrow("Network request failed: boom");
 });
 
-test("compare loader returns error when a rejected request is mixed with a missing product", async () => {
+test("compare loader throws when a rejected request is mixed with a missing product", async () => {
   fetchGraphQLMock
     .mockResolvedValueOnce({
       data: {
@@ -268,10 +265,7 @@ test("compare loader returns error when a rejected request is mixed with a missi
       params: {},
       context: undefined
     } as LoaderFunctionArgs)
-  ).resolves.toEqual({
-    status: "error",
-    slugs: ["missing-product", "broken-product"]
-  });
+  ).rejects.toThrow("Network request failed: boom");
 });
 
 test("renders an empty-state message when no products are selected", () => {
@@ -391,18 +385,6 @@ test("renders a not-found message when any selected product is missing", () => {
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByText("One or more selected products were not found.")).toBeInTheDocument();
-});
-
-test("renders an unavailable message when compare loading fails", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "error",
-    slugs: ["detail-product", "broken-product"]
-  });
-
-  render(<CompareRoute />);
-
-  expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-  expect(screen.getByText("Comparison unavailable.")).toBeInTheDocument();
 });
 
 test("saved comparisons loader requests the current user's sets and forwards the SSR request", async () => {
@@ -569,6 +551,42 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
     expect.stringContaining("query MySavedComparisonSets"),
     { first: 20, after: "cursor-1" },
     undefined
+  );
+});
+
+test("saved comparisons loader returns unauthorized status when GraphQL returns an unauthorized error", async () => {
+  const request = new Request("https://app.example.com/compare/saved");
+  const originalWindow = globalThis.window;
+
+  vi.stubGlobal("window", undefined);
+  fetchGraphQLMock.mockResolvedValue({
+    errors: [
+      {
+        message: "Unauthorized",
+        path: ["mySavedComparisonSets"]
+      }
+    ]
+  });
+
+  try {
+    await expect(
+      savedComparisonsLoader({
+        request,
+        params: {},
+        context: undefined
+      } as LoaderFunctionArgs)
+    ).resolves.toEqual({
+      status: "unauthorized",
+      savedSets: []
+    });
+  } finally {
+    vi.stubGlobal("window", originalWindow);
+  }
+
+  expect(fetchGraphQLMock).toHaveBeenCalledWith(
+    expect.stringContaining("query MySavedComparisonSets"),
+    { first: 20 },
+    { request }
   );
 });
 

@@ -9,6 +9,8 @@ interface Node {
 
 type Query {
   viewer: User
+  product(slug: String!): Product
+  mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
 }
 
 type Mutation {
@@ -18,6 +20,8 @@ type Mutation {
   forgotPassword(email: String!): AuthActionPayload!
   resetPassword(token: String!, password: String!): AuthActionPayload!
   verifyEmail(token: String!): AuthActionPayload!
+  createSavedComparisonSet(input: CreateSavedComparisonSetInput!): CreateSavedComparisonSetPayload!
+  deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
 }
 
 type AuthSessionPayload {
@@ -44,4 +48,60 @@ type MutationError {
 type User implements Node {
   id: ID!
   email: String!
+}
+
+type Product implements Node {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  brand: Brand!
+}
+
+type Brand implements Node {
+  id: ID!
+  name: String!
+}
+
+type SavedComparisonSetConnection {
+  edges: [SavedComparisonSetEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SavedComparisonSetEdge {
+  node: SavedComparisonSet!
+  cursor: String!
+}
+
+type SavedComparisonSet implements Node {
+  id: ID!
+  name: String!
+  items: [SavedComparisonItem!]!
+}
+
+type SavedComparisonItem {
+  position: Int!
+  product: Product!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+input CreateSavedComparisonSetInput {
+  name: String!
+  productIds: [ID!]!
+}
+
+type CreateSavedComparisonSetPayload {
+  savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
+}
+
+type DeleteSavedComparisonSetPayload {
+  savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
 }

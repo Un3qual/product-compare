@@ -37,7 +37,7 @@ export type CompareRouteLoaderData =
       slugs: [];
     }
   | {
-      status: "too_many" | "not_found" | "error";
+      status: "too_many" | "not_found";
       slugs: string[];
     }
   | {
@@ -47,7 +47,7 @@ export type CompareRouteLoaderData =
     };
 
 export interface SavedComparisonsRouteLoaderData {
-  status: "ready" | "empty" | "unauthorized" | "error";
+  status: "ready" | "empty" | "unauthorized";
   savedSets: SavedComparisonSetSummary[];
 }
 
@@ -132,11 +132,12 @@ export async function compareLoader({
     slugs.map((slug) => loadProductDetail(slug, ssrContext))
   );
 
-  if (productResults.some((result) => result.status === "rejected")) {
-    return {
-      status: "error",
-      slugs
-    };
+  const rejectedResult = productResults.find((result) => result.status === "rejected");
+
+  if (rejectedResult && rejectedResult.status === "rejected") {
+    throw rejectedResult.reason instanceof Error
+      ? rejectedResult.reason
+      : new Error("Product fetch failed");
   }
 
   const fulfilledResults = productResults.filter(
@@ -178,62 +179,48 @@ export async function savedComparisonsLoader({
   request
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
   const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const savedSets: SavedComparisonSetSummary[] = [];
+  let after: string | undefined;
 
-  try {
-    const savedSets: SavedComparisonSetSummary[] = [];
-    let after: string | undefined;
+  while (true) {
+    const response = await fetchGraphQL(
+      MY_SAVED_COMPARISON_SETS_QUERY,
+      after === undefined
+        ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
+        : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
+      ssrContext
+    );
 
-    while (true) {
-      const response = await fetchGraphQL(
-        MY_SAVED_COMPARISON_SETS_QUERY,
-        after === undefined
-          ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
-          : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
-        ssrContext
-      );
-
-      if (isUnauthorizedSavedComparisonsResponse(response)) {
-        return {
-          status: "unauthorized",
-          savedSets: []
-        };
-      }
-
-      const page = parseSavedComparisonSetsPage(response);
-
-      if (page === null) {
-        return {
-          status: "error",
-          savedSets: []
-        };
-      }
-
-      savedSets.push(...page.savedSets);
-
-      if (!page.hasNextPage) {
-        break;
-      }
-
-      if (!page.endCursor || page.endCursor === after) {
-        return {
-          status: "error",
-          savedSets: []
-        };
-      }
-
-      after = page.endCursor;
+    if (isUnauthorizedSavedComparisonsResponse(response)) {
+      return {
+        status: "unauthorized",
+        savedSets: []
+      };
     }
 
-    return {
-      status: savedSets.length === 0 ? "empty" : "ready",
-      savedSets
-    };
-  } catch {
-    return {
-      status: "error",
-      savedSets: []
-    };
+    const page = parseSavedComparisonSetsPage(response);
+
+    if (page === null) {
+      throw new Error("Failed to parse saved comparison sets response");
+    }
+
+    savedSets.push(...page.savedSets);
+
+    if (!page.hasNextPage) {
+      break;
+    }
+
+    if (!page.endCursor || page.endCursor === after) {
+      throw new Error("Invalid pagination cursor");
+    }
+
+    after = page.endCursor;
   }
+
+  return {
+    status: savedSets.length === 0 ? "empty" : "ready",
+    savedSets
+  };
 }
 
 export async function deleteSavedComparisonSet(
