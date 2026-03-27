@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import type { SavedComparisonsRouteLoaderData } from "./api";
 import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
@@ -6,13 +6,8 @@ import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
-  const [viewState, setViewState] = useState(() => buildSavedComparisonsViewState(loaderData));
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setViewState(buildSavedComparisonsViewState(loaderData));
-  }, [loaderData.savedSets, loaderData.status]);
 
   async function handleDelete(savedComparisonSetId: string) {
     setPendingDeleteIds((currentPendingDeleteIds) =>
@@ -26,17 +21,7 @@ export function SavedComparisonsRoute() {
       const result = await deleteSavedComparisonSet(savedComparisonSetId);
 
       if (result.savedComparisonSetId) {
-        setViewState((currentViewState) => {
-          const nextSavedSets = currentViewState.savedSets.filter(
-            (savedSet) => savedSet.id !== result.savedComparisonSetId
-          );
-
-          return {
-            savedSets: nextSavedSets,
-            statusMessage:
-              nextSavedSets.length === 0 ? "No saved comparisons yet." : "Comparison deleted."
-          };
-        });
+        // Deletion successful - router will refetch and update loaderData
         return;
       }
 
@@ -49,6 +34,8 @@ export function SavedComparisonsRoute() {
       );
     }
   }
+
+  const viewState = buildSavedComparisonsViewState(loaderData);
 
   return (
     <CompareShell title="Saved comparisons">

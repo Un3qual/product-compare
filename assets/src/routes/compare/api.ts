@@ -76,9 +76,7 @@ const MY_SAVED_COMPARISON_SETS_QUERY = `
           items {
             position
             product {
-              id
               slug
-              name
             }
           }
         }
