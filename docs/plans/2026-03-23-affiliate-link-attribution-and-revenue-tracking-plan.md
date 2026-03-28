@@ -184,13 +184,11 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 | Legacy (`affiliate_*`) field | New (`commerce_*`) field | Mapping notes |
 |---|---|---|
-| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; use business key (destination URL + program) for correlation |
-| `affiliate_links.url` | `commerce_links.destination_url` | Direct mapping |
-| `affiliate_links.affiliate_program_id` | `commerce_links.program_id` | Foreign key to programs table (will be unified) |
-| `affiliate_links.merchant_id` | `commerce_links.merchant_id` | Direct mapping |
-| `affiliate_links.network` | `commerce_links.network` | Direct mapping; enum values align with `commerce_conversions.source_network` |
-| `affiliate_links.tracking_params` | `commerce_links.campaign_params` | JSON field with same structure |
-| `affiliate_links.active` | `commerce_links.is_active` | Boolean flag, direct mapping |
+| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; correlation via business key (destination URL + program) |
+| `affiliate_links.original_url` | `commerce_links.destination_url` | Direct mapping (also note `affiliate_links.affiliate_url` for tracked URL) |
+| `affiliate_links.merchant_product_id` | `commerce_links.merchant_id` | Maps merchant_product relationship to merchant dimension |
+| `affiliate_links.affiliate_network_id` | `commerce_links.network` | Foreign key becomes enum; network ID maps to network enum values that align with `commerce_conversions.source_network` |
+| `affiliate_links.affiliate_url` | `commerce_links.campaign_params` | Tracked URL parameters extracted into structured campaign_params JSON |
 | `affiliate_programs.*` | (unified `programs` table) | Program metadata will be consolidated into a shared `programs` table or equivalent that supports both affiliate and non-affiliate programs |
 | `affiliate_networks.*` | `commerce_links.network` enum + config | Network metadata moves to application config or a lightweight `commerce_network_configs` reference table; `commerce_links.network` and `commerce_conversions.source_network` use the same enum |
 
@@ -201,7 +199,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 **Phase 1 (Backfill):** Run idempotent migration script that:
 
 1. Inserts rows into `commerce_links` from `affiliate_links` using `(destination_url, program_id, merchant_id)` as the business key.
-2. Uses `ON CONFLICT (destination_url, program_id) DO UPDATE` (or equivalent upsert with a composite unique constraint) to ensure repeated runs are safe.
+2. Uses `ON CONFLICT (destination_url, program_id, merchant_id) DO UPDATE` (or equivalent upsert with a composite unique constraint on all three business key columns) to ensure repeated runs are safe and prevent merging distinct merchant rows.
 3. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
 4. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
 
@@ -218,7 +216,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 - **Links:** When creating or updating outbound links, write to both `affiliate_links` (legacy) and `commerce_links` (new) using the same transaction.
 - **Click sessions:** When recording a click, write to both `affiliate_clicks` (if exists) and `commerce_click_sessions` using the same `click_id` UUID as the correlation key.
 - **Conversions:** When ingesting a network conversion, write to both legacy conversion tracking (if exists) and `commerce_conversions`.
-- **Consistency guarantee:** Use database transactions to ensure both writes succeed or both roll back; if dual-write fails, alert and fall back to legacy-only write to prevent data loss.
+- **Consistency guarantee:** Use database transactions to ensure both writes succeed or both roll back. If dual-write fails, do NOT fall back to legacy-only write; instead, trigger a fail-and-retry mechanism or enqueue the write for later processing. Dual-write failures must trigger degraded-mode alerting and escalation. Automated retries or queued writes must continue until both writes succeed, with monitoring and alerting visible to operators. Run a parity-check reconciliation job (described below) to verify consistency until the migration completes.
 
 **Feature flag strategy:**
 
