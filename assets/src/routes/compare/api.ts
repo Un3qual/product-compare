@@ -460,6 +460,8 @@ function parseSavedComparisonItems(items: unknown): string[] | null {
 }
 
 export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
+  // TODO: Once the backend emits structured error codes consistently,
+  // remove fuzzy message checks and rely solely on extensions.code
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }
@@ -475,12 +477,35 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
 
     const candidate = error as unknown as Record<string, unknown>;
 
-    return (
-      typeof candidate.message === "string" &&
-      candidate.message.toLowerCase() === "unauthorized" &&
+    // Check if the error path includes "mySavedComparisonSets"
+    const isRelevantPath =
       Array.isArray(candidate.path) &&
-      candidate.path[0] === "mySavedComparisonSets"
-    );
+      candidate.path.some((segment) => segment === "mySavedComparisonSets");
+
+    if (!isRelevantPath) {
+      return false;
+    }
+
+    // Check GraphQL extensions code
+    const extensions = candidate.extensions;
+    if (extensions && typeof extensions === "object" && !Array.isArray(extensions)) {
+      const code = (extensions as Record<string, unknown>).code;
+      if (typeof code === "string") {
+        const normalizedCode = code.toUpperCase();
+        if (normalizedCode === "UNAUTHENTICATED" || normalizedCode === "FORBIDDEN") {
+          return true;
+        }
+      }
+    }
+
+    // Fall back to checking message for common auth-related keywords
+    if (typeof candidate.message === "string") {
+      const normalizedMessage = candidate.message.toLowerCase();
+      const authKeywords = ["unauth", "not authenticated", "access denied"];
+      return authKeywords.some((keyword) => normalizedMessage.includes(keyword));
+    }
+
+    return false;
   });
 }
 
