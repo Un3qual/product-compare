@@ -199,13 +199,13 @@ test("compare loader forwards the request when running in server mode", async ()
     1,
     expect.stringContaining("query ProductDetail"),
     { slug: "detail-product" },
-    { request }
+    { request, signal: request.signal }
   );
   expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
     2,
     expect.stringContaining("query ProductDetail"),
     { slug: "second-product" },
-    { request }
+    { request, signal: request.signal }
   );
 });
 
@@ -453,7 +453,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
   expect(fetchGraphQLMock).toHaveBeenCalledWith(
     expect.stringContaining("query MySavedComparisonSets"),
     { first: 20 },
-    { request }
+    { request, signal: request.signal }
   );
 });
 
@@ -586,7 +586,7 @@ test("saved comparisons loader returns unauthorized status when GraphQL returns 
   expect(fetchGraphQLMock).toHaveBeenCalledWith(
     expect.stringContaining("query MySavedComparisonSets"),
     { first: 20 },
-    { request }
+    { request, signal: request.signal }
   );
 });
 
@@ -1023,7 +1023,7 @@ test("saved comparisons loader throws when the GraphQL response cannot be parsed
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
-test("saved comparisons loader returns truncated flag when page cap is reached", async () => {
+test("saved comparisons loader throws when page cap is reached before pagination completes", async () => {
   const request = new Request("https://app.example.com/compare/saved");
 
   // Simulate a response where hasNextPage is always true so the loader hits the cap.
@@ -1063,15 +1063,14 @@ test("saved comparisons loader returns truncated flag when page cap is reached",
     });
   });
 
-  const result = await savedComparisonsLoader({
-    request,
-    params: {},
-    context: undefined
-  } as LoaderFunctionArgs);
+  await expect(
+    savedComparisonsLoader({
+      request,
+      params: {},
+      context: undefined
+    } as LoaderFunctionArgs)
+  ).rejects.toThrow("Saved comparison sets pagination limit exceeded");
 
-  expect(result.status).toBe("ready");
-  expect(result.truncated).toBe(true);
-  expect(result.savedSets).toHaveLength(50);
   expect(fetchGraphQLMock).toHaveBeenCalledTimes(50);
 });
 
@@ -1100,7 +1099,70 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
     status: "empty",
     savedSets: []
   });
-  expect(result.truncated).toBeUndefined();
+});
+
+test("saved comparisons loader aborts pagination when the request is cancelled", async () => {
+  const controller = new AbortController();
+  const originalWindow = globalThis.window;
+  const request = {
+    headers: new Headers(),
+    signal: controller.signal,
+    url: "https://app.example.com/compare/saved"
+  } as unknown as Request;
+
+  fetchGraphQLMock.mockImplementationOnce(async () => {
+    controller.abort();
+
+    return {
+      data: {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-1",
+                name: "Desk setup",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      id: DETAIL_PRODUCT.id,
+                      slug: DETAIL_PRODUCT.slug,
+                      name: DETAIL_PRODUCT.name
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true,
+            endCursor: "cursor-1"
+          }
+        }
+      }
+    };
+  });
+
+  vi.stubGlobal("window", undefined);
+
+  try {
+    await expect(
+      savedComparisonsLoader({
+        request,
+        params: {},
+        context: undefined
+      } as LoaderFunctionArgs)
+    ).rejects.toThrow(/aborted/i);
+  } finally {
+    vi.stubGlobal("window", originalWindow);
+  }
+
+  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  expect(fetchGraphQLMock).toHaveBeenCalledWith(
+    expect.stringContaining("query MySavedComparisonSets"),
+    { first: 20 },
+    { request, signal: request.signal }
+  );
 });
 
 test("saved comparisons loader throws when pagination cursor does not advance", async () => {
@@ -1171,28 +1233,4 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
       context: undefined
     } as LoaderFunctionArgs)
   ).rejects.toThrow("Invalid pagination cursor");
-});
-
-test("saved comparisons route shows a truncation notice when the loader reports truncated data", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    truncated: true,
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByRole("note")).toHaveTextContent(
-    "Only your most recent saved comparisons are shown."
-  );
 });

@@ -91,6 +91,31 @@ test("derives and forwards a trusted origin for SSR requests", async () => {
   }
 });
 
+test("forwards an AbortSignal for SSR requests when one is provided", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+  const controller = new AbortController();
+
+  globalThis.fetch = (async (...args: unknown[]) => {
+    calls.push(args);
+    return {
+      ok: true,
+      json: async () => ({ data: {} })
+    } as Response;
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, {
+      signal: controller.signal
+    });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).signal).toBe(controller.signal);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("requires VITE_API_BASE_URL outside local dev", () => {
   expect(() => resolveGraphQLEndpoint({ isDev: false })).toThrow(
     "VITE_API_BASE_URL must be set outside local development"

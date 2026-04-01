@@ -7,6 +7,7 @@ export interface SSRContext {
   request?: Request;
   headers?: Record<string, string>;
   cookieString?: string;
+  signal?: AbortSignal;
 }
 
 interface ResolveGraphQLEndpointOptions {
@@ -49,7 +50,8 @@ export async function fetchGraphQL(
       method: "POST",
       credentials: ssrContext ? undefined : "include", // credentials only for browser
       headers,
-      body: JSON.stringify({ query, variables })
+      body: JSON.stringify({ query, variables }),
+      signal: ssrContext?.signal
     });
   } catch (error) {
     throw new Error(`Network request failed: ${(error as Error).message}`);

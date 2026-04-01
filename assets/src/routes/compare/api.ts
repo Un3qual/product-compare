@@ -49,7 +49,6 @@ export type CompareRouteLoaderData =
 export interface SavedComparisonsRouteLoaderData {
   status: "ready" | "empty" | "unauthorized";
   savedSets: SavedComparisonSetSummary[];
-  truncated?: boolean;
 }
 
 const CREATE_SAVED_COMPARISON_SET_MUTATION = `
@@ -127,7 +126,8 @@ export async function compareLoader({
     };
   }
 
-  const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const ssrContext =
+    typeof window === "undefined" ? { request, signal: request.signal } : undefined;
   const productResults = await Promise.allSettled(
     slugs.map((slug) => loadProductDetail(slug, ssrContext))
   );
@@ -178,17 +178,17 @@ export async function createSavedComparisonSet(
 export async function savedComparisonsLoader({
   request
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
-  const ssrContext = typeof window === "undefined" ? { request } : undefined;
+  const ssrContext =
+    typeof window === "undefined" ? { request, signal: request.signal } : undefined;
   const savedSets: SavedComparisonSetSummary[] = [];
   let after: string | undefined;
   let pageCount = 0;
 
-  let truncated = false;
-
   while (true) {
+    throwIfAborted(request.signal);
+
     if (pageCount >= SAVED_COMPARISON_SETS_MAX_PAGES) {
-      truncated = true;
-      break;
+      throw new Error("Saved comparison sets pagination limit exceeded");
     }
 
     pageCount += 1;
@@ -228,8 +228,7 @@ export async function savedComparisonsLoader({
 
   return {
     status: savedSets.length === 0 ? "empty" : "ready",
-    savedSets,
-    ...(truncated ? { truncated: true } : {})
+    savedSets
   };
 }
 
@@ -284,6 +283,18 @@ function readMutationPayload(response: GraphQLResponse, fieldName: string) {
   }
 
   return {};
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) {
+    return;
+  }
+
+  if (signal.reason instanceof Error) {
+    throw signal.reason;
+  }
+
+  throw new Error("Request aborted");
 }
 
 function parseConnection<T>(

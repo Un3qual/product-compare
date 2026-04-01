@@ -50,11 +50,6 @@ export function SavedComparisonsRoute() {
         {viewState.statusMessage}
       </p>
       {deleteError ? <p role="alert">{deleteError}</p> : null}
-      {loaderData.truncated ? (
-        <p role="note">
-          Only your most recent saved comparisons are shown. Remove some to see older ones.
-        </p>
-      ) : null}
       {loaderData.status === "unauthorized" ? <Link to="/auth/login">Sign in</Link> : null}
       {viewState.savedSets.length > 0 ? (
         <ul aria-label="Saved comparison sets">
