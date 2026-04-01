@@ -121,7 +121,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 - `commerce_links`
   - canonical outbound destination + merchant/program metadata
-  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network` (same enum as `commerce_conversions.source_network`), `campaign_params`, `is_active`
+  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network?` (same enum as `commerce_conversions.source_network`; required for `affiliate` rows, null for `non_affiliate` rows), `campaign_params`, `is_active`
 
 - `commerce_link_variants`
   - network-specific variants for the same canonical destination
@@ -190,9 +190,9 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 | `affiliate_links.original_url` | `commerce_links.destination_url` | Direct mapping (also note `affiliate_links.affiliate_url` for tracked URL) |
 | `affiliate_links.merchant_product_id` | `commerce_links.merchant_id` | Maps merchant_product relationship to merchant dimension |
 | `affiliate_links.affiliate_network_id` | `commerce_links.network` | Foreign key becomes enum; network ID maps to network enum values that align with `commerce_conversions.source_network` |
-| `affiliate_links.affiliate_url` | `commerce_links.campaign_params` | Tracked URL parameters extracted into structured campaign_params JSON |
+| `affiliate_links.affiliate_url` | `commerce_link_variants.tracking_template` | Preserve the full tracked redirect template for cutover; normalize query parameters into `commerce_links.campaign_params` as a derived field, not the source of truth |
 | `affiliate_programs.*` | (unified `programs` table) | Program metadata will be consolidated into a shared `programs` table or equivalent that supports both affiliate and non-affiliate programs |
-| `affiliate_networks.*` | `commerce_links.network` enum + config | Network metadata moves to application config or a lightweight `commerce_network_configs` reference table; `commerce_links.network` and `commerce_conversions.source_network` use the same enum |
+| `affiliate_networks.*` | `commerce_links.network?` enum + config | Network metadata moves to application config or a lightweight `commerce_network_configs` reference table; `commerce_links.network` and `commerce_conversions.source_network` use the same enum, with `commerce_links.network` null for `non_affiliate` rows |
 
 ### Migration/backfill plan: idempotent scripts to populate `commerce_*` from `affiliate_*` (and vice-versa if needed)
 
@@ -202,8 +202,9 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 1. Inserts rows into `commerce_links` from `affiliate_links` using a NULL-safe business key that treats `program_id` as optional.
 2. Uses `ON CONFLICT (destination_url, COALESCE(program_id, 0), merchant_id) DO UPDATE` or an equivalent NULL-safe upsert target backed by a matching unique index, so repeated runs are safe even when `program_id` is `NULL`.
-3. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
-4. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
+3. Backfills `commerce_link_variants.tracking_template` from `affiliate_links.affiliate_url` so the full tracked redirect template survives cutover, then derives `commerce_links.campaign_params` from that template as needed.
+4. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
+5. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
 
 **Unique-key note:** If we keep the sentinel strategy above, the migration must also enforce `CHECK (program_id IS NULL OR program_id > 0)` so the `0` sentinel cannot collide with a real foreign key. If we do not want that guard, the alternative is a partial unique-index design that separates the `program_id IS NULL` and `program_id IS NOT NULL` cases.
 
