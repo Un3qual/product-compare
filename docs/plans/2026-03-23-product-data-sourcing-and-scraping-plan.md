@@ -236,17 +236,31 @@ Use `NormalizeJob` to project each normalized field into the current persistence
 |---|---|---|
 | `source` | `ExternalProduct.source_id` via `Sources.Source` | Resolve or create the source row before persistence. |
 | `external_product_id` | `ExternalProduct.external_id` and `MerchantProduct.external_sku` | `external_products` owns the source-scoped identifier; `merchant_products.external_sku` carries the merchant-facing listing key when present. |
-| `merchant_identifier` | No first-class destination yet | Use this as the stable merchant lookup key during NormalizeJob so merchants resolve consistently before writing `Merchant.name`, `Merchant.domain`, or `MerchantProduct.merchant_id`; do not invent a storage column for it in the current schemas. |
+| `merchant_identifier` | `MerchantSourceIdentity.merchant_identifier` in a new source-scoped lookup table | Persist the source merchant key so `NormalizeJob` can resolve the same merchant across repeated imports even when `merchant_name` or `merchant_domain` drift. Keep `Merchant` as the canonical merchant record and make the lookup table the idempotency anchor. |
 | `product_title` | `Product.name` and the resolved `Product.id` referenced by `ExternalProduct.product_id` / `MerchantProduct.product_id` | Create or update the catalog product name from the normalized title, then link the product row into the source and merchant records. |
 | `brand_name` | `Product.brand_id` when a matching brand exists or can be created | No first-class brand-name field exists on the normalized record path itself. |
 | `gtin` | `Product.model_number` only if the GTIN is the canonical model identifier; otherwise no first-class destination yet | Keep the fallback explicit rather than inventing a new schema field. |
-| `merchant_name` | `Merchant.name` | Create or lookup the merchant using `merchant_identifier` first, then fall back to the merchant name for human-readable labeling where needed. |
+| `merchant_name` | `Merchant.name` | Seed or update the canonical merchant name after resolving `merchant_identifier` through the source identity table. |
+| `merchant_domain` | `Merchant.domain` | Store the canonical merchant domain alongside the merchant record, and use it as a secondary bootstrap hint when creating a new source identity. |
 | `listing_url` | `MerchantProduct.url` and `ExternalProduct.canonical_url` | Use the merchant-product URL as the canonical commerce listing URL for the source-scoped listing. |
 | `currency` | `MerchantProduct.currency` and `PricePoint.price` currency context | Merchant products store the listing currency; price points continue to carry numeric price only. |
 | `amount` | `PricePoint.price` | Persist the observed listing price as the price point. |
 | `availability` | `PricePoint.in_stock` | This is the current first-class availability signal; richer availability states are not modeled yet. |
 | `observed_at` | `PricePoint.observed_at`, `ExternalProduct.last_seen_at`, and `MerchantProduct.last_seen_at` | Use the timestamp for the latest source sighting and the price observation. |
 | `raw_payload` | `SourceArtifact.raw_json` / `SourceArtifact.raw_text` | Store the full source payload on the artifact record; no separate raw-payload field exists on product/merchant rows. |
+
+### Merchant identity persistence
+
+Add a dedicated `merchant_source_identities` lookup table to keep source-scoped merchant resolution deterministic without bloating `Merchant` with provider-specific columns. The table should carry at least:
+
+- `source_id`
+- `merchant_identifier`
+- `merchant_id`
+- `merchant_name`
+- `merchant_domain`
+- `last_seen_at`
+
+Use a unique constraint on `(source_id, merchant_identifier)` so replayed imports resolve the same merchant row instead of creating duplicates when names or domains drift. `NormalizeJob` should resolve the source identity first, then upsert `Merchant`, `MerchantProduct`, and `ExternalProduct` through that stable link.
 
 ### Pipeline stages
 
