@@ -133,6 +133,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   - `external_source`
   - `external_product_id`
   - `merchant_identifier`
+  - `merchant_domain?`
   - price/availability payload and observed timestamp
 
 #### Exit criteria
@@ -154,7 +155,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 #### Required behaviors
 
-- Idempotent upsert by `(source, external_product_id)` and `(merchant, canonical_url_or_listing_key)`.
+- Idempotent upsert by `(source, external_product_id)`, `(source, merchant_identifier)`, and `(merchant, canonical_url_or_listing_key)`.
 - Deterministic mapping errors (reject + reason code).
 - Last-write-wins with `observed_at` guards for price staleness.
 
@@ -219,6 +220,7 @@ ProductCompare.Ingestion.Sources.Adapter
   brand_name: String.t() | nil,
   gtin: String.t() | nil,
   merchant_name: String.t(),
+  merchant_domain: String.t() | nil,
   listing_url: String.t(),
   currency: String.t(),
   amount: Decimal.t(),
@@ -272,7 +274,7 @@ Use a unique constraint on `(source_id, merchant_identifier)` so replayed import
 ## Detailed Implementation Backlog
 
 1. Scaffold ingestion context skeleton (`ProductCompare.Ingestion`) and adapter behavior.
-2. Create ingestion-run persistence table (`ingestion_runs`) and record-level error table (`ingestion_errors`).
+2. Create ingestion-run persistence tables (`ingestion_runs`, `ingestion_errors`) and source-merchant identity lookup table (`merchant_source_identities`).
 3. Implement first connector with fixtures.
 4. Wire write path into existing Catalog/Pricing upsert APIs.
 5. Instrument telemetry events and dashboards.
@@ -294,7 +296,7 @@ Use a unique constraint on `(source_id, merchant_identifier)` so replayed import
 
 1. Pick first connector (**recommended default: eBay Browse API**; use CJ only if eBay quota/coverage unavailable).
 2. Create ADR: `docs/decisions/2026-03-23-ingestion-execution-boundary.md`.
-3. Scaffold ingestion context and adapter behavior with one fixture-based parser test.
+3. Scaffold ingestion context, merchant identity persistence, and adapter behavior with one fixture-based parser test.
 4. Update `docs/work/product-data-scraping.md` status from `drafting` to `active` once source is chosen.
 
 ## Deferred Until Further Notice

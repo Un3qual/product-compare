@@ -42,7 +42,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Batch:
   1. Choose the first connector (CJ/eBay/BestBuy/Awin/Amazon), defaulting to eBay Browse API unless blocked by quota/coverage constraints (use CJ only if eBay unavailable).
   2. Draft ADR for ingestion execution mode (sync pilot vs Oban-first).
-  3. Scaffold `ProductCompare.Ingestion` adapter boundary and fixture-based parser tests.
+  3. Scaffold `ProductCompare.Ingestion`, including the source-merchant identity persistence path (`merchant_source_identities`) and fixture-based parser tests.
   4. Promote this work doc from `drafting` to `active` when source choice + ADR exist.
 - Blockers (Note: blockers in "drafting" state require named owner, target date, and unblock criteria to be considered active and tracked):
   - **First-source selection and ownership**
