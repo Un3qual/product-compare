@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import type { CompareRouteLoaderData } from "./api";
 import { compareLoader, createSavedComparisonSet } from "./api";
@@ -9,12 +9,18 @@ export function CompareRoute() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const isSaveInFlightRef = useRef(false);
 
   async function handleSave() {
     if (loaderData.status !== "ready") {
       return;
     }
 
+    if (isSaveInFlightRef.current) {
+      return;
+    }
+
+    isSaveInFlightRef.current = true;
     setIsSaving(true);
     setSaveMessage(null);
     setSaveError(null);
@@ -48,11 +54,9 @@ export function CompareRoute() {
         }
         title="Compare products"
       >
-        {saveMessage ? (
-          <p aria-live="polite" role="status">
-            {saveMessage}
-          </p>
-        ) : null}
+        <p aria-live="polite" role="status">
+          {saveMessage ?? ""}
+        </p>
         {saveError ? <p role="alert">{saveError}</p> : null}
         <ul>
           {loaderData.products.map((product) => (
