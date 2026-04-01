@@ -137,3 +137,44 @@ test("compare route keeps a stable status region in the DOM before and after sav
     expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
   });
 });
+
+test("compare route allows a later save after the current request settles", async () => {
+  fetchGraphQLMock
+    .mockResolvedValueOnce({
+      data: {
+        createSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-1"
+          },
+          errors: []
+        }
+      }
+    })
+    .mockResolvedValueOnce({
+      data: {
+        createSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-2"
+          },
+          errors: []
+        }
+      }
+    });
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(<CompareRoute />);
+
+  const saveButton = screen.getByRole("button", { name: "Save comparison" });
+
+  fireEvent.click(saveButton);
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
+  });
+});
