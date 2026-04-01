@@ -200,10 +200,12 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 **Phase 1 (Backfill):** Run idempotent migration script that:
 
-1. Inserts rows into `commerce_links` from `affiliate_links` using `(destination_url, program_id, merchant_id)` as the business key.
-2. Uses `ON CONFLICT (destination_url, program_id, merchant_id) DO UPDATE` (or equivalent upsert with a composite unique constraint on all three business key columns) to ensure repeated runs are safe and prevent merging distinct merchant rows.
+1. Inserts rows into `commerce_links` from `affiliate_links` using a NULL-safe business key that treats `program_id` as optional.
+2. Uses `ON CONFLICT (destination_url, COALESCE(program_id, 0), merchant_id) DO UPDATE` or an equivalent NULL-safe upsert target backed by a matching unique index, so repeated runs are safe even when `program_id` is `NULL`.
 3. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
 4. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
+
+**Unique-key note:** If we keep the sentinel strategy above, the migration must also enforce `CHECK (program_id IS NULL OR program_id > 0)` so the `0` sentinel cannot collide with a real foreign key. If we do not want that guard, the alternative is a partial unique-index design that separates the `program_id IS NULL` and `program_id IS NOT NULL` cases.
 
 **Phase 2 (Dual-write):** Application code writes new link inventory and click sessions to **both** `affiliate_*` and `commerce_*` tables for a transition period (detailed below).
 
