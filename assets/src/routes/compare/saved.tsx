@@ -5,7 +5,7 @@ import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
-  const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
+  const loaderData = useLoaderData<typeof savedComparisonsLoader>();
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -98,12 +98,12 @@ function buildSavedComparisonsStatus(
     return "Sign in to view saved comparisons.";
   }
 
-  if (visibleSavedSets.length === 0) {
-    return "No saved comparisons yet.";
-  }
-
   if (hasLocalDeletion) {
     return "Comparison deleted.";
+  }
+
+  if (visibleSavedSets.length === 0) {
+    return "No saved comparisons yet.";
   }
 
   return "Saved comparison sets loaded.";

@@ -50,7 +50,7 @@ export const routes: RouteObject[] = [
         path: "compare/saved",
         loader: savedComparisonsLoader,
         element: <SavedComparisonsRoute />,
-        errorElement: <CompareErrorBoundary />
+        errorElement: <CompareErrorBoundary title="Saved comparisons" />
       },
       {
         path: "auth/login",

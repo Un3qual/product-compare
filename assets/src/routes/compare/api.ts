@@ -512,7 +512,7 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
     // Fall back to checking message for common auth-related keywords
     if (typeof candidate.message === "string") {
       const normalizedMessage = candidate.message.toLowerCase();
-      const authKeywords = ["unauth", "not authenticated", "access denied"];
+      const authKeywords = ["unauth", "not authenticated", "not authorized", "access denied"];
       return authKeywords.some((keyword) => normalizedMessage.includes(keyword));
     }
 

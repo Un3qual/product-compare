@@ -31,9 +31,9 @@
 
 - Route data under `assets/` is still split between a nominal Relay setup and manual `fetchGraphQL`/payload-parsing helpers in the route tree.
 - SSR currently creates a Relay environment per request, but the populated store is not serialized into client hydration, so the app cannot yet use proper Relay route preloading end-to-end.
-- `/compare` and `/compare/saved` now ship on the same manual compare `api.ts` path, and compare-scoped route error boundaries are still not registered yet.
+- `/compare` and `/compare/saved` now ship on the same manual compare `api.ts` path, and compare-scoped route error boundaries are registered for both routes.
 
 ## Next Planned Slice
 
 - Unify frontend route data around Relay preloaded queries, Relay mutations, and SSR store hydration.
-- After that slice closes, finish the remaining compare/saved hardening, including compare-scoped route error boundaries, on top of the Relay compare pattern.
+- After that slice closes, finish the remaining compare/saved hardening on top of the Relay compare pattern.

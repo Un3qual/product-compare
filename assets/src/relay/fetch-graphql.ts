@@ -54,7 +54,12 @@ export async function fetchGraphQL(
       signal: ssrContext?.signal
     });
   } catch (error) {
-    throw new Error(`Network request failed: ${(error as Error).message}`);
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Network request failed: ${message}`);
   }
 
   if (!response.ok) {

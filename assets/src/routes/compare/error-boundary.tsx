@@ -1,7 +1,13 @@
-import { useRouteError, isRouteErrorResponse } from "react-router-dom";
+import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import { CompareShell } from "./compare-shell";
 
-export function CompareErrorBoundary() {
+type CompareErrorBoundaryProps = {
+  title?: string;
+};
+
+export function CompareErrorBoundary({
+  title = "Compare products"
+}: CompareErrorBoundaryProps = {}) {
   const error = useRouteError();
 
   let errorMessage = "Comparison unavailable.";
@@ -22,12 +28,15 @@ export function CompareErrorBoundary() {
       retryGuidance = "Please try refreshing the page.";
     }
   } else if (error instanceof Error) {
-    if (
-      error.message.toLowerCase().includes("network") ||
-      error.message.toLowerCase().includes("fetch") ||
+    const normalizedMessage = error.message.toLowerCase();
+    const isNetworkError =
+      normalizedMessage.includes("network") ||
+      normalizedMessage.includes("fetch") ||
       error.name === "NetworkError" ||
-      error.name === "TypeError"
-    ) {
+      (error.name === "TypeError" &&
+        (normalizedMessage.includes("network") || normalizedMessage.includes("fetch")));
+
+    if (isNetworkError) {
       errorMessage = "A network error occurred while loading the comparison.";
       retryGuidance = "Please check your internet connection and try again.";
     } else {
@@ -37,7 +46,7 @@ export function CompareErrorBoundary() {
   }
 
   return (
-    <CompareShell title="Compare products">
+    <CompareShell title={title}>
       <div role="alert">
         <p>{errorMessage}</p>
         <p>{retryGuidance}</p>
