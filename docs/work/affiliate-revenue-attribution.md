@@ -41,8 +41,8 @@
 
 ## Verification Commands
 
-- `sed -n '1,300p' docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
-- `sed -n '1,200p' docs/work/affiliate-revenue-attribution.md`
+- `rg -n "^#|^##|^###|^####|^-" docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
+- `rg -n "^#|^##|^###|^####|^-" docs/work/affiliate-revenue-attribution.md`
 
 ## Deferred note
 

@@ -115,7 +115,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 | `commerce_conversions` | `(source_network, network_conversion_ref)` | Ensures each network-reported conversion is ingested exactly once; composite key prevents cross-network collisions on external reference values |
 | `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
 | `commerce_link_variants` | `(commerce_link_id, variant_key)` | One variant per key per canonical link |
-| `commerce_revenue_daily` | `(date, COALESCE(merchant_id, 0), COALESCE(product_id, 0), channel, network)` | One aggregate row per dimension combination per day; uses `COALESCE` sentinel values in a unique index to ensure NULL-safe uniqueness (PostgreSQL treats each NULL as distinct in standard unique constraints) |
+| `commerce_revenue_daily` | `(date, COALESCE(merchant_id, 0), COALESCE(product_id, 0), channel, network)` | One aggregate row per dimension combination per day; uses `COALESCE` sentinel values in a unique index to ensure NULL-safe uniqueness (PostgreSQL treats each NULL as distinct in standard unique constraints). Migration note: keep the sentinel strategy only if the migration also enforces the repo's integer `:id` convention with `CHECK (merchant_id IS NULL OR merchant_id > 0)` and `CHECK (product_id IS NULL OR product_id > 0)`; otherwise use a NULL-safe partial-index design instead of assuming `0` can never be a real foreign key value. |
 
 ## 1) Link inventory and routing
 
@@ -146,13 +146,15 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
     - `source_network` (e.g., `impact`, `awin`, `rakuten`, `cj`, `amazon_associates`) — identifies the originating affiliate network
     - `network_conversion_ref` (external reference; unique per `source_network` — see composite unique constraint above)
     - `click_session_id?` (nullable FK to `commerce_click_sessions` for unattributed/late conversions)
-    - `public_click_id?` (nullable public UUID or network-subid reference captured before internal click-session resolution)
+    - `public_click_id?` (nullable public UUID captured before internal click-session resolution)
+    - `network_click_ref?` (nullable network-provided click/subid reference used when the network payload carries an external click token instead of the public UUID)
     - `merchant_id`, `program_id?`, `product_id?`, `merchant_product_id?`
     - `status` (`pending`, `approved`, `reversed`, `paid`)
     - `currency`, `order_amount`, `commission_amount`, `commission_rate?`
     - `attribution_confidence` (`high` | `low` | `unmatched`) — reflects match quality; weak matches (merchant + time window + amount) are flagged `low`, unresolved conversions are `unmatched`
     - `data_freshness_at` (timestamp of the most recent network/report update for this conversion)
     - `purchased_at`, `reported_at`
+  - itemized-order note: if a network payload contains multiple line items, keep one parent `commerce_conversions` row keyed by `network_conversion_ref` and model the line items separately so the parent idempotency key does not multiply; the parent row may carry the aggregate conversion metadata while itemized detail is normalized into child rows or equivalent nested records with their own line-item-level uniqueness.
 
 ## 4) Price-paid facts
 
