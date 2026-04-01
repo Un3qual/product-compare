@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import type { SavedComparisonSetSummary, SavedComparisonsRouteLoaderData } from "./api";
 import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
@@ -9,8 +9,14 @@ export function SavedComparisonsRoute() {
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
 
   async function handleDelete(savedComparisonSetId: string) {
+    if (inFlightDeleteIdsRef.current.has(savedComparisonSetId)) {
+      return;
+    }
+
+    inFlightDeleteIdsRef.current.add(savedComparisonSetId);
     setPendingDeleteIds((currentPendingDeleteIds) =>
       currentPendingDeleteIds.includes(savedComparisonSetId)
         ? currentPendingDeleteIds
@@ -36,6 +42,7 @@ export function SavedComparisonsRoute() {
     } catch {
       setDeleteError("Request failed. Please try again.");
     } finally {
+      inFlightDeleteIdsRef.current.delete(savedComparisonSetId);
       setPendingDeleteIds((currentPendingDeleteIds) =>
         currentPendingDeleteIds.filter((pendingDeleteId) => pendingDeleteId !== savedComparisonSetId)
       );
@@ -98,12 +105,12 @@ function buildSavedComparisonsStatus(
     return "Sign in to view saved comparisons.";
   }
 
-  if (hasLocalDeletion) {
-    return "Comparison deleted.";
-  }
-
   if (visibleSavedSets.length === 0) {
     return "No saved comparisons yet.";
+  }
+
+  if (hasLocalDeletion) {
+    return "Comparison deleted.";
   }
 
   return "Saved comparison sets loaded.";

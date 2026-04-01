@@ -488,10 +488,11 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
 
     const candidate = error as unknown as Record<string, unknown>;
 
-    // Check if the error path includes "mySavedComparisonSets"
+    // Treat missing paths as potentially relevant so pathless auth responses still map to unauthorized.
     const isRelevantPath =
-      Array.isArray(candidate.path) &&
-      candidate.path.some((segment) => segment === "mySavedComparisonSets");
+      candidate.path == null ||
+      (Array.isArray(candidate.path) &&
+        candidate.path.some((segment) => segment === "mySavedComparisonSets"));
 
     if (!isRelevantPath) {
       return false;

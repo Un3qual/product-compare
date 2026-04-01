@@ -953,7 +953,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
+  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
 });
 
 test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
@@ -1043,7 +1043,7 @@ test("saved comparisons route keeps later delete rows pending until their own re
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
+    expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
   });
 });
 

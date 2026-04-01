@@ -51,7 +51,7 @@ export async function fetchGraphQL(
       credentials: ssrContext ? undefined : "include", // credentials only for browser
       headers,
       body: JSON.stringify({ query, variables }),
-      signal: ssrContext?.signal
+      signal: ssrContext?.signal ?? ssrContext?.request?.signal
     });
   } catch (error) {
     if (
