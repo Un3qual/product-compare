@@ -1,8 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import {
+  MemoryRouter,
+  useLoaderData
+} from "react-router-dom";
+import * as ReactRouterDom from "react-router-dom";
 import { compareLoader, isUnauthorizedSavedComparisonsResponse, savedComparisonsLoader } from "../api";
+import { CompareErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
 import { SavedComparisonsRoute } from "../saved";
 
@@ -321,6 +326,26 @@ test("renders compared product cards returned by the route loader", () => {
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
 });
 
+test("compare route renders the compare error boundary when the loader throws", async () => {
+  const useRouteErrorSpy = vi
+    .spyOn(ReactRouterDom, "useRouteError")
+    .mockReturnValue(new Error("Network request failed: boom"));
+
+  try {
+    render(<CompareErrorBoundary />);
+
+    expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A network error occurred while loading the comparison."
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Please check your internet connection and try again."
+    );
+  } finally {
+    useRouteErrorSpy.mockRestore();
+  }
+});
+
 test("compare route saves the current ready-state selection", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {
@@ -598,6 +623,11 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
         id: "saved-set-1",
         name: "Desk setup",
         slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: [DETAIL_PRODUCT.slug]
       }
     ]
   });
@@ -608,9 +638,12 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
     </MemoryRouter>
   );
 
+  const openComparisonLinks = screen.getAllByRole("link", { name: "Open comparison" });
+
   expect(screen.getByRole("heading", { name: "Saved comparisons" })).toBeInTheDocument();
   expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+  expect(openComparisonLinks).toHaveLength(2);
+  expect(openComparisonLinks[0]).toHaveAttribute(
     "href",
     `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`
   );
@@ -682,6 +715,106 @@ test("saved comparisons route removes a deleted set from the list", async () => 
         id: "saved-set-1",
         name: "Desk setup",
         slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: [DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getAllByRole("button", { name: "Delete comparison" })[0]);
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("mutation DeleteSavedComparisonSet"),
+      {
+        savedComparisonSetId: "saved-set-1"
+      },
+      undefined
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+    expect(screen.getByText("Office setup")).toBeInTheDocument();
+  });
+
+  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
+});
+
+test("saved comparisons route keeps the set visible when delete fails and clears pending state", async () => {
+  fetchGraphQLMock.mockRejectedValueOnce(new Error("Network request failed: boom"));
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const deleteButton = screen.getAllByRole("button", { name: "Delete comparison" })[0];
+
+  fireEvent.click(deleteButton);
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("mutation DeleteSavedComparisonSet"),
+      {
+        savedComparisonSetId: "saved-set-1"
+      },
+      undefined
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+});
+
+test("saved comparisons route keeps the set visible when delete returns GraphQL errors and clears pending state", async () => {
+  fetchGraphQLMock.mockResolvedValueOnce({
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null,
+        errors: [
+          {
+            code: "BAD_USER_INPUT",
+            field: "savedComparisonSetId",
+            message: "Could not delete this comparison set."
+          }
+        ]
+      }
+    }
+  });
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
       }
     ]
   });
@@ -705,52 +838,11 @@ test("saved comparisons route removes a deleted set from the list", async () => 
   });
 
   await waitFor(() => {
-    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-  });
-
-  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
-});
-
-test("saved comparisons route keeps the set visible when delete fails and clears pending state", async () => {
-  fetchGraphQLMock.mockRejectedValueOnce(new Error("Network request failed: boom"));
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const deleteButton = screen.getByRole("button", { name: "Delete comparison" });
-
-  fireEvent.click(deleteButton);
-
-  await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation DeleteSavedComparisonSet"),
-      {
-        savedComparisonSetId: "saved-set-1"
-      },
-      undefined
-    );
-  });
-
-  await waitFor(() => {
     expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
   });
 
   expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
 });
 
 test("saved comparisons route applies overlapping delete responses against the latest list state", async () => {
@@ -841,7 +933,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
 });
 
 test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
@@ -931,7 +1023,7 @@ test("saved comparisons route keeps later delete rows pending until their own re
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+    expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
   });
 });
 
@@ -957,6 +1049,35 @@ test("isUnauthorizedSavedComparisonsResponse detects an unauthorized GraphQL err
       errors: [
         {
           message: "Unauthorized",
+          path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response from extensions.code", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Authentication failed",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "UNAUTHENTICATED"
+          }
+        }
+      ]
+    })
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects fuzzy auth messages without extensions.code", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Access denied for saved comparison sets",
           path: ["mySavedComparisonSets"]
         }
       ]
