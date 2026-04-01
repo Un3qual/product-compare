@@ -89,6 +89,18 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
   });
 });
 
+test("saved comparisons route starts with an empty status region when saved sets are present", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
 test("saved comparisons route shows the empty state after deleting the last set", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {
@@ -125,6 +137,23 @@ test("saved comparisons route shows the empty state after deleting the last set"
   });
 
   expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+});
+
+test("saved comparisons route uses a descriptive sign-in link for unauthorized state", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "unauthorized",
+    savedSets: []
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(
+    screen.getByRole("link", { name: "Sign in to view saved comparisons" })
+  ).toBeInTheDocument();
 });
 
 function createDeferred<T>() {

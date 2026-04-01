@@ -57,7 +57,9 @@ export function SavedComparisonsRoute() {
         {viewState.statusMessage}
       </p>
       {deleteError ? <p role="alert">{deleteError}</p> : null}
-      {loaderData.status === "unauthorized" ? <Link to="/auth/login">Sign in</Link> : null}
+      {loaderData.status === "unauthorized" ? (
+        <Link to="/auth/login">Sign in to view saved comparisons</Link>
+      ) : null}
       {viewState.savedSets.length > 0 ? (
         <ul aria-label="Saved comparison sets">
           {viewState.savedSets.map((savedSet) => (
@@ -113,7 +115,7 @@ function buildSavedComparisonsStatus(
     return "Comparison deleted.";
   }
 
-  return "Saved comparison sets loaded.";
+  return "";
 }
 
 function buildSavedComparisonsViewState(
