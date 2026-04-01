@@ -1060,7 +1060,9 @@ test("saved comparisons route prompts the user to sign in when the saved-set que
   );
 
   expect(screen.getByText("Sign in to view saved comparisons.")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+  expect(
+    screen.getByRole("link", { name: "Sign in to view saved comparisons" })
+  ).toHaveAttribute("href", "/auth/login");
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects an unauthorized GraphQL error targeting the saved sets field", () => {
