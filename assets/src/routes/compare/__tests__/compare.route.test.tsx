@@ -346,6 +346,26 @@ test("compare route renders the compare error boundary when the loader throws", 
   }
 });
 
+test("compare route keeps non-network TypeErrors on the generic error path", () => {
+  const useRouteErrorSpy = vi
+    .spyOn(ReactRouterDom, "useRouteError")
+    .mockReturnValue(new TypeError("Cannot read properties of undefined"));
+
+  try {
+    render(<CompareErrorBoundary title="Compare products" />);
+
+    expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "An unexpected error occurred while loading the comparison."
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(
+      "Please check your internet connection and try again."
+    );
+  } finally {
+    useRouteErrorSpy.mockRestore();
+  }
+});
+
 test("compare route saves the current ready-state selection", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {
@@ -1078,6 +1098,19 @@ test("isUnauthorizedSavedComparisonsResponse detects fuzzy auth messages without
       errors: [
         {
           message: "Access denied for saved comparison sets",
+          path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects not authorized messages", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "You are not authorized to access saved comparison sets",
           path: ["mySavedComparisonSets"]
         }
       ]
