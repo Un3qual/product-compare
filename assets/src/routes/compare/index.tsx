@@ -40,6 +40,7 @@ export function CompareRoute() {
     } catch {
       setSaveError("Request failed. Please try again.");
     } finally {
+      isSaveInFlightRef.current = false;
       setIsSaving(false);
     }
   }
