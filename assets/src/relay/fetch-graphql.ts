@@ -54,7 +54,13 @@ export async function fetchGraphQL(
       signal: ssrContext?.signal
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (
+      (error instanceof DOMException && error.name === "AbortError") ||
+      (error &&
+        typeof error === "object" &&
+        "name" in error &&
+        (error as { name: unknown }).name === "AbortError")
+    ) {
       throw error;
     }
 

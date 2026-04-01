@@ -1078,17 +1078,19 @@ test("isUnauthorizedSavedComparisonsResponse detects an unauthorized GraphQL err
 
 test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response from extensions.code", () => {
   expect(
-    isUnauthorizedSavedComparisonsResponse({
-      errors: [
-        {
-          message: "Authentication failed",
-          path: ["mySavedComparisonSets"],
-          extensions: {
-            code: "UNAUTHENTICATED"
+    isUnauthorizedSavedComparisonsResponse(
+      {
+        errors: [
+          {
+            message: "Authentication failed",
+            path: ["mySavedComparisonSets"],
+            extensions: {
+              code: "UNAUTHENTICATED"
+            }
           }
-        }
-      ]
-    })
+        ]
+      } as unknown as Parameters<typeof isUnauthorizedSavedComparisonsResponse>[0]
+    )
   ).toBe(true);
 });
 
