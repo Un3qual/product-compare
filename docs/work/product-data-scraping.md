@@ -56,10 +56,10 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Verification Commands
 
-- `sed -n '1,220p' docs/work/product-data-scraping.md`
-- `sed -n '1,340p' docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- `sed -n '1,220p' docs/decisions/2026-03-05-mvp-scope-freeze.md`
-- `sed -n '1,220p' docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
+- `rg -n "^" docs/work/product-data-scraping.md`
+- `rg -n "^" docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
+- `rg -n "^" docs/decisions/2026-03-05-mvp-scope-freeze.md`
+- `rg -n "^" docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
 - `rg -n "scraping|ingestion|Oban|Browse API|PA-API|Awin|Best Buy" docs`
 
 ## Deferred note

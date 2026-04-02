@@ -154,7 +154,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
     - `attribution_confidence` (`high` | `low` | `unmatched`) — reflects match quality; weak matches (merchant + time window + amount) are flagged `low`, unresolved conversions are `unmatched`
     - `data_freshness_at` (timestamp of the most recent network/report update for this conversion)
     - `purchased_at`, `reported_at`
-  - itemized-order note: if a network payload contains multiple line items, keep one parent `commerce_conversions` row keyed by `network_conversion_ref` and model the line items separately so the parent idempotency key does not multiply; the parent row may carry the aggregate conversion metadata while itemized detail is normalized into child rows or equivalent nested records with their own line-item-level uniqueness.
+  - itemized-order note: if a network payload contains multiple line items, keep one parent `commerce_conversions` row keyed by `network_conversion_ref` and persist the item detail in `commerce_conversion_items` so the parent idempotency key does not multiply; child rows should carry at least `conversion_id`, `network_line_item_ref?`, `product_id?`, `merchant_product_id?`, `quantity`, `unit_price`, and `line_amount`, with uniqueness enforced on `(conversion_id, network_line_item_ref)` when the network provides a stable item ref or on `(conversion_id, line_number)` as the documented fallback for feed formats without item IDs.
 
 ## 4) Price-paid facts
 
@@ -268,6 +268,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 4. User redirected to merchant/network URL.
 
 Benefits:
+
 - stable first-party click ID,
 - uniform tracking for affiliate + non-affiliate links,
 - easier extension parity later.
@@ -330,6 +331,7 @@ Prepare backend contracts so an open-source extension can:
 4. avoid dark patterns (forced redirects, opaque overrides).
 
 Recommended extension principles:
+
 - open-source by default,
 - explicit user opt-in for data collection,
 - explain why/when links are affiliate monetized,
