@@ -186,7 +186,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 | Legacy (`affiliate_*`) field | New (`commerce_*`) field | Mapping notes |
 |---|---|---|
-| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; correlation via business key (destination URL + program) |
+| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; correlation uses the same NULL-safe business key as the backfill (`destination_url + merchant_id + program_id?`, with the nullable `program_id` normalized consistently for uniqueness). |
 | `affiliate_links.original_url` | `commerce_links.destination_url` | Direct mapping (also note `affiliate_links.affiliate_url` for tracked URL) |
 | `affiliate_links.merchant_product_id` | `commerce_links.merchant_id` | Maps merchant_product relationship to merchant dimension |
 | `affiliate_links.affiliate_network_id` | `commerce_links.network` | Foreign key becomes enum; network ID maps to network enum values that align with `commerce_conversions.source_network` |
@@ -231,7 +231,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 **Reconciliation jobs:**
 
-- **Click reconciliation:** Nightly job compares `affiliate_clicks` and `commerce_click_sessions` using `click_id` (the shared public UUID) as the join key; alerts on mismatches (count, timestamp drift, missing rows).
+- **Click reconciliation:** If a legacy `affiliate_clicks` table exists during the migration window, run a nightly parity job against `commerce_click_sessions` using `click_id` (the shared public UUID) as the join key and alert on mismatches (count, timestamp drift, missing rows). In environments that never persisted legacy click rows, use redirect endpoint audit exports or dual-write delivery metrics keyed by `click_id` as the temporary parity source instead of blocking cutover on a nonexistent table.
 - **Conversion reconciliation:** Nightly job compares legacy conversion records and `commerce_conversions` using `(source_network, network_conversion_ref)` as the composite unique key; alerts on status divergence or missing conversions.
 - **Idempotency enforcement:** Both tables enforce their own unique constraints (`click_id` for click sessions, `(source_network, network_conversion_ref)` for conversions) so duplicate ingestion is prevented at the database level.
 
