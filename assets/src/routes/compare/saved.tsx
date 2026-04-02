@@ -88,7 +88,7 @@ export function SavedComparisonsRoute() {
   );
 }
 
-function buildSavedComparisonHref(slugs: string[]) {
+const buildSavedComparisonHref = (slugs: string[]) => {
   const searchParams = new URLSearchParams();
 
   for (const slug of slugs) {
@@ -96,13 +96,13 @@ function buildSavedComparisonHref(slugs: string[]) {
   }
 
   return `/compare?${searchParams.toString()}`;
-}
+};
 
-function buildSavedComparisonsStatus(
+const buildSavedComparisonsStatus = (
   loaderData: SavedComparisonsRouteLoaderData,
   visibleSavedSets: SavedComparisonSetSummary[],
   hasLocalDeletion: boolean
-) {
+) => {
   if (loaderData.status === "unauthorized") {
     return "Sign in to view saved comparisons.";
   }
@@ -116,12 +116,12 @@ function buildSavedComparisonsStatus(
   }
 
   return "";
-}
+};
 
-function buildSavedComparisonsViewState(
+const buildSavedComparisonsViewState = (
   loaderData: SavedComparisonsRouteLoaderData,
   deletedSavedSetIds: string[]
-) {
+) => {
   const locallyDeletedSavedSetIds = deletedSavedSetIds.filter((deletedSavedSetId) =>
     loaderData.savedSets.some((savedSet) => savedSet.id === deletedSavedSetId)
   );
@@ -137,4 +137,4 @@ function buildSavedComparisonsViewState(
       locallyDeletedSavedSetIds.length > 0
     )
   };
-}
+};

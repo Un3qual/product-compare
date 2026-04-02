@@ -4,12 +4,12 @@ test("sends credentials for session auth", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
       json: async () => ({ data: {} })
-    } as Response;
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -42,12 +42,12 @@ test("forwards SSR cookies to the GraphQL request", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
       json: async () => ({ data: {} })
-    } as Response;
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -68,12 +68,12 @@ test("derives and forwards a trusted origin for SSR requests", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
       json: async () => ({ data: {} })
-    } as Response;
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -96,12 +96,12 @@ test("forwards an AbortSignal for SSR requests when one is provided", async () =
   const calls: unknown[][] = [];
   const controller = new AbortController();
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
       json: async () => ({ data: {} })
-    } as Response;
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -126,12 +126,12 @@ test("falls back to request.signal for SSR requests when no explicit signal is p
     url: "https://app.example.com/products"
   } as Request;
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
       json: async () => ({ data: {} })
-    } as Response;
+    } as Response);
   }) as typeof fetch;
 
   try {

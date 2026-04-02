@@ -51,7 +51,7 @@ const SECOND_PRODUCT = {
   }
 } as const;
 
-function createDeferred<T>() {
+const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
   const promise = new Promise<T>((promiseResolve, promiseReject) => {
@@ -64,14 +64,14 @@ function createDeferred<T>() {
     resolve,
     reject
   };
-}
+};
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
   useLoaderDataMock.mockReset();
 });
 
-function buildProductDetailResponse(product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT) {
+const buildProductDetailResponse = (product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT) => {
   return {
     data: {
       product: {
@@ -79,7 +79,7 @@ function buildProductDetailResponse(product: typeof DETAIL_PRODUCT | typeof SECO
       }
     }
   };
-}
+};
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
   await expect(
@@ -922,7 +922,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
   });
 
-  await act(async () => {
+  await act(() => {
     secondDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -935,7 +935,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     });
   });
 
-  await act(async () => {
+  await act(() => {
     firstDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -1013,7 +1013,7 @@ test("saved comparisons route keeps later delete rows pending until their own re
     expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);
   });
 
-  await act(async () => {
+  await act(() => {
     firstDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -1029,7 +1029,7 @@ test("saved comparisons route keeps later delete rows pending until their own re
   expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
-  await act(async () => {
+  await act(() => {
     secondDelete.resolve({
       data: {
         deleteSavedComparisonSet: {

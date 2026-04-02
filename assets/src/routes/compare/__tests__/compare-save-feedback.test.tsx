@@ -37,7 +37,7 @@ const READY_LOADER_DATA = {
   ]
 } as const;
 
-function createDeferred<T>() {
+const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
 
@@ -51,7 +51,7 @@ function createDeferred<T>() {
     resolve,
     reject
   };
-}
+};
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
@@ -77,7 +77,7 @@ test("compare route only submits one save mutation while the request is in fligh
 
   const saveButton = screen.getByRole("button", { name: "Save comparison" });
 
-  await act(async () => {
+  act(() => {
     fireEvent.click(saveButton);
     fireEvent.click(saveButton);
   });
@@ -95,6 +95,8 @@ test("compare route only submits one save mutation while the request is in fligh
         }
       }
     });
+
+    await saveRequest.promise;
   });
 
   await waitFor(() => {

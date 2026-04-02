@@ -521,7 +521,7 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
   });
 }
 
-function readSavedComparisonSetId(savedComparisonSet: unknown) {
+const readSavedComparisonSetId = (savedComparisonSet: unknown) => {
   if (
     savedComparisonSet &&
     typeof savedComparisonSet === "object" &&
@@ -533,7 +533,7 @@ function readSavedComparisonSetId(savedComparisonSet: unknown) {
   }
 
   return null;
-}
+};
 
 function normalizeMutationErrors(
   payloadErrors: unknown,

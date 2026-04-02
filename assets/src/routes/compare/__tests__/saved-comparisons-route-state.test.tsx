@@ -28,20 +28,20 @@ beforeEach(() => {
   mockedUseLoaderData.mockReset();
 });
 
-function buildSavedSet() {
+const buildSavedSet = () => {
   return {
     id: "saved-set-1",
     name: "Desk setup",
     slugs: ["chair", "desk"]
   };
-}
+};
 
-function buildReadyLoaderData() {
+const buildReadyLoaderData = () => {
   return {
     status: "ready" as const,
     savedSets: [buildSavedSet()]
   };
-}
+};
 
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   const deleteDeferred = createDeferred<{
@@ -86,6 +86,8 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
         }
       }
     });
+
+    await deleteDeferred.promise;
   });
 });
 
@@ -156,7 +158,7 @@ test("saved comparisons route uses a descriptive sign-in link for unauthorized s
   ).toBeInTheDocument();
 });
 
-function createDeferred<T>() {
+const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
   const promise = new Promise<T>((promiseResolve, promiseReject) => {
@@ -169,4 +171,4 @@ function createDeferred<T>() {
     resolve,
     reject
   };
-}
+};
