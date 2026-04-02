@@ -957,7 +957,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
 });
 
 test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
@@ -1017,7 +1017,7 @@ test("saved comparisons route keeps later delete rows pending until their own re
     expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);
   });
 
-  await act(() => {
+  await act(async () => {
     firstDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -1028,12 +1028,14 @@ test("saved comparisons route keeps later delete rows pending until their own re
         }
       }
     });
+
+    await firstDelete.promise;
   });
 
   expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
-  await act(() => {
+  await act(async () => {
     secondDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -1044,10 +1046,12 @@ test("saved comparisons route keeps later delete rows pending until their own re
         }
       }
     });
+
+    await secondDelete.promise;
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+    expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
   });
 });
 
