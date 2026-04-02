@@ -1294,10 +1294,10 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     url: "https://app.example.com/compare/saved"
   } as unknown as Request;
 
-  fetchGraphQLMock.mockImplementationOnce(async () => {
+  fetchGraphQLMock.mockImplementationOnce(() => {
     controller.abort();
 
-    return {
+    return Promise.resolve({
       data: {
         mySavedComparisonSets: {
           edges: [
@@ -1324,7 +1324,7 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
           }
         }
       }
-    };
+    });
   });
 
   vi.stubGlobal("window", undefined);

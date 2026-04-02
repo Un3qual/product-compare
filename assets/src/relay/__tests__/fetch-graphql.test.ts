@@ -8,7 +8,7 @@ test("sends credentials for session auth", async () => {
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
@@ -46,7 +46,7 @@ test("forwards SSR cookies to the GraphQL request", async () => {
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
@@ -72,7 +72,7 @@ test("derives and forwards a trusted origin for SSR requests", async () => {
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
@@ -100,7 +100,7 @@ test("forwards an AbortSignal for SSR requests when one is provided", async () =
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
@@ -125,7 +125,7 @@ test("forwards an AbortSignal without switching browser requests into SSR mode",
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
@@ -154,7 +154,7 @@ test("falls back to request.signal for SSR requests when no explicit signal is p
     calls.push(args);
     return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
+      json: () => Promise.resolve({ data: {} })
     } as Response);
   }) as typeof fetch;
 
