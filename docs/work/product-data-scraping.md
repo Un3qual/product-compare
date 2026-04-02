@@ -47,11 +47,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Blockers (Note: blockers in "drafting" state require named owner, target date, and unblock criteria to be considered active and tracked):
   - **First-source selection and ownership**
     - Owner: Ryan (backend/ingestion lead)
-    - Target date: 2026-04-03
+    - Target date: 2026-04-10
     - Unblock criteria: First connector choice documented in ADR with rationale; owner assigned to connector spike
   - **Compliance signoff checklist process**
     - Owner: Ryan (interim compliance coordinator)
-    - Target date: 2026-04-03
+    - Target date: 2026-04-10
     - Unblock criteria: Minimal provider onboarding checklist drafted and approved for Tier-1 sources; named legal approver recorded before any Tier-3 scraping gate can open
 
 ## Verification Commands
