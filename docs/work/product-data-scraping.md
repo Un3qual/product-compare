@@ -52,7 +52,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - **Compliance signoff checklist process**
     - Owner: Ryan (interim compliance coordinator)
     - Target date: 2026-04-10
-    - Unblock criteria: Minimal provider onboarding checklist drafted and approved for Tier-1 sources; named legal approver recorded before any Tier-3 scraping gate can open
+    - Unblock criteria: First connector choice documented in ADR so the checklist can target the selected Tier-1 source; minimal source-agnostic Tier-1 provider onboarding checklist drafted and approved; named legal approver recorded before any Tier-3 scraping gate can open
 
 ## Verification Commands
 

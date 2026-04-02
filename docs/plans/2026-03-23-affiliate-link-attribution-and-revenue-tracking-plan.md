@@ -116,7 +116,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 | `commerce_conversions` | `(source_network, network_conversion_ref)` | Ensures each network-reported conversion is ingested exactly once; composite key prevents cross-network collisions on external reference values |
 | `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
 | `commerce_link_variants` | `(commerce_link_id, variant_key)` | One variant per key per canonical link |
-| `commerce_revenue_daily` | `(date, COALESCE(merchant_id, 0), COALESCE(product_id, 0), channel, network)` | One aggregate row per dimension combination per day; uses `COALESCE` sentinel values in a unique index to ensure NULL-safe uniqueness (PostgreSQL treats each NULL as distinct in standard unique constraints). Migration note: keep the sentinel strategy only if the migration also enforces the repo's integer `:id` convention with `CHECK (merchant_id IS NULL OR merchant_id > 0)` and `CHECK (product_id IS NULL OR product_id > 0)`; otherwise use a NULL-safe partial-index design instead of assuming `0` can never be a real foreign key value. |
+| `commerce_revenue_daily` | `(date, COALESCE(merchant_id, 0), COALESCE(product_id, 0), channel, network?)` via a NULL-safe unique-index design | One aggregate row per dimension combination per day, including non-affiliate rows where `network` is null. Migration note: keep the sentinel strategy for nullable integer dimensions only if the migration also enforces the repo's integer `:id` convention with `CHECK (merchant_id IS NULL OR merchant_id > 0)` and `CHECK (product_id IS NULL OR product_id > 0)`; for `network?`, use a partial-index pair or an explicit documented non-affiliate enum sentinel instead of assuming a plain unique constraint will treat null as equal. |
 
 ## 1) Link inventory and routing
 
@@ -155,7 +155,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
     - `attribution_confidence` (`high` | `low` | `unmatched`) — reflects match quality; weak matches (merchant + time window + amount) are flagged `low`, unresolved conversions are `unmatched`
     - `data_freshness_at` (timestamp of the most recent network/report update for this conversion)
     - `purchased_at`, `reported_at`
-  - itemized-order note: if a network payload contains multiple line items, keep one parent `commerce_conversions` row keyed by `network_conversion_ref` and persist the item detail in `commerce_conversion_items` so the parent idempotency key does not multiply; child rows should carry at least `conversion_id`, `network_line_item_ref?`, `product_id?`, `merchant_product_id?`, `quantity`, `unit_price`, and `line_amount`, with uniqueness enforced on `(conversion_id, network_line_item_ref)` when the network provides a stable item ref or on `(conversion_id, line_number)` as the documented fallback for feed formats without item IDs.
+  - itemized-order note: if a network payload contains multiple line items, keep one parent `commerce_conversions` row keyed by `network_conversion_ref` and persist the item detail in `commerce_conversion_items` so the parent idempotency key does not multiply; child rows should carry at least `conversion_id`, `network_line_item_ref?`, `product_id?`, `merchant_product_id?`, `quantity`, `unit_price`, `line_amount`, and `line_number`, with uniqueness enforced on `(conversion_id, network_line_item_ref)` when the network provides a stable item ref or on `(conversion_id, line_number)` as the documented fallback for feed formats without item IDs.
 
 ## 4) Price-paid facts
 
@@ -172,7 +172,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 ## 5) Revenue aggregates/materializations
 
 - `commerce_revenue_daily`
-  - dimensions: `date`, `merchant_id?`, `product_id?`, `channel`, `network` (same enum as `source_network`)
+  - dimensions: `date`, `merchant_id?`, `product_id?`, `channel`, `network?` (nullable for `non_affiliate` rows; otherwise same enum as `source_network`)
   - metrics: clicks, conversions, conversion_rate, gross_order_value, commission_revenue, avg_paid_price
 
 ## Migration and Coexistence Strategy: `commerce_*` vs Existing `affiliate_*` Tables
