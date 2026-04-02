@@ -77,31 +77,31 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 ### Research references (official docs)
 
 - impact.com publisher APIs:
-  - https://integrations.impact.com/impact-publisher/reference/the-action-object
-  - https://integrations.impact.com/impact-publisher/reference/the-action-updates-object
-  - https://integrations.impact.com/impact-publisher/reference/the-items-object
+  - [impact.com — The Action object](https://integrations.impact.com/impact-publisher/reference/the-action-object)
+  - [impact.com — The Action Updates object](https://integrations.impact.com/impact-publisher/reference/the-action-updates-object)
+  - [impact.com — The Items object](https://integrations.impact.com/impact-publisher/reference/the-items-object)
 - Awin:
-  - https://help.awin.com/docs/transaction-notifications
-  - https://help.awin.com/apidocs/proof-of-purchase-publisher-transaction-api
-  - https://help.awin.com/apidocs/api-authentication
+  - [Awin — Transaction Notifications](https://help.awin.com/docs/transaction-notifications)
+  - [Awin — Proof of Purchase Publisher Transaction API](https://help.awin.com/apidocs/proof-of-purchase-publisher-transaction-api)
+  - [Awin — API Authentication](https://help.awin.com/apidocs/api-authentication)
 - Rakuten Advertising:
-  - https://pubhelp.rakutenadvertising.com/hc/en-us/articles/5949824361485-Advanced-Reports-API
-  - https://pubhelp.rakutenadvertising.com/hc/en-us/articles/360061521052-Run-Reports-Via-API
+  - [Rakuten Advertising — Advanced Reports API](https://pubhelp.rakutenadvertising.com/hc/en-us/articles/5949824361485-Advanced-Reports-API)
+  - [Rakuten Advertising — Run Reports Via API](https://pubhelp.rakutenadvertising.com/hc/en-us/articles/360061521052-Run-Reports-Via-API)
 - CJ:
-  - https://developers.cj.com/docs/rest-apis/product-search
-  - https://developers.cj.com/docs/product-feeds
-  - https://developers.cj.com/downloads/SFTP-Connection-Support-Guide-v0.1.pdf
+  - [CJ — Product Search REST API](https://developers.cj.com/docs/rest-apis/product-search)
+  - [CJ — Product Feeds](https://developers.cj.com/docs/product-feeds)
+  - [CJ — SFTP Connection Support Guide](https://developers.cj.com/downloads/SFTP-Connection-Support-Guide-v0.1.pdf)
 - Walmart Affiliate Program:
-  - https://affiliates.walmart.com/page/faqs
+  - [Walmart Affiliate Program — FAQs](https://affiliates.walmart.com/page/faqs)
 - eBay Browse API:
-  - https://developer.ebay.com/api-docs/buy/browse/types/gct%3AItemSummary
-  - https://developer.ebay.com/api-docs/buy/browse/types/gct%3AShippingOptionSummary
+  - [eBay Browse API — ItemSummary type](https://developer.ebay.com/api-docs/buy/browse/types/gct%3AItemSummary)
+  - [eBay Browse API — ShippingOptionSummary type](https://developer.ebay.com/api-docs/buy/browse/types/gct%3AShippingOptionSummary)
 - Best Buy APIs:
-  - https://developer.bestbuy.com/apis
-  - https://bestbuyapis.github.io/api-documentation/
+  - [Best Buy APIs — Overview](https://developer.bestbuy.com/apis)
+  - [Best Buy APIs — Documentation](https://bestbuyapis.github.io/api-documentation/)
 - Amazon Associates reporting help:
-  - https://affiliate-program.amazon.com/help/node/topic/GMWAK55DQX8JEK7C
-  - https://affiliate-program.amazon.com/help/node/topic/GPTZ495QPL6TEZLJ
+  - [Amazon Associates — Ordered Items and Bounties Reports](https://affiliate-program.amazon.com/help/node/topic/GMWAK55DQX8JEK7C)
+  - [Amazon Associates — Link and Order Reports](https://affiliate-program.amazon.com/help/node/topic/GPTZ495QPL6TEZLJ)
 
 ## Domain Model Additions (Proposed)
 
@@ -312,14 +312,7 @@ Benefits:
 ## Privacy, Legal, and Trust Guardrails (Deferred for now)
 
 - **Deferred until further notice:** privacy-governance hardening tasks are not in the current execution batch.
-- Baseline minimums remain in force before production traffic:
-  - retain raw click/conversion payload snapshots for at least 30 days for reconciliation, then automatically delete or anonymize them by day 90 unless legal or finance retention requires longer,
-  - publish explicit consent/legal-basis notes for attribution storage and provide an opt-out flow for non-essential telemetry,
-  - apply role-based access control and least-privilege defaults to ingest and admin surfaces,
-  - record audit logs with tamper-evident records for attribution-data access and changes,
-  - require encryption in transit for redirect/ingest flows and encryption at rest for persisted raw payloads,
-  - handle DSAR/deletion requests within a 30-day SLA,
-  - Owner: Ryan (acting compliance lead).
+- Baseline minimums remain in force before production traffic (see Phase 0 baseline controls in the "Scope posture for current phase" section above).
 - Re-activate the full privacy/governance checklist in a follow-up work item once core attribution + conversion plumbing is functional.
 
 ## “Ethical Honey” Extension Readiness (Future-facing)
