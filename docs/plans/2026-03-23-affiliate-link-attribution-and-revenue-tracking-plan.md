@@ -111,6 +111,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 | Table | Unique constraint | Purpose |
 |---|---|---|
+| `commerce_links` | `(destination_url, COALESCE(program_id, 0), merchant_id)` | Provides the NULL-safe business key used by link backfills and future upserts so reruns cannot create duplicate canonical link rows when `program_id` is absent. |
 | `commerce_click_sessions` | `click_id` (UUID) | Prevents duplicate click session creation; used as the public-facing idempotency key |
 | `commerce_conversions` | `(source_network, network_conversion_ref)` | Ensures each network-reported conversion is ingested exactly once; composite key prevents cross-network collisions on external reference values |
 | `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
