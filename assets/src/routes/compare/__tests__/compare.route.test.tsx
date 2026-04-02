@@ -922,7 +922,7 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
   });
 
-  await act(() => {
+  await act(async () => {
     secondDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -933,9 +933,11 @@ test("saved comparisons route applies overlapping delete responses against the l
         }
       }
     });
+
+    await secondDelete.promise;
   });
 
-  await act(() => {
+  await act(async () => {
     firstDelete.resolve({
       data: {
         deleteSavedComparisonSet: {
@@ -946,6 +948,8 @@ test("saved comparisons route applies overlapping delete responses against the l
         }
       }
     });
+
+    await firstDelete.promise;
   });
 
   await waitFor(() => {
@@ -1116,6 +1120,22 @@ test("isUnauthorizedSavedComparisonsResponse detects not authorized messages", (
         {
           message: "You are not authorized to access saved comparison sets",
           path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects pathless unauthorized errors with an empty path", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse({
+      errors: [
+        {
+          message: "Unauthorized",
+          path: [],
+          extensions: {
+            code: "UNAUTHENTICATED"
+          }
         }
       ]
     })

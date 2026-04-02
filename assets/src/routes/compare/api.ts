@@ -492,7 +492,8 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
     const isRelevantPath =
       candidate.path == null ||
       (Array.isArray(candidate.path) &&
-        candidate.path.some((segment) => segment === "mySavedComparisonSets"));
+        (candidate.path.length === 0 ||
+          candidate.path.some((segment) => segment === "mySavedComparisonSets")));
 
     if (!isRelevantPath) {
       return false;
