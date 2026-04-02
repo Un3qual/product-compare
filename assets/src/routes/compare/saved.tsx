@@ -30,6 +30,7 @@ export function SavedComparisonsRoute() {
       if (result.savedComparisonSetId) {
         const deletedSavedSetId = result.savedComparisonSetId;
 
+        setDeleteError(null);
         setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
           currentDeletedSavedSetIds.includes(deletedSavedSetId)
             ? currentDeletedSavedSetIds
@@ -107,12 +108,12 @@ const buildSavedComparisonsStatus = (
     return "Sign in to view saved comparisons.";
   }
 
-  if (visibleSavedSets.length === 0) {
-    return "No saved comparisons yet.";
-  }
-
   if (hasLocalDeletion) {
     return "Comparison deleted.";
+  }
+
+  if (visibleSavedSets.length === 0) {
+    return "No saved comparisons yet.";
   }
 
   return "";

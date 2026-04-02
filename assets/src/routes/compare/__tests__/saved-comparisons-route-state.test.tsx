@@ -103,7 +103,7 @@ test("saved comparisons route starts with an empty status region when saved sets
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
-test("saved comparisons route shows the empty state after deleting the last set", async () => {
+test("saved comparisons route announces deletion when deleting the last set", async () => {
   fetchGraphQLMock.mockResolvedValue({
     data: {
       deleteSavedComparisonSet: {
@@ -138,7 +138,8 @@ test("saved comparisons route shows the empty state after deleting the last set"
     expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
+  expect(screen.getByRole("status")).not.toHaveTextContent("No saved comparisons yet.");
 });
 
 test("saved comparisons route uses a descriptive sign-in link for unauthorized state", () => {
@@ -156,6 +157,100 @@ test("saved comparisons route uses a descriptive sign-in link for unauthorized s
   expect(
     screen.getByRole("link", { name: "Sign in to view saved comparisons" })
   ).toBeInTheDocument();
+});
+
+test("saved comparisons route clears stale delete errors when a later delete succeeds", async () => {
+  const failedDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null;
+        errors: {
+          code: string;
+          field: string | null;
+          message: string;
+        }[];
+      };
+    };
+  }>();
+  const successfulDelete = createDeferred<{
+    data: {
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: string;
+        };
+        errors: [];
+      };
+    };
+  }>();
+
+  fetchGraphQLMock
+    .mockImplementationOnce(() => failedDelete.promise)
+    .mockImplementationOnce(() => successfulDelete.promise);
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: ["lamp"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
+
+  fireEvent.click(deleteButtons[0]);
+  fireEvent.click(deleteButtons[1]);
+
+  await act(async () => {
+    failedDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: null,
+          errors: [
+            {
+              code: "GRAPHQL_ERROR",
+              field: null,
+              message: "Request failed. Please try again."
+            }
+          ]
+        }
+      }
+    });
+    await failedDelete.promise;
+  });
+
+  await act(async () => {
+    successfulDelete.resolve({
+      data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-2"
+          },
+          errors: []
+        }
+      }
+    });
+    await successfulDelete.promise;
+  });
+
+  await waitFor(() => {
+    expect(screen.getByText("Desk setup")).toBeInTheDocument();
+    expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
+  });
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
 const createDeferred = <T,>() => {
