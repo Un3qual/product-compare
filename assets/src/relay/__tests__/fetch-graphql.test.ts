@@ -116,6 +116,30 @@ test("forwards an AbortSignal for SSR requests when one is provided", async () =
   }
 });
 
+test("forwards an AbortSignal without switching browser requests into SSR mode", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+  const controller = new AbortController();
+
+  globalThis.fetch = ((...args: unknown[]) => {
+    calls.push(args);
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({ data: {} })
+    } as Response);
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, { signal: controller.signal });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).signal).toBe(controller.signal);
+    expect((calls[0][1] as RequestInit).credentials).toBe("include");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("falls back to request.signal for SSR requests when no explicit signal is provided", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];

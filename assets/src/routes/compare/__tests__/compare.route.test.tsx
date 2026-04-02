@@ -589,13 +589,13 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
     1,
     expect.stringContaining("query MySavedComparisonSets"),
     { first: 20 },
-    undefined
+    { signal: request.signal }
   );
   expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
     2,
     expect.stringContaining("query MySavedComparisonSets"),
     { first: 20, after: "cursor-1" },
-    undefined
+    { signal: request.signal }
   );
 });
 
@@ -1132,17 +1132,19 @@ test("isUnauthorizedSavedComparisonsResponse detects not authorized messages", (
 
 test("isUnauthorizedSavedComparisonsResponse detects pathless unauthorized errors with an empty path", () => {
   expect(
-    isUnauthorizedSavedComparisonsResponse({
-      errors: [
-        {
-          message: "Unauthorized",
-          path: [],
-          extensions: {
-            code: "UNAUTHENTICATED"
+    isUnauthorizedSavedComparisonsResponse(
+      {
+        errors: [
+          {
+            message: "Unauthorized",
+            path: [],
+            extensions: {
+              code: "UNAUTHENTICATED"
+            }
           }
-        }
-      ]
-    })
+        ]
+      } as unknown as Parameters<typeof isUnauthorizedSavedComparisonsResponse>[0]
+    )
   ).toBe(true);
 });
 

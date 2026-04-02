@@ -178,8 +178,8 @@ export async function createSavedComparisonSet(
 export async function savedComparisonsLoader({
   request
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
-  const ssrContext =
-    typeof window === "undefined" ? { request, signal: request.signal } : undefined;
+  const requestContext =
+    typeof window === "undefined" ? { request, signal: request.signal } : { signal: request.signal };
   const savedSets: SavedComparisonSetSummary[] = [];
   let after: string | undefined;
   let pageCount = 0;
@@ -197,7 +197,7 @@ export async function savedComparisonsLoader({
       after === undefined
         ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
         : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
-      ssrContext
+      requestContext
     );
 
     if (isUnauthorizedSavedComparisonsResponse(response)) {
