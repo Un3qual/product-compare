@@ -7,6 +7,7 @@ export interface SSRContext {
   request?: Request;
   headers?: Record<string, string>;
   cookieString?: string;
+  signal?: AbortSignal;
 }
 
 interface ResolveGraphQLEndpointOptions {
@@ -21,13 +22,14 @@ export async function fetchGraphQL(
   ssrContext?: SSRContext
 ): Promise<GraphQLResponse> {
   let response: Response;
+  const usesSSRContext = hasSSRContext(ssrContext);
 
   const headers: Record<string, string> = {
     "content-type": "application/json"
   };
 
   // For SSR requests, forward cookies from the incoming request
-  if (ssrContext) {
+  if (usesSSRContext && ssrContext) {
     const cookieValue =
       ssrContext.cookieString ??
       ssrContext.request?.headers.get("cookie") ??
@@ -47,12 +49,24 @@ export async function fetchGraphQL(
   try {
     response = await fetch(resolveGraphQLEndpoint(), {
       method: "POST",
-      credentials: ssrContext ? undefined : "include", // credentials only for browser
+      credentials: usesSSRContext ? undefined : "include", // credentials only for browser
       headers,
-      body: JSON.stringify({ query, variables })
+      body: JSON.stringify({ query, variables }),
+      signal: ssrContext?.signal ?? ssrContext?.request?.signal
     });
   } catch (error) {
-    throw new Error(`Network request failed: ${(error as Error).message}`);
+    if (
+      (error instanceof DOMException && error.name === "AbortError") ||
+      (error &&
+        typeof error === "object" &&
+        "name" in error &&
+        (error as { name: unknown }).name === "AbortError")
+    ) {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Network request failed: ${message}`);
   }
 
   if (!response.ok) {
@@ -134,4 +148,8 @@ function normalizeOrigin(value?: string | null) {
   } catch {
     return null;
   }
+}
+
+function hasSSRContext(ssrContext?: SSRContext) {
+  return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
 }

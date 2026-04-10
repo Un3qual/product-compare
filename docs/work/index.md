@@ -57,10 +57,19 @@ Commit only lane-local milestone changes.
 
 ## Blocked / Needs Decision
 
-- `docs/work/frontend-saved-comparisons-ui.md`
-  - Reason: user-directed queue reprioritization moved Relay route-data adoption ahead of new compare-route UI so the frontend stops extending the manual GraphQL helper pattern.
+- `docs/work/frontend-compare-saved-hardening.md`
+  - Reason: the shared compare shell and saved-set status semantics have landed, but the remaining compare-scoped error-boundary follow-up is deferred until Relay route-data adoption re-establishes `/compare` and `/compare/saved` on the long-term data path.
 
 ## Recently Completed
+
+### Frontend Saved Comparisons UI
+
+- Status: completed on 2026-03-19
+- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
+- Outcome:
+  - `/compare` now saves ready-state selections through `createSavedComparisonSet`.
+  - `/compare/saved` now lists private saved sets, reopens them back into `/compare` with repeated `slug` params, and deletes them from the UI.
+  - Frontend verification passed with `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 ### Saved Comparisons Backend
 
