@@ -8,11 +8,13 @@ Define **where** product data should come from and **how** we should ingest it i
 
 ## Scope posture for current phase (MVP+1 execution)
 
-To ship faster, **data governance/privacy hardening tasks are deferred until further notice** in this plan.
+To ship faster, **data governance/privacy hardening tasks are deferred for the MVP+1 connector rollout only** in this plan.
 
 - Focus current batches on connector integration, normalization, idempotent persistence, and reliability.
 - Keep only minimal safety/compliance checks needed to operate.
-- Re-open governance/privacy hardening after core ingestion flows are live.
+- Re-open governance/privacy hardening at Phase 2 exit or by `2026-06-30`, whichever comes first.
+- Owner: Ryan (backend/ingestion lead), tracked in `docs/work/product-data-scraping.md`.
+- Acceptance criteria for re-entry: one Tier-1 connector is live end-to-end, ingestion success/error telemetry and alerting are running, and the source-agnostic Tier-1 onboarding/compliance checklist is approved.
 
 This plan is intended to operationalize the deferred ingestion scope noted in:
 
@@ -144,7 +146,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ### Phase 1 — Tier-1 Connector MVP (2–3 weeks)
 
-#### Scope
+#### Phase 1 scope
 
 - Implement **one** connector end-to-end (recommended: eBay Browse API).
 - Build ingestion pipeline:
@@ -167,7 +169,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ### Phase 2 — Reliability & Operations (1–2 weeks)
 
-#### Scope
+#### Phase 2 scope
 
 - Add job orchestration (if not already selected in Phase 0):
   - queue partition by source
@@ -186,7 +188,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ### Phase 3 — Expand Connectors + Controlled Scraping (ongoing)
 
-#### Scope
+#### Phase 3 scope
 
 - Add second and third Tier-1/2 connectors.
 - Only introduce Tier-3 direct scraping for explicit gap coverage.
@@ -262,7 +264,15 @@ Add a dedicated `merchant_source_identities` lookup table to keep source-scoped 
 - `merchant_domain`
 - `last_seen_at`
 
-Use a unique constraint on `(source_id, merchant_identifier)` so replayed imports resolve the same merchant row instead of creating duplicates when names or domains drift. `NormalizeJob` should resolve the source identity first, then upsert `Merchant`, `MerchantProduct`, and `ExternalProduct` through that stable link.
+Schema constraints:
+
+- FK `source_id -> sources.id` (`NOT NULL`)
+- FK `merchant_id -> merchants.id` (`NOT NULL`)
+- Unique `(source_id, merchant_identifier)`
+- Index `(source_id)` for source-scoped lookups and replay idempotency checks
+- Index `(merchant_id)` for reverse lookups, merges, and downstream joins
+
+Use a unique constraint on `(source_id, merchant_identifier)` so replayed imports resolve the same merchant row instead of creating duplicates when names or domains drift. `NormalizeJob` should resolve or create the `merchant_source_identities` row first, use its stable `merchant_id` foreign key as the canonical merchant anchor, and only then upsert `Merchant`, `MerchantProduct`, and `ExternalProduct` through that resolved link.
 
 ### Pipeline stages
 
@@ -299,7 +309,7 @@ Use a unique constraint on `(source_id, merchant_identifier)` so replayed import
 3. Scaffold ingestion context, merchant identity persistence, and adapter behavior with one fixture-based parser test.
 4. Update `docs/work/product-data-scraping.md` status from `drafting` to `active` once source is chosen.
 
-## Deferred Until Further Notice
+## Deferred Beyond The MVP+1 Re-entry Gate
 
 - Data governance policy automation for source-level retention/redistribution controls.
 - Privacy hardening and governance observability for ingestion telemetry.

@@ -122,7 +122,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 - `commerce_links`
   - canonical outbound destination + merchant/program metadata
-  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network?` (same enum as `commerce_conversions.source_network`; required for `affiliate` rows, null for `non_affiliate` rows), `campaign_params`, `is_active`
+  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network?` (same enum as `commerce_conversions.source_network`; required for `affiliate` rows, null for `non_affiliate` rows), `campaign_params`, `backfilled_from_affiliate_links?`, `is_active`
 
 - `commerce_link_variants`
   - network-specific variants for the same canonical destination
@@ -132,7 +132,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 - `commerce_click_sessions`
   - one row per outbound click event
-  - fields: `click_id` (public UUID), `commerce_link_id` (FK to `commerce_links`), `user_id?`, `anonymous_id`, `source_surface` (web, api, extension), `referrer`, `user_agent_hash`, `ip_hash`, `created_at`
+  - fields: `click_id` (public UUID), `commerce_link_id` (FK to `commerce_links`), `commerce_link_variant_id?` (nullable FK to `commerce_link_variants` capturing the exact tracking template selected for the redirect), `user_id?`, `anonymous_id`, `source_surface` (web, api, extension), `referrer`, `user_agent_hash`, `ip_hash`, `created_at`
 
 - `commerce_click_events`
   - detailed event stream (optional if we keep single-table in phase 1)
