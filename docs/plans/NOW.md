@@ -1,6 +1,10 @@
 # NOW
 
-## Current Batch
+## Current Batches
+
+- Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
+
+### Frontend Lane
 
 - Status: ready
 - Batch: Frontend Relay Route-Data Adoption, Task 1
@@ -10,6 +14,17 @@
   - The frontend already ships a Relay provider, compiler config, and network layer, but `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows still depend on manual route-local GraphQL helpers.
   - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
   - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
+
+### Backend Lane
+
+- Status: ready
+- Batch: GraphQL Relay Contract Hardening, Task 1
+- Source of truth: `docs/work/graphql-relay-contract-hardening.md`
+- Next step: add a root `node(id: ID!)` lookup for the existing global-ID-backed product and pricing entities, with focused GraphQL coverage.
+- Why this batch is current:
+  - The backend already emits Relay-style global IDs on `product`, `products`, `merchants`, `merchantProducts`, and saved-comparison payloads, but it still lacks a generic root node lookup.
+  - This slice stays entirely under `lib/**` and backend GraphQL tests, so it can run in parallel with the active frontend Relay migration without file conflicts.
+  - Keeping this work in a separate backend lane avoids reopening the active frontend work doc with schema changes it explicitly deferred.
 
 ## Just Completed
 
