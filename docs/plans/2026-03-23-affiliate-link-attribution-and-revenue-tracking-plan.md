@@ -111,7 +111,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 | Table | Unique constraint | Purpose |
 |---|---|---|
-| `commerce_links` | `(destination_url, COALESCE(program_id, 0), merchant_id)` | Provides the NULL-safe business key used by link backfills and future upserts so reruns cannot create duplicate canonical link rows when `program_id` is absent. |
+| `commerce_links` | `(destination_url, COALESCE(program_id, 0), merchant_id, link_type)` | Provides the NULL-safe business key used by link backfills and future upserts so reruns cannot create duplicate canonical link rows when `program_id` is absent, while keeping affiliate and non-affiliate links distinct for the same merchant/program/destination. |
 | `commerce_click_sessions` | `click_id` (UUID) | Prevents duplicate click session creation; used as the public-facing idempotency key |
 | `commerce_conversions` | `(source_network, network_conversion_ref)` | Ensures each network-reported conversion is ingested exactly once; composite key prevents cross-network collisions on external reference values |
 | `purchase_price_facts` | `conversion_id` | One price-fact row per conversion |
@@ -201,9 +201,9 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 **Phase 1 (Backfill):** Run idempotent migration script that:
 
-1. Inserts rows into `commerce_links` from `affiliate_links` by joining through `merchant_products` to derive `merchant_id`, using a NULL-safe business key that treats `program_id` as optional.
-2. Uses `ON CONFLICT (destination_url, COALESCE(program_id, 0), merchant_id) DO UPDATE` or an equivalent NULL-safe upsert target backed by a matching unique index, so repeated runs are safe even when `program_id` is `NULL`.
-3. Backfills `commerce_link_variants.tracking_template` from `affiliate_links.affiliate_url` so the full tracked redirect template survives cutover, then derives `commerce_links.campaign_params` from that template as needed.
+1. Inserts rows into `commerce_links` from `affiliate_links` by joining through `merchant_products` to derive `merchant_id`, using a NULL-safe business key that treats `program_id` as optional and preserves `link_type` so affiliate and non-affiliate rows do not collapse together.
+2. Uses `ON CONFLICT (destination_url, COALESCE(program_id, 0), merchant_id, link_type) DO UPDATE` or an equivalent NULL-safe upsert target backed by a matching unique index, so repeated runs are safe even when `program_id` is `NULL`.
+3. Backfills `commerce_link_variants.tracking_template` from `affiliate_links.affiliate_url` by deriving a deterministic `variant_key` from the resolved affiliate network enum (or a documented legacy-network fallback token when the enum is not yet available), then writing through an idempotent upsert on `(commerce_link_id, variant_key)` so reruns converge on the same variant rows and the full tracked redirect template survives cutover before `commerce_links.campaign_params` are derived from that template as needed.
 4. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
 5. Does **not** attempt reverse-sync (no write-back to `affiliate_*` after initial backfill).
 
