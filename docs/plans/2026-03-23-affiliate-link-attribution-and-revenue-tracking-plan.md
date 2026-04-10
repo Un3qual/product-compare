@@ -105,7 +105,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 ## Domain Model Additions (Proposed)
 
-**Schema conventions note:** All tables below follow existing schema conventions: each table uses an integer surrogate primary key named `id` (of type `:id`), and foreign key columns are named `<table>_id` (also of type `:id`). Nullable foreign keys are denoted with `?` (e.g., `click_session_id?`, `program_id?`, `product_id?`) and are `:id` columns that allow null. Special public identifiers (e.g., `click_id` as a public UUID in `commerce_click_sessions`) are additional UUID columns and are not the table primary key or foreign key. When a downstream table needs both the internal relationship and the public click reference, keep them separate (for example `click_session_id?` plus `public_click_id?`). This applies to all tables: `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`.
+**Schema conventions note:** All tables below follow the repo-configured migration defaults: each table uses an integer surrogate primary key named `id` (currently configured as `:bigserial`), and foreign key columns are named `<table>_id` (currently configured as `:bigint`). Nullable foreign keys are denoted with `?` (e.g., `click_session_id?`, `program_id?`, `product_id?`) and are nullable bigint-backed columns. Special public identifiers (e.g., `click_id` as a public UUID in `commerce_click_sessions`) are additional UUID columns and are not the table primary key or foreign key. When a downstream table needs both the internal relationship and the public click reference, keep them separate (for example `click_session_id?` plus `public_click_id?`). This applies to all tables: `commerce_links`, `commerce_link_variants`, `commerce_click_sessions`, `commerce_click_events`, `commerce_conversions`, `purchase_price_facts`, and `commerce_revenue_daily`.
 
 **Unique constraints (idempotency keys):**
 
@@ -219,7 +219,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 **Dual-write implementation:**
 
-- **Links:** When creating or updating outbound links, write to both `affiliate_links` (legacy) and `commerce_links` (new) using the same transaction.
+- **Affiliate links:** When creating or updating affiliate outbound links, write to both `affiliate_links` (legacy) and `commerce_links` (new) using the same transaction.
 - **Click sessions:** When recording a click, write to both `affiliate_clicks` (if exists) and `commerce_click_sessions` using the same `click_id` UUID as the correlation key.
 - **Conversions:** When ingesting a network conversion, write to both legacy conversion tracking (if exists) and `commerce_conversions`.
 - **Consistency guarantee:** Use database transactions to ensure both writes succeed or both roll back. If dual-write fails, do NOT fall back to legacy-only write; instead, trigger a fail-and-retry mechanism or enqueue the write for later processing. Dual-write failures must trigger degraded-mode alerting and escalation. Automated retries or queued writes must continue until both writes succeed, with monitoring and alerting visible to operators. Run a parity-check reconciliation job (described below) to verify consistency until the migration completes.
