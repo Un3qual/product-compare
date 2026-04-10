@@ -1,6 +1,6 @@
 # Product Data Sourcing & Scraping Plan (2026-03-23)
 
-**ACTIVE WORK:** See `docs/work/product-data-scraping.md` (product-data-scraping work document) and `docs/work/index.md` (work index) for current execution status and next steps. This dated plan doc is historical context only.
+Execution status and next steps live in `docs/work/product-data-scraping.md` (product-data-scraping work document) and `docs/work/index.md` (work index). This dated plan doc is historical context only.
 
 ## Purpose
 
@@ -26,25 +26,25 @@ This plan is intended to operationalize the deferred ingestion scope noted in:
 A parallel research pass reviewed current provider docs and standards for acquisition constraints, limits, and integration mechanics. Primary references:
 
 - Amazon Associates PA-API FAQ and request-rate policy:
-  - https://affiliate-program.amazon.com/help/node/topic/GVJ2BJP35457CLML
-  - https://affiliate-program.amazon.com/help/node/topic/GLL6HEVVWUKMQDDQ
+  - <https://affiliate-program.amazon.com/help/node/topic/GVJ2BJP35457CLML>
+  - <https://affiliate-program.amazon.com/help/node/topic/GLL6HEVVWUKMQDDQ>
 - eBay Buy/Browse and limits:
-  - https://developer.ebay.com/api-docs/buy/browse/static/overview.html
-  - https://developer.ebay.com/develop/get-started/api-call-limits
-  - https://www.developer.ebay.com/api-docs/buy/static/buy-overview.html
+  - <https://developer.ebay.com/api-docs/buy/browse/static/overview.html>
+  - <https://developer.ebay.com/develop/get-started/api-call-limits>
+  - <https://www.developer.ebay.com/api-docs/buy/static/buy-overview.html>
 - Best Buy Products API:
-  - https://developer.bestbuy.com/apis
-  - https://bestbuyapis.github.io/api-documentation/
+  - <https://developer.bestbuy.com/apis>
+  - <https://bestbuyapis.github.io/api-documentation/>
 - CJ developer docs:
-  - https://developers.cj.com/docs/rest-apis/product-search
-  - https://developers.cj.com/docs/product-feeds
-  - https://developers.cj.com/docs/rest-apis/product-catalogs-overview/
+  - <https://developers.cj.com/docs/rest-apis/product-search>
+  - <https://developers.cj.com/docs/product-feeds>
+  - <https://developers.cj.com/docs/rest-apis/product-catalogs-overview/>
 - Awin product-feed API docs:
-  - https://help.awin.com/apidocs/retail-advertiser-productapidocumentation
+  - <https://help.awin.com/apidocs/retail-advertiser-productapidocumentation>
 - Crawl/markup standards relevant to direct-site extraction:
-  - RFC 9309 (robots): https://datatracker.ietf.org/doc/html/rfc9309
-  - Sitemap protocol: https://www.sitemaps.org/protocol.html
-  - Schema.org offer/product fields: https://schema.org/Offer, https://schema.org/priceCurrency
+  - RFC 9309 (robots): <https://datatracker.ietf.org/doc/html/rfc9309>
+  - Sitemap protocol: <https://www.sitemaps.org/protocol.html>
+  - Schema.org offer/product fields: <https://schema.org/Offer>, <https://schema.org/priceCurrency>
 
 ## Recommended Data Acquisition Ladder
 
@@ -237,7 +237,7 @@ Use `NormalizeJob` to project each normalized field into the current persistence
 | `NormalizedListing` field | Current destination | Notes |
 |---|---|---|
 | `source` | `ExternalProduct.source_id` via `Sources.Source` | Resolve or create the source row before persistence. |
-| `external_product_id` | `ExternalProduct.external_id` and `MerchantProduct.external_sku` | `external_products` owns the source-scoped identifier; `merchant_products.external_sku` carries the merchant-facing listing key when present. |
+| `external_product_id` | `ExternalProduct.external_id` | `external_products` owns the source-scoped identifier. Only use `merchant_products.external_sku` for an actual merchant-facing SKU when one exists; do not overload it with the provider's external product ID. |
 | `merchant_identifier` | `MerchantSourceIdentity.merchant_identifier` in a new source-scoped lookup table | Persist the source merchant key so `NormalizeJob` can resolve the same merchant across repeated imports even when `merchant_name` or `merchant_domain` drift. Keep `Merchant` as the canonical merchant record and make the lookup table the idempotency anchor. |
 | `product_title` | `Product.name` and the resolved `Product.id` referenced by `ExternalProduct.product_id` / `MerchantProduct.product_id` | Create or update the catalog product name from the normalized title, then link the product row into the source and merchant records. |
 | `brand_name` | `Product.brand_id` when a matching brand exists or can be created | No first-class brand-name field exists on the normalized record path itself. |
