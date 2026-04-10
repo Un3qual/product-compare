@@ -5,29 +5,55 @@ Start here before opening dated plans or checkpoint logs.
 ## How To Use This Folder
 
 - Read this file first.
-- Open only the highest-priority item marked `Status: active` unless it is blocked.
+- In single-agent mode, open only the highest-priority unblocked active lane.
+- In parallel mode, assign one worker to the highest-priority unblocked frontend lane and one worker to the highest-priority unblocked backend lane.
+- Each worker stays inside its lane's `Owned paths`; shared planning docs stay coordinator-owned.
 - Verify the selected batch against the codebase before editing.
-- Update this file and the referenced `docs/work/*.md` file whenever status, priority, or blockers change.
+- Workers update only their lane work doc as they go.
+- Coordinators update this file plus `docs/plans/NOW.md` and `docs/plans/INDEX.md` whenever lane status, priority, or blockers change.
 
-## Suggested Executor Prompt
+## Suggested Executor Prompts
 
 ```text
-Start at docs/work/index.md and follow only the ACTIVE item(s) it lists.
+Coordinator prompt:
+Start at docs/work/index.md.
 
-Execute the `Next batch` from the highest-priority active work doc.
-Before coding, verify the selected batch against the codebase and correct any drift in the work doc.
-Update the work doc as you go.
-Commit only at milestone boundaries defined by the active work doc.
-If there is no unblocked active batch, create or update the next work doc instead of scanning the whole docs tree.
-Open or update a PR only when the active work item is complete.
+Run in parallel-lane mode.
+Assign one worker to the highest-priority unblocked frontend lane and one worker to the highest-priority unblocked backend lane.
+Keep `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` coordinator-owned.
+Do not let workers edit the same files.
+If a worker reports a blocker outside its owned paths, update the lane docs instead of having it cross lanes.
+Integrate shared-doc updates only after reviewing both lane results.
+Open or update a PR only when the coordinated slice is ready.
 ```
 
-## Active Work
+```text
+Lane worker prompt:
+Start at docs/work/index.md and open only the active {frontend|backend} lane assigned to you.
 
-- `docs/work/frontend-relay-route-data.md`
+Execute the `Next batch` from that lane's work doc.
+Before coding, verify the selected batch against the codebase and correct any drift in that lane doc.
+Edit only the lane's `Owned paths` and that lane's work doc.
+Do not edit `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, or `ARCHITECTURE.md` unless your prompt explicitly says you are the coordinator.
+If the work requires another lane's files or a coordinator-owned doc, record a blocker in your lane doc and stop.
+Commit only lane-local milestone changes.
+```
+
+## Active Work Lanes
+
+- Frontend lane
+  - Work doc: `docs/work/frontend-relay-route-data.md`
   - Status: active
   - Priority: P1
   - Next batch: add Relay SSR hydration/preload primitives, then migrate route data off the manual `api.ts` GraphQL wrappers.
+  - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+
+- Backend lane
+  - Work doc: `docs/work/graphql-relay-contract-hardening.md`
+  - Status: active
+  - Priority: P2
+  - Next batch: add a root `node(id: ID!)` lookup for the existing global-ID-backed product and pricing entities, with focused GraphQL coverage.
+  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare_web/graphql/**`, `docs/work/graphql-relay-contract-hardening.md`, `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
 
 ## Blocked / Needs Decision
 
@@ -43,10 +69,22 @@ Open or update a PR only when the active work item is complete.
   - Reason: queued until the first-connector choice is finalized and the ingestion-boundary ADR is approved.
   - Next batch: choose the first connector (default: eBay Browse API; CJ as fallback), then draft the ingestion-boundary ADR.
 
-- `docs/work/frontend-saved-comparisons-ui.md`
-  - Reason: user-directed queue reprioritization moved Relay route-data adoption ahead of new compare-route UI so the frontend stops extending the manual GraphQL helper pattern.
+- `docs/work/frontend-compare-saved-hardening.md`
+  - Status: blocked on frontend Relay route-data adoption
+  - Priority: P2
+  - Reason: the shared compare shell and saved-set status semantics have landed, but the remaining compare-scoped error-boundary follow-up is deferred until Relay route-data adoption re-establishes `/compare` and `/compare/saved` on the long-term data path.
+  - Next batch: resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
 
 ## Recently Completed
+
+### Frontend Saved Comparisons UI
+
+- Status: completed on 2026-03-19
+- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
+- Outcome:
+  - `/compare` now saves ready-state selections through `createSavedComparisonSet`.
+  - `/compare/saved` now lists private saved sets, reopens them back into `/compare` with repeated `slug` params, and deletes them from the UI.
+  - Frontend verification passed with `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
 
 ### Saved Comparisons Backend
 
