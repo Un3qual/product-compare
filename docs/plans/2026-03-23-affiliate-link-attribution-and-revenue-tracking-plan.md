@@ -122,7 +122,7 @@ To prioritize a functioning product, **data governance and privacy-hardening tas
 
 - `commerce_links`
   - canonical outbound destination + merchant/program metadata
-  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network?` (same enum as `commerce_conversions.source_network`; required for `affiliate` rows, null for `non_affiliate` rows), `campaign_params`, `backfilled_from_affiliate_links?`, `is_active`
+  - fields: `merchant_id`, `program_id?`, `destination_url`, `link_type` (`affiliate` | `non_affiliate`), `network?` (same enum as `commerce_conversions.source_network`; required for steady-state `affiliate` rows once the source network is known, null for `non_affiliate` rows, and temporarily nullable during Phase 1 backfill when legacy `affiliate_links.affiliate_network_id` is missing or cannot yet be mapped so those affiliate rows are preserved for follow-up normalization), `campaign_params`, `backfilled_from_affiliate_links?`, `is_active`
 
 - `commerce_link_variants`
   - network-specific variants for the same canonical destination
@@ -187,10 +187,10 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 | Legacy (`affiliate_*`) field | New (`commerce_*`) field | Mapping notes |
 |---|---|---|
-| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; correlation uses the same NULL-safe business key as the backfill (`destination_url + merchant_id + program_id?`, with the nullable `program_id` normalized consistently for uniqueness). |
+| `affiliate_links.id` | `commerce_links.id` | Surrogate keys do not map directly; correlation uses the same NULL-safe business key as the backfill (`destination_url + merchant_id + program_id? + link_type`, with the nullable `program_id` normalized consistently for uniqueness and `link_type` carried through so affiliate and non-affiliate rows cannot correlate to the same canonical link). |
 | `affiliate_links.original_url` | `commerce_links.destination_url` | Direct mapping (also note `affiliate_links.affiliate_url` for tracked URL) |
 | `affiliate_links.merchant_product_id` | `commerce_links.merchant_id` | Derive the merchant dimension by joining `affiliate_links.merchant_product_id -> merchant_products.merchant_id` during backfill; `merchant_product_id` is not a direct `merchants.id` foreign key. |
-| `affiliate_links.affiliate_network_id` | `commerce_links.network` | Foreign key becomes enum; network ID maps to network enum values that align with `commerce_conversions.source_network` |
+| `affiliate_links.affiliate_network_id` | `commerce_links.network` | Foreign key becomes enum; network ID maps to network enum values that align with `commerce_conversions.source_network`. When legacy `affiliate_links.affiliate_network_id` is null, keep `commerce_links.network` null on the Phase 1 affiliate row, preserve `link_type = affiliate`, and let the variant backfill use the documented legacy-network fallback token until the row is normalized. |
 | `affiliate_links.affiliate_url` | `commerce_link_variants.tracking_template` | Preserve the full tracked redirect template for cutover; normalize query parameters into `commerce_links.campaign_params` as a derived field, not the source of truth |
 | `affiliate_programs.*` | (unified `programs` table) | Program metadata will be consolidated into a shared `programs` table or equivalent that supports both affiliate and non-affiliate programs |
 | `affiliate_networks.*` | `commerce_links.network?` enum + config | Network metadata moves to application config or a lightweight `commerce_network_configs` reference table; `commerce_links.network` and `commerce_conversions.source_network` use the same enum, with `commerce_links.network` null for `non_affiliate` rows |
@@ -201,7 +201,7 @@ The existing `affiliate_links`, `affiliate_programs`, and `affiliate_networks` t
 
 **Phase 1 (Backfill):** Run idempotent migration script that:
 
-1. Inserts rows into `commerce_links` from `affiliate_links` by joining through `merchant_products` to derive `merchant_id`, using a NULL-safe business key that treats `program_id` as optional and preserves `link_type` so affiliate and non-affiliate rows do not collapse together.
+1. Inserts rows into `commerce_links` from `affiliate_links` by joining through `merchant_products` to derive `merchant_id`, using a NULL-safe business key that treats `program_id` as optional and preserves `link_type` so affiliate and non-affiliate rows do not collapse together. When `affiliate_links.affiliate_network_id` is null or cannot yet be mapped to the enum, keep `commerce_links.network` null for that affiliate row in Phase 1 rather than dropping it, and normalize it later once the source network is known.
 2. Uses `ON CONFLICT (destination_url, COALESCE(program_id, 0), merchant_id, link_type) DO UPDATE` or an equivalent NULL-safe upsert target backed by a matching unique index, so repeated runs are safe even when `program_id` is `NULL`.
 3. Backfills `commerce_link_variants.tracking_template` from `affiliate_links.affiliate_url` by deriving a deterministic `variant_key` from the resolved affiliate network enum (or a documented legacy-network fallback token when the enum is not yet available), then writing through an idempotent upsert on `(commerce_link_id, variant_key)` so reruns converge on the same variant rows and the full tracked redirect template survives cutover before `commerce_links.campaign_params` are derived from that template as needed.
 4. Marks backfilled rows with `backfilled_from_affiliate_links = true` metadata flag for audit tracking.
