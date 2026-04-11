@@ -57,8 +57,23 @@ Commit only lane-local milestone changes.
 
 ## Blocked / Needs Decision
 
+- `docs/work/affiliate-revenue-attribution.md`
+  - Status: drafting
+  - Priority: P2
+  - Reason: queued behind the active Relay route-data work until the route-data migration finishes.
+  - Next batch: draft attribution ADR and scaffold core click/conversion schema migrations.
+
+- `docs/work/product-data-scraping.md`
+  - Status: drafting
+  - Priority: P2
+  - Reason: queued until the first-connector choice is finalized and the ingestion-boundary ADR is approved.
+  - Next batch: choose the first connector (default: eBay Browse API; CJ as fallback), then draft the ingestion-boundary ADR.
+
 - `docs/work/frontend-compare-saved-hardening.md`
+  - Status: blocked on frontend Relay route-data adoption
+  - Priority: P2
   - Reason: the shared compare shell and saved-set status semantics have landed, but the remaining compare-scoped error-boundary follow-up is deferred until Relay route-data adoption re-establishes `/compare` and `/compare/saved` on the long-term data path.
+  - Next batch: resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
 
 ## Recently Completed
 
