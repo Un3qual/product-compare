@@ -4,12 +4,12 @@ test("sends credentials for session auth", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
-    } as Response;
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -42,12 +42,12 @@ test("forwards SSR cookies to the GraphQL request", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
-    } as Response;
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -68,12 +68,12 @@ test("derives and forwards a trusted origin for SSR requests", async () => {
   const originalFetch = globalThis.fetch;
   const calls: unknown[][] = [];
 
-  globalThis.fetch = (async (...args: unknown[]) => {
+  globalThis.fetch = ((...args: unknown[]) => {
     calls.push(args);
-    return {
+    return Promise.resolve({
       ok: true,
-      json: async () => ({ data: {} })
-    } as Response;
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
   }) as typeof fetch;
 
   try {
@@ -86,6 +86,83 @@ test("derives and forwards a trusted origin for SSR requests", async () => {
       "content-type": "application/json",
       origin: "https://app.example.com"
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("forwards an AbortSignal for SSR requests when one is provided", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+  const controller = new AbortController();
+
+  globalThis.fetch = ((...args: unknown[]) => {
+    calls.push(args);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, {
+      signal: controller.signal
+    });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).signal).toBe(controller.signal);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("forwards an AbortSignal without switching browser requests into SSR mode", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+  const controller = new AbortController();
+
+  globalThis.fetch = ((...args: unknown[]) => {
+    calls.push(args);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, { signal: controller.signal });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).signal).toBe(controller.signal);
+    expect((calls[0][1] as RequestInit).credentials).toBe("include");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("falls back to request.signal for SSR requests when no explicit signal is provided", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: unknown[][] = [];
+  const controller = new AbortController();
+  const request = {
+    headers: new Headers(),
+    signal: controller.signal,
+    url: "https://app.example.com/products"
+  } as Request;
+
+  globalThis.fetch = ((...args: unknown[]) => {
+    calls.push(args);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: {} })
+    } as Response);
+  }) as typeof fetch;
+
+  try {
+    await fetchGraphQL("query Viewer { viewer { id } }", {}, { request });
+
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as RequestInit).signal).toBe(controller.signal);
   } finally {
     globalThis.fetch = originalFetch;
   }

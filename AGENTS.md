@@ -5,8 +5,12 @@
 - Start plan discovery at `docs/work/index.md`.
 - Treat `docs/work/*.md` as the source of truth for active execution status, priority, blockers, and the next batch of work.
 - Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links them as the current active work item.
+- When `docs/work/index.md` lists multiple active lanes, assign exactly one lane per worker. Default lanes are `frontend` and `backend`.
 - Verify the selected batch against the codebase before assuming an unchecked item is still unimplemented.
 - Update the relevant `docs/work/*.md` file when batch status, blockers, or priorities change.
+- In parallel mode, a worker may edit only files in its lane's `Owned paths` plus its lane work doc.
+- Treat `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` as coordinator-owned shared docs during parallel execution. Update them only from the coordinating session or at integration boundaries.
+- If the selected batch requires another lane's files or a coordinator-owned doc, record the blocker in the lane work doc instead of crossing lanes.
 - Commit only at milestone boundaries that include the related code/test/doc changes; do not make standalone checkbox-only or docs-only progress commits.
 
 ## Auth Contract
