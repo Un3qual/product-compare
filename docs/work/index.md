@@ -31,6 +31,11 @@ Open or update a PR only when the active work item is complete.
 
 ## Blocked / Needs Decision
 
+- `docs/work/product-data-scraping.md`
+  - Status: drafting
+  - Priority: P2
+  - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR.
+
 - `docs/work/frontend-saved-comparisons-ui.md`
   - Reason: user-directed queue reprioritization moved Relay route-data adoption ahead of new compare-route UI so the frontend stops extending the manual GraphQL helper pattern.
 
