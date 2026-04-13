@@ -35,6 +35,7 @@ Open or update a PR only when the active work item is complete.
   - Status: drafting
   - Priority: P2
   - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR.
+  - Reason: first-source ownership not yet assigned and compliance signoff checklist not yet documented.
 
 - `docs/work/frontend-saved-comparisons-ui.md`
   - Reason: user-directed queue reprioritization moved Relay route-data adoption ahead of new compare-route UI so the frontend stops extending the manual GraphQL helper pattern.

@@ -24,25 +24,25 @@ This plan is intended to operationalize the deferred ingestion scope noted in:
 A parallel research pass reviewed current provider docs and standards for acquisition constraints, limits, and integration mechanics. Primary references:
 
 - Amazon Associates PA-API FAQ and request-rate policy:
-  - https://affiliate-program.amazon.com/help/node/topic/GVJ2BJP35457CLML
-  - https://affiliate-program.amazon.com/help/node/topic/GLL6HEVVWUKMQDDQ
+  - <https://affiliate-program.amazon.com/help/node/topic/GVJ2BJP35457CLML>
+  - <https://affiliate-program.amazon.com/help/node/topic/GLL6HEVVWUKMQDDQ>
 - eBay Buy/Browse and limits:
-  - https://developer.ebay.com/api-docs/buy/browse/static/overview.html
-  - https://developer.ebay.com/develop/get-started/api-call-limits
-  - https://www.developer.ebay.com/api-docs/buy/static/buy-overview.html
+  - <https://developer.ebay.com/api-docs/buy/browse/static/overview.html>
+  - <https://developer.ebay.com/develop/get-started/api-call-limits>
+  - <https://www.developer.ebay.com/api-docs/buy/static/buy-overview.html>
 - Best Buy Products API:
-  - https://developer.bestbuy.com/apis
-  - https://bestbuyapis.github.io/api-documentation/
+  - <https://developer.bestbuy.com/apis>
+  - <https://bestbuyapis.github.io/api-documentation/>
 - CJ developer docs:
-  - https://developers.cj.com/docs/rest-apis/product-search
-  - https://developers.cj.com/docs/product-feeds
-  - https://developers.cj.com/docs/rest-apis/product-catalogs-overview/
+  - <https://developers.cj.com/docs/rest-apis/product-search>
+  - <https://developers.cj.com/docs/product-feeds>
+  - <https://developers.cj.com/docs/rest-apis/product-catalogs-overview/>
 - Awin product-feed API docs:
-  - https://help.awin.com/apidocs/retail-advertiser-productapidocumentation
+  - <https://help.awin.com/apidocs/retail-advertiser-productapidocumentation>
 - Crawl and markup standards relevant to direct-site extraction:
-  - RFC 9309 (robots): https://datatracker.ietf.org/doc/html/rfc9309
-  - Sitemap protocol: https://www.sitemaps.org/protocol.html
-  - Schema.org offer and product fields: https://schema.org/Offer, https://schema.org/priceCurrency
+  - RFC 9309 (robots): <https://datatracker.ietf.org/doc/html/rfc9309>
+  - Sitemap protocol: <https://www.sitemaps.org/protocol.html>
+  - Schema.org offer and product fields: <https://schema.org/Offer>, https://schema.org/priceCurrency
 
 ## Recommended Data Acquisition Ladder
 
@@ -79,7 +79,7 @@ Why last: highest legal, compliance, and maintenance risk; it should be a contro
 | eBay Browse API | OAuth + REST | near real-time listing/search | Daily call limits; some Buy APIs are limited-release in production | Medium | Low-Medium |
 | Best Buy Products API | API key + REST | near real-time for many fields | key management + endpoint-specific constraints | Low-Medium | Low |
 | CJ product catalog APIs/feeds | CJ account + developer access | API and/or feed-driven cadence | docs are portal-gated and JS-rendered; validate exact fields and quotas during connector spike | Medium | Low-Medium |
-| Awin feeds | Bearer token upload/download flows depending role | batch-oriented feed cadence | network/merchant approval and feed schema conformance | Medium | Medium |
+| Awin feeds | Bearer token upload/download flows depending on role | batch-oriented feed cadence | network/merchant approval and feed schema conformance | Medium | Medium |
 | Amazon PA-API | Associates-linked API account | request-rate scales with attributed shipped revenue | strict associates and API license compliance, low initial request rate | Medium-High | Medium |
 | Direct merchant scraping | crawler + parser | configurable | must obey terms, robots, anti-bot, and layout drift | High | High |
 
@@ -164,7 +164,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ## Phase 2 - Reliability & Operations (1-2 Weeks)
 
-### Scope
+### Phase 2 Scope
 
 - Add job orchestration (if not already selected in Phase 0):
   - queue partition by source
