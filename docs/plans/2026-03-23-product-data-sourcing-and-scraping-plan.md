@@ -6,11 +6,11 @@ Define where product data should come from and how we should ingest it in phased
 
 ## Scope Posture For Current Phase (MVP+1 Execution)
 
-To ship faster, data governance and privacy-hardening tasks are deferred until further notice in this plan.
+To ship faster, expanded governance and privacy-hardening tasks are deferred until core ingestion flows are live.
 
 - Focus current batches on connector integration, normalization, idempotent persistence, and reliability.
-- Keep only minimal safety and compliance checks needed to operate.
-- Re-open governance and privacy hardening after core ingestion flows are live.
+- Keep the minimal operational and compliance checks needed to operate safely in Phase 0.
+- Re-open expanded governance and privacy hardening after core ingestion flows are live.
 
 This plan is intended to operationalize the deferred ingestion scope noted in:
 
@@ -42,17 +42,17 @@ A parallel research pass reviewed current provider docs and standards for acquis
 - Crawl and markup standards relevant to direct-site extraction:
   - RFC 9309 (robots): <https://datatracker.ietf.org/doc/html/rfc9309>
   - Sitemap protocol: <https://www.sitemaps.org/protocol.html>
-  - Schema.org offer and product fields: <https://schema.org/Offer>, https://schema.org/priceCurrency
+  - Schema.org offer and product fields: <https://schema.org/Offer>, <https://schema.org/priceCurrency>
 
 ## Recommended Data Acquisition Ladder
 
-Use this order to minimize legal and operational risk while reaching useful catalog coverage quickly. This is the generic source ranking; the current execution default still favors CJ because approved account access removes an onboarding delay.
+Use this order to minimize legal and operational risk while reaching useful catalog coverage quickly. For this project's first connector spike, default to CJ because approved account access removes an onboarding delay, and fall back to eBay only if CJ scope proves insufficient.
 
 ### Tier 1 (start here): Official affiliate and marketplace APIs and feeds
 
-1. eBay Browse API (Buy API)
-2. Best Buy Products API
-3. Commission Junction (CJ) product catalog surfaces (Product Search / Product Feeds)
+1. Commission Junction (CJ) product catalog surfaces (Product Search / Product Feeds)
+2. eBay Browse API (Buy API)
+3. Best Buy Products API
 4. Awin product feeds for approved merchants
 5. Amazon PA-API (after eligibility and traffic constraints are satisfied)
 
@@ -94,12 +94,12 @@ Why last: highest legal, compliance, and maintenance risk; it should be a contro
 ### CJ Connector Spike Checklist (3-5 Days)
 
 1. Confirm which CJ data path is available for this account:
-   - REST Product Search docs: `developers.cj.com/docs/rest-apis/product-search`
-   - Product Feeds docs: `developers.cj.com/docs/product-feeds`
-   - Product Catalogs overview: `developers.cj.com/docs/rest-apis/product-catalogs-overview/`
+   - REST Product Search docs: <https://developers.cj.com/docs/rest-apis/product-search>
+   - Product Feeds docs: <https://developers.cj.com/docs/product-feeds>
+   - Product Catalogs overview: <https://developers.cj.com/docs/rest-apis/product-catalogs-overview/>
 2. Capture auth and quota behavior in a local integration note.
 3. Pull a small sample by one category and one known merchant.
-4. Map available identifiers to internal canonical keys (`external_source`, `external_product_id`, merchant key, listing URL).
+4. Map available identifiers to internal canonical keys (`external_source`, `external_product_id`, `merchant_identifier`, normalized listing key).
 5. Validate replay idempotency with two consecutive imports of the same CJ sample.
 
 ### CJ "Find New Merchants" Workflow
@@ -119,9 +119,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
    - Are links stable and trackable?
 5. Promote merchants that pass viability into the ingestion schedule; keep others in a parked backlog.
 
-## Phase Plan
-
-## Phase 0 - Governance + Source Selection (1 Week)
+## Phase 0 - Source Selection + Minimal Operational Checks (1 Week)
 
 ### Deliverables
 
@@ -141,7 +139,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ## Phase 1 - Tier-1 Connector MVP (2-3 Weeks)
 
-### Scope
+### Phase 1 Scope
 
 - Implement one connector end-to-end, defaulting to CJ because the account is already approved and falling back to eBay Browse only if CJ scope is insufficient for the first spike.
 - Build the ingestion pipeline:
@@ -152,7 +150,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ### Required Behaviors
 
-- Idempotent upsert by `(source, external_product_id)` and `(merchant, canonical_url_or_listing_key)`.
+- Idempotent upsert by `(source, external_product_id)` with `(merchant_identifier, normalized_listing_key_or_url)` as a secondary fallback only when a source omits a stable product identifier.
 - Deterministic mapping errors (reject plus reason code).
 - Last-write-wins with `observed_at` guards for price staleness.
 
@@ -183,7 +181,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ## Phase 3 - Expand Connectors + Controlled Scraping (Ongoing)
 
-### Scope
+### Phase 3 Scope
 
 - Add second and third Tier-1 or Tier-2 connectors.
 - Introduce Tier-3 direct scraping only for explicit gap coverage.
@@ -215,7 +213,8 @@ ProductCompare.Ingestion.Sources.Adapter
   product_title: String.t(),
   brand_name: String.t() | nil,
   gtin: String.t() | nil,
-  merchant_name: String.t(),
+  merchant_identifier: String.t(),
+  merchant_name: String.t() | nil,
   listing_url: String.t(),
   currency: String.t(),
   amount: Decimal.t(),

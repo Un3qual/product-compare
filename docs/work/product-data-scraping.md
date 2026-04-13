@@ -38,7 +38,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Next Batch
 
-- Status: ready once first source is selected
+- Status: blocked on first-source selection and ownership
 - Batch:
   1. Choose the first connector, defaulting to CJ unless blocked by missing API or feed scope.
   2. Draft an ADR for ingestion execution mode (sync pilot vs Oban-first).
@@ -55,6 +55,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - `cat docs/decisions/2026-03-05-mvp-scope-freeze.md`
 - `cat docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
 - `rg -n "scraping|ingestion|Oban|Browse API|PA-API|Awin|Best Buy" docs`
+
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
