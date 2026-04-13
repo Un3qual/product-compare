@@ -11,7 +11,14 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareSchemas.Accounts.ApiToken
+  alias ProductCompareSchemas.Catalog.Brand
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Pricing.Merchant
+  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @impl true
   def context(context) do
@@ -27,6 +34,13 @@ defmodule ProductCompareWeb.Schema do
     @desc "Returns the current authenticated user, if any."
     field :viewer, :user do
       resolve(&AuthResolver.viewer/3)
+    end
+
+    @desc "Returns a supported node by global ID."
+    field :node, :node_result do
+      arg(:id, non_null(:id))
+
+      resolve(&NodeResolver.node/3)
     end
 
     @desc "Returns API tokens owned by the current authenticated user."
@@ -514,6 +528,20 @@ defmodule ProductCompareWeb.Schema do
     field :has_previous_page, non_null(:boolean)
     field :start_cursor, :string
     field :end_cursor, :string
+  end
+
+  union :node_result do
+    types([:product, :brand, :merchant, :merchant_product, :saved_comparison_set, :api_token])
+
+    resolve_type(fn
+      %Product{}, _ -> :product
+      %Brand{}, _ -> :brand
+      %Merchant{}, _ -> :merchant
+      %MerchantProduct{}, _ -> :merchant_product
+      %SavedComparisonSet{}, _ -> :saved_comparison_set
+      %ApiToken{}, _ -> :api_token
+      _, _ -> nil
+    end)
   end
 
   object :brand do

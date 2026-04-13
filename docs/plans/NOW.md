@@ -17,16 +17,31 @@
 
 ### Backend Lane
 
-- Status: ready
-- Batch: GraphQL Relay Contract Hardening, Task 1
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/graphql-relay-contract-hardening.md`
-- Next step: add a root `node(id: ID!)` lookup for the existing global-ID-backed product and pricing entities, with focused GraphQL coverage.
+- Next step: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose a future backend lane if priorities change.
 - Why this batch is current:
-  - The backend already emits Relay-style global IDs on `product`, `products`, `merchants`, `merchantProducts`, and saved-comparison payloads, but it still lacks a generic root node lookup.
-  - This slice stays entirely under `lib/**` and backend GraphQL tests, so it can run in parallel with the active frontend Relay migration without file conflicts.
-  - Keeping this work in a separate backend lane avoids reopening the active frontend work doc with schema changes it explicitly deferred.
+  - The planned GraphQL Relay contract hardening tasks are complete and fully verified.
+  - No next backend batch is currently queued, while the frontend Relay route-data lane remains active.
+  - This keeps NOW accurate without inventing a new backend slice before it has been prioritized.
 
 ## Just Completed
+
+- GraphQL Relay Contract Hardening, Task 3:
+  - Closed `docs/work/graphql-relay-contract-hardening.md` after verifying the full planned node surface for public catalog/pricing nodes plus owner-scoped saved comparison sets and API tokens.
+  - Verified `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/api_token_auth_test.exs && mix typecheck`.
+  - Marked the backend lane complete with no next backend batch queued from this worktree.
+
+- GraphQL Relay Contract Hardening, Task 2:
+  - Extended `lib/product_compare_web/resolvers/node_resolver.ex` and `lib/product_compare_web/schema.ex` so root `node(id: ID!)` now supports owner-scoped `SavedComparisonSet` and `ApiToken` nodes in addition to the public catalog/pricing types.
+  - Added ownership-checked fetch helpers in `lib/product_compare/catalog.ex` and `lib/product_compare/accounts.ex`, and expanded `test/product_compare_web/graphql/node_query_test.exs` to cover owner success plus anonymous/cross-user null behavior.
+  - Verified `mix test test/product_compare_web/graphql/node_query_test.exs` and `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/node_query_test.exs`.
+
+- GraphQL Relay Contract Hardening, Task 1:
+  - Added `lib/product_compare_web/resolvers/node_resolver.ex`, root `node(id: ID!)` schema support, and minimal catalog/pricing context helpers for public `Product`, `Brand`, `Merchant`, and `MerchantProduct` lookups.
+  - Added `test/product_compare_web/graphql/node_query_test.exs` to cover the supported public node lookups plus malformed and unsupported ID handling.
+  - Verified `mix test test/product_compare_web/graphql/node_query_test.exs` and `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/node_query_test.exs`.
 
 - Queue rebaseline for Relay adoption:
   - Added `docs/plans/2026-03-19-frontend-relay-route-data-design.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`, and `docs/work/frontend-relay-route-data.md` to make full frontend Relay adoption the active queue item.

@@ -9,6 +9,7 @@ defmodule ProductCompare.Catalog do
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
+  alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
@@ -64,6 +65,12 @@ defmodule ProductCompare.Catalog do
   @spec get_product!(pos_integer()) :: Product.t()
   def get_product!(id), do: Repo.get!(Product, id)
 
+  @spec get_product(pos_integer()) :: Product.t() | nil
+  def get_product(id) when is_integer(id), do: Repo.get(Product, id)
+
+  @spec get_brand(pos_integer()) :: Brand.t() | nil
+  def get_brand(id) when is_integer(id), do: Repo.get(Brand, id)
+
   @spec get_product_by_slug(String.t() | nil) :: Product.t() | nil
   def get_product_by_slug(nil), do: nil
 
@@ -112,6 +119,21 @@ defmodule ProductCompare.Catalog do
       where: saved_comparison_set.user_id == ^user_id,
       order_by: [desc: saved_comparison_set.inserted_at, desc: saved_comparison_set.id]
     )
+  end
+
+  @spec get_saved_comparison_set_for_user(User.t(), Ecto.UUID.t()) :: SavedComparisonSet.t() | nil
+  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id) when is_binary(entropy_id) do
+    with {:ok, validated_entropy_id} <- Ecto.UUID.cast(entropy_id) do
+      SavedComparisonSet
+      |> where([saved_comparison_set],
+        saved_comparison_set.entropy_id == ^validated_entropy_id and
+          saved_comparison_set.user_id == ^user_id
+      )
+      |> preload(items: [:product])
+      |> Repo.one()
+    else
+      :error -> nil
+    end
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::

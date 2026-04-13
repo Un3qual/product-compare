@@ -260,6 +260,15 @@ defmodule ProductCompare.Accounts do
     |> Repo.all()
   end
 
+  @spec get_api_token_for_user(User.t(), Ecto.UUID.t()) :: ApiToken.t() | nil
+  def get_api_token_for_user(%User{id: user_id}, token_entropy_id) when is_binary(token_entropy_id) do
+    with {:ok, validated_entropy_id} <- Ecto.UUID.cast(token_entropy_id) do
+      Repo.get_by(ApiToken, user_id: user_id, entropy_id: validated_entropy_id)
+    else
+      :error -> nil
+    end
+  end
+
   @spec revoke_api_token(pos_integer(), Ecto.UUID.t()) ::
           {:ok, ApiToken.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def revoke_api_token(user_id, token_entropy_id) when is_binary(token_entropy_id) do
