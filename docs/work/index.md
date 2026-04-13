@@ -66,8 +66,8 @@ Commit only lane-local milestone changes.
 - `docs/work/product-data-scraping.md`
   - Status: drafting
   - Priority: P2
-  - Reason: queued until the first-connector choice is finalized and the ingestion-boundary ADR is approved.
-  - Next batch: choose the first connector (default: eBay Browse API; CJ as fallback), then draft the ingestion-boundary ADR.
+  - Reason: first-source ownership is not yet assigned and the ingestion-boundary ADR is not yet approved.
+  - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR; fall back to eBay Browse only if CJ scope is insufficient.
 
 - `docs/work/frontend-compare-saved-hardening.md`
   - Status: blocked on frontend Relay route-data adoption

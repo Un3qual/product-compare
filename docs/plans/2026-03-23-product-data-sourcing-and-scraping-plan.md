@@ -21,9 +21,9 @@ This plan is intended to operationalize the deferred ingestion scope noted in:
 - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
 - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
 
-## Research Inputs (Subagent Research Pass)
+## Research Inputs
 
-> Note: CJ Developer Portal pages are JS-rendered, so this plan references official endpoint/docs URLs and treats field-level details as implementation-time validation items.
+> Note: CJ Developer Portal pages are JS-rendered, so this plan references official endpoint and docs URLs and treats field-level details as implementation-time validation items.
 
 A parallel research pass reviewed current provider docs and standards for acquisition constraints, limits, and integration mechanics. Primary references:
 
@@ -50,13 +50,13 @@ A parallel research pass reviewed current provider docs and standards for acquis
 
 ## Recommended Data Acquisition Ladder
 
-Use this order to minimize legal/operational risk while reaching useful catalog coverage quickly.
+Use this order to minimize legal/operational risk while reaching useful catalog coverage quickly. For the first connector spike, default to CJ because approved account access removes an onboarding delay, and fall back to eBay only if CJ scope proves insufficient.
 
 ### Tier 1 (start here): Official affiliate/marketplace APIs and feeds
 
-1. eBay Browse API (Buy API)
-2. Best Buy Products API
-3. Commission Junction (CJ) product catalog surfaces (Product Search / Product Feeds)
+1. Commission Junction (CJ) product catalog surfaces (Product Search / Product Feeds)
+2. eBay Browse API (Buy API)
+3. Best Buy Products API
 4. Awin product feeds for approved merchants
 5. Amazon PA-API (after eligibility and traffic constraints are satisfied)
 
@@ -87,47 +87,45 @@ Use this order to minimize legal/operational risk while reaching useful catalog 
 | Amazon PA-API | Associates-linked API account | request-rate scales with attributed shipped revenue | strict associates and API license compliance, low initial request rate | Medium-High | Medium |
 | Direct merchant scraping | crawler + parser | configurable | must obey terms/robots + anti-bot + layout drift | High | High |
 
-## CJ Approved-Account Track (fallback source path)
+## CJ Approved-Account Track (default first-source path)
 
-### Why CJ remains useful as a fallback
+### Why CJ is the default first connector
 
-- Existing approved account removes a major onboarding blocker when eBay coverage or quota is insufficient.
-- CJ provides product-catalog surfaces (Product Search and Product Feeds docs) suitable for fallback ingestion and validation.
-- Merchant breadth in CJ can also accelerate **new merchant discovery** while the primary eBay path is being built.
+- Existing approved account removes a major onboarding blocker.
+- CJ provides product-catalog surfaces (Product Search and Product Feeds docs) suitable for first-source ingestion and validation.
+- Merchant breadth in CJ can also accelerate new merchant discovery while the first ingestion path is being built.
 
-### CJ fallback connector spike checklist (3–5 days)
+### CJ connector spike checklist (3-5 days)
 
 1. Confirm which CJ data path is available for this account:
-   - REST Product Search docs: `developers.cj.com/docs/rest-apis/product-search`
-   - Product Feeds docs: `developers.cj.com/docs/product-feeds`
-   - Product Catalogs overview: `developers.cj.com/docs/rest-apis/product-catalogs-overview/`
-2. Capture auth + quota behavior in a local integration note.
+   - REST Product Search docs: <https://developers.cj.com/docs/rest-apis/product-search>
+   - Product Feeds docs: <https://developers.cj.com/docs/product-feeds>
+   - Product Catalogs overview: <https://developers.cj.com/docs/rest-apis/product-catalogs-overview/>
+2. Capture auth and quota behavior in a local integration note.
 3. Pull a small sample by one category and one known merchant.
-4. Map available identifiers to internal canonical keys (`external_source`, `external_product_id`, merchant key, listing URL).
+4. Map available identifiers to internal canonical keys (`external_source`, `external_product_id`, `merchant_identifier`, normalized listing key).
 5. Validate replay idempotency with two consecutive imports of the same CJ sample.
 
-### CJ “find new merchants” workflow
+### CJ "find new merchants" workflow
 
 Use a repeatable weekly process to grow merchant coverage without uncontrolled scraping:
 
-1. In CJ Account Manager, export/record candidate advertisers by target category and region.
+1. In CJ Account Manager, export or record candidate advertisers by target category and region.
 2. Score candidates with a simple rubric:
-   - Product feed/catalog availability
+   - Product feed or catalog availability
    - Program terms constraints (paid search, coupon, trademark rules)
    - Commission and EPC competitiveness
-   - Data quality signals (identifier completeness, image/link consistency)
-3. Apply in small cohorts (e.g., 10–20 advertisers/week) and track approval latency.
-4. For approved programs, run a “data viability check” before full onboarding:
+   - Data quality signals (identifier completeness, image and link consistency)
+3. Apply in small cohorts (e.g., 10-20 advertisers/week) and track approval latency.
+4. For approved programs, run a data viability check before full onboarding:
    - Can we ingest representative products?
    - Are price and availability fields sufficiently complete?
    - Are links stable and trackable?
 5. Promote merchants that pass viability into ingestion schedule; keep others in a parked backlog.
 
-## Phase Plan
+## Phase 0 - Governance + Source Selection (1 Week)
 
-### Phase 0 — Governance + Source Selection (1 week)
-
-#### Deliverables
+### Deliverables
 
 - Approved source shortlist (minimum: 2 Tier-1 providers).
 - Minimal provider onboarding checklist for initial operation (expanded governance review deferred).
@@ -138,38 +136,39 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   - `merchant_domain?`
   - price/availability payload and observed timestamp
 
-#### Exit criteria
+### Exit Criteria
 
 - One signed-off ADR choosing initial execution mode:
-  - **A:** sync import pilot, or
-  - **B:** Oban-first ingestion.
+  - A: sync import pilot, or
+  - B: Oban-first ingestion.
 
-### Phase 1 — Tier-1 Connector MVP (2–3 weeks)
+## Phase 1 - Tier-1 Connector MVP (2-3 Weeks)
 
-#### Phase 1 scope
+### Phase 1 Scope
 
-- Implement **one** connector end-to-end (recommended: eBay Browse API).
+- Implement one connector end-to-end, defaulting to CJ because the account is already approved and falling back to eBay Browse only if CJ scope is insufficient for the first spike.
 - Build ingestion pipeline:
   1. Fetch
   2. Normalize
   3. Upsert Catalog/Pricing
   4. Record ingestion run outcome
 
-#### Required behaviors
+### Required Behaviors
 
-- Idempotent upsert by `(source, external_product_id)`, `(source, merchant_identifier)`, and `(merchant, canonical_url_or_listing_key)`.
+- Idempotent upsert by `(source, external_product_id)` whenever a source exposes a stable product identifier.
+- When a source omits a stable product ID, resolve merchant identity through `merchant_source_identities` and use `(source, merchant_identifier, canonical_url_or_listing_key)` as the fallback dedupe key.
 - Deterministic mapping errors (reject + reason code).
 - Last-write-wins with `observed_at` guards for price staleness.
 
-#### Validation
+### Validation
 
 - Fixture tests for parser/normalizer.
 - Integration test replaying same payload twice with no duplicates.
 - Failure-path test coverage for auth failure, rate-limit response, malformed payload.
 
-### Phase 2 — Reliability & Operations (1–2 weeks)
+## Phase 2 - Reliability & Operations (1-2 Weeks)
 
-#### Phase 2 scope
+### Phase 2 Scope
 
 - Add job orchestration (if not already selected in Phase 0):
   - queue partition by source
@@ -180,20 +179,20 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
   - fetched vs normalized vs persisted counts
   - failure categories
 
-#### SLO targets (initial)
+### SLO Targets (Initial)
 
 - Ingestion pipeline success rate >= 99% per run for valid payloads.
 - Alert if source run failure rate > 5% for 3 consecutive runs.
 - Alert if no successful run in 2x scheduled interval.
 
-### Phase 3 — Expand Connectors + Controlled Scraping (ongoing)
+## Phase 3 - Expand Connectors + Controlled Scraping (Ongoing)
 
-#### Phase 3 scope
+### Phase 3 Scope
 
 - Add second and third Tier-1/2 connectors.
 - Only introduce Tier-3 direct scraping for explicit gap coverage.
 
-#### Direct scraping gate (must all pass)
+### Direct Scraping Gate (Must All Pass)
 
 1. No viable official API/feed for required data.
 2. Legal/compliance review approved.
@@ -203,7 +202,7 @@ Use a repeatable weekly process to grow merchant coverage without uncontrolled s
 
 ## Proposed Internal Architecture
 
-### Adapter boundary
+### Adapter Boundary
 
 ```text
 ProductCompare.Ingestion.Sources.Adapter
@@ -211,7 +210,7 @@ ProductCompare.Ingestion.Sources.Adapter
   normalize(record) -> {:ok, normalized_record} | {:error, mapping_error}
 ```
 
-### Normalized record contract (draft)
+### Normalized Record Contract (Draft)
 
 ```text
 %NormalizedListing{
@@ -221,7 +220,7 @@ ProductCompare.Ingestion.Sources.Adapter
   product_title: String.t(),
   brand_name: String.t() | nil,
   gtin: String.t() | nil,
-  merchant_name: String.t(),
+  merchant_name: String.t() | nil,
   merchant_domain: String.t() | nil,
   listing_url: String.t(),
   currency: String.t(),
@@ -302,9 +301,9 @@ Use a unique constraint on `(source_id, merchant_identifier)` so replayed import
 - **Legal/compliance uncertainty**
   - Mitigation: provider checklist + mandatory legal signoff before activation.
 
-## Immediate Next Batch (actionable)
+## Immediate Next Batch (Actionable)
 
-1. Pick first connector (**recommended default: eBay Browse API**; use CJ only if eBay quota/coverage unavailable).
+1. Pick the first connector, defaulting to CJ because the account is already approved and falling back to eBay Browse only if CJ scope is insufficient.
 2. Create ADR: `docs/decisions/2026-03-23-ingestion-execution-boundary.md`.
 3. Scaffold ingestion context, merchant identity persistence, and adapter behavior with one fixture-based parser test.
 4. Update `docs/work/product-data-scraping.md` status from `drafting` to `active` once source is chosen.
