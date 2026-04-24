@@ -1,4 +1,5 @@
 import type { GraphQLTaggedNode } from "react-relay";
+import { RouterContextProvider } from "react-router-dom";
 import { createRelayEnvironment } from "../environment";
 import { loadAppQuery } from "../load-query";
 import {
@@ -69,9 +70,76 @@ test("getRoutePreloadedQuery reuses a query reference already loaded for the des
   expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
+test("preloadRouteQuery reuses a query reference already loaded for equivalent descriptor content", () => {
+  const environment = createRelayEnvironment();
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  const firstDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
+  const secondDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+  expect(secondDescriptor).toEqual(firstDescriptor);
+  expect(loadAppQuery).toHaveBeenCalledTimes(1);
+  expect(queryRef.dispose).not.toHaveBeenCalled();
+});
+
+test("preloadRouteQuery reuses equivalent nested variables regardless of object key order", () => {
+  const environment = createRelayEnvironment();
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  preloadRouteQuery(environment, routeQuery, {
+    first: 12,
+    filters: {
+      brandIds: ["brand-1"],
+      useCaseTaxonIds: ["taxon-1"]
+    }
+  });
+  preloadRouteQuery(environment, routeQuery, {
+    filters: {
+      useCaseTaxonIds: ["taxon-1"],
+      brandIds: ["brand-1"]
+    },
+    first: 12
+  });
+
+  expect(loadAppQuery).toHaveBeenCalledTimes(1);
+  expect(queryRef.dispose).not.toHaveBeenCalled();
+});
+
+test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", () => {
+  const environment = createRelayEnvironment();
+  const queryRefs: Array<{ dispose: ReturnType<typeof vi.fn>; variables: { first: number } }> = [];
+
+  vi.mocked(loadAppQuery).mockImplementation((_environment, _query, variables) => {
+    const queryRef = { dispose: vi.fn(), variables: variables as { first: number } };
+    queryRefs.push(queryRef);
+
+    return queryRef as never;
+  });
+
+  for (let first = 1; first <= 21; first += 1) {
+    preloadRouteQuery(environment, routeQuery, { first });
+  }
+
+  expect(queryRefs).toHaveLength(21);
+  expect(queryRefs[0]?.dispose).toHaveBeenCalledTimes(1);
+  expect(queryRefs[20]?.dispose).not.toHaveBeenCalled();
+});
+
 test("createRelayRouterContext exposes the Relay environment to route loaders", () => {
   const environment = createRelayEnvironment();
   const context = createRelayRouterContext(environment);
 
   expect(getRelayEnvironmentFromRouterContext(context)).toBe(environment);
+});
+
+test("getRelayEnvironmentFromRouterContext throws when the provider has no Relay environment", () => {
+  const context = new RouterContextProvider();
+
+  expect(() => getRelayEnvironmentFromRouterContext(context)).toThrow(
+    "Relay environment is missing from the route loader context"
+  );
 });

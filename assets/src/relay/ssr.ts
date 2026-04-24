@@ -8,7 +8,7 @@ interface RelayRecordsBootstrap {
 }
 
 export function dehydrateRelayEnvironment(environment: Environment): RelayRecordMap {
-  return environment.getStore().getSource().toJSON() as RelayRecordMap;
+  return environment.getStore().getSource().toJSON();
 }
 
 export function renderRelayRecordsScript(records: RelayRecordMap) {
@@ -36,7 +36,7 @@ export function readRelayRecordsFromDocument(documentRef: Document = document): 
 }
 
 function escapeJsonForHtml(json: string) {
-  return json.replace(/[<>&\u2028\u2029]/g, (character) => {
+  return json.replace(/[<>&\u2028\u2029]/gu, (character) => {
     switch (character) {
       case "<":
         return "\\u003c";
@@ -55,5 +55,12 @@ function escapeJsonForHtml(json: string) {
 }
 
 function isRelayRecordMap(value: unknown): value is RelayRecordMap {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.values(value).every(
+        (record) => record == null || (typeof record === "object" && !Array.isArray(record))
+      )
+  );
 }

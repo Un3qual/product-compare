@@ -5,7 +5,9 @@ import { createContext, RouterContextProvider } from "react-router-dom";
 import { getRequest, type Environment, type OperationType } from "relay-runtime";
 import { loadAppQuery } from "./load-query";
 
-const relayEnvironmentRouterContext = createContext<Environment>();
+const ROUTE_QUERY_REF_CACHE_LIMIT = 20;
+
+const relayEnvironmentRouterContext = createContext<Environment | null>(null);
 const routeQueryRefs = new WeakMap<Environment, Map<string, PreloadedQuery<OperationType>>>();
 
 export interface RelayRouteQueryDescriptor<TVariables = Record<string, unknown>> {
@@ -29,6 +31,12 @@ export function preloadRouteQuery<TQuery extends OperationType>(
       variables
     }
   };
+  const existingQueryRef = getRouteQueryRef(environment, descriptor);
+
+  if (existingQueryRef) {
+    return descriptor;
+  }
+
   const queryRef = loadAppQuery<TQuery>(environment, query, variables);
 
   setRouteQueryRef(environment, descriptor, queryRef);
@@ -63,7 +71,7 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
 
   return useMemo(
     () => getRoutePreloadedQuery<TQuery>(environment, query, descriptor),
-    [descriptor, descriptorKey, environment, query]
+    [descriptorKey, environment, query]
   );
 }
 
@@ -75,18 +83,33 @@ export function createRelayRouterContext(environment: Environment) {
 }
 
 export function getRelayEnvironmentFromRouterContext(context: unknown) {
-  if (context instanceof RouterContextProvider) {
-    return context.get(relayEnvironmentRouterContext);
+  if (!(context instanceof RouterContextProvider)) {
+    throw new Error("Relay environment is missing from the route loader context");
   }
 
-  throw new Error("Relay environment is missing from the route loader context");
+  const environment = context.get(relayEnvironmentRouterContext);
+
+  if (!environment) {
+    throw new Error("Relay environment is missing from the route loader context");
+  }
+
+  return environment;
 }
 
 function getRouteQueryRef<TQuery extends OperationType>(
   environment: Environment,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ) {
-  return routeQueryRefs.get(environment)?.get(routeQueryDescriptorKey(descriptor));
+  const environmentQueryRefs = routeQueryRefs.get(environment);
+  const descriptorKey = routeQueryDescriptorKey(descriptor);
+  const queryRef = environmentQueryRefs?.get(descriptorKey);
+
+  if (queryRef) {
+    environmentQueryRefs?.delete(descriptorKey);
+    environmentQueryRefs?.set(descriptorKey, queryRef);
+  }
+
+  return queryRef;
 }
 
 function setRouteQueryRef<TQuery extends OperationType>(
@@ -101,13 +124,56 @@ function setRouteQueryRef<TQuery extends OperationType>(
     routeQueryRefs.set(environment, environmentQueryRefs);
   }
 
-  environmentQueryRefs.set(routeQueryDescriptorKey(descriptor), queryRef as PreloadedQuery<OperationType>);
+  const descriptorKey = routeQueryDescriptorKey(descriptor);
+  const existingQueryRef = environmentQueryRefs.get(descriptorKey);
+
+  if (existingQueryRef === queryRef) {
+    return;
+  }
+
+  if (existingQueryRef) {
+    existingQueryRef.dispose();
+    environmentQueryRefs.delete(descriptorKey);
+  }
+
+  environmentQueryRefs.set(descriptorKey, queryRef as PreloadedQuery<OperationType>);
+  evictRouteQueryRefs(environmentQueryRefs);
+}
+
+function evictRouteQueryRefs(environmentQueryRefs: Map<string, PreloadedQuery<OperationType>>) {
+  while (environmentQueryRefs.size > ROUTE_QUERY_REF_CACHE_LIMIT) {
+    const oldestEntry = environmentQueryRefs.entries().next().value;
+
+    if (!oldestEntry) {
+      return;
+    }
+
+    const [descriptorKey, queryRef] = oldestEntry;
+    environmentQueryRefs.delete(descriptorKey);
+    queryRef.dispose();
+  }
 }
 
 function routeQueryDescriptorKey<TVariables>(descriptor: RelayRouteQueryDescriptor<TVariables>) {
   return JSON.stringify([
     descriptor.__relayQuery.operationName,
     descriptor.__relayQuery.text,
-    descriptor.__relayQuery.variables
+    stableJsonValue(descriptor.__relayQuery.variables)
   ]);
+}
+
+function stableJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stableJsonValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+        .map(([key, nestedValue]) => [key, stableJsonValue(nestedValue)])
+    );
+  }
+
+  return value;
 }

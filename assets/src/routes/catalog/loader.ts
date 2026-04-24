@@ -29,7 +29,9 @@ export async function browseLoader({ context }: LoaderFunctionArgs): Promise<Bro
         first: BROWSE_PRODUCTS_PAGE_SIZE
       })
     };
-  } catch {
+  } catch (error) {
+    console.error("Failed to preload browse products route query.", { error });
+
     return {
       status: "error"
     };

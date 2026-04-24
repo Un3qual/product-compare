@@ -1,3 +1,4 @@
+import { Component, Suspense, type ReactNode } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
@@ -15,10 +16,44 @@ export function BrowseRoute() {
       {loaderData.status === "error" ? (
         <p>Catalog unavailable.</p>
       ) : (
-        <BrowseProducts query={loaderData.query} />
+        <BrowseProductsErrorBoundary>
+          <Suspense fallback={<p role="status">Loading catalog...</p>}>
+            <BrowseProducts query={loaderData.query} />
+          </Suspense>
+        </BrowseProductsErrorBoundary>
       )}
     </section>
   );
+}
+
+type BrowseProductsErrorBoundaryState = {
+  hasError: boolean;
+};
+
+class BrowseProductsErrorBoundary extends Component<
+  { children: ReactNode },
+  BrowseProductsErrorBoundaryState
+> {
+  state: BrowseProductsErrorBoundaryState = {
+    hasError: false
+  };
+
+  static getDerivedStateFromError(): BrowseProductsErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <div role="alert">
+          <p>Catalog unavailable.</p>
+          <p>Please refresh the page or try again later.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function BrowseProducts({ query }: { query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"] }) {
@@ -38,7 +73,7 @@ function BrowseProducts({ query }: { query: Extract<BrowseProductsLoaderData, { 
             <Link to={`/products/${product.slug}`}>{product.name}</Link>
           </h2>
           <p>{product.slug}</p>
-          <p>{product.brand?.name ?? "Unknown brand"}</p>
+          <p>{product.brand.name}</p>
         </li>
       ))}
     </ul>

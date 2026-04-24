@@ -8,7 +8,7 @@ import {
 } from "relay-runtime";
 import { fetchGraphQL, type SSRContext } from "./fetch-graphql";
 
-export type RelayRecordMap = Record<string, Record<string, unknown> | null | undefined>;
+export type RelayRecordMap = NonNullable<ConstructorParameters<typeof RecordSource>[0]>;
 
 export interface CreateRelayEnvironmentOptions {
   records?: RelayRecordMap;
@@ -16,8 +16,7 @@ export interface CreateRelayEnvironmentOptions {
 }
 
 export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = {}) {
-  const records = (options.records ?? {}) as unknown as ConstructorParameters<typeof RecordSource>[0];
-  const recordSource = new RecordSource(records);
+  const recordSource = new RecordSource(options.records ?? {});
 
   return new Environment({
     network: Network.create((params: RequestParameters, variables: Variables) => {

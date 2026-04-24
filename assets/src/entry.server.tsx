@@ -37,8 +37,9 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   await waitForAllReady(htmlStream);
 
   const appHtml = await new Response(htmlStream).text();
+  const relayRecordsScript = renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment));
 
-  return `${appHtml}${renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment))}`;
+  return insertRelayRecordsScript(appHtml, relayRecordsScript);
 }
 
 async function waitForAllReady(stream: ReactReadableStream) {
@@ -87,4 +88,16 @@ function resolveServerUrl(url: string, fallback?: string) {
     });
     return "http://localhost/";
   }
+}
+
+function insertRelayRecordsScript(appHtml: string, relayRecordsScript: string) {
+  const bodyCloseIndex = appHtml.toLowerCase().lastIndexOf("</body>");
+
+  if (bodyCloseIndex === -1) {
+    return `${appHtml}${relayRecordsScript}`;
+  }
+
+  return `${appHtml.slice(0, bodyCloseIndex)}${relayRecordsScript}${appHtml.slice(
+    bodyCloseIndex
+  )}`;
 }

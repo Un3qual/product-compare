@@ -7,13 +7,14 @@ import { readRelayRecordsFromDocument } from "./relay/ssr";
 import { createClientRouter } from "./router";
 
 const root = document.getElementById("root");
-const relayEnvironment = createRelayEnvironment({
-  records: readRelayRecordsFromDocument()
-});
 
 if (!root) {
   throw new Error("missing #root element");
 }
+
+const relayEnvironment = createRelayEnvironment({
+  records: readRelayRecordsFromDocument()
+});
 
 const app = (
   <StrictMode>

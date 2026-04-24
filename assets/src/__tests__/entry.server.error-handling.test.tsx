@@ -4,6 +4,8 @@ const {
   createRelayEnvironmentMock,
   createStaticHandlerMock,
   createStaticRouterMock,
+  dehydrateRelayEnvironmentMock,
+  renderRelayRecordsScriptMock,
   renderToReadableStreamMock
 } = vi.hoisted(() => ({
   createRelayEnvironmentMock: vi.fn(() => ({})),
@@ -12,6 +14,8 @@ const {
     query: vi.fn(async () => ({}))
   })),
   createStaticRouterMock: vi.fn(() => ({})),
+  dehydrateRelayEnvironmentMock: vi.fn(() => ({})),
+  renderRelayRecordsScriptMock: vi.fn(() => ""),
   renderToReadableStreamMock: vi.fn()
 }));
 
@@ -24,8 +28,8 @@ vi.mock("../relay/environment", () => ({
 }));
 
 vi.mock("../relay/ssr", () => ({
-  dehydrateRelayEnvironment: vi.fn(() => ({})),
-  renderRelayRecordsScript: vi.fn(() => "")
+  dehydrateRelayEnvironment: dehydrateRelayEnvironmentMock,
+  renderRelayRecordsScript: renderRelayRecordsScriptMock
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -53,6 +57,10 @@ beforeEach(() => {
   }));
   createStaticRouterMock.mockReset();
   createStaticRouterMock.mockImplementation(() => ({}));
+  dehydrateRelayEnvironmentMock.mockReset();
+  dehydrateRelayEnvironmentMock.mockImplementation(() => ({}));
+  renderRelayRecordsScriptMock.mockReset();
+  renderRelayRecordsScriptMock.mockImplementation(() => "");
   renderToReadableStreamMock.mockReset();
 });
 
@@ -167,6 +175,28 @@ test("server render returns redirect responses from the static handler unchanged
   await expect(render("/products")).resolves.toBe(redirectResponse);
   expect(createStaticRouterMock).not.toHaveBeenCalled();
   expect(renderToReadableStreamMock).not.toHaveBeenCalled();
+});
+
+test("server render inserts Relay records before a full document body closes", async () => {
+  const relayRecordsScript = '<script id="__relayRecords" type="application/json">{"records":{}}</script>';
+  const htmlStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(
+        new TextEncoder().encode("<!doctype html><html><body><div>Product Compare</div></body></html>")
+      );
+      controller.close();
+    }
+  }) as ReadableStream & { allReady: Promise<void> };
+
+  htmlStream.allReady = Promise.resolve();
+  renderToReadableStreamMock.mockResolvedValue(htmlStream);
+  renderRelayRecordsScriptMock.mockReturnValue(relayRecordsScript);
+
+  const { render } = await import("../entry.server");
+
+  await expect(render("/")).resolves.toBe(
+    `<!doctype html><html><body><div>Product Compare</div>${relayRecordsScript}</body></html>`
+  );
 });
 
 test("server render keeps recoverable SSR errors from failing the response", async () => {

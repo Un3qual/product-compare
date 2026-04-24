@@ -8,7 +8,7 @@ declare module "react-relay" {
 
   export type GraphQLTaggedNode = RelayGraphQLTaggedNode;
 
-  export function graphql(strings: TemplateStringsArray): GraphQLTaggedNode;
+  export function graphql(strings: unknown): GraphQLTaggedNode;
 
   export interface PreloadedQuery<TQuery extends OperationType> {
     readonly variables: TQuery["variables"];

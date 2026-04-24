@@ -132,6 +132,9 @@ input ProductFiltersInput {
   useCaseTaxonIds: [ID!]
 }
 
+"""
+Decimal values are serialized as base-10 strings to preserve precision.
+"""
 scalar Decimal
 
 type CreateSavedComparisonSetPayload {
