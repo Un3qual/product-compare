@@ -257,6 +257,25 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
              } = graphql(conn, node_query(), %{"id" => "bad-node-id"})
     end
 
+    test "node rejects public ids outside the database bigint range", %{conn: conn} do
+      assert %{
+               "data" => %{"node" => nil},
+               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+             } =
+               graphql(conn, node_query(), %{
+                 "id" => relay_id("Product", 9_223_372_036_854_775_808)
+               })
+    end
+
+    test "node rejects non-positive public ids", %{conn: conn} do
+      for local_id <- [0, -1] do
+        assert %{
+                 "data" => %{"node" => nil},
+                 "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+               } = graphql(conn, node_query(), %{"id" => relay_id("Product", local_id)})
+      end
+    end
+
     test "node rejects owner-scoped ids with invalid UUID local ids", %{conn: conn} do
       assert %{
                "data" => %{"node" => nil},

@@ -140,7 +140,6 @@ defmodule ProductCompare.Catalog do
         saved_comparison_set.entropy_id == ^validated_entropy_id and
           saved_comparison_set.user_id == ^user_id
       )
-      |> preload(items: [:product])
       |> Repo.one()
     else
       :error -> nil

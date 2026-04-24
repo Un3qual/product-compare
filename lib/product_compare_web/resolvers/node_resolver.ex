@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   @public_types [:product, :brand, :merchant, :merchant_product]
   @owner_scoped_types [:saved_comparison_set, :api_token]
+  @max_bigint_id 9_223_372_036_854_775_807
 
   @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, term() | nil} | {:error, String.t()}
@@ -45,7 +46,7 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   defp parse_public_local_id(local_id) when is_binary(local_id) do
     case Integer.parse(local_id) do
-      {parsed_id, ""} when parsed_id > 0 -> {:ok, parsed_id}
+      {parsed_id, ""} when parsed_id > 0 and parsed_id <= @max_bigint_id -> {:ok, parsed_id}
       _ -> {:error, :invalid_id}
     end
   end
@@ -77,18 +78,20 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
          entropy_id,
          %{context: %{current_user: %User{} = user}}
        ) do
-    {:ok, Catalog.get_saved_comparison_set_for_user(user, entropy_id)}
+    fetch_record(Catalog.get_saved_comparison_set_for_user(user, entropy_id))
   end
 
-  defp fetch_owner_scoped_node(:saved_comparison_set, _entropy_id, _resolution), do: {:ok, nil}
+  defp fetch_owner_scoped_node(:saved_comparison_set, _entropy_id, _resolution),
+    do: fetch_record(nil)
 
   defp fetch_owner_scoped_node(:api_token, token_entropy_id, %{
          context: %{current_user: %User{} = user}
        }) do
-    {:ok, Accounts.get_api_token_for_user(user, token_entropy_id)}
+    fetch_record(Accounts.get_api_token_for_user(user, token_entropy_id))
   end
 
-  defp fetch_owner_scoped_node(:api_token, _token_entropy_id, _resolution), do: {:ok, nil}
+  defp fetch_owner_scoped_node(:api_token, _token_entropy_id, _resolution),
+    do: fetch_record(nil)
 
   defp fetch_record(nil), do: :not_found
   defp fetch_record(record), do: {:ok, record}

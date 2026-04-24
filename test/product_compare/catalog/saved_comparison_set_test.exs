@@ -90,6 +90,25 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
     end
   end
 
+  describe "get_saved_comparison_set_for_user/2" do
+    test "returns an owned set without eagerly preloading node associations" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-node-lazy-product"})
+
+      assert {:ok, saved_set} =
+               Catalog.create_saved_comparison_set(user.id, %{
+                 name: "Lazy node set",
+                 product_ids: [product.id]
+               })
+
+      loaded_saved_set = Catalog.get_saved_comparison_set_for_user(user, saved_set.entropy_id)
+
+      assert loaded_saved_set.id == saved_set.id
+      assert loaded_saved_set.user_id == user.id
+      refute Ecto.assoc_loaded?(loaded_saved_set.items)
+    end
+  end
+
   describe "delete_saved_comparison_set/2" do
     test "returns not_found for invalid entropy ids" do
       user = AccountsFixtures.user_fixture()

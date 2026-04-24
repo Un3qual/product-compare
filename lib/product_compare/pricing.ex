@@ -99,10 +99,7 @@ defmodule ProductCompare.Pricing do
   @spec get_merchant_product(pos_integer()) :: MerchantProduct.t() | nil
   def get_merchant_product(merchant_product_id)
       when is_integer(merchant_product_id) and merchant_product_id > 0 do
-    case Repo.get(MerchantProduct, merchant_product_id) do
-      nil -> nil
-      merchant_product -> Repo.preload(merchant_product, [:merchant, :product])
-    end
+    Repo.get(MerchantProduct, merchant_product_id)
   end
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}

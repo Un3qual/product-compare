@@ -138,7 +138,7 @@ defmodule ProductCompare.PricingTest do
                [matching_a_active.id]
     end
 
-    test "get_merchant!/1 and merchant-product read paths preload associations", %{
+    test "merchant-product read paths preload associations only where expected", %{
       test: test_name
     } do
       product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-product"})
@@ -167,10 +167,10 @@ defmodule ProductCompare.PricingTest do
       assert loaded_from_get.product.id == product.id
 
       loaded_from_optional_get = Pricing.get_merchant_product(merchant_product.id)
-      assert Ecto.assoc_loaded?(loaded_from_optional_get.merchant)
-      assert Ecto.assoc_loaded?(loaded_from_optional_get.product)
-      assert loaded_from_optional_get.merchant.id == merchant.id
-      assert loaded_from_optional_get.product.id == product.id
+      refute Ecto.assoc_loaded?(loaded_from_optional_get.merchant)
+      refute Ecto.assoc_loaded?(loaded_from_optional_get.product)
+      assert loaded_from_optional_get.merchant_id == merchant.id
+      assert loaded_from_optional_get.product_id == product.id
 
       loaded_from_list = Pricing.list_merchant_products(%{product_id: product.id})
 
