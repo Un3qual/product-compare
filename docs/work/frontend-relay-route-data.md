@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-22 after merge-conflict review
+- Last verified: 2026-04-24 after Task 1 Relay SSR hydration primitive verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -23,22 +23,36 @@
 
 ## Verified Current State
 
-- `assets/src/relay/environment.ts` and `assets/src/entry.client.tsx` already provide a Relay environment and provider, but route code still bypasses normal Relay APIs.
-- `assets/src/relay/load-query.ts` exists as a thin wrapper, but no current route imports `graphql`, `usePreloadedQuery`, `useFragment`, or `useMutation`.
+- `assets/src/relay/environment.ts`, `assets/src/relay/ssr.ts`, `assets/src/entry.client.tsx`, and `assets/src/entry.server.tsx` now seed/dehydrate Relay records through the SSR bootstrap while preserving the existing Relay provider.
+- `assets/src/relay/load-query.ts` and `assets/src/relay/route-preload.ts` provide the first route-preload primitives, but no current route imports `graphql`, `usePreloadedQuery`, `useFragment`, or `useMutation`.
 - `assets/src/routes/catalog/api.ts`, `assets/src/routes/products/api.ts`, `assets/src/routes/compare/api.ts`, and `assets/src/routes/auth/actions.ts` all own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
 - `assets/src/router.tsx` still wires `/products`, `/products/:slug`, `/compare`, and `/compare/saved` through manual route loaders that return DTO-like status payloads instead of Relay preload data.
-- `assets/src/entry.server.tsx` creates a request-scoped Relay environment, but the server render path does not serialize the populated store back into the client bootstrap.
+- `assets/src/entry.server.tsx` creates a request-scoped Relay environment, exposes it through React Router loader context, and serializes the populated store back into a non-executable client bootstrap script.
 - `assets/relay.config.json` exists and `assets/package.json` already includes Relay compiler/runtime dependencies, but `assets/src/__generated__/` still contains only `.gitkeep`.
 - The saved-comparisons UI now ships for authenticated users, but both compare routes still extend the same manual GraphQL helper path that this slice is meant to replace.
 
 ## Next Batch
 
 - Status: ready
-- Batch: Task 1 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Batch: Task 2 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 - Why this batch:
-  - The frontend already has enough Relay foundation to make route adoption tractable, but the missing SSR hydration/preload layer blocks the rest of the migration.
-  - Landing the hydration primitives first keeps the route migrations incremental and avoids a one-shot rewrite.
+  - The Relay SSR hydration and route-preload primitives are now in place, so the route migration can start with the smallest public catalog surface.
+  - Migrating `/products` first exercises the new preload path without the chained product-detail/offers lookup or compare save/delete mutations.
   - `/compare/saved` and the compare save/delete flows have now landed on the manual compare helper path, so this migration is still required before more compare-route follow-up work continues.
+
+## Completed Batches
+
+### Task 1: Relay SSR Hydration And Route-Preload Primitives
+
+- Completed: 2026-04-24
+- Outcome:
+  - Added `assets/src/relay/ssr.ts` for Relay store dehydration, HTML-safe bootstrap serialization, and client bootstrap parsing.
+  - Added `assets/src/relay/route-preload.ts` for route query preloading descriptors and shared React Router loader context access to the Relay environment.
+  - Updated `assets/src/relay/environment.ts`, `assets/src/entry.server.tsx`, `assets/src/entry.client.tsx`, and `assets/src/router.tsx` so SSR and hydration share seeded Relay records and loaders can use the request/client Relay environment.
+  - Added focused coverage in `assets/src/relay/__tests__/route-preload.test.ts`, extended `assets/src/__tests__/entry.server.test.tsx`, and kept the entry-server error-handling tests aligned with the new environment options.
+- Verification:
+  - `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/__tests__/entry.server.test.tsx src/__tests__/entry.server.error-handling.test.tsx`
+  - `cd assets && bun run typecheck`
 
 ## Parallel Lane Ownership
 

@@ -3,10 +3,13 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
 import { createRelayEnvironment } from "./relay/environment";
+import { readRelayRecordsFromDocument } from "./relay/ssr";
 import { createClientRouter } from "./router";
 
 const root = document.getElementById("root");
-const relayEnvironment = createRelayEnvironment();
+const relayEnvironment = createRelayEnvironment({
+  records: readRelayRecordsFromDocument()
+});
 
 if (!root) {
   throw new Error("missing #root element");
@@ -15,7 +18,7 @@ if (!root) {
 const app = (
   <StrictMode>
     <RelayEnvironmentProvider environment={relayEnvironment}>
-      <RouterProvider router={createClientRouter()} />
+      <RouterProvider router={createClientRouter(relayEnvironment)} />
     </RelayEnvironmentProvider>
   </StrictMode>
 );

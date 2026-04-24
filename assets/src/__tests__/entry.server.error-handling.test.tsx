@@ -23,6 +23,11 @@ vi.mock("../relay/environment", () => ({
   createRelayEnvironment: createRelayEnvironmentMock
 }));
 
+vi.mock("../relay/ssr", () => ({
+  dehydrateRelayEnvironment: vi.fn(() => ({})),
+  renderRelayRecordsScript: vi.fn(() => "")
+}));
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
 
@@ -73,7 +78,7 @@ test("server render passes SSR context into the Relay environment", async () => 
   const { render } = await import("../entry.server");
 
   await expect(render("/", ssrContext)).resolves.toContain("Product Compare");
-  expect(createRelayEnvironmentMock).toHaveBeenCalledWith(ssrContext);
+  expect(createRelayEnvironmentMock).toHaveBeenCalledWith({ ssrContext });
   expect(createStaticHandlerMock).toHaveBeenCalled();
 });
 

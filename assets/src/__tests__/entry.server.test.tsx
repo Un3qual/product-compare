@@ -14,3 +14,7 @@ test("server render resolves auth route markup", async () => {
 test("server render resolves recovery route markup", async () => {
   await expect(render("/auth/forgot-password")).resolves.toContain("Reset your password");
 });
+
+test("server render includes serialized Relay records for matched route queries", async () => {
+  await expect(render("/products")).resolves.toContain("__relayRecords");
+});
