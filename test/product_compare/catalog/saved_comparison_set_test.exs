@@ -14,10 +14,14 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
     end
 
     test "get_product/1 and get_brand/1 only accept positive integer ids" do
+      oversized_id = 9_223_372_036_854_775_808
+
       assert_raise FunctionClauseError, fn -> Catalog.get_product(0) end
       assert_raise FunctionClauseError, fn -> Catalog.get_product(-1) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(oversized_id) end
       assert_raise FunctionClauseError, fn -> Catalog.get_brand(0) end
       assert_raise FunctionClauseError, fn -> Catalog.get_brand(-1) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(oversized_id) end
     end
   end
 

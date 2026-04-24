@@ -15,6 +15,8 @@ defmodule ProductCompare.Catalog do
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
+  @max_bigint_id 9_223_372_036_854_775_807
+
   @spec list_products() :: [Product.t()]
   def list_products do
     Repo.all(from p in Product, order_by: [asc: p.id])
@@ -66,10 +68,12 @@ defmodule ProductCompare.Catalog do
   def get_product!(id), do: Repo.get!(Product, id)
 
   @spec get_product(pos_integer()) :: Product.t() | nil
-  def get_product(id) when is_integer(id) and id > 0, do: Repo.get(Product, id)
+  def get_product(id) when is_integer(id) and id > 0 and id <= @max_bigint_id,
+    do: Repo.get(Product, id)
 
   @spec get_brand(pos_integer()) :: Brand.t() | nil
-  def get_brand(id) when is_integer(id) and id > 0, do: Repo.get(Brand, id)
+  def get_brand(id) when is_integer(id) and id > 0 and id <= @max_bigint_id,
+    do: Repo.get(Brand, id)
 
   @spec get_product_by_slug(String.t() | nil) :: Product.t() | nil
   def get_product_by_slug(nil), do: nil

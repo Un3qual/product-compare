@@ -10,6 +10,8 @@ defmodule ProductCompare.Pricing do
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
 
+  @max_bigint_id 9_223_372_036_854_775_807
+
   @spec upsert_merchant(map()) :: {:ok, Merchant.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant(attrs) do
     now = DateTime.utc_now()
@@ -46,8 +48,9 @@ defmodule ProductCompare.Pricing do
   def get_merchant!(merchant_id), do: Repo.get!(Merchant, merchant_id)
 
   @spec get_merchant(pos_integer()) :: Merchant.t() | nil
-  def get_merchant(merchant_id) when is_integer(merchant_id) and merchant_id > 0,
-    do: Repo.get(Merchant, merchant_id)
+  def get_merchant(merchant_id)
+      when is_integer(merchant_id) and merchant_id > 0 and merchant_id <= @max_bigint_id,
+      do: Repo.get(Merchant, merchant_id)
 
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
@@ -98,7 +101,8 @@ defmodule ProductCompare.Pricing do
 
   @spec get_merchant_product(pos_integer()) :: MerchantProduct.t() | nil
   def get_merchant_product(merchant_product_id)
-      when is_integer(merchant_product_id) and merchant_product_id > 0 do
+      when is_integer(merchant_product_id) and merchant_product_id > 0 and
+             merchant_product_id <= @max_bigint_id do
     Repo.get(MerchantProduct, merchant_product_id)
   end
 

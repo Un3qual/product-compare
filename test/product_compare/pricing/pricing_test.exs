@@ -72,10 +72,14 @@ defmodule ProductCompare.PricingTest do
     end
 
     test "get_merchant/1 and get_merchant_product/1 only accept positive integer ids" do
+      oversized_id = 9_223_372_036_854_775_808
+
       assert_raise FunctionClauseError, fn -> Pricing.get_merchant(0) end
       assert_raise FunctionClauseError, fn -> Pricing.get_merchant(-1) end
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant(oversized_id) end
       assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(0) end
       assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(-1) end
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(oversized_id) end
     end
 
     test "list_merchant_products/1 filters by product and optional merchant/active flags", %{
