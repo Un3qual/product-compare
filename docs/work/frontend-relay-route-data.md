@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-04-24 after Task 1 Relay SSR hydration primitive verification
+- Last verified: 2026-04-24 after Task 2 browse-route Relay migration verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -24,23 +24,37 @@
 ## Verified Current State
 
 - `assets/src/relay/environment.ts`, `assets/src/relay/ssr.ts`, `assets/src/entry.client.tsx`, and `assets/src/entry.server.tsx` now seed/dehydrate Relay records through the SSR bootstrap while preserving the existing Relay provider.
-- `assets/src/relay/load-query.ts` and `assets/src/relay/route-preload.ts` provide the first route-preload primitives, but no current route imports `graphql`, `usePreloadedQuery`, `useFragment`, or `useMutation`.
-- `assets/src/routes/catalog/api.ts`, `assets/src/routes/products/api.ts`, `assets/src/routes/compare/api.ts`, and `assets/src/routes/auth/actions.ts` all own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
-- `assets/src/router.tsx` still wires `/products`, `/products/:slug`, `/compare`, and `/compare/saved` through manual route loaders that return DTO-like status payloads instead of Relay preload data.
+- `assets/src/relay/load-query.ts` and `assets/src/relay/route-preload.ts` provide route-preload primitives for serializable descriptors plus in-memory query-ref reuse.
+- `/products` now uses `assets/src/routes/catalog/loader.ts`, `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`, and `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts` instead of `assets/src/routes/catalog/api.ts`.
+- `assets/src/routes/products/api.ts`, `assets/src/routes/compare/api.ts`, and `assets/src/routes/auth/actions.ts` still own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
+- `assets/src/router.tsx` wires `/products` through a Relay preload loader, while `/products/:slug`, `/compare`, and `/compare/saved` still use manual route loaders that return DTO-like status payloads instead of Relay preload data.
 - `assets/src/entry.server.tsx` creates a request-scoped Relay environment, exposes it through React Router loader context, and serializes the populated store back into a non-executable client bootstrap script.
-- `assets/relay.config.json` exists and `assets/package.json` already includes Relay compiler/runtime dependencies, but `assets/src/__generated__/` still contains only `.gitkeep`.
+- `assets/relay.config.json` exists, `assets/package.json` already includes Relay compiler/runtime dependencies, and browse now has a tracked generated Relay artifact.
 - The saved-comparisons UI now ships for authenticated users, but both compare routes still extend the same manual GraphQL helper path that this slice is meant to replace.
 
 ## Next Batch
 
 - Status: ready
-- Batch: Task 2 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Batch: Task 3 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 - Why this batch:
-  - The Relay SSR hydration and route-preload primitives are now in place, so the route migration can start with the smallest public catalog surface.
-  - Migrating `/products` first exercises the new preload path without the chained product-detail/offers lookup or compare save/delete mutations.
+  - The `/products` browse route now exercises the Relay preload path, so the next route-data migration can move the product detail and offers page onto the same pattern.
+  - Migrating `/products/:slug` next removes another manual GraphQL wrapper while preserving the existing product-ready, missing-product, offer-empty, and offer-unavailable behavior.
   - `/compare/saved` and the compare save/delete flows have now landed on the manual compare helper path, so this migration is still required before more compare-route follow-up work continues.
 
 ## Completed Batches
+
+### Task 2: Browse Route Relay Migration
+
+- Completed: 2026-04-24
+- Outcome:
+  - Replaced `assets/src/routes/catalog/api.ts` with `assets/src/routes/catalog/loader.ts`, a Relay route query source, and the generated `BrowseProductsRouteQuery` artifact.
+  - Updated `assets/src/routes/catalog/browse.tsx` to render from `usePreloadedQuery` via the route-preload descriptor while preserving ready, empty, and unavailable UI states.
+  - Extended `assets/src/relay/route-preload.ts` so loader-created query refs can be reused during route render and recreated against a hydrated Relay environment on the client.
+  - Updated `assets/schema.graphql` and `assets/.gitignore` so the browse query compiles and generated `.graphql.ts` artifacts can be tracked.
+- Verification:
+  - `cd assets && bun run relay && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx`
+  - `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/routes/catalog/__tests__/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
 
 ### Task 1: Relay SSR Hydration And Route-Preload Primitives
 

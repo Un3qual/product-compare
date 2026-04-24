@@ -7,12 +7,12 @@
 ### Frontend Lane
 
 - Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 2
+- Batch: Frontend Relay Route-Data Adoption, Task 3
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: migrate the `/products` browse route to a Relay-preloaded query and remove its manual route-local GraphQL wrapper.
+- Next step: migrate `/products/:slug` product detail and active offers to Relay-preloaded queries and remove the manual product route GraphQL wrapper.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, and route-preload/context primitives now exist, so the migration can start with the smallest catalog route.
-  - The frontend still ships `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products` browse route migration now exist, so the next route can reuse the same pattern.
+  - The frontend still ships `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
   - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
   - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
 
@@ -28,6 +28,13 @@
   - Keeping this work in a separate backend lane avoids reopening the active frontend work doc with schema changes it explicitly deferred.
 
 ## Just Completed
+
+- Frontend Relay Route-Data Adoption, Task 2:
+  - Replaced `assets/src/routes/catalog/api.ts` with `assets/src/routes/catalog/loader.ts`, `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`, and generated `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`.
+  - Updated `assets/src/routes/catalog/browse.tsx` and `assets/src/router.tsx` so `/products` preloads and renders through Relay while preserving browse ready, empty, and unavailable states.
+  - Extended `assets/src/relay/route-preload.ts` to reuse loader-created query refs and recreate them against the hydrated client Relay environment when needed.
+  - Updated `assets/schema.graphql`, `assets/src/react-relay.d.ts`, and `assets/.gitignore` so the browse route compiles against Relay and its generated artifact can be tracked.
+  - Verified `cd assets && bun run relay && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx`, `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/routes/catalog/__tests__/browse.route.test.tsx`, and `cd assets && bun run typecheck`.
 
 - Frontend Relay Route-Data Adoption, Task 1:
   - Added `assets/src/relay/ssr.ts` to dehydrate the Relay store, render an HTML-safe non-executable `__relayRecords` bootstrap payload, and hydrate client environments from that payload.

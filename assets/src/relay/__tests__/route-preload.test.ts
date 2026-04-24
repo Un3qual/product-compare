@@ -3,6 +3,7 @@ import { createRelayEnvironment } from "../environment";
 import { loadAppQuery } from "../load-query";
 import {
   createRelayRouterContext,
+  getRoutePreloadedQuery,
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery
 } from "../route-preload";
@@ -51,6 +52,21 @@ test("preloadRouteQuery preloads the operation and returns a serializable descri
   });
 
   expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables);
+});
+
+test("getRoutePreloadedQuery reuses a query reference already loaded for the descriptor", () => {
+  const environment = createRelayEnvironment();
+  const variables = { first: 12 };
+  const queryRef = { dispose: vi.fn(), variables };
+
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  const descriptor = preloadRouteQuery(environment, routeQuery, variables);
+
+  vi.mocked(loadAppQuery).mockClear();
+
+  expect(getRoutePreloadedQuery(environment, routeQuery, descriptor)).toBe(queryRef);
+  expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
 test("createRelayRouterContext exposes the Relay environment to route loaders", () => {

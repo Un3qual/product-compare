@@ -7,7 +7,7 @@ import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
 import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
-import { browseLoader } from "./routes/catalog/api";
+import { browseLoader } from "./routes/catalog/loader";
 import { BrowseRoute } from "./routes/catalog/browse";
 import { compareLoader, savedComparisonsLoader } from "./routes/compare/api";
 import { CompareRoute } from "./routes/compare";

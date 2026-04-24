@@ -1,17 +1,44 @@
 import { render, screen } from "@testing-library/react";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { browseLoader } from "../api";
+import { usePreloadedQuery } from "react-relay";
+import { createRelayEnvironment } from "../../../relay/environment";
+import {
+  createRelayRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery
+} from "../../../relay/route-preload";
+import { browseLoader } from "../loader";
 import { BrowseRoute } from "../browse";
 
-const { useLoaderDataMock } = vi.hoisted(() => ({
-  useLoaderDataMock: vi.fn()
-}));
+const { preloadRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
+  vi.hoisted(() => ({
+    preloadRouteQueryMock: vi.fn(),
+    useLoaderDataMock: vi.fn(),
+    usePreloadedQueryMock: vi.fn(),
+    useRoutePreloadedQueryMock: vi.fn()
+  }));
 
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
-}));
+vi.mock("../../../relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../../relay/route-preload")>(
+    "../../../relay/route-preload"
+  );
+
+  return {
+    ...actual,
+    preloadRouteQuery: preloadRouteQueryMock,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+  };
+});
+
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    usePreloadedQuery: usePreloadedQueryMock
+  };
+});
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
@@ -22,191 +49,94 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
+const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+
+const browseQueryDescriptor = {
+  __relayQuery: {
+    operationName: "BrowseProductsRouteQuery",
+    text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }",
+    variables: { first: 12 }
+  }
+};
 
 beforeEach(() => {
-  fetchGraphQLMock.mockReset();
+  preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
+  usePreloadedQueryMock.mockReset();
+  useRoutePreloadedQueryMock.mockReset();
 });
 
-test("browse loader requests and returns the first page of products", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      products: {
-        edges: [
-          {
-            node: {
-              id: "product-1",
-              name: "Catalog First",
-              slug: "catalog-first",
-              brand: {
-                id: "brand-1",
-                name: "Acme"
-              }
-            }
-          },
-          {
-            node: {
-              id: "product-2",
-              name: "Catalog Second",
-              slug: "catalog-second",
-              brand: {
-                id: "brand-2",
-                name: "Globex"
-              }
-            }
-          }
-        ]
-      }
-    }
-  });
+test("browse loader preloads and returns the Relay browse route query", async () => {
+  const environment = createRelayEnvironment();
+
+  mockedPreloadRouteQuery.mockReturnValue(browseQueryDescriptor);
 
   await expect(
     browseLoader({
       request: new Request("https://app.example.com/products"),
       params: {},
-      context: undefined
+      context: createRelayRouterContext(environment)
     } as LoaderFunctionArgs)
   ).resolves.toEqual({
     status: "ready",
-    products: [
-      {
-        id: "product-1",
-        name: "Catalog First",
-        slug: "catalog-first",
-        brandName: "Acme"
-      },
-      {
-        id: "product-2",
-        name: "Catalog Second",
-        slug: "catalog-second",
-        brandName: "Globex"
-      }
-    ]
+    query: browseQueryDescriptor
   });
 
-  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
-    1,
-    expect.stringContaining("query BrowseProducts"),
-    { first: 12 },
-    undefined
-  );
-
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(environment, expect.anything(), { first: 12 });
 });
 
-test("browse loader forwards the SSR request to fetchGraphQL", async () => {
-  const originalWindow = globalThis.window;
+test("browse loader marks the catalog unavailable when Relay preload fails", async () => {
+  const environment = createRelayEnvironment();
 
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      products: {
-        edges: []
-      }
-    }
-  });
-
-  Object.defineProperty(globalThis, "window", {
-    configurable: true,
-    value: undefined
-  });
-
-  try {
-    const request = new Request("https://app.example.com/products");
-
-    await expect(
-      browseLoader({
-        request,
-        params: {},
-        context: undefined
-      } as LoaderFunctionArgs)
-    ).resolves.toEqual({ status: "ready", products: [] });
-
-    expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
-      1,
-      expect.stringContaining("query BrowseProducts"),
-      { first: 12 },
-      { request }
-    );
-  } finally {
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: originalWindow
-    });
-  }
-});
-
-test("browse loader falls back to an empty list for null GraphQL payloads", async () => {
-  fetchGraphQLMock.mockResolvedValue(null as never);
-
-  await expect(
-    browseLoader({
-      request: new Request("https://app.example.com/products"),
-      params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
-  ).resolves.toEqual({ status: "ready", products: [] });
-
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
-});
-
-test("browse loader marks GraphQL error payloads as unavailable", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      products: {
-        edges: []
-      }
-    },
-    errors: [
-      {
-        message: "resolver failed"
-      }
-    ]
+  mockedPreloadRouteQuery.mockImplementation(() => {
+    throw new Error("missing operation");
   });
 
   await expect(
     browseLoader({
       request: new Request("https://app.example.com/products"),
       params: {},
-      context: undefined
+      context: createRelayRouterContext(environment)
     } as LoaderFunctionArgs)
-  ).resolves.toEqual({ status: "error", products: [] });
-
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  ).resolves.toEqual({ status: "error" });
 });
 
-test("browse loader marks the catalog unavailable when the request fails", async () => {
-  fetchGraphQLMock.mockRejectedValue(new Error("Network request failed: boom"));
+test("renders browse products from the Relay route query", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
-  await expect(
-    browseLoader({
-      request: new Request("https://app.example.com/products"),
-      params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
-  ).resolves.toEqual({ status: "error", products: [] });
-
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
-});
-
-test("renders the browse products returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    products: [
-      {
-        id: "product-1",
-        name: "Catalog First",
-        slug: "catalog-first",
-        brandName: "Acme"
-      },
-      {
-        id: "product-2",
-        name: "Catalog Second",
-        slug: "catalog-second",
-        brandName: "Globex"
-      }
-    ]
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-1",
+            name: "Catalog First",
+            slug: "catalog-first",
+            brand: {
+              name: "Acme"
+            }
+          }
+        },
+        {
+          node: {
+            id: "product-2",
+            name: "Catalog Second",
+            slug: "catalog-second",
+            brand: {
+              name: "Globex"
+            }
+          }
+        }
+      ]
+    }
   });
 
   render(
@@ -223,12 +153,22 @@ test("renders the browse products returned by the route loader", () => {
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
 });
 
-test("renders an empty-state message when no products are available", () => {
+test("renders an empty-state message when the Relay query returns no products", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    products: []
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: []
+    }
   });
 
   render(
@@ -240,10 +180,9 @@ test("renders an empty-state message when no products are available", () => {
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
 });
 
-test("renders an unavailable-state message when the catalog request fails", () => {
+test("renders an unavailable-state message when the preload path fails", () => {
   mockedUseLoaderData.mockReturnValue({
-    status: "error",
-    products: []
+    status: "error"
   });
 
   render(
@@ -253,4 +192,6 @@ test("renders an unavailable-state message when the catalog request fails", () =
   );
 
   expect(screen.getByText("Catalog unavailable.")).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });

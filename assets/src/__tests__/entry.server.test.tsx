@@ -16,5 +16,44 @@ test("server render resolves recovery route markup", async () => {
 });
 
 test("server render includes serialized Relay records for matched route queries", async () => {
-  await expect(render("/products")).resolves.toContain("__relayRecords");
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = vi.fn(async () =>
+    new Response(
+      JSON.stringify({
+        data: {
+          products: {
+            edges: [
+              {
+                node: {
+                  id: "product-1",
+                  name: "Catalog First",
+                  slug: "catalog-first",
+                  brand: {
+                    id: "brand-1",
+                    name: "Acme"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }),
+      {
+        headers: {
+          "content-type": "application/json"
+        },
+        status: 200
+      }
+    )
+  ) as typeof fetch;
+
+  try {
+    const html = await render("/products");
+
+    expect(html).toContain("__relayRecords");
+    expect(html).toContain("Catalog First");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

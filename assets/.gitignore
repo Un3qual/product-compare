@@ -5,5 +5,6 @@ playwright-report/
 
 src/__generated__/*
 !src/__generated__/.gitkeep
+!src/__generated__/*.graphql.ts
 
 .DS_Store
