@@ -5,6 +5,22 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
 
+  describe "public read helpers" do
+    test "get_product/1 and get_brand/1 return records for positive ids" do
+      product = SpecsFixtures.product_fixture(%{slug: "catalog-read-contract-product"})
+
+      assert Catalog.get_product(product.id).id == product.id
+      assert Catalog.get_brand(product.brand_id).id == product.brand_id
+    end
+
+    test "get_product/1 and get_brand/1 only accept positive integer ids" do
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(0) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(-1) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(0) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(-1) end
+    end
+  end
+
   describe "create_saved_comparison_set/2" do
     test "persists an owner-scoped saved set with ordered items" do
       user = AccountsFixtures.user_fixture()

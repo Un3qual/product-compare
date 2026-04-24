@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompareWeb.Schema
 
   describe "/api/graphql node query" do
     test "node returns a product for a valid product global id", %{conn: conn} do
@@ -47,7 +48,8 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     end
 
     test "node returns a merchant for a valid merchant global id", %{conn: conn} do
-      merchant = merchant_fixture(%{name: "Node Merchant", domain: unique_domain("node-merchant")})
+      merchant =
+        merchant_fixture(%{name: "Node Merchant", domain: unique_domain("node-merchant")})
 
       assert %{
                "data" => %{
@@ -171,6 +173,23 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                })
     end
 
+    test "node returns nil for owner-scoped ids when current_user is nil" do
+      owner = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "node-saved-set-nil-user"})
+
+      assert {:ok, saved_set} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "Nil user hidden set",
+                 product_ids: [product.id]
+               })
+
+      assert {:ok, %{data: %{"node" => nil}}} =
+               Absinthe.run(node_query(), Schema,
+                 variables: %{"id" => relay_id("SavedComparisonSet", saved_set.entropy_id)},
+                 context: %{current_user: nil}
+               )
+    end
+
     test "node returns an api token for the authenticated owner", %{conn: conn} do
       owner = AccountsFixtures.user_fixture()
 
@@ -238,6 +257,21 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
              } = graphql(conn, node_query(), %{"id" => "bad-node-id"})
     end
 
+    test "node rejects owner-scoped ids with invalid UUID local ids", %{conn: conn} do
+      assert %{
+               "data" => %{"node" => nil},
+               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+             } = graphql(conn, node_query(), %{"id" => relay_id("ApiToken", "not-a-uuid")})
+
+      assert %{
+               "data" => %{"node" => nil},
+               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+             } =
+               graphql(conn, node_query(), %{
+                 "id" => relay_id("SavedComparisonSet", "not-a-uuid")
+               })
+    end
+
     test "node rejects unsupported ids", %{conn: conn} do
       unsupported_id = relay_id("PricePoint", 123)
 
@@ -245,6 +279,32 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                "data" => %{"node" => nil},
                "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
              } = graphql(conn, node_query(), %{"id" => unsupported_id})
+    end
+
+    test "node exposes the global id directly through the node field", %{conn: conn} do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "node-interface-product",
+          name: "Node Interface Product"
+        })
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "Product",
+                   "id" => product_id
+                 }
+               }
+             } = graphql(conn, node_id_query(), %{"id" => relay_id("Product", product.id)})
+
+      assert product_id == relay_id("Product", product.id)
+    end
+
+    test "node returns nil without errors for a valid non-existent public node id", %{conn: conn} do
+      response = graphql(conn, node_query(), %{"id" => relay_id("Product", 2_147_483_647)})
+
+      assert %{"data" => %{"node" => nil}} = response
+      refute Map.has_key?(response, "errors")
     end
   end
 
@@ -321,6 +381,17 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
           tokenPrefix
           revokedAt
         }
+      }
+    }
+    """
+  end
+
+  defp node_id_query do
+    """
+    query NodeId($id: ID!) {
+      node(id: $id) {
+        __typename
+        id
       }
     }
     """

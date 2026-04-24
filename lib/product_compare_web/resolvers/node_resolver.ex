@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareSchemas.Accounts.User
 
   @public_types [:product, :brand, :merchant, :merchant_product]
   @owner_scoped_types [:saved_comparison_set, :api_token]
@@ -30,7 +31,9 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
         end
 
       {:ok, {type, local_id}} when type in @owner_scoped_types ->
-        {:ok, {type, local_id}}
+        with {:ok, parsed_id} <- parse_uuid_local_id(local_id) do
+          {:ok, {type, parsed_id}}
+        end
 
       {:ok, {_type, _local_id}} ->
         {:error, :unsupported_type}
@@ -47,6 +50,13 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     end
   end
 
+  defp parse_uuid_local_id(local_id) when is_binary(local_id) do
+    case Ecto.UUID.cast(local_id) do
+      {:ok, parsed_id} -> {:ok, parsed_id}
+      :error -> {:error, :invalid_id}
+    end
+  end
+
   defp fetch_node(type, local_id, _resolution) when type in @public_types do
     fetch_public_node(type, local_id)
   end
@@ -58,19 +68,23 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   defp fetch_public_node(:product, id), do: fetch_record(Catalog.get_product(id))
   defp fetch_public_node(:brand, id), do: fetch_record(Catalog.get_brand(id))
   defp fetch_public_node(:merchant, id), do: fetch_record(Pricing.get_merchant(id))
-  defp fetch_public_node(:merchant_product, id), do: fetch_record(Pricing.get_merchant_product(id))
+
+  defp fetch_public_node(:merchant_product, id),
+    do: fetch_record(Pricing.get_merchant_product(id))
 
   defp fetch_owner_scoped_node(
          :saved_comparison_set,
          entropy_id,
-         %{context: %{current_user: user}}
+         %{context: %{current_user: %User{} = user}}
        ) do
     {:ok, Catalog.get_saved_comparison_set_for_user(user, entropy_id)}
   end
 
   defp fetch_owner_scoped_node(:saved_comparison_set, _entropy_id, _resolution), do: {:ok, nil}
 
-  defp fetch_owner_scoped_node(:api_token, token_entropy_id, %{context: %{current_user: user}}) do
+  defp fetch_owner_scoped_node(:api_token, token_entropy_id, %{
+         context: %{current_user: %User{} = user}
+       }) do
     {:ok, Accounts.get_api_token_for_user(user, token_entropy_id)}
   end
 

@@ -66,10 +66,10 @@ defmodule ProductCompare.Catalog do
   def get_product!(id), do: Repo.get!(Product, id)
 
   @spec get_product(pos_integer()) :: Product.t() | nil
-  def get_product(id) when is_integer(id), do: Repo.get(Product, id)
+  def get_product(id) when is_integer(id) and id > 0, do: Repo.get(Product, id)
 
   @spec get_brand(pos_integer()) :: Brand.t() | nil
-  def get_brand(id) when is_integer(id), do: Repo.get(Brand, id)
+  def get_brand(id) when is_integer(id) and id > 0, do: Repo.get(Brand, id)
 
   @spec get_product_by_slug(String.t() | nil) :: Product.t() | nil
   def get_product_by_slug(nil), do: nil
@@ -78,7 +78,10 @@ defmodule ProductCompare.Catalog do
     Repo.get_by(Product, slug: slug)
   end
 
-  @spec create_saved_comparison_set(pos_integer(), %{name: String.t(), product_ids: [pos_integer()]}) ::
+  @spec create_saved_comparison_set(pos_integer(), %{
+          name: String.t(),
+          product_ids: [pos_integer()]
+        }) ::
           {:ok, SavedComparisonSet.t()}
           | {:error,
              Ecto.Changeset.t()
@@ -96,7 +99,8 @@ defmodule ProductCompare.Catalog do
         :saved_comparison_set,
         SavedComparisonSet.changeset(%SavedComparisonSet{}, %{user_id: user_id, name: name})
       )
-      |> Multi.run(:saved_comparison_items, fn repo, %{saved_comparison_set: saved_comparison_set} ->
+      |> Multi.run(:saved_comparison_items, fn repo,
+                                               %{saved_comparison_set: saved_comparison_set} ->
         insert_saved_comparison_items(repo, saved_comparison_set.id, normalized_product_ids)
       end)
       |> Repo.transaction()
@@ -121,11 +125,18 @@ defmodule ProductCompare.Catalog do
     )
   end
 
-  @spec get_saved_comparison_set_for_user(User.t(), Ecto.UUID.t()) :: SavedComparisonSet.t() | nil
-  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id) when is_binary(entropy_id) do
+  @doc """
+  Fetches an owned saved comparison set by a raw entropy ID value.
+
+  Invalid UUID binaries return `nil` instead of raising.
+  """
+  @spec get_saved_comparison_set_for_user(User.t(), binary()) :: SavedComparisonSet.t() | nil
+  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id)
+      when is_binary(entropy_id) do
     with {:ok, validated_entropy_id} <- Ecto.UUID.cast(entropy_id) do
       SavedComparisonSet
-      |> where([saved_comparison_set],
+      |> where(
+        [saved_comparison_set],
         saved_comparison_set.entropy_id == ^validated_entropy_id and
           saved_comparison_set.user_id == ^user_id
       )

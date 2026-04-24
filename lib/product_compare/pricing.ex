@@ -46,7 +46,8 @@ defmodule ProductCompare.Pricing do
   def get_merchant!(merchant_id), do: Repo.get!(Merchant, merchant_id)
 
   @spec get_merchant(pos_integer()) :: Merchant.t() | nil
-  def get_merchant(merchant_id) when is_integer(merchant_id), do: Repo.get(Merchant, merchant_id)
+  def get_merchant(merchant_id) when is_integer(merchant_id) and merchant_id > 0,
+    do: Repo.get(Merchant, merchant_id)
 
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
@@ -96,8 +97,12 @@ defmodule ProductCompare.Pricing do
   end
 
   @spec get_merchant_product(pos_integer()) :: MerchantProduct.t() | nil
-  def get_merchant_product(merchant_product_id) when is_integer(merchant_product_id) do
-    Repo.get(MerchantProduct, merchant_product_id)
+  def get_merchant_product(merchant_product_id)
+      when is_integer(merchant_product_id) and merchant_product_id > 0 do
+    case Repo.get(MerchantProduct, merchant_product_id) do
+      nil -> nil
+      merchant_product -> Repo.preload(merchant_product, [:merchant, :product])
+    end
   end
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}

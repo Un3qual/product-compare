@@ -37,7 +37,7 @@ defmodule ProductCompareWeb.Schema do
     end
 
     @desc "Returns a supported node by global ID."
-    field :node, :node_result do
+    field :node, :node do
       arg(:id, non_null(:id))
 
       resolve(&NodeResolver.node/3)
@@ -463,6 +463,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :api_token do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn api_token, _, _ -> {:ok, GlobalId.encode(:api_token, api_token.entropy_id)} end)
     end
@@ -481,6 +483,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :saved_comparison_set do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn saved_comparison_set, _, _ ->
         encode_required_global_id(:saved_comparison_set, saved_comparison_set.entropy_id)
@@ -530,8 +534,8 @@ defmodule ProductCompareWeb.Schema do
     field :end_cursor, :string
   end
 
-  union :node_result do
-    types([:product, :brand, :merchant, :merchant_product, :saved_comparison_set, :api_token])
+  interface :node do
+    field :id, non_null(:id)
 
     resolve_type(fn
       %Product{}, _ -> :product
@@ -545,6 +549,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :brand do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn brand, _, _ -> encode_required_global_id(:brand, brand.id) end)
     end
@@ -553,6 +559,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :merchant do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn merchant, _, _ -> encode_required_global_id(:merchant, merchant.id) end)
     end
@@ -574,6 +582,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :product do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn product, _, _ -> encode_required_global_id(:product, product.id) end)
     end
@@ -586,6 +596,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :merchant_product do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn merchant_product, _, _ ->
         encode_required_global_id(:merchant_product, merchant_product.id)

@@ -71,6 +71,13 @@ defmodule ProductCompare.PricingTest do
              ]
     end
 
+    test "get_merchant/1 and get_merchant_product/1 only accept positive integer ids" do
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant(0) end
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant(-1) end
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(0) end
+      assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(-1) end
+    end
+
     test "list_merchant_products/1 filters by product and optional merchant/active flags", %{
       test: test_name
     } do
@@ -158,6 +165,12 @@ defmodule ProductCompare.PricingTest do
       assert Ecto.assoc_loaded?(loaded_from_get.product)
       assert loaded_from_get.merchant.id == merchant.id
       assert loaded_from_get.product.id == product.id
+
+      loaded_from_optional_get = Pricing.get_merchant_product(merchant_product.id)
+      assert Ecto.assoc_loaded?(loaded_from_optional_get.merchant)
+      assert Ecto.assoc_loaded?(loaded_from_optional_get.product)
+      assert loaded_from_optional_get.merchant.id == merchant.id
+      assert loaded_from_optional_get.product.id == product.id
 
       loaded_from_list = Pricing.list_merchant_products(%{product_id: product.id})
 
