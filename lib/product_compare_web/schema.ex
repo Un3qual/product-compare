@@ -11,7 +11,14 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareSchemas.Accounts.ApiToken
+  alias ProductCompareSchemas.Catalog.Brand
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Pricing.Merchant
+  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @impl true
   def context(context) do
@@ -27,6 +34,13 @@ defmodule ProductCompareWeb.Schema do
     @desc "Returns the current authenticated user, if any."
     field :viewer, :user do
       resolve(&AuthResolver.viewer/3)
+    end
+
+    @desc "Returns a supported node by global ID."
+    field :node, :node do
+      arg(:id, non_null(:id))
+
+      resolve(&NodeResolver.node/3)
     end
 
     @desc "Returns API tokens owned by the current authenticated user."
@@ -449,6 +463,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :api_token do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn api_token, _, _ -> {:ok, GlobalId.encode(:api_token, api_token.entropy_id)} end)
     end
@@ -467,6 +483,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :saved_comparison_set do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn saved_comparison_set, _, _ ->
         encode_required_global_id(:saved_comparison_set, saved_comparison_set.entropy_id)
@@ -516,7 +534,23 @@ defmodule ProductCompareWeb.Schema do
     field :end_cursor, :string
   end
 
+  interface :node do
+    field :id, non_null(:id)
+
+    resolve_type(fn
+      %Product{}, _ -> :product
+      %Brand{}, _ -> :brand
+      %Merchant{}, _ -> :merchant
+      %MerchantProduct{}, _ -> :merchant_product
+      %SavedComparisonSet{}, _ -> :saved_comparison_set
+      %ApiToken{}, _ -> :api_token
+      _, _ -> nil
+    end)
+  end
+
   object :brand do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn brand, _, _ -> encode_required_global_id(:brand, brand.id) end)
     end
@@ -525,6 +559,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :merchant do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn merchant, _, _ -> encode_required_global_id(:merchant, merchant.id) end)
     end
@@ -546,6 +582,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :product do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn product, _, _ -> encode_required_global_id(:product, product.id) end)
     end
@@ -558,6 +596,8 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :merchant_product do
+    interface(:node)
+
     field :id, non_null(:id) do
       resolve(fn merchant_product, _, _ ->
         encode_required_global_id(:merchant_product, merchant_product.id)

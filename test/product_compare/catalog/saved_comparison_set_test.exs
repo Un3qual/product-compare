@@ -5,6 +5,26 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
 
+  describe "public read helpers" do
+    test "get_product/1 and get_brand/1 return records for positive ids" do
+      product = SpecsFixtures.product_fixture(%{slug: "catalog-read-contract-product"})
+
+      assert Catalog.get_product(product.id).id == product.id
+      assert Catalog.get_brand(product.brand_id).id == product.brand_id
+    end
+
+    test "get_product/1 and get_brand/1 only accept positive integer ids" do
+      oversized_id = 9_223_372_036_854_775_808
+
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(0) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(-1) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_product(oversized_id) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(0) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(-1) end
+      assert_raise FunctionClauseError, fn -> Catalog.get_brand(oversized_id) end
+    end
+  end
+
   describe "create_saved_comparison_set/2" do
     test "persists an owner-scoped saved set with ordered items" do
       user = AccountsFixtures.user_fixture()
@@ -71,6 +91,25 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
                  name: "Malformed set",
                  product_ids: [1, "2", -3]
                })
+    end
+  end
+
+  describe "get_saved_comparison_set_for_user/2" do
+    test "returns an owned set without eagerly preloading node associations" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-node-lazy-product"})
+
+      assert {:ok, saved_set} =
+               Catalog.create_saved_comparison_set(user.id, %{
+                 name: "Lazy node set",
+                 product_ids: [product.id]
+               })
+
+      loaded_saved_set = Catalog.get_saved_comparison_set_for_user(user, saved_set.entropy_id)
+
+      assert loaded_saved_set.id == saved_set.id
+      assert loaded_saved_set.user_id == user.id
+      refute Ecto.assoc_loaded?(loaded_saved_set.items)
     end
   end
 
