@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-22 after schema/test review
+- Last verified: 2026-04-13 after full lane verification and typecheck
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -20,19 +20,21 @@
 
 ## Verified Current State
 
-- `lib/product_compare_web/schema.ex` exposes `product`, `products`, `merchants`, `merchantProducts`, `myApiTokens`, and `mySavedComparisonSets`, and those object types already encode Relay-style global IDs.
-- `lib/product_compare_web/graphql/global_id.ex` already decodes those global IDs, so the missing piece is the generic root lookup path rather than ID encoding.
-- The backend GraphQL tests cover per-surface ID and cursor behavior in `catalog_queries_test.exs`, `pricing_queries_test.exs`, `api_token_auth_test.exs`, and `saved_comparisons_test.exs`, but no test exercises a generic `node(id: ID!)` query.
-- `docs/work/frontend-relay-route-data.md` is active in the frontend lane and explicitly keeps schema changes out of that slice, so backend Relay-contract work needs its own lane and owned paths.
+- `lib/product_compare_web/schema.ex` now exposes a root `node(id: ID!)` field backed by a `:node_result` union for public `Product`, `Brand`, `Merchant`, and `MerchantProduct` nodes plus owner-scoped `SavedComparisonSet` and `ApiToken` nodes.
+- `lib/product_compare_web/resolvers/node_resolver.ex` now dispatches between public integer-backed IDs and owner-scoped entropy IDs, returning `nil` for anonymous or cross-user lookups of private nodes while still rejecting malformed or unsupported IDs deterministically.
+- `lib/product_compare/catalog.ex` now exposes `get_saved_comparison_set_for_user/2` with the existing ownership boundary and `items: [:product]` preload expected by the saved-comparisons GraphQL surface.
+- `lib/product_compare/accounts.ex` now exposes `get_api_token_for_user/2` for ownership-checked node lookups without changing the existing token lifecycle flows.
+- `test/product_compare_web/graphql/node_query_test.exs` now covers owner success plus anonymous/cross-user null behavior for `SavedComparisonSet` and `ApiToken`, and the focused owner-scoped GraphQL regression set passes.
+- `docs/work/frontend-relay-route-data.md` remains active in the frontend lane, and this backend slice still lands without touching `assets/**`.
 
 ## Next Batch
 
-- Status: ready
-- Batch: Task 1 from `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
+- Status: none queued
+- Batch: none
 - Why this batch:
-  - The schema already emits global IDs on the public catalog and pricing surfaces, so a narrow root node resolver is now tractable.
-  - Starting with public entity types keeps the first backend batch independent from auth/session ownership rules and from the active frontend lane.
-  - This gives the backend worker a Relay-adjacent slice that stays entirely under `lib/**` and backend GraphQL tests.
+  - Task 3's full backend verification passed, so the planned Relay-contract hardening scope for this lane is complete.
+  - No next backend Relay-contract batch is queued in this work doc; any broader node-surface expansion is a future prioritization decision.
+  - The active queue can keep frontend Relay route-data adoption as the remaining current lane work without inventing a backend follow-on batch here.
 
 ## Parallel Lane Ownership
 
@@ -43,8 +45,8 @@
 
 ## Planned Follow-Up
 
-- Extend the same node lookup path to the owner-scoped entities in Task 2 once the public entity path is proven out.
-- Decide after this slice whether the next backend lane should extend generic node support to the remaining auth/affiliate entities or move to the next GraphQL contract hardening task.
+- Decide separately whether a future backend slice should extend generic node support to the remaining auth/affiliate entities or leave the current allowlist as the intentionally supported set.
+- No immediate backend follow-up is required for the current frontend Relay migration.
 
 ## Verification Commands
 
@@ -54,3 +56,7 @@
 - `sed -n '1,240p' lib/product_compare_web/schema.ex`
 - `sed -n '1,220p' lib/product_compare_web/graphql/global_id.ex`
 - `rg -n 'field :node|node\\(|GlobalId.decode' lib/product_compare_web lib/product_compare test/product_compare_web/graphql`
+- `mix test test/product_compare_web/graphql/node_query_test.exs`
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/node_query_test.exs`
+- `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/node_query_test.exs`
+- `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/api_token_auth_test.exs && mix typecheck`
