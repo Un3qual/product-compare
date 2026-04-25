@@ -86,18 +86,18 @@ beforeEach(() => {
   useRoutePreloadedQueryMock.mockReset();
 });
 
-test("browse loader preloads and returns the Relay browse route query", async () => {
+test("browse loader preloads and returns the Relay browse route query", () => {
   const environment = createRelayEnvironment();
 
   mockedPreloadRouteQuery.mockReturnValue(browseQueryDescriptor);
 
-  await expect(
+  expect(
     browseLoader({
       request: new Request("https://app.example.com/products"),
       params: {},
       context: createRelayRouterContext(environment)
     } as LoaderFunctionArgs)
-  ).resolves.toEqual({
+  ).toEqual({
     status: "ready",
     query: browseQueryDescriptor
   });
@@ -105,23 +105,23 @@ test("browse loader preloads and returns the Relay browse route query", async ()
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(environment, expect.anything(), { first: 12 });
 });
 
-test("browse loader marks the catalog unavailable when Relay preload fails", async () => {
+test("browse loader marks the catalog unavailable when Relay preload fails", () => {
   const environment = createRelayEnvironment();
   const preloadError = new Error("missing operation");
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   mockedPreloadRouteQuery.mockImplementation(() => {
     throw preloadError;
   });
 
   try {
-    await expect(
+    expect(
       browseLoader({
         request: new Request("https://app.example.com/products"),
         params: {},
         context: createRelayRouterContext(environment)
       } as LoaderFunctionArgs)
-    ).resolves.toEqual({ status: "error" });
+    ).toEqual({ status: "error" });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError
@@ -212,7 +212,7 @@ test("renders a local loading state while the Relay route query suspends", () =>
   });
   mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
   mockedUsePreloadedQuery.mockImplementation(() => {
-    throw new Promise(() => {});
+    throw Promise.race([]);
   });
 
   render(
@@ -226,7 +226,7 @@ test("renders a local loading state while the Relay route query suspends", () =>
 
 test("renders a local unavailable state when the Relay route query errors", () => {
   const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

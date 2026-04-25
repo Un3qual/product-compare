@@ -2,6 +2,13 @@ import type { Environment } from "relay-runtime";
 import type { RelayRecordMap } from "./environment";
 
 const RELAY_RECORDS_SCRIPT_ID = "__relayRecords";
+const JSON_HTML_ESCAPES: Record<string, string> = {
+  "<": "\\u003c",
+  ">": "\\u003e",
+  "&": "\\u0026",
+  "\u2028": "\\u2028",
+  "\u2029": "\\u2029"
+};
 
 interface RelayRecordsBootstrap {
   records: RelayRecordMap;
@@ -36,22 +43,10 @@ export function readRelayRecordsFromDocument(documentRef: Document = document): 
 }
 
 function escapeJsonForHtml(json: string) {
-  return json.replace(/[<>&\u2028\u2029]/gu, (character) => {
-    switch (character) {
-      case "<":
-        return "\\u003c";
-      case ">":
-        return "\\u003e";
-      case "&":
-        return "\\u0026";
-      case "\u2028":
-        return "\\u2028";
-      case "\u2029":
-        return "\\u2029";
-      default:
-        return character;
-    }
-  });
+  return json.replace(
+    /[<>&\u2028\u2029]/gu,
+    (character) => JSON_HTML_ESCAPES[character] ?? character
+  );
 }
 
 function isRelayRecordMap(value: unknown): value is RelayRecordMap {

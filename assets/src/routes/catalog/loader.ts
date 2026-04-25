@@ -19,7 +19,7 @@ export type BrowseProductsLoaderData =
       status: "error";
     };
 
-export async function browseLoader({ context }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
+export function browseLoader({ context }: LoaderFunctionArgs): BrowseProductsLoaderData {
   try {
     const environment = getRelayEnvironmentFromRouterContext(context);
 
