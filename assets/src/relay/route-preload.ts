@@ -15,6 +15,7 @@ const activeRouteQueryLeases = new WeakSet<PreloadedQuery<OperationType>>();
 interface RouteQueryRefEntry {
   activeLeaseCount: number;
   descriptorKey: string;
+  disposeTimer: ReturnType<typeof setTimeout> | null;
   environment: Environment;
   isDisposed: boolean;
   queryRef: PreloadedQuery<OperationType>;
@@ -145,6 +146,7 @@ function activateRouteQueryRefLease<TQuery extends OperationType>(queryRef: Prel
     return;
   }
 
+  cancelRouteQueryRefDisposal(entry);
   activeRouteQueryLeases.add(lease);
   entry.activeLeaseCount += 1;
 }
@@ -161,8 +163,7 @@ function releaseRouteQueryRefLease<TQuery extends OperationType>(queryRef: Prelo
   entry.activeLeaseCount -= 1;
 
   if (entry.activeLeaseCount === 0) {
-    removeRouteQueryRefEntry(entry);
-    disposeRouteQueryRefEntry(entry);
+    scheduleRouteQueryRefDisposal(entry);
   }
 }
 
@@ -193,6 +194,7 @@ function setRouteQueryRef<TQuery extends OperationType>(
   const entry = {
     activeLeaseCount: 0,
     descriptorKey,
+    disposeTimer: null,
     environment,
     isDisposed: false,
     queryRef: queryRef as PreloadedQuery<OperationType>
@@ -231,6 +233,7 @@ function disposeInactiveRouteQueryRefEntry(entry: RouteQueryRefEntry) {
     return;
   }
 
+  cancelRouteQueryRefDisposal(entry);
   disposeRouteQueryRefEntry(entry);
 }
 
@@ -241,6 +244,32 @@ function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
 
   entry.queryRef.dispose();
   entry.isDisposed = true;
+}
+
+function scheduleRouteQueryRefDisposal(entry: RouteQueryRefEntry) {
+  if (entry.disposeTimer !== null) {
+    return;
+  }
+
+  entry.disposeTimer = setTimeout(() => {
+    entry.disposeTimer = null;
+
+    if (entry.activeLeaseCount > 0) {
+      return;
+    }
+
+    removeRouteQueryRefEntry(entry);
+    disposeRouteQueryRefEntry(entry);
+  }, 0);
+}
+
+function cancelRouteQueryRefDisposal(entry: RouteQueryRefEntry) {
+  if (entry.disposeTimer === null) {
+    return;
+  }
+
+  clearTimeout(entry.disposeTimer);
+  entry.disposeTimer = null;
 }
 
 function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {

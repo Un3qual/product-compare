@@ -1,5 +1,5 @@
-import { createElement } from "react";
-import { render } from "@testing-library/react";
+import { StrictMode, createElement } from "react";
+import { act, render } from "@testing-library/react";
 import type { GraphQLTaggedNode } from "react-relay";
 import { RelayEnvironmentProvider } from "react-relay";
 import { RouterContextProvider } from "react-router-dom";
@@ -33,6 +33,12 @@ beforeEach(() => {
   vi.mocked(fetchAppQuery).mockResolvedValue({});
   vi.mocked(loadAppQuery).mockReset();
 });
+
+async function flushRouteQueryRefDisposalTimers() {
+  await act(async () => {
+    vi.runOnlyPendingTimers();
+  });
+}
 
 test("dehydrateRelayEnvironment returns the populated record source", () => {
   const environment = createRelayEnvironment({
@@ -190,94 +196,148 @@ test("uncommitted route query refs stay replaceable if render aborts before effe
 });
 
 test("committed route query refs are claimed so later preloads do not dispose them", async () => {
-  const environment = createRelayEnvironment();
-  const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
-  const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
-  let renderedQueryRef: unknown;
+  vi.useFakeTimers();
 
-  vi.mocked(loadAppQuery)
-    .mockReturnValueOnce(firstQueryRef as never)
-    .mockReturnValueOnce(secondQueryRef as never);
+  try {
+    const environment = createRelayEnvironment();
+    const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+    const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+    let renderedQueryRef: unknown;
 
-  const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
+    vi.mocked(loadAppQuery)
+      .mockReturnValueOnce(firstQueryRef as never)
+      .mockReturnValueOnce(secondQueryRef as never);
 
-  function RouteQueryConsumer() {
-    renderedQueryRef = useRoutePreloadedQuery(routeQuery, descriptor);
+    const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-    return null;
+    function RouteQueryConsumer() {
+      renderedQueryRef = useRoutePreloadedQuery(routeQuery, descriptor);
+
+      return null;
+    }
+
+    const view = render(
+      createElement(
+        RelayEnvironmentProvider,
+        { environment },
+        createElement(RouteQueryConsumer)
+      )
+    );
+
+    expect(renderedQueryRef).not.toBe(firstQueryRef);
+    expect((renderedQueryRef as typeof firstQueryRef).variables).toBe(firstQueryRef.variables);
+
+    await preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+    expect(loadAppQuery).toHaveBeenCalledTimes(2);
+    expect(firstQueryRef.dispose).not.toHaveBeenCalled();
+    expect(secondQueryRef.dispose).not.toHaveBeenCalled();
+
+    view.unmount();
+    await flushRouteQueryRefDisposalTimers();
+
+    expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
   }
-
-  const view = render(
-    createElement(
-      RelayEnvironmentProvider,
-      { environment },
-      createElement(RouteQueryConsumer)
-    )
-  );
-
-  expect(renderedQueryRef).not.toBe(firstQueryRef);
-  expect((renderedQueryRef as typeof firstQueryRef).variables).toBe(firstQueryRef.variables);
-
-  await preloadRouteQuery(environment, routeQuery, { first: 12 });
-
-  expect(loadAppQuery).toHaveBeenCalledTimes(2);
-  expect(firstQueryRef.dispose).not.toHaveBeenCalled();
-  expect(secondQueryRef.dispose).not.toHaveBeenCalled();
-
-  view.unmount();
-
-  expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("multiple committed consumers release a shared route query ref after the last unmount", async () => {
-  const environment = createRelayEnvironment();
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-  const renderedQueryRefs: unknown[] = [];
+  vi.useFakeTimers();
 
-  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+  try {
+    const environment = createRelayEnvironment();
+    const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+    const renderedQueryRefs: unknown[] = [];
 
-  const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
+    vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
 
-  function RouteQueryConsumer({ index }: { index: number }) {
-    renderedQueryRefs[index] = useRoutePreloadedQuery(routeQuery, descriptor);
+    const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-    return null;
-  }
+    function RouteQueryConsumer({ index }: { index: number }) {
+      renderedQueryRefs[index] = useRoutePreloadedQuery(routeQuery, descriptor);
 
-  function RouteQueryConsumers({ count }: { count: number }) {
-    return createElement(
-      "div",
-      null,
-      Array.from({ length: count }, (_, index) =>
-        createElement(RouteQueryConsumer, { key: index, index })
+      return null;
+    }
+
+    function RouteQueryConsumers({ count }: { count: number }) {
+      return createElement(
+        "div",
+        null,
+        Array.from({ length: count }, (_, index) =>
+          createElement(RouteQueryConsumer, { key: index, index })
+        )
+      );
+    }
+
+    const view = render(
+      createElement(
+        RelayEnvironmentProvider,
+        { environment },
+        createElement(RouteQueryConsumers, { count: 2 })
       )
     );
+
+    expect(renderedQueryRefs[0]).not.toBe(renderedQueryRefs[1]);
+    expect(queryRef.dispose).not.toHaveBeenCalled();
+
+    view.rerender(
+      createElement(
+        RelayEnvironmentProvider,
+        { environment },
+        createElement(RouteQueryConsumers, { count: 1 })
+      )
+    );
+
+    expect(queryRef.dispose).not.toHaveBeenCalled();
+
+    view.unmount();
+    await flushRouteQueryRefDisposalTimers();
+
+    expect(queryRef.dispose).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
   }
+});
 
-  const view = render(
-    createElement(
-      RelayEnvironmentProvider,
-      { environment },
-      createElement(RouteQueryConsumers, { count: 2 })
-    )
-  );
+test("StrictMode effect replay keeps the active route query ref alive", async () => {
+  vi.useFakeTimers();
 
-  expect(renderedQueryRefs[0]).not.toBe(renderedQueryRefs[1]);
-  expect(queryRef.dispose).not.toHaveBeenCalled();
+  try {
+    const environment = createRelayEnvironment();
+    const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
-  view.rerender(
-    createElement(
-      RelayEnvironmentProvider,
-      { environment },
-      createElement(RouteQueryConsumers, { count: 1 })
-    )
-  );
+    vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
 
-  expect(queryRef.dispose).not.toHaveBeenCalled();
+    const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-  view.unmount();
+    function RouteQueryConsumer() {
+      useRoutePreloadedQuery(routeQuery, descriptor);
 
-  expect(queryRef.dispose).toHaveBeenCalledTimes(1);
+      return null;
+    }
+
+    const view = render(
+      createElement(
+        StrictMode,
+        null,
+        createElement(
+          RelayEnvironmentProvider,
+          { environment },
+          createElement(RouteQueryConsumer)
+        )
+      )
+    );
+
+    expect(queryRef.dispose).not.toHaveBeenCalled();
+
+    view.unmount();
+    await flushRouteQueryRefDisposalTimers();
+
+    expect(queryRef.dispose).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", async () => {
