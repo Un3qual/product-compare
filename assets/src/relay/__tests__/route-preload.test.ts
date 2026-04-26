@@ -383,6 +383,32 @@ test("preloadRouteQuery disposes the oldest cached query references when the cac
   expect(queryRefs[20]?.dispose).not.toHaveBeenCalled();
 });
 
+test("route query ref eviction keeps recently used descriptors cached", async () => {
+  const environment = createRelayEnvironment();
+  const descriptors = [];
+  const queryRefs: Array<{ dispose: ReturnType<typeof vi.fn>; variables: { first: number } }> = [];
+
+  vi.mocked(loadAppQuery).mockImplementation((_environment, _query, variables) => {
+    const queryRef = { dispose: vi.fn(), variables: variables as { first: number } };
+    queryRefs.push(queryRef);
+
+    return queryRef as never;
+  });
+
+  for (let first = 1; first <= 20; first += 1) {
+    descriptors.push(await preloadRouteQuery(environment, routeQuery, { first }));
+  }
+
+  getRoutePreloadedQuery(environment, routeQuery, descriptors[0]);
+
+  await preloadRouteQuery(environment, routeQuery, { first: 21 });
+
+  expect(queryRefs).toHaveLength(21);
+  expect(queryRefs[0]?.dispose).not.toHaveBeenCalled();
+  expect(queryRefs[1]?.dispose).toHaveBeenCalledTimes(1);
+  expect(queryRefs[20]?.dispose).not.toHaveBeenCalled();
+});
+
 test("createRelayRouterContext exposes the Relay environment to route loaders", () => {
   const environment = createRelayEnvironment();
   const context = createRelayRouterContext(environment);

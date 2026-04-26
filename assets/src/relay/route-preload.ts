@@ -124,8 +124,21 @@ export function getRelayEnvironmentFromRouterContext(context: unknown) {
 
 function getRouteQueryRefEntry(environment: Environment, descriptorKey: string) {
   const environmentQueryRefs = routeQueryRefs.get(environment);
+  const entry = environmentQueryRefs?.get(descriptorKey);
 
-  return environmentQueryRefs?.get(descriptorKey);
+  if (!environmentQueryRefs || !entry) {
+    return undefined;
+  }
+
+  if (entry.isDisposed) {
+    environmentQueryRefs.delete(descriptorKey);
+    return undefined;
+  }
+
+  environmentQueryRefs.delete(descriptorKey);
+  environmentQueryRefs.set(descriptorKey, entry);
+
+  return entry;
 }
 
 function createRouteQueryRefLease<TQuery extends OperationType>(entry: RouteQueryRefEntry) {
@@ -170,7 +183,7 @@ function activateRouteQueryRefLease<TQuery extends OperationType>(queryRef: Prel
   const lease = queryRef as PreloadedQuery<OperationType>;
   const entry = routeQueryLeaseHandles.get(lease);
 
-  if (!entry || activeRouteQueryLeases.has(lease)) {
+  if (!entry || entry.isDisposed || activeRouteQueryLeases.has(lease)) {
     return;
   }
 
