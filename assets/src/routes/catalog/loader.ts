@@ -48,11 +48,13 @@ export async function browseLoader({ context, request }: LoaderFunctionArgs): Pr
 }
 
 function isAbortError(error: unknown) {
-  return (
-    (error instanceof DOMException && error.name === "AbortError") ||
-    (error &&
-      typeof error === "object" &&
-      "name" in error &&
-      (error as { name: unknown }).name === "AbortError")
-  );
+  if (error instanceof DOMException) {
+    return error.name === "AbortError";
+  }
+
+  return hasErrorName(error, "AbortError");
+}
+
+function hasErrorName(error: unknown, name: string) {
+  return Boolean(error && typeof error === "object" && "name" in error && error.name === name);
 }

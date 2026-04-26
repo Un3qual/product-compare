@@ -9,8 +9,14 @@ const ROUTE_QUERY_REF_CACHE_LIMIT = 20;
 
 const relayEnvironmentRouterContext = createContext<Environment | null>(null);
 const routeQueryRefs = new WeakMap<Environment, Map<string, RouteQueryRefEntry>>();
+const routeQueryLeaseHandles = new WeakMap<PreloadedQuery<OperationType>, RouteQueryRefEntry>();
+const activeRouteQueryLeases = new WeakSet<PreloadedQuery<OperationType>>();
 
 interface RouteQueryRefEntry {
+  activeLeaseCount: number;
+  descriptorKey: string;
+  environment: Environment;
+  isDisposed: boolean;
   queryRef: PreloadedQuery<OperationType>;
 }
 
@@ -61,17 +67,15 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ): PreloadedQuery<TQuery> {
   const descriptorKey = routeQueryDescriptorKey(descriptor);
-  const existingQueryRef = getRouteQueryRef(environment, descriptorKey);
+  let routeQueryRefEntry = getRouteQueryRefEntry(environment, descriptorKey);
 
-  if (existingQueryRef) {
-    return existingQueryRef as PreloadedQuery<TQuery>;
+  if (!routeQueryRefEntry) {
+    const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
+
+    routeQueryRefEntry = setRouteQueryRef(environment, descriptorKey, queryRef);
   }
 
-  const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
-
-  setRouteQueryRef(environment, descriptorKey, queryRef);
-
-  return queryRef;
+  return createRouteQueryRefLease<TQuery>(routeQueryRefEntry);
 }
 
 export function useRoutePreloadedQuery<TQuery extends OperationType>(
@@ -86,10 +90,10 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
   );
 
   useEffect(() => {
-    claimRouteQueryRef(environment, descriptorKey, queryRef);
+    activateRouteQueryRefLease(queryRef);
 
     return () => queryRef.dispose();
-  }, [descriptorKey, environment, queryRef]);
+  }, [queryRef]);
 
   return queryRef;
 }
@@ -115,22 +119,50 @@ export function getRelayEnvironmentFromRouterContext(context: unknown) {
   return environment;
 }
 
-function getRouteQueryRef(environment: Environment, descriptorKey: string) {
+function getRouteQueryRefEntry(environment: Environment, descriptorKey: string) {
   const environmentQueryRefs = routeQueryRefs.get(environment);
 
-  return environmentQueryRefs?.get(descriptorKey)?.queryRef;
+  return environmentQueryRefs?.get(descriptorKey);
 }
 
-function claimRouteQueryRef<TQuery extends OperationType>(
-  environment: Environment,
-  descriptorKey: string,
-  queryRef: PreloadedQuery<TQuery>
-) {
-  const environmentQueryRefs = routeQueryRefs.get(environment);
-  const entry = environmentQueryRefs?.get(descriptorKey);
+function createRouteQueryRefLease<TQuery extends OperationType>(entry: RouteQueryRefEntry) {
+  const lease = Object.create(entry.queryRef) as PreloadedQuery<TQuery>;
 
-  if (entry?.queryRef === queryRef) {
-    environmentQueryRefs?.delete(descriptorKey);
+  Object.defineProperty(lease, "dispose", {
+    configurable: true,
+    value: () => releaseRouteQueryRefLease(lease)
+  });
+  routeQueryLeaseHandles.set(lease as PreloadedQuery<OperationType>, entry);
+
+  return lease;
+}
+
+function activateRouteQueryRefLease<TQuery extends OperationType>(queryRef: PreloadedQuery<TQuery>) {
+  const lease = queryRef as PreloadedQuery<OperationType>;
+  const entry = routeQueryLeaseHandles.get(lease);
+
+  if (!entry || activeRouteQueryLeases.has(lease)) {
+    return;
+  }
+
+  activeRouteQueryLeases.add(lease);
+  entry.activeLeaseCount += 1;
+}
+
+function releaseRouteQueryRefLease<TQuery extends OperationType>(queryRef: PreloadedQuery<TQuery>) {
+  const lease = queryRef as PreloadedQuery<OperationType>;
+  const entry = routeQueryLeaseHandles.get(lease);
+
+  if (!entry || !activeRouteQueryLeases.has(lease)) {
+    return;
+  }
+
+  activeRouteQueryLeases.delete(lease);
+  entry.activeLeaseCount -= 1;
+
+  if (entry.activeLeaseCount === 0) {
+    removeRouteQueryRefEntry(entry);
+    disposeRouteQueryRefEntry(entry);
   }
 }
 
@@ -147,19 +179,29 @@ function setRouteQueryRef<TQuery extends OperationType>(
   }
 
   const descriptorKey = typeof descriptor === "string" ? descriptor : routeQueryDescriptorKey(descriptor);
-  const existingQueryRef = environmentQueryRefs.get(descriptorKey)?.queryRef;
+  const existingEntry = environmentQueryRefs.get(descriptorKey);
 
-  if (existingQueryRef === queryRef) {
-    return;
+  if (existingEntry?.queryRef === queryRef) {
+    return existingEntry;
   }
 
-  if (existingQueryRef) {
-    existingQueryRef.dispose();
+  if (existingEntry) {
     environmentQueryRefs.delete(descriptorKey);
+    disposeInactiveRouteQueryRefEntry(existingEntry);
   }
 
-  environmentQueryRefs.set(descriptorKey, { queryRef: queryRef as PreloadedQuery<OperationType> });
+  const entry = {
+    activeLeaseCount: 0,
+    descriptorKey,
+    environment,
+    isDisposed: false,
+    queryRef: queryRef as PreloadedQuery<OperationType>
+  };
+
+  environmentQueryRefs.set(descriptorKey, entry);
   evictRouteQueryRefs(environmentQueryRefs);
+
+  return entry;
 }
 
 function evictRouteQueryRefs(environmentQueryRefs: Map<string, RouteQueryRefEntry>) {
@@ -172,8 +214,33 @@ function evictRouteQueryRefs(environmentQueryRefs: Map<string, RouteQueryRefEntr
 
     const [descriptorKey, entry] = oldestEntry;
     environmentQueryRefs.delete(descriptorKey);
-    entry.queryRef.dispose();
+    disposeInactiveRouteQueryRefEntry(entry);
   }
+}
+
+function removeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
+  const environmentQueryRefs = routeQueryRefs.get(entry.environment);
+
+  if (environmentQueryRefs?.get(entry.descriptorKey) === entry) {
+    environmentQueryRefs.delete(entry.descriptorKey);
+  }
+}
+
+function disposeInactiveRouteQueryRefEntry(entry: RouteQueryRefEntry) {
+  if (entry.activeLeaseCount > 0) {
+    return;
+  }
+
+  disposeRouteQueryRefEntry(entry);
+}
+
+function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
+  if (entry.isDisposed) {
+    return;
+  }
+
+  entry.queryRef.dispose();
+  entry.isDisposed = true;
 }
 
 function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {

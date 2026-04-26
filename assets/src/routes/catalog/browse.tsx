@@ -28,24 +28,37 @@ export function BrowseRoute() {
 
 type BrowseProductsErrorBoundaryState = {
   hasError: boolean;
+  resetToken: unknown;
 };
 
 class BrowseProductsErrorBoundary extends Component<
   { children: ReactNode; resetToken: unknown },
   BrowseProductsErrorBoundaryState
 > {
-  state: BrowseProductsErrorBoundaryState = {
-    hasError: false
-  };
-
-  static getDerivedStateFromError(): BrowseProductsErrorBoundaryState {
-    return { hasError: true };
+  constructor(props: { children: ReactNode; resetToken: unknown }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      resetToken: props.resetToken
+    };
   }
 
-  override componentDidUpdate(previousProps: { resetToken: unknown }) {
-    if (this.state.hasError && previousProps.resetToken !== this.props.resetToken) {
-      this.setState({ hasError: false });
+  static getDerivedStateFromProps(
+    props: { resetToken: unknown },
+    state: BrowseProductsErrorBoundaryState
+  ): Partial<BrowseProductsErrorBoundaryState> | null {
+    if (props.resetToken === state.resetToken) {
+      return null;
     }
+
+    return {
+      hasError: false,
+      resetToken: props.resetToken
+    };
+  }
+
+  static getDerivedStateFromError(): Partial<BrowseProductsErrorBoundaryState> {
+    return { hasError: true };
   }
 
   override render() {
