@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -86,26 +86,32 @@ beforeEach(() => {
   useRoutePreloadedQueryMock.mockReset();
 });
 
-test("browse loader preloads and returns the Relay browse route query", () => {
+test("browse loader preloads and returns the Relay browse route query", async () => {
   const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products");
 
-  mockedPreloadRouteQuery.mockReturnValue(browseQueryDescriptor);
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
 
-  expect(
+  await expect(
     browseLoader({
-      request: new Request("https://app.example.com/products"),
+      request,
       params: {},
       context: createRelayRouterContext(environment)
     } as LoaderFunctionArgs)
-  ).toEqual({
+  ).resolves.toEqual({
     status: "ready",
     query: browseQueryDescriptor
   });
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(environment, expect.anything(), { first: 12 });
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
 });
 
-test("browse loader marks the catalog unavailable when Relay preload fails", () => {
+test("browse loader marks the catalog unavailable when Relay preload fails", async () => {
   const environment = createRelayEnvironment();
   const preloadError = new Error("missing operation");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -115,13 +121,13 @@ test("browse loader marks the catalog unavailable when Relay preload fails", () 
   });
 
   try {
-    expect(
+    await expect(
       browseLoader({
         request: new Request("https://app.example.com/products"),
         params: {},
         context: createRelayRouterContext(environment)
       } as LoaderFunctionArgs)
-    ).toEqual({ status: "error" });
+    ).resolves.toEqual({ status: "error" });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError
@@ -246,6 +252,74 @@ test("renders a local unavailable state when the Relay route query errors", () =
 
     expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
     expect(screen.getByText("Please refresh the page or try again later.")).toBeInTheDocument();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("resets the local unavailable state when fresh loader data arrives", async () => {
+  const failedQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const recoveredQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const retryDescriptor = {
+    __relayQuery: {
+      ...browseQueryDescriptor.__relayQuery,
+      variables: { ...browseQueryDescriptor.__relayQuery.variables }
+    }
+  };
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(failedQueryRef);
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Relay read failed");
+  });
+
+  try {
+    const view = render(
+      <MemoryRouter>
+        <BrowseRoute />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
+
+    mockedUseLoaderData.mockReturnValue({
+      status: "ready",
+      query: retryDescriptor
+    });
+    mockedUseRoutePreloadedQuery.mockReturnValue(recoveredQueryRef);
+    mockedUsePreloadedQuery.mockReturnValue({
+      products: {
+        edges: [
+          {
+            node: {
+              id: "product-recovered",
+              name: "Recovered Product",
+              slug: "recovered-product",
+              brand: {
+                id: "brand-recovered",
+                name: "Recovered Brand"
+              }
+            }
+          }
+        ]
+      }
+    });
+
+    view.rerender(
+      <MemoryRouter>
+        <BrowseRoute />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Recovered Product" })).toHaveAttribute(
+      "href",
+      "/products/recovered-product"
+    );
   } finally {
     consoleErrorSpy.mockRestore();
   }

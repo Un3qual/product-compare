@@ -1,7 +1,7 @@
 import type { GraphQLTaggedNode } from "react-relay";
 import { RouterContextProvider } from "react-router-dom";
 import { createRelayEnvironment } from "../environment";
-import { loadAppQuery } from "../load-query";
+import { fetchAppQuery, loadAppQuery } from "../load-query";
 import {
   createRelayRouterContext,
   getRoutePreloadedQuery,
@@ -11,7 +11,9 @@ import {
 import { dehydrateRelayEnvironment } from "../ssr";
 
 vi.mock("../load-query", () => ({
-  loadAppQuery: vi.fn()
+  fetchAppQuery: vi.fn(),
+  loadAppQuery: vi.fn(),
+  RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY: "routeLoaderSignal"
 }));
 
 const routeQuery = {
@@ -23,6 +25,8 @@ const routeQuery = {
 } as unknown as GraphQLTaggedNode;
 
 beforeEach(() => {
+  vi.mocked(fetchAppQuery).mockReset();
+  vi.mocked(fetchAppQuery).mockResolvedValue({});
   vi.mocked(loadAppQuery).mockReset();
 });
 
@@ -40,11 +44,28 @@ test("dehydrateRelayEnvironment returns the populated record source", () => {
   );
 });
 
-test("preloadRouteQuery preloads the operation and returns a serializable descriptor", () => {
+test("preloadRouteQuery fetches fresh data before retaining a store-only query ref", async () => {
   const environment = createRelayEnvironment();
   const variables = { first: 12 };
+  const queryRef = { dispose: vi.fn(), variables };
+  let resolveFetch: (value: unknown) => void = () => undefined;
+  const fetchPromise = new Promise((resolve) => {
+    resolveFetch = resolve;
+  });
 
-  expect(preloadRouteQuery(environment, routeQuery, variables)).toEqual({
+  vi.mocked(fetchAppQuery).mockReturnValue(fetchPromise as never);
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  const descriptorPromise = preloadRouteQuery(environment, routeQuery, variables);
+
+  expect(fetchAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "network-only"
+  });
+  expect(loadAppQuery).not.toHaveBeenCalled();
+
+  resolveFetch({});
+
+  await expect(descriptorPromise).resolves.toEqual({
     __relayQuery: {
       operationName: "BrowseProductsRouteQuery",
       text: expect.stringContaining("query BrowseProductsRouteQuery"),
@@ -52,17 +73,38 @@ test("preloadRouteQuery preloads the operation and returns a serializable descri
     }
   });
 
-  expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables);
+  expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "store-only"
+  });
 });
 
-test("getRoutePreloadedQuery reuses a query reference already loaded for the descriptor", () => {
+test("preloadRouteQuery forwards the route loader abort signal to the network refresh", async () => {
+  const environment = createRelayEnvironment();
+  const variables = { first: 12 };
+  const signal = new AbortController().signal;
+
+  vi.mocked(loadAppQuery).mockReturnValue({ dispose: vi.fn(), variables } as never);
+
+  await preloadRouteQuery(environment, routeQuery, variables, { signal });
+
+  expect(fetchAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "network-only",
+    networkCacheConfig: {
+      metadata: {
+        routeLoaderSignal: signal
+      }
+    }
+  });
+});
+
+test("getRoutePreloadedQuery reuses a query reference already loaded for the descriptor", async () => {
   const environment = createRelayEnvironment();
   const variables = { first: 12 };
   const queryRef = { dispose: vi.fn(), variables };
 
   vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
 
-  const descriptor = preloadRouteQuery(environment, routeQuery, variables);
+  const descriptor = await preloadRouteQuery(environment, routeQuery, variables);
 
   vi.mocked(loadAppQuery).mockClear();
 
@@ -70,7 +112,7 @@ test("getRoutePreloadedQuery reuses a query reference already loaded for the des
   expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
-test("preloadRouteQuery reloads and replaces an unclaimed query reference for equivalent descriptor content", () => {
+test("preloadRouteQuery reloads and replaces an unclaimed query reference for equivalent descriptor content", async () => {
   const environment = createRelayEnvironment();
   const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
   const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
@@ -79,8 +121,8 @@ test("preloadRouteQuery reloads and replaces an unclaimed query reference for eq
     .mockReturnValueOnce(firstQueryRef as never)
     .mockReturnValueOnce(secondQueryRef as never);
 
-  const firstDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
-  const secondDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
+  const firstDescriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
+  const secondDescriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
   expect(secondDescriptor).toEqual(firstDescriptor);
   expect(loadAppQuery).toHaveBeenCalledTimes(2);
@@ -88,7 +130,7 @@ test("preloadRouteQuery reloads and replaces an unclaimed query reference for eq
   expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
-test("preloadRouteQuery uses stable nested variable keys when replacing unclaimed query refs", () => {
+test("preloadRouteQuery uses stable nested variable keys when replacing unclaimed query refs", async () => {
   const environment = createRelayEnvironment();
   const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
   const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
@@ -97,14 +139,14 @@ test("preloadRouteQuery uses stable nested variable keys when replacing unclaime
     .mockReturnValueOnce(firstQueryRef as never)
     .mockReturnValueOnce(secondQueryRef as never);
 
-  preloadRouteQuery(environment, routeQuery, {
+  await preloadRouteQuery(environment, routeQuery, {
     first: 12,
     filters: {
       brandIds: ["brand-1"],
       useCaseTaxonIds: ["taxon-1"]
     }
   });
-  preloadRouteQuery(environment, routeQuery, {
+  await preloadRouteQuery(environment, routeQuery, {
     filters: {
       useCaseTaxonIds: ["taxon-1"],
       brandIds: ["brand-1"]
@@ -117,7 +159,7 @@ test("preloadRouteQuery uses stable nested variable keys when replacing unclaime
   expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
-test("getRoutePreloadedQuery consumes the loader-created cache entry", () => {
+test("getRoutePreloadedQuery consumes the loader-created cache entry", async () => {
   const environment = createRelayEnvironment();
   const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
   const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
@@ -126,18 +168,18 @@ test("getRoutePreloadedQuery consumes the loader-created cache entry", () => {
     .mockReturnValueOnce(firstQueryRef as never)
     .mockReturnValueOnce(secondQueryRef as never);
 
-  const descriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
+  const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
   expect(getRoutePreloadedQuery(environment, routeQuery, descriptor)).toBe(firstQueryRef);
 
-  preloadRouteQuery(environment, routeQuery, { first: 12 });
+  await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
   expect(loadAppQuery).toHaveBeenCalledTimes(2);
   expect(firstQueryRef.dispose).not.toHaveBeenCalled();
   expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
-test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", () => {
+test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", async () => {
   const environment = createRelayEnvironment();
   const queryRefs: Array<{ dispose: ReturnType<typeof vi.fn>; variables: { first: number } }> = [];
 
@@ -149,7 +191,7 @@ test("preloadRouteQuery disposes the oldest cached query references when the cac
   });
 
   for (let first = 1; first <= 21; first += 1) {
-    preloadRouteQuery(environment, routeQuery, { first });
+    await preloadRouteQuery(environment, routeQuery, { first });
   }
 
   expect(queryRefs).toHaveLength(21);

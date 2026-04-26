@@ -19,15 +19,20 @@ export type BrowseProductsLoaderData =
       status: "error";
     };
 
-export function browseLoader({ context }: LoaderFunctionArgs): BrowseProductsLoaderData {
+export async function browseLoader({ context, request }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
   try {
     const environment = getRelayEnvironmentFromRouterContext(context);
 
     return {
       status: "ready",
-      query: preloadRouteQuery<BrowseProductsRouteQuery>(environment, browseProductsRouteQuery, {
-        first: BROWSE_PRODUCTS_PAGE_SIZE
-      })
+      query: await preloadRouteQuery<BrowseProductsRouteQuery>(
+        environment,
+        browseProductsRouteQuery,
+        {
+          first: BROWSE_PRODUCTS_PAGE_SIZE
+        },
+        { signal: request.signal }
+      )
     };
   } catch (error) {
     console.error("Failed to preload browse products route query.", { error });

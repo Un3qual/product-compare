@@ -2,8 +2,8 @@ import { useEffect, useMemo } from "react";
 import type { GraphQLTaggedNode } from "react-relay";
 import { useRelayEnvironment, type PreloadedQuery } from "react-relay";
 import { createContext, RouterContextProvider } from "react-router-dom";
-import { getRequest, type Environment, type OperationType } from "relay-runtime";
-import { loadAppQuery } from "./load-query";
+import { getRequest, type CacheConfig, type Environment, type OperationType } from "relay-runtime";
+import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
 
 const ROUTE_QUERY_REF_CACHE_LIMIT = 20;
 
@@ -18,11 +18,16 @@ export interface RelayRouteQueryDescriptor<TVariables = Record<string, unknown>>
   };
 }
 
-export function preloadRouteQuery<TQuery extends OperationType>(
+interface PreloadRouteQueryOptions {
+  signal?: AbortSignal;
+}
+
+export async function preloadRouteQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
-  variables: TQuery["variables"]
-): RelayRouteQueryDescriptor<TQuery["variables"]> {
+  variables: TQuery["variables"],
+  options: PreloadRouteQueryOptions = {}
+): Promise<RelayRouteQueryDescriptor<TQuery["variables"]>> {
   const request = getRequest(query);
   const descriptor = {
     __relayQuery: {
@@ -31,7 +36,15 @@ export function preloadRouteQuery<TQuery extends OperationType>(
       variables
     }
   };
-  const queryRef = loadAppQuery<TQuery>(environment, query, variables);
+
+  await fetchAppQuery<TQuery>(environment, query, variables, {
+    fetchPolicy: "network-only",
+    ...routeLoaderNetworkOptions(options.signal)
+  });
+
+  const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
+    fetchPolicy: "store-only"
+  });
 
   setRouteQueryRef(environment, descriptor, queryRef);
 
@@ -144,6 +157,20 @@ function evictRouteQueryRefs(environmentQueryRefs: Map<string, PreloadedQuery<Op
     environmentQueryRefs.delete(descriptorKey);
     queryRef.dispose();
   }
+}
+
+function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {
+  if (!signal) {
+    return {};
+  }
+
+  return {
+    networkCacheConfig: {
+      metadata: {
+        [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
+      }
+    }
+  };
 }
 
 function routeQueryDescriptorKey<TVariables>(descriptor: RelayRouteQueryDescriptor<TVariables>) {

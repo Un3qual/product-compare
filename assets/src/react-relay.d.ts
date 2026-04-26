@@ -1,7 +1,9 @@
 declare module "react-relay" {
   import type { ComponentType, ReactNode } from "react";
   import type {
+    CacheConfig,
     Environment,
+    FetchPolicy,
     GraphQLTaggedNode as RelayGraphQLTaggedNode,
     OperationType
   } from "relay-runtime";
@@ -15,6 +17,11 @@ declare module "react-relay" {
     dispose(): void;
   }
 
+  export interface LoadQueryOptions {
+    fetchPolicy?: FetchPolicy | null;
+    networkCacheConfig?: CacheConfig | null;
+  }
+
   export const RelayEnvironmentProvider: ComponentType<{
     children?: ReactNode;
     environment: Environment;
@@ -23,7 +30,8 @@ declare module "react-relay" {
   export function loadQuery<TQuery extends OperationType>(
     environment: Environment,
     query: GraphQLTaggedNode,
-    variables: TQuery["variables"]
+    variables: TQuery["variables"],
+    options?: LoadQueryOptions
   ): PreloadedQuery<TQuery>;
 
   export function usePreloadedQuery<TQuery extends OperationType>(

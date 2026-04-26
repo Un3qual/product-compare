@@ -16,7 +16,7 @@ export function BrowseRoute() {
       {loaderData.status === "error" ? (
         <p>Catalog unavailable.</p>
       ) : (
-        <BrowseProductsErrorBoundary>
+        <BrowseProductsErrorBoundary resetToken={loaderData.query}>
           <Suspense fallback={<p role="status">Loading catalog...</p>}>
             <BrowseProducts query={loaderData.query} />
           </Suspense>
@@ -31,7 +31,7 @@ type BrowseProductsErrorBoundaryState = {
 };
 
 class BrowseProductsErrorBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; resetToken: unknown },
   BrowseProductsErrorBoundaryState
 > {
   state: BrowseProductsErrorBoundaryState = {
@@ -40,6 +40,12 @@ class BrowseProductsErrorBoundary extends Component<
 
   static getDerivedStateFromError(): BrowseProductsErrorBoundaryState {
     return { hasError: true };
+  }
+
+  override componentDidUpdate(previousProps: { resetToken: unknown }) {
+    if (this.state.hasError && previousProps.resetToken !== this.props.resetToken) {
+      this.setState({ hasError: false });
+    }
   }
 
   override render() {
