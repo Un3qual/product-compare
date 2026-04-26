@@ -7,12 +7,12 @@
 ### Frontend Lane
 
 - Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 3
+- Batch: Frontend Relay Route-Data Adoption, Task 4
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: migrate `/products/:slug` product detail and active offers to Relay-preloaded queries and remove the manual product route GraphQL wrapper.
+- Next step: migrate `/compare` and the save-comparison mutation to Relay-preloaded queries/mutations, then remove the temporary compare-local product detail helper.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products` browse route migration now exist, so the next route can reuse the same pattern.
-  - The frontend still ships `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products` plus `/products/:slug` route migrations now exist, so the next route can reuse the same pattern.
+  - The frontend still ships `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
   - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
   - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
 
@@ -28,6 +28,12 @@
   - This keeps NOW accurate without inventing a new backend slice before it has been prioritized.
 
 ## Just Completed
+
+- Frontend Relay Route-Data Adoption, Task 3:
+  - Replaced `assets/src/routes/products/api.ts` with `assets/src/routes/products/loader.ts`, product detail/offers Relay route query sources, and generated Relay artifacts.
+  - Updated `assets/src/routes/products/detail.tsx` so `/products/:slug` renders product detail and active offers from Relay preloaded queries while preserving not-found, product-unavailable, empty-offers, offer-unavailable, no-latest-price, and unsafe-offer-url behavior.
+  - Added `fetchRouteQuery(...)` in `assets/src/relay/route-preload.ts` for dependent route preloads and moved the temporary manual product-detail helper under `assets/src/routes/compare/product-detail.ts` until the compare route migrates.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx`, `cd assets && bun run typecheck`, and `cd assets && bun x vitest run src/__tests__/entry.server.test.tsx`.
 
 - GraphQL Relay Contract Hardening, Task 3:
   - Closed `docs/work/graphql-relay-contract-hardening.md` after verifying the full planned node surface for public catalog/pricing nodes plus owner-scoped saved comparison sets and API tokens.

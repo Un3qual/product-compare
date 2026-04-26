@@ -7,6 +7,7 @@ import { createRelayEnvironment } from "../environment";
 import { fetchAppQuery, loadAppQuery } from "../load-query";
 import {
   createRelayRouterContext,
+  fetchRouteQuery,
   getRoutePreloadedQuery,
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
@@ -104,6 +105,38 @@ test("preloadRouteQuery forwards the route loader abort signal to the network re
         routeLoaderSignal: signal
       }
     }
+  });
+});
+
+test("fetchRouteQuery returns fetched data with the serializable descriptor", async () => {
+  const environment = createRelayEnvironment();
+  const variables = { first: 12 };
+  const queryRef = { dispose: vi.fn(), variables };
+  const data = {
+    products: {
+      edges: []
+    }
+  };
+
+  vi.mocked(fetchAppQuery).mockResolvedValue(data);
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  await expect(fetchRouteQuery(environment, routeQuery, variables)).resolves.toEqual({
+    data,
+    descriptor: {
+      __relayQuery: {
+        operationName: "BrowseProductsRouteQuery",
+        text: expect.stringContaining("query BrowseProductsRouteQuery"),
+        variables
+      }
+    }
+  });
+
+  expect(fetchAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "network-only"
+  });
+  expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "store-only"
   });
 });
 

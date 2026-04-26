@@ -11,6 +11,7 @@ type Query {
   viewer: User
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
+  merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
 }
 
@@ -64,6 +65,41 @@ type Brand implements Node {
   name: String!
 }
 
+type Merchant implements Node {
+  id: ID!
+  name: String!
+  domain: String!
+}
+
+type MerchantProduct implements Node {
+  id: ID!
+  merchantId: ID!
+  productId: ID!
+  externalSku: String
+  url: String!
+  currency: String!
+  isActive: Boolean!
+  merchant: Merchant
+  product: Product
+  latestPrice: PricePoint
+}
+
+type PricePoint {
+  id: ID!
+  merchantProductId: ID!
+  price: Decimal!
+}
+
+type MerchantProductConnection {
+  edges: [MerchantProductEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MerchantProductEdge {
+  node: MerchantProduct!
+  cursor: String!
+}
+
 type ProductConnection {
   edges: [ProductEdge!]!
   pageInfo: PageInfo!
@@ -105,6 +141,14 @@ type PageInfo {
 input CreateSavedComparisonSetInput {
   name: String!
   productIds: [ID!]!
+}
+
+input MerchantProductsInput {
+  productId: ID!
+  merchantId: ID
+  activeOnly: Boolean
+  first: Int
+  after: String
 }
 
 input ProductNumericFilterInput {

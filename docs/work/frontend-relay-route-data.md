@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-04-24 after Task 2 browse-route Relay migration verification
+- Last verified: 2026-04-26 after Task 3 product detail/offers Relay migration verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -26,8 +26,9 @@
 - `assets/src/relay/environment.ts`, `assets/src/relay/ssr.ts`, `assets/src/entry.client.tsx`, and `assets/src/entry.server.tsx` now seed/dehydrate Relay records through the SSR bootstrap while preserving the existing Relay provider.
 - `assets/src/relay/load-query.ts` and `assets/src/relay/route-preload.ts` provide route-preload primitives for serializable descriptors plus in-memory query-ref reuse.
 - `/products` now uses `assets/src/routes/catalog/loader.ts`, `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`, and `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts` instead of `assets/src/routes/catalog/api.ts`.
-- `assets/src/routes/products/api.ts`, `assets/src/routes/compare/api.ts`, and `assets/src/routes/auth/actions.ts` still own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
-- `assets/src/router.tsx` wires `/products` through a Relay preload loader, while `/products/:slug`, `/compare`, and `/compare/saved` still use manual route loaders that return DTO-like status payloads instead of Relay preload data.
+- `/products/:slug` now uses `assets/src/routes/products/loader.ts`, `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`, `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`, and generated Relay artifacts instead of `assets/src/routes/products/api.ts`.
+- `assets/src/routes/compare/api.ts`, `assets/src/routes/compare/product-detail.ts`, and `assets/src/routes/auth/actions.ts` still own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
+- `assets/src/router.tsx` wires `/products` and `/products/:slug` through Relay preload loaders, while `/compare` and `/compare/saved` still use manual route loaders that return DTO-like status payloads instead of Relay preload data.
 - `assets/src/entry.server.tsx` creates a request-scoped Relay environment, exposes it through React Router loader context, and serializes the populated store back into a non-executable client bootstrap script.
 - `assets/relay.config.json` exists, `assets/package.json` already includes Relay compiler/runtime dependencies, and browse now has a tracked generated Relay artifact.
 - The saved-comparisons UI now ships for authenticated users, but both compare routes still extend the same manual GraphQL helper path that this slice is meant to replace.
@@ -35,13 +36,27 @@
 ## Next Batch
 
 - Status: ready
-- Batch: Task 3 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Batch: Task 4 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 - Why this batch:
-  - The `/products` browse route now exercises the Relay preload path, so the next route-data migration can move the product detail and offers page onto the same pattern.
-  - Migrating `/products/:slug` next removes another manual GraphQL wrapper while preserving the existing product-ready, missing-product, offer-empty, and offer-unavailable behavior.
-  - `/compare/saved` and the compare save/delete flows have now landed on the manual compare helper path, so this migration is still required before more compare-route follow-up work continues.
+  - The `/products` browse and `/products/:slug` detail/offers routes now exercise the Relay preload path, so the next route-data migration can move `/compare` onto the same pattern.
+  - `/compare` still depends on `assets/src/routes/compare/api.ts` and `assets/src/routes/compare/product-detail.ts` for manual product GraphQL fetching plus the save mutation.
+  - Migrating `/compare` next removes the temporary compare-local product detail helper introduced while deleting the product route API wrapper.
 
 ## Completed Batches
+
+### Task 3: Product Detail And Offers Route Relay Migration
+
+- Completed: 2026-04-26
+- Outcome:
+  - Replaced `assets/src/routes/products/api.ts` with `assets/src/routes/products/loader.ts`, product detail/offers Relay route query sources, and generated Relay artifacts.
+  - Updated `assets/src/routes/products/detail.tsx` to render product detail and active offers from Relay preloaded queries while preserving not-found, product-unavailable, empty-offers, offer-unavailable, no-latest-price, and unsafe-offer-url behavior.
+  - Added `fetchRouteQuery(...)` in `assets/src/relay/route-preload.ts` so loaders can keep a fetched query in the route-ref cache while also using the returned data to preload dependent queries.
+  - Moved the remaining manual product-detail helper under `assets/src/routes/compare/product-detail.ts` so `/compare` can keep working until Task 4 migrates that route.
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `cd assets && bun x vitest run src/__tests__/entry.server.test.tsx`
 
 ### Task 2: Browse Route Relay Migration
 

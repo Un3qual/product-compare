@@ -45,7 +45,7 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/frontend-relay-route-data.md`
   - Status: active
   - Priority: P1
-  - Next batch: add Relay SSR hydration/preload primitives, then migrate route data off the manual `api.ts` GraphQL wrappers.
+  - Next batch: migrate `/compare` and the save-comparison mutation to Relay-preloaded queries/mutations, then remove the temporary compare-local product detail helper.
   - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 
 - Backend lane
