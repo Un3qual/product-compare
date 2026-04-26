@@ -7,11 +7,12 @@
 ### Frontend Lane
 
 - Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 1
+- Batch: Frontend Relay Route-Data Adoption, Task 3
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: add Relay SSR hydration/preload primitives so the route migrations can stop depending on manual GraphQL DTO loaders.
+- Next step: migrate `/products/:slug` product detail and active offers to Relay-preloaded queries and remove the manual product route GraphQL wrapper.
 - Why this batch is current:
-  - The frontend already ships a Relay provider, compiler config, and network layer, but `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows still depend on manual route-local GraphQL helpers.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products` browse route migration now exist, so the next route can reuse the same pattern.
+  - The frontend still ships `/products/:slug`, `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
   - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
   - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
 
@@ -42,6 +43,20 @@
   - Added `lib/product_compare_web/resolvers/node_resolver.ex`, root `node(id: ID!)` schema support, and minimal catalog/pricing context helpers for public `Product`, `Brand`, `Merchant`, and `MerchantProduct` lookups.
   - Added `test/product_compare_web/graphql/node_query_test.exs` to cover the supported public node lookups plus malformed and unsupported ID handling.
   - Verified `mix test test/product_compare_web/graphql/node_query_test.exs` and `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/node_query_test.exs`.
+
+- Frontend Relay Route-Data Adoption, Task 2:
+  - Replaced `assets/src/routes/catalog/api.ts` with `assets/src/routes/catalog/loader.ts`, `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`, and generated `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`.
+  - Updated `assets/src/routes/catalog/browse.tsx` and `assets/src/router.tsx` so `/products` preloads and renders through Relay while preserving browse ready, empty, and unavailable states.
+  - Extended `assets/src/relay/route-preload.ts` to reuse loader-created query refs and recreate them against the hydrated client Relay environment when needed.
+  - Updated `assets/schema.graphql`, `assets/src/react-relay.d.ts`, and `assets/.gitignore` so the browse route compiles against Relay and its generated artifact can be tracked.
+  - Verified `cd assets && bun run relay && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx`, `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/routes/catalog/__tests__/browse.route.test.tsx`, and `cd assets && bun run typecheck`.
+
+- Frontend Relay Route-Data Adoption, Task 1:
+  - Added `assets/src/relay/ssr.ts` to dehydrate the Relay store, render an HTML-safe non-executable `__relayRecords` bootstrap payload, and hydrate client environments from that payload.
+  - Added `assets/src/relay/route-preload.ts` for route-query preload descriptors and React Router loader context access to the shared Relay environment.
+  - Updated `assets/src/relay/environment.ts`, `assets/src/entry.server.tsx`, `assets/src/entry.client.tsx`, and `assets/src/router.tsx` so SSR creates a seeded request Relay environment, emits the store snapshot, and the browser reuses that snapshot.
+  - Added focused coverage in `assets/src/relay/__tests__/route-preload.test.ts`, extended `assets/src/__tests__/entry.server.test.tsx`, and kept entry-server error-handling tests aligned with the new environment options.
+  - Verified `cd assets && bun x vitest run src/relay/__tests__/route-preload.test.ts src/__tests__/entry.server.test.tsx src/__tests__/entry.server.error-handling.test.tsx` and `cd assets && bun run typecheck`.
 
 - Queue rebaseline for Relay adoption:
   - Added `docs/plans/2026-03-19-frontend-relay-route-data-design.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`, and `docs/work/frontend-relay-route-data.md` to make full frontend Relay adoption the active queue item.

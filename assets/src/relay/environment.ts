@@ -8,15 +8,24 @@ import {
 } from "relay-runtime";
 import { fetchGraphQL, type SSRContext } from "./fetch-graphql";
 
-export function createRelayEnvironment(ssrContext?: SSRContext) {
+export type RelayRecordMap = NonNullable<ConstructorParameters<typeof RecordSource>[0]>;
+
+export interface CreateRelayEnvironmentOptions {
+  records?: RelayRecordMap;
+  ssrContext?: SSRContext;
+}
+
+export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = {}) {
+  const recordSource = new RecordSource(options.records ?? {});
+
   return new Environment({
     network: Network.create((params: RequestParameters, variables: Variables) => {
       if (!params.text) {
         throw new Error(`Relay operation text is missing for request: ${params.name ?? "unknown"}`);
       }
 
-      return fetchGraphQL(params.text, variables as Record<string, unknown>, ssrContext);
+      return fetchGraphQL(params.text, variables as Record<string, unknown>, options.ssrContext);
     }),
-    store: new Store(new RecordSource())
+    store: new Store(recordSource)
   });
 }

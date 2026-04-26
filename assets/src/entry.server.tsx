@@ -3,15 +3,19 @@ import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "r
 import { RelayEnvironmentProvider } from "react-relay";
 import { createRelayEnvironment } from "./relay/environment";
 import type { SSRContext } from "./relay/fetch-graphql";
+import { createRelayRouterContext } from "./relay/route-preload";
+import { dehydrateRelayEnvironment, renderRelayRecordsScript } from "./relay/ssr";
 import { routes } from "./router";
 
 const STREAM_ABORT_DELAY_MS = 10_000;
 type ReactReadableStream = ReadableStream & { allReady: Promise<void> };
 
 export async function render(url: string, ssrContext?: SSRContext): Promise<Response | string> {
-  const relayEnvironment = createRelayEnvironment(ssrContext);
+  const relayEnvironment = createRelayEnvironment({ ssrContext });
   const handler = createStaticHandler(routes);
-  const context = await handler.query(createServerRequest(url, ssrContext));
+  const context = await handler.query(createServerRequest(url, ssrContext), {
+    requestContext: createRelayRouterContext(relayEnvironment)
+  });
 
   if (context instanceof Response) {
     return context;
@@ -32,7 +36,10 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
 
   await waitForAllReady(htmlStream);
 
-  return new Response(htmlStream).text();
+  const appHtml = await new Response(htmlStream).text();
+  const relayRecordsScript = renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment));
+
+  return insertRelayRecordsScript(appHtml, relayRecordsScript);
 }
 
 async function waitForAllReady(stream: ReactReadableStream) {
@@ -81,4 +88,16 @@ function resolveServerUrl(url: string, fallback?: string) {
     });
     return "http://localhost/";
   }
+}
+
+function insertRelayRecordsScript(appHtml: string, relayRecordsScript: string) {
+  const bodyCloseIndex = appHtml.toLowerCase().lastIndexOf("</body>");
+
+  if (bodyCloseIndex === -1) {
+    return `${appHtml}${relayRecordsScript}`;
+  }
+
+  return `${appHtml.slice(0, bodyCloseIndex)}${relayRecordsScript}${appHtml.slice(
+    bodyCloseIndex
+  )}`;
 }

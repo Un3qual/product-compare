@@ -10,6 +10,7 @@ interface Node {
 type Query {
   viewer: User
   product(slug: String!): Product
+  products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
 }
 
@@ -63,6 +64,16 @@ type Brand implements Node {
   name: String!
 }
 
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductEdge {
+  node: Product!
+  cursor: String!
+}
+
 type SavedComparisonSetConnection {
   edges: [SavedComparisonSetEdge!]!
   pageInfo: PageInfo!
@@ -95,6 +106,36 @@ input CreateSavedComparisonSetInput {
   name: String!
   productIds: [ID!]!
 }
+
+input ProductNumericFilterInput {
+  attributeId: ID!
+  min: Decimal
+  max: Decimal
+}
+
+input ProductBooleanFilterInput {
+  attributeId: ID!
+  value: Boolean!
+}
+
+input ProductEnumFilterInput {
+  attributeId: ID!
+  enumOptionId: ID!
+}
+
+input ProductFiltersInput {
+  primaryTypeTaxonId: ID
+  includeTypeDescendants: Boolean
+  numeric: [ProductNumericFilterInput!]
+  booleans: [ProductBooleanFilterInput!]
+  enums: [ProductEnumFilterInput!]
+  useCaseTaxonIds: [ID!]
+}
+
+"""
+Decimal values are serialized as base-10 strings to preserve precision.
+"""
+scalar Decimal
 
 type CreateSavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet
