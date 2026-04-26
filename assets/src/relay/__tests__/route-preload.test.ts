@@ -125,6 +125,29 @@ test("getRoutePreloadedQuery reuses a query reference already loaded for the des
   expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
+test("getRoutePreloadedQuery uses the hydrated store when the route cache is empty", () => {
+  const environment = createRelayEnvironment();
+  const variables = { first: 12 };
+  const queryRef = { dispose: vi.fn(), variables };
+
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  const descriptor = {
+    __relayQuery: {
+      operationName: "BrowseProductsRouteQuery",
+      text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }",
+      variables
+    }
+  };
+
+  const preloadedQuery = getRoutePreloadedQuery(environment, routeQuery, descriptor);
+
+  expect(preloadedQuery.variables).toBe(queryRef.variables);
+  expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
+    fetchPolicy: "store-only"
+  });
+});
+
 test("preloadRouteQuery reloads and replaces an unclaimed query reference for equivalent descriptor content", async () => {
   const environment = createRelayEnvironment();
   const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };

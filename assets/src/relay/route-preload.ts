@@ -71,7 +71,9 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   let routeQueryRefEntry = getRouteQueryRefEntry(environment, descriptorKey);
 
   if (!routeQueryRefEntry) {
-    const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
+    const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables, {
+      fetchPolicy: "store-only"
+    });
 
     routeQueryRefEntry = setRouteQueryRef(environment, descriptorKey, queryRef);
   }
@@ -137,6 +139,32 @@ function createRouteQueryRefLease<TQuery extends OperationType>(entry: RouteQuer
 
   return lease;
 }
+
+const scheduleRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
+  if (entry.disposeTimer !== null) {
+    return;
+  }
+
+  entry.disposeTimer = setTimeout(() => {
+    entry.disposeTimer = null;
+
+    if (entry.activeLeaseCount > 0) {
+      return;
+    }
+
+    removeRouteQueryRefEntry(entry);
+    disposeRouteQueryRefEntry(entry);
+  }, 0);
+};
+
+const cancelRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
+  if (entry.disposeTimer === null) {
+    return;
+  }
+
+  clearTimeout(entry.disposeTimer);
+  entry.disposeTimer = null;
+};
 
 function activateRouteQueryRefLease<TQuery extends OperationType>(queryRef: PreloadedQuery<TQuery>) {
   const lease = queryRef as PreloadedQuery<OperationType>;
@@ -245,32 +273,6 @@ function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
   entry.queryRef.dispose();
   entry.isDisposed = true;
 }
-
-const scheduleRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
-  if (entry.disposeTimer !== null) {
-    return;
-  }
-
-  entry.disposeTimer = setTimeout(() => {
-    entry.disposeTimer = null;
-
-    if (entry.activeLeaseCount > 0) {
-      return;
-    }
-
-    removeRouteQueryRefEntry(entry);
-    disposeRouteQueryRefEntry(entry);
-  }, 0);
-};
-
-const cancelRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
-  if (entry.disposeTimer === null) {
-    return;
-  }
-
-  clearTimeout(entry.disposeTimer);
-  entry.disposeTimer = null;
-};
 
 function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {
   if (!signal) {
