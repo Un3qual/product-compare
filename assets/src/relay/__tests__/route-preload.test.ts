@@ -70,25 +70,32 @@ test("getRoutePreloadedQuery reuses a query reference already loaded for the des
   expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
-test("preloadRouteQuery reuses a query reference already loaded for equivalent descriptor content", () => {
+test("preloadRouteQuery reloads and replaces an unclaimed query reference for equivalent descriptor content", () => {
   const environment = createRelayEnvironment();
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
-  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+  vi.mocked(loadAppQuery)
+    .mockReturnValueOnce(firstQueryRef as never)
+    .mockReturnValueOnce(secondQueryRef as never);
 
   const firstDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
   const secondDescriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
 
   expect(secondDescriptor).toEqual(firstDescriptor);
-  expect(loadAppQuery).toHaveBeenCalledTimes(1);
-  expect(queryRef.dispose).not.toHaveBeenCalled();
+  expect(loadAppQuery).toHaveBeenCalledTimes(2);
+  expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
+  expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
-test("preloadRouteQuery reuses equivalent nested variables regardless of object key order", () => {
+test("preloadRouteQuery uses stable nested variable keys when replacing unclaimed query refs", () => {
   const environment = createRelayEnvironment();
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
-  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+  vi.mocked(loadAppQuery)
+    .mockReturnValueOnce(firstQueryRef as never)
+    .mockReturnValueOnce(secondQueryRef as never);
 
   preloadRouteQuery(environment, routeQuery, {
     first: 12,
@@ -105,8 +112,29 @@ test("preloadRouteQuery reuses equivalent nested variables regardless of object 
     first: 12
   });
 
-  expect(loadAppQuery).toHaveBeenCalledTimes(1);
-  expect(queryRef.dispose).not.toHaveBeenCalled();
+  expect(loadAppQuery).toHaveBeenCalledTimes(2);
+  expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
+  expect(secondQueryRef.dispose).not.toHaveBeenCalled();
+});
+
+test("getRoutePreloadedQuery consumes the loader-created cache entry", () => {
+  const environment = createRelayEnvironment();
+  const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  vi.mocked(loadAppQuery)
+    .mockReturnValueOnce(firstQueryRef as never)
+    .mockReturnValueOnce(secondQueryRef as never);
+
+  const descriptor = preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+  expect(getRoutePreloadedQuery(environment, routeQuery, descriptor)).toBe(firstQueryRef);
+
+  preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+  expect(loadAppQuery).toHaveBeenCalledTimes(2);
+  expect(firstQueryRef.dispose).not.toHaveBeenCalled();
+  expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
 test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", () => {

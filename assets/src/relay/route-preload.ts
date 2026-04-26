@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { GraphQLTaggedNode } from "react-relay";
 import { useRelayEnvironment, type PreloadedQuery } from "react-relay";
 import { createContext, RouterContextProvider } from "react-router-dom";
@@ -31,12 +31,6 @@ export function preloadRouteQuery<TQuery extends OperationType>(
       variables
     }
   };
-  const existingQueryRef = getRouteQueryRef(environment, descriptor);
-
-  if (existingQueryRef) {
-    return descriptor;
-  }
-
   const queryRef = loadAppQuery<TQuery>(environment, query, variables);
 
   setRouteQueryRef(environment, descriptor, queryRef);
@@ -49,17 +43,13 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ): PreloadedQuery<TQuery> {
-  const existingQueryRef = getRouteQueryRef(environment, descriptor);
+  const existingQueryRef = takeRouteQueryRef(environment, descriptor);
 
   if (existingQueryRef) {
     return existingQueryRef as PreloadedQuery<TQuery>;
   }
 
-  const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
-
-  setRouteQueryRef(environment, descriptor, queryRef);
-
-  return queryRef;
+  return loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
 }
 
 export function useRoutePreloadedQuery<TQuery extends OperationType>(
@@ -68,11 +58,14 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
 ): PreloadedQuery<TQuery> {
   const environment = useRelayEnvironment();
   const descriptorKey = routeQueryDescriptorKey(descriptor);
-
-  return useMemo(
+  const queryRef = useMemo(
     () => getRoutePreloadedQuery<TQuery>(environment, query, descriptor),
     [descriptorKey, environment, query]
   );
+
+  useEffect(() => () => queryRef.dispose(), [queryRef]);
+
+  return queryRef;
 }
 
 export function createRelayRouterContext(environment: Environment) {
@@ -96,7 +89,7 @@ export function getRelayEnvironmentFromRouterContext(context: unknown) {
   return environment;
 }
 
-function getRouteQueryRef<TQuery extends OperationType>(
+function takeRouteQueryRef<TQuery extends OperationType>(
   environment: Environment,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ) {
@@ -106,7 +99,6 @@ function getRouteQueryRef<TQuery extends OperationType>(
 
   if (queryRef) {
     environmentQueryRefs?.delete(descriptorKey);
-    environmentQueryRefs?.set(descriptorKey, queryRef);
   }
 
   return queryRef;
