@@ -22,24 +22,31 @@ export function ProductDetailRoute() {
   }
 
   return (
-    <ProductDetailErrorBoundary resetToken={loaderData.productQuery}>
+    <ResettableErrorBoundary
+      resetToken={loaderData.productQuery}
+      fallback={
+        <section>
+          <p>Product unavailable.</p>
+        </section>
+      }
+    >
       <Suspense fallback={<p role="status">Loading product...</p>}>
         <ProductDetail productQuery={loaderData.productQuery} offers={loaderData.offers} />
       </Suspense>
-    </ProductDetailErrorBoundary>
+    </ResettableErrorBoundary>
   );
 }
 
-type ProductDetailErrorBoundaryState = {
+type ResettableErrorBoundaryState = {
   hasError: boolean;
   resetToken: unknown;
 };
 
-class ProductDetailErrorBoundary extends Component<
-  { children: ReactNode; resetToken: unknown },
-  ProductDetailErrorBoundaryState
+class ResettableErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode; resetToken: unknown },
+  ResettableErrorBoundaryState
 > {
-  constructor(props: { children: ReactNode; resetToken: unknown }) {
+  constructor(props: { children: ReactNode; fallback: ReactNode; resetToken: unknown }) {
     super(props);
     this.state = {
       hasError: false,
@@ -49,8 +56,8 @@ class ProductDetailErrorBoundary extends Component<
 
   static getDerivedStateFromProps(
     props: { resetToken: unknown },
-    state: ProductDetailErrorBoundaryState
-  ): Partial<ProductDetailErrorBoundaryState> | null {
+    state: ResettableErrorBoundaryState
+  ): Partial<ResettableErrorBoundaryState> | null {
     if (props.resetToken === state.resetToken) {
       return null;
     }
@@ -61,17 +68,13 @@ class ProductDetailErrorBoundary extends Component<
     };
   }
 
-  static getDerivedStateFromError(): Partial<ProductDetailErrorBoundaryState> {
+  static getDerivedStateFromError(): Partial<ResettableErrorBoundaryState> {
     return { hasError: true };
   }
 
   override render() {
     if (this.state.hasError) {
-      return (
-        <section>
-          <p>Product unavailable.</p>
-        </section>
-      );
+      return this.props.fallback;
     }
 
     return this.props.children;
@@ -111,63 +114,22 @@ function ProductDetail({
         {offers.status === "error" ? (
           <p>Offers unavailable.</p>
         ) : (
-          <ProductOffersErrorBoundary resetToken={offers.query}>
+          <ResettableErrorBoundary
+            resetToken={offers.query}
+            fallback={
+              <div role="alert">
+                <p>Offers unavailable.</p>
+              </div>
+            }
+          >
             <Suspense fallback={<p role="status">Loading offers...</p>}>
               <ProductOffers query={offers.query} />
             </Suspense>
-          </ProductOffersErrorBoundary>
+          </ResettableErrorBoundary>
         )}
       </section>
     </section>
   );
-}
-
-type ProductOffersErrorBoundaryState = {
-  hasError: boolean;
-  resetToken: unknown;
-};
-
-class ProductOffersErrorBoundary extends Component<
-  { children: ReactNode; resetToken: unknown },
-  ProductOffersErrorBoundaryState
-> {
-  constructor(props: { children: ReactNode; resetToken: unknown }) {
-    super(props);
-    this.state = {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromProps(
-    props: { resetToken: unknown },
-    state: ProductOffersErrorBoundaryState
-  ): Partial<ProductOffersErrorBoundaryState> | null {
-    if (props.resetToken === state.resetToken) {
-      return null;
-    }
-
-    return {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromError(): Partial<ProductOffersErrorBoundaryState> {
-    return { hasError: true };
-  }
-
-  override render() {
-    if (this.state.hasError) {
-      return (
-        <div role="alert">
-          <p>Offers unavailable.</p>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
 }
 
 function ProductOffers({

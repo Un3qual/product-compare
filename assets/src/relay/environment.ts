@@ -39,12 +39,9 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
 function networkSSRContext(ssrContext: SSRContext | undefined, cacheConfig: CacheConfig) {
   const signal = routeLoaderSignal(cacheConfig);
 
-  if (!signal) {
-    return ssrContext;
-  }
-
   return {
     ...ssrContext,
+    rejectGraphQLErrors: true,
     signal
   };
 }

@@ -168,6 +168,56 @@ test("falls back to request.signal for SSR requests when no explicit signal is p
   }
 });
 
+test("returns GraphQL top-level errors by default for manual response parsing", async () => {
+  const originalFetch = globalThis.fetch;
+  const graphQLResponse = {
+    data: {
+      login: null
+    },
+    errors: [{ message: "boom" }]
+  };
+
+  globalThis.fetch = (() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(graphQLResponse)
+    } as Response)) as typeof fetch;
+
+  try {
+    await expect(fetchGraphQL("mutation Login { login { viewer { id } } }", {})).resolves.toBe(
+      graphQLResponse
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects GraphQL top-level errors when requested by Relay query callers", async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = (() =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: {
+            product: null
+          },
+          errors: [{ message: "boom" }]
+        })
+    } as Response)) as typeof fetch;
+
+  try {
+    await expect(
+      fetchGraphQL("query Product { product(slug: \"boom\") { id } }", {}, {
+        rejectGraphQLErrors: true
+      })
+    ).rejects.toThrow("GraphQL response contained errors");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("requires VITE_API_BASE_URL outside local dev", () => {
   expect(() => resolveGraphQLEndpoint({ isDev: false })).toThrow(
     "VITE_API_BASE_URL must be set outside local development"

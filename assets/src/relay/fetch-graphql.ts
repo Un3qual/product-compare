@@ -7,6 +7,7 @@ export interface SSRContext {
   request?: Request;
   headers?: Record<string, string>;
   cookieString?: string;
+  rejectGraphQLErrors?: boolean;
   signal?: AbortSignal;
 }
 
@@ -74,7 +75,13 @@ export async function fetchGraphQL(
     throw new Error(`GraphQL request failed (${response.status}): ${responseBody}`);
   }
 
-  return response.json();
+  const body = (await response.json()) as GraphQLResponse;
+
+  if (ssrContext?.rejectGraphQLErrors && hasGraphQLErrors(body)) {
+    throw new Error("GraphQL response contained errors");
+  }
+
+  return body;
 }
 
 export function resolveGraphQLEndpoint(options: ResolveGraphQLEndpointOptions = {}) {
@@ -152,4 +159,12 @@ function normalizeOrigin(value?: string | null) {
 
 function hasSSRContext(ssrContext?: SSRContext) {
   return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
+}
+
+function hasGraphQLErrors(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
 }
