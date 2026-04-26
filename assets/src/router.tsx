@@ -1,11 +1,13 @@
 import type { HydrationState, RouteObject } from "react-router-dom";
 import { createBrowserRouter } from "react-router-dom";
+import type { Environment } from "relay-runtime";
+import { createRelayRouterContext } from "./relay/route-preload";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
 import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
-import { browseLoader } from "./routes/catalog/api";
+import { browseLoader } from "./routes/catalog/loader";
 import { BrowseRoute } from "./routes/catalog/browse";
 import { compareLoader, savedComparisonsLoader } from "./routes/compare/api";
 import { CompareRoute } from "./routes/compare";
@@ -76,8 +78,9 @@ export const routes: RouteObject[] = [
   }
 ];
 
-export function createClientRouter() {
+export function createClientRouter(relayEnvironment?: Environment) {
   return createBrowserRouter(routes, {
+    getContext: relayEnvironment ? () => createRelayRouterContext(relayEnvironment) : undefined,
     hydrationData: typeof window === "undefined" ? undefined : window.__staticRouterHydrationData
   });
 }
