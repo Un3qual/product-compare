@@ -34,11 +34,11 @@ beforeEach(() => {
   vi.mocked(loadAppQuery).mockReset();
 });
 
-async function flushRouteQueryRefDisposalTimers() {
-  await act(async () => {
+const flushRouteQueryRefDisposalTimers = () => {
+  act(() => {
     vi.runOnlyPendingTimers();
   });
-}
+};
 
 test("dehydrateRelayEnvironment returns the populated record source", () => {
   const environment = createRelayEnvironment({
@@ -210,11 +210,11 @@ test("committed route query refs are claimed so later preloads do not dispose th
 
     const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-    function RouteQueryConsumer() {
+    const RouteQueryConsumer = () => {
       renderedQueryRef = useRoutePreloadedQuery(routeQuery, descriptor);
 
       return null;
-    }
+    };
 
     const view = render(
       createElement(
@@ -234,7 +234,7 @@ test("committed route query refs are claimed so later preloads do not dispose th
     expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 
     view.unmount();
-    await flushRouteQueryRefDisposalTimers();
+    flushRouteQueryRefDisposalTimers();
 
     expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
   } finally {
@@ -254,13 +254,13 @@ test("multiple committed consumers release a shared route query ref after the la
 
     const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-    function RouteQueryConsumer({ index }: { index: number }) {
+    const RouteQueryConsumer = ({ index }: { index: number }) => {
       renderedQueryRefs[index] = useRoutePreloadedQuery(routeQuery, descriptor);
 
       return null;
-    }
+    };
 
-    function RouteQueryConsumers({ count }: { count: number }) {
+    const RouteQueryConsumers = ({ count }: { count: number }) => {
       return createElement(
         "div",
         null,
@@ -268,7 +268,7 @@ test("multiple committed consumers release a shared route query ref after the la
           createElement(RouteQueryConsumer, { key: index, index })
         )
       );
-    }
+    };
 
     const view = render(
       createElement(
@@ -292,7 +292,7 @@ test("multiple committed consumers release a shared route query ref after the la
     expect(queryRef.dispose).not.toHaveBeenCalled();
 
     view.unmount();
-    await flushRouteQueryRefDisposalTimers();
+    flushRouteQueryRefDisposalTimers();
 
     expect(queryRef.dispose).toHaveBeenCalledTimes(1);
   } finally {
@@ -311,11 +311,11 @@ test("StrictMode effect replay keeps the active route query ref alive", async ()
 
     const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
-    function RouteQueryConsumer() {
+    const RouteQueryConsumer = () => {
       useRoutePreloadedQuery(routeQuery, descriptor);
 
       return null;
-    }
+    };
 
     const view = render(
       createElement(
@@ -332,7 +332,7 @@ test("StrictMode effect replay keeps the active route query ref alive", async ()
     expect(queryRef.dispose).not.toHaveBeenCalled();
 
     view.unmount();
-    await flushRouteQueryRefDisposalTimers();
+    flushRouteQueryRefDisposalTimers();
 
     expect(queryRef.dispose).toHaveBeenCalledTimes(1);
   } finally {

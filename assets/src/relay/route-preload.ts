@@ -246,7 +246,7 @@ function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
   entry.isDisposed = true;
 }
 
-function scheduleRouteQueryRefDisposal(entry: RouteQueryRefEntry) {
+const scheduleRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
   if (entry.disposeTimer !== null) {
     return;
   }
@@ -261,16 +261,16 @@ function scheduleRouteQueryRefDisposal(entry: RouteQueryRefEntry) {
     removeRouteQueryRefEntry(entry);
     disposeRouteQueryRefEntry(entry);
   }, 0);
-}
+};
 
-function cancelRouteQueryRefDisposal(entry: RouteQueryRefEntry) {
+const cancelRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
   if (entry.disposeTimer === null) {
     return;
   }
 
   clearTimeout(entry.disposeTimer);
   entry.disposeTimer = null;
-}
+};
 
 function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {
   if (!signal) {
