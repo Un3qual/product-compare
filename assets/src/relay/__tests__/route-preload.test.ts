@@ -1,4 +1,7 @@
+import { createElement } from "react";
+import { render } from "@testing-library/react";
 import type { GraphQLTaggedNode } from "react-relay";
+import { RelayEnvironmentProvider } from "react-relay";
 import { RouterContextProvider } from "react-router-dom";
 import { createRelayEnvironment } from "../environment";
 import { fetchAppQuery, loadAppQuery } from "../load-query";
@@ -6,7 +9,8 @@ import {
   createRelayRouterContext,
   getRoutePreloadedQuery,
   getRelayEnvironmentFromRouterContext,
-  preloadRouteQuery
+  preloadRouteQuery,
+  useRoutePreloadedQuery
 } from "../route-preload";
 import { dehydrateRelayEnvironment } from "../ssr";
 
@@ -159,7 +163,7 @@ test("preloadRouteQuery uses stable nested variable keys when replacing unclaime
   expect(secondQueryRef.dispose).not.toHaveBeenCalled();
 });
 
-test("getRoutePreloadedQuery consumes the loader-created cache entry", async () => {
+test("uncommitted route query refs stay replaceable if render aborts before effects run", async () => {
   const environment = createRelayEnvironment();
   const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
   const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
@@ -175,8 +179,47 @@ test("getRoutePreloadedQuery consumes the loader-created cache entry", async () 
   await preloadRouteQuery(environment, routeQuery, { first: 12 });
 
   expect(loadAppQuery).toHaveBeenCalledTimes(2);
+  expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
+  expect(secondQueryRef.dispose).not.toHaveBeenCalled();
+});
+
+test("committed route query refs are claimed so later preloads do not dispose them", async () => {
+  const environment = createRelayEnvironment();
+  const firstQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const secondQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  let renderedQueryRef: unknown;
+
+  vi.mocked(loadAppQuery)
+    .mockReturnValueOnce(firstQueryRef as never)
+    .mockReturnValueOnce(secondQueryRef as never);
+
+  const descriptor = await preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+  function RouteQueryConsumer() {
+    renderedQueryRef = useRoutePreloadedQuery(routeQuery, descriptor);
+
+    return null;
+  }
+
+  const view = render(
+    createElement(
+      RelayEnvironmentProvider,
+      { environment },
+      createElement(RouteQueryConsumer)
+    )
+  );
+
+  expect(renderedQueryRef).toBe(firstQueryRef);
+
+  await preloadRouteQuery(environment, routeQuery, { first: 12 });
+
+  expect(loadAppQuery).toHaveBeenCalledTimes(2);
   expect(firstQueryRef.dispose).not.toHaveBeenCalled();
   expect(secondQueryRef.dispose).not.toHaveBeenCalled();
+
+  view.unmount();
+
+  expect(firstQueryRef.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("preloadRouteQuery disposes the oldest cached query references when the cache limit is exceeded", async () => {

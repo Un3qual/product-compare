@@ -8,7 +8,11 @@ import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } f
 const ROUTE_QUERY_REF_CACHE_LIMIT = 20;
 
 const relayEnvironmentRouterContext = createContext<Environment | null>(null);
-const routeQueryRefs = new WeakMap<Environment, Map<string, PreloadedQuery<OperationType>>>();
+const routeQueryRefs = new WeakMap<Environment, Map<string, RouteQueryRefEntry>>();
+
+interface RouteQueryRefEntry {
+  queryRef: PreloadedQuery<OperationType>;
+}
 
 export interface RelayRouteQueryDescriptor<TVariables = Record<string, unknown>> {
   __relayQuery: {
@@ -56,13 +60,18 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ): PreloadedQuery<TQuery> {
-  const existingQueryRef = takeRouteQueryRef(environment, descriptor);
+  const descriptorKey = routeQueryDescriptorKey(descriptor);
+  const existingQueryRef = getRouteQueryRef(environment, descriptorKey);
 
   if (existingQueryRef) {
     return existingQueryRef as PreloadedQuery<TQuery>;
   }
 
-  return loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
+  const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables);
+
+  setRouteQueryRef(environment, descriptorKey, queryRef);
+
+  return queryRef;
 }
 
 export function useRoutePreloadedQuery<TQuery extends OperationType>(
@@ -76,7 +85,11 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
     [descriptorKey, environment, query]
   );
 
-  useEffect(() => () => queryRef.dispose(), [queryRef]);
+  useEffect(() => {
+    claimRouteQueryRef(environment, descriptorKey, queryRef);
+
+    return () => queryRef.dispose();
+  }, [descriptorKey, environment, queryRef]);
 
   return queryRef;
 }
@@ -102,24 +115,28 @@ export function getRelayEnvironmentFromRouterContext(context: unknown) {
   return environment;
 }
 
-function takeRouteQueryRef<TQuery extends OperationType>(
+function getRouteQueryRef(environment: Environment, descriptorKey: string) {
+  const environmentQueryRefs = routeQueryRefs.get(environment);
+
+  return environmentQueryRefs?.get(descriptorKey)?.queryRef;
+}
+
+function claimRouteQueryRef<TQuery extends OperationType>(
   environment: Environment,
-  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
+  descriptorKey: string,
+  queryRef: PreloadedQuery<TQuery>
 ) {
   const environmentQueryRefs = routeQueryRefs.get(environment);
-  const descriptorKey = routeQueryDescriptorKey(descriptor);
-  const queryRef = environmentQueryRefs?.get(descriptorKey);
+  const entry = environmentQueryRefs?.get(descriptorKey);
 
-  if (queryRef) {
+  if (entry?.queryRef === queryRef) {
     environmentQueryRefs?.delete(descriptorKey);
   }
-
-  return queryRef;
 }
 
 function setRouteQueryRef<TQuery extends OperationType>(
   environment: Environment,
-  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>,
+  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]> | string,
   queryRef: PreloadedQuery<TQuery>
 ) {
   let environmentQueryRefs = routeQueryRefs.get(environment);
@@ -129,8 +146,8 @@ function setRouteQueryRef<TQuery extends OperationType>(
     routeQueryRefs.set(environment, environmentQueryRefs);
   }
 
-  const descriptorKey = routeQueryDescriptorKey(descriptor);
-  const existingQueryRef = environmentQueryRefs.get(descriptorKey);
+  const descriptorKey = typeof descriptor === "string" ? descriptor : routeQueryDescriptorKey(descriptor);
+  const existingQueryRef = environmentQueryRefs.get(descriptorKey)?.queryRef;
 
   if (existingQueryRef === queryRef) {
     return;
@@ -141,11 +158,11 @@ function setRouteQueryRef<TQuery extends OperationType>(
     environmentQueryRefs.delete(descriptorKey);
   }
 
-  environmentQueryRefs.set(descriptorKey, queryRef as PreloadedQuery<OperationType>);
+  environmentQueryRefs.set(descriptorKey, { queryRef: queryRef as PreloadedQuery<OperationType> });
   evictRouteQueryRefs(environmentQueryRefs);
 }
 
-function evictRouteQueryRefs(environmentQueryRefs: Map<string, PreloadedQuery<OperationType>>) {
+function evictRouteQueryRefs(environmentQueryRefs: Map<string, RouteQueryRefEntry>) {
   while (environmentQueryRefs.size > ROUTE_QUERY_REF_CACHE_LIMIT) {
     const oldestEntry = environmentQueryRefs.entries().next().value;
 
@@ -153,9 +170,9 @@ function evictRouteQueryRefs(environmentQueryRefs: Map<string, PreloadedQuery<Op
       return;
     }
 
-    const [descriptorKey, queryRef] = oldestEntry;
+    const [descriptorKey, entry] = oldestEntry;
     environmentQueryRefs.delete(descriptorKey);
-    queryRef.dispose();
+    entry.queryRef.dispose();
   }
 }
 

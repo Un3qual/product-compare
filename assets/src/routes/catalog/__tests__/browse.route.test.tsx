@@ -137,6 +137,28 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
   }
 });
 
+test("browse loader rethrows aborted route preloads", async () => {
+  const environment = createRelayEnvironment();
+  const abortError = new DOMException("The operation was aborted.", "AbortError");
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedPreloadRouteQuery.mockRejectedValue(abortError);
+
+  try {
+    await expect(
+      browseLoader({
+        request: new Request("https://app.example.com/products"),
+        params: {},
+        context: createRelayRouterContext(environment)
+      } as LoaderFunctionArgs)
+    ).rejects.toBe(abortError);
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
 test("browse route query carries Relay connection pagination metadata", () => {
   const artifact = getBrowseProductsRouteQueryArtifact();
 

@@ -35,10 +35,24 @@ export async function browseLoader({ context, request }: LoaderFunctionArgs): Pr
       )
     };
   } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
+
     console.error("Failed to preload browse products route query.", { error });
 
     return {
       status: "error"
     };
   }
+}
+
+function isAbortError(error: unknown) {
+  return (
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error &&
+      typeof error === "object" &&
+      "name" in error &&
+      (error as { name: unknown }).name === "AbortError")
+  );
 }
