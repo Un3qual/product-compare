@@ -78,11 +78,7 @@ export async function fetchGraphQL(
   const body = (await response.json()) as GraphQLResponse;
 
   if (ssrContext?.rejectGraphQLErrors && hasGraphQLErrors(body)) {
-    // Type guard ensures body has errors property
-    const errorMessage = "errors" in body && body.errors?.[0]?.message
-      ? `GraphQL response contained errors: ${body.errors[0].message}`
-      : "GraphQL response contained errors";
-    throw new Error(errorMessage);
+    throw new Error(formatGraphQLErrorMessage(body));
   }
 
   return body;
@@ -171,4 +167,18 @@ export function hasGraphQLErrors(response: GraphQLResponse) {
   }
 
   return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
+}
+
+export function formatGraphQLErrorMessage(response: GraphQLResponse) {
+  if (!hasGraphQLErrors(response)) {
+    return "GraphQL response contained errors";
+  }
+
+  const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
+  const firstError = errors?.[0];
+  const detail = typeof firstError?.message === "string" ? firstError.message : null;
+
+  return detail
+    ? `GraphQL response contained errors: ${detail}`
+    : "GraphQL response contained errors";
 }

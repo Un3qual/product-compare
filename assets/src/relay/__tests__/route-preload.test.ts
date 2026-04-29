@@ -108,7 +108,7 @@ test("preloadRouteQuery forwards the route loader abort signal to the network re
   });
 });
 
-test("fetchRouteQuery returns fetched data with the serializable descriptor", async () => {
+test("fetchRouteQuery returns fetched data with the serializable descriptor and disposal handle", async () => {
   const environment = createRelayEnvironment();
   const variables = { first: 12 };
   const queryRef = { dispose: vi.fn(), variables };
@@ -121,7 +121,9 @@ test("fetchRouteQuery returns fetched data with the serializable descriptor", as
   vi.mocked(fetchAppQuery).mockResolvedValue(data);
   vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
 
-  await expect(fetchRouteQuery(environment, routeQuery, variables)).resolves.toEqual({
+  const fetchedQuery = await fetchRouteQuery(environment, routeQuery, variables);
+
+  expect(fetchedQuery).toEqual({
     data,
     descriptor: {
       __relayQuery: {
@@ -129,7 +131,8 @@ test("fetchRouteQuery returns fetched data with the serializable descriptor", as
         text: expect.stringContaining("query BrowseProductsRouteQuery"),
         variables
       }
-    }
+    },
+    dispose: expect.any(Function)
   });
 
   expect(fetchAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
@@ -138,6 +141,10 @@ test("fetchRouteQuery returns fetched data with the serializable descriptor", as
   expect(loadAppQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
     fetchPolicy: "store-only"
   });
+
+  fetchedQuery.dispose();
+
+  expect(queryRef.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("getRoutePreloadedQuery reuses a query reference already loaded for the descriptor", async () => {

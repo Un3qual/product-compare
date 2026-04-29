@@ -36,6 +36,7 @@ interface PreloadRouteQueryOptions {
 export interface FetchedRelayRouteQuery<TQuery extends OperationType> {
   data: TQuery["response"];
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>;
+  dispose: () => void;
 }
 
 export async function fetchRouteQuery<TQuery extends OperationType>(
@@ -54,11 +55,12 @@ export async function fetchRouteQuery<TQuery extends OperationType>(
     fetchPolicy: "store-only"
   });
 
-  setRouteQueryRef(environment, descriptor, queryRef);
+  const entry = setRouteQueryRef(environment, descriptor, queryRef);
 
   return {
     data,
-    descriptor
+    descriptor,
+    dispose: () => disposeFetchedRouteQueryRef(entry)
   };
 }
 
@@ -287,6 +289,11 @@ function disposeInactiveRouteQueryRefEntry(entry: RouteQueryRefEntry) {
 
   cancelRouteQueryRefDisposal(entry);
   disposeRouteQueryRefEntry(entry);
+}
+
+function disposeFetchedRouteQueryRef(entry: RouteQueryRefEntry) {
+  removeRouteQueryRefEntry(entry);
+  disposeInactiveRouteQueryRefEntry(entry);
 }
 
 function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {

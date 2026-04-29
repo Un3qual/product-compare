@@ -111,7 +111,8 @@ test("product detail loader preloads product detail and active offers through Re
     data: {
       product: DETAIL_PRODUCT
     },
-    descriptor: PRODUCT_QUERY_DESCRIPTOR
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
   });
   mockedPreloadRouteQuery.mockResolvedValue(OFFERS_QUERY_DESCRIPTOR);
 
@@ -146,12 +147,14 @@ test("product detail loader preloads product detail and active offers through Re
 
 test("product detail loader marks null products as not found", async () => {
   const environment = createRelayEnvironment();
+  const disposeProductRouteQuery = vi.fn();
 
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
       product: null
     },
-    descriptor: PRODUCT_QUERY_DESCRIPTOR
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: disposeProductRouteQuery
   });
 
   await expect(
@@ -165,6 +168,7 @@ test("product detail loader marks null products as not found", async () => {
   });
 
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+  expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("product detail loader marks failed product preloads as unavailable", async () => {
@@ -202,7 +206,8 @@ test("product detail loader keeps product detail ready when offers fail", async 
     data: {
       product: DETAIL_PRODUCT
     },
-    descriptor: PRODUCT_QUERY_DESCRIPTOR
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
   });
   mockedPreloadRouteQuery.mockRejectedValue(offersError);
 
@@ -523,7 +528,11 @@ function mockRouteQueryRefs() {
       return productQueryRef;
     }
 
-    return offersQueryRef;
+    if (descriptor === OFFERS_QUERY_DESCRIPTOR) {
+      return offersQueryRef;
+    }
+
+    throw new Error(`Unexpected route query descriptor: ${JSON.stringify(descriptor)}`);
   });
 }
 

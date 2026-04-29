@@ -1,5 +1,9 @@
 import type { GraphQLResponse } from "relay-runtime";
-import { fetchGraphQL, hasGraphQLErrors } from "../../relay/fetch-graphql";
+import {
+  fetchGraphQL,
+  formatGraphQLErrorMessage,
+  hasGraphQLErrors
+} from "../../relay/fetch-graphql";
 import type { SSRContext } from "../../relay/fetch-graphql";
 
 export interface ProductDetail {
@@ -29,14 +33,16 @@ export async function loadProductDetail(
   slug: string,
   ssrContext?: SSRContext
 ): Promise<ProductDetail | null> {
-  if (slug === "") {
+  const normalizedSlug = slug.trim();
+
+  if (normalizedSlug === "") {
     throw new Error("Product slug is required");
   }
 
-  const response = await fetchGraphQL(PRODUCT_DETAIL_QUERY, { slug }, ssrContext);
+  const response = await fetchGraphQL(PRODUCT_DETAIL_QUERY, { slug: normalizedSlug }, ssrContext);
 
   if (hasGraphQLErrors(response)) {
-    throw new Error("GraphQL response contained errors");
+    throw new Error(formatGraphQLErrorMessage(response));
   }
 
   if (isProductMissing(response)) {

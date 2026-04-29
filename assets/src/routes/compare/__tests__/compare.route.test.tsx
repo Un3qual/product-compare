@@ -9,15 +9,23 @@ import * as ReactRouterDom from "react-router-dom";
 import { compareLoader, isUnauthorizedSavedComparisonsResponse, savedComparisonsLoader } from "../api";
 import { CompareErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
+import { loadProductDetail } from "../product-detail";
 import { SavedComparisonsRoute } from "../saved";
 
 const { useLoaderDataMock } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn()
 }));
 
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
-}));
+vi.mock("../../../relay/fetch-graphql", async () => {
+  const actual = await vi.importActual<typeof import("../../../relay/fetch-graphql")>(
+    "../../../relay/fetch-graphql"
+  );
+
+  return {
+    ...actual,
+    fetchGraphQL: vi.fn()
+  };
+});
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
@@ -92,6 +100,25 @@ test("compare loader returns an empty state when no slugs are selected", async (
     status: "empty",
     slugs: []
   });
+});
+
+test("loadProductDetail rejects whitespace-only slugs before requesting GraphQL", async () => {
+  await expect(loadProductDetail("   ")).rejects.toThrow("Product slug is required");
+
+  expect(fetchGraphQLMock).not.toHaveBeenCalled();
+});
+
+test("loadProductDetail includes GraphQL error context when product lookup fails", async () => {
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      product: null
+    },
+    errors: [{ message: "backend exploded" }]
+  });
+
+  await expect(loadProductDetail("detail-product")).rejects.toThrow(
+    "GraphQL response contained errors: backend exploded"
+  );
 });
 
 test("compare loader rejects more than three selected slugs", async () => {

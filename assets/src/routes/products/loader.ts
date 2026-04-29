@@ -39,7 +39,7 @@ export async function productDetailLoader({
   params,
   request
 }: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
-  const slug = params.slug ?? "";
+  const slug = params.slug?.trim() ?? "";
 
   if (slug === "") {
     throw new Error("Product slug is required");
@@ -57,6 +57,8 @@ export async function productDetailLoader({
     const product = productRouteQuery.data.product;
 
     if (!product) {
+      productRouteQuery.dispose();
+
       return {
         status: "not_found"
       };
