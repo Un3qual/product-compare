@@ -69,3 +69,27 @@ test("Relay environment preserves default GraphQL error handling outside route-l
   expect(ssrContext?.rejectGraphQLErrors).toBeUndefined();
   expect(ssrContext?.signal).toBeUndefined();
 });
+
+test("Relay environment preserves an explicit SSR signal outside route-loader requests", async () => {
+  const signal = new AbortController().signal;
+  const environment = createRelayEnvironment({
+    ssrContext: {
+      signal
+    }
+  });
+
+  fetchGraphQLMock.mockResolvedValue({
+    data: {
+      product: null
+    }
+  });
+
+  await fetchQuery(environment, productDetailRouteQuery, {
+    slug: "detail-product"
+  }).toPromise();
+
+  const ssrContext = fetchGraphQLMock.mock.calls[0]?.[2];
+
+  expect(ssrContext?.rejectGraphQLErrors).toBeUndefined();
+  expect(ssrContext?.signal).toBe(signal);
+});

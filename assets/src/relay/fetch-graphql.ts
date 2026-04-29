@@ -175,10 +175,12 @@ export function formatGraphQLErrorMessage(response: GraphQLResponse) {
   }
 
   const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
-  const firstError = errors?.[0];
-  const detail = typeof firstError?.message === "string" ? firstError.message : null;
+  const messages =
+    errors
+      ?.map((error) => (typeof error.message === "string" ? error.message : null))
+      .filter((message): message is string => message !== null) ?? [];
 
-  return detail
-    ? `GraphQL response contained errors: ${detail}`
+  return messages.length > 0
+    ? `GraphQL response contained errors: ${messages.join("; ")}`
     : "GraphQL response contained errors";
 }

@@ -1,4 +1,4 @@
-import { fetchGraphQL, resolveGraphQLEndpoint } from "../fetch-graphql";
+import { fetchGraphQL, formatGraphQLErrorMessage, resolveGraphQLEndpoint } from "../fetch-graphql";
 
 test("sends credentials for session auth", async () => {
   const originalFetch = globalThis.fetch;
@@ -216,6 +216,14 @@ test("rejects GraphQL top-level errors when requested by Relay query callers", a
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("formats all GraphQL top-level error messages", () => {
+  expect(
+    formatGraphQLErrorMessage({
+      errors: [{ message: "first failure" }, { message: "second failure" }]
+    })
+  ).toBe("GraphQL response contained errors: first failure; second failure");
 });
 
 test("requires VITE_API_BASE_URL outside local dev", () => {

@@ -42,7 +42,9 @@ export async function productDetailLoader({
   const slug = params.slug?.trim() ?? "";
 
   if (slug === "") {
-    throw new Error("Product slug is required");
+    return {
+      status: "not_found"
+    };
   }
 
   const environment = getRelayEnvironmentFromRouterContext(context);

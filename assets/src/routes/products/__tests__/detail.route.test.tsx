@@ -171,6 +171,21 @@ test("product detail loader marks null products as not found", async () => {
   expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
 });
 
+test("product detail loader treats blank slugs as not found", async () => {
+  await expect(
+    productDetailLoader({
+      request: new Request("https://app.example.com/products/%20"),
+      params: { slug: "   " },
+      context: createRelayRouterContext(createRelayEnvironment())
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "not_found"
+  });
+
+  expect(mockedFetchRouteQuery).not.toHaveBeenCalled();
+  expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+});
+
 test("product detail loader marks failed product preloads as unavailable", async () => {
   const environment = createRelayEnvironment();
   const preloadError = new Error("Network request failed: boom");
