@@ -256,6 +256,37 @@ test("product detail loader rethrows aborted product preloads", async () => {
   }
 });
 
+test("product detail loader disposes product query when offers preload aborts", async () => {
+  const environment = createRelayEnvironment();
+  const abortError = new DOMException("The operation was aborted.", "AbortError");
+  const disposeProductRouteQuery = vi.fn();
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedFetchRouteQuery.mockResolvedValue({
+    data: {
+      product: DETAIL_PRODUCT
+    },
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: disposeProductRouteQuery
+  });
+  mockedPreloadRouteQuery.mockRejectedValue(abortError);
+
+  try {
+    await expect(
+      productDetailLoader({
+        request: new Request("https://app.example.com/products/detail-product"),
+        params: { slug: "detail-product" },
+        context: createRelayRouterContext(environment)
+      } as unknown as LoaderFunctionArgs)
+    ).rejects.toBe(abortError);
+
+    expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
 test("renders product detail and active offers from Relay route queries", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

@@ -64,11 +64,16 @@ export async function productDetailLoader({
       };
     }
 
-    return {
-      status: "ready",
-      productQuery: productRouteQuery.descriptor,
-      offers: await preloadProductOffers(environment, product.id, request.signal)
-    };
+    try {
+      return {
+        status: "ready",
+        productQuery: productRouteQuery.descriptor,
+        offers: await preloadProductOffers(environment, product.id, request.signal)
+      };
+    } catch (error) {
+      productRouteQuery.dispose();
+      throw error;
+    }
   } catch (error) {
     if (isAbortError(error)) {
       throw error;

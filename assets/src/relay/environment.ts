@@ -41,7 +41,7 @@ function networkSSRContext(ssrContext: SSRContext | undefined, cacheConfig: Cach
 
   return {
     ...ssrContext,
-    rejectGraphQLErrors: true,
+    rejectGraphQLErrors: signal ? true : ssrContext?.rejectGraphQLErrors,
     signal
   };
 }
