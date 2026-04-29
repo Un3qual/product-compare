@@ -312,14 +312,8 @@ test("renders product detail and active offers from Relay route queries", () => 
     }
   });
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === productQueryRef) {
-      return {
-        product: DETAIL_PRODUCT
-      };
-    }
-
-    return buildOffersData([
+  mockProductAndOffersQueries(
+    buildOffersData([
       {
         id: "merchant-product-1",
         url: "https://merchant.example.com/detail-product",
@@ -333,8 +327,8 @@ test("renders product detail and active offers from Relay route queries", () => 
           price: "199.99"
         }
       }
-    ]);
-  });
+    ])
+  );
 
   render(
     <MemoryRouter>
@@ -365,14 +359,8 @@ test("renders an offer without a latest price", () => {
     }
   });
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === productQueryRef) {
-      return {
-        product: DETAIL_PRODUCT
-      };
-    }
-
-    return buildOffersData([
+  mockProductAndOffersQueries(
+    buildOffersData([
       {
         id: "merchant-product-1",
         url: "https://merchant.example.com/detail-product",
@@ -383,8 +371,8 @@ test("renders an offer without a latest price", () => {
         },
         latestPrice: null
       }
-    ]);
-  });
+    ])
+  );
 
   render(
     <MemoryRouter>
@@ -410,15 +398,7 @@ test("renders an empty-offers message when no active offers exist", () => {
     }
   });
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === productQueryRef) {
-      return {
-        product: DETAIL_PRODUCT
-      };
-    }
-
-    return buildOffersData([]);
-  });
+  mockProductAndOffersQueries(buildOffersData([]));
 
   render(
     <MemoryRouter>
@@ -440,14 +420,8 @@ test("drops offers with unsafe urls", () => {
     }
   });
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === productQueryRef) {
-      return {
-        product: DETAIL_PRODUCT
-      };
-    }
-
-    return buildOffersData([
+  mockProductAndOffersQueries(
+    buildOffersData([
       {
         id: "merchant-product-1",
         url: "javascript:alert(1)",
@@ -461,8 +435,8 @@ test("drops offers with unsafe urls", () => {
           price: "199.99"
         }
       }
-    ]);
-  });
+    ])
+  );
 
   render(
     <MemoryRouter>
@@ -511,15 +485,7 @@ test("renders a local unavailable-offers message when the Relay offers query err
     }
   });
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === productQueryRef) {
-      return {
-        product: DETAIL_PRODUCT
-      };
-    }
-
-    throw new Error("Relay offers read failed");
-  });
+  mockProductAndOffersQueries(new Error("Relay offers read failed"));
 
   try {
     render(
@@ -579,6 +545,26 @@ function mockRouteQueryRefs() {
     }
 
     throw new Error(`Unexpected route query descriptor: ${JSON.stringify(descriptor)}`);
+  });
+}
+
+function mockProductAndOffersQueries(offersResult: unknown) {
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === productQueryRef) {
+      return {
+        product: DETAIL_PRODUCT
+      };
+    }
+
+    if (queryRef === offersQueryRef) {
+      if (offersResult instanceof Error) {
+        throw offersResult;
+      }
+
+      return offersResult;
+    }
+
+    throw new Error(`Unexpected preloaded query ref: ${String(queryRef)}`);
   });
 }
 
