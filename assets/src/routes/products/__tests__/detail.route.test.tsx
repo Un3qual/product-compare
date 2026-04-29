@@ -479,6 +479,7 @@ test("renders a local unavailable-offers message when the Relay offers query err
 
     expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
+    expect(consoleErrorSpy).toHaveBeenCalled();
   } finally {
     consoleErrorSpy.mockRestore();
   }

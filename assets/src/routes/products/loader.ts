@@ -39,14 +39,15 @@ export async function productDetailLoader({
   params,
   request
 }: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
+  const slug = params.slug ?? "";
+
+  if (slug === "") {
+    throw new Error("Product slug is required");
+  }
+
+  const environment = getRelayEnvironmentFromRouterContext(context);
+
   try {
-    const slug = params.slug ?? "";
-
-    if (slug === "") {
-      throw new Error("Product slug is required");
-    }
-
-    const environment = getRelayEnvironmentFromRouterContext(context);
     const productRouteQuery = await fetchRouteQuery<ProductDetailRouteQuery>(
       environment,
       productDetailRouteQuery,

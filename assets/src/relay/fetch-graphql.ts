@@ -78,7 +78,11 @@ export async function fetchGraphQL(
   const body = (await response.json()) as GraphQLResponse;
 
   if (ssrContext?.rejectGraphQLErrors && hasGraphQLErrors(body)) {
-    throw new Error("GraphQL response contained errors");
+    // Type guard ensures body has errors property
+    const errorMessage = "errors" in body && body.errors?.[0]?.message
+      ? `GraphQL response contained errors: ${body.errors[0].message}`
+      : "GraphQL response contained errors";
+    throw new Error(errorMessage);
   }
 
   return body;
@@ -161,7 +165,7 @@ function hasSSRContext(ssrContext?: SSRContext) {
   return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
 }
 
-function hasGraphQLErrors(response: GraphQLResponse) {
+export function hasGraphQLErrors(response: GraphQLResponse) {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }

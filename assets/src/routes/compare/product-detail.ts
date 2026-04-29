@@ -1,5 +1,5 @@
 import type { GraphQLResponse } from "relay-runtime";
-import { fetchGraphQL } from "../../relay/fetch-graphql";
+import { fetchGraphQL, hasGraphQLErrors } from "../../relay/fetch-graphql";
 import type { SSRContext } from "../../relay/fetch-graphql";
 
 export interface ProductDetail {
@@ -88,17 +88,6 @@ function parseProductDetail(response: GraphQLResponse): ProductDetail | null {
     description: typeof candidate.description === "string" ? candidate.description : null,
     brandName: parseBrandName(candidate.brand)
   };
-}
-
-function hasGraphQLErrors(response: GraphQLResponse) {
-  if (!response || typeof response !== "object" || Array.isArray(response)) {
-    return false;
-  }
-
-  const candidate = response as unknown as Record<string, unknown>;
-  const errors = candidate.errors;
-
-  return Array.isArray(errors) && errors.length > 0;
 }
 
 function isProductMissing(response: GraphQLResponse) {

@@ -171,7 +171,9 @@ function ProductOffers({
     <ul>
       {offers.map((offer) => (
         <li key={offer.id}>
-          <a href={offer.url}>{offer.merchantName}</a>
+          <a href={offer.url} target="_blank" rel="noopener noreferrer">
+            {offer.merchantName}
+          </a>
           {offer.priceText ? <p>{offer.priceText}</p> : null}
         </li>
       ))}
