@@ -1,8 +1,8 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { fetchGraphQL } from "../../relay/fetch-graphql";
-import type { ProductDetail } from "../products/api";
-import { loadProductDetail } from "../products/api";
+import type { ProductDetail } from "./product-detail";
+import { loadProductDetail } from "./product-detail";
 
 export interface CompareMutationError {
   code: string;

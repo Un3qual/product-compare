@@ -33,22 +33,20 @@ interface PreloadRouteQueryOptions {
   signal?: AbortSignal;
 }
 
-export async function preloadRouteQuery<TQuery extends OperationType>(
+export interface FetchedRelayRouteQuery<TQuery extends OperationType> {
+  data: TQuery["response"];
+  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>;
+  dispose: () => void;
+}
+
+export async function fetchRouteQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
   options: PreloadRouteQueryOptions = {}
-): Promise<RelayRouteQueryDescriptor<TQuery["variables"]>> {
-  const request = getRequest(query);
-  const descriptor = {
-    __relayQuery: {
-      operationName: request.params.name,
-      text: request.params.text,
-      variables
-    }
-  };
-
-  await fetchAppQuery<TQuery>(environment, query, variables, {
+): Promise<FetchedRelayRouteQuery<TQuery>> {
+  const descriptor = createRouteQueryDescriptor<TQuery>(query, variables);
+  const data = await fetchAppQuery<TQuery>(environment, query, variables, {
     fetchPolicy: "network-only",
     ...routeLoaderNetworkOptions(options.signal)
   });
@@ -57,7 +55,22 @@ export async function preloadRouteQuery<TQuery extends OperationType>(
     fetchPolicy: "store-only"
   });
 
-  setRouteQueryRef(environment, descriptor, queryRef);
+  const entry = setRouteQueryRef(environment, descriptor, queryRef);
+
+  return {
+    data,
+    descriptor,
+    dispose: () => disposeFetchedRouteQueryRef(entry)
+  };
+}
+
+export async function preloadRouteQuery<TQuery extends OperationType>(
+  environment: Environment,
+  query: GraphQLTaggedNode,
+  variables: TQuery["variables"],
+  options: PreloadRouteQueryOptions = {}
+): Promise<RelayRouteQueryDescriptor<TQuery["variables"]>> {
+  const { descriptor } = await fetchRouteQuery<TQuery>(environment, query, variables, options);
 
   return descriptor;
 }
@@ -278,6 +291,11 @@ function disposeInactiveRouteQueryRefEntry(entry: RouteQueryRefEntry) {
   disposeRouteQueryRefEntry(entry);
 }
 
+function disposeFetchedRouteQueryRef(entry: RouteQueryRefEntry) {
+  removeRouteQueryRefEntry(entry);
+  disposeInactiveRouteQueryRefEntry(entry);
+}
+
 function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
   if (entry.isDisposed) {
     return;
@@ -297,6 +315,21 @@ function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: 
       metadata: {
         [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
       }
+    }
+  };
+}
+
+function createRouteQueryDescriptor<TQuery extends OperationType>(
+  query: GraphQLTaggedNode,
+  variables: TQuery["variables"]
+) {
+  const request = getRequest(query);
+
+  return {
+    __relayQuery: {
+      operationName: request.params.name,
+      text: request.params.text,
+      variables
     }
   };
 }

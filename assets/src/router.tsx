@@ -13,8 +13,8 @@ import { compareLoader, savedComparisonsLoader } from "./routes/compare/api";
 import { CompareRoute } from "./routes/compare";
 import { SavedComparisonsRoute } from "./routes/compare/saved";
 import { CompareErrorBoundary } from "./routes/compare/error-boundary";
-import { productDetailLoader } from "./routes/products/api";
 import { ProductDetailRoute } from "./routes/products/detail";
+import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
 
 declare global {
