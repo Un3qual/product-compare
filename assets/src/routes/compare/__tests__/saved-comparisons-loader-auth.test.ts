@@ -3,7 +3,7 @@ import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
-} from "../api";
+} from "../saved-data";
 
 vi.mock("../../../relay/fetch-graphql", () => ({
   fetchGraphQL: vi.fn()

@@ -5,6 +5,8 @@ declare module "react-relay" {
     Environment,
     FetchPolicy,
     GraphQLTaggedNode as RelayGraphQLTaggedNode,
+    MutationConfig,
+    MutationParameters,
     OperationType
   } from "relay-runtime";
 
@@ -41,6 +43,14 @@ declare module "react-relay" {
     query: GraphQLTaggedNode,
     preloadedQuery: PreloadedQuery<TQuery>
   ): TQuery["response"];
+
+  export type MutationCommitFn<TMutation extends MutationParameters> = (
+    config: Omit<MutationConfig<TMutation>, "mutation">
+  ) => { dispose(): void };
+
+  export function useMutation<TMutation extends MutationParameters>(
+    mutation: GraphQLTaggedNode
+  ): [MutationCommitFn<TMutation>, boolean];
 
   export function useRelayEnvironment(): Environment;
 }

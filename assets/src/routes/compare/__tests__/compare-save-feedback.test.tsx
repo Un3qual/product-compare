@@ -1,15 +1,22 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useLoaderData } from "react-router-dom";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
+import { useMutation } from "react-relay";
 import { CompareRoute } from "../index";
 
-const { useLoaderDataMock } = vi.hoisted(() => ({
-  useLoaderDataMock: vi.fn()
+const { commitMutationMock, useLoaderDataMock, useMutationMock } = vi.hoisted(() => ({
+  commitMutationMock: vi.fn(),
+  useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn()
 }));
 
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
-}));
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    useMutation: useMutationMock
+  };
+});
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
@@ -20,8 +27,8 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 
 const READY_LOADER_DATA = {
   status: "ready",
@@ -37,40 +44,19 @@ const READY_LOADER_DATA = {
   ]
 } as const;
 
-const createDeferred = <T,>() => {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-
-  return {
-    promise,
-    resolve,
-    reject
-  };
-};
-
 beforeEach(() => {
-  fetchGraphQLMock.mockReset();
+  commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseMutation.mockReset();
+  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 
 test("compare route only submits one save mutation while the request is in flight", async () => {
-  const saveRequest = createDeferred<{
-    data: {
-      createSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        } | null;
-        errors: [];
-      };
-    };
-  }>();
+  let pendingCompletion: ((response: unknown) => void) | undefined;
 
-  fetchGraphQLMock.mockImplementation(() => saveRequest.promise);
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    pendingCompletion = onCompleted;
+  });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
   render(<CompareRoute />);
@@ -82,21 +68,17 @@ test("compare route only submits one save mutation while the request is in fligh
     fireEvent.click(saveButton);
   });
 
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  expect(commitMutationMock).toHaveBeenCalledTimes(1);
 
   await act(async () => {
-    saveRequest.resolve({
-      data: {
-        createSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-1"
-          },
-          errors: []
-        }
+    pendingCompletion?.({
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
       }
     });
-
-    await saveRequest.promise;
   });
 
   await waitFor(() => {
@@ -105,15 +87,15 @@ test("compare route only submits one save mutation while the request is in fligh
 });
 
 test("compare route keeps a stable status region in the DOM before and after save success", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
           id: "saved-set-1"
         },
         errors: []
       }
-    }
+    });
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
@@ -124,14 +106,15 @@ test("compare route keeps a stable status region in the DOM before and after sav
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation CreateSavedComparisonSet"),
-      {
-        input: {
-          name: "Desk Lamp comparison",
-          productIds: ["product-1"]
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            name: "Desk Lamp comparison",
+            productIds: ["product-1"]
+          }
         }
-      }
+      })
     );
   });
 
@@ -141,27 +124,11 @@ test("compare route keeps a stable status region in the DOM before and after sav
 });
 
 test("compare route allows a later save after the current request settles", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce({
-      data: {
-        createSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-1"
-          },
-          errors: []
-        }
-      }
-    })
-    .mockResolvedValueOnce({
-      data: {
-        createSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-2"
-          },
-          errors: []
-        }
-      }
-    });
+  const completions: Array<(response: unknown) => void> = [];
+
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    completions.push(onCompleted);
+  });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
   render(<CompareRoute />);
@@ -171,12 +138,23 @@ test("compare route allows a later save after the current request settles", asyn
   fireEvent.click(saveButton);
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  await act(async () => {
+    completions[0]?.({
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    });
   });
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
   });
 });

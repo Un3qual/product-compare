@@ -7,14 +7,14 @@
 ### Frontend Lane
 
 - Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 4
+- Batch: Frontend Relay Route-Data Adoption, Task 5
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: migrate `/compare` and the save-comparison mutation to Relay-preloaded queries/mutations, then remove the temporary compare-local product detail helper.
+- Next step: migrate browser auth mutations from `assets/src/routes/auth/actions.ts` to Relay mutations while preserving the GraphQL-over-`/api/graphql` auth contract.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products` plus `/products/:slug` route migrations now exist, so the next route can reuse the same pattern.
-  - The frontend still ships `/compare`, `/compare/saved`, and the auth flows on manual route-local GraphQL helpers.
-  - `/compare/saved` and the compare-route shell/status follow-up now exist on top of that manual helper path, so Relay adoption remains the next unblocked slice before more compare-route polish resumes.
-  - Keeping Relay route-data adoption active prevents the remaining compare/saved hardening from being split across two frontend data-layer patterns.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, and `/compare` migrations now exist.
+  - `/compare` now renders selected products from Relay preloaded queries and saves through a Relay mutation, so the temporary compare-local product detail helper has been removed.
+  - The frontend still ships `/compare/saved` and the auth flows on manual route-local GraphQL helpers; the next planned unblocked batch is the auth mutation migration.
+  - Keeping Relay route-data adoption active prevents remaining auth and compare/saved hardening from being split across long-term and temporary data-layer patterns.
 
 ### Backend Lane
 
@@ -28,6 +28,13 @@
   - This keeps NOW accurate without inventing a new backend slice before it has been prioritized.
 
 ## Just Completed
+
+- Frontend Relay Route-Data Adoption, Task 4:
+  - Added `assets/src/routes/compare/loader.ts` so `/compare` parses URL-selected slugs and preloads one Relay `ProductDetailRouteQuery` per selected product while preserving empty, over-limit, not-found, and loader-error behavior.
+  - Updated `assets/src/routes/compare/index.tsx` so ready-state product cards render from Relay preloaded product queries and the save action commits `CreateSavedComparisonSetMutation` through `useMutation`.
+  - Removed `assets/src/routes/compare/api.ts` and the temporary `assets/src/routes/compare/product-detail.ts`; moved the still-manual saved-route query/delete helpers into explicit `assets/src/routes/compare/saved-data.ts`.
+  - Generated `assets/src/__generated__/CreateSavedComparisonSetMutation.graphql.ts`, updated the local `react-relay` type shim for `useMutation`, and kept compare/saved regression coverage aligned with the new data path.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/saved-comparisons-route-state.test.tsx src/routes/compare/__tests__/saved-comparisons-loader-auth.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend Relay Route-Data Adoption, Task 3:
   - Replaced `assets/src/routes/products/api.ts` with `assets/src/routes/products/loader.ts`, product detail/offers Relay route query sources, and generated Relay artifacts.
