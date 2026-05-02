@@ -44,9 +44,9 @@ declare module "react-relay" {
     preloadedQuery: PreloadedQuery<TQuery>
   ): TQuery["response"];
 
-  export type MutationCommitFn<TMutation extends MutationParameters> = (
-    config: Omit<MutationConfig<TMutation>, "mutation">
-  ) => { dispose(): void };
+  export interface MutationCommitFn<TMutation extends MutationParameters> {
+    (config: Omit<MutationConfig<TMutation>, "mutation">): { dispose(): void };
+  }
 
   export function useMutation<TMutation extends MutationParameters>(
     mutation: GraphQLTaggedNode

@@ -1,4 +1,4 @@
-import { Component, Suspense, useRef, useState, type ReactNode } from "react";
+import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createSavedComparisonSetMutation, {
@@ -13,12 +13,18 @@ import { compareLoader, type CompareProductSummary, type CompareRouteLoaderData 
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
-  const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const isSaveInFlightRef = useRef(false);
   const [commitCreateSavedComparisonSet, isMutationInFlight] =
     useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+  const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
+
+  useEffect(() => {
+    isSaveInFlightRef.current = false;
+    setSaveMessage(null);
+    setSaveError(null);
+  }, [selectionKey]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -30,7 +36,6 @@ export function CompareRoute() {
     }
 
     isSaveInFlightRef.current = true;
-    setIsSaving(true);
     setSaveMessage(null);
     setSaveError(null);
 
@@ -52,18 +57,16 @@ export function CompareRoute() {
         }
 
         isSaveInFlightRef.current = false;
-        setIsSaving(false);
       },
       onError: () => {
         setSaveError("Request failed. Please try again.");
         isSaveInFlightRef.current = false;
-        setIsSaving(false);
       }
     });
   }
 
   if (loaderData.status === "ready") {
-    const saveInFlight = isSaving || isMutationInFlight;
+    const saveInFlight = isMutationInFlight;
 
     return (
       <CompareShell
@@ -78,18 +81,19 @@ export function CompareRoute() {
           {saveMessage ?? ""}
         </p>
         {saveError ? <p role="alert">{saveError}</p> : null}
-        {loaderData.productQueries?.length ? (
-          <ResettableErrorBoundary
-            resetToken={loaderData.productQueries}
-            fallback={<p role="alert">Comparison unavailable.</p>}
-          >
-            <Suspense fallback={<p role="status">Loading comparison...</p>}>
-              <CompareProductList loaderData={loaderData} />
-            </Suspense>
-          </ResettableErrorBoundary>
-        ) : (
-          <CompareProductSummaryList products={loaderData.products} />
-        )}
+        <ResettableErrorBoundary
+          resetToken={loaderData.productQueries}
+          fallback={
+            <>
+              <p role="alert">Comparison details unavailable.</p>
+              <CompareProductSummaryList products={loaderData.products} />
+            </>
+          }
+        >
+          <Suspense fallback={<p role="status">Loading comparison...</p>}>
+            <CompareProductList loaderData={loaderData} />
+          </Suspense>
+        </ResettableErrorBoundary>
       </CompareShell>
     );
   }

@@ -3,14 +3,15 @@ import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../relay/environment";
 import {
   createRelayRouterContext,
-  fetchRouteQuery
+  fetchRouteQuery,
+  useRoutePreloadedQuery
 } from "../../../relay/route-preload";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import {
   MemoryRouter,
   useLoaderData
 } from "react-router-dom";
-import { useMutation } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import * as ReactRouterDom from "react-router-dom";
 import { compareLoader } from "../loader";
 import {
@@ -21,11 +22,20 @@ import { CompareErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
 import { SavedComparisonsRoute } from "../saved";
 
-const { commitMutationMock, fetchRouteQueryMock, useLoaderDataMock, useMutationMock } = vi.hoisted(() => ({
+const {
+  commitMutationMock,
+  fetchRouteQueryMock,
+  useLoaderDataMock,
+  useMutationMock,
+  usePreloadedQueryMock,
+  useRoutePreloadedQueryMock
+} = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
-  useMutationMock: vi.fn()
+  useMutationMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn()
 }));
 
 vi.mock("../../../relay/fetch-graphql", async () => {
@@ -46,7 +56,8 @@ vi.mock("../../../relay/route-preload", async () => {
 
   return {
     ...actual,
-    fetchRouteQuery: fetchRouteQueryMock
+    fetchRouteQuery: fetchRouteQueryMock,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
   };
 });
 
@@ -55,7 +66,8 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    useMutation: useMutationMock
+    useMutation: useMutationMock,
+    usePreloadedQuery: usePreloadedQueryMock
   };
 });
 
@@ -72,6 +84,8 @@ const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const DETAIL_PRODUCT = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
@@ -109,6 +123,16 @@ const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   }
 };
 
+const DETAIL_PRODUCT_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
+const SECOND_PRODUCT_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
 const buildFetchedProductQuery = (
   product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT | null,
   descriptor: typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
@@ -126,6 +150,16 @@ const buildProductSummary = (product: typeof DETAIL_PRODUCT | typeof SECOND_PROD
   slug: product.slug,
   description: product.description,
   brandName: product.brand.name
+});
+
+const buildReadyCompareLoaderData = () => ({
+  status: "ready" as const,
+  slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+  productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+  products: [
+    buildProductSummary(DETAIL_PRODUCT),
+    buildProductSummary(SECOND_PRODUCT)
+  ]
 });
 
 const createDeferred = <T,>() => {
@@ -149,7 +183,12 @@ beforeEach(() => {
   fetchGraphQLMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
+  usePreloadedQueryMock.mockReset();
+  useRoutePreloadedQueryMock.mockReset();
+  DETAIL_PRODUCT_QUERY_REF.dispose.mockReset();
+  SECOND_PRODUCT_QUERY_REF.dispose.mockReset();
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockCompareRouteQueries();
 });
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
@@ -301,6 +340,46 @@ test("compare loader throws when any selected product request fails", async () =
   expect(fetchedProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
+test("compare loader rethrows AbortError-like rejected reasons without wrapping", async () => {
+  const environment = createRelayEnvironment();
+  const abortError = {
+    name: "AbortError",
+    message: "The operation was aborted."
+  };
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
+
+  await expect(
+    compareLoader({
+      request: new Request("https://app.example.com/compare?slug=detail-product"),
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
+  ).rejects.toBe(abortError);
+});
+
+test("compare loader wraps non-error rejected reasons with the original cause", async () => {
+  const environment = createRelayEnvironment();
+  const rejectionReason = "relay transport failed";
+  let caughtError: unknown;
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(rejectionReason);
+
+  try {
+    await compareLoader({
+      request: new Request("https://app.example.com/compare?slug=detail-product"),
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs);
+  } catch (error) {
+    caughtError = error;
+  }
+
+  expect(caughtError).toBeInstanceOf(Error);
+  expect((caughtError as Error).message).toBe("Product fetch failed");
+  expect((caughtError as Error & { cause?: unknown }).cause).toBe(rejectionReason);
+});
+
 test("compare loader throws when a rejected request is mixed with a missing product", async () => {
   const environment = createRelayEnvironment();
   const missingProductQuery = {
@@ -352,26 +431,7 @@ test("renders a limit message when more than three products are selected", () =>
 });
 
 test("renders compared product cards returned by the route loader", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
@@ -432,26 +492,7 @@ test("compare route saves the current ready-state selection", async () => {
     });
   });
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
@@ -723,26 +764,7 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
 });
 
 test("compare route exposes a named region for the compare shell", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
@@ -1401,6 +1423,36 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     { request, signal: request.signal }
   );
 });
+
+function mockCompareRouteQueries() {
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === DETAIL_PRODUCT_QUERY_DESCRIPTOR) {
+      return DETAIL_PRODUCT_QUERY_REF;
+    }
+
+    if (descriptor === SECOND_PRODUCT_QUERY_DESCRIPTOR) {
+      return SECOND_PRODUCT_QUERY_REF;
+    }
+
+    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
+  });
+
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: DETAIL_PRODUCT
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: SECOND_PRODUCT
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+}
 
 test("saved comparisons loader throws when pagination cursor does not advance", async () => {
   const request = new Request("https://app.example.com/compare/saved");

@@ -75,9 +75,7 @@ export async function compareLoader({
 
   if (rejectedResult) {
     disposeFetchedProductQueries(fetchedProductQueries);
-    throw rejectedResult.reason instanceof Error
-      ? rejectedResult.reason
-      : new Error("Product fetch failed");
+    throw normalizeProductFetchError(rejectedResult.reason);
   }
 
   const products = fetchedProductQueries.map(({ data }) => data.product);
@@ -130,6 +128,29 @@ function disposeFetchedProductQueries(productQueries: FetchedCompareProductQuery
   for (const productQuery of productQueries) {
     productQuery.dispose();
   }
+}
+
+function normalizeProductFetchError(error: unknown) {
+  if (isAbortError(error) || error instanceof Error) {
+    return error;
+  }
+
+  const wrappedError = new Error("Product fetch failed") as Error & { cause?: unknown };
+  wrappedError.cause = error;
+
+  return wrappedError;
+}
+
+function isAbortError(error: unknown) {
+  return getErrorName(error) === "AbortError";
+}
+
+function getErrorName(error: unknown) {
+  if (!error || typeof error !== "object" || !("name" in error)) {
+    return null;
+  }
+
+  return error.name;
 }
 
 function isPresentProduct(

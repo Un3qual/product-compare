@@ -223,6 +223,30 @@ test("compare route renders compared product cards from Relay route queries", ()
   );
 });
 
+test("compare route falls back to loader summaries when Relay detail rendering fails", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+  mockRouteQueryRefs();
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Relay detail read failed");
+  });
+
+  try {
+    render(
+      <MemoryRouter>
+        <CompareRoute />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Comparison details unavailable.");
+    expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
 test("compare route saves the current selection through a Relay mutation", async () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockRouteQueryRefs();
