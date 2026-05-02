@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import type { SavedComparisonSetSummary, SavedComparisonsRouteLoaderData } from "./api";
-import { deleteSavedComparisonSet, savedComparisonsLoader } from "./api";
+import type {
+  SavedComparisonSetSummary,
+  SavedComparisonsRouteLoaderData
+} from "./saved-data";
+import { deleteSavedComparisonSet, savedComparisonsLoader } from "./saved-data";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {

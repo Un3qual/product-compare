@@ -1,19 +1,41 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
+import { createRelayEnvironment } from "../../../relay/environment";
+import {
+  createRelayRouterContext,
+  fetchRouteQuery,
+  useRoutePreloadedQuery
+} from "../../../relay/route-preload";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import {
   MemoryRouter,
   useLoaderData
 } from "react-router-dom";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import * as ReactRouterDom from "react-router-dom";
-import { compareLoader, isUnauthorizedSavedComparisonsResponse, savedComparisonsLoader } from "../api";
+import { compareLoader } from "../loader";
+import {
+  isUnauthorizedSavedComparisonsResponse,
+  savedComparisonsLoader
+} from "../saved-data";
 import { CompareErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
-import { loadProductDetail } from "../product-detail";
 import { SavedComparisonsRoute } from "../saved";
 
-const { useLoaderDataMock } = vi.hoisted(() => ({
-  useLoaderDataMock: vi.fn()
+const {
+  commitMutationMock,
+  fetchRouteQueryMock,
+  useLoaderDataMock,
+  useMutationMock,
+  usePreloadedQueryMock,
+  useRoutePreloadedQueryMock
+} = vi.hoisted(() => ({
+  commitMutationMock: vi.fn(),
+  fetchRouteQueryMock: vi.fn(),
+  useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn()
 }));
 
 vi.mock("../../../relay/fetch-graphql", async () => {
@@ -27,6 +49,28 @@ vi.mock("../../../relay/fetch-graphql", async () => {
   };
 });
 
+vi.mock("../../../relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../../relay/route-preload")>(
+    "../../../relay/route-preload"
+  );
+
+  return {
+    ...actual,
+    fetchRouteQuery: fetchRouteQueryMock,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+  };
+});
+
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    useMutation: useMutationMock,
+    usePreloadedQuery: usePreloadedQueryMock
+  };
+});
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
 
@@ -37,7 +81,11 @@ vi.mock("react-router-dom", async () => {
 });
 
 const fetchGraphQLMock = vi.mocked(fetchGraphQL);
+const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const DETAIL_PRODUCT = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
@@ -59,6 +107,61 @@ const SECOND_PRODUCT = {
   }
 } as const;
 
+const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "ProductDetailRouteQuery",
+    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
+    variables: { slug: DETAIL_PRODUCT.slug }
+  }
+};
+
+const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "ProductDetailRouteQuery",
+    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
+    variables: { slug: SECOND_PRODUCT.slug }
+  }
+};
+
+const DETAIL_PRODUCT_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
+const SECOND_PRODUCT_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
+const buildFetchedProductQuery = (
+  product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT | null,
+  descriptor: typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
+) => ({
+  data: {
+    product
+  },
+  descriptor,
+  dispose: vi.fn()
+});
+
+const buildProductSummary = (product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT) => ({
+  id: product.id,
+  name: product.name,
+  slug: product.slug,
+  description: product.description,
+  brandName: product.brand.name
+});
+
+const buildReadyCompareLoaderData = () => ({
+  status: "ready" as const,
+  slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+  productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+  products: [
+    buildProductSummary(DETAIL_PRODUCT),
+    buildProductSummary(SECOND_PRODUCT)
+  ]
+});
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
@@ -75,19 +178,18 @@ const createDeferred = <T,>() => {
 };
 
 beforeEach(() => {
+  commitMutationMock.mockReset();
+  fetchRouteQueryMock.mockReset();
   fetchGraphQLMock.mockReset();
   useLoaderDataMock.mockReset();
+  useMutationMock.mockReset();
+  usePreloadedQueryMock.mockReset();
+  useRoutePreloadedQueryMock.mockReset();
+  DETAIL_PRODUCT_QUERY_REF.dispose.mockReset();
+  SECOND_PRODUCT_QUERY_REF.dispose.mockReset();
+  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockCompareRouteQueries();
 });
-
-const buildProductDetailResponse = (product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT) => {
-  return {
-    data: {
-      product: {
-        ...product
-      }
-    }
-  };
-};
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
   await expect(
@@ -100,25 +202,6 @@ test("compare loader returns an empty state when no slugs are selected", async (
     status: "empty",
     slugs: []
   });
-});
-
-test("loadProductDetail rejects whitespace-only slugs before requesting GraphQL", async () => {
-  await expect(loadProductDetail("   ")).rejects.toThrow("Product slug is required");
-
-  expect(fetchGraphQLMock).not.toHaveBeenCalled();
-});
-
-test("loadProductDetail includes GraphQL error context when product lookup fails", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      product: null
-    },
-    errors: [{ message: "backend exploded" }]
-  });
-
-  await expect(loadProductDetail("detail-product")).rejects.toThrow(
-    "GraphQL response contained errors: backend exploded"
-  );
 });
 
 test("compare loader rejects more than three selected slugs", async () => {
@@ -137,118 +220,86 @@ test("compare loader rejects more than three selected slugs", async () => {
 });
 
 test("compare loader requests selected product details and preserves URL order", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
-    .mockResolvedValueOnce(buildProductDetailResponse(SECOND_PRODUCT));
-
-  await expect(
-    compareLoader({
-      request: new Request(
-        "https://app.example.com/compare?slug=detail-product&slug=second-product"
-      ),
-      params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
-  ).resolves.toEqual({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
-
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
-  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
-    1,
-    expect.stringContaining("query ProductDetail"),
-    { slug: "detail-product" },
-    undefined
-  );
-  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
-    2,
-    expect.stringContaining("query ProductDetail"),
-    { slug: "second-product" },
-    undefined
-  );
-});
-
-test("compare loader forwards the request when running in server mode", async () => {
+  const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
-  const originalWindow = globalThis.window;
 
-  vi.stubGlobal("window", undefined);
-  fetchGraphQLMock
-    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
-    .mockResolvedValueOnce(buildProductDetailResponse(SECOND_PRODUCT));
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
 
-  try {
-    await expect(
-      compareLoader({
-        request,
-        params: {},
-        context: undefined
-      } as LoaderFunctionArgs)
-    ).resolves.toEqual({
-      status: "ready",
-      slugs: ["detail-product", "second-product"],
-      products: [
-        {
-          id: DETAIL_PRODUCT.id,
-          name: DETAIL_PRODUCT.name,
-          slug: DETAIL_PRODUCT.slug,
-          description: DETAIL_PRODUCT.description,
-          brandName: DETAIL_PRODUCT.brand.name
-        },
-        {
-          id: SECOND_PRODUCT.id,
-          name: SECOND_PRODUCT.name,
-          slug: SECOND_PRODUCT.slug,
-          description: SECOND_PRODUCT.description,
-          brandName: SECOND_PRODUCT.brand.name
-        }
-      ]
-    });
-  } finally {
-    vi.stubGlobal("window", originalWindow);
-  }
+  await expect(
+    compareLoader({
+      request,
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    slugs: ["detail-product", "second-product"],
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT)
+    ]
+  });
 
-  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
-    expect.stringContaining("query ProductDetail"),
+    environment,
+    expect.anything(),
     { slug: "detail-product" },
-    { request, signal: request.signal }
+    { signal: request.signal }
   );
-  expect(fetchGraphQLMock).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
-    expect.stringContaining("query ProductDetail"),
+    environment,
+    expect.anything(),
     { slug: "second-product" },
-    { request, signal: request.signal }
+    { signal: request.signal }
+  );
+});
+
+test("compare loader forwards the route abort signal to each Relay preload", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
+
+  await compareLoader({
+    request,
+    params: {},
+    context: createRelayRouterContext(environment)
+  } as unknown as LoaderFunctionArgs);
+
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { slug: "detail-product" },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { slug: "second-product" },
+    { signal: request.signal }
   );
 });
 
 test("compare loader returns not_found when any selected product is missing", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
-    .mockResolvedValueOnce({
-      data: {
-        product: null
-      }
-    });
+  const environment = createRelayEnvironment();
+  const firstProductQuery = buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR);
+  const missingProductQuery = buildFetchedProductQuery(null, SECOND_PRODUCT_QUERY_DESCRIPTOR);
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(firstProductQuery)
+    .mockResolvedValueOnce(missingProductQuery);
 
   await expect(
     compareLoader({
@@ -256,17 +307,25 @@ test("compare loader returns not_found when any selected product is missing", as
         "https://app.example.com/compare?slug=detail-product&slug=missing-product"
       ),
       params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
   ).resolves.toEqual({
     status: "not_found",
     slugs: ["detail-product", "missing-product"]
   });
+  expect(firstProductQuery.dispose).toHaveBeenCalledTimes(1);
+  expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("compare loader throws when any selected product request fails", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce(buildProductDetailResponse(DETAIL_PRODUCT))
+  const environment = createRelayEnvironment();
+  const fetchedProductQuery = buildFetchedProductQuery(
+    DETAIL_PRODUCT,
+    DETAIL_PRODUCT_QUERY_DESCRIPTOR
+  );
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(fetchedProductQuery)
     .mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
@@ -275,29 +334,76 @@ test("compare loader throws when any selected product request fails", async () =
         "https://app.example.com/compare?slug=detail-product&slug=broken-product"
       ),
       params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
   ).rejects.toThrow("Network request failed: boom");
+  expect(fetchedProductQuery.dispose).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader rethrows AbortError-like rejected reasons without wrapping", async () => {
+  const environment = createRelayEnvironment();
+  const abortError = {
+    name: "AbortError",
+    message: "The operation was aborted."
+  };
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
+
+  await expect(
+    compareLoader({
+      request: new Request("https://app.example.com/compare?slug=detail-product"),
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
+  ).rejects.toBe(abortError);
+});
+
+test("compare loader wraps non-error rejected reasons with the original cause", async () => {
+  const environment = createRelayEnvironment();
+  const rejectionReason = "relay transport failed";
+  let caughtError: unknown;
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(rejectionReason);
+
+  try {
+    await compareLoader({
+      request: new Request("https://app.example.com/compare?slug=detail-product"),
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs);
+  } catch (error) {
+    caughtError = error;
+  }
+
+  expect(caughtError).toBeInstanceOf(Error);
+  expect((caughtError as Error).message).toBe("Product fetch failed");
+  expect((caughtError as Error & { cause?: unknown }).cause).toBe(rejectionReason);
 });
 
 test("compare loader throws when a rejected request is mixed with a missing product", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce({
+  const environment = createRelayEnvironment();
+  const missingProductQuery = {
       data: {
         product: null
-      }
-    })
+      },
+      descriptor: DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+      dispose: vi.fn()
+    };
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(missingProductQuery)
     .mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
     compareLoader({
       request: new Request(
-        "https://app.example.com/compare?slug=missing-product&slug=broken-product"
+        "https://app.example.com/compare?slug=detail-product&slug=broken-product"
       ),
       params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
   ).rejects.toThrow("Network request failed: boom");
+  expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("renders an empty-state message when no products are selected", () => {
@@ -325,26 +431,7 @@ test("renders a limit message when more than three products are selected", () =>
 });
 
 test("renders compared product cards returned by the route loader", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
@@ -394,53 +481,33 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
 });
 
 test("compare route saves the current ready-state selection", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1",
-          name: "Detail Product vs Second Product",
-          items: []
+          id: "saved-set-1"
         },
         errors: []
       }
-    }
+    });
   });
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation CreateSavedComparisonSet"),
-      {
-        input: {
-          name: "Detail Product vs Second Product",
-          productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id]
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            name: "Detail Product vs Second Product",
+            productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id]
+          }
         }
-      }
+      })
     );
   });
 
@@ -697,26 +764,7 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
 });
 
 test("compare route exposes a named region for the compare shell", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    slugs: ["detail-product", "second-product"],
-    products: [
-      {
-        id: DETAIL_PRODUCT.id,
-        name: DETAIL_PRODUCT.name,
-        slug: DETAIL_PRODUCT.slug,
-        description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
-      },
-      {
-        id: SECOND_PRODUCT.id,
-        name: SECOND_PRODUCT.name,
-        slug: SECOND_PRODUCT.slug,
-        description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
-      }
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(<CompareRoute />);
 
@@ -1375,6 +1423,36 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     { request, signal: request.signal }
   );
 });
+
+function mockCompareRouteQueries() {
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === DETAIL_PRODUCT_QUERY_DESCRIPTOR) {
+      return DETAIL_PRODUCT_QUERY_REF;
+    }
+
+    if (descriptor === SECOND_PRODUCT_QUERY_DESCRIPTOR) {
+      return SECOND_PRODUCT_QUERY_REF;
+    }
+
+    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
+  });
+
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: DETAIL_PRODUCT
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: SECOND_PRODUCT
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+}
 
 test("saved comparisons loader throws when pagination cursor does not advance", async () => {
   const request = new Request("https://app.example.com/compare/saved");

@@ -1,23 +1,11 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { fetchGraphQL } from "../../relay/fetch-graphql";
-import type { ProductDetail } from "./product-detail";
-import { loadProductDetail } from "./product-detail";
 
 export interface CompareMutationError {
   code: string;
   field?: string | null;
   message: string;
-}
-
-export interface CreateSavedComparisonSetInput {
-  name: string;
-  productIds: string[];
-}
-
-export interface CreateSavedComparisonSetResult {
-  savedComparisonSetId: string | null;
-  errors: CompareMutationError[];
 }
 
 export interface SavedComparisonSetSummary {
@@ -31,40 +19,10 @@ export interface DeleteSavedComparisonSetResult {
   errors: CompareMutationError[];
 }
 
-export type CompareRouteLoaderData =
-  | {
-      status: "empty";
-      slugs: [];
-    }
-  | {
-      status: "too_many" | "not_found";
-      slugs: string[];
-    }
-  | {
-      status: "ready";
-      slugs: string[];
-      products: ProductDetail[];
-    };
-
 export interface SavedComparisonsRouteLoaderData {
   status: "ready" | "empty" | "unauthorized";
   savedSets: SavedComparisonSetSummary[];
 }
-
-const CREATE_SAVED_COMPARISON_SET_MUTATION = `
-  mutation CreateSavedComparisonSet($input: CreateSavedComparisonSetInput!) {
-    createSavedComparisonSet(input: $input) {
-      savedComparisonSet {
-        id
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
 
 const MY_SAVED_COMPARISON_SETS_QUERY = `
   query MySavedComparisonSets($first: Int, $after: String) {
@@ -106,74 +64,6 @@ const DELETE_SAVED_COMPARISON_SET_MUTATION = `
     }
   }
 `;
-
-export async function compareLoader({
-  request
-}: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
-  const slugs = parseSelectedSlugs(request.url);
-
-  if (slugs.length === 0) {
-    return {
-      status: "empty",
-      slugs: []
-    };
-  }
-
-  if (slugs.length > 3) {
-    return {
-      status: "too_many",
-      slugs
-    };
-  }
-
-  const ssrContext =
-    typeof window === "undefined" ? { request, signal: request.signal } : undefined;
-  const productResults = await Promise.allSettled(
-    slugs.map((slug) => loadProductDetail(slug, ssrContext))
-  );
-
-  const rejectedResult = productResults.find((result) => result.status === "rejected");
-
-  if (rejectedResult && rejectedResult.status === "rejected") {
-    throw rejectedResult.reason instanceof Error
-      ? rejectedResult.reason
-      : new Error("Product fetch failed");
-  }
-
-  const fulfilledResults = productResults.filter(
-    (result): result is PromiseFulfilledResult<ProductDetail | null> =>
-      result.status === "fulfilled"
-  );
-
-  if (fulfilledResults.some((result) => result.value === null)) {
-    return {
-      status: "not_found",
-      slugs
-    };
-  }
-
-  return {
-    status: "ready",
-    slugs,
-    products: fulfilledResults.flatMap((result) =>
-      result.value === null ? [] : [result.value]
-    )
-  };
-}
-
-export async function createSavedComparisonSet(
-  input: CreateSavedComparisonSetInput
-): Promise<CreateSavedComparisonSetResult> {
-  const response = await fetchGraphQL(CREATE_SAVED_COMPARISON_SET_MUTATION, { input });
-  const payload = readMutationPayload(response, "createSavedComparisonSet");
-  const savedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
-  const errors = normalizeMutationErrors(payload.errors, response);
-
-  return {
-    savedComparisonSetId,
-    errors: savedComparisonSetId ? errors : ensureFailureErrors(errors)
-  };
-}
 
 export async function savedComparisonsLoader({
   request
@@ -250,21 +140,6 @@ export async function deleteSavedComparisonSet(
     savedComparisonSetId: deletedSavedComparisonSetId,
     errors: deletedSavedComparisonSetId ? errors : ensureFailureErrors(errors)
   };
-}
-
-function parseSelectedSlugs(requestUrl: string) {
-  const url = new URL(requestUrl);
-  const selected = new Set<string>();
-
-  for (const rawSlug of url.searchParams.getAll("slug")) {
-    const slug = rawSlug.trim();
-
-    if (slug !== "") {
-      selected.add(slug);
-    }
-  }
-
-  return Array.from(selected);
 }
 
 function readMutationPayload(response: GraphQLResponse, fieldName: string) {
@@ -379,11 +254,7 @@ function parseSavedComparisonSetsPage(
   hasNextPage: boolean;
   endCursor: string | null;
 } | null {
-  const result = parseConnection(
-    response,
-    "mySavedComparisonSets",
-    parseSavedComparisonSetEdge
-  );
+  const result = parseConnection(response, "mySavedComparisonSets", parseSavedComparisonSetEdge);
 
   if (!result) {
     return null;
@@ -450,9 +321,10 @@ function parseSavedComparisonItems(items: unknown): string[] | null {
 
     return {
       position: candidate.position,
-      slug: typeof (product as Record<string, unknown>).slug === "string"
-        ? ((product as Record<string, unknown>).slug as string)
-        : null
+      slug:
+        typeof (product as Record<string, unknown>).slug === "string"
+          ? ((product as Record<string, unknown>).slug as string)
+          : null
     };
   });
 
@@ -487,8 +359,6 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
     }
 
     const candidate = error as unknown as Record<string, unknown>;
-
-    // Treat missing paths as potentially relevant so pathless auth responses still map to unauthorized.
     const isRelevantPath =
       candidate.path == null ||
       (Array.isArray(candidate.path) &&
@@ -499,7 +369,6 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
       return false;
     }
 
-    // Check GraphQL extensions code
     const extensions = candidate.extensions;
     if (extensions && typeof extensions === "object" && !Array.isArray(extensions)) {
       const code = (extensions as Record<string, unknown>).code;
@@ -511,7 +380,6 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
       }
     }
 
-    // Fall back to checking message for common auth-related keywords
     if (typeof candidate.message === "string") {
       const normalizedMessage = candidate.message.toLowerCase();
       const authKeywords = ["unauth", "not authenticated", "not authorized", "access denied"];
