@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-04-30 after Task 4 compare route/save mutation Relay migration verification
+- Last verified: 2026-05-02 after Task 5 auth mutation Relay migration verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -29,7 +29,8 @@
 - `/products/:slug` now uses `assets/src/routes/products/loader.ts`, `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`, `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`, and generated Relay artifacts instead of `assets/src/routes/products/api.ts`.
 - `/compare` now uses `assets/src/routes/compare/loader.ts`, reuses the generated `ProductDetailRouteQuery` artifact through Relay route preloading, renders selected products from Relay preloaded queries, and saves ready selections through `CreateSavedComparisonSetMutation`.
 - `assets/src/routes/compare/api.ts` and `assets/src/routes/compare/product-detail.ts` have been removed; the still-manual saved-comparisons route helper now lives explicitly at `assets/src/routes/compare/saved-data.ts` until the saved route migrates.
-- `assets/src/routes/compare/saved-data.ts` and `assets/src/routes/auth/actions.ts` still own raw GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
+- Browser auth routes now commit `LoginMutation`, `RegisterMutation`, `ForgotPasswordMutation`, `ResetPasswordMutation`, and `VerifyEmailMutation` through Relay `useMutation`, with shared payload/error normalization in `assets/src/routes/auth/errors.ts`.
+- `assets/src/routes/compare/saved-data.ts` still owns raw saved-comparison GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
 - `assets/src/router.tsx` wires `/products`, `/products/:slug`, and `/compare` through Relay preload loaders, while `/compare/saved` still uses a manual route loader that returns DTO-like status payloads instead of Relay preload data.
 - `assets/src/entry.server.tsx` creates a request-scoped Relay environment, exposes it through React Router loader context, and serializes the populated store back into a non-executable client bootstrap script.
 - `assets/relay.config.json` exists, `assets/package.json` already includes Relay compiler/runtime dependencies, and browse now has a tracked generated Relay artifact.
@@ -38,13 +39,25 @@
 ## Next Batch
 
 - Status: ready
-- Batch: Task 5 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Batch: Task 6 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 - Why this batch:
-  - `/products`, `/products/:slug`, and `/compare` now exercise Relay route data, so the next planned batch can move the auth mutations off the route-local `fetchGraphQL(...)` action helper.
-  - `assets/src/routes/auth/actions.ts` still owns raw auth mutation strings and browser-facing payload normalization.
-  - `/compare/saved` still has a manual helper in `assets/src/routes/compare/saved-data.ts`; keep that gap visible for the later lane-closing cleanup instead of hiding it behind the deleted `api.ts` name.
+  - `/products`, `/products/:slug`, `/compare`, and browser auth writes now exercise Relay route data or Relay mutations.
+  - `assets/src/relay/fetch-graphql.ts` can now be checked as a thin Relay network helper because auth no longer depends on route-local GraphQL payload parsing.
+  - `/compare/saved` still has a manual helper in `assets/src/routes/compare/saved-data.ts`; keep that gap visible for the lane-closing cleanup instead of hiding it behind the deleted `api.ts` name.
 
 ## Completed Batches
+
+### Task 5: Auth Mutation Relay Migration
+
+- Completed: 2026-05-02
+- Outcome:
+  - Replaced `assets/src/routes/auth/actions.ts` with Relay mutation documents for `login`, `register`, `forgotPassword`, `resetPassword`, and `verifyEmail`, plus generated Relay artifacts for each operation.
+  - Moved shared auth mutation error normalization into `assets/src/routes/auth/errors.ts` and updated the session, recovery, reset, and verification routes to commit through `useMutation` while preserving existing form copy, redirects, generic transport errors, stale reset-token guards, and single-use verification token behavior.
+  - Updated auth route coverage so the routes assert Relay mutation variables and callback handling instead of route-local `fetchGraphQL(...)` calls.
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
 
 ### Task 4: Compare Route And Save Mutation Relay Migration
 

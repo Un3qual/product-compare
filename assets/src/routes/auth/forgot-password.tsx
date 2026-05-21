@@ -1,11 +1,15 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
+import { useMutation } from "react-relay";
+import forgotPasswordMutation, {
+  type ForgotPasswordMutation
+} from "../../__generated__/ForgotPasswordMutation.graphql";
 import {
   findMutationError,
-  sanitizeTransportError,
   type MutationError,
-  requestPasswordReset
-} from "./actions";
+  normalizeActionPayload,
+  transportMutationError
+} from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
 const successMessage =
@@ -13,31 +17,34 @@ const successMessage =
 
 export function ForgotPasswordRoute() {
   const [errors, setErrors] = useState<MutationError[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [commitForgotPassword, isSubmitting] =
+    useMutation<ForgotPasswordMutation>(forgotPasswordMutation);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrors([]);
     setMessage(null);
-    setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
 
-    try {
-      const result = await requestPasswordReset(String(formData.get("email") ?? ""));
+    commitForgotPassword({
+      variables: { email },
+      onCompleted(response) {
+        const result = normalizeActionPayload(response.forgotPassword);
 
-      if (result.ok && result.errors.length === 0) {
-        setMessage(successMessage);
-        return;
+        if (result.ok && result.errors.length === 0) {
+          setMessage(successMessage);
+          return;
+        }
+
+        setErrors(result.errors);
+      },
+      onError(error) {
+        setErrors([transportMutationError(error)]);
       }
-
-      setErrors(result.errors);
-    } catch (error) {
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

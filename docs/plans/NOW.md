@@ -7,14 +7,14 @@
 ### Frontend Lane
 
 - Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 5
+- Batch: Frontend Relay Route-Data Adoption, Task 6
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: migrate browser auth mutations from `assets/src/routes/auth/actions.ts` to Relay mutations while preserving the GraphQL-over-`/api/graphql` auth contract.
+- Next step: remove dead manual-fetch plumbing and verify `assets/src/relay/fetch-graphql.ts` as a thin Relay network helper.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, and `/compare` migrations now exist.
-  - `/compare` now renders selected products from Relay preloaded queries and saves through a Relay mutation, so the temporary compare-local product detail helper has been removed.
-  - The frontend still ships `/compare/saved` and the auth flows on manual route-local GraphQL helpers; the next planned unblocked batch is the auth mutation migration.
-  - Keeping Relay route-data adoption active prevents remaining auth and compare/saved hardening from being split across long-term and temporary data-layer patterns.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, `/compare`, and auth mutation migrations now exist.
+  - Browser auth now commits `login`, `register`, `forgotPassword`, `resetPassword`, and `verifyEmail` through Relay mutation artifacts instead of `assets/src/routes/auth/actions.ts`.
+  - The frontend still ships `/compare/saved` on a manual route-local GraphQL helper, and `fetchGraphQL` should be trimmed/verified as transport-only before the lane hands off.
+  - Keeping Relay route-data adoption active prevents the remaining compare/saved cleanup from being split across long-term and temporary data-layer patterns.
 
 ### Backend Lane
 
@@ -28,6 +28,12 @@
   - This keeps NOW accurate without inventing a new backend slice before it has been prioritized.
 
 ## Just Completed
+
+- Frontend Relay Route-Data Adoption, Task 5:
+  - Replaced `assets/src/routes/auth/actions.ts` with Relay mutation documents for `LoginMutation`, `RegisterMutation`, `ForgotPasswordMutation`, `ResetPasswordMutation`, and `VerifyEmailMutation`, plus generated Relay artifacts.
+  - Moved shared auth payload/error normalization into `assets/src/routes/auth/errors.ts` and updated login, register, forgot-password, reset-password, and verify-email routes to commit through `useMutation` while preserving existing UX and token safety behavior.
+  - Updated focused auth route tests to assert Relay mutation variables and callback handling instead of direct `fetchGraphQL(...)` calls.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`, and `cd assets && bun run typecheck`.
 
 - Frontend Relay Route-Data Adoption, Task 4:
   - Added `assets/src/routes/compare/loader.ts` so `/compare` parses URL-selected slugs and preloads one Relay `ProductDetailRouteQuery` per selected product while preserving empty, over-limit, not-found, and loader-error behavior.

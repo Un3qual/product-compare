@@ -1,12 +1,16 @@
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { useMutation } from "react-relay";
 import { useSearchParams } from "react-router-dom";
+import resetPasswordMutation, {
+  type ResetPasswordMutation
+} from "../../__generated__/ResetPasswordMutation.graphql";
 import {
   findMutationError,
-  sanitizeTransportError,
   type MutationError,
-  resetPassword
-} from "./actions";
+  normalizeActionPayload,
+  transportMutationError
+} from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
 const missingTokenError: MutationError = {
@@ -22,6 +26,7 @@ export function ResetPasswordRoute() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeRequestVersion = useRef(0);
+  const [commitResetPassword] = useMutation<ResetPasswordMutation>(resetPasswordMutation);
 
   useEffect(() => {
     // Bump the active request marker so late responses from an older token do not
@@ -32,7 +37,7 @@ export function ResetPasswordRoute() {
     setIsSubmitting(false);
   }, [token]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrors(token ? [] : [missingTokenError]);
     setMessage(null);
@@ -46,34 +51,35 @@ export function ResetPasswordRoute() {
     const requestVersion = activeRequestVersion.current;
 
     const formData = new FormData(event.currentTarget);
+    const password = String(formData.get("password") ?? "");
 
-    try {
-      const result = await resetPassword(
-        token,
-        String(formData.get("password") ?? "")
-      );
+    commitResetPassword({
+      variables: { token, password },
+      onCompleted(response) {
+        const result = normalizeActionPayload(response.resetPassword);
 
-      if (requestVersion !== activeRequestVersion.current) {
-        return;
-      }
+        if (requestVersion !== activeRequestVersion.current) {
+          return;
+        }
 
-      if (result.ok && result.errors.length === 0) {
-        setMessage("Your password has been updated.");
-        return;
-      }
+        if (result.ok && result.errors.length === 0) {
+          setMessage("Your password has been updated.");
+          setIsSubmitting(false);
+          return;
+        }
 
-      setErrors(result.errors);
-    } catch (error) {
-      if (requestVersion !== activeRequestVersion.current) {
-        return;
-      }
+        setErrors(result.errors);
+        setIsSubmitting(false);
+      },
+      onError(error) {
+        if (requestVersion !== activeRequestVersion.current) {
+          return;
+        }
 
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
-    } finally {
-      if (requestVersion === activeRequestVersion.current) {
+        setErrors([transportMutationError(error)]);
         setIsSubmitting(false);
       }
-    }
+    });
   }
 
   return (

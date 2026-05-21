@@ -1,43 +1,47 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
+import { useMutation } from "react-relay";
 import { useNavigate } from "react-router-dom";
+import registerMutation, {
+  type RegisterMutation
+} from "../../__generated__/RegisterMutation.graphql";
 import {
   findMutationError,
-  sanitizeTransportError,
   type MutationError,
-  registerWithPassword
-} from "./actions";
+  normalizeSessionPayload,
+  transportMutationError
+} from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
 export function RegisterRoute() {
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commitRegister, isSubmitting] = useMutation<RegisterMutation>(registerMutation);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrors([]);
-    setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
 
-    try {
-      const result = await registerWithPassword(
-        String(formData.get("email") ?? ""),
-        String(formData.get("password") ?? "")
-      );
+    commitRegister({
+      variables: { email, password },
+      onCompleted(response) {
+        const result = normalizeSessionPayload(response.register);
 
-      if (result.viewer) {
-        navigate("/");
-        return;
+        if (result.viewer) {
+          navigate("/");
+          return;
+        }
+
+        setErrors(result.errors);
+      },
+      onError(error) {
+        setErrors([transportMutationError(error)]);
       }
-
-      setErrors(result.errors);
-    } catch (error) {
-      setErrors([{ code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }]);
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
+import { useMutation, type MutationCommitFn } from "react-relay";
 import { useSearchParams } from "react-router-dom";
+import verifyEmailMutation, {
+  type VerifyEmailMutation
+} from "../../__generated__/VerifyEmailMutation.graphql";
 import {
   type AuthActionResult,
-  sanitizeTransportError,
   type MutationError,
-  verifyEmail
-} from "./actions";
+  normalizeActionPayload,
+  transportMutationError
+} from "./errors";
 import { AuthFormShell } from "./form-shell";
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
+type VerifyEmailCommit = MutationCommitFn<VerifyEmailMutation>;
 
 const missingTokenError: MutationError = {
   code: "INVALID_TOKEN",
@@ -22,6 +27,7 @@ export function VerifyEmailRoute() {
   const [errors, setErrors] = useState<MutationError[]>(token ? [] : [missingTokenError]);
   const [isLoading, setIsLoading] = useState(Boolean(token));
   const [message, setMessage] = useState<string | null>(null);
+  const [commitVerifyEmail] = useMutation<VerifyEmailMutation>(verifyEmailMutation);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +45,7 @@ export function VerifyEmailRoute() {
         setMessage(null);
         setErrors([]);
 
-        const result = await verifyEmailOnce(token);
+        const result = await verifyEmailOnce(token, commitVerifyEmail);
 
         if (cancelled) {
           return;
@@ -54,7 +60,7 @@ export function VerifyEmailRoute() {
       } catch (error) {
         if (!cancelled) {
           setErrors([
-            { code: "NETWORK_ERROR", field: null, message: sanitizeTransportError(error) }
+            transportMutationError(error)
           ]);
         }
       } finally {
@@ -69,7 +75,7 @@ export function VerifyEmailRoute() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [commitVerifyEmail, token]);
 
   return (
     <AuthFormShell
@@ -91,7 +97,7 @@ export function resetVerifyEmailRequestCache() {
   verificationRequests.clear();
 }
 
-function verifyEmailOnce(token: string) {
+function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   const existingRequest = verificationRequests.get(token);
 
   if (existingRequest) {
@@ -101,7 +107,17 @@ function verifyEmailOnce(token: string) {
   // Verification tokens are single-use. Reusing successful in-flight or settled
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
   // but any failed outcome must be evicted so later mounts can retry.
-  const request = verifyEmail(token)
+  const request = new Promise<AuthActionResult>((resolve, reject) => {
+    commitVerifyEmail({
+      variables: { token },
+      onCompleted(response) {
+        resolve(normalizeActionPayload(response.verifyEmail));
+      },
+      onError(error) {
+        reject(error);
+      }
+    });
+  })
     .then((result) => {
       if (!result.ok || result.errors.length > 0) {
         verificationRequests.delete(token);
