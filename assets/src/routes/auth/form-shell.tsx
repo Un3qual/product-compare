@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import type { MutationError } from "./actions";
+import type { MutationError } from "./errors";
 import { Button, Label, Slot } from "../../ui/primitives";
 import { tokens } from "../../ui/theme/tokens.stylex";
 

@@ -1,9 +1,14 @@
 import { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { RelayEnvironmentProvider } from "react-relay";
-import { BrowserRouter, createMemoryRouter, RouterProvider, Route, createRoutesFromElements, Routes } from "react-router-dom";
-import { createRelayEnvironment } from "../../../relay/environment";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
+import { useMutation } from "react-relay";
+import {
+  BrowserRouter,
+  createMemoryRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+  Routes
+} from "react-router-dom";
 import { ForgotPasswordRoute } from "../forgot-password";
 import { ResetPasswordRoute } from "../reset-password";
 import {
@@ -11,11 +16,21 @@ import {
   VerifyEmailRoute
 } from "../verify-email";
 
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
+const { commitMutationMock, useMutationMock } = vi.hoisted(() => ({
+  commitMutationMock: vi.fn(),
+  useMutationMock: vi.fn()
 }));
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    useMutation: useMutationMock
+  };
+});
+
+const mockedUseMutation = vi.mocked(useMutation);
 
 function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
   const router = createMemoryRouter(
@@ -29,11 +44,7 @@ function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
     { initialEntries: [initialEntry] }
   );
 
-  const content = (
-    <RelayEnvironmentProvider environment={createRelayEnvironment()}>
-      <RouterProvider router={router} />
-    </RelayEnvironmentProvider>
-  );
+  const content = <RouterProvider router={router} />;
 
   const view = render(
     options?.strictMode ? <StrictMode>{content}</StrictMode> : content
@@ -42,21 +53,30 @@ function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
   return { router, unmount: view.unmount };
 }
 
+function latestMutationOptions() {
+  return commitMutationMock.mock.calls.at(-1)?.[0];
+}
+
+function completeLatestMutation(response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    latestMutationOptions()?.onCompleted(response, graphQLErrors);
+  });
+}
+
+function failLatestMutation(error: Error) {
+  act(() => {
+    latestMutationOptions()?.onError(error);
+  });
+}
+
 beforeEach(() => {
-  fetchGraphQLMock.mockReset();
+  commitMutationMock.mockReset();
+  mockedUseMutation.mockReset();
+  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   resetVerifyEmailRequestCache();
 });
 
-test("forgot password route submits the email and shows the privacy-safe success state", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      forgotPassword: {
-        ok: true,
-        errors: []
-      }
-    }
-  });
-
+test("forgot password route commits the email through Relay and shows the privacy-safe success state", async () => {
   renderRoute("/auth/forgot-password");
 
   expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
@@ -75,10 +95,18 @@ test("forgot password route submits the email and shows the privacy-safe success
   fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation ForgotPassword"),
-      { email: "person@example.com" }
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { email: "person@example.com" }
+      })
     );
+  });
+
+  completeLatestMutation({
+    forgotPassword: {
+      ok: true,
+      errors: []
+    }
   });
 
   expect(
@@ -86,16 +114,40 @@ test("forgot password route submits the email and shows the privacy-safe success
   ).toHaveTextContent("If an account exists for that email, reset instructions are on the way.");
 });
 
-test("reset password route reads the token from the URL and submits the new password", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      resetPassword: {
+test("forgot password route hides top-level GraphQL error details behind a generic alert", async () => {
+  renderRoute("/auth/forgot-password");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { email: "person@example.com" }
+      })
+    );
+  });
+
+  completeLatestMutation(
+    {
+      forgotPassword: {
         ok: true,
         errors: []
       }
-    }
-  });
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
 
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+test("reset password route reads the token from the URL and commits the new password", async () => {
   renderRoute("/auth/reset-password?token=reset-token");
 
   expect(screen.getByText("New password").closest("label")).toHaveAttribute(
@@ -117,48 +169,129 @@ test("reset password route reads the token from the URL and submits the new pass
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation ResetPassword"),
-      {
-        token: "reset-token",
-        password: "supersecretpass456"
-      }
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          token: "reset-token",
+          password: "supersecretpass456"
+        }
+      })
     );
   });
 
+  completeLatestMutation({
+    resetPassword: {
+      ok: true,
+      errors: []
+    }
+  });
+
   expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
+});
+
+test("reset password route shows a generic alert when the action payload fails without errors", async () => {
+  renderRoute("/auth/reset-password?token=reset-token");
+
+  fireEvent.change(screen.getByLabelText(/^new password$/i), {
+    target: { value: "supersecretpass456" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          token: "reset-token",
+          password: "supersecretpass456"
+        }
+      })
+    );
+  });
+
+  completeLatestMutation({
+    resetPassword: {
+      ok: false,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Request failed. Please try again."
+  );
+});
+
+test("reset password route hides top-level GraphQL error details behind a generic alert", async () => {
+  renderRoute("/auth/reset-password?token=reset-token");
+
+  fireEvent.change(screen.getByLabelText(/^new password$/i), {
+    target: { value: "supersecretpass456" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          token: "reset-token",
+          password: "supersecretpass456"
+        }
+      })
+    );
+  });
+
+  completeLatestMutation(
+    {
+      resetPassword: {
+        ok: true,
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
 });
 
 test("reset password route clears stale success state when the token changes", async () => {
   const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   let view: ReturnType<typeof render> | null = null;
 
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      resetPassword: {
-        ok: true,
-        errors: []
-      }
-    }
-  });
-
   window.history.pushState({}, "", "/auth/reset-password?token=first-token");
 
   try {
     view = render(
-      <RelayEnvironmentProvider environment={createRelayEnvironment()}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-          </Routes>
-        </BrowserRouter>
-      </RelayEnvironmentProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
+        </Routes>
+      </BrowserRouter>
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
       target: { value: "supersecretpass456" }
     });
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+    await waitFor(() => {
+      expect(commitMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: {
+            token: "first-token",
+            password: "supersecretpass456"
+          }
+        })
+      );
+    });
+
+    completeLatestMutation({
+      resetPassword: {
+        ok: true,
+        errors: []
+      }
+    });
 
     expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
 
@@ -184,37 +317,15 @@ test("reset password route ignores stale responses after the token changes", asy
   const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   let view: ReturnType<typeof render> | null = null;
 
-  let resolveFirstRequest:
-    | ((value: { data: { resetPassword: { ok: boolean; errors: never[] } } }) => void)
-    | null = null;
-
-  fetchGraphQLMock
-    .mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveFirstRequest = resolve;
-        })
-    )
-    .mockResolvedValueOnce({
-      data: {
-        resetPassword: {
-          ok: true,
-          errors: []
-        }
-      }
-    });
-
   window.history.pushState({}, "", "/auth/reset-password?token=first-token");
 
   try {
     view = render(
-      <RelayEnvironmentProvider environment={createRelayEnvironment()}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-          </Routes>
-        </BrowserRouter>
-      </RelayEnvironmentProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
+        </Routes>
+      </BrowserRouter>
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
@@ -223,30 +334,30 @@ test("reset password route ignores stale responses after the token changes", asy
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
     await waitFor(() => {
-      expect(fetchGraphQLMock).toHaveBeenCalledWith(
-        expect.stringContaining("mutation ResetPassword"),
-        {
-          token: "first-token",
-          password: "supersecretpass456"
-        }
+      expect(commitMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: {
+            token: "first-token",
+            password: "supersecretpass456"
+          }
+        })
       );
     });
+
+    const firstRequest = latestMutationOptions();
 
     await act(async () => {
       window.history.pushState({}, "", "/auth/reset-password?token=second-token");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    await act(async () => {
-      resolveFirstRequest?.({
-        data: {
-          resetPassword: {
-            ok: true,
-            errors: []
-          }
+    act(() => {
+      firstRequest?.onCompleted({
+        resetPassword: {
+          ok: true,
+          errors: []
         }
       });
-      await Promise.resolve();
     });
 
     await waitFor(() => {
@@ -256,13 +367,21 @@ test("reset password route ignores stale responses after the token changes", asy
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
     await waitFor(() => {
-      expect(fetchGraphQLMock).toHaveBeenLastCalledWith(
-        expect.stringContaining("mutation ResetPassword"),
-        {
-          token: "second-token",
-          password: "supersecretpass456"
-        }
+      expect(commitMutationMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          variables: {
+            token: "second-token",
+            password: "supersecretpass456"
+          }
+        })
       );
+    });
+
+    completeLatestMutation({
+      resetPassword: {
+        ok: true,
+        errors: []
+      }
     });
 
     expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
@@ -276,98 +395,134 @@ test("reset password route ignores stale responses after the token changes", asy
   );
 });
 
-test("verify email route consumes the URL token and reports success", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      verifyEmail: {
-        ok: true,
-        errors: []
-      }
-    }
-  });
-
+test("verify email route consumes the URL token through Relay and reports success", async () => {
   renderRoute("/auth/verify-email?token=confirm-token");
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation VerifyEmail"),
-      { token: "confirm-token" }
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { token: "confirm-token" }
+      })
     );
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: true,
+      errors: []
+    }
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
 });
 
 test("verify email route retries after a transient failure on remount", async () => {
-  fetchGraphQLMock
-    .mockRejectedValueOnce(new Error("temporary outage"))
-    .mockResolvedValueOnce({
-      data: {
-        verifyEmail: {
-          ok: true,
-          errors: []
-        }
-      }
-    });
-
   const firstView = renderRoute("/auth/verify-email?token=confirm-token");
 
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  failLatestMutation(new Error("temporary outage"));
+
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
 
   firstView.unmount();
 
   renderRoute("/auth/verify-email?token=confirm-token");
 
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: true,
+      errors: []
+    }
+  });
+
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
 });
 
-test("verify email route retries after a resolved failed payload on remount", async () => {
-  fetchGraphQLMock
-    .mockResolvedValueOnce({
-      data: {
-        verifyEmail: {
-          ok: false,
-          errors: []
-        }
-      }
-    })
-    .mockResolvedValueOnce({
-      data: {
-        verifyEmail: {
-          ok: true,
-          errors: []
-        }
-      }
-    });
-
+test("verify email route retries after a top-level GraphQL error on remount", async () => {
   const firstView = renderRoute("/auth/verify-email?token=confirm-token");
 
-  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
 
-  firstView.unmount();
-
-  renderRoute("/auth/verify-email?token=confirm-token");
-
-  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
-  expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
-});
-
-test("verify email route only submits a single-use token once in strict mode", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
+  completeLatestMutation(
+    {
       verifyEmail: {
         ok: true,
         errors: []
       }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+
+  firstView.unmount();
+
+  renderRoute("/auth/verify-email?token=confirm-token");
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: true,
+      errors: []
     }
   });
 
+  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+});
+
+test("verify email route retries after a resolved failed payload on remount", async () => {
+  const firstView = renderRoute("/auth/verify-email?token=confirm-token");
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: false,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+
+  firstView.unmount();
+
+  renderRoute("/auth/verify-email?token=confirm-token");
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: true,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+});
+
+test("verify email route only submits a single-use token once in strict mode", async () => {
   renderRoute("/auth/verify-email?token=confirm-token", { strictMode: true });
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
   });
 });

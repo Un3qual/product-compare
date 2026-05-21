@@ -45,14 +45,14 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/frontend-relay-route-data.md`
   - Status: active
   - Priority: P1
-  - Next batch: migrate `/compare` and the save-comparison mutation to Relay-preloaded queries/mutations, then remove the temporary compare-local product detail helper.
+  - Next batch: remove dead manual-fetch plumbing and verify `fetchGraphQL` as a thin Relay network helper after the auth Relay mutation migration.
   - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 
 - Backend lane
   - Work doc: `docs/work/graphql-relay-contract-hardening.md`
-  - Status: active
+  - Status: completed
   - Priority: P2
-  - Next batch: add a root `node(id: ID!)` lookup for the existing global-ID-backed product and pricing entities, with focused GraphQL coverage.
+  - Next batch: no unblocked backend batch is queued from this worktree; choose a future backend lane only if priorities change.
   - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare_web/graphql/**`, `docs/work/graphql-relay-contract-hardening.md`, `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
 
 ## Blocked / Needs Decision
@@ -76,6 +76,23 @@ Commit only lane-local milestone changes.
   - Next batch: resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
 
 ## Recently Completed
+
+### Frontend Relay Auth Mutation Migration
+
+- Status: completed on 2026-05-02
+- Source of truth: `docs/work/frontend-relay-route-data.md`
+- Outcome:
+  - Login, register, forgot-password, reset-password, and verify-email routes now commit the existing GraphQL auth contract through Relay mutation artifacts.
+  - Removed the route-local `assets/src/routes/auth/actions.ts` helper and moved shared payload/error normalization to `assets/src/routes/auth/errors.ts`.
+  - Verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`, and `cd assets && bun run typecheck`.
+
+### GraphQL Relay Contract Hardening
+
+- Status: completed on 2026-04-30
+- Source of truth: `docs/work/graphql-relay-contract-hardening.md`
+- Outcome:
+  - Root `node(id: ID!)` support covers public catalog/pricing nodes plus owner-scoped saved comparison sets and API tokens.
+  - Verification passed with `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/api_token_auth_test.exs && mix typecheck`.
 
 ### Frontend Saved Comparisons UI
 
