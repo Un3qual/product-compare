@@ -9,6 +9,7 @@ import {
   findMutationError,
   type MutationError,
   normalizeSessionPayload,
+  relayGraphQLError,
   transportMutationError
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
@@ -28,8 +29,15 @@ export function RegisterRoute() {
 
     commitRegister({
       variables: { email, password },
-      onCompleted(response) {
-        const result = normalizeSessionPayload(response.register);
+      onCompleted(response, graphQLErrors) {
+        const graphQLError = relayGraphQLError(graphQLErrors);
+
+        if (graphQLError) {
+          setErrors([graphQLError]);
+          return;
+        }
+
+        const result = normalizeSessionPayload(response?.register);
 
         if (result.viewer) {
           navigate("/");

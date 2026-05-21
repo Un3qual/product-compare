@@ -57,9 +57,9 @@ function latestMutationOptions() {
   return commitMutationMock.mock.calls.at(-1)?.[0];
 }
 
-function completeLatestMutation(response: unknown) {
+function completeLatestMutation(response: unknown, graphQLErrors?: unknown[]) {
   act(() => {
-    latestMutationOptions()?.onCompleted(response);
+    latestMutationOptions()?.onCompleted(response, graphQLErrors);
   });
 }
 
@@ -114,6 +114,39 @@ test("forgot password route commits the email through Relay and shows the privac
   ).toHaveTextContent("If an account exists for that email, reset instructions are on the way.");
 });
 
+test("forgot password route hides top-level GraphQL error details behind a generic alert", async () => {
+  renderRoute("/auth/forgot-password");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { email: "person@example.com" }
+      })
+    );
+  });
+
+  completeLatestMutation(
+    {
+      forgotPassword: {
+        ok: true,
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
 test("reset password route reads the token from the URL and commits the new password", async () => {
   renderRoute("/auth/reset-password?token=reset-token");
 
@@ -154,6 +187,72 @@ test("reset password route reads the token from the URL and commits the new pass
   });
 
   expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
+});
+
+test("reset password route shows a generic alert when the action payload fails without errors", async () => {
+  renderRoute("/auth/reset-password?token=reset-token");
+
+  fireEvent.change(screen.getByLabelText(/^new password$/i), {
+    target: { value: "supersecretpass456" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          token: "reset-token",
+          password: "supersecretpass456"
+        }
+      })
+    );
+  });
+
+  completeLatestMutation({
+    resetPassword: {
+      ok: false,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Request failed. Please try again."
+  );
+});
+
+test("reset password route hides top-level GraphQL error details behind a generic alert", async () => {
+  renderRoute("/auth/reset-password?token=reset-token");
+
+  fireEvent.change(screen.getByLabelText(/^new password$/i), {
+    target: { value: "supersecretpass456" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          token: "reset-token",
+          password: "supersecretpass456"
+        }
+      })
+    );
+  });
+
+  completeLatestMutation(
+    {
+      resetPassword: {
+        ok: true,
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
 });
 
 test("reset password route clears stale success state when the token changes", async () => {
@@ -327,6 +426,46 @@ test("verify email route retries after a transient failure on remount", async ()
   failLatestMutation(new Error("temporary outage"));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
+
+  firstView.unmount();
+
+  renderRoute("/auth/verify-email?token=confirm-token");
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeLatestMutation({
+    verifyEmail: {
+      ok: true,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+});
+
+test("verify email route retries after a top-level GraphQL error on remount", async () => {
+  const firstView = renderRoute("/auth/verify-email?token=confirm-token");
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  completeLatestMutation(
+    {
+      verifyEmail: {
+        ok: true,
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
 
   firstView.unmount();
 

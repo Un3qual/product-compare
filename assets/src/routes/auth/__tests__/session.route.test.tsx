@@ -41,15 +41,19 @@ function renderRoute(initialEntry: string) {
   );
 }
 
-function completeMutation(response: unknown) {
+function latestMutationOptions() {
+  return commitMutationMock.mock.calls.at(-1)?.[0];
+}
+
+function completeMutation(response: unknown, graphQLErrors?: unknown[]) {
   act(() => {
-    commitMutationMock.mock.calls[0]?.[0].onCompleted(response);
+    latestMutationOptions()?.onCompleted(response, graphQLErrors);
   });
 }
 
 function failMutation(error: Error) {
   act(() => {
-    commitMutationMock.mock.calls[0]?.[0].onError(error);
+    latestMutationOptions()?.onError(error);
   });
 }
 
@@ -195,12 +199,53 @@ test("login route hides top-level GraphQL error details behind a generic alert",
     expect(commitMutationMock).toHaveBeenCalled();
   });
 
-  failMutation(new Error("GraphQL request failed (500): database stacktrace"));
+  completeMutation(
+    {
+      login: {
+        viewer: { id: "1", email: "person@example.com" },
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
 
   const alert = await screen.findByRole("alert");
 
   expect(alert).toHaveTextContent("Request failed. Please try again.");
   expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(navigateMock).not.toHaveBeenCalled();
+});
+
+test("register route hides top-level GraphQL error details behind a generic alert", async () => {
+  renderRoute("/auth/register");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.change(screen.getByLabelText(/^password$/i), {
+    target: { value: "supersecretpass123" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalled();
+  });
+
+  completeMutation(
+    {
+      register: {
+        viewer: { id: "1", email: "person@example.com" },
+        errors: []
+      }
+    },
+    [{ message: "GraphQL request failed (500): database stacktrace" }]
+  );
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(navigateMock).not.toHaveBeenCalled();
 });
 
 test("login route shows a generic alert when the session payload fails without errors", async () => {

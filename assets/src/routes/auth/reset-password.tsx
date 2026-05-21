@@ -9,6 +9,7 @@ import {
   findMutationError,
   type MutationError,
   normalizeActionPayload,
+  relayGraphQLError,
   transportMutationError
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
@@ -55,12 +56,20 @@ export function ResetPasswordRoute() {
 
     commitResetPassword({
       variables: { token, password },
-      onCompleted(response) {
-        const result = normalizeActionPayload(response.resetPassword);
-
+      onCompleted(response, graphQLErrors) {
         if (requestVersion !== activeRequestVersion.current) {
           return;
         }
+
+        const graphQLError = relayGraphQLError(graphQLErrors);
+
+        if (graphQLError) {
+          setErrors([graphQLError]);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const result = normalizeActionPayload(response?.resetPassword);
 
         if (result.ok && result.errors.length === 0) {
           setMessage("Your password has been updated.");

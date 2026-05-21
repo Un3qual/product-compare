@@ -37,6 +37,14 @@ export function transportMutationError(error: unknown): MutationError {
   };
 }
 
+export function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
+  if (Array.isArray(errors) && errors.length > 0) {
+    return transportMutationError(errors);
+  }
+
+  return null;
+}
+
 export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
   const sessionPayload = isRecord(payload) ? payload : {};
   const viewer = isViewer(sessionPayload.viewer) ? sessionPayload.viewer : null;

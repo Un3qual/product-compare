@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, type MutationCommitFn } from "react-relay";
 import { useSearchParams } from "react-router-dom";
 import verifyEmailMutation, {
@@ -8,6 +8,7 @@ import {
   type AuthActionResult,
   type MutationError,
   normalizeActionPayload,
+  relayGraphQLError,
   transportMutationError
 } from "./errors";
 import { AuthFormShell } from "./form-shell";
@@ -28,6 +29,9 @@ export function VerifyEmailRoute() {
   const [isLoading, setIsLoading] = useState(Boolean(token));
   const [message, setMessage] = useState<string | null>(null);
   const [commitVerifyEmail] = useMutation<VerifyEmailMutation>(verifyEmailMutation);
+  // Only token changes should restart verification; still call the latest Relay commit.
+  const commitVerifyEmailRef = useRef(commitVerifyEmail);
+  commitVerifyEmailRef.current = commitVerifyEmail;
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +49,9 @@ export function VerifyEmailRoute() {
         setMessage(null);
         setErrors([]);
 
-        const result = await verifyEmailOnce(token, commitVerifyEmail);
+        const result = await verifyEmailOnce(token, (config) =>
+          commitVerifyEmailRef.current(config)
+        );
 
         if (cancelled) {
           return;
@@ -59,9 +65,7 @@ export function VerifyEmailRoute() {
         }
       } catch (error) {
         if (!cancelled) {
-          setErrors([
-            transportMutationError(error)
-          ]);
+          setErrors([transportMutationError(error)]);
         }
       } finally {
         if (!cancelled) {
@@ -75,7 +79,7 @@ export function VerifyEmailRoute() {
     return () => {
       cancelled = true;
     };
-  }, [commitVerifyEmail, token]);
+  }, [token]);
 
   return (
     <AuthFormShell
@@ -110,8 +114,15 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   const request = new Promise<AuthActionResult>((resolve, reject) => {
     commitVerifyEmail({
       variables: { token },
-      onCompleted(response) {
-        resolve(normalizeActionPayload(response.verifyEmail));
+      onCompleted(response, graphQLErrors) {
+        const graphQLError = relayGraphQLError(graphQLErrors);
+
+        if (graphQLError) {
+          reject(graphQLError);
+          return;
+        }
+
+        resolve(normalizeActionPayload(response?.verifyEmail));
       },
       onError(error) {
         reject(error);

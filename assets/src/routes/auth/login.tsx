@@ -7,6 +7,7 @@ import {
   findMutationError,
   type MutationError,
   normalizeSessionPayload,
+  relayGraphQLError,
   transportMutationError
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
@@ -26,8 +27,15 @@ export function LoginRoute() {
 
     commitLogin({
       variables: { email, password },
-      onCompleted(response) {
-        const result = normalizeSessionPayload(response.login);
+      onCompleted(response, graphQLErrors) {
+        const graphQLError = relayGraphQLError(graphQLErrors);
+
+        if (graphQLError) {
+          setErrors([graphQLError]);
+          return;
+        }
+
+        const result = normalizeSessionPayload(response?.login);
 
         if (result.viewer) {
           navigate("/");

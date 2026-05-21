@@ -8,6 +8,7 @@ import {
   findMutationError,
   type MutationError,
   normalizeActionPayload,
+  relayGraphQLError,
   transportMutationError
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
@@ -31,8 +32,15 @@ export function ForgotPasswordRoute() {
 
     commitForgotPassword({
       variables: { email },
-      onCompleted(response) {
-        const result = normalizeActionPayload(response.forgotPassword);
+      onCompleted(response, graphQLErrors) {
+        const graphQLError = relayGraphQLError(graphQLErrors);
+
+        if (graphQLError) {
+          setErrors([graphQLError]);
+          return;
+        }
+
+        const result = normalizeActionPayload(response?.forgotPassword);
 
         if (result.ok && result.errors.length === 0) {
           setMessage(successMessage);
