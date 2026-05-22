@@ -90,18 +90,14 @@ defmodule ProductCompare.CommerceAttribution do
     update_fields =
       present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
 
-    case stale_existing_conversion(changeset) do
-      %CommerceConversion{} = existing_conversion ->
-        {:ok, existing_conversion}
-
-      nil ->
-        Repo.insert(
-          changeset,
-          on_conflict: [set: update_fields ++ [updated_at: now]],
-          conflict_target: [:source_network, :network_conversion_ref],
-          returning: true
-        )
-    end
+    changeset
+    |> Repo.insert(
+      on_conflict: conversion_conflict_query(update_fields, now),
+      conflict_target: [:source_network, :network_conversion_ref],
+      allow_stale: true,
+      returning: true
+    )
+    |> maybe_fetch_unchanged_conversion(changeset)
   end
 
   @spec create_purchase_price_fact(map()) ::
@@ -122,24 +118,24 @@ defmodule ProductCompare.CommerceAttribution do
     )
   end
 
-  defp stale_existing_conversion(changeset) do
-    with true <- changeset.valid?,
-         %DateTime{} = reported_at <- Ecto.Changeset.get_field(changeset, :reported_at),
-         source_network when not is_nil(source_network) <-
-           Ecto.Changeset.get_field(changeset, :source_network),
-         network_conversion_ref when is_binary(network_conversion_ref) <-
-           Ecto.Changeset.get_field(changeset, :network_conversion_ref),
-         %CommerceConversion{reported_at: %DateTime{} = existing_reported_at} =
-           existing_conversion <-
-           Repo.get_by(CommerceConversion,
-             source_network: source_network,
-             network_conversion_ref: network_conversion_ref
-           ),
-         :lt <- DateTime.compare(reported_at, existing_reported_at) do
-      existing_conversion
-    else
-      _not_stale -> nil
-    end
+  defp conversion_conflict_query(update_fields, now) do
+    from conversion in CommerceConversion,
+      where: fragment("EXCLUDED.reported_at >= ?", conversion.reported_at),
+      update: [set: ^(update_fields ++ [updated_at: now])]
+  end
+
+  defp maybe_fetch_unchanged_conversion({:ok, %CommerceConversion{id: nil}}, changeset) do
+    {:ok, get_existing_conversion!(changeset)}
+  end
+
+  defp maybe_fetch_unchanged_conversion(result, _changeset), do: result
+
+  defp get_existing_conversion!(changeset) do
+    Repo.get_by!(
+      CommerceConversion,
+      source_network: Ecto.Changeset.get_field(changeset, :source_network),
+      network_conversion_ref: Ecto.Changeset.get_field(changeset, :network_conversion_ref)
+    )
   end
 
   defp maybe_put_click_session_id(attrs) do
