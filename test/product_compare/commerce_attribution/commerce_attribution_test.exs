@@ -187,6 +187,32 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.attribution_confidence == :high
     end
 
+    test "ignores stale follow-up payloads with older reported timestamps" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "15.00",
+        "ReportingDate" => "2026-05-21T09:00:00Z"
+      }
+
+      {:ok, inserted} = ImpactAdapter.ingest_action(payload)
+
+      {:ok, stale_result} =
+        ImpactAdapter.ingest_action(%{
+          payload
+          | "Status" => "PENDING",
+            "Payout" => "1.00",
+            "ReportingDate" => "2026-05-20T09:00:00Z"
+        })
+
+      assert stale_result.id == inserted.id
+      assert stale_result.status == :approved
+      assert Decimal.equal?(stale_result.commission_amount, Decimal.new("15.00"))
+      assert stale_result.reported_at == ~U[2026-05-21 09:00:00.000000Z]
+    end
+
     test "does not crash on malformed numeric payload fields" do
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
