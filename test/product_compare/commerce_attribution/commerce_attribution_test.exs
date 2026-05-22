@@ -39,7 +39,35 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.network == :awin
       assert updated.campaign_params == %{"utm_campaign" => "refresh"}
       assert updated.is_active == false
+
+      {:ok, reactivated} =
+        CommerceAttribution.upsert_commerce_link(%{
+          merchant_id: merchant.id,
+          destination_url: destination_url,
+          link_type: :affiliate,
+          network: nil,
+          campaign_params: %{},
+          is_active: true
+        })
+
+      assert reactivated.id == inserted.id
+      assert reactivated.network == nil
+      assert reactivated.campaign_params == %{}
+      assert reactivated.is_active == true
       assert Repo.aggregate(CommerceLink, :count, :id) == 1
+    end
+
+    test "rejects redirect destinations without an http or https URL" do
+      merchant = merchant_fixture()
+
+      assert {:error, changeset} =
+               CommerceAttribution.upsert_commerce_link(%{
+                 merchant_id: merchant.id,
+                 destination_url: "javascript:alert(1)",
+                 link_type: :affiliate
+               })
+
+      assert "must be a valid http/https URL" in errors_on(changeset).destination_url
     end
   end
 
@@ -112,7 +140,60 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.status == :approved
       assert Decimal.equal?(updated.commission_amount, Decimal.new("15.00"))
       assert updated.data_freshness_at == ~U[2026-05-21 09:00:00.000000Z]
+
+      {:ok, reverted} =
+        ImpactAdapter.ingest_action(%{
+          payload
+          | "Status" => "PENDING",
+            "Payout" => "15.00",
+            "ReportingDate" => "2026-05-21T10:00:00Z"
+        })
+
+      assert reverted.id == inserted.id
+      assert reverted.status == :pending
       assert Repo.aggregate(CommerceConversion, :count, :id) == 1
+    end
+
+    test "does not crash on malformed numeric payload fields" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "PENDING",
+        "Currency" => "USD",
+        "SaleAmount" => "N/A",
+        "Payout" => "",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+      assert conversion.order_amount == nil
+      assert conversion.commission_amount == nil
+    end
+  end
+
+  describe "ingest_conversion/1" do
+    test "updates status and attribution confidence back to schema defaults" do
+      attrs = %{
+        source_network: :impact,
+        network_conversion_ref: "conversion-#{System.unique_integer([:positive])}",
+        status: :approved,
+        currency: "USD",
+        attribution_confidence: :high,
+        reported_at: ~U[2026-05-20 12:00:00.000000Z]
+      }
+
+      {:ok, inserted} = CommerceAttribution.ingest_conversion(attrs)
+
+      {:ok, updated} =
+        CommerceAttribution.ingest_conversion(%{
+          attrs
+          | status: :pending,
+            attribution_confidence: :unmatched,
+            reported_at: ~U[2026-05-21 12:00:00.000000Z]
+        })
+
+      assert updated.id == inserted.id
+      assert updated.status == :pending
+      assert updated.attribution_confidence == :unmatched
     end
   end
 

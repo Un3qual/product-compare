@@ -55,7 +55,16 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
 
   defp decimal(nil), do: nil
   defp decimal(%Decimal{} = value), do: value
-  defp decimal(value), do: Decimal.new(to_string(value))
+
+  defp decimal(value) do
+    value = value |> to_string() |> String.trim()
+
+    case Decimal.parse(value) do
+      {%Decimal{} = decimal, ""} -> decimal
+      {%Decimal{}, _rest} -> nil
+      :error -> nil
+    end
+  end
 
   defp integer(nil), do: nil
   defp integer(value) when is_integer(value), do: value

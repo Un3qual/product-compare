@@ -1,7 +1,7 @@
 import { fetchQuery } from "relay-runtime";
 import productDetailRouteQuery from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { fetchGraphQL } from "../fetch-graphql";
-import { createRelayEnvironment } from "../environment";
+import { createRelayEnvironment, formatGraphQLErrorMessage, hasGraphQLErrors } from "../environment";
 import { RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "../load-query";
 
 const { fetchGraphQLMock } = vi.hoisted(() => ({
@@ -95,4 +95,48 @@ test("Relay environment preserves an explicit SSR signal outside route-loader re
 
   expect(ssrContext?.rejectGraphQLErrors).toBeUndefined();
   expect(ssrContext?.signal).toBe(signal);
+});
+
+describe("hasGraphQLErrors", () => {
+  test("returns false for null, non-object values, arrays, and missing errors", () => {
+    expect(hasGraphQLErrors(null as never)).toBe(false);
+    expect(hasGraphQLErrors(undefined as never)).toBe(false);
+    expect(hasGraphQLErrors(42 as never)).toBe(false);
+    expect(hasGraphQLErrors("not an object" as never)).toBe(false);
+    expect(hasGraphQLErrors([1, 2, 3] as never)).toBe(false);
+    expect(hasGraphQLErrors({ data: { product: null } })).toBe(false);
+    expect(hasGraphQLErrors({ errors: [] })).toBe(false);
+  });
+
+  test("returns true when the errors array has entries", () => {
+    expect(
+      hasGraphQLErrors({
+        data: { product: null },
+        errors: [{ message: "boom" }]
+      })
+    ).toBe(true);
+  });
+});
+
+describe("formatGraphQLErrorMessage", () => {
+  test("formats multiple GraphQL top-level error messages", () => {
+    expect(
+      formatGraphQLErrorMessage({
+        errors: [{ message: "first failure" }, { message: "second failure" }]
+      })
+    ).toBe("GraphQL response contained errors: first failure; second failure");
+  });
+
+  test("uses a generic message when no string error messages are present", () => {
+    expect(
+      formatGraphQLErrorMessage({
+        errors: [{ message: 123 }, { message: null }, { foo: "bar" }]
+      } as never)
+    ).toBe("GraphQL response contained errors");
+  });
+
+  test("uses a generic message when errors are missing or empty", () => {
+    expect(formatGraphQLErrorMessage({} as never)).toBe("GraphQL response contained errors");
+    expect(formatGraphQLErrorMessage({ errors: [] })).toBe("GraphQL response contained errors");
+  });
 });

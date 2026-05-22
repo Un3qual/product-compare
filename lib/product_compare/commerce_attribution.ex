@@ -11,6 +11,31 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
+  @commerce_link_upsert_fields [
+    :network,
+    :campaign_params,
+    :backfilled_from_affiliate_links,
+    :is_active
+  ]
+  @commerce_conversion_upsert_fields [
+    :click_session_id,
+    :public_click_id,
+    :network_click_ref,
+    :merchant_id,
+    :affiliate_program_id,
+    :product_id,
+    :merchant_product_id,
+    :status,
+    :currency,
+    :order_amount,
+    :commission_amount,
+    :commission_rate,
+    :attribution_confidence,
+    :data_freshness_at,
+    :purchased_at,
+    :reported_at,
+    :raw_payload
+  ]
   @commerce_link_conflict_target {:unsafe_fragment,
                                   "(destination_url, COALESCE(affiliate_program_id, 0), merchant_id, link_type)"}
 
@@ -20,9 +45,7 @@ defmodule ProductCompare.CommerceAttribution do
     changeset = CommerceLink.changeset(%CommerceLink{}, attrs)
 
     update_fields =
-      changeset.changes
-      |> Map.drop([:destination_url, :affiliate_program_id, :merchant_id, :link_type])
-      |> Map.to_list()
+      present_upsert_fields(attrs, changeset, @commerce_link_upsert_fields)
 
     Repo.insert(
       changeset,
@@ -44,7 +67,8 @@ defmodule ProductCompare.CommerceAttribution do
   def redirect_destination(click_id) do
     with {:ok, cast_click_id} <- Ecto.UUID.cast(click_id),
          destination_url when is_binary(destination_url) <-
-           lookup_redirect_destination(cast_click_id) do
+           lookup_redirect_destination(cast_click_id),
+         true <- CommerceLink.valid_destination_url?(destination_url) do
       {:ok, destination_url}
     else
       _not_found -> {:error, :not_found}
@@ -64,9 +88,7 @@ defmodule ProductCompare.CommerceAttribution do
     changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
 
     update_fields =
-      changeset.changes
-      |> Map.drop([:source_network, :network_conversion_ref])
-      |> Map.to_list()
+      present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
 
     Repo.insert(
       changeset,
@@ -138,4 +160,13 @@ defmodule ProductCompare.CommerceAttribution do
   defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
 
   defp attr_present?(attrs, key), do: not is_nil(get_attr(attrs, key))
+
+  defp present_upsert_fields(attrs, changeset, fields) do
+    for field <- fields,
+        attr_key_present?(attrs, field),
+        do: {field, Ecto.Changeset.get_field(changeset, field)}
+  end
+
+  defp attr_key_present?(attrs, key) when is_map(attrs),
+    do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
 end

@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :merchant_id, references(:merchants, type: :bigint, on_delete: :delete_all), null: false
 
       add :affiliate_program_id,
-          references(:affiliate_programs, type: :bigint, on_delete: :nilify_all)
+          references(:affiliate_programs, type: :bigint, on_delete: :restrict)
 
       add :destination_url, :text, null: false
       add :link_type, :text, null: false, default: "affiliate"

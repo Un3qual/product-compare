@@ -38,6 +38,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
       :is_active
     ])
     |> validate_required([:merchant_id, :destination_url, :link_type])
+    |> validate_destination_url()
     |> validate_campaign_params()
     |> unique_constraint(:destination_url, name: :commerce_links_business_key_uq)
     |> foreign_key_constraint(:merchant_id)
@@ -52,5 +53,29 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
       value when is_map(value) -> changeset
       _value -> add_error(changeset, :campaign_params, "must be a map")
     end
+  end
+
+  @spec valid_destination_url?(term()) :: boolean()
+  def valid_destination_url?(url) when is_binary(url) do
+    case URI.parse(url) do
+      %URI{scheme: scheme, host: host}
+      when scheme in ["http", "https"] and is_binary(host) and host != "" ->
+        not String.match?(url, ~r/[[:space:]\x00-\x1F\x7F]/)
+
+      _url ->
+        false
+    end
+  end
+
+  def valid_destination_url?(_url), do: false
+
+  defp validate_destination_url(changeset) do
+    validate_change(changeset, :destination_url, fn :destination_url, destination_url ->
+      if valid_destination_url?(destination_url) do
+        []
+      else
+        [destination_url: "must be a valid http/https URL"]
+      end
+    end)
   end
 end

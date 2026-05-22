@@ -54,7 +54,7 @@ function routeLoaderSignal(cacheConfig: CacheConfig) {
   return undefined;
 }
 
-function hasGraphQLErrors(response: GraphQLResponse) {
+export function hasGraphQLErrors(response: GraphQLResponse) {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }
@@ -62,7 +62,7 @@ function hasGraphQLErrors(response: GraphQLResponse) {
   return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
 }
 
-function formatGraphQLErrorMessage(response: GraphQLResponse) {
+export function formatGraphQLErrorMessage(response: GraphQLResponse) {
   if (!hasGraphQLErrors(response)) {
     return "GraphQL response contained errors";
   }

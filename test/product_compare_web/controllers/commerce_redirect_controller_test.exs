@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.Pricing
+  alias ProductCompare.Repo
 
   describe "GET /r/:click_id" do
     test "redirects known click ids to the commerce link destination", %{conn: conn} do
@@ -16,6 +17,21 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
     test "returns 404 for unknown click ids", %{conn: conn} do
       conn = get(conn, "/r/#{Ecto.UUID.generate()}")
+
+      assert response(conn, 404) == "redirect not found"
+    end
+
+    test "returns 404 instead of redirecting invalid stored destinations", %{conn: conn} do
+      commerce_link_id = unsafe_commerce_link_fixture("javascript:alert(1)")
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link_id,
+          click_id: Ecto.UUID.generate(),
+          source_surface: :web
+        })
+
+      conn = get(conn, "/r/#{click_session.click_id}")
 
       assert response(conn, 404) == "redirect not found"
     end
@@ -58,5 +74,27 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       })
 
     merchant
+  end
+
+  defp unsafe_commerce_link_fixture(destination_url) do
+    merchant = merchant_fixture()
+    now = DateTime.utc_now()
+
+    {1, [%{id: commerce_link_id}]} =
+      Repo.insert_all(
+        "commerce_links",
+        [
+          %{
+            merchant_id: merchant.id,
+            destination_url: destination_url,
+            link_type: "affiliate",
+            inserted_at: now,
+            updated_at: now
+          }
+        ],
+        returning: [:id]
+      )
+
+    commerce_link_id
   end
 end
