@@ -5,9 +5,10 @@
 - Status: active
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-21 after commerce attribution Task 1 focused tests passed
+- Last verified: 2026-05-22 after commerce attribution Task 2 focused tests, typecheck, and diff check passed
 - Detailed plan:
   - `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
+  - `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
 - Objective:
   - Design a trustworthy attribution pipeline covering outbound links, purchases, paid prices, and aggregated revenue metrics per product/merchant/channel.
 
@@ -35,13 +36,19 @@
 ## Next Batch
 
 - Status: ready
-- Batch: Task 2
-  1. Add the `commerce_revenue_daily` aggregate storage/read model or equivalent query-backed projection.
-  2. Add merchant/product/network revenue summary context functions over approved/paid conversions.
-  3. Define the baseline dashboard JSON contract for clicks, conversions, gross order value, commission revenue, and average paid price.
-  4. Cover empty, aggregate, and suppression-ready result shapes with focused tests.
+- Batch: Task 3
+  1. Add a read-only `revenueSummary` GraphQL query backed by the Task 2 dashboard summary contract.
+  2. Normalize merchant/product filters through Relay global IDs and keep network/date/suppression filters explicit.
+  3. Return JSON-safe filters, metrics, and suppression metadata without broadening invalid filters.
+  4. Cover empty, aggregate, suppression, and invalid-filter shapes with focused GraphQL tests.
 
 ## Completed
+
+- Task 2 completed on 2026-05-22:
+  - Added a query-backed revenue projection over commerce click sessions, approved/paid conversions, and purchase-price facts.
+  - Added merchant, product, and network revenue summary context functions plus a JSON-ready dashboard summary contract with filters, metrics, and suppression metadata.
+  - Covered empty, aggregate, and low-volume suppression result shapes with focused commerce attribution tests.
+  - Verified with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Task 1 completed on 2026-05-21:
   - Added `docs/decisions/2026-05-21-commerce-attribution-redirect-model.md`.

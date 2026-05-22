@@ -59,8 +59,8 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/affiliate-revenue-attribution.md`
   - Status: active
   - Priority: P2
-  - Next batch: add the revenue aggregate read model and baseline dashboard JSON contract over the new commerce attribution tables, with focused context tests.
-  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
+  - Next batch: expose the Task 2 revenue summary contract through a read-only GraphQL `revenueSummary` query with focused GraphQL tests.
+  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`, `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
 
 ## Blocked / Needs Decision
 
@@ -71,6 +71,15 @@ Commit only lane-local milestone changes.
   - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Commerce Attribution Task 2
+
+- Status: completed on 2026-05-22
+- Source of truth: `docs/work/affiliate-revenue-attribution.md`
+- Outcome:
+  - Added a query-backed revenue projection over click sessions, approved/paid conversions, and purchase-price facts.
+  - Added merchant, product, network, and dashboard revenue summary context functions with JSON-ready metric and suppression shapes.
+  - Verification passed with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`, `mix typecheck`, and `git diff --check`.
 
 ### Commerce Attribution Task 1
 

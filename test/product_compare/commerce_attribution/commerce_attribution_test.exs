@@ -362,6 +362,180 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
   end
 
+  describe "revenue dashboard summaries" do
+    test "returns an empty JSON-ready dashboard contract" do
+      assert CommerceAttribution.dashboard_revenue_summary() == %{
+               "filters" => %{
+                 "from" => nil,
+                 "merchant_id" => nil,
+                 "network" => nil,
+                 "product_id" => nil,
+                 "to" => nil
+               },
+               "metrics" => %{
+                 "average_paid_price" => nil,
+                 "clicks" => 0,
+                 "commission_revenue" => "0.00",
+                 "conversions" => 0,
+                 "gross_order_value" => "0.00"
+               },
+               "suppression" => %{"suppressed" => false, "threshold" => 0}
+             }
+    end
+
+    test "aggregates approved and paid conversions for merchant product and network summaries" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+      _unconverted_click_session = click_session_fixture(commerce_link)
+
+      approved =
+        conversion_fixture(%{
+          click_session_id: click_session.id,
+          public_click_id: click_session.click_id,
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          merchant_product_id: merchant_product.id,
+          status: :approved,
+          order_amount: Decimal.new("120.00"),
+          commission_amount: Decimal.new("12.00"),
+          reported_at: ~U[2026-05-20 12:00:00.000000Z]
+        })
+
+      paid =
+        conversion_fixture(%{
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          merchant_product_id: merchant_product.id,
+          status: :paid,
+          order_amount: Decimal.new("180.00"),
+          commission_amount: Decimal.new("18.00"),
+          reported_at: ~U[2026-05-21 12:00:00.000000Z]
+        })
+
+      _pending =
+        conversion_fixture(%{
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          status: :pending,
+          order_amount: Decimal.new("999.00"),
+          commission_amount: Decimal.new("99.00"),
+          reported_at: ~U[2026-05-21 13:00:00.000000Z]
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: approved.id,
+          reported_paid_price: Decimal.new("100.00"),
+          currency: "USD"
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: paid.id,
+          reported_paid_price: Decimal.new("200.00"),
+          currency: "USD"
+        })
+
+      expected_metrics = %{
+        "average_paid_price" => "150.00",
+        "clicks" => 2,
+        "commission_revenue" => "30.00",
+        "conversions" => 2,
+        "gross_order_value" => "300.00"
+      }
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.merchant_revenue_summary(merchant.id, network: :impact)
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 2}} =
+               CommerceAttribution.product_revenue_summary(product.id, network: :impact)
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+    end
+
+    test "uses merchant product dimensions for adapter-ingested conversions" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      {:ok, conversion} =
+        ImpactAdapter.ingest_action(%{
+          "ActionId" => "impact-summary-#{System.unique_integer([:positive])}",
+          "ClickId" => click_session.click_id,
+          "Status" => "APPROVED",
+          "Currency" => "USD",
+          "SaleAmount" => "75.00",
+          "Payout" => "7.50",
+          "ReportingDate" => "2026-05-21T12:00:00Z",
+          "MerchantProductId" => merchant_product.id
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: conversion.id,
+          reported_paid_price: Decimal.new("72.00"),
+          currency: "USD"
+        })
+
+      expected_metrics = %{
+        "average_paid_price" => "72.00",
+        "clicks" => 1,
+        "commission_revenue" => "7.50",
+        "conversions" => 1,
+        "gross_order_value" => "75.00"
+      }
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.merchant_revenue_summary(merchant.id)
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.product_revenue_summary(product.id)
+    end
+
+    test "keeps low-volume dashboard results suppression-ready" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        source_network: :impact,
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("90.00"),
+        commission_amount: Decimal.new("9.00"),
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert CommerceAttribution.dashboard_revenue_summary(%{
+               merchant_id: merchant.id,
+               min_conversions: 2
+             }) == %{
+               "filters" => %{
+                 "from" => nil,
+                 "merchant_id" => merchant.id,
+                 "network" => nil,
+                 "product_id" => nil,
+                 "to" => nil
+               },
+               "metrics" => %{
+                 "average_paid_price" => nil,
+                 "clicks" => nil,
+                 "commission_revenue" => nil,
+                 "conversions" => nil,
+                 "gross_order_value" => nil
+               },
+               "suppression" => %{"suppressed" => true, "threshold" => 2}
+             }
+    end
+  end
+
   defp conversion_fixture(attrs \\ %{}) do
     {:ok, conversion} =
       attrs

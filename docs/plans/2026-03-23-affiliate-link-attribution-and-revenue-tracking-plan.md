@@ -373,7 +373,8 @@ Recommended extension principles:
 - [x] Implement click redirect endpoint + tests.
 - [ ] Run source-field mapping spike (Impact + CJ + Awin) and produce normalized conversion field dictionary (captured from authenticated docs + sample payloads). Blocked for CJ/Awin until account docs or sample payloads are available.
 - [x] Build first conversion ingest adapter and idempotent upsert tests.
-- [ ] Wire merchant/product daily aggregate query and baseline dashboard JSON contract. This is the next unblocked code batch.
+- [x] Wire merchant/product daily aggregate query and baseline dashboard JSON contract.
+- [ ] Expose the baseline revenue summary contract through a read-only GraphQL query. This is the next unblocked code batch.
 
 ## Deferred Until Further Notice
 
