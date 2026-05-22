@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: blocked on frontend Relay route-data adoption
+- Status: completed
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-03-22 after merge-conflict review
+- Last verified: 2026-05-21 after Relay route-data Task 6 handoff verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -29,16 +29,16 @@
 
 ## Next Batch
 
-- Status: blocked by queue rebaseline
-- Batch: Resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
+- Status: completed
+- Batch: none queued in this work item
 - Why this batch:
-  - Task 1 already landed the shared shell plus route-local status semantics, so the remaining hardening gap is compare-scoped route-boundary failure handling.
-  - `/compare` and `/compare/saved` still depend on the manual `assets/src/routes/compare/api.ts` helper path, so deferring Task 2 avoids polishing a route surface that will soon change data-layer shape.
-  - Once Relay adoption re-establishes the compare routes on the long-term path, Task 2 can stay tightly scoped to compare-scoped `errorElement` wiring and focused regression tests.
+  - Task 1 already landed the shared shell plus route-local status semantics.
+  - Task 2 already landed compare-scoped `errorElement` wiring and focused regression tests.
+  - Relay route-data Task 6 closed the queue rebaseline blocker; no additional compare/saved hardening batch is queued from this work item.
 
 ## Planned Follow-Up
 
-- Re-open this work item as the next compare-route polish slice once the compare and saved-comparisons routes stop depending on the manual helper path.
+- Keep this work item closed. Track any future `/compare/saved` Relay migration or additional compare polish as a new active work item.
 
 ## Verification Commands
 

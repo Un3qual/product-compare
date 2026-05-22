@@ -4,6 +4,7 @@ import {
   Network,
   RecordSource,
   Store,
+  type GraphQLResponse,
   type RequestParameters,
   type Variables
 } from "relay-runtime";
@@ -26,24 +27,21 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
         throw new Error(`Relay operation text is missing for request: ${params.name ?? "unknown"}`);
       }
 
-      return fetchGraphQL(
-        params.text,
-        variables as Record<string, unknown>,
-        networkSSRContext(options.ssrContext, cacheConfig)
-      );
+      const routeSignal = routeLoaderSignal(cacheConfig);
+
+      return fetchGraphQL(params.text, variables as Record<string, unknown>, {
+        ...options.ssrContext,
+        signal: routeSignal ?? options.ssrContext?.signal
+      }).then((response) => {
+        if (routeSignal && hasGraphQLErrors(response)) {
+          throw new Error(formatGraphQLErrorMessage(response));
+        }
+
+        return response;
+      });
     }),
     store: new Store(recordSource)
   });
-}
-
-function networkSSRContext(ssrContext: SSRContext | undefined, cacheConfig: CacheConfig) {
-  const routeSignal = routeLoaderSignal(cacheConfig);
-
-  return {
-    ...ssrContext,
-    rejectGraphQLErrors: routeSignal ? true : ssrContext?.rejectGraphQLErrors,
-    signal: routeSignal ?? ssrContext?.signal
-  };
 }
 
 function routeLoaderSignal(cacheConfig: CacheConfig) {
@@ -54,4 +52,28 @@ function routeLoaderSignal(cacheConfig: CacheConfig) {
   }
 
   return undefined;
+}
+
+function hasGraphQLErrors(response: GraphQLResponse) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    return false;
+  }
+
+  return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
+}
+
+function formatGraphQLErrorMessage(response: GraphQLResponse) {
+  if (!hasGraphQLErrors(response)) {
+    return "GraphQL response contained errors";
+  }
+
+  const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
+  const messages =
+    errors
+      ?.map((error) => (typeof error.message === "string" ? error.message : null))
+      .filter((message): message is string => message !== null) ?? [];
+
+  return messages.length > 0
+    ? `GraphQL response contained errors: ${messages.join("; ")}`
+    : "GraphQL response contained errors";
 }

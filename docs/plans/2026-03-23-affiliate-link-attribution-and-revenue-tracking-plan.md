@@ -368,12 +368,12 @@ Recommended extension principles:
 
 ## Immediate Next Batch
 
-1. Draft ADR: attribution model + redirect contract.
-2. Create migrations for core commerce attribution tables.
-3. Implement click redirect endpoint + tests.
-4. Run source-field mapping spike (Impact + CJ + Awin) and produce normalized conversion field dictionary (captured from authenticated docs + sample payloads).
-5. Build first conversion ingest adapter and idempotent upsert tests.
-6. Wire merchant/product daily aggregate query and baseline dashboard JSON contract.
+- [x] Draft ADR: attribution model + redirect contract.
+- [x] Create migrations for core commerce attribution tables.
+- [x] Implement click redirect endpoint + tests.
+- [ ] Run source-field mapping spike (Impact + CJ + Awin) and produce normalized conversion field dictionary (captured from authenticated docs + sample payloads). Blocked for CJ/Awin until account docs or sample payloads are available.
+- [x] Build first conversion ingest adapter and idempotent upsert tests.
+- [ ] Wire merchant/product daily aggregate query and baseline dashboard JSON contract. This is the next unblocked code batch.
 
 ## Deferred Until Further Notice
 

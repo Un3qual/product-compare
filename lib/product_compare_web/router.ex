@@ -30,6 +30,10 @@ defmodule ProductCompareWeb.Router do
     plug ProductCompareWeb.Plugs.ApplyGraphqlSessionMutations
   end
 
+  scope "/", ProductCompareWeb do
+    get "/r/:click_id", CommerceRedirectController, :show
+  end
+
   scope "/api", ProductCompareWeb do
     pipe_through [:api_cors]
 
@@ -40,6 +44,9 @@ defmodule ProductCompareWeb.Router do
     pipe_through [:api_cors, :api, :graphql_session, :graphql_api]
 
     forward "/graphql", Absinthe.Plug, schema: ProductCompareWeb.Schema
-    forward "/graphiql", Absinthe.Plug.GraphiQL, schema: ProductCompareWeb.Schema, interface: :simple
+
+    forward "/graphiql", Absinthe.Plug.GraphiQL,
+      schema: ProductCompareWeb.Schema,
+      interface: :simple
   end
 end

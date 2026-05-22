@@ -11,26 +11,28 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Frontend lane: `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+1. Commerce attribution lane: `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
    - Status: active
-   - Scope: move the frontend off manual route-local GraphQL helpers and onto Relay preloaded queries, Relay mutations, and SSR store hydration.
+   - Scope: implement the revenue aggregate read model and baseline dashboard JSON contract over the new commerce attribution tables. Task 1 core redirect/conversion plumbing completed on 2026-05-21.
 
-2. Backend lane: `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
-   - Status: active
-   - Scope: add the missing root Relay `node(id: ID!)` lookup for the existing global-ID-backed catalog/pricing surfaces without touching the frontend lane.
+2. Product data ingestion lane: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
+   - Status: blocked on first-source selection and ownership
+   - Scope: choose the first connector, draft the ingestion execution ADR, and scaffold the ingestion boundary after the source/owner decision is recorded.
 
 ## Next Candidate After Active Queue
 
-1. Frontend lane follow-up: `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
-   - Depends on the compare and saved-comparisons routes moving onto Relay route data first.
-   - Intended scope: finish compare-scoped error boundaries and the remaining compare/saved route hardening on top of the Relay path.
-
-2. Backend lane follow-up
-   - Depends on the initial `node(id: ID!)` slice landing first.
+1. Backend lane follow-up
+   - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to the remaining auth/affiliate entities or move the backend lane to the next GraphQL contract slice.
 
 ## Historical Reference
 
+- `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+  - Completed on 2026-05-21.
+- `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md`
+  - Completed on 2026-05-21.
+- `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
+  - Completed on 2026-04-30.
 - `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`
   - Completed on 2026-03-19.
 - Earlier dated plans in `docs/plans/` remain historical context unless `docs/work/index.md` promotes one into active execution.

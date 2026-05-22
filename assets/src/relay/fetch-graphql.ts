@@ -7,7 +7,6 @@ export interface SSRContext {
   request?: Request;
   headers?: Record<string, string>;
   cookieString?: string;
-  rejectGraphQLErrors?: boolean;
   signal?: AbortSignal;
 }
 
@@ -76,10 +75,6 @@ export async function fetchGraphQL(
   }
 
   const body = (await response.json()) as GraphQLResponse;
-
-  if (ssrContext?.rejectGraphQLErrors && hasGraphQLErrors(body)) {
-    throw new Error(formatGraphQLErrorMessage(body));
-  }
 
   return body;
 }
@@ -159,28 +154,4 @@ function normalizeOrigin(value?: string | null) {
 
 function hasSSRContext(ssrContext?: SSRContext) {
   return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
-}
-
-export function hasGraphQLErrors(response: GraphQLResponse) {
-  if (!response || typeof response !== "object" || Array.isArray(response)) {
-    return false;
-  }
-
-  return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
-}
-
-export function formatGraphQLErrorMessage(response: GraphQLResponse) {
-  if (!hasGraphQLErrors(response)) {
-    return "GraphQL response contained errors";
-  }
-
-  const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
-  const messages =
-    errors
-      ?.map((error) => (typeof error.message === "string" ? error.message : null))
-      .filter((message): message is string => message !== null) ?? [];
-
-  return messages.length > 0
-    ? `GraphQL response contained errors: ${messages.join("; ")}`
-    : "GraphQL response contained errors";
 }

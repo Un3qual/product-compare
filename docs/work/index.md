@@ -43,9 +43,9 @@ Commit only lane-local milestone changes.
 
 - Frontend lane
   - Work doc: `docs/work/frontend-relay-route-data.md`
-  - Status: active
+  - Status: completed
   - Priority: P1
-  - Next batch: remove dead manual-fetch plumbing and verify `fetchGraphQL` as a thin Relay network helper after the auth Relay mutation migration.
+  - Next batch: no unblocked frontend batch is queued from this worktree.
   - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
 
 - Backend lane
@@ -55,13 +55,14 @@ Commit only lane-local milestone changes.
   - Next batch: no unblocked backend batch is queued from this worktree; choose a future backend lane only if priorities change.
   - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare_web/graphql/**`, `docs/work/graphql-relay-contract-hardening.md`, `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
 
-## Blocked / Needs Decision
-
-- `docs/work/affiliate-revenue-attribution.md`
-  - Status: drafting
+- Commerce attribution lane
+  - Work doc: `docs/work/affiliate-revenue-attribution.md`
+  - Status: active
   - Priority: P2
-  - Reason: queued behind the active Relay route-data work until the route-data migration finishes.
-  - Next batch: draft attribution ADR and scaffold core click/conversion schema migrations.
+  - Next batch: add the revenue aggregate read model and baseline dashboard JSON contract over the new commerce attribution tables, with focused context tests.
+  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
+
+## Blocked / Needs Decision
 
 - `docs/work/product-data-scraping.md`
   - Status: drafting
@@ -69,13 +70,33 @@ Commit only lane-local milestone changes.
   - Reason: first-source ownership is not yet assigned and the ingestion-boundary ADR is not yet approved.
   - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR; fall back to eBay Browse only if CJ scope is insufficient.
 
-- `docs/work/frontend-compare-saved-hardening.md`
-  - Status: blocked on frontend Relay route-data adoption
-  - Priority: P2
-  - Reason: the shared compare shell and saved-set status semantics have landed, but the remaining compare-scoped error-boundary follow-up is deferred until Relay route-data adoption re-establishes `/compare` and `/compare/saved` on the long-term data path.
-  - Next batch: resume Task 2 from `docs/plans/2026-03-19-frontend-compare-saved-hardening-implementation-plan.md` after `docs/work/frontend-relay-route-data.md` is complete
-
 ## Recently Completed
+
+### Commerce Attribution Task 1
+
+- Status: completed on 2026-05-21
+- Source of truth: `docs/work/affiliate-revenue-attribution.md`
+- Outcome:
+  - Added the redirect/attribution ADR plus core `commerce_links`, `commerce_click_sessions`, `commerce_conversions`, and `purchase_price_facts` persistence.
+  - Added redirect resolution, idempotent conversion ingest, an Impact adapter, and focused redirect/context tests.
+  - Verification passed with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`.
+
+### Frontend Relay Route-Data Adoption
+
+- Status: completed on 2026-05-21
+- Source of truth: `docs/work/frontend-relay-route-data.md`
+- Outcome:
+  - Relay SSR hydration, route preloading, `/products`, `/products/:slug`, `/compare`, and browser auth Relay migrations are complete.
+  - `fetchGraphQL` is now a thin GraphQL HTTP transport helper, with route-loader top-level GraphQL error rejection kept in the Relay environment.
+  - `/compare/saved` remains on the explicit `saved-data.ts` helper and should be tracked as a new cleanup if it is prioritized.
+
+### Frontend Compare And Saved Routes Hardening
+
+- Status: completed on 2026-05-21
+- Source of truth: `docs/work/frontend-compare-saved-hardening.md`
+- Outcome:
+  - Shared compare shell, route-local status semantics, and compare-scoped route error boundaries are already in place.
+  - The prior queue-rebaseline blocker is closed because Relay route-data Task 6 is complete.
 
 ### Frontend Relay Auth Mutation Migration
 

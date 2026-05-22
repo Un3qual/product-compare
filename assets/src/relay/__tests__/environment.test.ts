@@ -16,39 +16,42 @@ beforeEach(() => {
   fetchGraphQLMock.mockReset();
 });
 
-test("Relay environment asks fetchGraphQL to reject top-level GraphQL errors for route-loader requests", async () => {
+test("Relay environment rejects top-level GraphQL errors for route-loader requests without fetchGraphQL parsing flags", async () => {
   const environment = createRelayEnvironment();
   const signal = new AbortController().signal;
 
   fetchGraphQLMock.mockResolvedValue({
     data: {
       product: null
-    }
+    },
+    errors: [{ message: "boom" }]
   });
 
-  await fetchQuery(
-    environment,
-    productDetailRouteQuery,
-    {
-      slug: "detail-product"
-    },
-    {
-      networkCacheConfig: {
-        metadata: {
-          [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
+  await expect(
+    fetchQuery(
+      environment,
+      productDetailRouteQuery,
+      {
+        slug: "detail-product"
+      },
+      {
+        networkCacheConfig: {
+          metadata: {
+            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
+          }
         }
       }
-    }
-  ).toPromise();
+    ).toPromise()
+  ).rejects.toThrow("GraphQL response contained errors: boom");
 
   expect(fetchGraphQL).toHaveBeenCalledWith(
     expect.stringContaining("query ProductDetailRouteQuery"),
     { slug: "detail-product" },
     expect.objectContaining({
-      rejectGraphQLErrors: true,
       signal
     })
   );
+  expect(fetchGraphQLMock.mock.calls[0]?.[2]).not.toHaveProperty("rejectGraphQLErrors");
 });
 
 test("Relay environment preserves default GraphQL error handling outside route-loader requests", async () => {
