@@ -6,15 +6,14 @@
 
 ### Frontend Lane
 
-- Status: ready
-- Batch: Frontend Relay Route-Data Adoption, Task 6
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: remove dead manual-fetch plumbing and verify `assets/src/relay/fetch-graphql.ts` as a thin Relay network helper.
+- Next step: no unblocked frontend batch is queued from this worktree; coordinator follow-up can choose a future frontend lane if priorities change.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, `/compare`, and auth mutation migrations now exist.
-  - Browser auth now commits `login`, `register`, `forgotPassword`, `resetPassword`, and `verifyEmail` through Relay mutation artifacts instead of `assets/src/routes/auth/actions.ts`.
-  - The frontend still ships `/compare/saved` on a manual route-local GraphQL helper, and `fetchGraphQL` should be trimmed/verified as transport-only before the lane hands off.
-  - Keeping Relay route-data adoption active prevents the remaining compare/saved cleanup from being split across long-term and temporary data-layer patterns.
+  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, `/compare`, and auth mutation migrations are complete.
+  - `assets/src/relay/fetch-graphql.ts` is now verified as a transport-only helper, with route-loader GraphQL error rejection kept at the Relay environment boundary.
+  - `/compare/saved` still uses the explicit `assets/src/routes/compare/saved-data.ts` manual helper; track any future saved-route Relay migration as a new work item.
 
 ### Backend Lane
 
@@ -24,10 +23,34 @@
 - Next step: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose a future backend lane if priorities change.
 - Why this batch is current:
   - The planned GraphQL Relay contract hardening tasks are complete and fully verified.
-  - No next backend batch is currently queued, while the frontend Relay route-data lane remains active.
-  - This keeps NOW accurate without inventing a new backend slice before it has been prioritized.
+  - No next backend Relay-contract batch is currently queued.
+  - Commerce attribution is the next unblocked implementation lane.
+
+### Commerce Attribution Lane
+
+- Status: ready
+- Batch: Affiliate Revenue & Attribution, Task 2
+- Source of truth: `docs/work/affiliate-revenue-attribution.md`
+- Next step: add the revenue aggregate read model and baseline dashboard JSON contract over the new commerce attribution tables, with focused context tests.
+- Why this batch is current:
+  - Frontend Relay route-data adoption and backend Relay contract hardening are complete.
+  - Commerce attribution Task 1 now provides the core redirect, click-session, conversion, and purchase-price fact tables and context APIs.
+  - `docs/work/product-data-scraping.md` remains blocked on first-source selection and ownership.
+  - CJ/Awin source-field mapping is deferred pending account docs or sample payloads, so the next unblocked code batch is the local aggregate/read-model slice.
 
 ## Just Completed
+
+- Commerce Attribution, Task 1:
+  - Added `docs/decisions/2026-05-21-commerce-attribution-redirect-model.md` to record the owned redirect, deterministic last-click, and network-neutral conversion decisions.
+  - Added `commerce_links`, `commerce_click_sessions`, `commerce_conversions`, and `purchase_price_facts` migrations/schemas with database idempotency constraints.
+  - Added `ProductCompare.CommerceAttribution`, `/r/:click_id`, and `ProductCompare.CommerceAttribution.ImpactAdapter` to cover redirect resolution, conversion upserts, click matching, and price-paid fact insertion.
+  - Verified `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`.
+
+- Frontend Relay Route-Data Adoption, Task 6:
+  - Trimmed `assets/src/relay/fetch-graphql.ts` so it only owns GraphQL HTTP transport concerns: endpoint resolution, browser credentials, SSR cookie/origin forwarding, abort signals, HTTP failure wrapping, and JSON response return.
+  - Moved route-loader top-level GraphQL error rejection into `assets/src/relay/environment.ts`, where route-loader cache metadata and abort signals are available.
+  - Updated `assets/src/relay/__tests__/fetch-graphql.test.ts` and `assets/src/relay/__tests__/environment.test.ts` to lock the thinner transport boundary while preserving route-loader failure behavior.
+  - Verified `cd assets && bun run relay`, `cd assets && bun run typecheck`, `cd assets && bun run test:unit`, and the focused SSR route suite.
 
 - Frontend Relay Route-Data Adoption, Task 5:
   - Replaced `assets/src/routes/auth/actions.ts` with Relay mutation documents for `LoginMutation`, `RegisterMutation`, `ForgotPasswordMutation`, `ResetPasswordMutation`, and `VerifyEmailMutation`, plus generated Relay artifacts.

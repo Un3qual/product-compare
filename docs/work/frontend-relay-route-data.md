@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-05-02 after Task 5 auth mutation Relay migration verification
+- Last verified: 2026-05-21 after Task 6 transport-helper verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -15,11 +15,12 @@
   - `docs/work/frontend-saved-comparisons-ui.md`
   - `docs/work/frontend-compare-saved-hardening.md`
 - Definition of done:
-  - `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and the browser auth flows use Relay query or mutation APIs instead of route-local GraphQL strings and payload parsers.
+  - `/products`, `/products/:slug`, `/compare`, and the browser auth flows use Relay query or mutation APIs instead of route-local GraphQL strings and payload parsers.
+  - `/compare/saved` remains isolated in the explicit `saved-data.ts` manual helper so a future saved-route Relay migration is visible and not confused with deleted `api.ts` plumbing.
   - React Router loaders only own URL parsing, local guards, redirects, and Relay preloading.
   - SSR and hydration share a serialized Relay store snapshot so route data fetched on the server is reused on first client paint.
   - The confusing route-local `api.ts` modules are deleted or replaced by explicit `loader.ts`, `queries/`, `fragments/`, or `mutations/` files.
-  - The shipped compare/saved route flows no longer depend on the old manual fetch layer, so any remaining compare-route hardening can proceed on one stable data path.
+  - `fetchGraphQL` stays a transport-only Relay network helper; route-level GraphQL error handling lives at the Relay environment boundary.
 
 ## Verified Current State
 
@@ -33,19 +34,36 @@
 - `assets/src/routes/compare/saved-data.ts` still owns raw saved-comparison GraphQL strings, direct `fetchGraphQL(...)` calls, and payload normalization.
 - `assets/src/router.tsx` wires `/products`, `/products/:slug`, and `/compare` through Relay preload loaders, while `/compare/saved` still uses a manual route loader that returns DTO-like status payloads instead of Relay preload data.
 - `assets/src/entry.server.tsx` creates a request-scoped Relay environment, exposes it through React Router loader context, and serializes the populated store back into a non-executable client bootstrap script.
+- `assets/src/relay/fetch-graphql.ts` now only owns endpoint resolution, HTTP request shape, browser credentials, SSR cookie/origin forwarding, abort signals, HTTP failure wrapping, and JSON response return.
+- `assets/src/relay/environment.ts` preserves route-loader GraphQL error rejection without passing route-specific parsing flags through `fetchGraphQL`.
 - `assets/relay.config.json` exists, `assets/package.json` already includes Relay compiler/runtime dependencies, and browse now has a tracked generated Relay artifact.
-- The saved-comparisons UI now ships for authenticated users, but `/compare/saved` still uses the manual `saved-data.ts` helper path that a later Relay route-data batch must replace.
+- The saved-comparisons UI now ships for authenticated users, but `/compare/saved` still uses the manual `saved-data.ts` helper path that a future saved-route Relay cleanup can replace if prioritized.
 
 ## Next Batch
 
-- Status: ready
-- Batch: Task 6 from `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+- Status: completed
+- Batch: none queued in this lane
 - Why this batch:
-  - `/products`, `/products/:slug`, `/compare`, and browser auth writes now exercise Relay route data or Relay mutations.
-  - `assets/src/relay/fetch-graphql.ts` can now be checked as a thin Relay network helper because auth no longer depends on route-local GraphQL payload parsing.
-  - `/compare/saved` still has a manual helper in `assets/src/routes/compare/saved-data.ts`; keep that gap visible for the lane-closing cleanup instead of hiding it behind the deleted `api.ts` name.
+  - Task 6 completed the queued transport-helper cleanup after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
+  - The remaining `/compare/saved` manual helper is documented as explicit follow-up scope rather than part of this completed route-data batch.
+  - Coordinator handoff can now choose the next product slice from `docs/work/index.md` and `docs/plans/INDEX.md`.
 
 ## Completed Batches
+
+### Task 6: Manual Fetch Plumbing Cleanup And Handoff
+
+- Completed: 2026-05-21
+- Outcome:
+  - Trimmed `assets/src/relay/fetch-graphql.ts` so it no longer owns route-loader GraphQL error parsing flags and remains focused on the GraphQL HTTP request/response transport.
+  - Moved route-loader top-level GraphQL error rejection to `assets/src/relay/environment.ts`, where route-loader cache metadata and abort signals are available.
+  - Updated the transport and environment tests to lock the thinner helper boundary while preserving route-loader failure behavior.
+  - Left `/compare/saved` on the explicit `assets/src/routes/compare/saved-data.ts` manual helper as visible future cleanup scope.
+- Verification:
+  - `cd assets && bun x vitest run src/relay/__tests__/fetch-graphql.test.ts src/relay/__tests__/environment.test.ts`
+  - `cd assets && bun run relay`
+  - `cd assets && bun run typecheck`
+  - `cd assets && bun run test:unit`
+  - `cd assets && bun x vitest run src/__tests__/entry.server.test.tsx src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`
 
 ### Task 5: Auth Mutation Relay Migration
 

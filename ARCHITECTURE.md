@@ -19,23 +19,24 @@
 - `/products/:slug` ships product detail and active-offer baselines.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params and now exposes a saved-comparison action for ready-state selections.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
-- The compare routes now share a route shell plus route-local status semantics, but they still fetch GraphQL manually through route-local helpers rather than Relay query and mutation APIs.
+- Browser auth, `/products`, `/products/:slug`, and `/compare` now use Relay query or mutation APIs with SSR store hydration.
+- `/compare/saved` remains on an explicit `saved-data.ts` manual GraphQL helper until a future saved-route Relay cleanup is prioritized.
 
 ## Current Delivered Backend Baseline
 
 - GraphQL exposes viewer/session auth mutations, catalog browse/detail, merchant discovery, merchant products, and active coupons.
 - GraphQL request-level Dataloader batching is in place for catalog/pricing associations and latest-price lookups.
 - Relay-style global IDs are used where the schema already requires them, with Phoenix staying responsible for auth/session state.
+- Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution and an initial Impact conversion adapter.
 
 ## Active Gap
 
-- Route data under `assets/` is still split between a nominal Relay setup and manual `fetchGraphQL`/payload-parsing helpers in the route tree.
-- SSR currently creates a Relay environment per request, but the populated store is not serialized into client hydration, so the app cannot yet use proper Relay route preloading end-to-end.
-- The GraphQL API already emits Relay-style global IDs on the main catalog/pricing surfaces, but it still lacks a root `node(id: ID!)` lookup for those records.
-- `/compare` and `/compare/saved` now ship on the same manual compare `api.ts` path, and compare-scoped route error boundaries are registered for both routes.
+- Commerce revenue aggregates and public-safe dashboard/API read models are still pending.
+- CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
+- Product data ingestion is still blocked on first-source selection, ownership, and the ingestion execution ADR.
+- `/compare/saved` still has an explicit manual GraphQL helper; this is a visible follow-up cleanup, not an active route-data blocker.
 
 ## Next Planned Slice
 
-- Frontend lane: unify route data around Relay preloaded queries, Relay mutations, and SSR store hydration.
-- Backend lane: add the missing root Relay `node(id: ID!)` lookup for the existing global-ID-backed catalog/pricing surfaces without touching `assets/`.
-- After the frontend lane closes, finish the remaining compare/saved hardening on top of the Relay compare pattern.
+- Commerce attribution lane: add the revenue aggregate read model and baseline dashboard JSON contract with focused tests.
+- Product data ingestion remains behind the first-source and ownership decision.
