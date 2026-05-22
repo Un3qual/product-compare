@@ -187,6 +187,24 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.attribution_confidence == :high
     end
 
+    test "stores external click tokens without rejecting conversions" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "ClickId" => "impact-subid-123",
+        "Status" => "PENDING",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "12.34",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+      assert conversion.public_click_id == nil
+      assert conversion.click_session_id == nil
+      assert conversion.network_click_ref == "impact-subid-123"
+      assert conversion.attribution_confidence == :unmatched
+    end
+
     test "ignores stale follow-up payloads with older reported timestamps" do
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",

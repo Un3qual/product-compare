@@ -5,6 +5,8 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
 
   alias ProductCompare.CommerceAttribution
 
+  @canonical_uuid_pattern ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+
   @spec ingest_action(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
   def ingest_action(payload) when is_map(payload) do
     payload
@@ -16,10 +18,11 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     reported_at =
       parse_datetime(value(payload, :reporting_date, "ReportingDate", "reportingDate"))
 
-    %{
+    payload
+    |> click_id_attrs()
+    |> Map.merge(%{
       source_network: :impact,
       network_conversion_ref: value(payload, :action_id, "ActionId", "actionId"),
-      public_click_id: value(payload, :click_id, "ClickId", "clickId"),
       status: normalize_status(value(payload, :status, "Status")),
       currency: value(payload, :currency, "Currency"),
       order_amount: decimal(value(payload, :sale_amount, "SaleAmount", "saleAmount")),
@@ -29,9 +32,38 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       data_freshness_at: reported_at,
       merchant_product_id: integer(value(payload, :merchant_product_id, "MerchantProductId")),
       raw_payload: payload
-    }
+    })
     |> drop_nil_optional_attrs()
   end
+
+  defp click_id_attrs(payload) do
+    case click_id_token(value(payload, :click_id, "ClickId", "clickId")) do
+      nil ->
+        %{}
+
+      click_id ->
+        if String.match?(click_id, @canonical_uuid_pattern) do
+          case Ecto.UUID.cast(click_id) do
+            {:ok, public_click_id} -> %{public_click_id: public_click_id}
+            :error -> %{network_click_ref: click_id}
+          end
+        else
+          %{network_click_ref: click_id}
+        end
+    end
+  end
+
+  defp click_id_token(nil), do: nil
+  defp click_id_token(value) when is_integer(value), do: Integer.to_string(value)
+
+  defp click_id_token(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      token -> token
+    end
+  end
+
+  defp click_id_token(_value), do: nil
 
   defp value(payload, atom_key, string_key), do: value(payload, atom_key, string_key, nil)
 
