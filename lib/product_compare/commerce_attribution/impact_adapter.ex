@@ -30,6 +30,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       merchant_product_id: integer(value(payload, :merchant_product_id, "MerchantProductId")),
       raw_payload: payload
     }
+    |> drop_nil_optional_attrs()
   end
 
   defp value(payload, atom_key, string_key), do: value(payload, atom_key, string_key, nil)
@@ -91,4 +92,15 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   end
 
   defp parse_datetime(_value), do: nil
+
+  defp drop_nil_optional_attrs(attrs) do
+    Map.drop(
+      attrs,
+      for(
+        {field, nil} <- attrs,
+        field not in [:network_conversion_ref, :reported_at],
+        do: field
+      )
+    )
+  end
 end

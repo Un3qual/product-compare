@@ -143,14 +143,14 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp put_default_attribution_confidence(attrs) do
     cond do
-      attr_present?(attrs, :attribution_confidence) ->
+      attr_key_present?(attrs, :attribution_confidence) ->
         attrs
 
       attr_present?(attrs, :click_session_id) ->
         put_attr(attrs, :attribution_confidence, :high)
 
       true ->
-        put_attr(attrs, :attribution_confidence, :unmatched)
+        attrs
     end
   end
 
