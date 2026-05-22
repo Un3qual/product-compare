@@ -56,7 +56,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   defp decimal(nil), do: nil
   defp decimal(%Decimal{} = value), do: value
 
-  defp decimal(value) do
+  defp decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
     value = value |> to_string() |> String.trim()
 
     case Decimal.parse(value) do
@@ -65,6 +65,8 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       :error -> nil
     end
   end
+
+  defp decimal(_value), do: nil
 
   defp integer(nil), do: nil
   defp integer(value) when is_integer(value), do: value
@@ -76,6 +78,8 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     end
   end
 
+  defp integer(_value), do: nil
+
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = datetime), do: datetime
 
@@ -85,4 +89,6 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       _error -> nil
     end
   end
+
+  defp parse_datetime(_value), do: nil
 end

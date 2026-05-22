@@ -168,6 +168,37 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.order_amount == nil
       assert conversion.commission_amount == nil
     end
+
+    test "does not crash on unsupported optional payload field types" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "PENDING",
+        "Currency" => "USD",
+        "SaleAmount" => %{"amount" => "129.99"},
+        "Payout" => ["12.34"],
+        "EventDate" => %{"timestamp" => "2026-05-20T12:00:00Z"},
+        "ReportingDate" => "2026-05-20T12:05:00Z",
+        "MerchantProductId" => %{"id" => 123}
+      }
+
+      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+      assert conversion.order_amount == nil
+      assert conversion.commission_amount == nil
+      assert conversion.purchased_at == nil
+      assert conversion.merchant_product_id == nil
+    end
+
+    test "returns a changeset error instead of crashing on unsupported required date types" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "PENDING",
+        "Currency" => "USD",
+        "ReportingDate" => %{"timestamp" => "2026-05-20T12:05:00Z"}
+      }
+
+      assert {:error, changeset} = ImpactAdapter.ingest_action(payload)
+      assert "can't be blank" in errors_on(changeset).reported_at
+    end
   end
 
   describe "ingest_conversion/1" do
