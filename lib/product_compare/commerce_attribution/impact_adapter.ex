@@ -73,7 +73,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       (fallback_key && Map.get(payload, fallback_key))
   end
 
-  defp normalize_status(nil), do: :pending
+  defp normalize_status(nil), do: nil
 
   defp normalize_status(status) when is_atom(status), do: status
 

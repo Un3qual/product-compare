@@ -187,6 +187,33 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.attribution_confidence == :high
     end
 
+    test "preserves status when follow-up payloads omit status" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "15.00",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      {:ok, inserted} = ImpactAdapter.ingest_action(payload)
+
+      {:ok, updated} =
+        payload
+        |> Map.drop(["Status"])
+        |> Map.merge(%{
+          "Payout" => "20.00",
+          "ReportingDate" => "2026-05-21T09:00:00Z"
+        })
+        |> ImpactAdapter.ingest_action()
+
+      assert updated.id == inserted.id
+      assert updated.status == :approved
+      assert Decimal.equal?(updated.commission_amount, Decimal.new("20.00"))
+      assert updated.reported_at == ~U[2026-05-21 09:00:00.000000Z]
+    end
+
     test "stores external click tokens without rejecting conversions" do
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
