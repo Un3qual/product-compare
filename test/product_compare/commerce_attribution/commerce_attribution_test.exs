@@ -366,6 +366,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     test "returns an empty JSON-ready dashboard contract" do
       assert CommerceAttribution.dashboard_revenue_summary() == %{
                "filters" => %{
+                 "currency" => nil,
                  "from" => nil,
                  "merchant_id" => nil,
                  "network" => nil,
@@ -377,6 +378,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "clicks" => 0,
                  "commission_revenue" => "0.00",
                  "conversions" => 0,
+                 "currency" => nil,
                  "gross_order_value" => "0.00"
                },
                "suppression" => %{"suppressed" => false, "threshold" => 0}
@@ -447,6 +449,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         "clicks" => 2,
         "commission_revenue" => "30.00",
         "conversions" => 2,
+        "currency" => "USD",
         "gross_order_value" => "300.00"
       }
 
@@ -491,6 +494,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         "clicks" => 1,
         "commission_revenue" => "7.50",
         "conversions" => 1,
+        "currency" => "USD",
         "gross_order_value" => "75.00"
       }
 
@@ -499,6 +503,123 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert %{"metrics" => ^expected_metrics} =
                CommerceAttribution.product_revenue_summary(product.id)
+    end
+
+    test "requires a currency filter before aggregating mixed-currency money" do
+      conversion_fixture(%{
+        status: :approved,
+        currency: "USD",
+        order_amount: Decimal.new("100.00"),
+        commission_amount: Decimal.new("10.00"),
+        reported_at: ~U[2026-05-20 12:00:00.000000Z]
+      })
+
+      conversion_fixture(%{
+        status: :approved,
+        currency: "EUR",
+        order_amount: Decimal.new("90.00"),
+        commission_amount: Decimal.new("9.00"),
+        reported_at: ~U[2026-05-20 13:00:00.000000Z]
+      })
+
+      assert_raise ArgumentError,
+                   "revenue summary currency filter is required for mixed currencies",
+                   fn -> CommerceAttribution.dashboard_revenue_summary() end
+
+      assert %{
+               "filters" => %{"currency" => "USD"},
+               "metrics" => %{
+                 "commission_revenue" => "10.00",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "100.00"
+               }
+             } = CommerceAttribution.dashboard_revenue_summary(currency: "usd")
+    end
+
+    test "counts network clicks from conversion source when the link has no network" do
+      merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :impact,
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("80.00"),
+        commission_amount: Decimal.new("8.00"),
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{
+               "metrics" => %{
+                 "clicks" => 1,
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "80.00"
+               }
+             } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+    end
+
+    test "filters conversion date ranges with inclusive UTC calendar boundaries" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("42.00"),
+        commission_amount: Decimal.new("4.20"),
+        reported_at: ~U[2026-05-21 23:59:59.000000Z]
+      })
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("999.00"),
+        commission_amount: Decimal.new("99.90"),
+        reported_at: ~U[2026-05-22 00:00:00.000000Z]
+      })
+
+      assert %{
+               "filters" => %{"from" => "2026-05-21", "to" => "2026-05-21"},
+               "metrics" => %{
+                 "commission_revenue" => "4.20",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "42.00"
+               }
+             } =
+               CommerceAttribution.dashboard_revenue_summary(%{
+                 merchant_id: merchant.id,
+                 from: ~D[2026-05-21],
+                 to: ~D[2026-05-21]
+               })
+    end
+
+    test "rejects invalid summary identifiers, networks, and currencies" do
+      oversized_id = 9_223_372_036_854_775_808
+
+      assert_raise ArgumentError, "invalid revenue summary merchant_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(merchant_id: 0)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary merchant_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(merchant_id: oversized_id)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary product_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(product_id: "not-an-id")
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary network", fn ->
+        CommerceAttribution.network_revenue_summary(:unknown_network)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary currency", fn ->
+        CommerceAttribution.dashboard_revenue_summary(currency: "US")
+      end
     end
 
     test "keeps low-volume dashboard results suppression-ready" do
@@ -518,6 +639,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                min_conversions: 2
              }) == %{
                "filters" => %{
+                 "currency" => nil,
                  "from" => nil,
                  "merchant_id" => merchant.id,
                  "network" => nil,
@@ -529,6 +651,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "clicks" => nil,
                  "commission_revenue" => nil,
                  "conversions" => nil,
+                 "currency" => nil,
                  "gross_order_value" => nil
                },
                "suppression" => %{"suppressed" => true, "threshold" => 2}

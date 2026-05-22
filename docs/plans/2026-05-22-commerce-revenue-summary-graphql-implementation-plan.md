@@ -4,13 +4,13 @@ Execution status lives in `docs/work/affiliate-revenue-attribution.md` and `docs
 
 ## Goal
 
-Expose the new commerce revenue summary read model through a backend GraphQL query so dashboard and public-safe reporting clients can request clicks, conversions, gross order value, commission revenue, and average paid price without reaching into context internals.
+Expose the new commerce revenue summary read model through a backend GraphQL query so dashboard and public-safe reporting clients can request clicks, conversions, gross order value, commission revenue, currency, and average paid price without reaching into context internals.
 
 ## Architecture
 
 - Reuse `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1` as the source of truth for aggregate calculations and suppression behavior.
 - Keep the GraphQL surface read-only.
-- Accept optional merchant/product filters as existing Relay global IDs and optional network/date/suppression filters as scalar inputs.
+- Accept optional merchant/product filters as existing Relay global IDs and optional network/currency/date/suppression filters as scalar inputs.
 - Return the same JSON-safe contract shape already covered at the context layer: filters, metrics, and suppression metadata.
 - Keep CJ/Awin source-field mapping out of this batch because it remains blocked on external docs or sample payloads.
 
@@ -29,7 +29,7 @@ Expose the new commerce revenue summary read model through a backend GraphQL que
 Add focused GraphQL tests for:
 
 - Empty summary shape with zero counts, zero money strings, null average paid price, and unsuppressed metadata.
-- Aggregate summary over approved/paid conversions only, including merchant/product global ID filters and network filter.
+- Aggregate summary over approved/paid conversions only, including merchant/product global ID filters plus network and currency filters.
 - Low-volume suppression, proving metric keys remain present with null values when `minConversions` is not met.
 - Invalid merchant/product global IDs return a GraphQL error instead of silently broadening the query.
 
@@ -46,7 +46,7 @@ Expected: fail because the query, types, and resolver do not exist.
 Add a commerce attribution resolver that:
 
 - Normalizes `input.merchantId` and `input.productId` through `ProductCompareWeb.GraphQL.GlobalId`.
-- Passes `network`, `from`, `to`, and `minConversions` through to `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1`.
+- Passes `network`, `currency`, `from`, `to`, and `minConversions` through to `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1`.
 - Returns `{:ok, summary}` on valid input and `{:error, "invalid revenue summary filters"}` or a similarly explicit message on invalid IDs.
 
 ### Step 3: Add Schema Types
@@ -66,6 +66,7 @@ Use camel-cased GraphQL fields that map onto the JSON-ready contract, including:
 - `grossOrderValue`
 - `commissionRevenue`
 - `averagePaidPrice`
+- `currency`
 - `suppressed`
 - `threshold`
 

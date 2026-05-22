@@ -13,13 +13,7 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @revenue_statuses [:approved, :paid]
-  @dashboard_metric_keys [
-    "average_paid_price",
-    "clicks",
-    "commission_revenue",
-    "conversions",
-    "gross_order_value"
-  ]
+  @max_bigint_id 9_223_372_036_854_775_807
 
   @commerce_link_upsert_fields [
     :network,
@@ -171,23 +165,11 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp aggregate_revenue_metrics(filters) do
+    query = revenue_metrics_query(filters)
+    currency = revenue_metrics_currency!(query, filters.currency)
+
     metrics =
-      CommerceConversion
-      |> from(as: :conversion)
-      |> join(:left, [conversion: conversion], fact in PurchasePriceFact,
-        as: :price_fact,
-        on: fact.conversion_id == conversion.id
-      )
-      |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
-        as: :merchant_product,
-        on: merchant_product.id == conversion.merchant_product_id
-      )
-      |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
-      |> maybe_where_conversion_merchant(filters.merchant_id)
-      |> maybe_where_conversion_product(filters.product_id)
-      |> maybe_where_conversion_network(filters.network)
-      |> maybe_where_conversion_from(filters.from)
-      |> maybe_where_conversion_to(filters.to)
+      query
       |> select([conversion: conversion, price_fact: fact], %{
         conversions: count(conversion.id),
         gross_order_value: sum(conversion.order_amount),
@@ -200,16 +182,58 @@ defmodule ProductCompare.CommerceAttribution do
       "average_paid_price" => nullable_money_string(metrics.average_paid_price),
       "commission_revenue" => money_string(metrics.commission_revenue),
       "conversions" => metrics.conversions,
+      "currency" => currency,
       "gross_order_value" => money_string(metrics.gross_order_value)
     }
+  end
+
+  defp revenue_metrics_query(filters) do
+    CommerceConversion
+    |> from(as: :conversion)
+    |> join(:left, [conversion: conversion], fact in PurchasePriceFact,
+      as: :price_fact,
+      on: fact.conversion_id == conversion.id and fact.currency == conversion.currency
+    )
+    |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
+      as: :merchant_product,
+      on: merchant_product.id == conversion.merchant_product_id
+    )
+    |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
+    |> maybe_where_conversion_merchant(filters.merchant_id)
+    |> maybe_where_conversion_product(filters.product_id)
+    |> maybe_where_conversion_network(filters.network)
+    |> maybe_where_conversion_currency(filters.currency)
+    |> maybe_where_conversion_from(filters.from)
+    |> maybe_where_conversion_to(filters.to)
+  end
+
+  defp revenue_metrics_currency!(_query, currency) when is_binary(currency), do: currency
+
+  defp revenue_metrics_currency!(query, nil) do
+    currencies =
+      query
+      |> distinct(true)
+      |> select([conversion: conversion], conversion.currency)
+      |> Repo.all()
+
+    case currencies do
+      [] -> nil
+      [currency] -> currency
+      [_first_currency, _second_currency | _rest] -> raise_mixed_currency_error!()
+    end
+  end
+
+  defp raise_mixed_currency_error! do
+    raise ArgumentError, "revenue summary currency filter is required for mixed currencies"
   end
 
   defp aggregate_click_count(filters) do
     CommerceClickSession
     |> from(as: :session)
     |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
-    |> maybe_join_converted_product_clicks(filters.product_id)
+    |> maybe_join_click_conversions(filters)
     |> maybe_where_click_merchant(filters.merchant_id)
+    |> maybe_where_click_product(filters.product_id)
     |> maybe_where_click_network(filters.network)
     |> maybe_where_click_from(filters.from)
     |> maybe_where_click_to(filters.to)
@@ -217,21 +241,17 @@ defmodule ProductCompare.CommerceAttribution do
     |> Repo.one()
   end
 
-  defp maybe_join_converted_product_clicks(query, nil), do: query
+  defp maybe_join_click_conversions(query, %{network: nil, product_id: nil}), do: query
 
-  defp maybe_join_converted_product_clicks(query, product_id) do
+  defp maybe_join_click_conversions(query, _filters) do
     query
-    |> join(:inner, [session: session], conversion in CommerceConversion,
+    |> join(:left, [session: session], conversion in CommerceConversion,
       as: :conversion,
       on: conversion.click_session_id == session.id and conversion.status in ^@revenue_statuses
     )
     |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
       as: :merchant_product,
       on: merchant_product.id == conversion.merchant_product_id
-    )
-    |> where(
-      [conversion: conversion, merchant_product: merchant_product],
-      conversion.product_id == ^product_id or merchant_product.product_id == ^product_id
     )
   end
 
@@ -260,25 +280,34 @@ defmodule ProductCompare.CommerceAttribution do
   defp maybe_where_conversion_network(query, network),
     do: where(query, [conversion: conversion], conversion.source_network == ^network)
 
+  defp maybe_where_conversion_currency(query, nil), do: query
+
+  defp maybe_where_conversion_currency(query, currency),
+    do: where(query, [conversion: conversion], conversion.currency == ^currency)
+
   defp maybe_where_conversion_from(query, nil), do: query
 
   defp maybe_where_conversion_from(query, from_date) do
+    from_datetime = date_start_datetime(from_date)
+
     where(
       query,
       [conversion: conversion],
-      fragment("COALESCE(?, ?)::date", conversion.purchased_at, conversion.reported_at) >=
-        ^from_date
+      (not is_nil(conversion.purchased_at) and conversion.purchased_at >= ^from_datetime) or
+        (is_nil(conversion.purchased_at) and conversion.reported_at >= ^from_datetime)
     )
   end
 
   defp maybe_where_conversion_to(query, nil), do: query
 
   defp maybe_where_conversion_to(query, to_date) do
+    to_datetime = date_exclusive_end_datetime(to_date)
+
     where(
       query,
       [conversion: conversion],
-      fragment("COALESCE(?, ?)::date", conversion.purchased_at, conversion.reported_at) <=
-        ^to_date
+      (not is_nil(conversion.purchased_at) and conversion.purchased_at < ^to_datetime) or
+        (is_nil(conversion.purchased_at) and conversion.reported_at < ^to_datetime)
     )
   end
 
@@ -287,24 +316,44 @@ defmodule ProductCompare.CommerceAttribution do
   defp maybe_where_click_merchant(query, merchant_id),
     do: where(query, [link: link], link.merchant_id == ^merchant_id)
 
+  defp maybe_where_click_product(query, nil), do: query
+
+  defp maybe_where_click_product(query, product_id) do
+    where(
+      query,
+      [conversion: conversion, merchant_product: merchant_product],
+      conversion.product_id == ^product_id or merchant_product.product_id == ^product_id
+    )
+  end
+
   defp maybe_where_click_network(query, nil), do: query
 
-  defp maybe_where_click_network(query, network),
-    do: where(query, [link: link], link.network == ^network)
+  defp maybe_where_click_network(query, network) do
+    where(
+      query,
+      [link: link, conversion: conversion],
+      link.network == ^network or conversion.source_network == ^network
+    )
+  end
 
   defp maybe_where_click_from(query, nil), do: query
 
   defp maybe_where_click_from(query, from_date),
-    do: where(query, [session: session], fragment("?::date", session.inserted_at) >= ^from_date)
+    do: where(query, [session: session], session.inserted_at >= ^date_start_datetime(from_date))
 
   defp maybe_where_click_to(query, nil), do: query
 
   defp maybe_where_click_to(query, to_date),
-    do: where(query, [session: session], fragment("?::date", session.inserted_at) <= ^to_date)
+    do:
+      where(
+        query,
+        [session: session],
+        session.inserted_at < ^date_exclusive_end_datetime(to_date)
+      )
 
   defp maybe_suppress_metrics(metrics, min_conversions) when min_conversions > 0 do
     if metrics["conversions"] < min_conversions do
-      {Map.new(@dashboard_metric_keys, &{&1, nil}), true}
+      {Map.new(Map.keys(metrics), &{&1, nil}), true}
     else
       {metrics, false}
     end
@@ -314,6 +363,7 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp dashboard_filters(filters) do
     %{
+      "currency" => filters.currency,
       "from" => date_string(filters.from),
       "merchant_id" => filters.merchant_id,
       "network" => network_string(filters.network),
@@ -324,11 +374,12 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp normalize_revenue_filters(opts) do
     %{
+      currency: normalize_currency(get_revenue_filter(opts, :currency)),
       from: normalize_date(get_revenue_filter(opts, :from)),
-      merchant_id: get_revenue_filter(opts, :merchant_id),
+      merchant_id: normalize_dimension_id(get_revenue_filter(opts, :merchant_id), :merchant_id),
       min_conversions: normalize_min_conversions(get_revenue_filter(opts, :min_conversions)),
       network: normalize_network(get_revenue_filter(opts, :network)),
-      product_id: get_revenue_filter(opts, :product_id),
+      product_id: normalize_dimension_id(get_revenue_filter(opts, :product_id), :product_id),
       to: normalize_date(get_revenue_filter(opts, :to))
     }
   end
@@ -368,11 +419,47 @@ defmodule ProductCompare.CommerceAttribution do
   defp normalize_min_conversions(_value),
     do: raise(ArgumentError, "invalid revenue summary suppression threshold")
 
+  defp normalize_dimension_id(nil, _field), do: nil
+
+  defp normalize_dimension_id(value, _field)
+       when is_integer(value) and value > 0 and value <= @max_bigint_id,
+       do: value
+
+  defp normalize_dimension_id(value, field) when is_binary(value) do
+    case Integer.parse(value) do
+      {integer, ""} when integer > 0 and integer <= @max_bigint_id -> integer
+      _invalid -> raise_invalid_dimension_id!(field)
+    end
+  end
+
+  defp normalize_dimension_id(_value, field), do: raise_invalid_dimension_id!(field)
+
+  defp raise_invalid_dimension_id!(field),
+    do: raise(ArgumentError, "invalid revenue summary #{field}")
+
+  defp normalize_currency(nil), do: nil
+
+  defp normalize_currency(currency) when is_binary(currency) do
+    currency = String.upcase(currency)
+
+    if String.match?(currency, ~r/^[A-Z]{3}$/) do
+      currency
+    else
+      raise ArgumentError, "invalid revenue summary currency"
+    end
+  end
+
+  defp normalize_currency(_currency), do: raise(ArgumentError, "invalid revenue summary currency")
+
   defp normalize_network(nil), do: nil
 
-  defp normalize_network(network)
-       when network in [:impact, :awin, :rakuten, :cj, :amazon_associates],
-       do: network
+  defp normalize_network(network) when is_atom(network) do
+    if network in CommerceLink.networks() do
+      network
+    else
+      raise ArgumentError, "invalid revenue summary network"
+    end
+  end
 
   defp normalize_network(network) when is_binary(network) do
     network =
@@ -384,6 +471,14 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp normalize_network(_network), do: raise(ArgumentError, "invalid revenue summary network")
+
+  defp date_start_datetime(%Date{} = date), do: DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+
+  defp date_exclusive_end_datetime(%Date{} = date) do
+    date
+    |> Date.add(1)
+    |> DateTime.new!(~T[00:00:00], "Etc/UTC")
+  end
 
   defp date_string(nil), do: nil
   defp date_string(%Date{} = date), do: Date.to_iso8601(date)
