@@ -214,6 +214,7 @@ defmodule ProductCompare.CommerceAttribution do
       query
       |> distinct(true)
       |> select([conversion: conversion], conversion.currency)
+      |> limit(2)
       |> Repo.all()
 
     case currencies do

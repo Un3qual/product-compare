@@ -522,9 +522,16 @@ defmodule ProductCompare.CommerceAttributionTest do
         reported_at: ~U[2026-05-20 13:00:00.000000Z]
       })
 
-      assert_raise ArgumentError,
-                   "revenue summary currency filter is required for mixed currencies",
-                   fn -> CommerceAttribution.dashboard_revenue_summary() end
+      {_error, queries} =
+        capture_select_queries(fn ->
+          assert_raise ArgumentError,
+                       "revenue summary currency filter is required for mixed currencies",
+                       fn -> CommerceAttribution.dashboard_revenue_summary() end
+        end)
+
+      currency_probe_query = Enum.find(queries, &currency_probe_query?/1)
+      assert currency_probe_query
+      assert String.contains?(String.upcase(currency_probe_query), "LIMIT")
 
       assert %{
                "filters" => %{"currency" => "USD"},
@@ -807,5 +814,51 @@ defmodule ProductCompare.CommerceAttributionTest do
       utc_offset: -28_800,
       zone_abbr: "PDT"
     }
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
+  end
+
+  defp currency_probe_query?(query) when is_binary(query) do
+    String.contains?(query, "DISTINCT") and
+      String.contains?(query, ~s("currency")) and
+      String.contains?(query, ~s(FROM "commerce_conversions"))
   end
 end
