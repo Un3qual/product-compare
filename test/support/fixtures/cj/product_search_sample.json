@@ -1,0 +1,17 @@
+{
+  "products": [
+    {
+      "adId": "CJ-12345",
+      "advertiserId": "924501",
+      "advertiserName": "Trail Shop",
+      "brand": "Acme",
+      "buyUrl": "https://trail.example/products/acme-trail-shoe",
+      "currency": "USD",
+      "gtin": "00012345678905",
+      "inStock": true,
+      "lastUpdated": "2026-05-23T15:00:00Z",
+      "name": "Acme Trail Running Shoe",
+      "price": "129.99"
+    }
+  ]
+}

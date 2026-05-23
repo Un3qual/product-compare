@@ -11,9 +11,12 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Product data ingestion lane: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-   - Status: blocked on first-source selection and ownership
-   - Scope: choose the first connector, draft the ingestion execution ADR, and scaffold the ingestion boundary after the source/owner decision is recorded.
+1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+   - Status: queued
+   - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
+   - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, and merchant source identity persistence.
+   - Next scope: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+   - Deferred: live CJ credential validation, quota behavior, account-scoped sample payloads, and any Tier-3 scraping activation.
 
 ## Next Candidate After Active Queue
 

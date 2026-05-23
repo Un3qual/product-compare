@@ -32,10 +32,10 @@
 ## Active Gap
 
 - CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
-- Product data ingestion is still blocked on first-source selection, ownership, and the ingestion execution ADR.
+- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, and fixture parser tests.
 - `/compare/saved` still has an explicit manual GraphQL helper; this is a visible follow-up cleanup, not an active route-data blocker.
 
 ## Next Planned Slice
 
-- No unblocked implementation slice is selected in this worktree after the commerce attribution lane completion.
-- Product data ingestion remains behind the first-source and ownership decision.
+- Product Data Ingestion Persistence is queued next: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+- Live CJ provider validation remains blocked until credentials, quota behavior, and representative sample payloads are recorded.
