@@ -563,6 +563,30 @@ defmodule ProductCompare.CommerceAttributionTest do
              } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
     end
 
+    test "counts attributed clicks even when conversions are not revenue-statused" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :impact,
+        merchant_id: merchant.id,
+        merchant_product_id: merchant_product.id,
+        status: :pending,
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.product_revenue_summary(product.id)
+    end
+
     test "filters conversion date ranges with inclusive UTC calendar boundaries" do
       merchant = merchant_fixture()
 
@@ -595,6 +619,40 @@ defmodule ProductCompare.CommerceAttributionTest do
                  merchant_id: merchant.id,
                  from: ~D[2026-05-21],
                  to: ~D[2026-05-21]
+               })
+    end
+
+    test "normalizes DateTime filters to UTC before extracting calendar dates" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("31.00"),
+        commission_amount: Decimal.new("3.10"),
+        reported_at: ~U[2026-05-20 12:00:00.000000Z]
+      })
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("44.00"),
+        commission_amount: Decimal.new("4.40"),
+        reported_at: ~U[2026-05-21 04:00:00.000000Z]
+      })
+
+      assert %{
+               "filters" => %{"from" => "2026-05-21"},
+               "metrics" => %{
+                 "commission_revenue" => "4.40",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "44.00"
+               }
+             } =
+               CommerceAttribution.dashboard_revenue_summary(%{
+                 merchant_id: merchant.id,
+                 from: pacific_datetime(2026, 5, 20, 20, 30, 0)
                })
     end
 
@@ -732,5 +790,22 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp pacific_datetime(year, month, day, hour, minute, second) do
+    %DateTime{
+      calendar: Calendar.ISO,
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      minute: minute,
+      second: second,
+      microsecond: {0, 6},
+      std_offset: 3600,
+      time_zone: "America/Los_Angeles",
+      utc_offset: -28_800,
+      zone_abbr: "PDT"
+    }
   end
 end

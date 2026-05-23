@@ -47,7 +47,7 @@
 - Task 2 completed on 2026-05-22:
   - Added a query-backed revenue projection over commerce click sessions, approved/paid conversions, and purchase-price facts.
   - Added merchant, product, and network revenue summary context functions plus a JSON-ready dashboard summary contract with filters, currency-scoped metrics, and suppression metadata.
-  - Hardened the context contract after review by rejecting ambiguous mixed-currency money aggregation, validating dimension filters before query construction, deriving supported network filters from the schema source, counting network clicks from conversion source-network fallbacks, and comparing date filters against UTC datetime boundaries.
+  - Hardened the context contract after review by rejecting ambiguous mixed-currency money aggregation, validating dimension filters before query construction, deriving supported network filters from the schema source, counting network clicks from conversion source-network fallbacks, keeping click attribution independent from conversion revenue status, and normalizing date filters against UTC datetime boundaries.
   - Covered empty, aggregate, and low-volume suppression result shapes with focused commerce attribution tests.
   - Verified with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`, `mix typecheck`, and `git diff --check`.
 

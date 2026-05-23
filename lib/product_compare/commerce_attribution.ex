@@ -247,7 +247,7 @@ defmodule ProductCompare.CommerceAttribution do
     query
     |> join(:left, [session: session], conversion in CommerceConversion,
       as: :conversion,
-      on: conversion.click_session_id == session.id and conversion.status in ^@revenue_statuses
+      on: conversion.click_session_id == session.id
     )
     |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
       as: :merchant_product,
@@ -397,7 +397,12 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp normalize_date(nil), do: nil
   defp normalize_date(%Date{} = date), do: date
-  defp normalize_date(%DateTime{} = datetime), do: DateTime.to_date(datetime)
+
+  defp normalize_date(%DateTime{} = datetime) do
+    datetime
+    |> DateTime.shift_zone!("Etc/UTC")
+    |> DateTime.to_date()
+  end
 
   defp normalize_date(date) when is_binary(date) do
     case Date.from_iso8601(date) do
