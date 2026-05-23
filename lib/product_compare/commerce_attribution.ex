@@ -333,7 +333,7 @@ defmodule ProductCompare.CommerceAttribution do
     where(
       query,
       [link: link, conversion: conversion],
-      link.network == ^network or conversion.source_network == ^network
+      link.network == ^network or (is_nil(link.network) and conversion.source_network == ^network)
     )
   end
 

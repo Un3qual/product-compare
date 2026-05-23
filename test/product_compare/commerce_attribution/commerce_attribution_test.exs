@@ -10,6 +10,30 @@ defmodule ProductCompare.CommerceAttributionTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
+  defmodule PacificTimeZoneDatabase do
+    @behaviour Calendar.TimeZoneDatabase
+
+    @pacific_daylight_time %{
+      std_offset: 3600,
+      utc_offset: -28_800,
+      zone_abbr: "PDT"
+    }
+
+    @impl true
+    def time_zone_periods_from_wall_datetime(_naive_datetime, "America/Los_Angeles"),
+      do: {:ok, @pacific_daylight_time}
+
+    def time_zone_periods_from_wall_datetime(_naive_datetime, _time_zone),
+      do: {:error, :time_zone_not_found}
+
+    @impl true
+    def time_zone_period_from_utc_iso_days(_iso_days, "America/Los_Angeles"),
+      do: {:ok, @pacific_daylight_time}
+
+    def time_zone_period_from_utc_iso_days(_iso_days, _time_zone),
+      do: {:error, :time_zone_not_found}
+  end
+
   describe "upsert_commerce_link/1" do
     test "converges duplicate destination rows with a nil affiliate program" do
       merchant = merchant_fixture()
@@ -570,6 +594,27 @@ defmodule ProductCompare.CommerceAttributionTest do
              } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
     end
 
+    test "does not override a link network with an inconsistent conversion source network" do
+      merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :awin,
+        merchant_id: merchant.id,
+        status: :pending,
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+
+      assert %{"metrics" => %{"clicks" => 0, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:awin, merchant_id: merchant.id)
+    end
+
     test "counts attributed clicks even when conversions are not revenue-statused" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
@@ -800,20 +845,12 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   defp pacific_datetime(year, month, day, hour, minute, second) do
-    %DateTime{
-      calendar: Calendar.ISO,
-      year: year,
-      month: month,
-      day: day,
-      hour: hour,
-      minute: minute,
-      second: second,
-      microsecond: {0, 6},
-      std_offset: 3600,
-      time_zone: "America/Los_Angeles",
-      utc_offset: -28_800,
-      zone_abbr: "PDT"
-    }
+    DateTime.new!(
+      Date.new!(year, month, day),
+      Time.new!(hour, minute, second),
+      "America/Los_Angeles",
+      PacificTimeZoneDatabase
+    )
   end
 
   defp capture_select_queries(fun) do
