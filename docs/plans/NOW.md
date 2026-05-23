@@ -42,9 +42,9 @@
 
 - Commerce Attribution, Task 3:
   - Added a read-only GraphQL `revenueSummary` query backed by `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1`.
-  - Added GraphQL input/output types for Relay global ID merchant/product filters, network/currency/date/suppression filters, currency-scoped metrics, and suppression metadata.
+  - Added GraphQL input/output types for Relay global ID merchant/product filters, network/currency/date filters, currency-scoped metrics, and server-enforced suppression metadata.
   - Added `ProductCompareWeb.Resolvers.CommerceAttributionResolver` to normalize global IDs, reject invalid filters without broadening the query, and encode returned merchant/product filters back to Relay IDs.
-  - Added focused GraphQL coverage for empty, aggregate, low-volume suppression, and invalid-filter shapes.
+  - Added focused GraphQL coverage for empty, aggregate, low-volume suppression, invalid global ID, and invalid scalar-filter shapes.
   - Verified `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Commerce Attribution, Task 2:

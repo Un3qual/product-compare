@@ -78,8 +78,8 @@ Commit only lane-local milestone changes.
 - Source of truth: `docs/work/affiliate-revenue-attribution.md`
 - Outcome:
   - Added a read-only GraphQL `revenueSummary` query over the Task 2 dashboard summary contract.
-  - Added Relay global ID normalization for merchant/product filters plus explicit network, currency, date, and suppression inputs.
-  - Returned GraphQL-safe filter, metric, and suppression objects while rejecting invalid merchant/product global IDs.
+  - Added Relay global ID normalization for merchant/product filters plus explicit network, currency, and date inputs.
+  - Returned GraphQL-safe filter, metric, and server-enforced suppression objects while rejecting invalid filters.
   - Verification passed with `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 ### Commerce Attribution Task 2

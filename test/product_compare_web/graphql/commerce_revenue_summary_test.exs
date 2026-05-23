@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.GlobalId
 
   describe "/api/graphql commerce revenue summary" do
     test "returns an empty dashboard summary shape", %{conn: conn} do
@@ -21,15 +22,15 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    },
                    "metrics" => %{
                      "averagePaidPrice" => nil,
-                     "clicks" => 0,
-                     "commissionRevenue" => "0.00",
-                     "conversions" => 0,
+                     "clicks" => nil,
+                     "commissionRevenue" => nil,
+                     "conversions" => nil,
                      "currency" => nil,
-                     "grossOrderValue" => "0.00"
+                     "grossOrderValue" => nil
                    },
                    "suppression" => %{
-                     "suppressed" => false,
-                     "threshold" => 0
+                     "suppressed" => true,
+                     "threshold" => 2
                    }
                  }
                }
@@ -94,8 +95,8 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
       create_purchase_price_fact!(approved, "100.00")
       create_purchase_price_fact!(paid, "60.00")
 
-      merchant_id = relay_id("Merchant", merchant.id)
-      product_id = relay_id("Product", product.id)
+      merchant_id = global_id(:merchant, merchant.id)
+      product_id = global_id(:product, product.id)
 
       assert %{
                "data" => %{
@@ -118,7 +119,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    },
                    "suppression" => %{
                      "suppressed" => false,
-                     "threshold" => 0
+                     "threshold" => 2
                    }
                  }
                }
@@ -135,7 +136,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                })
     end
 
-    test "keeps low-volume metric keys present with null values", %{conn: conn} do
+    test "enforces low-volume suppression without client-controlled thresholds", %{conn: conn} do
       merchant = merchant_fixture()
 
       conversion_fixture(%{
@@ -167,8 +168,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
              } =
                graphql(conn, revenue_summary_query(), %{
                  "input" => %{
-                   "merchantId" => relay_id("Merchant", merchant.id),
-                   "minConversions" => 2
+                   "merchantId" => global_id(:merchant, merchant.id)
                  }
                })
     end
@@ -183,7 +183,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
              } =
                graphql(conn, revenue_summary_query(), %{
                  "input" => %{
-                   "merchantId" => relay_id("Product", 123)
+                   "merchantId" => global_id(:product, 123)
                  }
                })
 
@@ -199,6 +199,22 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    "productId" => "not-a-global-id"
                  }
                })
+    end
+
+    test "returns stable GraphQL errors for invalid scalar filters", %{conn: conn} do
+      for input <- [
+            %{"from" => "not-a-date"},
+            %{"currency" => "US"},
+            %{"network" => "unknown-network"}
+          ] do
+        assert %{
+                 "data" => %{"revenueSummary" => nil},
+                 "errors" => [
+                   %{"message" => "invalid revenue summary filters", "path" => ["revenueSummary"]}
+                   | _
+                 ]
+               } = graphql(conn, revenue_summary_query(), %{"input" => input})
+      end
     end
   end
 
@@ -329,5 +345,5 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
     fact
   end
 
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
+  defp global_id(type, local_id), do: GlobalId.encode(type, Integer.to_string(local_id))
 end

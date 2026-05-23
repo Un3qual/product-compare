@@ -4,25 +4,26 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   alias ProductCompare.CommerceAttribution
   alias ProductCompareWeb.GraphQL.GlobalId
 
+  @invalid_filters_error "invalid revenue summary filters"
   @max_bigint_id 9_223_372_036_854_775_807
+  @public_min_conversions 2
 
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def revenue_summary(_parent, args, _resolution) do
     input = fetch_value(args || %{}, :input, %{}) || %{}
 
-    with {:ok, filters} <- normalize_revenue_summary_input(input) do
-      summary =
-        filters
-        |> CommerceAttribution.dashboard_revenue_summary()
-        |> graphql_summary()
-
+    with {:ok, filters} <- normalize_revenue_summary_input(input),
+         {:ok, summary} <-
+           filters
+           |> CommerceAttribution.dashboard_revenue_summary()
+           |> graphql_summary() do
       {:ok, summary}
     else
-      {:error, _reason} -> {:error, "invalid revenue summary filters"}
+      {:error, _reason} -> {:error, @invalid_filters_error}
     end
   rescue
-    exception in ArgumentError -> {:error, Exception.message(exception)}
+    ArgumentError -> {:error, @invalid_filters_error}
   end
 
   defp normalize_revenue_summary_input(input) when is_map(input) do
@@ -34,7 +35,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
           currency: fetch_value(input, :currency),
           from: fetch_value(input, :from),
           merchant_id: merchant_id,
-          min_conversions: fetch_value(input, :min_conversions),
+          min_conversions: @public_min_conversions,
           network: fetch_value(input, :network),
           product_id: product_id,
           to: fetch_value(input, :to)
@@ -42,6 +43,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
         |> drop_nil_values()
 
       {:ok, filters}
+    else
+      {:error, _reason} -> {:error, :invalid_id}
     end
   end
 
@@ -52,29 +55,32 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
          "metrics" => metrics,
          "suppression" => suppression
        }) do
-    %{
-      filters: %{
-        currency: filters["currency"],
-        from: filters["from"],
-        merchant_id: encode_optional_global_id(:merchant, filters["merchant_id"]),
-        network: filters["network"],
-        product_id: encode_optional_global_id(:product, filters["product_id"]),
-        to: filters["to"]
-      },
-      metrics: %{
-        average_paid_price: metrics["average_paid_price"],
-        clicks: metrics["clicks"],
-        commission_revenue: metrics["commission_revenue"],
-        conversions: metrics["conversions"],
-        currency: metrics["currency"],
-        gross_order_value: metrics["gross_order_value"]
-      },
-      suppression: %{
-        suppressed: suppression["suppressed"],
-        threshold: suppression["threshold"]
-      }
-    }
+    {:ok,
+     %{
+       filters: %{
+         currency: filters["currency"],
+         from: filters["from"],
+         merchant_id: encode_optional_global_id(:merchant, filters["merchant_id"]),
+         network: filters["network"],
+         product_id: encode_optional_global_id(:product, filters["product_id"]),
+         to: filters["to"]
+       },
+       metrics: %{
+         average_paid_price: metrics["average_paid_price"],
+         clicks: metrics["clicks"],
+         commission_revenue: metrics["commission_revenue"],
+         conversions: metrics["conversions"],
+         currency: metrics["currency"],
+         gross_order_value: metrics["gross_order_value"]
+       },
+       suppression: %{
+         suppressed: suppression["suppressed"],
+         threshold: suppression["threshold"]
+       }
+     }}
   end
+
+  defp graphql_summary(_summary), do: {:error, :invalid_summary}
 
   defp cast_optional_global_id(nil, _expected_type), do: {:ok, nil}
 

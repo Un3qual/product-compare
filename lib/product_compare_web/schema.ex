@@ -229,7 +229,6 @@ defmodule ProductCompareWeb.Schema do
     field :currency, :string
     field :from, :string
     field :to, :string
-    field :min_conversions, :integer
   end
 
   object :revenue_summary do

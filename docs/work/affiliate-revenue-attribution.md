@@ -43,9 +43,9 @@
 
 - Task 3 completed on 2026-05-23:
   - Added a read-only `revenueSummary` GraphQL query backed by the Task 2 dashboard summary contract.
-  - Normalized merchant/product filters through Relay global IDs while keeping network, currency, date, and suppression filters explicit.
-  - Returned GraphQL-safe filters, currency-scoped metric strings/counts, and suppression metadata without broadening invalid global ID filters.
-  - Covered empty, aggregate, low-volume suppression, and invalid-filter shapes with focused GraphQL tests.
+  - Normalized merchant/product filters through Relay global IDs while keeping network, currency, and date filters explicit.
+  - Returned GraphQL-safe filters, currency-scoped metric strings/counts, and server-enforced suppression metadata without broadening invalid filters.
+  - Covered empty, aggregate, low-volume suppression, invalid global ID, and invalid scalar-filter shapes with focused GraphQL tests.
   - Verified with `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Task 2 completed on 2026-05-22:
