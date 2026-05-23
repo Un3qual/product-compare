@@ -29,16 +29,22 @@
 ### Commerce Attribution Lane
 
 - Status: ready
-- Batch: Affiliate Revenue & Attribution, Task 2
+- Batch: Affiliate Revenue & Attribution, Task 3
 - Source of truth: `docs/work/affiliate-revenue-attribution.md`
-- Next step: add the revenue aggregate read model and baseline dashboard JSON contract over the new commerce attribution tables, with focused context tests.
+- Next step: expose the Task 2 revenue summary contract through a read-only GraphQL `revenueSummary` query with focused GraphQL tests.
 - Why this batch is current:
-  - Frontend Relay route-data adoption and backend Relay contract hardening are complete.
-  - Commerce attribution Task 1 now provides the core redirect, click-session, conversion, and purchase-price fact tables and context APIs.
+  - Commerce attribution Task 2 is complete and verified.
+  - `ARCHITECTURE.md` still identifies public-safe dashboard/API read models as the next commerce attribution gap.
   - `docs/work/product-data-scraping.md` remains blocked on first-source selection and ownership.
-  - CJ/Awin source-field mapping is deferred pending account docs or sample payloads, so the next unblocked code batch is the local aggregate/read-model slice.
+  - CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
 
 ## Just Completed
+
+- Commerce Attribution, Task 2:
+  - Added a query-backed revenue projection in `ProductCompare.CommerceAttribution` over click sessions, approved/paid conversions, and purchase-price facts.
+  - Added `dashboard_revenue_summary/1`, `merchant_revenue_summary/2`, `product_revenue_summary/2`, and `network_revenue_summary/2` with a JSON-ready dashboard contract for clicks, conversions, gross order value, commission revenue, average paid price, filters, and suppression metadata.
+  - Extended `test/product_compare/commerce_attribution/commerce_attribution_test.exs` to cover empty, aggregate, and low-volume suppression result shapes.
+  - Verified `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Commerce Attribution, Task 1:
   - Added `docs/decisions/2026-05-21-commerce-attribution-redirect-model.md` to record the owned redirect, deterministic last-click, and network-neutral conversion decisions.

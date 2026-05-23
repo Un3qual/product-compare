@@ -10,6 +10,30 @@ defmodule ProductCompare.CommerceAttributionTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
+  defmodule PacificTimeZoneDatabase do
+    @behaviour Calendar.TimeZoneDatabase
+
+    @pacific_daylight_time %{
+      std_offset: 3600,
+      utc_offset: -28_800,
+      zone_abbr: "PDT"
+    }
+
+    @impl true
+    def time_zone_periods_from_wall_datetime(_naive_datetime, "America/Los_Angeles"),
+      do: {:ok, @pacific_daylight_time}
+
+    def time_zone_periods_from_wall_datetime(_naive_datetime, _time_zone),
+      do: {:error, :time_zone_not_found}
+
+    @impl true
+    def time_zone_period_from_utc_iso_days(_iso_days, "America/Los_Angeles"),
+      do: {:ok, @pacific_daylight_time}
+
+    def time_zone_period_from_utc_iso_days(_iso_days, _time_zone),
+      do: {:error, :time_zone_not_found}
+  end
+
   describe "upsert_commerce_link/1" do
     test "converges duplicate destination rows with a nil affiliate program" do
       merchant = merchant_fixture()
@@ -362,6 +386,389 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
   end
 
+  describe "revenue dashboard summaries" do
+    test "returns an empty JSON-ready dashboard contract" do
+      assert CommerceAttribution.dashboard_revenue_summary() == %{
+               "filters" => %{
+                 "currency" => nil,
+                 "from" => nil,
+                 "merchant_id" => nil,
+                 "network" => nil,
+                 "product_id" => nil,
+                 "to" => nil
+               },
+               "metrics" => %{
+                 "average_paid_price" => nil,
+                 "clicks" => 0,
+                 "commission_revenue" => "0.00",
+                 "conversions" => 0,
+                 "currency" => nil,
+                 "gross_order_value" => "0.00"
+               },
+               "suppression" => %{"suppressed" => false, "threshold" => 0}
+             }
+    end
+
+    test "aggregates approved and paid conversions for merchant product and network summaries" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+      _unconverted_click_session = click_session_fixture(commerce_link)
+
+      approved =
+        conversion_fixture(%{
+          click_session_id: click_session.id,
+          public_click_id: click_session.click_id,
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          merchant_product_id: merchant_product.id,
+          status: :approved,
+          order_amount: Decimal.new("120.00"),
+          commission_amount: Decimal.new("12.00"),
+          reported_at: ~U[2026-05-20 12:00:00.000000Z]
+        })
+
+      paid =
+        conversion_fixture(%{
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          merchant_product_id: merchant_product.id,
+          status: :paid,
+          order_amount: Decimal.new("180.00"),
+          commission_amount: Decimal.new("18.00"),
+          reported_at: ~U[2026-05-21 12:00:00.000000Z]
+        })
+
+      _pending =
+        conversion_fixture(%{
+          source_network: :impact,
+          merchant_id: merchant.id,
+          product_id: product.id,
+          status: :pending,
+          order_amount: Decimal.new("999.00"),
+          commission_amount: Decimal.new("99.00"),
+          reported_at: ~U[2026-05-21 13:00:00.000000Z]
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: approved.id,
+          reported_paid_price: Decimal.new("100.00"),
+          currency: "USD"
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: paid.id,
+          reported_paid_price: Decimal.new("200.00"),
+          currency: "USD"
+        })
+
+      expected_metrics = %{
+        "average_paid_price" => "150.00",
+        "clicks" => 2,
+        "commission_revenue" => "30.00",
+        "conversions" => 2,
+        "currency" => "USD",
+        "gross_order_value" => "300.00"
+      }
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.merchant_revenue_summary(merchant.id, network: :impact)
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 2}} =
+               CommerceAttribution.product_revenue_summary(product.id, network: :impact)
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+    end
+
+    test "uses merchant product dimensions for adapter-ingested conversions" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      {:ok, conversion} =
+        ImpactAdapter.ingest_action(%{
+          "ActionId" => "impact-summary-#{System.unique_integer([:positive])}",
+          "ClickId" => click_session.click_id,
+          "Status" => "APPROVED",
+          "Currency" => "USD",
+          "SaleAmount" => "75.00",
+          "Payout" => "7.50",
+          "ReportingDate" => "2026-05-21T12:00:00Z",
+          "MerchantProductId" => merchant_product.id
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: conversion.id,
+          reported_paid_price: Decimal.new("72.00"),
+          currency: "USD"
+        })
+
+      expected_metrics = %{
+        "average_paid_price" => "72.00",
+        "clicks" => 1,
+        "commission_revenue" => "7.50",
+        "conversions" => 1,
+        "currency" => "USD",
+        "gross_order_value" => "75.00"
+      }
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.merchant_revenue_summary(merchant.id)
+
+      assert %{"metrics" => ^expected_metrics} =
+               CommerceAttribution.product_revenue_summary(product.id)
+    end
+
+    test "requires a currency filter before aggregating mixed-currency money" do
+      conversion_fixture(%{
+        status: :approved,
+        currency: "USD",
+        order_amount: Decimal.new("100.00"),
+        commission_amount: Decimal.new("10.00"),
+        reported_at: ~U[2026-05-20 12:00:00.000000Z]
+      })
+
+      conversion_fixture(%{
+        status: :approved,
+        currency: "EUR",
+        order_amount: Decimal.new("90.00"),
+        commission_amount: Decimal.new("9.00"),
+        reported_at: ~U[2026-05-20 13:00:00.000000Z]
+      })
+
+      {_error, queries} =
+        capture_select_queries(fn ->
+          assert_raise ArgumentError,
+                       "revenue summary currency filter is required for mixed currencies",
+                       fn -> CommerceAttribution.dashboard_revenue_summary() end
+        end)
+
+      currency_probe_query = Enum.find(queries, &currency_probe_query?/1)
+      assert currency_probe_query
+      assert String.contains?(String.upcase(currency_probe_query), "LIMIT")
+
+      assert %{
+               "filters" => %{"currency" => "USD"},
+               "metrics" => %{
+                 "commission_revenue" => "10.00",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "100.00"
+               }
+             } = CommerceAttribution.dashboard_revenue_summary(currency: "usd")
+    end
+
+    test "counts network clicks from conversion source when the link has no network" do
+      merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :impact,
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("80.00"),
+        commission_amount: Decimal.new("8.00"),
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{
+               "metrics" => %{
+                 "clicks" => 1,
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "80.00"
+               }
+             } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+    end
+
+    test "does not override a link network with an inconsistent conversion source network" do
+      merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :awin,
+        merchant_id: merchant.id,
+        status: :pending,
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+
+      assert %{"metrics" => %{"clicks" => 0, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:awin, merchant_id: merchant.id)
+    end
+
+    test "counts attributed clicks even when conversions are not revenue-statused" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+      click_session = click_session_fixture(commerce_link)
+
+      conversion_fixture(%{
+        click_session_id: click_session.id,
+        public_click_id: click_session.click_id,
+        source_network: :impact,
+        merchant_id: merchant.id,
+        merchant_product_id: merchant_product.id,
+        status: :pending,
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+
+      assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
+               CommerceAttribution.product_revenue_summary(product.id)
+    end
+
+    test "filters conversion date ranges with inclusive UTC calendar boundaries" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("42.00"),
+        commission_amount: Decimal.new("4.20"),
+        reported_at: ~U[2026-05-21 23:59:59.000000Z]
+      })
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("999.00"),
+        commission_amount: Decimal.new("99.90"),
+        reported_at: ~U[2026-05-22 00:00:00.000000Z]
+      })
+
+      assert %{
+               "filters" => %{"from" => "2026-05-21", "to" => "2026-05-21"},
+               "metrics" => %{
+                 "commission_revenue" => "4.20",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "42.00"
+               }
+             } =
+               CommerceAttribution.dashboard_revenue_summary(%{
+                 merchant_id: merchant.id,
+                 from: ~D[2026-05-21],
+                 to: ~D[2026-05-21]
+               })
+    end
+
+    test "normalizes DateTime filters to UTC before extracting calendar dates" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("31.00"),
+        commission_amount: Decimal.new("3.10"),
+        reported_at: ~U[2026-05-20 12:00:00.000000Z]
+      })
+
+      conversion_fixture(%{
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("44.00"),
+        commission_amount: Decimal.new("4.40"),
+        reported_at: ~U[2026-05-21 04:00:00.000000Z]
+      })
+
+      assert %{
+               "filters" => %{"from" => "2026-05-21"},
+               "metrics" => %{
+                 "commission_revenue" => "4.40",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "44.00"
+               }
+             } =
+               CommerceAttribution.dashboard_revenue_summary(%{
+                 merchant_id: merchant.id,
+                 from: pacific_datetime(2026, 5, 20, 20, 30, 0)
+               })
+    end
+
+    test "rejects invalid summary identifiers, networks, and currencies" do
+      oversized_id = 9_223_372_036_854_775_808
+
+      assert_raise ArgumentError, "invalid revenue summary merchant_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(merchant_id: 0)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary merchant_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(merchant_id: oversized_id)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary product_id", fn ->
+        CommerceAttribution.dashboard_revenue_summary(product_id: "not-an-id")
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary network", fn ->
+        CommerceAttribution.network_revenue_summary(:unknown_network)
+      end
+
+      assert_raise ArgumentError, "invalid revenue summary currency", fn ->
+        CommerceAttribution.dashboard_revenue_summary(currency: "US")
+      end
+    end
+
+    test "keeps low-volume dashboard results suppression-ready" do
+      merchant = merchant_fixture()
+
+      conversion_fixture(%{
+        source_network: :impact,
+        merchant_id: merchant.id,
+        status: :approved,
+        order_amount: Decimal.new("90.00"),
+        commission_amount: Decimal.new("9.00"),
+        reported_at: ~U[2026-05-21 12:00:00.000000Z]
+      })
+
+      assert CommerceAttribution.dashboard_revenue_summary(%{
+               merchant_id: merchant.id,
+               min_conversions: 2
+             }) == %{
+               "filters" => %{
+                 "currency" => nil,
+                 "from" => nil,
+                 "merchant_id" => merchant.id,
+                 "network" => nil,
+                 "product_id" => nil,
+                 "to" => nil
+               },
+               "metrics" => %{
+                 "average_paid_price" => nil,
+                 "clicks" => nil,
+                 "commission_revenue" => nil,
+                 "conversions" => nil,
+                 "currency" => nil,
+                 "gross_order_value" => nil
+               },
+               "suppression" => %{"suppressed" => true, "threshold" => 2}
+             }
+    end
+  end
+
   defp conversion_fixture(attrs \\ %{}) do
     {:ok, conversion} =
       attrs
@@ -435,5 +842,60 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp pacific_datetime(year, month, day, hour, minute, second) do
+    DateTime.new!(
+      Date.new!(year, month, day),
+      Time.new!(hour, minute, second),
+      "America/Los_Angeles",
+      PacificTimeZoneDatabase
+    )
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
+  end
+
+  defp currency_probe_query?(query) when is_binary(query) do
+    String.contains?(query, "DISTINCT") and
+      String.contains?(query, ~s("currency")) and
+      String.contains?(query, ~s(FROM "commerce_conversions"))
   end
 end
