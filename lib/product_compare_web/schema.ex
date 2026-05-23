@@ -11,6 +11,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AffiliateResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareSchemas.Accounts.ApiToken
@@ -57,6 +58,13 @@ defmodule ProductCompareWeb.Schema do
       arg(:input, non_null(:active_coupons_input))
 
       resolve(&AffiliateResolver.active_coupons/3)
+    end
+
+    @desc "Returns aggregate commerce revenue metrics with public-safe suppression metadata."
+    field :revenue_summary, :revenue_summary do
+      arg(:input, :revenue_summary_input)
+
+      resolve(&CommerceAttributionResolver.revenue_summary/3)
     end
 
     @desc "Returns a single product by slug."
@@ -212,6 +220,44 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :upsert_affiliate_network_input do
     field :name, non_null(:string)
+  end
+
+  input_object :revenue_summary_input do
+    field :merchant_id, :id
+    field :product_id, :id
+    field :network, :string
+    field :currency, :string
+    field :from, :string
+    field :to, :string
+  end
+
+  object :revenue_summary do
+    field :filters, non_null(:revenue_summary_filters)
+    field :metrics, non_null(:revenue_summary_metrics)
+    field :suppression, non_null(:revenue_summary_suppression)
+  end
+
+  object :revenue_summary_filters do
+    field :currency, :string
+    field :from, :string
+    field :merchant_id, :id
+    field :network, :string
+    field :product_id, :id
+    field :to, :string
+  end
+
+  object :revenue_summary_metrics do
+    field :average_paid_price, :string
+    field :clicks, :integer
+    field :commission_revenue, :string
+    field :conversions, :integer
+    field :currency, :string
+    field :gross_order_value, :string
+  end
+
+  object :revenue_summary_suppression do
+    field :suppressed, non_null(:boolean)
+    field :threshold, non_null(:integer)
   end
 
   input_object :upsert_affiliate_program_input do

@@ -11,12 +11,7 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Commerce attribution lane: `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
-   - Status: active
-   - Current implementation plan: `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
-   - Scope: expose the verified revenue summary read model and dashboard JSON contract through a read-only GraphQL query. Task 1 core redirect/conversion plumbing completed on 2026-05-21; Task 2 aggregate/read-model context completed on 2026-05-22.
-
-2. Product data ingestion lane: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
+1. Product data ingestion lane: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Status: blocked on first-source selection and ownership
    - Scope: choose the first connector, draft the ingestion execution ADR, and scaffold the ingestion boundary after the source/owner decision is recorded.
 
@@ -25,6 +20,13 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 1. Backend lane follow-up
    - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to the remaining auth/affiliate entities or move the backend lane to the next GraphQL contract slice.
+
+## Recently Completed
+
+- Commerce attribution lane: `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
+  - Status: completed on 2026-05-23
+  - Final implementation plan: `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
+  - Scope: first-party redirect/click plumbing, conversion and purchase-price facts, the revenue summary read model, and read-only GraphQL `revenueSummary` exposure are complete. CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
 
 ## Historical Reference
 

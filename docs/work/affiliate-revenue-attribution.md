@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-22 after commerce attribution Task 2 review hardening focused tests, typecheck, and diff check passed
+- Last verified: 2026-05-23 after commerce attribution Task 3 GraphQL tests, context regression, typecheck, and diff check passed
 - Detailed plan:
   - `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
   - `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
@@ -35,14 +35,18 @@
 
 ## Next Batch
 
-- Status: ready
-- Batch: Task 3
-  1. Add a read-only `revenueSummary` GraphQL query backed by the Task 2 dashboard summary contract.
-  2. Normalize merchant/product filters through Relay global IDs and keep network/currency/date/suppression filters explicit.
-  3. Return JSON-safe filters, currency-scoped metrics, and suppression metadata without broadening invalid filters.
-  4. Cover empty, aggregate, suppression, and invalid-filter shapes with focused GraphQL tests.
+- Status: none queued
+- Batch: no unblocked commerce attribution implementation batch remains in this worktree.
+- Next step: keep CJ/Awin source-field mapping deferred until account docs or sample payloads are available. Product data ingestion remains blocked in `docs/work/product-data-scraping.md` on first-source selection, ownership, and the ingestion execution ADR.
 
 ## Completed
+
+- Task 3 completed on 2026-05-23:
+  - Added a read-only `revenueSummary` GraphQL query backed by the Task 2 dashboard summary contract.
+  - Normalized merchant/product filters through Relay global IDs while keeping network, currency, and date filters explicit.
+  - Returned GraphQL-safe filters, currency-scoped metric strings/counts, and server-enforced suppression metadata without broadening invalid filters.
+  - Covered empty, aggregate, low-volume suppression, invalid global ID, and invalid scalar-filter shapes with focused GraphQL tests.
+  - Verified with `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Task 2 completed on 2026-05-22:
   - Added a query-backed revenue projection over commerce click sessions, approved/paid conversions, and purchase-price facts.
@@ -64,7 +68,7 @@
 
 ## Verification Commands
 
-- `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
+- `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`
 - `mix typecheck`
 - `git diff --check`
 
