@@ -39,6 +39,21 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParserTest do
       assert observed_at == ~U[2026-05-23 15:00:00Z]
     end
 
+    test "accepts numeric price values and non-UTC timestamp offsets" do
+      [record | _] = product_search_fixture()
+
+      record =
+        record
+        |> Map.put("price", 129.99)
+        |> Map.put("lastUpdated", "2026-05-23T15:00:00-05:00")
+
+      assert {:ok, %NormalizedListing{amount: amount, observed_at: observed_at}} =
+               ProductParser.normalize(record)
+
+      assert Decimal.equal?(amount, Decimal.new("129.99"))
+      assert observed_at == ~U[2026-05-23 20:00:00Z]
+    end
+
     test "returns deterministic mapping errors for malformed records" do
       assert {:error, %{reason: :missing_required_field, field: :external_product_id}} =
                ProductParser.normalize(%{

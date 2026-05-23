@@ -61,6 +61,9 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
         value when is_integer(value) ->
           Integer.to_string(value)
 
+        value when is_float(value) ->
+          Float.to_string(value)
+
         _ ->
           nil
       end
@@ -79,7 +82,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
 
   defp datetime(record, field, keys) do
     with {:ok, value} <- required_string(record, field, keys),
-         {:ok, observed_at, 0} <- DateTime.from_iso8601(value) do
+         {:ok, observed_at, _offset} <- DateTime.from_iso8601(value) do
       {:ok, observed_at}
     else
       {:error, _reason} = error -> error

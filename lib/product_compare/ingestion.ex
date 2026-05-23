@@ -5,7 +5,6 @@ defmodule ProductCompare.Ingestion do
 
   import Ecto.Query
 
-  alias Ecto.Multi
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -26,35 +25,93 @@ defmodule ProductCompare.Ingestion do
     with {:ok, merchant} <- upsert_listing_merchant(listing) do
       %MerchantSourceIdentity{}
       |> MerchantSourceIdentity.changeset(identity_attrs(source_id, merchant.id, listing))
-      |> Repo.insert()
-      |> preload_merchant()
+      |> Repo.insert(
+        on_conflict: :nothing,
+        conflict_target: [:source_id, :merchant_identifier],
+        returning: true
+      )
+      |> maybe_fetch_conflicting_identity(source_id, listing.merchant_identifier)
     end
   end
 
   defp update_merchant_identity(identity, listing) do
-    if DateTime.compare(listing.observed_at, identity.last_seen_at) == :lt do
-      {:ok, identity}
-    else
-      Multi.new()
-      |> Multi.update(
-        :merchant,
-        Merchant.changeset(identity.merchant, %{
-          name: listing.merchant_name,
-          domain: listing.merchant_domain
-        })
-      )
-      |> Multi.update(
-        :identity,
-        MerchantSourceIdentity.changeset(
-          identity,
-          identity_attrs(identity.source_id, identity.merchant_id, listing)
-        )
-      )
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{identity: updated_identity}} -> preload_merchant({:ok, updated_identity})
-        {:error, _step, reason, _changes} -> {:error, reason}
+    Repo.transaction(fn ->
+      case update_identity_if_current(identity, listing) do
+        {:ok, updated_identity} ->
+          sync_identity_merchant(updated_identity, listing)
+
+        :stale ->
+          get_merchant_identity(identity.source_id, identity.merchant_identifier)
       end
+    end)
+    |> case do
+      {:ok, %MerchantSourceIdentity{} = updated_identity} ->
+        preload_merchant({:ok, updated_identity})
+
+      {:ok, nil} ->
+        {:error, :merchant_identity_not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp maybe_fetch_conflicting_identity(
+         {:ok, %MerchantSourceIdentity{id: nil}},
+         source_id,
+         merchant_identifier
+       ) do
+    case get_merchant_identity(source_id, merchant_identifier) do
+      nil -> {:error, :merchant_identity_not_found}
+      %MerchantSourceIdentity{} = identity -> {:ok, identity}
+    end
+  end
+
+  defp maybe_fetch_conflicting_identity(
+         {:ok, %MerchantSourceIdentity{} = identity},
+         _source_id,
+         _merchant_identifier
+       ) do
+    preload_merchant({:ok, identity})
+  end
+
+  defp maybe_fetch_conflicting_identity(error, _source_id, _merchant_identifier), do: error
+
+  defp update_identity_if_current(identity, listing) do
+    now = DateTime.utc_now()
+
+    query =
+      from source_identity in MerchantSourceIdentity,
+        where:
+          source_identity.id == ^identity.id and
+            source_identity.last_seen_at <= ^listing.observed_at,
+        select: source_identity
+
+    updates = [
+      merchant_name: listing.merchant_name,
+      merchant_domain: listing.merchant_domain,
+      last_seen_at: listing.observed_at,
+      updated_at: now
+    ]
+
+    case Repo.update_all(query, set: updates) do
+      {1, [updated_identity]} -> {:ok, updated_identity}
+      {0, []} -> :stale
+    end
+  end
+
+  defp sync_identity_merchant(identity, listing) do
+    identity = Repo.preload(identity, :merchant)
+
+    identity.merchant
+    |> Merchant.changeset(%{
+      name: listing.merchant_name,
+      domain: listing.merchant_domain
+    })
+    |> Repo.update()
+    |> case do
+      {:ok, merchant} -> %{identity | merchant: merchant}
+      {:error, reason} -> Repo.rollback(reason)
     end
   end
 
