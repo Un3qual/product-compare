@@ -57,9 +57,9 @@ Commit only lane-local milestone changes.
 
 - Commerce attribution lane
   - Work doc: `docs/work/affiliate-revenue-attribution.md`
-  - Status: active
+  - Status: completed
   - Priority: P2
-  - Next batch: expose the Task 2 revenue summary contract through a read-only GraphQL `revenueSummary` query with focused GraphQL tests.
+  - Next batch: no unblocked commerce attribution batch remains in this worktree; CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
   - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`, `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
 
 ## Blocked / Needs Decision
@@ -71,6 +71,16 @@ Commit only lane-local milestone changes.
   - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Commerce Attribution Task 3
+
+- Status: completed on 2026-05-23
+- Source of truth: `docs/work/affiliate-revenue-attribution.md`
+- Outcome:
+  - Added a read-only GraphQL `revenueSummary` query over the Task 2 dashboard summary contract.
+  - Added Relay global ID normalization for merchant/product filters plus explicit network, currency, date, and suppression inputs.
+  - Returned GraphQL-safe filter, metric, and suppression objects while rejecting invalid merchant/product global IDs.
+  - Verification passed with `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 ### Commerce Attribution Task 2
 

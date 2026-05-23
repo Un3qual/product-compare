@@ -27,16 +27,15 @@
 - GraphQL exposes viewer/session auth mutations, catalog browse/detail, merchant discovery, merchant products, and active coupons.
 - GraphQL request-level Dataloader batching is in place for catalog/pricing associations and latest-price lookups.
 - Relay-style global IDs are used where the schema already requires them, with Phoenix staying responsible for auth/session state.
-- Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, and a query-backed revenue summary contract.
+- Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, a query-backed revenue summary contract, and read-only GraphQL `revenueSummary` exposure.
 
 ## Active Gap
 
-- Commerce revenue summary GraphQL/API exposure is still pending.
 - CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
 - Product data ingestion is still blocked on first-source selection, ownership, and the ingestion execution ADR.
 - `/compare/saved` still has an explicit manual GraphQL helper; this is a visible follow-up cleanup, not an active route-data blocker.
 
 ## Next Planned Slice
 
-- Commerce attribution lane: expose the revenue summary contract through a read-only GraphQL query with focused tests.
+- No unblocked implementation slice is selected in this worktree after the commerce attribution lane completion.
 - Product data ingestion remains behind the first-source and ownership decision.

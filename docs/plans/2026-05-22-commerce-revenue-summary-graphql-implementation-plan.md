@@ -2,6 +2,8 @@
 
 Execution status lives in `docs/work/affiliate-revenue-attribution.md` and `docs/work/index.md`.
 
+Status: completed on 2026-05-23.
+
 ## Goal
 
 Expose the new commerce revenue summary read model through a backend GraphQL query so dashboard and public-safe reporting clients can request clicks, conversions, gross order value, commission revenue, currency, and average paid price without reaching into context internals.

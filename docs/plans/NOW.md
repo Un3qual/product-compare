@@ -28,17 +28,24 @@
 
 ### Commerce Attribution Lane
 
-- Status: ready
-- Batch: Affiliate Revenue & Attribution, Task 3
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/affiliate-revenue-attribution.md`
-- Next step: expose the Task 2 revenue summary contract through a read-only GraphQL `revenueSummary` query with focused GraphQL tests.
+- Next step: no unblocked commerce attribution batch remains in this worktree; keep CJ/Awin source-field mapping deferred until account docs or sample payloads are available.
 - Why this batch is current:
-  - Commerce attribution Task 2 is complete and verified.
-  - `ARCHITECTURE.md` still identifies public-safe dashboard/API read models as the next commerce attribution gap.
+  - Commerce attribution Tasks 1, 2, and 3 are complete and verified.
+  - `ARCHITECTURE.md` now records the read-only revenue summary GraphQL surface as delivered.
   - `docs/work/product-data-scraping.md` remains blocked on first-source selection and ownership.
   - CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
 
 ## Just Completed
+
+- Commerce Attribution, Task 3:
+  - Added a read-only GraphQL `revenueSummary` query backed by `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1`.
+  - Added GraphQL input/output types for Relay global ID merchant/product filters, network/currency/date/suppression filters, currency-scoped metrics, and suppression metadata.
+  - Added `ProductCompareWeb.Resolvers.CommerceAttributionResolver` to normalize global IDs, reject invalid filters without broadening the query, and encode returned merchant/product filters back to Relay IDs.
+  - Added focused GraphQL coverage for empty, aggregate, low-volume suppression, and invalid-filter shapes.
+  - Verified `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Commerce Attribution, Task 2:
   - Added a query-backed revenue projection in `ProductCompare.CommerceAttribution` over click sessions, approved/paid conversions, and purchase-price facts.
