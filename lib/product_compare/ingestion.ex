@@ -33,7 +33,7 @@ defmodule ProductCompare.Ingestion do
       {:ok, %MerchantSourceIdentity{} = identity} ->
         {:ok, identity}
 
-      {:error, {:stale_conflict, source_id, merchant_identifier}} ->
+      {:error, {:stale_conflict, ^source_id, merchant_identifier}} ->
         fetch_merchant_identity(source_id, merchant_identifier)
 
       {:error, reason} ->
@@ -141,10 +141,7 @@ defmodule ProductCompare.Ingestion do
     identity = Repo.preload(identity, :merchant)
 
     identity.merchant
-    |> Merchant.changeset(%{
-      name: listing.merchant_name,
-      domain: listing.merchant_domain
-    })
+    |> Merchant.changeset(merchant_attrs(listing))
     |> Repo.update()
     |> case do
       {:ok, merchant} -> %{identity | merchant: merchant}
@@ -163,10 +160,24 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp upsert_listing_merchant(listing) do
-    Pricing.upsert_merchant(%{
-      name: listing.merchant_name,
-      domain: listing.merchant_domain
-    })
+    Pricing.upsert_merchant(merchant_attrs(listing))
+  end
+
+  defp merchant_attrs(listing) do
+    %{
+      name:
+        first_present([
+          listing.merchant_name,
+          listing.merchant_domain,
+          listing.merchant_identifier
+        ]),
+      domain:
+        first_present([
+          listing.merchant_domain,
+          domain_from_url(listing.listing_url),
+          listing.merchant_identifier
+        ])
+    }
   end
 
   defp identity_attrs(source_id, merchant_id, listing) do
@@ -179,6 +190,28 @@ defmodule ProductCompare.Ingestion do
       last_seen_at: listing.observed_at
     }
   end
+
+  defp domain_from_url(url) when is_binary(url) do
+    url
+    |> URI.parse()
+    |> Map.get(:host)
+    |> present_string()
+  end
+
+  defp domain_from_url(_url), do: nil
+
+  defp first_present(values), do: Enum.find_value(values, &present_string/1)
+
+  defp present_string(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp present_string(_value), do: nil
 
   defp preload_merchant({:ok, identity}), do: {:ok, Repo.preload(identity, :merchant)}
   defp preload_merchant(error), do: error

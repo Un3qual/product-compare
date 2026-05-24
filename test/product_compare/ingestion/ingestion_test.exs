@@ -100,6 +100,24 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
       assert Repo.aggregate(Merchant, :count, :id) == 1
     end
+
+    test "falls back to source identifiers when optional merchant metadata is absent" do
+      source = source_fixture()
+
+      listing =
+        normalized_listing(%{
+          merchant_identifier: "924501",
+          merchant_name: nil,
+          merchant_domain: nil,
+          listing_url: "https://trail.example/products/acme-trail-shoe"
+        })
+
+      assert {:ok, identity} = Ingestion.resolve_merchant_identity(source, listing)
+
+      assert identity.merchant_name == nil
+      assert identity.merchant_domain == nil
+      assert %Merchant{name: "924501", domain: "trail.example"} = identity.merchant
+    end
   end
 
   defp source_fixture(attrs \\ %{}) do
