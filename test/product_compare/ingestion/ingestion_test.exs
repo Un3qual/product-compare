@@ -242,6 +242,24 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "stores a stable replay content hash from canonical listing fields" do
+      source = source_fixture()
+
+      listing =
+        normalized_listing(%{
+          raw_payload: %{
+            "price" => "129.99",
+            "nested" => %{"b" => ["two", false, nil], "a" => 1},
+            "id" => "CJ-12345"
+          }
+        })
+
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+
+      assert persisted.source_artifact.content_hash ==
+               "7ebf63b3d013b44178147b191378c5b137df0bc1aab99893832458fc390f4bb4"
+    end
+
     test "does not let stale observations overwrite merchant products or add older price points" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]
@@ -278,6 +296,46 @@ defmodule ProductCompare.IngestionTest do
 
       assert stale_persisted.price_point.id == current_persisted.price_point.id
       assert Decimal.eq?(stale_persisted.price_point.price, Decimal.new("129.99"))
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "rolls back merchant identity updates when listing persistence fails" do
+      source = source_fixture()
+      current_observed_at = ~U[2026-05-24 15:00:00Z]
+      failed_observed_at = ~U[2026-05-25 15:00:00Z]
+
+      current_listing =
+        normalized_listing(%{
+          observed_at: current_observed_at,
+          raw_payload: %{"id" => "CJ-12345", "price" => "129.99"}
+        })
+
+      failed_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-BROKEN",
+          product_title: nil,
+          merchant_name: "Trail Shop Outlet",
+          merchant_domain: "outlet.example",
+          listing_url: "https://trail.example/products/broken",
+          observed_at: failed_observed_at,
+          raw_payload: %{"id" => "CJ-12345", "price" => "139.99"}
+        })
+
+      assert {:ok, current_persisted} =
+               Ingestion.persist_normalized_listing(source, current_listing)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Ingestion.persist_normalized_listing(source, failed_listing)
+
+      identity = Repo.get!(MerchantSourceIdentity, current_persisted.merchant_identity.id)
+
+      assert identity.merchant_name == "Trail Shop"
+      assert identity.merchant_domain == "trail.example"
+      assert DateTime.compare(identity.last_seen_at, current_observed_at) == :eq
+
+      assert Repo.aggregate(SourceArtifact, :count, :id) == 1
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 1
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
   end

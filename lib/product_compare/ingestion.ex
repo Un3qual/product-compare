@@ -19,6 +19,11 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Taxonomy.Taxon
 
+  @source_artifact_conflict_target {:unsafe_fragment,
+                                    "(source_id, content_hash) WHERE content_hash IS NOT NULL"}
+  @price_point_conflict_target {:unsafe_fragment,
+                                "(merchant_product_id, observed_at, artifact_id) WHERE artifact_id IS NOT NULL"}
+
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
   def resolve_merchant_identity(%Source{id: source_id}, %NormalizedListing{} = listing) do
@@ -39,18 +44,27 @@ defmodule ProductCompare.Ingestion do
 
   @spec persist_normalized_listing(Source.t(), NormalizedListing.t()) ::
           {:ok, persisted_listing()} | {:error, term()}
-  def persist_normalized_listing(%Source{} = source, %NormalizedListing{} = listing) do
-    with {:ok, merchant_identity} <- resolve_merchant_identity(source, listing) do
-      Repo.transaction(fn ->
-        case persist_listing_in_transaction(source, listing, merchant_identity) do
-          {:ok, persisted_listing} -> persisted_listing
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-      |> case do
-        {:ok, persisted_listing} -> {:ok, persisted_listing}
-        {:error, reason} -> {:error, reason}
+  def persist_normalized_listing(%Source{id: source_id} = source, %NormalizedListing{} = listing) do
+    Repo.transaction(fn ->
+      with {:ok, merchant_identity} <-
+             resolve_merchant_identity_in_transaction(source_id, listing),
+           {:ok, persisted_listing} <-
+             persist_listing_in_transaction(source, listing, merchant_identity) do
+        persisted_listing
+      else
+        {:error, reason} -> Repo.rollback(reason)
       end
+    end)
+    |> case do
+      {:ok, persisted_listing} -> {:ok, persisted_listing}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp resolve_merchant_identity_in_transaction(source_id, listing) do
+    case get_merchant_identity(source_id, listing.merchant_identifier) do
+      nil -> create_or_fetch_merchant_identity(source_id, listing)
+      %MerchantSourceIdentity{} = identity -> update_or_fetch_merchant_identity(identity, listing)
     end
   end
 
@@ -77,20 +91,30 @@ defmodule ProductCompare.Ingestion do
   defp upsert_source_artifact(%Source{id: source_id}, listing) do
     content_hash = listing_content_hash(listing)
 
-    case Repo.get_by(SourceArtifact, source_id: source_id, content_hash: content_hash) do
-      nil ->
-        %SourceArtifact{}
-        |> SourceArtifact.changeset(%{
-          source_id: source_id,
-          url: listing.listing_url,
-          fetched_at: listing.observed_at,
-          content_hash: content_hash,
-          raw_json: listing.raw_payload
-        })
-        |> Repo.insert()
+    %SourceArtifact{}
+    |> SourceArtifact.changeset(%{
+      source_id: source_id,
+      url: listing.listing_url,
+      fetched_at: listing.observed_at,
+      content_hash: content_hash,
+      raw_json: listing.raw_payload
+    })
+    |> Repo.insert(
+      on_conflict: :nothing,
+      conflict_target: @source_artifact_conflict_target,
+      returning: true
+    )
+    |> case do
+      {:ok, %SourceArtifact{id: nil}} -> fetch_source_artifact(source_id, content_hash)
+      {:ok, %SourceArtifact{} = source_artifact} -> {:ok, source_artifact}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-      %SourceArtifact{} = source_artifact ->
-        {:ok, source_artifact}
+  defp fetch_source_artifact(source_id, content_hash) do
+    case Repo.get_by(SourceArtifact, source_id: source_id, content_hash: content_hash) do
+      nil -> {:error, :source_artifact_not_found}
+      %SourceArtifact{} = source_artifact -> {:ok, source_artifact}
     end
   end
 
@@ -270,39 +294,54 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp get_or_create_price_point(merchant_product, source_artifact, listing) do
-    case Repo.get_by(PricePoint,
-           merchant_product_id: merchant_product.id,
-           observed_at: listing.observed_at,
-           artifact_id: source_artifact.id
-         ) do
-      nil ->
-        Pricing.add_price_point(%{
-          merchant_product_id: merchant_product.id,
-          observed_at: listing.observed_at,
-          price: listing.amount,
-          in_stock: price_point_in_stock(listing.availability),
-          artifact_id: source_artifact.id
-        })
+    attrs = %{
+      merchant_product_id: merchant_product.id,
+      observed_at: listing.observed_at,
+      price: listing.amount,
+      in_stock: price_point_in_stock(listing.availability),
+      artifact_id: source_artifact.id
+    }
 
-      %PricePoint{} = price_point ->
+    %PricePoint{}
+    |> PricePoint.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: :nothing,
+      conflict_target: @price_point_conflict_target,
+      returning: true
+    )
+    |> case do
+      {:ok, %PricePoint{id: nil}} ->
+        fetch_price_point(merchant_product.id, listing.observed_at, source_artifact.id)
+
+      {:ok, %PricePoint{} = price_point} ->
         {:ok, price_point}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp fetch_price_point(merchant_product_id, observed_at, artifact_id) do
+    case Repo.get_by(PricePoint,
+           merchant_product_id: merchant_product_id,
+           observed_at: observed_at,
+           artifact_id: artifact_id
+         ) do
+      nil -> {:error, :price_point_not_found}
+      %PricePoint{} = price_point -> {:ok, price_point}
     end
   end
 
   defp create_merchant_identity(source_id, listing) do
     Repo.transaction(fn ->
-      case create_merchant_identity_in_transaction(source_id, listing) do
+      case create_or_fetch_merchant_identity(source_id, listing) do
         {:ok, identity} -> identity
-        {:stale_conflict, _source_id, _merchant_identifier} = conflict -> Repo.rollback(conflict)
         {:error, reason} -> Repo.rollback(reason)
       end
     end)
     |> case do
       {:ok, %MerchantSourceIdentity{} = identity} ->
         {:ok, identity}
-
-      {:error, {:stale_conflict, ^source_id, merchant_identifier}} ->
-        fetch_merchant_identity(source_id, merchant_identifier)
 
       {:error, reason} ->
         {:error, reason}
@@ -322,31 +361,44 @@ defmodule ProductCompare.Ingestion do
     end
   end
 
-  defp update_merchant_identity(identity, listing) do
-    source_id = identity.source_id
-    merchant_identifier = identity.merchant_identifier
+  defp create_or_fetch_merchant_identity(source_id, listing) do
+    case create_merchant_identity_in_transaction(source_id, listing) do
+      {:ok, %MerchantSourceIdentity{} = identity} ->
+        {:ok, identity}
 
-    Repo.transaction(fn ->
-      case update_identity_if_current(identity, listing) do
-        {:ok, updated_identity} ->
-          case retarget_identity_merchant(updated_identity, listing) do
-            {:ok, retargeted_identity} -> retargeted_identity
-            {:error, reason} -> Repo.rollback(reason)
-          end
-
-        :stale ->
-          Repo.rollback({:stale_identity, source_id, merchant_identifier})
-      end
-    end)
-    |> case do
-      {:ok, %MerchantSourceIdentity{} = updated_identity} ->
-        preload_merchant({:ok, updated_identity})
-
-      {:error, {:stale_identity, ^source_id, ^merchant_identifier}} ->
+      {:stale_conflict, ^source_id, merchant_identifier} ->
         fetch_merchant_identity(source_id, merchant_identifier)
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp update_merchant_identity(identity, listing) do
+    Repo.transaction(fn ->
+      case update_or_fetch_merchant_identity(identity, listing) do
+        {:ok, updated_identity} -> updated_identity
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+    |> case do
+      {:ok, %MerchantSourceIdentity{} = updated_identity} ->
+        {:ok, updated_identity}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp update_or_fetch_merchant_identity(identity, listing) do
+    case update_identity_if_current(identity, listing) do
+      {:ok, updated_identity} ->
+        with {:ok, retargeted_identity} <- retarget_identity_merchant(updated_identity, listing) do
+          preload_merchant({:ok, retargeted_identity})
+        end
+
+      :stale ->
+        fetch_merchant_identity(identity.source_id, identity.merchant_identifier)
     end
   end
 
@@ -492,20 +544,49 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp listing_content_hash(listing) do
-    %{
-      external_product_id: listing.external_product_id,
-      merchant_identifier: listing.merchant_identifier,
-      listing_url: listing.listing_url,
-      currency: listing.currency,
-      amount: Decimal.to_string(listing.amount),
-      availability: listing.availability,
-      observed_at: listing.observed_at,
-      raw_payload: listing.raw_payload
-    }
-    |> :erlang.term_to_binary()
+    payload = [
+      ["amount", canonical_hash_value(listing.amount)],
+      ["availability", canonical_hash_value(listing.availability)],
+      ["currency", canonical_hash_value(listing.currency)],
+      ["external_product_id", canonical_hash_value(listing.external_product_id)],
+      ["listing_url", canonical_hash_value(listing.listing_url)],
+      ["merchant_identifier", canonical_hash_value(listing.merchant_identifier)],
+      ["observed_at", canonical_hash_value(listing.observed_at)],
+      ["raw_payload", canonical_hash_value(listing.raw_payload)]
+    ]
+
+    payload
+    |> Jason.encode!()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16(case: :lower)
   end
+
+  defp canonical_hash_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)
+  defp canonical_hash_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp canonical_hash_value(%NaiveDateTime{} = value), do: NaiveDateTime.to_iso8601(value)
+  defp canonical_hash_value(%Date{} = value), do: Date.to_iso8601(value)
+  defp canonical_hash_value(%Time{} = value), do: Time.to_iso8601(value)
+
+  defp canonical_hash_value(value) when is_map(value) do
+    value
+    |> Enum.map(fn {key, value} -> [canonical_hash_key(key), canonical_hash_value(value)] end)
+    |> Enum.sort_by(&List.first/1)
+  end
+
+  defp canonical_hash_value(value) when is_list(value),
+    do: Enum.map(value, &canonical_hash_value/1)
+
+  defp canonical_hash_value(value) when is_boolean(value) or is_nil(value), do: value
+
+  defp canonical_hash_value(value)
+       when is_binary(value) or is_number(value),
+       do: value
+
+  defp canonical_hash_value(value) when is_atom(value), do: Atom.to_string(value)
+
+  defp canonical_hash_key(key) when is_binary(key), do: key
+  defp canonical_hash_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp canonical_hash_key(key), do: inspect(key)
 
   defp product_slug(listing) do
     "#{listing.product_title} #{listing.source} #{listing.external_product_id}"
