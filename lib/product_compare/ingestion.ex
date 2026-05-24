@@ -62,12 +62,8 @@ defmodule ProductCompare.Ingestion do
          merchant,
          listing
        ) do
-    case get_merchant_identity(source_id, listing.merchant_identifier) do
-      nil ->
-        {:error, :merchant_identity_not_found}
-
-      %MerchantSourceIdentity{} = identity ->
-        update_conflicting_merchant_identity(identity, merchant, listing)
+    with {:ok, identity} <- fetch_merchant_identity(source_id, listing.merchant_identifier) do
+      update_conflicting_merchant_identity(identity, merchant, listing)
     end
   end
 
@@ -85,7 +81,14 @@ defmodule ProductCompare.Ingestion do
   defp update_conflicting_merchant_identity(identity, merchant, listing) do
     case update_identity_if_current(identity, listing, merchant.id) do
       {:ok, updated_identity} -> preload_merchant({:ok, updated_identity})
-      :stale -> preload_merchant({:ok, identity})
+      :stale -> fetch_merchant_identity(identity.source_id, identity.merchant_identifier)
+    end
+  end
+
+  defp fetch_merchant_identity(source_id, merchant_identifier) do
+    case get_merchant_identity(source_id, merchant_identifier) do
+      nil -> {:error, :merchant_identity_not_found}
+      %MerchantSourceIdentity{} = identity -> {:ok, identity}
     end
   end
 
