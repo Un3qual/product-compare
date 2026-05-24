@@ -30,7 +30,7 @@ defmodule ProductCompare.Ingestion do
         conflict_target: [:source_id, :merchant_identifier],
         returning: true
       )
-      |> maybe_fetch_conflicting_identity(source_id, listing.merchant_identifier)
+      |> maybe_update_conflicting_identity(source_id, merchant, listing)
     end
   end
 
@@ -56,29 +56,42 @@ defmodule ProductCompare.Ingestion do
     end
   end
 
-  defp maybe_fetch_conflicting_identity(
+  defp maybe_update_conflicting_identity(
          {:ok, %MerchantSourceIdentity{id: nil}},
          source_id,
-         merchant_identifier
+         merchant,
+         listing
        ) do
-    case get_merchant_identity(source_id, merchant_identifier) do
-      nil -> {:error, :merchant_identity_not_found}
-      %MerchantSourceIdentity{} = identity -> {:ok, identity}
+    case get_merchant_identity(source_id, listing.merchant_identifier) do
+      nil ->
+        {:error, :merchant_identity_not_found}
+
+      %MerchantSourceIdentity{} = identity ->
+        update_conflicting_merchant_identity(identity, merchant, listing)
     end
   end
 
-  defp maybe_fetch_conflicting_identity(
+  defp maybe_update_conflicting_identity(
          {:ok, %MerchantSourceIdentity{} = identity},
          _source_id,
-         _merchant_identifier
+         _merchant,
+         _listing
        ) do
     preload_merchant({:ok, identity})
   end
 
-  defp maybe_fetch_conflicting_identity(error, _source_id, _merchant_identifier), do: error
+  defp maybe_update_conflicting_identity(error, _source_id, _merchant, _listing), do: error
 
-  defp update_identity_if_current(identity, listing) do
+  defp update_conflicting_merchant_identity(identity, merchant, listing) do
+    case update_identity_if_current(identity, listing, merchant.id) do
+      {:ok, updated_identity} -> preload_merchant({:ok, updated_identity})
+      :stale -> preload_merchant({:ok, identity})
+    end
+  end
+
+  defp update_identity_if_current(identity, listing, merchant_id \\ nil) do
     now = DateTime.utc_now()
+    merchant_id = merchant_id || identity.merchant_id
 
     query =
       from source_identity in MerchantSourceIdentity,
@@ -88,6 +101,7 @@ defmodule ProductCompare.Ingestion do
         select: source_identity
 
     updates = [
+      merchant_id: merchant_id,
       merchant_name: listing.merchant_name,
       merchant_domain: listing.merchant_domain,
       last_seen_at: listing.observed_at,
