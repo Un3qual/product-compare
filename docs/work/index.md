@@ -62,15 +62,32 @@ Commit only lane-local milestone changes.
   - Next batch: no unblocked commerce attribution batch remains in this worktree; CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
   - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`, `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
 
+- Product data ingestion lane
+  - Work doc: `docs/work/product-data-scraping.md`
+  - Status: active
+  - Priority: P2
+  - Next batch: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+  - Owned paths: `lib/product_compare/ingestion/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_schemas/ingestion/**`, `lib/product_compare_schemas/specs/**`, `lib/product_compare_schemas/pricing/**`, `priv/repo/migrations/**`, `test/product_compare/ingestion/**`, `test/support/fixtures/cj/**`, `docs/work/product-data-scraping.md`, `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`, `docs/decisions/2026-05-23-ingestion-execution-boundary.md`
+
 ## Blocked / Needs Decision
 
-- `docs/work/product-data-scraping.md`
-  - Status: drafting
+- Live product-provider validation
+  - Status: blocked
   - Priority: P2
-  - Reason: first-source ownership is not yet assigned and the ingestion-boundary ADR is not yet approved.
-  - Next batch: validate CJ connector scope first, then draft the ingestion-boundary ADR; fall back to eBay Browse only if CJ scope is insufficient.
+  - Reason: live CJ credential path, quota behavior, and account-scoped sample payloads are not yet recorded.
+  - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Product Data Ingestion Foundation Task 1
+
+- Status: completed on 2026-05-23
+- Source of truth: `docs/work/product-data-scraping.md`
+- Outcome:
+  - Selected CJ as the first fixture-backed source and recorded the synchronous pilot boundary in `docs/decisions/2026-05-23-ingestion-execution-boundary.md`.
+  - Added `merchant_source_identities` plus the ingestion schema/context boundary for deterministic source-scoped merchant resolution.
+  - Added the normalized listing contract, adapter behavior, CJ fixture parser, and focused ingestion/parser tests.
+  - Verification passed with `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs`, `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix typecheck`.
 
 ### Commerce Attribution Task 3
 

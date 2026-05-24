@@ -35,10 +35,29 @@
 - Why this batch is current:
   - Commerce attribution Tasks 1, 2, and 3 are complete and verified.
   - `ARCHITECTURE.md` now records the read-only revenue summary GraphQL surface as delivered.
-  - `docs/work/product-data-scraping.md` remains blocked on first-source selection and ownership.
+  - `docs/work/product-data-scraping.md` is now the next selected lane after the completed commerce attribution work.
   - CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
 
+### Product Data Ingestion Lane
+
+- Status: queued
+- Batch: Product Data Ingestion Persistence, Task 2
+- Source of truth: `docs/work/product-data-scraping.md`
+- Implementation plan: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+- Next step: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+- Why this batch is current:
+  - Product Data Ingestion Foundation Task 1 selected CJ, recorded the sync-pilot ADR, added `merchant_source_identities`, and scaffolded fixture-backed parser coverage.
+  - Full listing persistence remains the next local ingestion gap before any live provider polling.
+  - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
+
 ## Just Completed
+
+- Product Data Ingestion Foundation, Task 1:
+  - Added `docs/decisions/2026-05-23-ingestion-execution-boundary.md` to record CJ-first source selection, eBay fallback criteria, sync pilot scope, and Oban revisit triggers.
+  - Added `merchant_source_identities` persistence and `ProductCompareSchemas.Ingestion.MerchantSourceIdentity`.
+  - Added `ProductCompare.Ingestion.resolve_merchant_identity/2` for deterministic source-scoped merchant identity resolution.
+  - Added `ProductCompare.Ingestion.NormalizedListing`, source adapter behavior, a CJ fixture parser, and local fixture parser coverage.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs`, `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix typecheck`.
 
 - Commerce Attribution, Task 3:
   - Added a read-only GraphQL `revenueSummary` query backed by `ProductCompare.CommerceAttribution.dashboard_revenue_summary/1`.
