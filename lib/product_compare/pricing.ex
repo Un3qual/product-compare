@@ -157,9 +157,11 @@ defmodule ProductCompare.Pricing do
 
     Repo.insert(
       changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:name],
-      returning: true
+      [
+        on_conflict: [set: update_fields ++ [updated_at: now]],
+        conflict_target: [:name],
+        returning: true
+      ] ++ transaction_insert_opts()
     )
   end
 
@@ -168,10 +170,20 @@ defmodule ProductCompare.Pricing do
 
     Repo.insert(
       changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:domain],
-      returning: true
+      [
+        on_conflict: [set: update_fields ++ [updated_at: now]],
+        conflict_target: [:domain],
+        returning: true
+      ] ++ transaction_insert_opts()
     )
+  end
+
+  defp transaction_insert_opts do
+    if Repo.in_transaction?() do
+      [mode: :savepoint]
+    else
+      []
+    end
   end
 
   defp maybe_where_from(query, nil), do: query

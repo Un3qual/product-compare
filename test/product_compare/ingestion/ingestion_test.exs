@@ -3,6 +3,7 @@ defmodule ProductCompare.IngestionTest do
 
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.NormalizedListing
+  alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
@@ -117,6 +118,52 @@ defmodule ProductCompare.IngestionTest do
       assert identity.merchant_name == nil
       assert identity.merchant_domain == nil
       assert %Merchant{name: "924501", domain: "trail.example"} = identity.merchant
+    end
+
+    test "retargets an identity when newer merchant metadata matches another merchant" do
+      source = source_fixture()
+      first_seen_at = ~U[2026-05-23 15:00:00Z]
+      later_seen_at = ~U[2026-05-24 15:00:00Z]
+
+      first_listing =
+        normalized_listing(%{
+          merchant_identifier: "924501",
+          merchant_name: "Trail Shop",
+          merchant_domain: "trail.example",
+          observed_at: first_seen_at
+        })
+
+      {:ok, other_merchant} =
+        Pricing.upsert_merchant(%{
+          name: "Trail Shop Outlet",
+          domain: "outlet.example"
+        })
+
+      updated_listing =
+        normalized_listing(%{
+          merchant_identifier: "924501",
+          merchant_name: "Trail Shop Outlet",
+          merchant_domain: "outlet.example",
+          observed_at: later_seen_at
+        })
+
+      assert {:ok, first_identity} = Ingestion.resolve_merchant_identity(source, first_listing)
+
+      assert {:ok, updated_identity} =
+               Ingestion.resolve_merchant_identity(source, updated_listing)
+
+      assert updated_identity.id == first_identity.id
+      assert updated_identity.merchant_id == other_merchant.id
+      assert updated_identity.merchant_name == "Trail Shop Outlet"
+      assert updated_identity.merchant_domain == "outlet.example"
+      assert DateTime.compare(updated_identity.last_seen_at, later_seen_at) == :eq
+
+      assert %Merchant{id: merchant_id, name: "Trail Shop Outlet", domain: "outlet.example"} =
+               updated_identity.merchant
+
+      assert merchant_id == other_merchant.id
+      assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
+      assert Repo.aggregate(Merchant, :count, :id) == 2
     end
   end
 

@@ -9,7 +9,6 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
-  alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Specs.Source
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
@@ -55,21 +54,27 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp update_merchant_identity(identity, listing) do
+    source_id = identity.source_id
+    merchant_identifier = identity.merchant_identifier
+
     Repo.transaction(fn ->
       case update_identity_if_current(identity, listing) do
         {:ok, updated_identity} ->
-          sync_identity_merchant(updated_identity, listing)
+          case retarget_identity_merchant(updated_identity, listing) do
+            {:ok, retargeted_identity} -> retargeted_identity
+            {:error, reason} -> Repo.rollback(reason)
+          end
 
         :stale ->
-          get_merchant_identity(identity.source_id, identity.merchant_identifier)
+          Repo.rollback({:stale_identity, source_id, merchant_identifier})
       end
     end)
     |> case do
       {:ok, %MerchantSourceIdentity{} = updated_identity} ->
         preload_merchant({:ok, updated_identity})
 
-      {:ok, nil} ->
-        {:error, :merchant_identity_not_found}
+      {:error, {:stale_identity, ^source_id, ^merchant_identifier}} ->
+        fetch_merchant_identity(source_id, merchant_identifier)
 
       {:error, reason} ->
         {:error, reason}
@@ -137,15 +142,20 @@ defmodule ProductCompare.Ingestion do
     end
   end
 
-  defp sync_identity_merchant(identity, listing) do
-    identity = Repo.preload(identity, :merchant)
+  defp retarget_identity_merchant(identity, listing) do
+    with {:ok, merchant} <- upsert_listing_merchant(listing),
+         {:ok, identity} <- set_identity_merchant(identity, merchant.id) do
+      {:ok, %{identity | merchant: merchant}}
+    end
+  end
 
-    identity.merchant
-    |> Merchant.changeset(merchant_attrs(listing))
-    |> Repo.update()
-    |> case do
-      {:ok, merchant} -> %{identity | merchant: merchant}
-      {:error, reason} -> Repo.rollback(reason)
+  defp set_identity_merchant(identity, merchant_id) do
+    if identity.merchant_id == merchant_id do
+      {:ok, identity}
+    else
+      identity
+      |> MerchantSourceIdentity.changeset(%{merchant_id: merchant_id})
+      |> Repo.update()
     end
   end
 
