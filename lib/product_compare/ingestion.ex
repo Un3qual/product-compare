@@ -22,6 +22,26 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp create_merchant_identity(source_id, listing) do
+    Repo.transaction(fn ->
+      case create_merchant_identity_in_transaction(source_id, listing) do
+        {:ok, identity} -> identity
+        {:stale_conflict, _source_id, _merchant_identifier} = conflict -> Repo.rollback(conflict)
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+    |> case do
+      {:ok, %MerchantSourceIdentity{} = identity} ->
+        {:ok, identity}
+
+      {:error, {:stale_conflict, source_id, merchant_identifier}} ->
+        fetch_merchant_identity(source_id, merchant_identifier)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp create_merchant_identity_in_transaction(source_id, listing) do
     with {:ok, merchant} <- upsert_listing_merchant(listing) do
       %MerchantSourceIdentity{}
       |> MerchantSourceIdentity.changeset(identity_attrs(source_id, merchant.id, listing))
@@ -81,7 +101,7 @@ defmodule ProductCompare.Ingestion do
   defp update_conflicting_merchant_identity(identity, merchant, listing) do
     case update_identity_if_current(identity, listing, merchant.id) do
       {:ok, updated_identity} -> preload_merchant({:ok, updated_identity})
-      :stale -> fetch_merchant_identity(identity.source_id, identity.merchant_identifier)
+      :stale -> {:stale_conflict, identity.source_id, identity.merchant_identifier}
     end
   end
 
