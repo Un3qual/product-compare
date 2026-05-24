@@ -7,7 +7,11 @@ defmodule ProductCompare.IngestionTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
+  alias ProductCompareSchemas.Pricing.MerchantProduct
+  alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ExternalProduct
   alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "resolve_merchant_identity/2" do
     test "creates a source-scoped merchant identity from a normalized listing" do
@@ -164,6 +168,117 @@ defmodule ProductCompare.IngestionTest do
       assert merchant_id == other_merchant.id
       assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
       assert Repo.aggregate(Merchant, :count, :id) == 2
+    end
+  end
+
+  describe "persist_normalized_listing/2" do
+    test "persists a normalized listing into artifact, external product, merchant product, and price point rows" do
+      source = source_fixture()
+      observed_at = ~U[2026-05-24 15:00:00Z]
+
+      listing =
+        normalized_listing(%{
+          external_product_id: "CJ-12345",
+          listing_url: "https://trail.example/products/acme-trail-shoe",
+          currency: "usd",
+          amount: Decimal.new("129.99"),
+          observed_at: observed_at,
+          raw_payload: %{"id" => "CJ-12345", "price" => "129.99"}
+        })
+
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+
+      assert persisted.source_artifact.source_id == source.id
+      assert persisted.source_artifact.url == listing.listing_url
+      assert persisted.source_artifact.raw_json == listing.raw_payload
+      assert DateTime.compare(persisted.source_artifact.fetched_at, observed_at) == :eq
+
+      assert persisted.external_product.source_id == source.id
+      assert persisted.external_product.external_id == "CJ-12345"
+      assert persisted.external_product.canonical_url == listing.listing_url
+      assert persisted.external_product.product_id == persisted.product.id
+      assert DateTime.compare(persisted.external_product.last_seen_at, observed_at) == :eq
+
+      assert persisted.product.name == "Acme Trail Running Shoe"
+
+      assert persisted.merchant_product.merchant_id == persisted.merchant_identity.merchant_id
+      assert persisted.merchant_product.product_id == persisted.product.id
+      assert persisted.merchant_product.external_sku == "CJ-12345"
+      assert persisted.merchant_product.url == listing.listing_url
+      assert persisted.merchant_product.currency == "USD"
+      assert persisted.merchant_product.is_active == true
+      assert DateTime.compare(persisted.merchant_product.last_seen_at, observed_at) == :eq
+
+      assert persisted.price_point.merchant_product_id == persisted.merchant_product.id
+      assert persisted.price_point.artifact_id == persisted.source_artifact.id
+      assert Decimal.eq?(persisted.price_point.price, Decimal.new("129.99"))
+      assert persisted.price_point.in_stock == true
+      assert DateTime.compare(persisted.price_point.observed_at, observed_at) == :eq
+
+      assert Repo.aggregate(SourceArtifact, :count, :id) == 1
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 1
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 1
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "replays the same normalized listing without duplicating persistence rows" do
+      source = source_fixture()
+      listing = normalized_listing(%{raw_payload: %{"id" => "CJ-12345", "price" => "129.99"}})
+
+      assert {:ok, first_persisted} = Ingestion.persist_normalized_listing(source, listing)
+      assert {:ok, second_persisted} = Ingestion.persist_normalized_listing(source, listing)
+
+      assert second_persisted.source_artifact.id == first_persisted.source_artifact.id
+      assert second_persisted.external_product.id == first_persisted.external_product.id
+      assert second_persisted.product.id == first_persisted.product.id
+      assert second_persisted.merchant_identity.id == first_persisted.merchant_identity.id
+      assert second_persisted.merchant_product.id == first_persisted.merchant_product.id
+      assert second_persisted.price_point.id == first_persisted.price_point.id
+
+      assert Repo.aggregate(SourceArtifact, :count, :id) == 1
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 1
+      assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 1
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "does not let stale observations overwrite merchant products or add older price points" do
+      source = source_fixture()
+      current_observed_at = ~U[2026-05-24 15:00:00Z]
+      stale_observed_at = ~U[2026-05-23 15:00:00Z]
+
+      current_listing =
+        normalized_listing(%{
+          amount: Decimal.new("129.99"),
+          availability: :in_stock,
+          observed_at: current_observed_at,
+          raw_payload: %{"id" => "CJ-12345", "price" => "129.99"}
+        })
+
+      stale_listing =
+        normalized_listing(%{
+          amount: Decimal.new("89.99"),
+          availability: :out_of_stock,
+          observed_at: stale_observed_at,
+          raw_payload: %{"id" => "CJ-12345", "price" => "89.99"}
+        })
+
+      assert {:ok, current_persisted} =
+               Ingestion.persist_normalized_listing(source, current_listing)
+
+      assert {:ok, stale_persisted} = Ingestion.persist_normalized_listing(source, stale_listing)
+
+      assert stale_persisted.merchant_product.id == current_persisted.merchant_product.id
+      assert stale_persisted.merchant_product.is_active == true
+
+      assert DateTime.compare(
+               stale_persisted.merchant_product.last_seen_at,
+               current_observed_at
+             ) == :eq
+
+      assert stale_persisted.price_point.id == current_persisted.price_point.id
+      assert Decimal.eq?(stale_persisted.price_point.price, Decimal.new("129.99"))
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
   end
 

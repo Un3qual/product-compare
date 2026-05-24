@@ -23,5 +23,8 @@ defmodule ProductCompareSchemas.Specs.SourceArtifact do
     |> cast(attrs, [:source_id, :url, :fetched_at, :content_hash, :raw_json, :raw_text])
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:source_id)
+    |> unique_constraint([:source_id, :content_hash],
+      name: :source_artifacts_source_content_hash_uq
+    )
   end
 end

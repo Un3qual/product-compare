@@ -2,7 +2,7 @@
 
 Execution status lives in `docs/work/product-data-scraping.md` and `docs/work/index.md`.
 
-Status: Task 1 completed on 2026-05-23.
+Status: Task 2 completed on 2026-05-24; live provider validation remains blocked.
 
 ## Goal
 
@@ -118,3 +118,36 @@ When Task 1 is verified, update `docs/work/product-data-scraping.md` and `docs/p
 
 - Task 2 candidate: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency.
 - Keep live CJ API validation blocked until credentials, quota behavior, and sample payload scope are recorded.
+
+## Task 2: Persist Normalized Listings Into Catalog And Pricing Rows
+
+Status: completed on 2026-05-24.
+
+### Files
+
+- Update: `lib/product_compare/ingestion.ex`
+- Update: `lib/product_compare_schemas/specs/source_artifact.ex`
+- Update: `lib/product_compare_schemas/pricing/price_point.ex`
+- Create: `priv/repo/migrations/20260524000000_add_ingestion_replay_idempotency_indexes.exs`
+- Update: `test/product_compare/ingestion/ingestion_test.exs`
+- Update: `docs/work/product-data-scraping.md`
+- Update: `docs/work/index.md`
+- Update: `docs/plans/NOW.md`
+
+### Delivered
+
+- Added tests for persisting one normalized listing into `SourceArtifact`, `ExternalProduct`, a generated catalog product shell, `MerchantProduct`, and `PricePoint`.
+- Added `ProductCompare.Ingestion.persist_normalized_listing/2` to reuse `resolve_merchant_identity/2`, create or reuse external product mappings, generate catalog products for previously unseen external listings, upsert merchant products, and write price observations.
+- Added replay idempotency for exact listing replays and database uniqueness indexes for source artifact and price point replay keys.
+- Added stale-observation guards so older listing observations keep the latest merchant product state and latest price point intact.
+- Kept live provider polling, credentials, account-manager automation, and Tier-3 scraping blocked.
+
+### Verification
+
+Run:
+
+```bash
+mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs
+mix typecheck
+git diff --check
+```

@@ -5,11 +5,19 @@ defmodule ProductCompare.Ingestion do
 
   import Ecto.Query
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompare.Taxonomy, as: TaxonomyContext
+  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
+  alias ProductCompareSchemas.Pricing.MerchantProduct
+  alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ExternalProduct
   alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
+  alias ProductCompareSchemas.Taxonomy.Taxon
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
@@ -17,6 +25,267 @@ defmodule ProductCompare.Ingestion do
     case get_merchant_identity(source_id, listing.merchant_identifier) do
       nil -> create_merchant_identity(source_id, listing)
       %MerchantSourceIdentity{} = identity -> update_merchant_identity(identity, listing)
+    end
+  end
+
+  @type persisted_listing :: %{
+          source_artifact: SourceArtifact.t(),
+          external_product: ExternalProduct.t(),
+          product: Product.t(),
+          merchant_identity: MerchantSourceIdentity.t(),
+          merchant_product: MerchantProduct.t(),
+          price_point: PricePoint.t() | nil
+        }
+
+  @spec persist_normalized_listing(Source.t(), NormalizedListing.t()) ::
+          {:ok, persisted_listing()} | {:error, term()}
+  def persist_normalized_listing(%Source{} = source, %NormalizedListing{} = listing) do
+    with {:ok, merchant_identity} <- resolve_merchant_identity(source, listing) do
+      Repo.transaction(fn ->
+        case persist_listing_in_transaction(source, listing, merchant_identity) do
+          {:ok, persisted_listing} -> persisted_listing
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+      |> case do
+        {:ok, persisted_listing} -> {:ok, persisted_listing}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  defp persist_listing_in_transaction(source, listing, merchant_identity) do
+    with {:ok, source_artifact} <- upsert_source_artifact(source, listing),
+         {:ok, external_product} <- upsert_external_product(source, listing),
+         {:ok, product} <- ensure_listing_product(external_product, listing),
+         {:ok, external_product} <- attach_external_product(external_product, product, listing),
+         {:ok, merchant_product} <-
+           upsert_listing_merchant_product(merchant_identity, product, listing),
+         {:ok, price_point} <- persist_price_point(merchant_product, source_artifact, listing) do
+      {:ok,
+       %{
+         source_artifact: source_artifact,
+         external_product: external_product,
+         product: product,
+         merchant_identity: merchant_identity,
+         merchant_product: merchant_product,
+         price_point: price_point
+       }}
+    end
+  end
+
+  defp upsert_source_artifact(%Source{id: source_id}, listing) do
+    content_hash = listing_content_hash(listing)
+
+    case Repo.get_by(SourceArtifact, source_id: source_id, content_hash: content_hash) do
+      nil ->
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source_id,
+          url: listing.listing_url,
+          fetched_at: listing.observed_at,
+          content_hash: content_hash,
+          raw_json: listing.raw_payload
+        })
+        |> Repo.insert()
+
+      %SourceArtifact{} = source_artifact ->
+        {:ok, source_artifact}
+    end
+  end
+
+  defp upsert_external_product(%Source{id: source_id}, listing) do
+    case Repo.get_by(ExternalProduct,
+           source_id: source_id,
+           external_id: listing.external_product_id
+         ) do
+      nil ->
+        %ExternalProduct{}
+        |> ExternalProduct.changeset(external_product_attrs(source_id, listing))
+        |> Repo.insert()
+
+      %ExternalProduct{} = external_product ->
+        update_external_product_if_current(external_product, listing)
+    end
+  end
+
+  defp update_external_product_if_current(external_product, listing) do
+    if stale_observation?(external_product.last_seen_at, listing.observed_at) do
+      {:ok, external_product}
+    else
+      external_product
+      |> ExternalProduct.changeset(%{
+        canonical_url: listing.listing_url,
+        last_seen_at: listing.observed_at
+      })
+      |> Repo.update()
+    end
+  end
+
+  defp ensure_listing_product(%ExternalProduct{product_id: product_id}, listing)
+       when not is_nil(product_id) do
+    case Repo.get(Product, product_id) do
+      nil -> get_or_create_listing_product(listing)
+      %Product{} = product -> {:ok, product}
+    end
+  end
+
+  defp ensure_listing_product(%ExternalProduct{}, listing),
+    do: get_or_create_listing_product(listing)
+
+  defp get_or_create_listing_product(listing) do
+    slug = product_slug(listing)
+
+    case Repo.get_by(Product, slug: slug) do
+      nil -> create_listing_product(slug, listing)
+      %Product{} = product -> {:ok, product}
+    end
+  end
+
+  defp create_listing_product(slug, listing) do
+    with {:ok, primary_type_taxon} <- ensure_ingested_type_taxon(),
+         {:ok, brand_id} <- maybe_upsert_brand_id(listing.brand_name) do
+      %{
+        name: listing.product_title,
+        slug: slug,
+        brand_id: brand_id,
+        primary_type_taxon_id: primary_type_taxon.id
+      }
+      |> Catalog.create_product()
+      |> case do
+        {:ok, %Product{} = product} ->
+          {:ok, product}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          if unique_error_on_field?(changeset, :slug) do
+            {:ok, Repo.get_by!(Product, slug: slug)}
+          else
+            {:error, changeset}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
+
+  defp ensure_ingested_type_taxon do
+    with {:ok, type_taxonomy} <- TaxonomyContext.upsert_taxonomy(%{code: "type", name: "Type"}) do
+      case Repo.get_by(Taxon, taxonomy_id: type_taxonomy.id, code: "ingested-product") do
+        nil ->
+          create_ingested_type_taxon(type_taxonomy.id)
+
+        %Taxon{} = taxon ->
+          {:ok, taxon}
+      end
+    end
+  end
+
+  defp create_ingested_type_taxon(taxonomy_id) do
+    %{taxonomy_id: taxonomy_id, code: "ingested-product", name: "Ingested Product"}
+    |> TaxonomyContext.create_taxon()
+    |> case do
+      {:ok, %Taxon{} = taxon} ->
+        {:ok, taxon}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        if unique_error_on_field?(changeset, :code) do
+          {:ok, Repo.get_by!(Taxon, taxonomy_id: taxonomy_id, code: "ingested-product")}
+        else
+          {:error, changeset}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp maybe_upsert_brand_id(nil), do: {:ok, nil}
+
+  defp maybe_upsert_brand_id(brand_name) do
+    case present_string(brand_name) do
+      nil ->
+        {:ok, nil}
+
+      name ->
+        case Catalog.upsert_brand(%{name: name}) do
+          {:ok, brand} -> {:ok, brand.id}
+          {:error, reason} -> {:error, reason}
+        end
+    end
+  end
+
+  defp attach_external_product(external_product, product, listing) do
+    attrs =
+      if stale_observation?(external_product.last_seen_at, listing.observed_at) do
+        %{product_id: product.id}
+      else
+        %{
+          product_id: product.id,
+          canonical_url: listing.listing_url,
+          last_seen_at: listing.observed_at
+        }
+      end
+
+    external_product
+    |> ExternalProduct.changeset(attrs)
+    |> Repo.update()
+  end
+
+  defp upsert_listing_merchant_product(merchant_identity, product, listing) do
+    attrs = merchant_product_attrs(merchant_identity, product, listing)
+
+    case Repo.get_by(MerchantProduct,
+           merchant_id: merchant_identity.merchant_id,
+           url: listing.listing_url
+         ) do
+      nil ->
+        Pricing.upsert_merchant_product(attrs)
+
+      %MerchantProduct{} = merchant_product ->
+        if stale_observation?(merchant_product.last_seen_at, listing.observed_at) do
+          {:ok, merchant_product}
+        else
+          Pricing.upsert_merchant_product(attrs)
+        end
+    end
+  end
+
+  defp persist_price_point(merchant_product, source_artifact, listing) do
+    if stale_observation?(merchant_product.last_seen_at, listing.observed_at) do
+      {:ok, Pricing.latest_price(merchant_product.id)}
+    else
+      case Pricing.latest_price(merchant_product.id) do
+        %PricePoint{} = latest_price ->
+          if stale_observation?(latest_price.observed_at, listing.observed_at) do
+            {:ok, latest_price}
+          else
+            get_or_create_price_point(merchant_product, source_artifact, listing)
+          end
+
+        _latest_price ->
+          get_or_create_price_point(merchant_product, source_artifact, listing)
+      end
+    end
+  end
+
+  defp get_or_create_price_point(merchant_product, source_artifact, listing) do
+    case Repo.get_by(PricePoint,
+           merchant_product_id: merchant_product.id,
+           observed_at: listing.observed_at,
+           artifact_id: source_artifact.id
+         ) do
+      nil ->
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: listing.observed_at,
+          price: listing.amount,
+          in_stock: price_point_in_stock(listing.availability),
+          artifact_id: source_artifact.id
+        })
+
+      %PricePoint{} = price_point ->
+        {:ok, price_point}
     end
   end
 
@@ -190,6 +459,27 @@ defmodule ProductCompare.Ingestion do
     }
   end
 
+  defp external_product_attrs(source_id, listing) do
+    %{
+      source_id: source_id,
+      external_id: listing.external_product_id,
+      canonical_url: listing.listing_url,
+      last_seen_at: listing.observed_at
+    }
+  end
+
+  defp merchant_product_attrs(merchant_identity, product, listing) do
+    %{
+      merchant_id: merchant_identity.merchant_id,
+      product_id: product.id,
+      external_sku: listing.external_product_id,
+      url: listing.listing_url,
+      currency: listing.currency,
+      last_seen_at: listing.observed_at,
+      is_active: merchant_product_active?(listing.availability)
+    }
+  end
+
   defp identity_attrs(source_id, merchant_id, listing) do
     %{
       source_id: source_id,
@@ -200,6 +490,46 @@ defmodule ProductCompare.Ingestion do
       last_seen_at: listing.observed_at
     }
   end
+
+  defp listing_content_hash(listing) do
+    %{
+      external_product_id: listing.external_product_id,
+      merchant_identifier: listing.merchant_identifier,
+      listing_url: listing.listing_url,
+      currency: listing.currency,
+      amount: Decimal.to_string(listing.amount),
+      availability: listing.availability,
+      observed_at: listing.observed_at,
+      raw_payload: listing.raw_payload
+    }
+    |> :erlang.term_to_binary()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+  end
+
+  defp product_slug(listing) do
+    "#{listing.product_title} #{listing.source} #{listing.external_product_id}"
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/, "-")
+    |> String.trim("-")
+    |> case do
+      "" -> "ingested-product-#{listing.external_product_id}"
+      slug -> slug
+    end
+  end
+
+  defp stale_observation?(nil, _observed_at), do: false
+
+  defp stale_observation?(last_seen_at, observed_at) do
+    DateTime.compare(last_seen_at, observed_at) == :gt
+  end
+
+  defp merchant_product_active?(:out_of_stock), do: false
+  defp merchant_product_active?(_availability), do: true
+
+  defp price_point_in_stock(:in_stock), do: true
+  defp price_point_in_stock(:out_of_stock), do: false
+  defp price_point_in_stock(_availability), do: nil
 
   defp domain_from_url(url) when is_binary(url) do
     url
@@ -222,6 +552,13 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp present_string(_value), do: nil
+
+  defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
+    Enum.any?(errors, fn
+      {^field, {_message, opts}} -> opts[:constraint] == :unique
+      _ -> false
+    end)
+  end
 
   defp preload_merchant({:ok, identity}), do: {:ok, Repo.preload(identity, :merchant)}
   defp preload_merchant(error), do: error

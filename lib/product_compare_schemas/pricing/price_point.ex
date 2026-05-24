@@ -32,5 +32,8 @@ defmodule ProductCompareSchemas.Pricing.PricePoint do
     |> validate_number(:shipping, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:artifact_id)
+    |> unique_constraint([:merchant_product_id, :observed_at, :artifact_id],
+      name: :price_points_mp_time_artifact_uq
+    )
   end
 end
