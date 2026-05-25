@@ -299,6 +299,48 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "does not retarget an existing merchant product when a listing URL is reused" do
+      source = source_fixture()
+      reused_url = "https://trail.example/products/reused"
+
+      original_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-ORIGINAL",
+          product_title: "Acme Trail Running Shoe",
+          listing_url: reused_url,
+          raw_payload: %{"id" => "CJ-ORIGINAL", "price" => "129.99"}
+        })
+
+      reused_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-REUSED",
+          product_title: "Different Trail Running Shoe",
+          listing_url: reused_url,
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-REUSED", "price" => "139.99"}
+        })
+
+      assert {:ok, original_persisted} =
+               Ingestion.persist_normalized_listing(source, original_listing)
+
+      assert {:error,
+              {:merchant_product_product_conflict, merchant_product_id, existing_product_id,
+               new_product_id}} =
+               Ingestion.persist_normalized_listing(source, reused_listing)
+
+      assert merchant_product_id == original_persisted.merchant_product.id
+      assert existing_product_id == original_persisted.product.id
+      refute new_product_id == existing_product_id
+
+      merchant_product = Repo.get!(MerchantProduct, merchant_product_id)
+
+      assert merchant_product.product_id == original_persisted.product.id
+      assert merchant_product.external_sku == "CJ-ORIGINAL"
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 1
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 1
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
     test "rolls back merchant identity updates when listing persistence fails" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]

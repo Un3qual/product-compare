@@ -119,30 +119,43 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp upsert_external_product(%Source{id: source_id}, listing) do
-    case Repo.get_by(ExternalProduct,
-           source_id: source_id,
-           external_id: listing.external_product_id
-         ) do
-      nil ->
-        %ExternalProduct{}
-        |> ExternalProduct.changeset(external_product_attrs(source_id, listing))
-        |> Repo.insert()
+    attrs = external_product_attrs(source_id, listing)
 
-      %ExternalProduct{} = external_product ->
-        update_external_product_if_current(external_product, listing)
+    %ExternalProduct{}
+    |> ExternalProduct.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: external_product_conflict_query(attrs),
+      conflict_target: [:source_id, :external_id],
+      returning: true,
+      allow_stale: true
+    )
+    |> case do
+      {:ok, %ExternalProduct{id: nil}} ->
+        fetch_external_product(source_id, listing.external_product_id)
+
+      {:ok, %ExternalProduct{} = external_product} ->
+        {:ok, external_product}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  defp update_external_product_if_current(external_product, listing) do
-    if stale_observation?(external_product.last_seen_at, listing.observed_at) do
-      {:ok, external_product}
-    else
-      external_product
-      |> ExternalProduct.changeset(%{
-        canonical_url: listing.listing_url,
-        last_seen_at: listing.observed_at
-      })
-      |> Repo.update()
+  defp external_product_conflict_query(attrs) do
+    from external_product in ExternalProduct,
+      where: external_product.last_seen_at <= ^attrs.last_seen_at,
+      update: [
+        set: [
+          canonical_url: ^attrs.canonical_url,
+          last_seen_at: ^attrs.last_seen_at
+        ]
+      ]
+  end
+
+  defp fetch_external_product(source_id, external_product_id) do
+    case Repo.get_by(ExternalProduct, source_id: source_id, external_id: external_product_id) do
+      nil -> {:error, :external_product_not_found}
+      %ExternalProduct{} = external_product -> {:ok, external_product}
     end
   end
 
@@ -213,7 +226,7 @@ defmodule ProductCompare.Ingestion do
         {:ok, taxon}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        if unique_error_on_field?(changeset, :code) do
+        if unique_error_on_any_field?(changeset, [:taxonomy_id, :code]) do
           {:ok, Repo.get_by!(Taxon, taxonomy_id: taxonomy_id, code: "ingested-product")}
         else
           {:error, changeset}
@@ -258,20 +271,55 @@ defmodule ProductCompare.Ingestion do
 
   defp upsert_listing_merchant_product(merchant_identity, product, listing) do
     attrs = merchant_product_attrs(merchant_identity, product, listing)
+    changeset = MerchantProduct.changeset(%MerchantProduct{}, attrs)
+    now = DateTime.utc_now()
 
-    case Repo.get_by(MerchantProduct,
-           merchant_id: merchant_identity.merchant_id,
-           url: listing.listing_url
-         ) do
+    update_fields =
+      changeset.changes
+      |> Map.drop([:merchant_id, :product_id, :url])
+      |> Map.to_list()
+
+    conflict_query =
+      from merchant_product in MerchantProduct,
+        where:
+          merchant_product.product_id == ^product.id and
+            merchant_product.last_seen_at <= ^listing.observed_at,
+        update: [set: ^(update_fields ++ [updated_at: now])]
+
+    changeset
+    |> Repo.insert(
+      on_conflict: conflict_query,
+      conflict_target: [:merchant_id, :url],
+      returning: true,
+      allow_stale: true
+    )
+    |> case do
+      {:ok, %MerchantProduct{id: nil}} ->
+        fetch_listing_merchant_product(
+          merchant_identity.merchant_id,
+          listing.listing_url,
+          product
+        )
+
+      {:ok, %MerchantProduct{} = merchant_product} ->
+        {:ok, merchant_product}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp fetch_listing_merchant_product(merchant_id, url, product) do
+    case Repo.get_by(MerchantProduct, merchant_id: merchant_id, url: url) do
       nil ->
-        Pricing.upsert_merchant_product(attrs)
+        {:error, :merchant_product_not_found}
+
+      %MerchantProduct{product_id: product_id} = merchant_product when product_id != product.id ->
+        {:error,
+         {:merchant_product_product_conflict, merchant_product.id, product_id, product.id}}
 
       %MerchantProduct{} = merchant_product ->
-        if stale_observation?(merchant_product.last_seen_at, listing.observed_at) do
-          {:ok, merchant_product}
-        else
-          Pricing.upsert_merchant_product(attrs)
-        end
+        {:ok, merchant_product}
     end
   end
 
@@ -639,6 +687,10 @@ defmodule ProductCompare.Ingestion do
       {^field, {_message, opts}} -> opts[:constraint] == :unique
       _ -> false
     end)
+  end
+
+  defp unique_error_on_any_field?(changeset, fields) do
+    Enum.any?(fields, &unique_error_on_field?(changeset, &1))
   end
 
   defp preload_merchant({:ok, identity}), do: {:ok, Repo.preload(identity, :merchant)}
