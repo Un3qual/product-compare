@@ -5,6 +5,7 @@ defmodule ProductCompare.IngestionTest do
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -336,6 +337,7 @@ defmodule ProductCompare.IngestionTest do
 
       assert merchant_product.product_id == original_persisted.product.id
       assert merchant_product.external_sku == "CJ-ORIGINAL"
+      assert Repo.aggregate(Product, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
