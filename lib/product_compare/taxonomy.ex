@@ -21,19 +21,20 @@ defmodule ProductCompare.Taxonomy do
 
   @spec upsert_taxonomy(map()) :: {:ok, Taxonomy.t()} | {:error, Ecto.Changeset.t()}
   def upsert_taxonomy(attrs) do
-    code = Map.get(attrs, :code) || Map.get(attrs, "code")
+    now = DateTime.utc_now()
+    changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
 
-    case Repo.get_by(Taxonomy, code: code) do
-      nil ->
-        %Taxonomy{}
-        |> Taxonomy.changeset(attrs)
-        |> Repo.insert()
+    update_fields =
+      changeset.changes
+      |> Map.drop([:code])
+      |> Map.to_list()
 
-      taxonomy ->
-        taxonomy
-        |> Taxonomy.changeset(attrs)
-        |> Repo.update()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:code],
+      returning: true
+    )
   end
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}

@@ -38,12 +38,20 @@ defmodule ProductCompare.Catalog do
 
   @spec upsert_brand(map()) :: {:ok, Brand.t()} | {:error, Ecto.Changeset.t()}
   def upsert_brand(attrs) do
-    name = Map.get(attrs, :name) || Map.get(attrs, "name")
+    now = DateTime.utc_now()
+    changeset = Brand.changeset(%Brand{}, attrs)
 
-    case Repo.get_by(Brand, name: name) do
-      nil -> create_brand(attrs)
-      brand -> brand |> Brand.changeset(attrs) |> Repo.update()
-    end
+    update_fields =
+      changeset.changes
+      |> Map.drop([:name])
+      |> Map.to_list()
+
+    Repo.insert(
+      changeset,
+      on_conflict: [set: update_fields ++ [updated_at: now]],
+      conflict_target: [:name],
+      returning: true
+    )
   end
 
   @spec create_product(map()) :: {:ok, Product.t()} | {:error, term()}
