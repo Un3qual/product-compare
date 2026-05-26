@@ -253,20 +253,30 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp attach_external_product(external_product, product, listing) do
-    attrs =
-      if stale_observation?(external_product.last_seen_at, listing.observed_at) do
-        %{product_id: product.id}
-      else
-        %{
-          product_id: product.id,
-          canonical_url: listing.listing_url,
-          last_seen_at: listing.observed_at
-        }
-      end
+    query =
+      from persisted_external_product in ExternalProduct,
+        where:
+          persisted_external_product.id == ^external_product.id and
+            persisted_external_product.last_seen_at <= ^listing.observed_at,
+        select: persisted_external_product
 
-    external_product
-    |> ExternalProduct.changeset(attrs)
-    |> Repo.update()
+    updates = [
+      product_id: product.id,
+      canonical_url: listing.listing_url,
+      last_seen_at: listing.observed_at
+    ]
+
+    case Repo.update_all(query, set: updates) do
+      {1, [updated_external_product]} -> {:ok, updated_external_product}
+      {0, []} -> fetch_external_product(external_product.id)
+    end
+  end
+
+  defp fetch_external_product(external_product_id) do
+    case Repo.get(ExternalProduct, external_product_id) do
+      nil -> {:error, :external_product_not_found}
+      %ExternalProduct{} = external_product -> {:ok, external_product}
+    end
   end
 
   defp upsert_listing_merchant_product(merchant_identity, product, listing) do

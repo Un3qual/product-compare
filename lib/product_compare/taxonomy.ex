@@ -23,19 +23,41 @@ defmodule ProductCompare.Taxonomy do
   def upsert_taxonomy(attrs) do
     now = DateTime.utc_now()
     changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
+    code = Map.get(attrs, :code) || Map.get(attrs, "code")
 
-    update_fields =
-      changeset.changes
-      |> Map.drop([:code])
-      |> Map.to_list()
+    if changeset.valid? do
+      update_fields =
+        changeset.changes
+        |> Map.drop([:code])
+        |> Map.to_list()
 
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:code],
-      returning: true
-    )
+      Repo.insert(
+        changeset,
+        on_conflict: [set: update_fields ++ [updated_at: now]],
+        conflict_target: [:code],
+        returning: true
+      )
+    else
+      fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset)
+    end
   end
+
+  defp fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset) do
+    if present?(code) and not provided?(attrs, :name) do
+      case Repo.get_by(Taxonomy, code: code) do
+        %Taxonomy{} = taxonomy -> {:ok, taxonomy}
+        nil -> {:error, changeset}
+      end
+    else
+      {:error, changeset}
+    end
+  end
+
+  defp provided?(attrs, key),
+    do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+
+  defp present?(value) when is_binary(value), do: String.trim(value) != ""
+  defp present?(_value), do: false
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}
   def create_taxon(attrs) do

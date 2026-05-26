@@ -300,6 +300,41 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "does not attach stale external product observations over newer rows" do
+      source = source_fixture()
+      current_observed_at = ~U[2026-05-24 15:00:00Z]
+      stale_observed_at = ~U[2026-05-23 15:00:00Z]
+
+      external_product =
+        %ExternalProduct{}
+        |> ExternalProduct.changeset(%{
+          source_id: source.id,
+          external_id: "CJ-STALE-ATTACH",
+          canonical_url: "https://trail.example/products/current",
+          last_seen_at: current_observed_at
+        })
+        |> Repo.insert!()
+
+      stale_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-STALE-ATTACH",
+          product_title: "Older Trail Running Shoe",
+          listing_url: "https://trail.example/products/older",
+          observed_at: stale_observed_at,
+          raw_payload: %{"id" => "CJ-STALE-ATTACH", "price" => "89.99"}
+        })
+
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, stale_listing)
+
+      reloaded_external_product = Repo.get!(ExternalProduct, external_product.id)
+
+      assert persisted.external_product.id == external_product.id
+      assert persisted.external_product.product_id == nil
+      assert reloaded_external_product.product_id == nil
+      assert reloaded_external_product.canonical_url == "https://trail.example/products/current"
+      assert DateTime.compare(reloaded_external_product.last_seen_at, current_observed_at) == :eq
+    end
+
     test "does not retarget an existing merchant product when a listing URL is reused" do
       source = source_fixture()
       reused_url = "https://trail.example/products/reused"
@@ -338,6 +373,7 @@ defmodule ProductCompare.IngestionTest do
       assert merchant_product.product_id == original_persisted.product.id
       assert merchant_product.external_sku == "CJ-ORIGINAL"
       assert Repo.aggregate(Product, :count, :id) == 1
+      assert Repo.aggregate(SourceArtifact, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
