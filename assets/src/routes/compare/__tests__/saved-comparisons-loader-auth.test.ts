@@ -1,5 +1,10 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
+import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../relay/environment";
+import {
+  createRelayRouterContext,
+  fetchRouteQuery
+} from "../../../relay/route-preload";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
@@ -9,10 +14,23 @@ vi.mock("../../../relay/fetch-graphql", () => ({
   fetchGraphQL: vi.fn()
 }));
 
+vi.mock("../../../relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../../relay/route-preload")>(
+    "../../../relay/route-preload"
+  );
+
+  return {
+    ...actual,
+    fetchRouteQuery: vi.fn()
+  };
+});
+
 const fetchGraphQLMock = vi.mocked(fetchGraphQL);
+const fetchRouteQueryMock = vi.mocked(fetchRouteQuery);
 
 beforeEach(() => {
   fetchGraphQLMock.mockReset();
+  fetchRouteQueryMock.mockReset();
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects a pathless unauthenticated response", () => {
@@ -33,22 +51,39 @@ test("isUnauthorizedSavedComparisonsResponse detects a pathless unauthenticated 
 });
 
 test("savedComparisonsLoader returns unauthorized for a pathless not authorized response", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    errors: [
-      {
-        message: "You are not authorized to access saved comparison sets"
-      }
-    ]
-  });
+  fetchRouteQueryMock.mockRejectedValueOnce(
+    new RouteLoaderGraphQLError({
+      errors: [
+        {
+          message: "You are not authorized to access saved comparison sets"
+        }
+      ]
+    })
+  );
 
   await expect(
     savedComparisonsLoader({
       request: new Request("https://app.example.com/compare/saved"),
       params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+      context: createRelayRouterContext(createRelayEnvironment())
+    } as unknown as LoaderFunctionArgs)
   ).resolves.toEqual({
     status: "unauthorized",
+    savedSetQueries: [],
     savedSets: []
   });
+});
+
+test("savedComparisonsLoader does not treat generic access denied failures as auth state", async () => {
+  fetchRouteQueryMock.mockRejectedValueOnce(
+    new Error("CDN access denied while fetching saved comparison sets")
+  );
+
+  await expect(
+    savedComparisonsLoader({
+      request: new Request("https://app.example.com/compare/saved"),
+      params: {},
+      context: createRelayRouterContext(createRelayEnvironment())
+    } as unknown as LoaderFunctionArgs)
+  ).rejects.toThrow("CDN access denied while fetching saved comparison sets");
 });

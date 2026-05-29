@@ -11,6 +11,8 @@ import {
 } from "../../../relay/route-preload";
 import { CompareRoute } from "../index";
 import { compareLoader } from "../loader";
+import { SavedComparisonsRoute } from "../saved";
+import { savedComparisonsLoader } from "../saved-data";
 
 const {
   commitMutationMock,
@@ -118,6 +120,19 @@ const secondProductQueryRef = {
   variables: secondProductQueryDescriptor.__relayQuery.variables
 };
 
+const savedComparisonsRouteQueryDescriptor = {
+  __relayQuery: {
+    operationName: "SavedComparisonsRouteQuery",
+    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    variables: { first: 20 }
+  }
+};
+
+const savedComparisonsQueryRef = {
+  dispose: vi.fn(),
+  variables: savedComparisonsRouteQueryDescriptor.__relayQuery.variables
+};
+
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
@@ -128,6 +143,7 @@ beforeEach(() => {
   useRoutePreloadedQueryMock.mockReset();
   detailProductQueryRef.dispose.mockReset();
   secondProductQueryRef.dispose.mockReset();
+  savedComparisonsQueryRef.dispose.mockReset();
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 
@@ -283,6 +299,137 @@ test("compare route saves the current selection through a Relay mutation", async
     );
   });
   expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
+});
+
+test("saved comparisons loader preloads saved-set pages through Relay", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce({
+    data: {
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Relay saved set",
+              items: [
+                {
+                  position: 1,
+                  product: {
+                    slug: DETAIL_PRODUCT.slug
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    },
+    descriptor: savedComparisonsRouteQueryDescriptor,
+    dispose: vi.fn()
+  });
+
+  await expect(
+    savedComparisonsLoader({
+      request,
+      params: {},
+      context: createRelayRouterContext(environment)
+    } as unknown as LoaderFunctionArgs)
+  ).resolves.toEqual({
+    status: "ready",
+    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Relay saved set",
+        slugs: [DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
+});
+
+test("saved comparisons route renders saved sets from Relay route queries", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
+    savedSets: [
+      {
+        id: "fallback-saved-set",
+        name: "Fallback saved set",
+        slugs: ["fallback-product"]
+      }
+    ]
+  });
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === savedComparisonsRouteQueryDescriptor) {
+      return savedComparisonsQueryRef;
+    }
+
+    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
+  });
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === savedComparisonsQueryRef) {
+      return {
+        mySavedComparisonSets: {
+          edges: [
+            {
+              node: {
+                id: "saved-set-1",
+                name: "Relay saved set",
+                items: [
+                  {
+                    position: 1,
+                    product: {
+                      slug: DETAIL_PRODUCT.slug
+                    }
+                  },
+                  {
+                    position: 2,
+                    product: {
+                      slug: SECOND_PRODUCT.slug
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: null
+          }
+        }
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Relay saved set")).toBeInTheDocument();
+  expect(screen.queryByText("Fallback saved set")).not.toBeInTheDocument();
+  expect(screen.getByText(`${DETAIL_PRODUCT.slug}, ${SECOND_PRODUCT.slug}`)).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    savedComparisonsRouteQueryDescriptor
+  );
 });
 
 function buildReadyLoaderData() {

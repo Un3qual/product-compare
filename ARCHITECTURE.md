@@ -20,7 +20,7 @@
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params and now exposes a saved-comparison action for ready-state selections.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
 - Browser auth, `/products`, `/products/:slug`, and `/compare` now use Relay query or mutation APIs with SSR store hydration.
-- `/compare/saved` remains on an explicit `saved-data.ts` manual GraphQL helper until a future saved-route Relay cleanup is prioritized.
+- `/compare/saved` Relay migration is now the active frontend follow-up: saved-set list loading/rendering uses Relay route query descriptors, and the remaining active batch moves deletion onto a Relay mutation.
 
 ## Current Delivered Backend Baseline
 
@@ -33,9 +33,9 @@
 
 - CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
 - Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, and fixture parser tests.
-- `/compare/saved` still has an explicit manual GraphQL helper; this is a visible follow-up cleanup, not an active route-data blocker.
+- `/compare/saved` still has an explicit manual GraphQL helper for delete behavior until the active Relay migration finishes.
 
 ## Next Planned Slice
 
-- Product Data Ingestion Persistence is queued next: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+- Frontend Saved Comparisons Relay Migration is queued next: move `/compare/saved` delete behavior onto Relay mutation APIs while preserving the current route UX.
 - Live CJ provider validation remains blocked until credentials, quota behavior, and representative sample payloads are recorded.

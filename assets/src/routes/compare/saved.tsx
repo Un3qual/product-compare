@@ -1,10 +1,21 @@
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
+import { usePreloadedQuery } from "react-relay";
+import savedComparisonsRouteQuery, {
+  type SavedComparisonsRouteQuery
+} from "../../__generated__/SavedComparisonsRouteQuery.graphql";
+import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
+import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import type {
+  SavedComparisonSetQueryDescriptor,
   SavedComparisonSetSummary,
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
-import { deleteSavedComparisonSet, savedComparisonsLoader } from "./saved-data";
+import {
+  deleteSavedComparisonSet,
+  savedComparisonsLoader,
+  summarizeSavedComparisonSetsPage
+} from "./saved-data";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
@@ -54,6 +65,8 @@ export function SavedComparisonsRoute() {
   }
 
   const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds);
+  const savedSetQueries =
+    loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
 
   return (
     <CompareShell title="Saved comparisons">
@@ -64,35 +77,126 @@ export function SavedComparisonsRoute() {
       {loaderData.status === "unauthorized" ? (
         <Link to="/auth/login">Sign in to view saved comparisons</Link>
       ) : null}
-      {viewState.savedSets.length > 0 ? (
-        <ul aria-label="Saved comparison sets">
-          {viewState.savedSets.map((savedSet) => (
-            <li key={savedSet.id}>
-              <article>
-                <h2>{savedSet.name}</h2>
-                <p>{savedSet.slugs.join(", ")}</p>
-                <p>
-                  <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
-                </p>
-                <button
-                  disabled={pendingDeleteIds.includes(savedSet.id)}
-                  onClick={() => void handleDelete(savedSet.id)}
-                  type="button"
-                >
-                  {pendingDeleteIds.includes(savedSet.id)
-                    ? "Deleting comparison..."
-                    : "Delete comparison"}
-                </button>
-              </article>
-            </li>
-          ))}
-        </ul>
+      {viewState.savedSets.length > 0 && savedSetQueries.length > 0 ? (
+        <ResettableErrorBoundary
+          fallback={
+            <SavedComparisonSetList
+              onDelete={handleDelete}
+              pendingDeleteIds={pendingDeleteIds}
+              savedSets={viewState.savedSets}
+            />
+          }
+          resetToken={savedSetQueries}
+        >
+          <Suspense fallback={<p role="status">Loading saved comparisons...</p>}>
+            <RelaySavedComparisonSetList
+              deletedSavedSetIds={deletedSavedSetIds}
+              onDelete={handleDelete}
+              pendingDeleteIds={pendingDeleteIds}
+              savedSetQueries={savedSetQueries}
+            />
+          </Suspense>
+        </ResettableErrorBoundary>
+      ) : null}
+      {viewState.savedSets.length > 0 && savedSetQueries.length === 0 ? (
+        <SavedComparisonSetList
+          onDelete={handleDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSets={viewState.savedSets}
+        />
       ) : null}
     </CompareShell>
   );
 }
 
-const buildSavedComparisonHref = (slugs: string[]) => {
+function RelaySavedComparisonSetList({
+  deletedSavedSetIds,
+  onDelete,
+  pendingDeleteIds,
+  savedSetQueries
+}: {
+  deletedSavedSetIds: string[];
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSetQueries: SavedComparisonSetQueryDescriptor[];
+}) {
+  return (
+    <ul aria-label="Saved comparison sets">
+      {savedSetQueries.map((savedSetQuery) => (
+        <RelaySavedComparisonSetPage
+          deletedSavedSetIds={deletedSavedSetIds}
+          key={savedComparisonSetQueryKey(savedSetQuery)}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSetQuery={savedSetQuery}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function RelaySavedComparisonSetPage({
+  deletedSavedSetIds,
+  onDelete,
+  pendingDeleteIds,
+  savedSetQuery
+}: {
+  deletedSavedSetIds: string[];
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSetQuery: SavedComparisonSetQueryDescriptor;
+}) {
+  const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    savedSetQuery
+  );
+  const data = usePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    queryRef
+  );
+  const page = summarizeSavedComparisonSetsPage(data);
+  const savedSets = page.savedSets.filter(
+    (savedSet) => !deletedSavedSetIds.includes(savedSet.id)
+  );
+
+  return (
+    <>
+      {savedSets.map((savedSet) => (
+        <SavedComparisonSetItem
+          key={savedSet.id}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSet={savedSet}
+        />
+      ))}
+    </>
+  );
+}
+
+function SavedComparisonSetList({
+  onDelete,
+  pendingDeleteIds,
+  savedSets
+}: {
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSets: SavedComparisonSetSummary[];
+}) {
+  return (
+    <ul aria-label="Saved comparison sets">
+      {savedSets.map((savedSet) => (
+        <SavedComparisonSetItem
+          key={savedSet.id}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSet={savedSet}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function buildSavedComparisonHref(slugs: string[]) {
   const searchParams = new URLSearchParams();
 
   for (const slug of slugs) {
@@ -100,7 +204,46 @@ const buildSavedComparisonHref = (slugs: string[]) => {
   }
 
   return `/compare?${searchParams.toString()}`;
-};
+}
+
+function SavedComparisonSetItem({
+  onDelete,
+  pendingDeleteIds,
+  savedSet
+}: {
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSet: SavedComparisonSetSummary;
+}) {
+  const deletePending = pendingDeleteIds.includes(savedSet.id);
+
+  return (
+    <li>
+      <article>
+        <h2>{savedSet.name}</h2>
+        <p>{savedSet.slugs.join(", ")}</p>
+        <p>
+          <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
+        </p>
+        <button
+          disabled={deletePending}
+          onClick={() => {
+            onDelete(savedSet.id).catch(() => undefined);
+          }}
+          type="button"
+        >
+          {deletePending ? "Deleting comparison..." : "Delete comparison"}
+        </button>
+      </article>
+    </li>
+  );
+}
+
+export function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescriptor) {
+  return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
+    stableJsonValue(savedSetQuery.__relayQuery.variables)
+  )}`;
+}
 
 const buildSavedComparisonsStatus = (
   loaderData: SavedComparisonsRouteLoaderData,

@@ -1,7 +1,12 @@
 import { fetchQuery } from "relay-runtime";
 import productDetailRouteQuery from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { fetchGraphQL } from "../fetch-graphql";
-import { createRelayEnvironment, formatGraphQLErrorMessage, hasGraphQLErrors } from "../environment";
+import {
+  createRelayEnvironment,
+  formatGraphQLErrorMessage,
+  hasGraphQLErrors,
+  RouteLoaderGraphQLError
+} from "../environment";
 import { RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "../load-query";
 
 const { fetchGraphQLMock } = vi.hoisted(() => ({
@@ -43,6 +48,30 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
       }
     ).toPromise()
   ).rejects.toThrow("GraphQL response contained errors: boom");
+  await expect(
+    fetchQuery(
+      environment,
+      productDetailRouteQuery,
+      {
+        slug: "detail-product"
+      },
+      {
+        networkCacheConfig: {
+          metadata: {
+            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
+          }
+        }
+      }
+    ).toPromise()
+  ).rejects.toMatchObject({
+    name: "RouteLoaderGraphQLError",
+    response: {
+      data: {
+        product: null
+      },
+      errors: [{ message: "boom" }]
+    }
+  });
 
   expect(fetchGraphQL).toHaveBeenCalledWith(
     expect.stringContaining("query ProductDetailRouteQuery"),
@@ -52,6 +81,24 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
     })
   );
   expect(fetchGraphQLMock.mock.calls[0]?.[2]).not.toHaveProperty("rejectGraphQLErrors");
+});
+
+test("RouteLoaderGraphQLError preserves the GraphQL response", () => {
+  const response = {
+    errors: [
+      {
+        message: "Authentication required",
+        extensions: {
+          code: "UNAUTHENTICATED"
+        }
+      }
+    ]
+  };
+
+  const error = new RouteLoaderGraphQLError(response);
+
+  expect(error.message).toBe("GraphQL response contained errors: Authentication required");
+  expect(error.response).toBe(response);
 });
 
 test("Relay environment preserves default GraphQL error handling outside route-loader requests", async () => {

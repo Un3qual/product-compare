@@ -1,4 +1,4 @@
-import { Component, Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
@@ -8,6 +8,7 @@ import productOffersRouteQuery, {
   type ProductOffersRouteQuery
 } from "../../__generated__/ProductOffersRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
+import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 
 export function ProductDetailRoute() {
@@ -35,50 +36,6 @@ export function ProductDetailRoute() {
       </Suspense>
     </ResettableErrorBoundary>
   );
-}
-
-type ResettableErrorBoundaryState = {
-  hasError: boolean;
-  resetToken: unknown;
-};
-
-class ResettableErrorBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode; resetToken: unknown },
-  ResettableErrorBoundaryState
-> {
-  constructor(props: { children: ReactNode; fallback: ReactNode; resetToken: unknown }) {
-    super(props);
-    this.state = {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromProps(
-    props: { resetToken: unknown },
-    state: ResettableErrorBoundaryState
-  ): Partial<ResettableErrorBoundaryState> | null {
-    if (props.resetToken === state.resetToken) {
-      return null;
-    }
-
-    return {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromError(): Partial<ResettableErrorBoundaryState> {
-    return { hasError: true };
-  }
-
-  override render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-
-    return this.props.children;
-  }
 }
 
 function ProductDetail({

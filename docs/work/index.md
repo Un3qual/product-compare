@@ -42,11 +42,11 @@ Commit only lane-local milestone changes.
 ## Active Work Lanes
 
 - Frontend lane
-  - Work doc: `docs/work/frontend-relay-route-data.md`
-  - Status: completed
+  - Work doc: `docs/work/frontend-saved-comparisons-relay-migration.md`
+  - Status: in_progress
   - Priority: P1
-  - Next batch: no unblocked frontend batch is queued from this worktree.
-  - Owned paths: `assets/**`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/plans/2026-03-19-frontend-relay-route-data-implementation-plan.md`
+  - Next batch: Task 2, migrate `/compare/saved` deletion from the manual helper to a Relay mutation while preserving existing local delete UX.
+  - Owned paths: `assets/**`, `docs/work/frontend-saved-comparisons-relay-migration.md`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/work/frontend-compare-saved-hardening.md`, `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
 
 - Backend lane
   - Work doc: `docs/work/graphql-relay-contract-hardening.md`
