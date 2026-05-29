@@ -9,6 +9,20 @@ defmodule ProductCompare.Taxonomy.UseCaseAndGuardrailTest do
   alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Taxonomy.ProductTaxon
 
+  describe "upsert_taxonomy/1" do
+    test "accepts code-only attrs for an existing taxonomy" do
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture(
+          "code-only-#{System.unique_integer([:positive])}",
+          "Code Only"
+        )
+
+      assert {:ok, same_taxonomy} = Taxonomy.upsert_taxonomy(%{code: taxonomy.code})
+      assert same_taxonomy.id == taxonomy.id
+      assert same_taxonomy.name == "Code Only"
+    end
+  end
+
   describe "use-case tagging" do
     test "assign_use_case/5 upserts and unassign_use_case/2 removes tag" do
       user = AccountsFixtures.user_fixture()

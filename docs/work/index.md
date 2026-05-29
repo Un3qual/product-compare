@@ -64,9 +64,9 @@ Commit only lane-local milestone changes.
 
 - Product data ingestion lane
   - Work doc: `docs/work/product-data-scraping.md`
-  - Status: active
+  - Status: blocked
   - Priority: P2
-  - Next batch: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+  - Next batch: no unblocked local ingestion batch is queued from this worktree; live CJ validation and source onboarding compliance signoff must unblock before live provider polling or Tier-3 scraping work begins.
   - Owned paths: `lib/product_compare/ingestion/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_schemas/ingestion/**`, `lib/product_compare_schemas/specs/**`, `lib/product_compare_schemas/pricing/**`, `priv/repo/migrations/**`, `test/product_compare/ingestion/**`, `test/support/fixtures/cj/**`, `docs/work/product-data-scraping.md`, `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`, `docs/decisions/2026-05-23-ingestion-execution-boundary.md`
 
 ## Blocked / Needs Decision
@@ -78,6 +78,17 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Product Data Ingestion Persistence Task 2
+
+- Status: completed on 2026-05-24
+- Source of truth: `docs/work/product-data-scraping.md`
+- Outcome:
+  - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to persist fixture-backed normalized listings into `SourceArtifact`, `ExternalProduct`, generated catalog product shells, `MerchantProduct`, and `PricePoint`.
+  - Reused source-scoped merchant identities for merchant resolution and added replay idempotency for exact normalized listing replays.
+  - Added stale-observation guards so older listing observations do not overwrite current merchant product state or add older price points.
+  - Added database uniqueness indexes for replay-safe source artifact and price point writes.
+  - Verification passed with `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs` and `mix typecheck`.
 
 ### Product Data Ingestion Foundation Task 1
 

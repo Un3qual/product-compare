@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: active
+- Status: blocked
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-23 after Task 1 verification
+- Last verified: 2026-05-24 after Task 2 verification
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -31,6 +31,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Existing `Catalog`, `Specs`, and `Pricing` context boundaries already provide persistence targets for normalized ingestion records.
 - `ProductCompare.Ingestion` now owns the source-agnostic normalized listing contract, source adapter behavior, CJ fixture parser, and source-scoped merchant identity resolution.
 - `merchant_source_identities` now persists deterministic source-to-merchant links for replay-safe imports.
+- `ProductCompare.Ingestion.persist_normalized_listing/2` now persists fixture-backed normalized listings into `SourceArtifact`, `ExternalProduct`, catalog product shells, `MerchantProduct`, and `PricePoint` rows with replay idempotency and stale price-observation guards.
 
 ## Current Recommendation
 
@@ -41,12 +42,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Next Batch
 
-- Status: queued
-- Batch:
-  1. Add tests for persisting a normalized listing into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint`.
-  2. Add a `ProductCompare.Ingestion.persist_normalized_listing/2` path that reuses source-scoped merchant identities and existing Catalog/Pricing schemas.
-  3. Prove replay idempotency for the same normalized listing and an observed-at guard for stale price observations.
-  4. Keep live provider polling, credentials, account-manager automation, and Tier-3 scraping blocked.
+- Status: blocked
+- Batch: no unblocked local ingestion batch is queued from this worktree.
+- Next unblock target: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and the source onboarding compliance checklist before live provider polling or Tier-3 scraping work begins.
 - Remaining blockers:
   - **Live CJ product-scope validation**
     - Owner: Ryan (backend/ingestion lead)
@@ -75,6 +73,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- Product Data Ingestion Persistence, Task 2:
+  - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to reuse source-scoped merchant identities while persisting normalized listings into source artifacts, external products, generated catalog product shells, merchant products, and price points.
+  - Added replay idempotency for repeated normalized listings by reusing source artifacts, external products, merchant products, and price points.
+  - Added stale-observation guards so older listing observations do not overwrite current merchant product state or add older price points.
+  - Added database uniqueness indexes for replay-safe source artifact and price point writes.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs` and `mix typecheck`.
 
 - Product Data Ingestion Foundation, Task 1:
   - Added `docs/decisions/2026-05-23-ingestion-execution-boundary.md` to record CJ-first source selection, eBay fallback criteria, sync pilot scope, and Oban revisit triggers.

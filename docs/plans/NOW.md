@@ -40,17 +40,25 @@
 
 ### Product Data Ingestion Lane
 
-- Status: queued
-- Batch: Product Data Ingestion Persistence, Task 2
+- Status: blocked
+- Batch: none queued
 - Source of truth: `docs/work/product-data-scraping.md`
 - Implementation plan: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
-- Next step: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
+- Next step: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff before live provider polling or Tier-3 scraping work begins.
 - Why this batch is current:
   - Product Data Ingestion Foundation Task 1 selected CJ, recorded the sync-pilot ADR, added `merchant_source_identities`, and scaffolded fixture-backed parser coverage.
-  - Full listing persistence remains the next local ingestion gap before any live provider polling.
+  - Product Data Ingestion Persistence Task 2 now persists fixture-backed normalized listings into the existing catalog/pricing/spec persistence path with replay idempotency and stale-observation guards.
+  - No unblocked local ingestion batch remains before live provider validation.
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Product Data Ingestion Persistence, Task 2:
+  - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to persist normalized listings into `SourceArtifact`, `ExternalProduct`, generated catalog product shells, `MerchantProduct`, and `PricePoint`.
+  - Reused source-scoped merchant identities for replay-safe merchant resolution.
+  - Added replay idempotency for repeated normalized listings plus stale-observation guards so older listing observations do not overwrite current merchant product or price state.
+  - Added database uniqueness indexes for replay-safe source artifact and price point writes.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs` and `mix typecheck`.
 
 - Product Data Ingestion Foundation, Task 1:
   - Added `docs/decisions/2026-05-23-ingestion-execution-boundary.md` to record CJ-first source selection, eBay fallback criteria, sync pilot scope, and Oban revisit triggers.
