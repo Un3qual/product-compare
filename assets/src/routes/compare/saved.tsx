@@ -239,6 +239,16 @@ function SavedComparisonSetList({
   );
 }
 
+function buildSavedComparisonHref(slugs: string[]) {
+  const searchParams = new URLSearchParams();
+
+  for (const slug of slugs) {
+    searchParams.append("slug", slug);
+  }
+
+  return `/compare?${searchParams.toString()}`;
+}
+
 function SavedComparisonSetItem({
   onDelete,
   pendingDeleteIds,
@@ -276,16 +286,6 @@ function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescri
   return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
     savedSetQuery.__relayQuery.variables
   )}`;
-}
-
-function buildSavedComparisonHref(slugs: string[]) {
-  const searchParams = new URLSearchParams();
-
-  for (const slug of slugs) {
-    searchParams.append("slug", slug);
-  }
-
-  return `/compare?${searchParams.toString()}`;
 }
 
 const buildSavedComparisonsStatus = (
