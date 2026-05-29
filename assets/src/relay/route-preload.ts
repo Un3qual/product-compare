@@ -342,7 +342,7 @@ function routeQueryDescriptorKey<TVariables>(descriptor: RelayRouteQueryDescript
   ]);
 }
 
-function stableJsonValue(value: unknown): unknown {
+export function stableJsonValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(stableJsonValue);
   }

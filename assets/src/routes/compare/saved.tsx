@@ -4,7 +4,7 @@ import { usePreloadedQuery } from "react-relay";
 import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
+import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import type {
   SavedComparisonSetQueryDescriptor,
@@ -228,7 +228,7 @@ function SavedComparisonSetItem({
         <button
           disabled={deletePending}
           onClick={() => {
-            onDelete(savedSet.id);
+            onDelete(savedSet.id).catch(() => undefined);
           }}
           type="button"
         >
@@ -239,9 +239,9 @@ function SavedComparisonSetItem({
   );
 }
 
-function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescriptor) {
+export function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescriptor) {
   return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
-    savedSetQuery.__relayQuery.variables
+    stableJsonValue(savedSetQuery.__relayQuery.variables)
   )}`;
 }
 

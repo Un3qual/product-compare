@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, act } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { SavedComparisonsRoute } from "../saved";
+import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../saved";
 
 const { useLoaderDataMock } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn()
@@ -251,6 +251,31 @@ test("saved comparisons route clears stale delete errors when a later delete suc
   });
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("saved comparison query keys are stable across variable property order", () => {
+  const firstKey = savedComparisonSetQueryKey({
+    __relayQuery: {
+      operationName: "SavedComparisonsRouteQuery",
+      text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+      variables: {
+        first: 20,
+        after: "cursor-1"
+      }
+    }
+  });
+  const secondKey = savedComparisonSetQueryKey({
+    __relayQuery: {
+      operationName: "SavedComparisonsRouteQuery",
+      text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+      variables: {
+        after: "cursor-1",
+        first: 20
+      }
+    }
+  });
+
+  expect(secondKey).toBe(firstKey);
 });
 
 const createDeferred = <T,>() => {
