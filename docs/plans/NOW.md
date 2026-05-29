@@ -6,14 +6,16 @@
 
 ### Frontend Lane
 
-- Status: completed
-- Batch: none queued
-- Source of truth: `docs/work/frontend-relay-route-data.md`
-- Next step: no unblocked frontend batch is queued from this worktree; coordinator follow-up can choose a future frontend lane if priorities change.
+- Status: in_progress
+- Batch: Frontend Saved Comparisons Relay Migration, Task 2: Saved-Set Delete Mutation Relay Migration
+- Source of truth: `docs/work/frontend-saved-comparisons-relay-migration.md`
+- Implementation plan: `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
+- Next step: move `/compare/saved` deletion from the manual `deleteSavedComparisonSet(...)` helper to a Relay mutation while preserving existing local delete UX.
 - Why this batch is current:
-  - Relay SSR hydration, bootstrap parsing, route-preload/context primitives, and the `/products`, `/products/:slug`, `/compare`, and auth mutation migrations are complete.
-  - `assets/src/relay/fetch-graphql.ts` is now verified as a transport-only helper, with route-loader GraphQL error rejection kept at the Relay environment boundary.
-  - `/compare/saved` still uses the explicit `assets/src/routes/compare/saved-data.ts` manual helper; track any future saved-route Relay migration as a new work item.
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample-payload, and compliance evidence.
+  - `/compare/saved` is the remaining explicit unblocked architecture gap after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
+  - Task 1 moved saved-set list loading/rendering onto Relay route query descriptors.
+  - Task 2 is the next unblocked batch because `assets/src/routes/compare/saved-data.ts` still owns the raw delete mutation helper.
 
 ### Backend Lane
 
@@ -52,6 +54,12 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Saved Comparisons Relay Migration, Task 1:
+  - Added `SavedComparisonsRouteQuery` and generated `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`.
+  - Updated `savedComparisonsLoader` to page through `fetchRouteQuery`, return Relay route query descriptors plus fallback summaries, and preserve unauthorized, page-cap, cursor, empty, and abort behavior.
+  - Updated `SavedComparisonsRoute` to render ready-state rows from Relay preloaded saved-set query records with loader summaries as the error-boundary fallback.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/saved-comparisons-loader-auth.test.ts src/routes/compare/__tests__/saved-comparisons-route-state.test.tsx`, and `cd assets && bun run typecheck`.
 
 - Product Data Ingestion Persistence, Task 2:
   - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to persist normalized listings into `SourceArtifact`, `ExternalProduct`, generated catalog product shells, `MerchantProduct`, and `PricePoint`.

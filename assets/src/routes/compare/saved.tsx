@@ -1,14 +1,24 @@
-import { useRef, useState } from "react";
+import { Component, Suspense, useRef, useState, type ReactNode } from "react";
 import { Link, useLoaderData } from "react-router-dom";
+import { usePreloadedQuery } from "react-relay";
+import savedComparisonsRouteQuery, {
+  type SavedComparisonsRouteQuery
+} from "../../__generated__/SavedComparisonsRouteQuery.graphql";
+import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import type {
+  SavedComparisonSetQueryDescriptor,
   SavedComparisonSetSummary,
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
-import { deleteSavedComparisonSet, savedComparisonsLoader } from "./saved-data";
+import {
+  deleteSavedComparisonSet,
+  savedComparisonsLoader,
+  summarizeSavedComparisonSetsPage
+} from "./saved-data";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
-  const loaderData = useLoaderData<typeof savedComparisonsLoader>();
+  const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -54,6 +64,8 @@ export function SavedComparisonsRoute() {
   }
 
   const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds);
+  const savedSetQueries =
+    loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
 
   return (
     <CompareShell title="Saved comparisons">
@@ -64,32 +76,204 @@ export function SavedComparisonsRoute() {
       {loaderData.status === "unauthorized" ? (
         <Link to="/auth/login">Sign in to view saved comparisons</Link>
       ) : null}
-      {viewState.savedSets.length > 0 ? (
-        <ul aria-label="Saved comparison sets">
-          {viewState.savedSets.map((savedSet) => (
-            <li key={savedSet.id}>
-              <article>
-                <h2>{savedSet.name}</h2>
-                <p>{savedSet.slugs.join(", ")}</p>
-                <p>
-                  <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
-                </p>
-                <button
-                  disabled={pendingDeleteIds.includes(savedSet.id)}
-                  onClick={() => void handleDelete(savedSet.id)}
-                  type="button"
-                >
-                  {pendingDeleteIds.includes(savedSet.id)
-                    ? "Deleting comparison..."
-                    : "Delete comparison"}
-                </button>
-              </article>
-            </li>
-          ))}
-        </ul>
+      {viewState.savedSets.length > 0 && savedSetQueries.length > 0 ? (
+        <ResettableErrorBoundary
+          fallback={
+            <SavedComparisonSetList
+              onDelete={handleDelete}
+              pendingDeleteIds={pendingDeleteIds}
+              savedSets={viewState.savedSets}
+            />
+          }
+          resetToken={savedSetQueries}
+        >
+          <Suspense fallback={<p role="status">Loading saved comparisons...</p>}>
+            <RelaySavedComparisonSetList
+              deletedSavedSetIds={deletedSavedSetIds}
+              onDelete={handleDelete}
+              pendingDeleteIds={pendingDeleteIds}
+              savedSetQueries={savedSetQueries}
+            />
+          </Suspense>
+        </ResettableErrorBoundary>
+      ) : null}
+      {viewState.savedSets.length > 0 && savedSetQueries.length === 0 ? (
+        <SavedComparisonSetList
+          onDelete={handleDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSets={viewState.savedSets}
+        />
       ) : null}
     </CompareShell>
   );
+}
+
+type ResettableErrorBoundaryState = {
+  hasError: boolean;
+  resetToken: unknown;
+};
+
+class ResettableErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode; resetToken: unknown },
+  ResettableErrorBoundaryState
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode; resetToken: unknown }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      resetToken: props.resetToken
+    };
+  }
+
+  static getDerivedStateFromProps(
+    props: { resetToken: unknown },
+    state: ResettableErrorBoundaryState
+  ): Partial<ResettableErrorBoundaryState> | null {
+    if (props.resetToken === state.resetToken) {
+      return null;
+    }
+
+    return {
+      hasError: false,
+      resetToken: props.resetToken
+    };
+  }
+
+  static getDerivedStateFromError(): Partial<ResettableErrorBoundaryState> {
+    return { hasError: true };
+  }
+
+  override render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+
+    return this.props.children;
+  }
+}
+
+function RelaySavedComparisonSetList({
+  deletedSavedSetIds,
+  onDelete,
+  pendingDeleteIds,
+  savedSetQueries
+}: {
+  deletedSavedSetIds: string[];
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSetQueries: SavedComparisonSetQueryDescriptor[];
+}) {
+  return (
+    <ul aria-label="Saved comparison sets">
+      {savedSetQueries.map((savedSetQuery) => (
+        <RelaySavedComparisonSetPage
+          deletedSavedSetIds={deletedSavedSetIds}
+          key={savedComparisonSetQueryKey(savedSetQuery)}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSetQuery={savedSetQuery}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function RelaySavedComparisonSetPage({
+  deletedSavedSetIds,
+  onDelete,
+  pendingDeleteIds,
+  savedSetQuery
+}: {
+  deletedSavedSetIds: string[];
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSetQuery: SavedComparisonSetQueryDescriptor;
+}) {
+  const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    savedSetQuery
+  );
+  const data = usePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    queryRef
+  );
+  const page = summarizeSavedComparisonSetsPage(data);
+  const savedSets = page.savedSets.filter(
+    (savedSet) => !deletedSavedSetIds.includes(savedSet.id)
+  );
+
+  return (
+    <>
+      {savedSets.map((savedSet) => (
+        <SavedComparisonSetItem
+          key={savedSet.id}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSet={savedSet}
+        />
+      ))}
+    </>
+  );
+}
+
+function SavedComparisonSetList({
+  onDelete,
+  pendingDeleteIds,
+  savedSets
+}: {
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSets: SavedComparisonSetSummary[];
+}) {
+  return (
+    <ul aria-label="Saved comparison sets">
+      {savedSets.map((savedSet) => (
+        <SavedComparisonSetItem
+          key={savedSet.id}
+          onDelete={onDelete}
+          pendingDeleteIds={pendingDeleteIds}
+          savedSet={savedSet}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function SavedComparisonSetItem({
+  onDelete,
+  pendingDeleteIds,
+  savedSet
+}: {
+  onDelete: (savedComparisonSetId: string) => Promise<void>;
+  pendingDeleteIds: string[];
+  savedSet: SavedComparisonSetSummary;
+}) {
+  const deletePending = pendingDeleteIds.includes(savedSet.id);
+
+  return (
+    <li>
+      <article>
+        <h2>{savedSet.name}</h2>
+        <p>{savedSet.slugs.join(", ")}</p>
+        <p>
+          <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
+        </p>
+        <button
+          disabled={deletePending}
+          onClick={() => void onDelete(savedSet.id)}
+          type="button"
+        >
+          {deletePending ? "Deleting comparison..." : "Delete comparison"}
+        </button>
+      </article>
+    </li>
+  );
+}
+
+function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescriptor) {
+  return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
+    savedSetQuery.__relayQuery.variables
+  )}`;
 }
 
 const buildSavedComparisonHref = (slugs: string[]) => {

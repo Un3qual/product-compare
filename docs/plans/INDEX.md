@@ -11,12 +11,18 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
-   - Status: queued
+1. Frontend saved comparisons Relay migration: `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
+   - Status: active
+   - Source context: `ARCHITECTURE.md`, `docs/work/frontend-saved-comparisons-relay-migration.md`, and the completed frontend Relay route-data lane.
+   - Current scope: saved-set list loading/rendering now uses Relay route query descriptors; move the delete mutation to Relay next.
+   - Deferred: any additional compare/saved UI polish after the data path is unified.
+
+2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+   - Status: blocked
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-   - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, and merchant source identity persistence.
-   - Next scope: persist normalized listings into `SourceArtifact`, `ExternalProduct`, `MerchantProduct`, and `PricePoint` with replay idempotency and stale-observation guards.
-   - Deferred: live CJ credential validation, quota behavior, account-scoped sample payloads, and any Tier-3 scraping activation.
+   - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
+   - Next scope: no unblocked local ingestion batch remains before live provider validation.
+   - Deferred: live CJ credential validation, quota behavior, account-scoped sample payloads, source onboarding compliance signoff, and any Tier-3 scraping activation.
 
 ## Next Candidate After Active Queue
 
