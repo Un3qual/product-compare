@@ -414,13 +414,33 @@ test("preloadRouteQuery disposes the oldest cached query references when the cac
     return queryRef as never;
   });
 
-  for (let first = 1; first <= 21; first += 1) {
+  for (let first = 1; first <= 51; first += 1) {
     await preloadRouteQuery(environment, routeQuery, { first });
   }
 
-  expect(queryRefs).toHaveLength(21);
+  expect(queryRefs).toHaveLength(51);
   expect(queryRefs[0]?.dispose).toHaveBeenCalledTimes(1);
-  expect(queryRefs[20]?.dispose).not.toHaveBeenCalled();
+  expect(queryRefs[50]?.dispose).not.toHaveBeenCalled();
+});
+
+test("preloadRouteQuery retains enough query references for the saved-comparisons page cap", async () => {
+  const environment = createRelayEnvironment();
+  const queryRefs: Array<{ dispose: ReturnType<typeof vi.fn>; variables: { first: number } }> = [];
+
+  vi.mocked(loadAppQuery).mockImplementation((_environment, _query, variables) => {
+    const queryRef = { dispose: vi.fn(), variables: variables as { first: number } };
+    queryRefs.push(queryRef);
+
+    return queryRef as never;
+  });
+
+  for (let first = 1; first <= 50; first += 1) {
+    await preloadRouteQuery(environment, routeQuery, { first });
+  }
+
+  expect(queryRefs).toHaveLength(50);
+  expect(queryRefs[0]?.dispose).not.toHaveBeenCalled();
+  expect(queryRefs[49]?.dispose).not.toHaveBeenCalled();
 });
 
 test("route query ref eviction keeps recently used descriptors cached", async () => {
@@ -435,18 +455,18 @@ test("route query ref eviction keeps recently used descriptors cached", async ()
     return queryRef as never;
   });
 
-  for (let first = 1; first <= 20; first += 1) {
+  for (let first = 1; first <= 50; first += 1) {
     descriptors.push(await preloadRouteQuery(environment, routeQuery, { first }));
   }
 
   getRoutePreloadedQuery(environment, routeQuery, descriptors[0]);
 
-  await preloadRouteQuery(environment, routeQuery, { first: 21 });
+  await preloadRouteQuery(environment, routeQuery, { first: 51 });
 
-  expect(queryRefs).toHaveLength(21);
+  expect(queryRefs).toHaveLength(51);
   expect(queryRefs[0]?.dispose).not.toHaveBeenCalled();
   expect(queryRefs[1]?.dispose).toHaveBeenCalledTimes(1);
-  expect(queryRefs[20]?.dispose).not.toHaveBeenCalled();
+  expect(queryRefs[50]?.dispose).not.toHaveBeenCalled();
 });
 
 test("createRelayRouterContext exposes the Relay environment to route loaders", () => {

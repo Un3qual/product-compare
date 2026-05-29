@@ -5,7 +5,7 @@ import { createContext, RouterContextProvider } from "react-router-dom";
 import { getRequest, type CacheConfig, type Environment, type OperationType } from "relay-runtime";
 import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
 
-const ROUTE_QUERY_REF_CACHE_LIMIT = 20;
+const ROUTE_QUERY_REF_CACHE_LIMIT = 50;
 
 const relayEnvironmentRouterContext = createContext<Environment | null>(null);
 const routeQueryRefs = new WeakMap<Environment, Map<string, RouteQueryRefEntry>>();

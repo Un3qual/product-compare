@@ -12,7 +12,7 @@
 - Implementation plan: `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
 - Next step: move `/compare/saved` deletion from the manual `deleteSavedComparisonSet(...)` helper to a Relay mutation while preserving existing local delete UX.
 - Why this batch is current:
-  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample-payload, and compliance evidence.
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `/compare/saved` is the remaining explicit unblocked architecture gap after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
   - Task 1 moved saved-set list loading/rendering onto Relay route query descriptors.
   - Task 2 is the next unblocked batch because `assets/src/routes/compare/saved-data.ts` still owns the raw delete mutation helper.

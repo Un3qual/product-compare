@@ -67,9 +67,9 @@
 - Completed: 2026-05-29
 - Outcome:
   - Added `SavedComparisonsRouteQuery` and generated its Relay artifact.
-  - Updated `savedComparisonsLoader` to fetch paginated saved-set pages through `fetchRouteQuery`, return route query descriptors plus fallback summaries, and preserve unauthorized, page-cap, cursor, empty, and abort behavior.
-  - Updated `SavedComparisonsRoute` to render ready-state saved-set rows from Relay preloaded query records with loader summaries as the route-local error-boundary fallback.
-  - Updated saved-route tests from direct `fetchGraphQL(...)` loader assertions to the Relay loader contract.
+  - Rewrote `savedComparisonsLoader` to fetch paginated saved-set pages through `fetchRouteQuery`, return route query descriptors plus fallback summaries, and preserve unauthorized, page-cap, cursor, empty, and abort behavior.
+  - Modified `SavedComparisonsRoute` to render ready-state saved-set rows from Relay preloaded query records with loader summaries as the route-local error-boundary fallback.
+  - Converted saved-route tests from direct `fetchGraphQL(...)` loader assertions to the Relay loader contract.
 - Verification:
   - `cd assets && bun run relay`
   - `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/saved-comparisons-loader-auth.test.ts src/routes/compare/__tests__/saved-comparisons-route-state.test.tsx`

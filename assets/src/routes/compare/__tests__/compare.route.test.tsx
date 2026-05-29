@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
-import { createRelayEnvironment } from "../../../relay/environment";
+import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../relay/environment";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
@@ -702,7 +702,14 @@ test("saved comparisons loader returns unauthorized status when GraphQL returns 
   const request = new Request("https://app.example.com/compare/saved");
 
   mockedFetchRouteQuery.mockRejectedValueOnce(
-    new Error("GraphQL response contained errors: Unauthorized")
+    new RouteLoaderGraphQLError({
+      errors: [
+        {
+          message: "Unauthorized",
+          path: ["mySavedComparisonSets"]
+        }
+      ]
+    })
   );
 
   await expect(

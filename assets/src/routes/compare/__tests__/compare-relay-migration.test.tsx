@@ -305,32 +305,6 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
 
-  mockedFetchGraphQL.mockResolvedValue({
-    data: {
-      mySavedComparisonSets: {
-        edges: [
-          {
-            node: {
-              id: "saved-set-1",
-              name: "Manual fallback",
-              items: [
-                {
-                  position: 1,
-                  product: {
-                    slug: DETAIL_PRODUCT.slug
-                  }
-                }
-              ]
-            }
-          }
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null
-        }
-      }
-    }
-  });
   mockedFetchRouteQuery.mockResolvedValueOnce({
     data: {
       mySavedComparisonSets: {
@@ -384,6 +358,7 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
     { first: 20 },
     { signal: request.signal }
   );
+  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
 });
 
 test("saved comparisons route renders saved sets from Relay route queries", () => {

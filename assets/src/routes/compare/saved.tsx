@@ -18,7 +18,7 @@ import {
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
-  const loaderData = useLoaderData<typeof savedComparisonsLoader>() as SavedComparisonsRouteLoaderData;
+  const loaderData = useLoaderData<typeof savedComparisonsLoader>();
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -260,7 +260,9 @@ function SavedComparisonSetItem({
         </p>
         <button
           disabled={deletePending}
-          onClick={() => void onDelete(savedSet.id)}
+          onClick={() => {
+            onDelete(savedSet.id);
+          }}
           type="button"
         >
           {deletePending ? "Deleting comparison..." : "Delete comparison"}
@@ -276,7 +278,7 @@ function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescri
   )}`;
 }
 
-const buildSavedComparisonHref = (slugs: string[]) => {
+function buildSavedComparisonHref(slugs: string[]) {
   const searchParams = new URLSearchParams();
 
   for (const slug of slugs) {
@@ -284,7 +286,7 @@ const buildSavedComparisonHref = (slugs: string[]) => {
   }
 
   return `/compare?${searchParams.toString()}`;
-};
+}
 
 const buildSavedComparisonsStatus = (
   loaderData: SavedComparisonsRouteLoaderData,

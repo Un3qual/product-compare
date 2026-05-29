@@ -18,6 +18,16 @@ export interface CreateRelayEnvironmentOptions {
   ssrContext?: SSRContext;
 }
 
+export class RouteLoaderGraphQLError extends Error {
+  readonly response: GraphQLResponse;
+
+  constructor(response: GraphQLResponse) {
+    super(formatGraphQLErrorMessage(response));
+    this.name = "RouteLoaderGraphQLError";
+    this.response = response;
+  }
+}
+
 export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = {}) {
   const recordSource = new RecordSource(options.records ?? {});
 
@@ -34,7 +44,7 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
         signal: routeSignal ?? options.ssrContext?.signal
       }).then((response) => {
         if (routeSignal && hasGraphQLErrors(response)) {
-          throw new Error(formatGraphQLErrorMessage(response));
+          throw new RouteLoaderGraphQLError(response);
         }
 
         return response;

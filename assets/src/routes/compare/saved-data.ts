@@ -3,6 +3,7 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
+import { RouteLoaderGraphQLError } from "../../relay/environment";
 import { fetchGraphQL } from "../../relay/fetch-graphql";
 import {
   fetchRouteQuery,
@@ -118,10 +119,6 @@ export async function savedComparisonsLoader({
       };
     }
 
-    if (isAbortError(error)) {
-      throw error;
-    }
-
     throw error;
   }
 
@@ -223,26 +220,11 @@ function disposeFetchedSavedComparisonPages(
 }
 
 export function isUnauthorizedSavedComparisonsError(error: unknown) {
-  if (!error || typeof error !== "object" || !("message" in error)) {
+  if (!(error instanceof RouteLoaderGraphQLError)) {
     return false;
   }
 
-  const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
-  const authKeywords = ["unauth", "not authenticated", "not authorized", "access denied"];
-
-  return authKeywords.some((keyword) => message.includes(keyword));
-}
-
-function isAbortError(error: unknown) {
-  return getErrorName(error) === "AbortError";
-}
-
-function getErrorName(error: unknown) {
-  if (!error || typeof error !== "object" || !("name" in error)) {
-    return null;
-  }
-
-  return error.name;
+  return isUnauthorizedSavedComparisonsResponse(error.response);
 }
 
 export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
