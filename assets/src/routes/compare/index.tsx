@@ -1,4 +1,4 @@
-import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createSavedComparisonSetMutation, {
@@ -8,6 +8,7 @@ import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
+import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { CompareShell } from "./compare-shell";
 import { compareLoader, type CompareProductSummary, type CompareRouteLoaderData } from "./loader";
 
@@ -107,50 +108,6 @@ export function CompareRoute() {
       ) : null}
     </CompareShell>
   );
-}
-
-type ResettableErrorBoundaryState = {
-  hasError: boolean;
-  resetToken: unknown;
-};
-
-class ResettableErrorBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode; resetToken: unknown },
-  ResettableErrorBoundaryState
-> {
-  constructor(props: { children: ReactNode; fallback: ReactNode; resetToken: unknown }) {
-    super(props);
-    this.state = {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromProps(
-    props: { resetToken: unknown },
-    state: ResettableErrorBoundaryState
-  ): Partial<ResettableErrorBoundaryState> | null {
-    if (props.resetToken === state.resetToken) {
-      return null;
-    }
-
-    return {
-      hasError: false,
-      resetToken: props.resetToken
-    };
-  }
-
-  static getDerivedStateFromError(): Partial<ResettableErrorBoundaryState> {
-    return { hasError: true };
-  }
-
-  override render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-
-    return this.props.children;
-  }
 }
 
 function CompareProductList({
