@@ -350,7 +350,6 @@ test("compare route ignores stale save completions after the selected comparison
 });
 
 test("compare route enables saving a new selection while the previous Relay mutation is in flight", async () => {
-  commitMutationMock.mockImplementation(() => {});
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
   const { rerender } = render(<CompareRoute />);
