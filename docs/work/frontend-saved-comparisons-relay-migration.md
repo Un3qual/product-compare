@@ -17,7 +17,7 @@
   - `docs/work/frontend-compare-saved-hardening.md`
 - Current implementation plan:
   - `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
-  - `docs/plans/2026-05-30-frontend-saved-comparisons-auth-code-cleanup-implementation-plan.md`
+  - `docs/work/review-readability-cleanups.md`
 - Objective:
   - Move `/compare/saved` from the explicit manual `saved-data.ts` GraphQL helper path onto the existing Relay route preload and mutation APIs while preserving saved-set list, reopen, unauthorized, and delete behavior.
 
