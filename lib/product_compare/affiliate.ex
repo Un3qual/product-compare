@@ -11,6 +11,18 @@ defmodule ProductCompare.Affiliate do
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
 
+  @spec get_affiliate_network(pos_integer()) :: AffiliateNetwork.t() | nil
+  def get_affiliate_network(id), do: Repo.get(AffiliateNetwork, id)
+
+  @spec get_affiliate_program(pos_integer()) :: AffiliateProgram.t() | nil
+  def get_affiliate_program(id), do: Repo.get(AffiliateProgram, id)
+
+  @spec get_affiliate_link(pos_integer()) :: AffiliateLink.t() | nil
+  def get_affiliate_link(id), do: Repo.get(AffiliateLink, id)
+
+  @spec get_coupon(pos_integer()) :: Coupon.t() | nil
+  def get_coupon(id), do: Repo.get(Coupon, id)
+
   @spec upsert_network(map()) :: {:ok, AffiliateNetwork.t()} | {:error, Ecto.Changeset.t()}
   def upsert_network(attrs) do
     now = DateTime.utc_now()

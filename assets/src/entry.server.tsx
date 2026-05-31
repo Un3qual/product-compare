@@ -69,10 +69,32 @@ function createServerRequest(url: string, ssrContext?: SSRContext) {
     headers.set("cookie", ssrContext.cookieString);
   }
 
-  return new Request(resolveServerUrl(url, request?.url), {
+  const signal = ssrContext?.signal ?? request?.signal;
+  const serverRequest = new Request(resolveServerUrl(url, request?.url), {
     method: request?.method ?? "GET",
     headers
   });
+
+  if (signal) {
+    // Avoid RequestInit cross-realm AbortSignal checks while preserving loader cancellation.
+    Object.defineProperty(serverRequest, "signal", {
+      value: bridgeAbortSignal(signal)
+    });
+  }
+
+  return serverRequest;
+}
+
+function bridgeAbortSignal(signal: AbortSignal) {
+  const controller = new AbortController();
+
+  if (signal.aborted) {
+    controller.abort(signal.reason);
+  } else {
+    signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+  }
+
+  return controller.signal;
 }
 
 function resolveServerUrl(url: string, fallback?: string) {

@@ -4,23 +4,23 @@ import { useSearchParams } from "react-router-dom";
 import verifyEmailMutation, {
   type VerifyEmailMutation
 } from "../../__generated__/VerifyEmailMutation.graphql";
+import { commitRouteMutationPromise } from "../relay-mutations";
 import {
   type AuthActionResult,
+  invalidTokenMutationError,
+  isSuccessfulActionResult,
   type MutationError,
-  normalizeActionPayload,
-  relayGraphQLError,
-  transportMutationError
+  resolveActionMutationResult,
+  transportMutationErrors
 } from "./errors";
 import { AuthFormShell } from "./form-shell";
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
 type VerifyEmailCommit = MutationCommitFn<VerifyEmailMutation>;
 
-const missingTokenError: MutationError = {
-  code: "INVALID_TOKEN",
-  field: "token",
-  message: "This verification link is missing or invalid."
-};
+const missingTokenError = invalidTokenMutationError(
+  "This verification link is missing or invalid."
+);
 
 export function VerifyEmailRoute() {
   const [searchParams] = useSearchParams();
@@ -57,7 +57,7 @@ export function VerifyEmailRoute() {
           return;
         }
 
-        if (result.ok && result.errors.length === 0) {
+        if (isSuccessfulActionResult(result)) {
           setMessage("Your email address is verified.");
           setErrors([]);
         } else {
@@ -65,7 +65,7 @@ export function VerifyEmailRoute() {
         }
       } catch (error) {
         if (!cancelled) {
-          setErrors([transportMutationError(error)]);
+          setErrors(transportMutationErrors(error));
         }
       } finally {
         if (!cancelled) {
@@ -111,26 +111,14 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   // Verification tokens are single-use. Reusing successful in-flight or settled
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
   // but any failed outcome must be evicted so later mounts can retry.
-  const request = new Promise<AuthActionResult>((resolve, reject) => {
-    commitVerifyEmail({
-      variables: { token },
-      onCompleted(response, graphQLErrors) {
-        const graphQLError = relayGraphQLError(graphQLErrors);
-
-        if (graphQLError) {
-          reject(graphQLError);
-          return;
-        }
-
-        resolve(normalizeActionPayload(response?.verifyEmail));
-      },
-      onError(error) {
-        reject(error);
-      }
-    });
+  const request = commitRouteMutationPromise(commitVerifyEmail, {
+    variables: { token }
   })
+    .then(({ response, graphQLErrors }) =>
+      resolveActionMutationResult(response?.verifyEmail, graphQLErrors)
+    )
     .then((result) => {
-      if (!result.ok || result.errors.length > 0) {
+      if (!isSuccessfulActionResult(result)) {
         verificationRequests.delete(token);
       }
 

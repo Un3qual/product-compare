@@ -1,67 +1,87 @@
 import { Suspense, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
+import deleteSavedComparisonSetMutation, {
+  type DeleteSavedComparisonSetMutation
+} from "../../__generated__/DeleteSavedComparisonSetMutation.graphql";
 import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { commitRouteMutation } from "../relay-mutations";
+import {
+  DEFAULT_ROUTE_ERROR_MESSAGE,
+  hasRouteMutationGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
 import type {
   SavedComparisonSetQueryDescriptor,
   SavedComparisonSetSummary,
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
-import {
-  deleteSavedComparisonSet,
-  savedComparisonsLoader,
-  summarizeSavedComparisonSetsPage
-} from "./saved-data";
+import { savedComparisonsLoader, summarizeSavedComparisonSetsPage } from "./saved-data";
 import { CompareShell } from "./compare-shell";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
-  const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<string[]>([]);
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<ReadonlySet<string>>(new Set());
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
+  const [commitDeleteSavedComparisonSet] = useMutation<DeleteSavedComparisonSetMutation>(
+    deleteSavedComparisonSetMutation
+  );
 
-  async function handleDelete(savedComparisonSetId: string) {
+  function finishDelete(savedComparisonSetId: string) {
+    inFlightDeleteIdsRef.current.delete(savedComparisonSetId);
+    setPendingDeleteIds((currentPendingDeleteIds) =>
+      removeSetValue(currentPendingDeleteIds, savedComparisonSetId)
+    );
+  }
+
+  function handleDelete(savedComparisonSetId: string) {
     if (inFlightDeleteIdsRef.current.has(savedComparisonSetId)) {
       return;
     }
 
     inFlightDeleteIdsRef.current.add(savedComparisonSetId);
     setPendingDeleteIds((currentPendingDeleteIds) =>
-      currentPendingDeleteIds.includes(savedComparisonSetId)
-        ? currentPendingDeleteIds
-        : [...currentPendingDeleteIds, savedComparisonSetId]
+      addSetValue(currentPendingDeleteIds, savedComparisonSetId)
     );
     setDeleteError(null);
 
-    try {
-      const result = await deleteSavedComparisonSet(savedComparisonSetId);
+    commitRouteMutation(
+      commitDeleteSavedComparisonSet,
+      {
+        variables: {
+          savedComparisonSetId
+        },
+        onCompleted: (response, graphQLErrors) => {
+          const payload = response.deleteSavedComparisonSet;
+          const deletedSavedSetId = payload?.savedComparisonSet?.id;
 
-      if (result.savedComparisonSetId) {
-        const deletedSavedSetId = result.savedComparisonSetId;
+          if (deletedSavedSetId && !hasRouteMutationGraphQLErrors(graphQLErrors)) {
+            setDeleteError(null);
+            setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
+              addSetValue(currentDeletedSavedSetIds, deletedSavedSetId)
+            );
+          } else {
+            setDeleteError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+          }
 
-        setDeleteError(null);
-        setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
-          currentDeletedSavedSetIds.includes(deletedSavedSetId)
-            ? currentDeletedSavedSetIds
-            : [...currentDeletedSavedSetIds, deletedSavedSetId]
-        );
-        return;
+          finishDelete(savedComparisonSetId);
+        },
+        onError: () => {
+          setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          finishDelete(savedComparisonSetId);
+        }
+      },
+      () => {
+        setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        finishDelete(savedComparisonSetId);
       }
-
-      setDeleteError(result.errors[0]?.message ?? "Request failed. Please try again.");
-    } catch {
-      setDeleteError("Request failed. Please try again.");
-    } finally {
-      inFlightDeleteIdsRef.current.delete(savedComparisonSetId);
-      setPendingDeleteIds((currentPendingDeleteIds) =>
-        currentPendingDeleteIds.filter((pendingDeleteId) => pendingDeleteId !== savedComparisonSetId)
-      );
-    }
+    );
   }
 
   const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds);
@@ -115,9 +135,9 @@ function RelaySavedComparisonSetList({
   pendingDeleteIds,
   savedSetQueries
 }: {
-  deletedSavedSetIds: string[];
-  onDelete: (savedComparisonSetId: string) => Promise<void>;
-  pendingDeleteIds: string[];
+  deletedSavedSetIds: ReadonlySet<string>;
+  onDelete: (savedComparisonSetId: string) => void;
+  pendingDeleteIds: ReadonlySet<string>;
   savedSetQueries: SavedComparisonSetQueryDescriptor[];
 }) {
   return (
@@ -141,9 +161,9 @@ function RelaySavedComparisonSetPage({
   pendingDeleteIds,
   savedSetQuery
 }: {
-  deletedSavedSetIds: string[];
-  onDelete: (savedComparisonSetId: string) => Promise<void>;
-  pendingDeleteIds: string[];
+  deletedSavedSetIds: ReadonlySet<string>;
+  onDelete: (savedComparisonSetId: string) => void;
+  pendingDeleteIds: ReadonlySet<string>;
   savedSetQuery: SavedComparisonSetQueryDescriptor;
 }) {
   const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
@@ -155,9 +175,7 @@ function RelaySavedComparisonSetPage({
     queryRef
   );
   const page = summarizeSavedComparisonSetsPage(data);
-  const savedSets = page.savedSets.filter(
-    (savedSet) => !deletedSavedSetIds.includes(savedSet.id)
-  );
+  const savedSets = page.savedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
 
   return (
     <>
@@ -178,8 +196,8 @@ function SavedComparisonSetList({
   pendingDeleteIds,
   savedSets
 }: {
-  onDelete: (savedComparisonSetId: string) => Promise<void>;
-  pendingDeleteIds: string[];
+  onDelete: (savedComparisonSetId: string) => void;
+  pendingDeleteIds: ReadonlySet<string>;
   savedSets: SavedComparisonSetSummary[];
 }) {
   return (
@@ -211,11 +229,11 @@ function SavedComparisonSetItem({
   pendingDeleteIds,
   savedSet
 }: {
-  onDelete: (savedComparisonSetId: string) => Promise<void>;
-  pendingDeleteIds: string[];
+  onDelete: (savedComparisonSetId: string) => void;
+  pendingDeleteIds: ReadonlySet<string>;
   savedSet: SavedComparisonSetSummary;
 }) {
-  const deletePending = pendingDeleteIds.includes(savedSet.id);
+  const deletePending = pendingDeleteIds.has(savedSet.id);
 
   return (
     <li>
@@ -228,7 +246,7 @@ function SavedComparisonSetItem({
         <button
           disabled={deletePending}
           onClick={() => {
-            onDelete(savedSet.id).catch(() => undefined);
+            onDelete(savedSet.id);
           }}
           type="button"
         >
@@ -243,6 +261,24 @@ export function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQuer
   return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
     stableJsonValue(savedSetQuery.__relayQuery.variables)
   )}`;
+}
+
+function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): ReadonlySet<T> {
+  if (currentValues.has(nextValue)) {
+    return currentValues;
+  }
+
+  return new Set(currentValues).add(nextValue);
+}
+
+function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): ReadonlySet<T> {
+  if (!currentValues.has(removedValue)) {
+    return currentValues;
+  }
+
+  const nextValues = new Set(currentValues);
+  nextValues.delete(removedValue);
+  return nextValues;
 }
 
 const buildSavedComparisonsStatus = (
@@ -267,21 +303,15 @@ const buildSavedComparisonsStatus = (
 
 const buildSavedComparisonsViewState = (
   loaderData: SavedComparisonsRouteLoaderData,
-  deletedSavedSetIds: string[]
+  deletedSavedSetIds: ReadonlySet<string>
 ) => {
-  const locallyDeletedSavedSetIds = deletedSavedSetIds.filter((deletedSavedSetId) =>
-    loaderData.savedSets.some((savedSet) => savedSet.id === deletedSavedSetId)
+  const hasLocalDeletion = loaderData.savedSets.some((savedSet) =>
+    deletedSavedSetIds.has(savedSet.id)
   );
-  const savedSets = loaderData.savedSets.filter(
-    (savedSet) => !locallyDeletedSavedSetIds.includes(savedSet.id)
-  );
+  const savedSets = loaderData.savedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
 
   return {
     savedSets,
-    statusMessage: buildSavedComparisonsStatus(
-      loaderData,
-      savedSets,
-      locallyDeletedSavedSetIds.length > 0
-    )
+    statusMessage: buildSavedComparisonsStatus(loaderData, savedSets, hasLocalDeletion)
   };
 };

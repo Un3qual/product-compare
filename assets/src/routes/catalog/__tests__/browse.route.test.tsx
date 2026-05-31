@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../relay/environment";
 import browseProductsRouteQueryArtifact from "../../../__generated__/BrowseProductsRouteQuery.graphql";
@@ -63,6 +63,19 @@ const browseQueryDescriptor = {
   }
 };
 
+const buildBrowseLoaderArgs = ({
+  environment = createRelayEnvironment(),
+  request = new Request("https://app.example.com/products")
+}: {
+  environment?: ReturnType<typeof createRelayEnvironment>;
+  request?: Request;
+} = {}): LoaderFunctionArgs => ({
+  request,
+  params: {},
+  context: createRelayRouterContext(environment),
+  unstable_pattern: "/products"
+});
+
 function getBrowseProductsRouteQueryArtifact() {
   return browseProductsRouteQueryArtifact as {
     params?: {
@@ -93,11 +106,7 @@ test("browse loader preloads and returns the Relay browse route query", async ()
   mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
 
   await expect(
-    browseLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as LoaderFunctionArgs)
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     query: browseQueryDescriptor
@@ -122,16 +131,30 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
 
   try {
     await expect(
-      browseLoader({
-        request: new Request("https://app.example.com/products"),
-        params: {},
-        context: createRelayRouterContext(environment)
-      } as LoaderFunctionArgs)
+      browseLoader(buildBrowseLoaderArgs({ environment }))
     ).resolves.toEqual({ status: "error" });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError
     });
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("browse loader rethrows missing Relay router context configuration errors", async () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  try {
+    await expect(
+      browseLoader({
+        ...buildBrowseLoaderArgs(),
+        context: new RouterContextProvider()
+      })
+    ).rejects.toThrow("Relay environment is missing from the route loader context");
+
+    expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   } finally {
     consoleErrorSpy.mockRestore();
   }
@@ -146,11 +169,7 @@ test("browse loader rethrows aborted route preloads", async () => {
 
   try {
     await expect(
-      browseLoader({
-        request: new Request("https://app.example.com/products"),
-        params: {},
-        context: createRelayRouterContext(environment)
-      } as LoaderFunctionArgs)
+      browseLoader(buildBrowseLoaderArgs({ environment }))
     ).rejects.toBe(abortError);
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -381,7 +400,8 @@ test("renders an unavailable-state message when the preload path fails", () => {
     </MemoryRouter>
   );
 
-  expect(screen.getByText("Catalog unavailable.")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
+  expect(screen.getByText("Please refresh the page or try again later.")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });

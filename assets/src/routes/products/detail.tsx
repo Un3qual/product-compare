@@ -15,21 +15,17 @@ export function ProductDetailRoute() {
   const loaderData = useLoaderData<typeof productDetailLoader>() as ProductDetailLoaderData;
 
   if (loaderData.status !== "ready") {
-    return (
-      <section>
-        <p>{loaderData.status === "not_found" ? "Product not found." : "Product unavailable."}</p>
-      </section>
+    return loaderData.status === "not_found" ? (
+      <ProductNotFoundFallback />
+    ) : (
+      <ProductUnavailableFallback />
     );
   }
 
   return (
     <ResettableErrorBoundary
       resetToken={loaderData.productQuery}
-      fallback={
-        <section>
-          <p>Product unavailable.</p>
-        </section>
-      }
+      fallback={<ProductUnavailableFallback />}
     >
       <Suspense fallback={<p role="status">Loading product...</p>}>
         <ProductDetail productQuery={loaderData.productQuery} offers={loaderData.offers} />
@@ -52,11 +48,7 @@ function ProductDetail({
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
 
   if (!data.product) {
-    return (
-      <section>
-        <p>Product not found.</p>
-      </section>
-    );
+    return <ProductNotFoundFallback />;
   }
 
   const { product } = data;
@@ -69,15 +61,11 @@ function ProductDetail({
       <section>
         <h2>Active offers</h2>
         {offers.status === "error" ? (
-          <p>Offers unavailable.</p>
+          <OffersUnavailableFallback />
         ) : (
           <ResettableErrorBoundary
             resetToken={offers.query}
-            fallback={
-              <div role="alert">
-                <p>Offers unavailable.</p>
-              </div>
-            }
+            fallback={<OffersUnavailableFallback />}
           >
             <Suspense fallback={<p role="status">Loading offers...</p>}>
               <ProductOffers query={offers.query} />
@@ -86,6 +74,30 @@ function ProductDetail({
         )}
       </section>
     </section>
+  );
+}
+
+function ProductUnavailableFallback() {
+  return (
+    <section role="alert">
+      <p>Product unavailable.</p>
+    </section>
+  );
+}
+
+function ProductNotFoundFallback() {
+  return (
+    <section>
+      <p>Product not found.</p>
+    </section>
+  );
+}
+
+function OffersUnavailableFallback() {
+  return (
+    <div role="alert">
+      <p>Offers unavailable.</p>
+    </div>
   );
 }
 

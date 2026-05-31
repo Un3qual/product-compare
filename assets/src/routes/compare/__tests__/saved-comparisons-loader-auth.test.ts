@@ -1,18 +1,13 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
-import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../relay/environment";
-import {
-  createRelayRouterContext,
-  fetchRouteQuery
-} from "../../../relay/route-preload";
+import { fetchRouteQuery } from "../../../relay/route-preload";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
 } from "../saved-data";
-
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
-}));
+import {
+  buildGraphQLResponseWithErrors,
+  buildRouteLoaderGraphQLError,
+  buildSavedComparisonsLoaderArgs
+} from "./saved-comparisons-test-helpers";
 
 vi.mock("../../../relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../relay/route-preload")>(
@@ -25,48 +20,41 @@ vi.mock("../../../relay/route-preload", async () => {
   };
 });
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const fetchRouteQueryMock = vi.mocked(fetchRouteQuery);
 
 beforeEach(() => {
-  fetchGraphQLMock.mockReset();
   fetchRouteQueryMock.mockReset();
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects a pathless unauthenticated response", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse(
-      {
-        errors: [
-          {
-            message: "Unauthorized",
-            extensions: {
-              code: "UNAUTHENTICATED"
-            }
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Unauthorized",
+          extensions: {
+            code: "UNAUTHENTICATED"
           }
-        ]
-      } as unknown as Parameters<typeof isUnauthorizedSavedComparisonsResponse>[0]
+        }
+      ])
     )
   ).toBe(true);
 });
 
-test("savedComparisonsLoader returns unauthorized for a pathless not authorized response", async () => {
+test("savedComparisonsLoader returns unauthorized for a pathless structured auth response", async () => {
   fetchRouteQueryMock.mockRejectedValueOnce(
-    new RouteLoaderGraphQLError({
-      errors: [
-        {
-          message: "You are not authorized to access saved comparison sets"
+    buildRouteLoaderGraphQLError([
+      {
+        message: "Authentication failed",
+        extensions: {
+          code: "UNAUTHENTICATED"
         }
-      ]
-    })
+      }
+    ])
   );
 
   await expect(
-    savedComparisonsLoader({
-      request: new Request("https://app.example.com/compare/saved"),
-      params: {},
-      context: createRelayRouterContext(createRelayEnvironment())
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs())
   ).resolves.toEqual({
     status: "unauthorized",
     savedSetQueries: [],
@@ -80,10 +68,22 @@ test("savedComparisonsLoader does not treat generic access denied failures as au
   );
 
   await expect(
-    savedComparisonsLoader({
-      request: new Request("https://app.example.com/compare/saved"),
-      params: {},
-      context: createRelayRouterContext(createRelayEnvironment())
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs())
   ).rejects.toThrow("CDN access denied while fetching saved comparison sets");
+});
+
+test("isUnauthorizedSavedComparisonsResponse ignores legacy unauthorized extension codes", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse(
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Unauthorized",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "UNAUTHORIZED"
+          }
+        }
+      ])
+    )
+  ).toBe(false);
 });

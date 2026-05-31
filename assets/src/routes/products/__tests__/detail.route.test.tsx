@@ -93,6 +93,21 @@ const DETAIL_PRODUCT = {
 const productQueryRef = { dispose: vi.fn(), variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables };
 const offersQueryRef = { dispose: vi.fn(), variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables };
 
+const buildProductDetailLoaderArgs = ({
+  environment = createRelayEnvironment(),
+  request = new Request("https://app.example.com/products/detail-product"),
+  slug = "detail-product"
+}: {
+  environment?: ReturnType<typeof createRelayEnvironment>;
+  request?: Request;
+  slug?: string;
+} = {}): LoaderFunctionArgs => ({
+  request,
+  params: { slug },
+  context: createRelayRouterContext(environment),
+  unstable_pattern: "/products/:slug"
+});
+
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();
   preloadRouteQueryMock.mockReset();
@@ -117,11 +132,7 @@ test("product detail loader preloads product detail and active offers through Re
   mockedPreloadRouteQuery.mockResolvedValue(OFFERS_QUERY_DESCRIPTOR);
 
   await expect(
-    productDetailLoader({
-      request,
-      params: { slug: "detail-product" },
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -158,11 +169,13 @@ test("product detail loader marks null products as not found", async () => {
   });
 
   await expect(
-    productDetailLoader({
-      request: new Request("https://app.example.com/products/missing-product"),
-      params: { slug: "missing-product" },
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    productDetailLoader(
+      buildProductDetailLoaderArgs({
+        environment,
+        request: new Request("https://app.example.com/products/missing-product"),
+        slug: "missing-product"
+      })
+    )
   ).resolves.toEqual({
     status: "not_found"
   });
@@ -173,11 +186,12 @@ test("product detail loader marks null products as not found", async () => {
 
 test("product detail loader treats blank slugs as not found", async () => {
   await expect(
-    productDetailLoader({
-      request: new Request("https://app.example.com/products/%20"),
-      params: { slug: "   " },
-      context: createRelayRouterContext(createRelayEnvironment())
-    } as unknown as LoaderFunctionArgs)
+    productDetailLoader(
+      buildProductDetailLoaderArgs({
+        request: new Request("https://app.example.com/products/%20"),
+        slug: "   "
+      })
+    )
   ).resolves.toEqual({
     status: "not_found"
   });
@@ -195,11 +209,7 @@ test("product detail loader marks failed product preloads as unavailable", async
 
   try {
     await expect(
-      productDetailLoader({
-        request: new Request("https://app.example.com/products/detail-product"),
-        params: { slug: "detail-product" },
-        context: createRelayRouterContext(environment)
-      } as unknown as LoaderFunctionArgs)
+      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).resolves.toEqual({
       status: "error"
     });
@@ -228,11 +238,7 @@ test("product detail loader keeps product detail ready when offers fail", async 
 
   try {
     await expect(
-      productDetailLoader({
-        request: new Request("https://app.example.com/products/detail-product"),
-        params: { slug: "detail-product" },
-        context: createRelayRouterContext(environment)
-      } as unknown as LoaderFunctionArgs)
+      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).resolves.toEqual({
       status: "ready",
       productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -258,11 +264,7 @@ test("product detail loader rethrows aborted product preloads", async () => {
 
   try {
     await expect(
-      productDetailLoader({
-        request: new Request("https://app.example.com/products/detail-product"),
-        params: { slug: "detail-product" },
-        context: createRelayRouterContext(environment)
-      } as unknown as LoaderFunctionArgs)
+      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).rejects.toBe(abortError);
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -288,11 +290,7 @@ test("product detail loader disposes product query when offers preload aborts", 
 
   try {
     await expect(
-      productDetailLoader({
-        request: new Request("https://app.example.com/products/detail-product"),
-        params: { slug: "detail-product" },
-        context: createRelayRouterContext(environment)
-      } as unknown as LoaderFunctionArgs)
+      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).rejects.toBe(abortError);
 
     expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
@@ -468,7 +466,7 @@ test("renders an unavailable-offers message without collapsing the product detai
   );
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
-  expect(screen.getByText("Offers unavailable.")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
   expect(screen.queryByText("Product unavailable.")).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
@@ -529,7 +527,7 @@ test("renders an unavailable message when the product detail request fails", () 
     </MemoryRouter>
   );
 
-  expect(screen.getByText("Product unavailable.")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Product unavailable.");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });

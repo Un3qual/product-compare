@@ -19,23 +19,23 @@
 - `/products/:slug` ships product detail and active-offer baselines.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params and now exposes a saved-comparison action for ready-state selections.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
-- Browser auth, `/products`, `/products/:slug`, and `/compare` now use Relay query or mutation APIs with SSR store hydration.
-- `/compare/saved` Relay migration is now the active frontend follow-up: saved-set list loading/rendering uses Relay route query descriptors, and the remaining active batch moves deletion onto a Relay mutation.
+- Browser auth, `/products`, `/products/:slug`, `/compare`, and `/compare/saved` now use Relay query or mutation APIs with SSR store hydration.
+- Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
 
 ## Current Delivered Backend Baseline
 
-- GraphQL exposes viewer/session auth mutations, catalog browse/detail, merchant discovery, merchant products, and active coupons.
+- GraphQL exposes viewer/session auth mutations, catalog browse/detail, merchant discovery, merchant products, and active coupons, with `UNAUTHENTICATED` used consistently for missing-session GraphQL failures.
 - GraphQL request-level Dataloader batching is in place for catalog/pricing associations and latest-price lookups.
-- Relay-style global IDs are used where the schema already requires them, with Phoenix staying responsible for auth/session state.
+- Relay-style global IDs are used where the schema already requires them, with root node lookup covering public catalog/pricing entities including price points, owner-scoped saved/API-token entities, and authenticated affiliate entities.
+- GraphQL global ID local-value normalization, encoding, and integer/UUID decoding are centralized in `ProductCompareWeb.GraphQL.GlobalId`.
 - Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, a query-backed revenue summary contract, and read-only GraphQL `revenueSummary` exposure.
 
 ## Active Gap
 
 - CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
 - Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, and fixture parser tests.
-- `/compare/saved` still has an explicit manual GraphQL helper for delete behavior until the active Relay migration finishes.
 
 ## Next Planned Slice
 
-- Frontend Saved Comparisons Relay Migration is queued next: move `/compare/saved` delete behavior onto Relay mutation APIs while preserving the current route UX.
-- Live CJ provider validation remains blocked until credentials, quota behavior, and representative sample payloads are recorded.
+- No unblocked frontend or backend implementation slice is queued after the saved-comparisons Relay migration, authenticated affiliate node follow-up, and public price-point node follow-up.
+- Live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.

@@ -5,57 +5,53 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
-  alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
+  alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, _resolution) do
-    {:ok, Catalog.get_product_by_slug(fetch_value(args || %{}, :slug))}
+    {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def products(_parent, args, _resolution) do
-    with {:ok, filters} <- normalize_filters(fetch_value(args || %{}, :filters, %{})) do
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       query = Filtering.apply_filters(Product, filters)
 
-      connection_args = Map.take(args || %{}, [:first, :after])
+      connection_args = Input.connection_args(args)
 
-      case Connection.from_query(query, connection_args, Repo) do
-        {:ok, connection} ->
-          {:ok, connection}
-
-        {:error, :invalid_cursor} ->
-          {:error, "invalid cursor"}
-      end
+      Connection.from_query_result(query, connection_args, Repo)
     end
   end
 
   @spec my_saved_comparison_sets(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def my_saved_comparison_sets(_parent, args, %{context: %{current_user: current_user}}) do
     query = Catalog.list_saved_comparison_sets_query(current_user.id)
-    connection_args = Map.take(args || %{}, [:first, :after])
+    connection_args = Input.connection_args(args)
 
-    case Connection.from_query(query, connection_args, Repo) do
-      {:ok, connection} ->
-        {:ok, connection}
-
-      {:error, :invalid_cursor} ->
-        {:error, "invalid cursor"}
-    end
+    Connection.from_query_result(query, connection_args, Repo)
   end
 
-  def my_saved_comparison_sets(_parent, _args, _resolution), do: {:error, "unauthorized"}
+  def my_saved_comparison_sets(_parent, _args, _resolution),
+    do: {:error, GraphQLErrors.unauthenticated()}
 
   @spec create_saved_comparison_set(any(), %{input: map()}, Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def create_saved_comparison_set(_parent, %{input: input}, %{context: %{current_user: current_user}}) do
+  def create_saved_comparison_set(_parent, %{input: input}, %{
+        context: %{current_user: current_user}
+      }) do
     with {:ok, product_ids} <-
-           cast_global_id_list(fetch_list_value(input, :product_ids), :product, "product") do
+           Input.decode_integer_id_list(
+             Input.fetch_list_value(input, :product_ids),
+             :product,
+             "product"
+           ) do
       attrs = %{
-        name: fetch_value(input, :name),
+        name: Input.fetch_value(input, :name),
         product_ids: product_ids
       }
 
@@ -100,9 +96,13 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   def create_saved_comparison_set(_parent, _args, _resolution),
-    do: {:ok, saved_comparison_error_payload("UNAUTHORIZED", "unauthorized")}
+    do: {:ok, saved_comparison_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
-  @spec delete_saved_comparison_set(any(), %{saved_comparison_set_id: String.t()}, Absinthe.Resolution.t()) ::
+  @spec delete_saved_comparison_set(
+          any(),
+          %{saved_comparison_set_id: String.t()},
+          Absinthe.Resolution.t()
+        ) ::
           {:ok, map()}
   def delete_saved_comparison_set(
         _parent,
@@ -110,7 +110,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
         %{context: %{current_user: current_user}}
       ) do
     with {:ok, entropy_id} <-
-           cast_required_entropy_global_id(
+           Input.decode_required_uuid_id(
              saved_comparison_set_id,
              :saved_comparison_set,
              "saved comparison set"
@@ -134,22 +134,34 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   def delete_saved_comparison_set(_parent, _args, _resolution),
-    do: {:ok, saved_comparison_error_payload("UNAUTHORIZED", "unauthorized")}
+    do: {:ok, saved_comparison_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
   @spec normalize_filters(map() | nil) :: {:ok, map()} | {:error, String.t()}
   defp normalize_filters(nil), do: {:ok, %{}}
 
   defp normalize_filters(filters) when is_map(filters) do
     with {:ok, primary_type_taxon_id} <-
-           cast_optional_global_id(fetch_value(filters, :primary_type_taxon_id), :taxon, "taxon"),
+           Input.decode_optional_integer_id(
+             Input.fetch_value(filters, :primary_type_taxon_id),
+             :taxon,
+             "taxon"
+           ),
          {:ok, include_type_descendants} <-
-           normalize_boolean(fetch_value(filters, :include_type_descendants, false)),
-         {:ok, numeric_filters} <- normalize_numeric_filters(fetch_list_value(filters, :numeric)),
+           Input.normalize_boolean_value(
+             Input.fetch_value(filters, :include_type_descendants, false)
+           ),
+         {:ok, numeric_filters} <-
+           normalize_numeric_filters(Input.fetch_list_value(filters, :numeric)),
          {:ok, boolean_filters} <-
-           normalize_boolean_filters(fetch_list_value(filters, :booleans)),
-         {:ok, enum_filters} <- normalize_enum_filters(fetch_list_value(filters, :enums)),
+           normalize_boolean_filters(Input.fetch_list_value(filters, :booleans)),
+         {:ok, enum_filters} <- normalize_enum_filters(Input.fetch_list_value(filters, :enums)),
          {:ok, use_case_taxon_ids} <-
-           cast_global_id_list(fetch_list_value(filters, :use_case_taxon_ids), :taxon, "taxon") do
+           Input.decode_integer_id_list(
+             Input.fetch_list_value(filters, :use_case_taxon_ids),
+             :taxon,
+             "taxon",
+             "invalid filter ids"
+           ) do
       normalized_filters =
         %{
           include_type_descendants: include_type_descendants,
@@ -158,7 +170,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
           enums: enum_filters,
           use_case_taxon_ids: use_case_taxon_ids
         }
-        |> maybe_put(:primary_type_taxon_id, primary_type_taxon_id)
+        |> Input.put_present(:primary_type_taxon_id, primary_type_taxon_id)
 
       {:ok, normalized_filters}
     end
@@ -171,13 +183,17 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     Enum.reduce_while(filters, {:ok, []}, fn filter, {:ok, acc} ->
       with true <- is_map(filter),
            {:ok, attribute_id} <-
-             cast_required_global_id(fetch_value(filter, :attribute_id), :attribute, "attribute"),
-           {:ok, min} <- normalize_decimal(fetch_value(filter, :min)),
-           {:ok, max} <- normalize_decimal(fetch_value(filter, :max)) do
+             Input.decode_required_integer_id(
+               Input.fetch_value(filter, :attribute_id),
+               :attribute,
+               "attribute"
+             ),
+           {:ok, min} <- Input.normalize_decimal_value(Input.fetch_value(filter, :min)),
+           {:ok, max} <- Input.normalize_decimal_value(Input.fetch_value(filter, :max)) do
         normalized_filter =
           %{attribute_id: attribute_id}
-          |> maybe_put(:min, min)
-          |> maybe_put(:max, max)
+          |> Input.put_present(:min, min)
+          |> Input.put_present(:max, max)
 
         {:cont, {:ok, [normalized_filter | acc]}}
       else
@@ -195,8 +211,12 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     Enum.reduce_while(filters, {:ok, []}, fn filter, {:ok, acc} ->
       with true <- is_map(filter),
            {:ok, attribute_id} <-
-             cast_required_global_id(fetch_value(filter, :attribute_id), :attribute, "attribute"),
-           value when is_boolean(value) <- fetch_value(filter, :value) do
+             Input.decode_required_integer_id(
+               Input.fetch_value(filter, :attribute_id),
+               :attribute,
+               "attribute"
+             ),
+           value when is_boolean(value) <- Input.fetch_value(filter, :value) do
         {:cont, {:ok, [%{attribute_id: attribute_id, value: value} | acc]}}
       else
         false -> {:halt, {:error, "invalid boolean filter"}}
@@ -214,10 +234,14 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     Enum.reduce_while(filters, {:ok, []}, fn filter, {:ok, acc} ->
       with true <- is_map(filter),
            {:ok, attribute_id} <-
-             cast_required_global_id(fetch_value(filter, :attribute_id), :attribute, "attribute"),
+             Input.decode_required_integer_id(
+               Input.fetch_value(filter, :attribute_id),
+               :attribute,
+               "attribute"
+             ),
            {:ok, enum_option_id} <-
-             cast_required_global_id(
-               fetch_value(filter, :enum_option_id),
+             Input.decode_required_integer_id(
+               Input.fetch_value(filter, :enum_option_id),
                :enum_option,
                "enum option"
              ) do
@@ -232,133 +256,29 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   defp normalize_enum_filters(_filters), do: {:error, "invalid enum filter"}
 
-  @spec cast_optional_global_id(any(), GlobalId.type(), String.t()) ::
-          {:ok, pos_integer() | nil} | {:error, String.t()}
-  defp cast_optional_global_id(nil, _expected_type, _field_name), do: {:ok, nil}
-
-  defp cast_optional_global_id(value, expected_type, field_name),
-    do: cast_required_global_id(value, expected_type, field_name)
-
-  @spec cast_global_id_list(any(), GlobalId.type(), String.t()) ::
-          {:ok, [pos_integer()]} | {:error, String.t()}
-  defp cast_global_id_list(nil, _expected_type, _field_name), do: {:ok, []}
-
-  defp cast_global_id_list(values, expected_type, field_name) when is_list(values) do
-    Enum.reduce_while(values, {:ok, []}, fn value, {:ok, acc} ->
-      case cast_required_global_id(value, expected_type, field_name) do
-        {:ok, normalized_value} ->
-          {:cont, {:ok, [normalized_value | acc]}}
-
-        {:error, _} = error ->
-          {:halt, error}
-      end
-    end)
-    |> reverse_ok_list()
-  end
-
-  defp cast_global_id_list(_values, _expected_type, _field_name),
-    do: {:error, "invalid filter ids"}
-
-  @spec cast_required_global_id(any(), GlobalId.type(), String.t()) ::
-          {:ok, pos_integer()} | {:error, String.t()}
-  defp cast_required_global_id(value, expected_type, field_name) when is_binary(value) do
-    with {:ok, {^expected_type, local_id}} <- GlobalId.decode(value),
-         {parsed_id, ""} <- Integer.parse(local_id),
-         true <- parsed_id > 0 do
-      {:ok, parsed_id}
-    else
-      _ -> {:error, "invalid #{field_name} id"}
-    end
-  end
-
-  defp cast_required_global_id(_value, _expected_type, field_name),
-    do: {:error, "invalid #{field_name} id"}
-
-  @spec cast_required_entropy_global_id(any(), GlobalId.type(), String.t()) ::
-          {:ok, Ecto.UUID.t()} | {:error, String.t()}
-  defp cast_required_entropy_global_id(value, expected_type, field_name) when is_binary(value) do
-    with {:ok, {^expected_type, entropy_id}} <- GlobalId.decode(value),
-         {:ok, normalized_entropy_id} <- Ecto.UUID.cast(entropy_id) do
-      {:ok, normalized_entropy_id}
-    else
-      _ -> {:error, "invalid #{field_name} id"}
-    end
-  end
-
-  defp cast_required_entropy_global_id(_value, _expected_type, field_name),
-    do: {:error, "invalid #{field_name} id"}
-
-  @spec normalize_decimal(any()) :: {:ok, Decimal.t() | number() | nil} | {:error, String.t()}
-  defp normalize_decimal(nil), do: {:ok, nil}
-  defp normalize_decimal(%Decimal{} = value), do: {:ok, value}
-  defp normalize_decimal(value) when is_integer(value) or is_float(value), do: {:ok, value}
-
-  defp normalize_decimal(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> {:error, "invalid numeric value"}
-    end
-  end
-
-  defp normalize_decimal(_value), do: {:error, "invalid numeric value"}
-
   @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
           {:ok, list()} | {:error, String.t()}
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
-  defp reverse_ok_list({:error, _} = error), do: error
-
-  @spec fetch_value(map(), atom(), any()) :: any()
-  defp fetch_value(map, key, default \\ nil),
-    do: Map.get(map, key, Map.get(map, Atom.to_string(key), default))
-
-  @spec fetch_list_value(map(), atom()) :: any()
-  defp fetch_list_value(map, key) do
-    case fetch_value(map, key, []) do
-      nil -> []
-      value -> value
-    end
-  end
-
-  @spec normalize_boolean(any()) :: {:ok, boolean()}
-  defp normalize_boolean(true), do: {:ok, true}
-  defp normalize_boolean(false), do: {:ok, false}
-  defp normalize_boolean(_value), do: {:ok, false}
-
-  @spec maybe_put(map(), atom(), any()) :: map()
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+  defp reverse_ok_list({:error, _message} = error), do: error
 
   defp saved_comparison_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     %{
       saved_comparison_set: nil,
-      errors: changeset_errors(changeset)
+      errors: GraphQLErrors.changeset_mutation_errors(changeset)
     }
   end
 
   defp saved_comparison_error_payload(code, message, field \\ nil) do
     %{
       saved_comparison_set: nil,
-      errors: [mutation_error(code, message, field)]
+      errors: [GraphQLErrors.mutation_error(code, message, field)]
     }
   end
 
-  defp changeset_errors(%Ecto.Changeset{} = changeset) do
-    changeset
-    |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
-      opts_by_key = Map.new(opts, fn {k, v} -> {to_string(k), v} end)
-
-      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
-        opts_by_key
-        |> Map.get(key, key)
-        |> to_string()
-      end)
-    end)
-    |> Enum.flat_map(fn {field, messages} ->
-      Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
-    end)
-  end
-
-  defp mutation_error(code, message, field) do
-    %{code: code, message: message, field: field}
+  defp saved_comparison_error_payload(error) when is_map(error) do
+    %{
+      saved_comparison_set: nil,
+      errors: [error]
+    }
   end
 end

@@ -1,8 +1,12 @@
-export interface MutationError {
-  code: string;
-  field?: string | null;
-  message: string;
-}
+import {
+  DEFAULT_ROUTE_ERROR_MESSAGE,
+  hasRouteGraphQLErrors,
+  isRouteMutationError,
+  type RouteMutationError
+} from "../route-errors";
+import { isRouteRecord } from "../route-records";
+
+export type MutationError = RouteMutationError;
 
 interface Viewer {
   id: string;
@@ -19,14 +23,12 @@ export interface AuthActionResult {
   errors: MutationError[];
 }
 
-const transportErrorMessage = "Request failed. Please try again.";
-
 export function findMutationError(errors: MutationError[], field: string) {
   return errors.find((error) => error.field === field)?.message ?? null;
 }
 
 export function sanitizeTransportError(_error: unknown) {
-  return transportErrorMessage;
+  return DEFAULT_ROUTE_ERROR_MESSAGE;
 }
 
 export function transportMutationError(error: unknown): MutationError {
@@ -37,16 +39,58 @@ export function transportMutationError(error: unknown): MutationError {
   };
 }
 
-export function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
-  if (Array.isArray(errors) && errors.length > 0) {
+export function transportMutationErrors(error: unknown): MutationError[] {
+  return [transportMutationError(error)];
+}
+
+export function invalidTokenMutationError(message: string): MutationError {
+  return {
+    code: "INVALID_TOKEN",
+    field: "token",
+    message
+  };
+}
+
+function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
+  if (hasRouteGraphQLErrors(errors)) {
     return transportMutationError(errors);
   }
 
   return null;
 }
 
+export function resolveSessionMutationResult(
+  payload: unknown,
+  graphQLErrors: readonly unknown[] | null | undefined
+): AuthSessionResult {
+  const graphQLError = relayGraphQLError(graphQLErrors);
+
+  if (graphQLError) {
+    return { viewer: null, errors: [graphQLError] };
+  }
+
+  return normalizeSessionPayload(payload);
+}
+
+export function resolveActionMutationResult(
+  payload: unknown,
+  graphQLErrors: readonly unknown[] | null | undefined
+): AuthActionResult {
+  const graphQLError = relayGraphQLError(graphQLErrors);
+
+  if (graphQLError) {
+    return { ok: false, errors: [graphQLError] };
+  }
+
+  return normalizeActionPayload(payload);
+}
+
+export function isSuccessfulActionResult(result: AuthActionResult) {
+  return result.ok && result.errors.length === 0;
+}
+
 export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
-  const sessionPayload = isRecord(payload) ? payload : {};
+  const sessionPayload = isRouteRecord(payload) ? payload : {};
   const viewer = isViewer(sessionPayload.viewer) ? sessionPayload.viewer : null;
   const errors = normalizeErrors(sessionPayload.errors);
 
@@ -57,7 +101,7 @@ export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
 }
 
 export function normalizeActionPayload(payload: unknown): AuthActionResult {
-  const actionPayload = isRecord(payload) ? payload : {};
+  const actionPayload = isRouteRecord(payload) ? payload : {};
   const ok = actionPayload.ok === true;
   const errors = normalizeErrors(actionPayload.errors);
 
@@ -69,7 +113,7 @@ export function normalizeActionPayload(payload: unknown): AuthActionResult {
 
 function normalizeErrors(payloadErrors: unknown): MutationError[] {
   if (Array.isArray(payloadErrors)) {
-    const typedErrors = payloadErrors.filter(isMutationError);
+    const typedErrors = payloadErrors.filter(isRouteMutationError);
 
     if (typedErrors.length > 0) {
       return typedErrors;
@@ -88,32 +132,14 @@ function ensureFailureErrors(errors: MutationError[]) {
     {
       code: "UNKNOWN_ERROR",
       field: null,
-      message: transportErrorMessage
+      message: DEFAULT_ROUTE_ERROR_MESSAGE
     }
   ];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function isMutationError(value: unknown): value is MutationError {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return Boolean(
-    typeof value.code === "string" &&
-      typeof value.message === "string" &&
-      (value.field === undefined ||
-        value.field === null ||
-        typeof value.field === "string")
-  );
-}
-
 function isViewer(value: unknown): value is Viewer {
   return Boolean(
-    isRecord(value) &&
+    isRouteRecord(value) &&
       typeof value.id === "string" &&
       typeof value.email === "string"
   );

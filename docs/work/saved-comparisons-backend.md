@@ -5,7 +5,7 @@
 - Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-03-18 (UTC) at commit `821067e` (clean working tree)
+- Last verified: 2026-05-30 after saved-comparisons Relay migration handoff
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -25,7 +25,7 @@ Changes include:
 - `lib/product_compare/catalog.ex` exposes create/list/delete saved-comparison helpers alongside the existing product and brand APIs.
 - `lib/product_compare_web/schema.ex` exposes saved-comparison query, mutation, and object types.
 - `lib/product_compare_web/resolvers/catalog_resolver.ex` handles saved-comparison query and mutation flows in addition to catalog browse/detail.
-- `assets/src/routes/compare/index.tsx` and `assets/src/routes/compare/api.ts` are still frontend-only today, which is why the next queued slice is the frontend saved-comparisons UI.
+- The frontend saved-comparisons UI and Relay migration are complete: `/compare` saves ready selections through Relay, and `/compare/saved` lists/reopens/deletes saved sets through Relay route query and mutation APIs.
 
 ## Completed
 
@@ -38,7 +38,7 @@ Changes include:
 ## Closure
 
 - This backend work item is complete.
-- The next unblocked slice is the frontend saved-comparisons UI work queued in `docs/work/frontend-saved-comparisons-ui.md`.
+- The dependent frontend saved-comparisons UI and Relay migration work is complete. No follow-up is queued from this backend work item.
 
 ## Verification Commands
 

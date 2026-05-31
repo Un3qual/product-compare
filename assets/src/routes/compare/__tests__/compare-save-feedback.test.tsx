@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { CompareRoute } from "../index";
 
 const {
@@ -214,6 +215,36 @@ test("compare route keeps a stable status region in the DOM before and after sav
   await waitFor(() => {
     expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
   });
+});
+
+test("compare route reports a generic error when save completes with top-level GraphQL errors", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        createSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-1"
+          },
+          errors: [
+            {
+              code: "INVALID_ARGUMENT",
+              field: "productIds",
+              message: "Payload detail should not win"
+            }
+          ]
+        }
+      },
+      [{ message: "database stacktrace" }]
+    );
+  });
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
 test("compare route allows a later save after the current request settles", async () => {

@@ -1,15 +1,25 @@
-import { fireEvent, render, screen, waitFor, act } from "@testing-library/react";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { useMutation } from "react-relay";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../saved";
+import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
+import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 
-const { useLoaderDataMock } = vi.hoisted(() => ({
-  useLoaderDataMock: vi.fn()
+const { commitMutationMock, useLoaderDataMock, useMutationMock } = vi.hoisted(() => ({
+  commitMutationMock: vi.fn(),
+  useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn()
 }));
 
-vi.mock("../../../relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
-}));
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    useMutation: useMutationMock
+  };
+});
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
@@ -20,12 +30,14 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 
 beforeEach(() => {
-  fetchGraphQLMock.mockReset();
+  commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseMutation.mockReset();
+  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 
 const buildSavedSet = () => {
@@ -44,18 +56,11 @@ const buildReadyLoaderData = () => {
 };
 
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
-  const deleteDeferred = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        };
-        errors: [];
-      };
-    };
-  }>();
+  let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
 
-  fetchGraphQLMock.mockImplementation(() => deleteDeferred.promise);
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    completeDelete = onCompleted;
+  });
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
 
   render(
@@ -70,24 +75,13 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
   fireEvent.click(deleteButton);
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledTimes(1);
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
   });
 
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
   await act(async () => {
-    deleteDeferred.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-1"
-          },
-          errors: []
-        }
-      }
-    });
-
-    await deleteDeferred.promise;
+    completeDelete(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 });
 
@@ -104,15 +98,8 @@ test("saved comparisons route starts with an empty status region when saved sets
 });
 
 test("saved comparisons route announces deletion when deleting the last set", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: "saved-set-1"
-        },
-        errors: []
-      }
-    }
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
 
@@ -125,12 +112,12 @@ test("saved comparisons route announces deletion when deleting the last set", as
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation DeleteSavedComparisonSet"),
-      {
-        savedComparisonSetId: "saved-set-1"
-      },
-      undefined
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
     );
   });
 
@@ -160,32 +147,13 @@ test("saved comparisons route uses a descriptive sign-in link for unauthorized s
 });
 
 test("saved comparisons route clears stale delete errors when a later delete succeeds", async () => {
-  const failedDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: null;
-        errors: {
-          code: string;
-          field: string | null;
-          message: string;
-        }[];
-      };
-    };
-  }>();
-  const successfulDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        };
-        errors: [];
-      };
-    };
-  }>();
+  const commits: Array<{
+    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
+  }> = [];
 
-  fetchGraphQLMock
-    .mockImplementationOnce(() => failedDelete.promise)
-    .mockImplementationOnce(() => successfulDelete.promise);
+  commitMutationMock.mockImplementation((config) => {
+    commits.push(config);
+  });
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     savedSets: [
@@ -213,36 +181,27 @@ test("saved comparisons route clears stale delete errors when a later delete suc
   fireEvent.click(deleteButtons[0]);
   fireEvent.click(deleteButtons[1]);
 
-  await act(async () => {
-    failedDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: null,
-          errors: [
-            {
-              code: "GRAPHQL_ERROR",
-              field: null,
-              message: "Request failed. Please try again."
-            }
-          ]
-        }
-      }
-    });
-    await failedDelete.promise;
+  await waitFor(() => {
+    expect(commits).toHaveLength(2);
   });
 
   await act(async () => {
-    successfulDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-2"
-          },
-          errors: []
-        }
+    commits[0].onCompleted({
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null,
+        errors: [
+          {
+            code: "GRAPHQL_ERROR",
+            field: null,
+            message: "Request failed. Please try again."
+          }
+        ]
       }
     });
-    await successfulDelete.promise;
+  });
+
+  await act(async () => {
+    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 
   await waitFor(() => {
@@ -251,6 +210,131 @@ test("saved comparisons route clears stale delete errors when a later delete suc
   });
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("saved comparisons route submits the saved-set ID as Relay mutation variables", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
+    );
+  });
+});
+
+test("saved comparisons route keeps the set visible when the Relay mutation returns typed errors", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null,
+        errors: [
+          {
+            code: "BAD_USER_INPUT",
+            field: "savedComparisonSetId",
+            message: "Could not delete this comparison set."
+          }
+        ]
+      }
+    });
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
+});
+
+test("saved comparisons route keeps the set visible when delete completes with top-level GraphQL errors", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"), [
+      { message: "database stacktrace" }
+    ]);
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
+test("saved comparisons route reports Relay mutation network failures", async () => {
+  commitMutationMock.mockImplementation(({ onError }) => {
+    onError(new Error("Network request failed: boom"));
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
+    );
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
 });
 
 test("saved comparison query keys are stable across variable property order", () => {
@@ -277,18 +361,3 @@ test("saved comparison query keys are stable across variable property order", ()
 
   expect(secondKey).toBe(firstKey);
 });
-
-const createDeferred = <T,>() => {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-
-  return {
-    promise,
-    resolve,
-    reject
-  };
-};

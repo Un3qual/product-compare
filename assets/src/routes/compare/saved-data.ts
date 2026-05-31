@@ -4,29 +4,18 @@ import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../relay/environment";
-import { fetchGraphQL } from "../../relay/fetch-graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
   type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
-
-export interface CompareMutationError {
-  code: string;
-  field?: string | null;
-  message: string;
-}
+import { isRouteRecord } from "../route-records";
 
 export interface SavedComparisonSetSummary {
   id: string;
   name: string;
   slugs: string[];
-}
-
-export interface DeleteSavedComparisonSetResult {
-  savedComparisonSetId: string | null;
-  errors: CompareMutationError[];
 }
 
 export type SavedComparisonSetQueryDescriptor = RelayRouteQueryDescriptor<
@@ -47,21 +36,8 @@ export type SavedComparisonsRouteLoaderData =
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
 const SAVED_COMPARISON_SETS_MAX_PAGES = 50;
-
-const DELETE_SAVED_COMPARISON_SET_MUTATION = `
-  mutation DeleteSavedComparisonSet($savedComparisonSetId: ID!) {
-    deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {
-      savedComparisonSet {
-        id
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
+const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["FORBIDDEN", "UNAUTHENTICATED"]);
+const SAVED_COMPARISONS_PARSE_ERROR = "Failed to parse saved comparison sets response";
 
 export async function savedComparisonsLoader({
   context,
@@ -129,44 +105,6 @@ export async function savedComparisonsLoader({
   };
 }
 
-export async function deleteSavedComparisonSet(
-  savedComparisonSetId: string
-): Promise<DeleteSavedComparisonSetResult> {
-  const response = await fetchGraphQL(
-    DELETE_SAVED_COMPARISON_SET_MUTATION,
-    {
-      savedComparisonSetId
-    },
-    undefined
-  );
-  const payload = readMutationPayload(response, "deleteSavedComparisonSet");
-  const deletedSavedComparisonSetId = readSavedComparisonSetId(payload.savedComparisonSet);
-  const errors = normalizeMutationErrors(payload.errors, response);
-
-  return {
-    savedComparisonSetId: deletedSavedComparisonSetId,
-    errors: deletedSavedComparisonSetId ? errors : ensureFailureErrors(errors)
-  };
-}
-
-function readMutationPayload(response: GraphQLResponse, fieldName: string) {
-  if (
-    !Array.isArray(response) &&
-    "data" in response &&
-    response.data &&
-    typeof response.data === "object" &&
-    !Array.isArray(response.data)
-  ) {
-    const payload = (response.data as Record<string, unknown>)[fieldName];
-
-    if (payload && typeof payload === "object" && !Array.isArray(payload)) {
-      return payload as Record<string, unknown>;
-    }
-  }
-
-  return {};
-}
-
 function throwIfAborted(signal?: AbortSignal) {
   if (!signal?.aborted) {
     return;
@@ -180,35 +118,86 @@ function throwIfAborted(signal?: AbortSignal) {
 }
 
 export function summarizeSavedComparisonSetsPage(
-  data: SavedComparisonsRouteQuery["response"]
+  data: unknown
 ): {
   savedSets: SavedComparisonSetSummary[];
   hasNextPage: boolean;
   endCursor: string | null;
 } {
-  const connection = data.mySavedComparisonSets;
+  const connection = isRouteRecord(data) ? data.mySavedComparisonSets : null;
 
-  if (!connection || !Array.isArray(connection.edges) || !connection.pageInfo) {
-    throw new Error("Failed to parse saved comparison sets response");
+  if (
+    !isRouteRecord(connection) ||
+    !Array.isArray(connection.edges) ||
+    !isRouteRecord(connection.pageInfo)
+  ) {
+    throwSavedComparisonsParseError();
+  }
+
+  const { hasNextPage, endCursor } = connection.pageInfo;
+
+  if (typeof hasNextPage !== "boolean" || !(endCursor == null || typeof endCursor === "string")) {
+    throwSavedComparisonsParseError();
   }
 
   return {
-    savedSets: connection.edges.map((edge) => summarizeSavedComparisonSet(edge.node)),
-    hasNextPage: connection.pageInfo.hasNextPage,
-    endCursor: connection.pageInfo.endCursor ?? null
+    savedSets: connection.edges.map(summarizeSavedComparisonEdge),
+    hasNextPage,
+    endCursor: endCursor ?? null
   };
 }
 
-function summarizeSavedComparisonSet(
-  node: SavedComparisonsRouteQuery["response"]["mySavedComparisonSets"]["edges"][number]["node"]
-): SavedComparisonSetSummary {
+function summarizeSavedComparisonEdge(edge: unknown): SavedComparisonSetSummary {
+  if (!isRouteRecord(edge)) {
+    throwSavedComparisonsParseError();
+  }
+
+  return summarizeSavedComparisonSet(edge.node);
+}
+
+function summarizeSavedComparisonSet(node: unknown): SavedComparisonSetSummary {
+  if (
+    !isRouteRecord(node) ||
+    typeof node.id !== "string" ||
+    typeof node.name !== "string" ||
+    !Array.isArray(node.items)
+  ) {
+    throwSavedComparisonsParseError();
+  }
+
   return {
     id: node.id,
     name: node.name,
-    slugs: [...node.items]
+    slugs: node.items
+      .map(summarizeSavedComparisonItem)
       .sort((left, right) => left.position - right.position)
-      .map((item) => item.product.slug)
+      .map((item) => item.slug)
   };
+}
+
+function summarizeSavedComparisonItem(item: unknown): { position: number; slug: string } {
+  if (
+    !isRouteRecord(item) ||
+    typeof item.position !== "number" ||
+    !isRouteRecord(item.product)
+  ) {
+    throwSavedComparisonsParseError();
+  }
+
+  const slug = item.product.slug;
+
+  if (typeof slug !== "string") {
+    throwSavedComparisonsParseError();
+  }
+
+  return {
+    position: item.position,
+    slug
+  };
+}
+
+function throwSavedComparisonsParseError(): never {
+  throw new Error(SAVED_COMPARISONS_PARSE_ERROR);
 }
 
 function disposeFetchedSavedComparisonPages(
@@ -228,8 +217,6 @@ export function isUnauthorizedSavedComparisonsError(error: unknown) {
 }
 
 export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
-  // TODO: Once the backend emits structured error codes consistently,
-  // remove fuzzy message checks and rely solely on extensions.code
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }
@@ -239,109 +226,28 @@ export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse
   }
 
   return response.errors.some((error) => {
-    if (!error || typeof error !== "object" || Array.isArray(error)) {
+    if (!isRouteRecord(error)) {
       return false;
     }
 
-    const candidate = error as unknown as Record<string, unknown>;
     const isRelevantPath =
-      candidate.path == null ||
-      (Array.isArray(candidate.path) &&
-        (candidate.path.length === 0 ||
-          candidate.path.some((segment) => segment === "mySavedComparisonSets")));
+      error.path == null ||
+      (Array.isArray(error.path) &&
+        (error.path.length === 0 ||
+          error.path.some((segment) => segment === "mySavedComparisonSets")));
 
     if (!isRelevantPath) {
       return false;
     }
 
-    const extensions = candidate.extensions;
-    if (extensions && typeof extensions === "object" && !Array.isArray(extensions)) {
-      const code = (extensions as Record<string, unknown>).code;
+    const extensions = error.extensions;
+    if (isRouteRecord(extensions)) {
+      const code = extensions.code;
       if (typeof code === "string") {
-        const normalizedCode = code.toUpperCase();
-        if (normalizedCode === "UNAUTHENTICATED" || normalizedCode === "FORBIDDEN") {
-          return true;
-        }
+        return SAVED_COMPARISONS_AUTH_ERROR_CODES.has(code.toUpperCase());
       }
-    }
-
-    if (typeof candidate.message === "string") {
-      const normalizedMessage = candidate.message.toLowerCase();
-      const authKeywords = ["unauth", "not authenticated", "not authorized", "access denied"];
-      return authKeywords.some((keyword) => normalizedMessage.includes(keyword));
     }
 
     return false;
   });
-}
-
-const readSavedComparisonSetId = (savedComparisonSet: unknown) => {
-  if (
-    savedComparisonSet &&
-    typeof savedComparisonSet === "object" &&
-    !Array.isArray(savedComparisonSet) &&
-    "id" in savedComparisonSet &&
-    typeof savedComparisonSet.id === "string"
-  ) {
-    return savedComparisonSet.id;
-  }
-
-  return null;
-};
-
-function normalizeMutationErrors(
-  payloadErrors: unknown,
-  response: GraphQLResponse
-): CompareMutationError[] {
-  if (Array.isArray(payloadErrors)) {
-    const typedErrors = payloadErrors.filter(isCompareMutationError);
-
-    if (typedErrors.length > 0) {
-      return typedErrors;
-    }
-  }
-
-  if (!Array.isArray(response) && "errors" in response && Array.isArray(response.errors)) {
-    return response.errors.map(() => ({
-      code: "GRAPHQL_ERROR",
-      field: null,
-      message: "Request failed. Please try again."
-    }));
-  }
-
-  return [];
-}
-
-function ensureFailureErrors(errors: CompareMutationError[]) {
-  if (errors.length > 0) {
-    return errors;
-  }
-
-  return [
-    {
-      code: "UNKNOWN_ERROR",
-      field: null,
-      message: "Request failed. Please try again."
-    }
-  ];
-}
-
-function isCompareMutationError(value: unknown): value is CompareMutationError {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as {
-    code?: unknown;
-    field?: unknown;
-    message?: unknown;
-  };
-
-  return Boolean(
-    typeof candidate.code === "string" &&
-      typeof candidate.message === "string" &&
-      (candidate.field === undefined ||
-        candidate.field === null ||
-        typeof candidate.field === "string")
-  );
 }

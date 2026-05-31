@@ -9,6 +9,12 @@ import productDetailRouteQuery, {
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { commitRouteMutation } from "../relay-mutations";
+import {
+  DEFAULT_ROUTE_ERROR_MESSAGE,
+  hasRouteMutationGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
 import { CompareShell } from "./compare-shell";
 import { compareLoader, type CompareProductSummary, type CompareRouteLoaderData } from "./loader";
 
@@ -40,30 +46,40 @@ export function CompareRoute() {
     setSaveMessage(null);
     setSaveError(null);
 
-    commitCreateSavedComparisonSet({
-      variables: {
-        input: {
-          name: buildSavedComparisonName(loaderData.products),
-          productIds: loaderData.products.map((product) => product.id)
+    commitRouteMutation(
+      commitCreateSavedComparisonSet,
+      {
+        variables: {
+          input: {
+            name: buildSavedComparisonName(loaderData.products),
+            productIds: loaderData.products.map((product) => product.id)
+          }
+        },
+        onCompleted: (response, graphQLErrors) => {
+          const payload = response.createSavedComparisonSet;
+
+          if (
+            payload?.savedComparisonSet?.id &&
+            !hasRouteMutationGraphQLErrors(graphQLErrors)
+          ) {
+            setSaveMessage("Comparison saved.");
+            setSaveError(null);
+          } else {
+            setSaveError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+          }
+
+          isSaveInFlightRef.current = false;
+        },
+        onError: () => {
+          setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          isSaveInFlightRef.current = false;
         }
       },
-      onCompleted: (response) => {
-        const payload = response.createSavedComparisonSet;
-
-        if (payload?.savedComparisonSet?.id) {
-          setSaveMessage("Comparison saved.");
-          setSaveError(null);
-        } else {
-          setSaveError(payload?.errors?.[0]?.message ?? "Request failed. Please try again.");
-        }
-
-        isSaveInFlightRef.current = false;
-      },
-      onError: () => {
-        setSaveError("Request failed. Please try again.");
+      () => {
+        setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
         isSaveInFlightRef.current = false;
       }
-    });
+    );
   }
 
   if (loaderData.status === "ready") {

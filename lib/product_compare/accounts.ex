@@ -6,6 +6,7 @@ defmodule ProductCompare.Accounts do
   import Ecto.Query
 
   alias ProductCompare.Accounts.UserAuth
+  alias ProductCompare.Attrs
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
@@ -473,9 +474,9 @@ defmodule ProductCompare.Accounts do
         user_id: user_id,
         token_prefix: token_prefix_from_hash(token_hash),
         token_hash: token_hash,
-        expires_at: default_api_token_expiry(fetch_attr(attrs, :expires_at), now)
+        expires_at: default_api_token_expiry(Attrs.fetch(attrs, :expires_at), now)
       }
-      |> maybe_put(:label, fetch_attr(attrs, :label))
+      |> Attrs.put_present(:label, Attrs.fetch(attrs, :label))
 
     case %ApiToken{}
          |> ApiToken.changeset(token_attrs)
@@ -525,8 +526,8 @@ defmodule ProductCompare.Accounts do
 
   defp merge_rotation_defaults(attrs, token) do
     attrs
-    |> ensure_map()
-    |> maybe_put(:label, fetch_attr(attrs, :label) || token.label)
+    |> Attrs.ensure_map()
+    |> Attrs.put_present(:label, Attrs.fetch(attrs, :label) || token.label)
   end
 
   defp api_token_active?(%ApiToken{revoked_at: nil, expires_at: expires_at}, now) do
@@ -543,7 +544,7 @@ defmodule ProductCompare.Accounts do
 
   defp token_list_status_filter(opts) when is_map(opts) do
     opts
-    |> fetch_attr(:status)
+    |> Attrs.fetch(:status)
     |> normalize_api_token_status_filter()
   end
 
@@ -601,18 +602,6 @@ defmodule ProductCompare.Accounts do
         end
     end
   end
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-  end
-
-  defp fetch_attr(_attrs, _key), do: nil
-
-  defp ensure_map(attrs) when is_map(attrs), do: attrs
-  defp ensure_map(_attrs), do: %{}
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   # Browser auth recovery flows stay mailer-agnostic here; production delivery
   # can be injected later without changing the GraphQL contract or the token logic.

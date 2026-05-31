@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
+  alias ProductCompareWeb.Resolvers.AffiliateResolver
 
   import ProductCompare.Fixtures.AccountsFixtures
 
@@ -24,8 +25,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
       one_hour = 3600
       two_hours = 7200
-      merchant_id = relay_id("Merchant", merchant.id)
-      merchant_product_id = relay_id("MerchantProduct", merchant_product.id)
+      merchant_id = relay_id(:merchant, merchant.id)
+      merchant_product_id = relay_id(:merchant_product, merchant_product.id)
 
       assert %{
                "data" => %{
@@ -42,7 +43,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                })
 
       impact_network = Repo.get_by!(AffiliateNetwork, name: "Impact")
-      assert primary_network_id == relay_id("AffiliateNetwork", impact_network.id)
+      assert primary_network_id == relay_id(:affiliate_network, impact_network.id)
 
       assert %{
                "data" => %{
@@ -73,7 +74,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                })
 
       partnerize_network = Repo.get_by!(AffiliateNetwork, name: "Partnerize")
-      assert secondary_network_id == relay_id("AffiliateNetwork", partnerize_network.id)
+      assert secondary_network_id == relay_id(:affiliate_network, partnerize_network.id)
 
       assert %{
                "data" => %{
@@ -363,9 +364,9 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       merchant = merchant_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant})
       {:ok, existing_network} = Affiliate.upsert_network(%{name: "Existing Network"})
-      existing_network_id = relay_id("AffiliateNetwork", existing_network.id)
-      merchant_id = relay_id("Merchant", merchant.id)
-      merchant_product_id = relay_id("MerchantProduct", merchant_product.id)
+      existing_network_id = relay_id(:affiliate_network, existing_network.id)
+      merchant_id = relay_id(:merchant, merchant.id)
+      merchant_product_id = relay_id(:merchant_product, merchant_product.id)
 
       baseline_counts = %{
         network: Repo.aggregate(AffiliateNetwork, :count, :id),
@@ -424,7 +425,14 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       assert %{
                "data" => %{"activeCoupons" => nil},
-               "errors" => [%{"message" => "unauthorized"} | _]
+               "errors" => [
+                 %{
+                   "message" => "unauthorized",
+                   "path" => ["activeCoupons"],
+                   "extensions" => %{"code" => "UNAUTHENTICATED"}
+                 }
+                 | _
+               ]
              } = response
 
       assert Repo.aggregate(AffiliateNetwork, :count, :id) == baseline_counts.network
@@ -436,7 +444,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     test "affiliate mutations reject raw affiliate network IDs", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()
-      merchant_id = relay_id("Merchant", merchant.id)
+      merchant_id = relay_id(:merchant, merchant.id)
 
       {:ok, existing_network} =
         Affiliate.upsert_network(%{name: "Raw Id Network #{System.unique_integer([:positive])}"})
@@ -474,7 +482,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       {:ok, existing_network} =
         Affiliate.upsert_network(%{name: "Raw Merchant Id #{System.unique_integer([:positive])}"})
 
-      affiliate_network_id = relay_id("AffiliateNetwork", existing_network.id)
+      affiliate_network_id = relay_id(:affiliate_network, existing_network.id)
 
       response =
         graphql(authed_conn, upsert_program_mutation(), %{
@@ -505,7 +513,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     test "createCoupon returns validation errors for invalid discount shape", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()
-      merchant_id = relay_id("Merchant", merchant.id)
+      merchant_id = relay_id(:merchant, merchant.id)
 
       response =
         graphql(authed_conn, create_coupon_mutation(), %{
@@ -536,7 +544,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     test "activeCoupons rejects invalid cursor input", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()
-      merchant_id = relay_id("Merchant", merchant.id)
+      merchant_id = relay_id(:merchant, merchant.id)
 
       response =
         graphql(authed_conn, active_coupons_query(), %{
@@ -563,6 +571,59 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                "errors" => [%{"message" => "invalid merchant id"} | _]
              } = response
     end
+
+    test "activeCoupons resolver honors string-key at input after ID normalization" do
+      merchant = merchant_fixture()
+      merchant_id = relay_id(:merchant, merchant.id)
+      future_at = DateTime.utc_now() |> DateTime.add(3600, :second) |> DateTime.truncate(:second)
+      code = "STRING-AT-#{System.unique_integer([:positive])}"
+
+      {:ok, _coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: code,
+          discount_type: :other,
+          valid_from: DateTime.add(future_at, -60, :second),
+          valid_to: DateTime.add(future_at, 60, :second)
+        })
+
+      assert {:ok, %{coupons: %{edges: [%{node: %{code: ^code}}]}}} =
+               AffiliateResolver.active_coupons(
+                 nil,
+                 %{input: %{"merchant_id" => merchant_id, "at" => future_at, "first" => 10}},
+                 %{context: %{current_user: user_fixture()}}
+               )
+    end
+
+    test "upsertAffiliateNetwork resolver honors string-key name input" do
+      name = "String Key Network #{System.unique_integer([:positive])}"
+
+      assert {:ok, %{network: %{name: ^name}, errors: []}} =
+               AffiliateResolver.upsert_affiliate_network(
+                 nil,
+                 %{input: %{"name" => name}},
+                 %{context: %{current_user: user_fixture()}}
+               )
+    end
+
+    test "upsertAffiliateProgram resolver normalizes string-key attrs after ID decoding" do
+      merchant = merchant_fixture()
+      {:ok, network} = Affiliate.upsert_network(%{name: "String Program Network"})
+
+      assert {:ok, %{program: %{program_code: "DIRECT-PROGRAM", status: "active"}, errors: []}} =
+               AffiliateResolver.upsert_affiliate_program(
+                 nil,
+                 %{
+                   input: %{
+                     "affiliate_network_id" => relay_id(:affiliate_network, network.id),
+                     "merchant_id" => relay_id(:merchant, merchant.id),
+                     "program_code" => "DIRECT-PROGRAM",
+                     "status" => "active"
+                   }
+                 },
+                 %{context: %{current_user: user_fixture()}}
+               )
+    end
   end
 
   defp assert_mutation_unauthorized(response, root_field, entity_field) do
@@ -575,7 +636,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     assert %{
              ^entity_field => nil,
              "errors" => [
-               %{"code" => "UNAUTHORIZED", "message" => "unauthorized", "field" => nil}
+               %{"code" => "UNAUTHENTICATED", "message" => "unauthorized", "field" => nil}
              ]
            } = Map.fetch!(data, root_field)
   end
@@ -734,6 +795,4 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
   end
-
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
 end

@@ -106,6 +106,12 @@ defmodule ProductCompare.Pricing do
     Repo.get(MerchantProduct, merchant_product_id)
   end
 
+  @spec get_price_point(pos_integer()) :: PricePoint.t() | nil
+  def get_price_point(price_point_id)
+      when is_integer(price_point_id) and price_point_id > 0 and price_point_id <= @max_bigint_id do
+    Repo.get(PricePoint, price_point_id)
+  end
+
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs) do
     %PricePoint{}

@@ -4,7 +4,9 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.SessionMutationBridge
 
   @invalid_credentials_message "invalid email or password"
@@ -67,7 +69,10 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     else
       {:error, :invalid_origin} ->
         {:ok,
-         %{ok: false, errors: [mutation_error("INVALID_ORIGIN", @invalid_origin_message, nil)]}}
+         %{
+           ok: false,
+           errors: [GraphQLErrors.mutation_error("INVALID_ORIGIN", @invalid_origin_message)]
+         }}
     end
   end
 
@@ -123,40 +128,39 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   end
 
   @spec my_api_tokens(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def my_api_tokens(_parent, args, %{context: %{current_user: current_user}}) do
-    status_filter = Map.get(args || %{}, :status, :all)
+    args = args || %{}
+    status_filter = Input.fetch_value(args, :status, :all)
     query = Accounts.list_api_tokens_query(current_user.id, status: status_filter)
-    connection_args = Map.drop(args || %{}, [:status])
+    connection_args = args |> Input.drop_key(:status) |> Input.connection_args()
 
-    case Connection.from_query(query, connection_args, Repo) do
-      {:ok, connection} -> {:ok, connection}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-    end
+    Connection.from_query_result(query, connection_args, Repo)
   end
 
-  def my_api_tokens(_parent, _args, _resolution), do: {:error, "unauthorized"}
+  def my_api_tokens(_parent, _args, _resolution),
+    do: {:error, GraphQLErrors.unauthenticated()}
 
   @spec create_api_token(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
   def create_api_token(_parent, args, %{context: %{current_user: current_user}}) do
-    attrs =
-      args
-      |> Map.take([:label, :expires_at])
-      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-      |> Map.new()
+    attrs = Input.take_present(args, [:label, :expires_at])
 
     case Accounts.create_api_token(current_user.id, attrs) do
       {:ok, result} ->
         {:ok, Map.put(result, :errors, [])}
 
       {:error, changeset} ->
-        {:ok, create_rotate_error_payload("INVALID_ARGUMENT", first_changeset_error(changeset))}
+        {:ok,
+         create_rotate_error_payload(
+           "INVALID_ARGUMENT",
+           GraphQLErrors.changeset_first_message(changeset)
+         )}
     end
   end
 
   def create_api_token(_parent, _args, _resolution),
-    do: {:ok, create_rotate_error_payload("UNAUTHORIZED", "unauthorized")}
+    do: {:ok, create_rotate_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
   @spec revoke_api_token(any(), %{token_id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -179,18 +183,14 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   end
 
   def revoke_api_token(_parent, _args, _resolution),
-    do: {:ok, revoke_error_payload("UNAUTHORIZED", "unauthorized")}
+    do: {:ok, revoke_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
   @spec rotate_api_token(any(), %{token_id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, map()}
   def rotate_api_token(_parent, %{token_id: token_id} = args, %{
         context: %{current_user: current_user}
       }) do
-    attrs =
-      args
-      |> Map.take([:label, :expires_at])
-      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-      |> Map.new()
+    attrs = Input.take_present(args, [:label, :expires_at])
 
     with {:ok, token_entropy_id} <- resolve_token_entropy_id(token_id) do
       case Accounts.rotate_api_token(current_user.id, token_entropy_id, attrs) do
@@ -201,7 +201,11 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
           {:ok, create_rotate_error_payload("NOT_FOUND", "token not found")}
 
         {:error, changeset} ->
-          {:ok, create_rotate_error_payload("INVALID_ARGUMENT", first_changeset_error(changeset))}
+          {:ok,
+           create_rotate_error_payload(
+             "INVALID_ARGUMENT",
+             GraphQLErrors.changeset_first_message(changeset)
+           )}
       end
     else
       {:error, :invalid_id} ->
@@ -210,7 +214,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   end
 
   def rotate_api_token(_parent, _args, _resolution),
-    do: {:ok, create_rotate_error_payload("UNAUTHORIZED", "unauthorized")}
+    do: {:ok, create_rotate_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
   defp require_trusted_request_origin(%{context: %{trusted_request_origin?: true}}), do: :ok
   defp require_trusted_request_origin(_resolution), do: {:error, :invalid_origin}
@@ -232,20 +236,20 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   defp auth_error_payload(code, message, field \\ nil) do
     %{
       viewer: nil,
-      errors: [mutation_error(code, message, field)]
+      errors: [GraphQLErrors.mutation_error(code, message, field)]
     }
   end
 
   defp action_error_payload(code, message, field \\ nil) do
     %{
       ok: false,
-      errors: [mutation_error(code, message, field)]
+      errors: [GraphQLErrors.mutation_error(code, message, field)]
     }
   end
 
   defp auth_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     errors =
-      changeset_errors(changeset)
+      GraphQLErrors.changeset_mutation_errors(changeset)
 
     %{
       viewer: nil,
@@ -256,37 +260,16 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   defp action_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     %{
       ok: false,
-      errors: changeset_errors(changeset)
+      errors: GraphQLErrors.changeset_mutation_errors(changeset)
     }
   end
 
-  defp first_changeset_error(%Ecto.Changeset{errors: [{_field, {message, _opts}} | _]}),
-    do: message
-
-  defp first_changeset_error(_changeset), do: "invalid payload"
-
-  defp changeset_errors(%Ecto.Changeset{} = changeset) do
-    changeset
-    |> Ecto.Changeset.traverse_errors(fn {message, opts} ->
-      opts_by_key = Map.new(opts, fn {k, v} -> {to_string(k), v} end)
-
-      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
-        opts_by_key
-        |> Map.get(key, key)
-        |> to_string()
-      end)
-    end)
-    |> Enum.flat_map(fn {field, messages} ->
-      Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, Atom.to_string(field)))
-    end)
-  end
-
   defp resolve_token_entropy_id(token_id) do
-    case GlobalId.decode(token_id) do
-      {:ok, {:api_token, entropy_id}} ->
+    case GlobalId.decode_uuid(token_id, :api_token) do
+      {:ok, entropy_id} ->
         {:ok, entropy_id}
 
-      _ ->
+      :error ->
         {:error, :invalid_id}
     end
   end
@@ -295,18 +278,29 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
     %{
       plain_text_token: nil,
       api_token: nil,
-      errors: [mutation_error(code, message, field)]
+      errors: [GraphQLErrors.mutation_error(code, message, field)]
+    }
+  end
+
+  defp create_rotate_error_payload(error) when is_map(error) do
+    %{
+      plain_text_token: nil,
+      api_token: nil,
+      errors: [error]
     }
   end
 
   defp revoke_error_payload(code, message, field \\ nil) do
     %{
       api_token: nil,
-      errors: [mutation_error(code, message, field)]
+      errors: [GraphQLErrors.mutation_error(code, message, field)]
     }
   end
 
-  defp mutation_error(code, message, field) do
-    %{code: code, message: message, field: field}
+  defp revoke_error_payload(error) when is_map(error) do
+    %{
+      api_token: nil,
+      errors: [error]
+    }
   end
 end
