@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { useLoaderData } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
@@ -10,6 +10,7 @@ import productOffersRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
+import { ProductAttributeList } from "./product-attribute-list";
 
 export function ProductDetailRoute() {
   const loaderData = useLoaderData<typeof productDetailLoader>() as ProductDetailLoaderData;
@@ -58,6 +59,10 @@ function ProductDetail({
       <h1>{product.name}</h1>
       <p>{product.brand?.name ?? "Unknown brand"}</p>
       {product.description ? <p>{product.description}</p> : null}
+      <p>
+        <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>Compare this product</Link>
+      </p>
+      <ProductSpecifications attributes={product.currentAttributes} />
       <section>
         <h2>Active offers</h2>
         {offers.status === "error" ? (
@@ -73,6 +78,26 @@ function ProductDetail({
           </ResettableErrorBoundary>
         )}
       </section>
+    </section>
+  );
+}
+
+function ProductSpecifications({
+  attributes
+}: {
+  attributes: ReadonlyArray<{
+    code: string;
+    displayName: string;
+    valueText: string;
+  }>;
+}) {
+  return (
+    <section>
+      <h2>Specifications</h2>
+      <ProductAttributeList
+        attributes={attributes}
+        emptyMessage="No product attributes available yet."
+      />
     </section>
   );
 }

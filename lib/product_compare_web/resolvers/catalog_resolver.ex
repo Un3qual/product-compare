@@ -4,6 +4,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
+  alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
@@ -25,6 +26,16 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
       Connection.from_query_result(query, connection_args, Repo)
     end
+  end
+
+  @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) :: {:ok, [map()]}
+  def current_attributes(%Product{id: product_id}, _args, _resolution) do
+    attributes =
+      product_id
+      |> Specs.list_current_attributes_for_product()
+      |> Enum.map(&format_current_attribute/1)
+
+    {:ok, attributes}
   end
 
   @spec my_saved_comparison_sets(any(), map(), Absinthe.Resolution.t()) ::
@@ -260,6 +271,44 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
           {:ok, list()} | {:error, String.t()}
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
+
+  defp format_current_attribute(%{attribute: attribute, claim: claim}) do
+    %{
+      code: attribute.code,
+      display_name: attribute.display_name,
+      data_type: Atom.to_string(attribute.data_type),
+      value_text: format_claim_value(claim)
+    }
+  end
+
+  defp format_claim_value(%{value_bool: value}) when is_boolean(value) do
+    if value, do: "Yes", else: "No"
+  end
+
+  defp format_claim_value(%{value_int: value}) when is_integer(value),
+    do: Integer.to_string(value)
+
+  defp format_claim_value(%{value_num: %Decimal{} = value, unit: unit}) do
+    value
+    |> Decimal.normalize()
+    |> Decimal.to_string(:normal)
+    |> append_unit(unit)
+  end
+
+  defp format_claim_value(%{value_text: value}) when is_binary(value), do: value
+  defp format_claim_value(%{value_date: %Date{} = value}), do: Date.to_iso8601(value)
+  defp format_claim_value(%{value_ts: %DateTime{} = value}), do: DateTime.to_iso8601(value)
+  defp format_claim_value(%{enum_option: %{label: value}}) when is_binary(value), do: value
+  defp format_claim_value(%{value_json: value}) when is_map(value), do: Jason.encode!(value)
+  defp format_claim_value(_claim), do: ""
+
+  defp append_unit(value, %{symbol: symbol}) when is_binary(symbol) and symbol != "",
+    do: "#{value} #{symbol}"
+
+  defp append_unit(value, %{code: code}) when is_binary(code) and code != "",
+    do: "#{value} #{code}"
+
+  defp append_unit(value, _unit), do: value
 
   defp saved_comparison_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     %{

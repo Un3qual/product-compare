@@ -1,6 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { Link, useLoaderData } from "react-router-dom";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import compareProductPickerQuery, {
+  type CompareProductPickerQuery
+} from "../../__generated__/CompareProductPickerQuery.graphql";
 import createSavedComparisonSetMutation, {
   type CreateSavedComparisonSetMutation
 } from "../../__generated__/CreateSavedComparisonSetMutation.graphql";
@@ -15,6 +18,7 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
+import { ProductAttributeList } from "../products/product-attribute-list";
 import { CompareShell } from "./compare-shell";
 import { compareLoader, type CompareProductSummary, type CompareRouteLoaderData } from "./loader";
 
@@ -146,18 +150,74 @@ export function CompareRoute() {
             <CompareProductList loaderData={loaderData} />
           </Suspense>
         </ResettableErrorBoundary>
+        {loaderData.slugs.length < 3 ? (
+          <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+        ) : null}
       </CompareShell>
     );
   }
 
   return (
     <CompareShell title="Compare products">
-      {loaderData.status === "empty" ? <p>Choose up to 3 products to compare.</p> : null}
+      {loaderData.status === "empty" ? (
+        <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+      ) : null}
       {loaderData.status === "too_many" ? <p>You can compare up to 3 products.</p> : null}
       {loaderData.status === "not_found" ? (
         <p>One or more selected products were not found.</p>
       ) : null}
     </CompareShell>
+  );
+}
+
+function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  return (
+    <ResettableErrorBoundary
+      resetToken={selectedSlugs.join("|")}
+      fallback={<p role="alert">Product picker unavailable.</p>}
+    >
+      <Suspense fallback={<p role="status">Loading products...</p>}>
+        <CompareProductPicker selectedSlugs={selectedSlugs} />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
+}
+
+function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  const data = useLazyLoadQuery<CompareProductPickerQuery>(
+    compareProductPickerQuery,
+    { first: 12 },
+    { fetchPolicy: "store-or-network" }
+  );
+  const selectedSlugSet = new Set(selectedSlugs);
+  const availableProducts = data.products.edges
+    .map(({ node }) => node)
+    .filter((product) => !selectedSlugSet.has(product.slug));
+
+  if (availableProducts.length === 0) {
+    const message =
+      selectedSlugs.length === 0
+        ? "No products are available to compare yet."
+        : "No additional products are available to compare yet.";
+
+    return <p>{message}</p>;
+  }
+
+  return (
+    <section>
+      <h2>Choose products</h2>
+      <ul>
+        {availableProducts.map((product) => (
+          <li key={product.id}>
+            <h3>{product.name}</h3>
+            <p>{product.brand.name}</p>
+            <Link to={buildComparePath(selectedSlugs, product.slug)}>
+              Compare {product.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -221,9 +281,24 @@ function CompareProductCard({
         <p>{product.brand?.name ?? summary?.brandName ?? "Unknown brand"}</p>
         <p>{product.slug}</p>
         {product.description ? <p>{product.description}</p> : null}
+        <ProductAttributeList
+          attributes={product.currentAttributes}
+          emptyMessage="No product attributes available yet."
+        />
       </article>
     </li>
   );
+}
+
+function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
+  const params = new URLSearchParams();
+  const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(0, 3);
+
+  for (const slug of nextSlugs) {
+    params.append("slug", slug);
+  }
+
+  return `/compare?${params.toString()}`;
 }
 
 function isActiveSaveRequest(

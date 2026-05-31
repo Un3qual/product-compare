@@ -79,7 +79,24 @@ const OFFERS_QUERY_DESCRIPTOR = {
   }
 };
 
-const DETAIL_PRODUCT = {
+type DetailProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  brand: {
+    id: string;
+    name: string;
+  };
+  currentAttributes: ReadonlyArray<{
+    code: string;
+    displayName: string;
+    dataType: string;
+    valueText: string;
+  }>;
+};
+
+const DETAIL_PRODUCT: DetailProduct = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
   slug: "detail-product",
@@ -87,8 +104,9 @@ const DETAIL_PRODUCT = {
   brand: {
     id: "brand-1",
     name: "Acme"
-  }
-} as const;
+  },
+  currentAttributes: []
+};
 
 const productQueryRef = { dispose: vi.fn(), variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables };
 const offersQueryRef = { dispose: vi.fn(), variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables };
@@ -347,6 +365,71 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
+test("renders product specifications from current attributes", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    currentAttributes: [
+      {
+        code: "refresh-rate",
+        displayName: "Refresh rate",
+        dataType: "numeric",
+        valueText: "144 Hz"
+      },
+      {
+        code: "panel-type",
+        displayName: "Panel type",
+        dataType: "text",
+        valueText: "OLED"
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("heading", { name: "Specifications" })).toBeInTheDocument();
+  expect(screen.getByText("Refresh rate")).toBeVisible();
+  expect(screen.getByText("144 Hz")).toBeVisible();
+  expect(screen.getByText("Panel type")).toBeVisible();
+  expect(screen.getByText("OLED")).toBeVisible();
+});
+
+test("links from product detail to compare with the current product selected", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "Compare this product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product"
+  );
+});
+
 test("renders an offer without a latest price", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -546,11 +629,11 @@ function mockRouteQueryRefs() {
   });
 }
 
-function mockProductAndOffersQueries(offersResult: unknown) {
+function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRODUCT) {
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
     if (queryRef === productQueryRef) {
       return {
-        product: DETAIL_PRODUCT
+        product
       };
     }
 

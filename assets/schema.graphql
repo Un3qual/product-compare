@@ -58,6 +58,14 @@ type Product implements Node {
   slug: String!
   description: String
   brand: Brand!
+  currentAttributes: [ProductAttributeValue!]!
+}
+
+type ProductAttributeValue {
+  code: String!
+  displayName: String!
+  dataType: String!
+  valueText: String!
 }
 
 type Brand implements Node {

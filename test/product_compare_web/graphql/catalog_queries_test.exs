@@ -91,6 +91,73 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, product_query(), %{"slug" => "non-existent-slug"})
     end
 
+    test "product exposes selected current attributes", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "attribute-demo-monitor"})
+      {refresh_rate_attribute, hz_unit} = refresh_rate_attribute_with_unit_fixture()
+      panel_attribute = text_attribute_fixture(%{code: "panel-type", display_name: "Panel type"})
+      hdr_attribute = bool_attribute_fixture(%{code: "hdr", display_name: "HDR"})
+
+      product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, refresh_rate_attribute, moderator)
+
+      product
+      |> accept_claim!(panel_attribute, %{value_text: "OLED"}, moderator)
+      |> select_current_claim!(product, panel_attribute, moderator)
+
+      product
+      |> accept_claim!(hdr_attribute, %{value_bool: true}, moderator)
+      |> select_current_claim!(product, hdr_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => attributes
+                 }
+               }
+             } = graphql(conn, product_attributes_query(), %{"slug" => product.slug})
+
+      assert [
+               %{
+                 "code" => "hdr",
+                 "displayName" => "HDR",
+                 "dataType" => "bool",
+                 "valueText" => "Yes"
+               },
+               %{
+                 "code" => "panel-type",
+                 "displayName" => "Panel type",
+                 "dataType" => "text",
+                 "valueText" => "OLED"
+               },
+               %{
+                 "code" => "refresh-rate",
+                 "displayName" => "Refresh rate",
+                 "dataType" => "numeric",
+                 "valueText" => "144 Hz"
+               }
+             ] = attributes
+    end
+
+    test "product returns an empty currentAttributes list when no current claims exist", %{
+      conn: conn
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "attribute-free-monitor"})
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => []
+                 }
+               }
+             } = graphql(conn, product_attributes_query(), %{"slug" => product.slug})
+    end
+
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{slug: "catalog-first", name: "Catalog First"})
@@ -539,6 +606,21 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp product_attributes_query do
+    """
+    query ProductAttributes($slug: String!) {
+      product(slug: $slug) {
+        currentAttributes {
+          code
+          displayName
+          dataType
+          valueText
+        }
+      }
+    }
+    """
+  end
+
   defp aliased_products_query do
     """
     query AliasedProducts($firstSlug: String!, $secondSlug: String!) {
@@ -646,12 +728,52 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     {attribute, unit}
   end
 
-  defp bool_attribute_fixture do
-    SpecsFixtures.attribute_fixture(%{
-      code: unique_code("catalog-attr-bool-filter"),
-      display_name: "Catalog Boolean Filter Attribute",
-      data_type: :bool
-    })
+  defp refresh_rate_attribute_with_unit_fixture do
+    dimension =
+      SpecsFixtures.dimension_fixture(%{code: unique_code("catalog-dim-refresh-rate")})
+
+    unit =
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: "hz",
+        symbol: "Hz"
+      })
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: "refresh-rate",
+        display_name: "Refresh rate",
+        data_type: :numeric,
+        dimension_id: dimension.id
+      })
+
+    {attribute, unit}
+  end
+
+  defp text_attribute_fixture(attrs) do
+    SpecsFixtures.attribute_fixture(
+      Map.merge(
+        %{
+          code: unique_code("catalog-attr-text"),
+          display_name: "Catalog Text Attribute",
+          data_type: :text
+        },
+        attrs
+      )
+    )
+  end
+
+  defp bool_attribute_fixture(attrs \\ %{}) do
+    SpecsFixtures.attribute_fixture(
+      Map.merge(
+        %{
+          code: unique_code("catalog-attr-bool-filter"),
+          display_name: "Catalog Boolean Filter Attribute",
+          data_type: :bool
+        },
+        attrs
+      )
+    )
   end
 
   defp enum_attribute_with_options_fixture do

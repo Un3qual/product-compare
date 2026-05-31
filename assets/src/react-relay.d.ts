@@ -44,6 +44,12 @@ declare module "react-relay" {
     preloadedQuery: PreloadedQuery<TQuery>
   ): TQuery["response"];
 
+  export function useLazyLoadQuery<TQuery extends OperationType>(
+    query: GraphQLTaggedNode,
+    variables: TQuery["variables"],
+    options?: LoadQueryOptions
+  ): TQuery["response"];
+
   export interface MutationCommitFn<TMutation extends MutationParameters> {
     (config: Omit<MutationConfig<TMutation>, "mutation">): { dispose(): void };
   }

@@ -64,6 +64,11 @@ function BrowseProducts({
           </h2>
           <p>{product.slug}</p>
           <p>{product.brand.name}</p>
+          <p>
+            <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
+              Compare {product.name}
+            </Link>
+          </p>
         </li>
       ))}
     </ul>

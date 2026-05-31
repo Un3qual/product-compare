@@ -214,6 +214,16 @@ defmodule ProductCompare.Specs do
     end
   end
 
+  @spec list_current_attributes_for_product(pos_integer()) :: [ProductAttributeCurrent.t()]
+  def list_current_attributes_for_product(product_id) do
+    ProductAttributeCurrent
+    |> where([current], current.product_id == ^product_id)
+    |> join(:inner, [current], attribute in assoc(current, :attribute))
+    |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
+    |> preload([_current, attribute], attribute: attribute, claim: [:unit, :enum_option])
+    |> Repo.all()
+  end
+
   defp fetch_attribute(attribute_id) do
     case Repo.get(Attribute, attribute_id) do
       nil -> {:error, :attribute_not_found}

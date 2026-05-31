@@ -8,7 +8,7 @@ import {
   MemoryRouter,
   useLoaderData
 } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import * as ReactRouterDom from "react-router-dom";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { compareLoader } from "../loader";
@@ -32,6 +32,7 @@ import type { DeleteSavedComparisonSetMutationResponse } from "./saved-compariso
 const {
   commitMutationMock,
   fetchRouteQueryMock,
+  useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
@@ -39,6 +40,7 @@ const {
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -77,6 +80,7 @@ vi.mock("react-router-dom", async () => {
 });
 
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
@@ -89,7 +93,8 @@ const DETAIL_PRODUCT = {
   brand: {
     id: "brand-1",
     name: "Acme"
-  }
+  },
+  currentAttributes: []
 } as const;
 const SECOND_PRODUCT = {
   id: "UHJvZHVjdDoy",
@@ -99,7 +104,8 @@ const SECOND_PRODUCT = {
   brand: {
     id: "brand-2",
     name: "Bravo"
-  }
+  },
+  currentAttributes: []
 } as const;
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
@@ -212,12 +218,18 @@ const buildReadyCompareLoaderData = () => ({
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
+  useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   DETAIL_PRODUCT_QUERY_REF.dispose.mockReset();
   SECOND_PRODUCT_QUERY_REF.dispose.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: []
+    }
+  });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockCompareRouteQueries();
 });
@@ -430,16 +442,62 @@ test("compare loader throws when a rejected request is mixed with a missing prod
   expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
-test("renders an empty-state message when no products are selected", () => {
+test("empty compare page lets users choose products without editing the URL", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     slugs: []
   });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:monitor-a",
+            name: "Monitor A",
+            slug: "monitor-a",
+            brand: { id: "Brand:displayco", name: "DisplayCo" }
+          }
+        },
+        {
+          node: {
+            id: "Product:monitor-b",
+            name: "Monitor B",
+            slug: "monitor-b",
+            brand: { id: "Brand:viewco", name: "ViewCo" }
+          }
+        }
+      ]
+    }
+  });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-  expect(screen.getByText("Choose up to 3 products to compare.")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Choose products" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toHaveAttribute(
+    "href",
+    "/compare?slug=monitor-a"
+  );
+  expect(screen.getByRole("link", { name: "Compare Monitor B" })).toHaveAttribute(
+    "href",
+    "/compare?slug=monitor-b"
+  );
+});
+
+test("empty compare page handles an empty product picker", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: []
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByText("No products are available to compare yet.")).toBeInTheDocument();
 });
 
 test("renders a limit message when more than three products are selected", () => {
@@ -448,7 +506,7 @@ test("renders a limit message when more than three products are selected", () =>
     slugs: ["one", "two", "three", "four"]
   });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByText("You can compare up to 3 products.")).toBeInTheDocument();
@@ -457,11 +515,90 @@ test("renders a limit message when more than three products are selected", () =>
 test("renders compared product cards returned by the route loader", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+});
+
+test("ready compare cards render product attributes", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...DETAIL_PRODUCT,
+          currentAttributes: [
+            {
+              code: "refresh-rate",
+              displayName: "Refresh rate",
+              dataType: "numeric",
+              valueText: "144 Hz"
+            }
+          ]
+        }
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...SECOND_PRODUCT,
+          currentAttributes: [
+            {
+              code: "refresh-rate",
+              displayName: "Refresh rate",
+              dataType: "numeric",
+              valueText: "165 Hz"
+            }
+          ]
+        }
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByText("144 Hz")).toBeVisible();
+  expect(screen.getByText("165 Hz")).toBeVisible();
+  expect(screen.getAllByText("Refresh rate")).toHaveLength(2);
+});
+
+test("ready compare page lets users append a product without editing the URL", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: DETAIL_PRODUCT.id,
+            name: DETAIL_PRODUCT.name,
+            slug: DETAIL_PRODUCT.slug,
+            brand: DETAIL_PRODUCT.brand
+          }
+        },
+        {
+          node: {
+            id: "Product:monitor-c",
+            name: "Monitor C",
+            slug: "monitor-c",
+            brand: { id: "Brand:panelco", name: "PanelCo" }
+          }
+        }
+      ]
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.queryByRole("link", { name: "Compare Detail Product" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c"
+  );
 });
 
 test("compare route renders the compare error boundary when the loader throws", async () => {
@@ -518,7 +655,7 @@ test("compare route saves the current ready-state selection", async () => {
 
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
@@ -544,7 +681,7 @@ test("compare route reports a fallback error when the save commit throws synchro
   });
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
@@ -563,7 +700,7 @@ test("renders a not-found message when any selected product is missing", () => {
     slugs: ["detail-product", "missing-product"]
   });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByText("One or more selected products were not found.")).toBeInTheDocument();
@@ -769,7 +906,7 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
 test("compare route exposes a named region for the compare shell", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(
     screen.getByRole("region", {
@@ -1340,6 +1477,14 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     { signal: request.signal }
   );
 });
+
+function renderCompareRoute() {
+  return render(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+}
 
 function mockCompareRouteQueries() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
