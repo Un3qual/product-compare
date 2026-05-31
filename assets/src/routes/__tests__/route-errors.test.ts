@@ -6,7 +6,7 @@ import {
 } from "../route-errors";
 
 test("hasRouteGraphQLErrors detects non-empty top-level GraphQL error arrays", () => {
-  const missingErrors: undefined = undefined;
+  const missingErrors = undefined;
 
   expect(hasRouteGraphQLErrors([{ message: "GraphQL failure" }])).toBe(true);
   expect(hasRouteGraphQLErrors([])).toBe(false);
@@ -45,7 +45,7 @@ test("routeMutationErrorMessage returns the first typed mutation error message",
 });
 
 test("routeMutationErrorMessage falls back when errors are missing or malformed", () => {
-  const missingErrors: undefined = undefined;
+  const missingErrors = undefined;
 
   expect(routeMutationErrorMessage(missingErrors)).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage([])).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
