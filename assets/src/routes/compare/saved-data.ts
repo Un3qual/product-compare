@@ -36,7 +36,7 @@ export type SavedComparisonsRouteLoaderData =
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
 const SAVED_COMPARISON_SETS_MAX_PAGES = 50;
-const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["FORBIDDEN", "UNAUTHENTICATED"]);
+const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
 const SAVED_COMPARISONS_PARSE_ERROR = "Failed to parse saved comparison sets response";
 
 export async function savedComparisonsLoader({

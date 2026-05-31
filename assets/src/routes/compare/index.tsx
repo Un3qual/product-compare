@@ -22,11 +22,12 @@ export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveInFlightSelectionKey, setSaveInFlightSelectionKey] = useState<string | null>(null);
   const isSaveInFlightRef = useRef(false);
   const activeSelectionKeyRef = useRef<string | null>(null);
   const activeSaveRequestRef = useRef<{ id: number; selectionKey: string } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
-  const [commitCreateSavedComparisonSet, isMutationInFlight] =
+  const [commitCreateSavedComparisonSet] =
     useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
   const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
 
@@ -39,6 +40,7 @@ export function CompareRoute() {
   useEffect(() => {
     setSaveMessage(null);
     setSaveError(null);
+    setSaveInFlightSelectionKey(null);
   }, [selectionKey]);
 
   function handleSave() {
@@ -51,6 +53,7 @@ export function CompareRoute() {
     }
 
     isSaveInFlightRef.current = true;
+    setSaveInFlightSelectionKey(selectionKey);
     const saveRequest = {
       id: nextSaveRequestIdRef.current + 1,
       selectionKey
@@ -88,6 +91,7 @@ export function CompareRoute() {
 
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
+          setSaveInFlightSelectionKey(null);
         },
         onError: () => {
           if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
@@ -97,6 +101,7 @@ export function CompareRoute() {
           setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
+          setSaveInFlightSelectionKey(null);
         }
       },
       () => {
@@ -107,12 +112,13 @@ export function CompareRoute() {
         setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
         activeSaveRequestRef.current = null;
         isSaveInFlightRef.current = false;
+        setSaveInFlightSelectionKey(null);
       }
     );
   }
 
   if (loaderData.status === "ready") {
-    const saveInFlight = isMutationInFlight;
+    const saveInFlight = saveInFlightSelectionKey === selectionKey;
 
     return (
       <CompareShell

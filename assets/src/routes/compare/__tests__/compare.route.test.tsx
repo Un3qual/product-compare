@@ -680,40 +680,57 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
   );
 });
 
-test.each(["UNAUTHENTICATED", "FORBIDDEN"])(
-  "saved comparisons loader returns unauthorized status when GraphQL returns %s",
-  async (code) => {
-    const environment = createRelayEnvironment();
-    const request = new Request("https://app.example.com/compare/saved");
+test("saved comparisons loader returns unauthorized status when GraphQL returns UNAUTHENTICATED", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
 
-    mockedFetchRouteQuery.mockRejectedValueOnce(
-      buildRouteLoaderGraphQLError([
-        {
-          message: "Unauthorized",
-          path: ["mySavedComparisonSets"],
-          extensions: {
-            code
-          }
+  mockedFetchRouteQuery.mockRejectedValueOnce(
+    buildRouteLoaderGraphQLError([
+      {
+        message: "Unauthorized",
+        path: ["mySavedComparisonSets"],
+        extensions: {
+          code: "UNAUTHENTICATED"
         }
-      ])
-    );
+      }
+    ])
+  );
 
-    await expect(
-      savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
-    ).resolves.toEqual({
-      status: "unauthorized",
-      savedSetQueries: [],
-      savedSets: []
-    });
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "unauthorized",
+    savedSetQueries: [],
+    savedSets: []
+  });
 
-    expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-      environment,
-      expect.anything(),
-      { first: 20 },
-      { signal: request.signal }
-    );
-  }
-);
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20 },
+    { signal: request.signal }
+  );
+});
+
+test("saved comparisons loader does not treat FORBIDDEN as a sign-in state", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  const forbiddenError = buildRouteLoaderGraphQLError([
+    {
+      message: "Forbidden",
+      path: ["mySavedComparisonSets"],
+      extensions: {
+        code: "FORBIDDEN"
+      }
+    }
+  ]);
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(forbiddenError);
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).rejects.toBe(forbiddenError);
+});
 
 test("saved comparisons route renders persisted sets with reopen links", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -1084,7 +1101,7 @@ test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response fr
   ).toBe(true);
 });
 
-test("isUnauthorizedSavedComparisonsResponse detects a forbidden response from extensions.code", () => {
+test("isUnauthorizedSavedComparisonsResponse ignores a forbidden response from extensions.code", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse(
       buildGraphQLResponseWithErrors([
@@ -1097,7 +1114,7 @@ test("isUnauthorizedSavedComparisonsResponse detects a forbidden response from e
         }
       ])
     )
-  ).toBe(true);
+  ).toBe(false);
 });
 
 test("isUnauthorizedSavedComparisonsResponse ignores fuzzy auth messages without extensions.code", () => {

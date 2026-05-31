@@ -349,6 +349,32 @@ test("compare route ignores stale save completions after the selected comparison
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 
+test("compare route enables saving a new selection while the previous Relay mutation is in flight", async () => {
+  commitMutationMock.mockImplementation(() => {});
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  const { rerender } = render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
+  mockedUseMutation.mockReturnValue([commitMutationMock, true]);
+  rerender(<CompareRoute />);
+
+  const saveButton = screen.getByRole("button", { name: "Save comparison" });
+  expect(saveButton).toBeEnabled();
+
+  fireEvent.click(saveButton);
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 function mockRouteQueryRefs() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === deskLampQueryDescriptor) {
