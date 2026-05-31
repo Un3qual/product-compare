@@ -1,8 +1,8 @@
 import { graphql } from "react-relay";
 
 export const compareProductPickerQuery = graphql`
-  query CompareProductPickerQuery($first: Int!) {
-    products(first: $first) {
+  query CompareProductPickerQuery($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
       edges {
         node {
           id
@@ -13,6 +13,10 @@ export const compareProductPickerQuery = graphql`
             name
           }
         }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }

@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
@@ -10,6 +12,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, _resolution) do
@@ -29,6 +32,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) :: {:ok, [map()]}
+  def current_attributes(%Product{id: product_id}, _args, %{context: %{loader: loader}})
+      when is_integer(product_id) do
+    loader
+    |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+    |> on_load(fn loader ->
+      attributes =
+        loader
+        |> Dataloader.get(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+        |> Enum.map(&format_current_attribute/1)
+
+      {:ok, attributes}
+    end)
+  end
+
   def current_attributes(%Product{id: product_id}, _args, _resolution) do
     attributes =
       product_id

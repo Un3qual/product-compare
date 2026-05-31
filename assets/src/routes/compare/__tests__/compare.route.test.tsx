@@ -482,6 +482,60 @@ test("empty compare page lets users choose products without editing the URL", ()
     "href",
     "/compare?slug=monitor-b"
   );
+  expect(mockedUseLazyLoadQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    { first: 24, after: null },
+    { fetchPolicy: "store-or-network" }
+  );
+});
+
+test("product picker can advance beyond the first picker page", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery
+    .mockReturnValueOnce({
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "next-products"
+        }
+      }
+    })
+    .mockReturnValueOnce({
+      products: {
+        edges: [
+          {
+            node: {
+              id: "Product:monitor-c",
+              name: "Monitor C",
+              slug: "monitor-c",
+              brand: { id: "Brand:panelco", name: "PanelCo" }
+            }
+          }
+        ],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    });
+
+  renderCompareRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+
+  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { first: 24, after: "next-products" },
+    { fetchPolicy: "store-or-network" }
+  );
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
+    "href",
+    "/compare?slug=monitor-c"
+  );
 });
 
 test("empty compare page handles an empty product picker", () => {

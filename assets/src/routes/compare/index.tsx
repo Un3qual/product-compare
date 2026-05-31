@@ -20,7 +20,14 @@ import {
 } from "../route-errors";
 import { ProductAttributeList } from "../products/product-attribute-list";
 import { CompareShell } from "./compare-shell";
-import { compareLoader, type CompareProductSummary, type CompareRouteLoaderData } from "./loader";
+import {
+  compareLoader,
+  MAX_COMPARE_PRODUCTS,
+  type CompareProductSummary,
+  type CompareRouteLoaderData
+} from "./loader";
+
+const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
@@ -150,7 +157,7 @@ export function CompareRoute() {
             <CompareProductList loaderData={loaderData} />
           </Suspense>
         </ResettableErrorBoundary>
-        {loaderData.slugs.length < 3 ? (
+        {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
           <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
         ) : null}
       </CompareShell>
@@ -162,7 +169,9 @@ export function CompareRoute() {
       {loaderData.status === "empty" ? (
         <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
       ) : null}
-      {loaderData.status === "too_many" ? <p>You can compare up to 3 products.</p> : null}
+      {loaderData.status === "too_many" ? (
+        <p>You can compare up to {MAX_COMPARE_PRODUCTS} products.</p>
+      ) : null}
       {loaderData.status === "not_found" ? (
         <p>One or more selected products were not found.</p>
       ) : null}
@@ -184,17 +193,26 @@ function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readon
 }
 
 function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  const [after, setAfter] = useState<string | null>(null);
+  const selectedSlugsKey = selectedSlugs.join("|");
+
+  useEffect(() => {
+    setAfter(null);
+  }, [selectedSlugsKey]);
+
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
-    { first: 12 },
+    { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" }
   );
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = data.products.edges
     .map(({ node }) => node)
     .filter((product) => !selectedSlugSet.has(product.slug));
+  const pageInfo = data.products.pageInfo ?? { hasNextPage: false, endCursor: null };
+  const nextCursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
 
-  if (availableProducts.length === 0) {
+  if (availableProducts.length === 0 && !nextCursor) {
     const message =
       selectedSlugs.length === 0
         ? "No products are available to compare yet."
@@ -206,17 +224,31 @@ function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly strin
   return (
     <section>
       <h2>Choose products</h2>
-      <ul>
-        {availableProducts.map((product) => (
-          <li key={product.id}>
-            <h3>{product.name}</h3>
-            <p>{product.brand.name}</p>
-            <Link to={buildComparePath(selectedSlugs, product.slug)}>
-              Compare {product.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {availableProducts.length > 0 ? (
+        <ul>
+          {availableProducts.map((product) => (
+            <li key={product.id}>
+              <h3>{product.name}</h3>
+              <p>{product.brand.name}</p>
+              <Link to={buildComparePath(selectedSlugs, product.slug)}>
+                Compare {product.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No additional products are available on this page.</p>
+      )}
+      {nextCursor ? (
+        <button
+          onClick={() => {
+            setAfter(nextCursor);
+          }}
+          type="button"
+        >
+          Show more products
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -292,7 +324,10 @@ function CompareProductCard({
 
 function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
   const params = new URLSearchParams();
-  const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(0, 3);
+  const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(
+    0,
+    MAX_COMPARE_PRODUCTS
+  );
 
   for (const slug of nextSlugs) {
     params.append("slug", slug);

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6af0e403ea658b0a657a92a371a9da76>>
+ * @generated SignedSource<<8371809f3ade5c7eb24aa46c49de294e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,6 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CompareProductPickerQuery$variables = {
+  after?: string | null | undefined;
   first: number;
 };
 export type CompareProductPickerQuery$data = {
@@ -25,6 +26,10 @@ export type CompareProductPickerQuery$data = {
         readonly slug: string;
       };
     }>;
+    readonly pageInfo: {
+      readonly endCursor: string | null | undefined;
+      readonly hasNextPage: boolean;
+    };
   };
 };
 export type CompareProductPickerQuery = {
@@ -33,31 +38,39 @@ export type CompareProductPickerQuery = {
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = [
-  {
-    "defaultValue": null,
-    "kind": "LocalArgument",
-    "name": "first"
-  }
-],
+var v0 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "after"
+},
 v1 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "first"
+},
+v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v2 = {
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v3 = [
+v4 = [
   {
     "alias": null,
     "args": [
+      {
+        "kind": "Variable",
+        "name": "after",
+        "variableName": "after"
+      },
       {
         "kind": "Variable",
         "name": "first",
@@ -85,8 +98,8 @@ v3 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v1/*: any*/),
               (v2/*: any*/),
+              (v3/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -102,12 +115,37 @@ v3 = [
                 "name": "brand",
                 "plural": false,
                 "selections": [
-                  (v1/*: any*/),
-                  (v2/*: any*/)
+                  (v2/*: any*/),
+                  (v3/*: any*/)
                 ],
                 "storageKey": null
               }
             ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "PageInfo",
+        "kind": "LinkedField",
+        "name": "pageInfo",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "hasNextPage",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "endCursor",
             "storageKey": null
           }
         ],
@@ -119,32 +157,38 @@ v3 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [
+      (v0/*: any*/),
+      (v1/*: any*/)
+    ],
     "kind": "Fragment",
     "metadata": null,
     "name": "CompareProductPickerQuery",
-    "selections": (v3/*: any*/),
+    "selections": (v4/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [
+      (v1/*: any*/),
+      (v0/*: any*/)
+    ],
     "kind": "Operation",
     "name": "CompareProductPickerQuery",
-    "selections": (v3/*: any*/)
+    "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "ec6f46b61adce655b6886536820fcf7c",
+    "cacheID": "34d7aed28a897c79edced5fc453ca69b",
     "id": null,
     "metadata": {},
     "name": "CompareProductPickerQuery",
     "operationKind": "query",
-    "text": "query CompareProductPickerQuery(\n  $first: Int!\n) {\n  products(first: $first) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query CompareProductPickerQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "b792c7835c0c89fea4cc1462ba487101";
+(node as any).hash = "b9045dc8348d8ecded649aa263a337e4";
 
 export default node;

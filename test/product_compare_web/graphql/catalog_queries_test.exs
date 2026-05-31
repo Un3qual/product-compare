@@ -158,6 +158,68 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, product_attributes_query(), %{"slug" => product.slug})
     end
 
+    test "products batches current attribute lookups for connection nodes", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      first_product = SpecsFixtures.product_fixture(%{slug: "batched-attribute-first"})
+      second_product = SpecsFixtures.product_fixture(%{slug: "batched-attribute-second"})
+      {refresh_rate_attribute, hz_unit} = refresh_rate_attribute_with_unit_fixture()
+
+      first_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(first_product, refresh_rate_attribute, moderator)
+
+      second_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("165"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(second_product, refresh_rate_attribute, moderator)
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_current_attributes_query(), %{"first" => 2})
+        end)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } = response
+
+      assert Enum.any?(edges, fn edge ->
+               get_in(edge, ["node", "slug"]) == first_product.slug &&
+                 get_in(edge, ["node", "currentAttributes"]) == [
+                   %{
+                     "code" => "refresh-rate",
+                     "displayName" => "Refresh rate",
+                     "dataType" => "numeric",
+                     "valueText" => "144 Hz"
+                   }
+                 ]
+             end)
+
+      assert Enum.any?(edges, fn edge ->
+               get_in(edge, ["node", "slug"]) == second_product.slug &&
+                 get_in(edge, ["node", "currentAttributes"]) == [
+                   %{
+                     "code" => "refresh-rate",
+                     "displayName" => "Refresh rate",
+                     "dataType" => "numeric",
+                     "valueText" => "165 Hz"
+                   }
+                 ]
+             end)
+
+      assert count_queries_targeting_table(queries, :product_attribute_current) == 1
+    end
+
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{slug: "catalog-first", name: "Catalog First"})
@@ -642,6 +704,26 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp products_current_attributes_query do
+    """
+    query ProductsCurrentAttributes($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            currentAttributes {
+              code
+              displayName
+              dataType
+              valueText
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -686,6 +768,10 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     |> String.trim_leading()
     |> String.upcase()
     |> String.starts_with?("SELECT")
+  end
+
+  defp count_queries_targeting_table(queries, table) when is_atom(table) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do
