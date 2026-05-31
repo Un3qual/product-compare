@@ -473,7 +473,7 @@ defmodule ProductCompare.Accounts do
         user_id: user_id,
         token_prefix: token_prefix_from_hash(token_hash),
         token_hash: token_hash,
-        expires_at: default_api_token_expiry(fetch_attr(attrs, :expires_at), now)
+        expires_at: api_token_expiry(attrs, now)
       }
       |> maybe_put(:label, fetch_attr(attrs, :label))
 
@@ -581,11 +581,41 @@ defmodule ProductCompare.Accounts do
 
   defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
-  defp default_api_token_expiry(%DateTime{} = expires_at, _now),
+  defp api_token_expiry(attrs, now) do
+    if attr_key_present?(attrs, :expires_at) do
+      explicit_api_token_expiry(fetch_attr(attrs, :expires_at), now)
+    else
+      default_api_token_expiry(now)
+    end
+  end
+
+  defp explicit_api_token_expiry(nil, _now), do: nil
+
+  defp explicit_api_token_expiry(%DateTime{} = expires_at, _now),
     do: DateTime.truncate(expires_at, :microsecond)
 
-  defp default_api_token_expiry(_expires_at, now),
+  defp explicit_api_token_expiry(_expires_at, now), do: default_api_token_expiry(now)
+
+  defp default_api_token_expiry(now),
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
+
+  defp fetch_attr(attrs, key) when is_map(attrs) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+  end
+
+  defp fetch_attr(_attrs, _key), do: nil
+
+  defp attr_key_present?(attrs, key) when is_map(attrs) do
+    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+  end
+
+  defp attr_key_present?(_attrs, _key), do: false
+
+  defp ensure_map(attrs) when is_map(attrs), do: attrs
+  defp ensure_map(_attrs), do: %{}
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp api_token_default_ttl_days do
     case Application.get_env(:product_compare, :api_token_default_ttl_days) do
@@ -601,18 +631,6 @@ defmodule ProductCompare.Accounts do
         end
     end
   end
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-  end
-
-  defp fetch_attr(_attrs, _key), do: nil
-
-  defp ensure_map(attrs) when is_map(attrs), do: attrs
-  defp ensure_map(_attrs), do: %{}
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   # Browser auth recovery flows stay mailer-agnostic here; production delivery
   # can be injected later without changing the GraphQL contract or the token logic.

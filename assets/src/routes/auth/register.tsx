@@ -5,12 +5,13 @@ import { useNavigate } from "react-router-dom";
 import registerMutation, {
   type RegisterMutation
 } from "../../__generated__/RegisterMutation.graphql";
+import { routeFormValue } from "../form-data";
+import { commitRouteMutation } from "../relay-mutations";
 import {
   findMutationError,
   type MutationError,
-  normalizeSessionPayload,
-  relayGraphQLError,
-  transportMutationError
+  resolveSessionMutationResult,
+  transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
@@ -24,32 +25,31 @@ export function RegisterRoute() {
     setErrors([]);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
-    const password = String(formData.get("password") ?? "");
+    const email = routeFormValue(formData, "email");
+    const password = routeFormValue(formData, "password");
 
-    commitRegister({
-      variables: { email, password },
-      onCompleted(response, graphQLErrors) {
-        const graphQLError = relayGraphQLError(graphQLErrors);
+    commitRouteMutation(
+      commitRegister,
+      {
+        variables: { email, password },
+        onCompleted(response, graphQLErrors) {
+          const result = resolveSessionMutationResult(response?.register, graphQLErrors);
 
-        if (graphQLError) {
-          setErrors([graphQLError]);
-          return;
+          if (result.viewer) {
+            navigate("/");
+            return;
+          }
+
+          setErrors(result.errors);
+        },
+        onError(error) {
+          setErrors(transportMutationErrors(error));
         }
-
-        const result = normalizeSessionPayload(response?.register);
-
-        if (result.viewer) {
-          navigate("/");
-          return;
-        }
-
-        setErrors(result.errors);
       },
-      onError(error) {
-        setErrors([transportMutationError(error)]);
+      (error) => {
+        setErrors(transportMutationErrors(error));
       }
-    });
+    );
   }
 
   return (

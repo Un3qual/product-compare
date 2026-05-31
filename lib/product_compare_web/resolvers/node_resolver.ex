@@ -2,14 +2,15 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   @moduledoc false
 
   alias ProductCompare.Accounts
+  alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Accounts.User
 
-  @public_types [:product, :brand, :merchant, :merchant_product]
+  @public_types [:product, :brand, :merchant, :merchant_product, :price_point]
+  @authenticated_types [:affiliate_network, :affiliate_program, :affiliate_link, :coupon]
   @owner_scoped_types [:saved_comparison_set, :api_token]
-  @max_bigint_id 9_223_372_036_854_775_807
 
   @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, term() | nil} | {:error, String.t()}
@@ -25,41 +26,19 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   end
 
   defp decode_node_id(id) do
-    case GlobalId.decode(id) do
-      {:ok, {type, local_id}} when type in @public_types ->
-        with {:ok, parsed_id} <- parse_public_local_id(local_id) do
-          {:ok, {type, parsed_id}}
-        end
-
-      {:ok, {type, local_id}} when type in @owner_scoped_types ->
-        with {:ok, parsed_id} <- parse_uuid_local_id(local_id) do
-          {:ok, {type, parsed_id}}
-        end
-
-      {:ok, {_type, _local_id}} ->
-        {:error, :unsupported_type}
-
-      :error ->
-        {:error, :invalid_id}
-    end
-  end
-
-  defp parse_public_local_id(local_id) when is_binary(local_id) do
-    case Integer.parse(local_id) do
-      {parsed_id, ""} when parsed_id > 0 and parsed_id <= @max_bigint_id -> {:ok, parsed_id}
-      _ -> {:error, :invalid_id}
-    end
-  end
-
-  defp parse_uuid_local_id(local_id) when is_binary(local_id) do
-    case Ecto.UUID.cast(local_id) do
-      {:ok, parsed_id} -> {:ok, parsed_id}
-      :error -> {:error, :invalid_id}
-    end
+    GlobalId.decode_typed_local_id(
+      id,
+      @public_types ++ @authenticated_types,
+      @owner_scoped_types
+    )
   end
 
   defp fetch_node(type, local_id, _resolution) when type in @public_types do
     fetch_public_node(type, local_id)
+  end
+
+  defp fetch_node(type, local_id, resolution) when type in @authenticated_types do
+    fetch_authenticated_node(type, local_id, resolution)
   end
 
   defp fetch_node(type, local_id, resolution) when type in @owner_scoped_types do
@@ -72,6 +51,19 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   defp fetch_public_node(:merchant_product, id),
     do: fetch_record(Pricing.get_merchant_product(id))
+
+  defp fetch_public_node(:price_point, id), do: fetch_record(Pricing.get_price_point(id))
+
+  defp fetch_authenticated_node(type, id, %{context: %{current_user: %User{}}}) do
+    fetch_record(fetch_affiliate_node(type, id))
+  end
+
+  defp fetch_authenticated_node(_type, _id, _resolution), do: fetch_record(nil)
+
+  defp fetch_affiliate_node(:affiliate_network, id), do: Affiliate.get_affiliate_network(id)
+  defp fetch_affiliate_node(:affiliate_program, id), do: Affiliate.get_affiliate_program(id)
+  defp fetch_affiliate_node(:affiliate_link, id), do: Affiliate.get_affiliate_link(id)
+  defp fetch_affiliate_node(:coupon, id), do: Affiliate.get_coupon(id)
 
   defp fetch_owner_scoped_node(
          :saved_comparison_set,

@@ -12,6 +12,7 @@ import {
   preloadRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
+import { recoverRouteLoaderError } from "../loader-errors";
 
 const PRODUCT_OFFERS_PAGE_SIZE = 6;
 
@@ -77,15 +78,13 @@ export async function productDetailLoader({
       throw error;
     }
   } catch (error) {
-    if (isAbortError(error)) {
-      throw error;
-    }
-
-    console.error("Failed to preload product detail route query.", { error });
-
-    return {
-      status: "error"
-    };
+    return recoverRouteLoaderError<ProductDetailLoaderData>(
+      error,
+      "Failed to preload product detail route query.",
+      {
+        status: "error"
+      }
+    );
   }
 }
 
@@ -108,26 +107,12 @@ async function preloadProductOffers(
       )
     };
   } catch (error) {
-    if (isAbortError(error)) {
-      throw error;
-    }
-
-    console.error("Failed to preload product offers route query.", { error });
-
-    return {
-      status: "error"
-    };
+    return recoverRouteLoaderError<ProductOffersLoaderData>(
+      error,
+      "Failed to preload product offers route query.",
+      {
+        status: "error"
+      }
+    );
   }
-}
-
-function isAbortError(error: unknown) {
-  return getErrorName(error) === "AbortError";
-}
-
-function getErrorName(error: unknown) {
-  if (!error || typeof error !== "object" || !("name" in error)) {
-    return null;
-  }
-
-  return error.name;
 }

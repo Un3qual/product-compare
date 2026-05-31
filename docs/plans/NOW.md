@@ -6,27 +6,34 @@
 
 ### Frontend Lane
 
-- Status: in_progress
-- Batch: Frontend Saved Comparisons Relay Migration, Task 2: Saved-Set Delete Mutation Relay Migration
-- Source of truth: `docs/work/frontend-saved-comparisons-relay-migration.md`
-- Implementation plan: `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
-- Next step: move `/compare/saved` deletion from the manual `deleteSavedComparisonSet(...)` helper to a Relay mutation while preserving existing local delete UX.
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/review-readability-cleanups.md`
+- Implementation plan: `docs/work/review-readability-cleanups.md`
+- Next step: no unblocked frontend batch is queued from this worktree; coordinator follow-up can choose a future frontend lane if priorities change.
 - Why this batch is current:
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
-  - `/compare/saved` is the remaining explicit unblocked architecture gap after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
+  - `/compare/saved` was the remaining explicit unblocked architecture gap after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
   - Task 1 moved saved-set list loading/rendering onto Relay route query descriptors.
-  - Task 2 is the next unblocked batch because `assets/src/routes/compare/saved-data.ts` still owns the raw delete mutation helper.
+  - The saved-set delete path now commits through Relay mutation artifacts, and the raw saved-comparison mutation helper is gone.
+  - Review-driven route helper cleanup centralized loader recovery, thrown-error normalization, mutation promise handling, typed mutation errors, GraphQL error checks, route payload guards, form-data extraction, and auth route result helpers.
+  - No next frontend implementation lane is currently queued.
 
 ### Backend Lane
 
 - Status: completed
 - Batch: none queued
-- Source of truth: `docs/work/graphql-relay-contract-hardening.md`
-- Next step: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose a future backend lane if priorities change.
+- Source of truth: `docs/work/review-readability-cleanups.md`
+- Implementation plan: `docs/work/review-readability-cleanups.md`
+- Next step: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose another review-driven backend slice if priorities change.
 - Why this batch is current:
   - The planned GraphQL Relay contract hardening tasks are complete and fully verified.
-  - No next backend Relay-contract batch is currently queued.
-  - Commerce attribution is the next unblocked implementation lane.
+  - The follow-up to extend generic node lookup to authenticated affiliate entities is complete.
+  - The follow-up to extend generic node lookup to public `PricePoint` entities is complete.
+  - Missing-session typed mutation payloads now use `UNAUTHENTICATED`, matching top-level auth-required GraphQL errors.
+  - Review-driven GraphQL cleanup centralized input lookup, Relay global ID helpers, connection mapping, mutation error helpers, field resolver wrappers, and test global ID construction.
+  - Review-driven core cleanup kept Accounts, Affiliate, and Commerce Attribution attr normalization local after removing the cross-context attr helper abstraction.
+  - No next backend implementation lane is currently queued.
 
 ### Commerce Attribution Lane
 
@@ -54,6 +61,13 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Review Readability Cleanups:
+  - Completed `/compare/saved` Relay query/mutation migration and removed the remaining raw saved-comparison mutation helper.
+  - Centralized frontend route loader, mutation, auth, record, and GraphQL error helper behavior across saved comparisons, compare save/delete, browser auth, and Relay-backed route loaders.
+  - Centralized backend GraphQL input, global ID, connection, mutation error, unauthenticated-error, and field resolver helpers across Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema paths.
+  - Kept Accounts, Affiliate, and Commerce Attribution attr handling local while preserving explicit nil expiry and atom/string-key input behavior.
+  - Verified `cd assets && bun run check`, `mix test`, `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix typecheck`, and `git diff --check`.
 
 - Frontend Saved Comparisons Relay Migration, Task 1:
   - Added `SavedComparisonsRouteQuery` and generated `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`.

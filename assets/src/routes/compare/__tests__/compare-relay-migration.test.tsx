@@ -1,11 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../relay/environment";
 import {
-  createRelayRouterContext,
   fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../../relay/route-preload";
@@ -13,6 +11,10 @@ import { CompareRoute } from "../index";
 import { compareLoader } from "../loader";
 import { SavedComparisonsRoute } from "../saved";
 import { savedComparisonsLoader } from "../saved-data";
+import {
+  buildCompareLoaderArgs,
+  buildSavedComparisonsLoaderArgs
+} from "./saved-comparisons-test-helpers";
 
 const {
   commitMutationMock,
@@ -173,11 +175,7 @@ test("compare loader preloads selected product detail queries through Relay", as
     });
 
   await expect(
-    compareLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
@@ -335,11 +333,7 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
   });
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [savedComparisonsRouteQueryDescriptor],
@@ -430,6 +424,51 @@ test("saved comparisons route renders saved sets from Relay route queries", () =
     expect.anything(),
     savedComparisonsRouteQueryDescriptor
   );
+});
+
+test("saved comparisons route deletes saved sets through a Relay mutation", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Relay saved set",
+        slugs: [DETAIL_PRODUCT.slug]
+      }
+    ]
+  });
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
+      deleteSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    });
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
+    );
+  });
+  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
+  expect(screen.queryByText("Relay saved set")).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
 });
 
 function buildReadyLoaderData() {

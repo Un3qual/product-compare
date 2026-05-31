@@ -42,18 +42,18 @@ Commit only lane-local milestone changes.
 ## Active Work Lanes
 
 - Frontend lane
-  - Work doc: `docs/work/frontend-saved-comparisons-relay-migration.md`
-  - Status: in_progress
-  - Priority: P1
-  - Next batch: Task 2, migrate `/compare/saved` deletion from the manual helper to a Relay mutation while preserving existing local delete UX.
-  - Owned paths: `assets/**`, `docs/work/frontend-saved-comparisons-relay-migration.md`, `docs/work/frontend-relay-route-data.md`, `docs/work/frontend-saved-comparisons-ui.md`, `docs/work/frontend-compare-saved-hardening.md`, `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
-
-- Backend lane
-  - Work doc: `docs/work/graphql-relay-contract-hardening.md`
+  - Work doc: `docs/work/review-readability-cleanups.md`
   - Status: completed
   - Priority: P2
-  - Next batch: no unblocked backend batch is queued from this worktree; choose a future backend lane only if priorities change.
-  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare_web/graphql/**`, `docs/work/graphql-relay-contract-hardening.md`, `docs/plans/2026-03-22-graphql-relay-contract-hardening-implementation-plan.md`
+  - Next batch: no unblocked frontend batch is queued from this worktree; coordinator follow-up can choose a future frontend lane if priorities change.
+  - Owned paths: `assets/**`, `docs/work/review-readability-cleanups.md`
+
+- Backend lane
+  - Work doc: `docs/work/review-readability-cleanups.md`
+  - Status: completed
+  - Priority: P2
+  - Next batch: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose another review-driven backend slice if priorities change.
+  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare/**`, `test/product_compare_web/graphql/**`, `test/support/conn_case.ex`, `docs/work/review-readability-cleanups.md`
 
 - Commerce attribution lane
   - Work doc: `docs/work/affiliate-revenue-attribution.md`
@@ -78,6 +78,16 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Review Readability Cleanups
+
+- Status: completed on 2026-05-31
+- Source of truth: `docs/work/review-readability-cleanups.md`
+- Outcome:
+  - Completed the saved-comparisons Relay delete migration and consolidated frontend route helpers for loader, mutation, auth, payload, and GraphQL error handling.
+  - Centralized backend GraphQL input, global ID, connection, mutation error, and unauthenticated-error helpers across Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema resolver paths.
+  - Kept core attr handling local to Accounts, Affiliate, and Commerce Attribution instead of carrying a cross-context helper module.
+  - Verification passed with `cd assets && bun run check`, `mix test`, `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix typecheck`, and `git diff --check`.
 
 ### Product Data Ingestion Persistence Task 2
 
@@ -135,7 +145,7 @@ Commit only lane-local milestone changes.
 - Outcome:
   - Relay SSR hydration, route preloading, `/products`, `/products/:slug`, `/compare`, and browser auth Relay migrations are complete.
   - `fetchGraphQL` is now a thin GraphQL HTTP transport helper, with route-loader top-level GraphQL error rejection kept in the Relay environment.
-  - `/compare/saved` remains on the explicit `saved-data.ts` helper and should be tracked as a new cleanup if it is prioritized.
+  - The later saved-comparisons Relay migration moved `/compare/saved` onto Relay query/mutation APIs and closed the explicit helper cleanup.
 
 ### Frontend Compare And Saved Routes Hardening
 

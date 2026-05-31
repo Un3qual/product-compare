@@ -561,19 +561,24 @@ defmodule ProductCompare.CommerceAttribution do
     end
   end
 
-  defp get_attr(attrs, key) when is_map(attrs),
-    do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-
-  defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
-
-  defp attr_present?(attrs, key), do: not is_nil(get_attr(attrs, key))
-
   defp present_upsert_fields(attrs, changeset, fields) do
     for field <- fields,
         attr_key_present?(attrs, field),
         do: {field, Ecto.Changeset.get_field(changeset, field)}
   end
 
+  defp get_attr(attrs, key) when is_map(attrs),
+    do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+
+  defp get_attr(_attrs, _key), do: nil
+
+  defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
+  defp put_attr(attrs, _key, _value), do: attrs
+
+  defp attr_present?(attrs, key), do: not is_nil(get_attr(attrs, key))
+
   defp attr_key_present?(attrs, key) when is_map(attrs),
     do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+
+  defp attr_key_present?(_attrs, _key), do: false
 end

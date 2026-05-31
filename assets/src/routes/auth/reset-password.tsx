@@ -5,20 +5,19 @@ import { useSearchParams } from "react-router-dom";
 import resetPasswordMutation, {
   type ResetPasswordMutation
 } from "../../__generated__/ResetPasswordMutation.graphql";
+import { routeFormValue } from "../form-data";
+import { commitRouteMutation } from "../relay-mutations";
 import {
   findMutationError,
+  invalidTokenMutationError,
+  isSuccessfulActionResult,
   type MutationError,
-  normalizeActionPayload,
-  relayGraphQLError,
-  transportMutationError
+  resolveActionMutationResult,
+  transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
-const missingTokenError: MutationError = {
-  code: "INVALID_TOKEN",
-  field: "token",
-  message: "This reset link is missing or invalid."
-};
+const missingTokenError = invalidTokenMutationError("This reset link is missing or invalid.");
 
 export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
@@ -52,43 +51,46 @@ export function ResetPasswordRoute() {
     const requestVersion = activeRequestVersion.current;
 
     const formData = new FormData(event.currentTarget);
-    const password = String(formData.get("password") ?? "");
+    const password = routeFormValue(formData, "password");
 
-    commitResetPassword({
-      variables: { token, password },
-      onCompleted(response, graphQLErrors) {
-        if (requestVersion !== activeRequestVersion.current) {
-          return;
-        }
+    commitRouteMutation(
+      commitResetPassword,
+      {
+        variables: { token, password },
+        onCompleted(response, graphQLErrors) {
+          if (requestVersion !== activeRequestVersion.current) {
+            return;
+          }
 
-        const graphQLError = relayGraphQLError(graphQLErrors);
+          const result = resolveActionMutationResult(response?.resetPassword, graphQLErrors);
 
-        if (graphQLError) {
-          setErrors([graphQLError]);
+          if (isSuccessfulActionResult(result)) {
+            setMessage("Your password has been updated.");
+            setIsSubmitting(false);
+            return;
+          }
+
+          setErrors(result.errors);
           setIsSubmitting(false);
-          return;
-        }
+        },
+        onError(error) {
+          if (requestVersion !== activeRequestVersion.current) {
+            return;
+          }
 
-        const result = normalizeActionPayload(response?.resetPassword);
-
-        if (result.ok && result.errors.length === 0) {
-          setMessage("Your password has been updated.");
+          setErrors(transportMutationErrors(error));
           setIsSubmitting(false);
-          return;
         }
-
-        setErrors(result.errors);
-        setIsSubmitting(false);
       },
-      onError(error) {
+      (error) => {
         if (requestVersion !== activeRequestVersion.current) {
           return;
         }
 
-        setErrors([transportMutationError(error)]);
+        setErrors(transportMutationErrors(error));
         setIsSubmitting(false);
       }
-    });
+    );
   }
 
   return (

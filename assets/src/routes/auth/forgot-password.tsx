@@ -4,12 +4,14 @@ import { useMutation } from "react-relay";
 import forgotPasswordMutation, {
   type ForgotPasswordMutation
 } from "../../__generated__/ForgotPasswordMutation.graphql";
+import { routeFormValue } from "../form-data";
+import { commitRouteMutation } from "../relay-mutations";
 import {
   findMutationError,
+  isSuccessfulActionResult,
   type MutationError,
-  normalizeActionPayload,
-  relayGraphQLError,
-  transportMutationError
+  resolveActionMutationResult,
+  transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
@@ -28,31 +30,33 @@ export function ForgotPasswordRoute() {
     setMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
+    const email = routeFormValue(formData, "email");
 
-    commitForgotPassword({
-      variables: { email },
-      onCompleted(response, graphQLErrors) {
-        const graphQLError = relayGraphQLError(graphQLErrors);
+    commitRouteMutation(
+      commitForgotPassword,
+      {
+        variables: { email },
+        onCompleted(response, graphQLErrors) {
+          const result = resolveActionMutationResult(
+            response?.forgotPassword,
+            graphQLErrors
+          );
 
-        if (graphQLError) {
-          setErrors([graphQLError]);
-          return;
+          if (isSuccessfulActionResult(result)) {
+            setMessage(successMessage);
+            return;
+          }
+
+          setErrors(result.errors);
+        },
+        onError(error) {
+          setErrors(transportMutationErrors(error));
         }
-
-        const result = normalizeActionPayload(response?.forgotPassword);
-
-        if (result.ok && result.errors.length === 0) {
-          setMessage(successMessage);
-          return;
-        }
-
-        setErrors(result.errors);
       },
-      onError(error) {
-        setErrors([transportMutationError(error)]);
+      (error) => {
+        setErrors(transportMutationErrors(error));
       }
-    });
+    );
   }
 
   return (

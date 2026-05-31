@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { CompareRoute } from "../index";
 
 const {
@@ -216,6 +217,36 @@ test("compare route keeps a stable status region in the DOM before and after sav
   });
 });
 
+test("compare route reports a generic error when save completes with top-level GraphQL errors", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        createSavedComparisonSet: {
+          savedComparisonSet: {
+            id: "saved-set-1"
+          },
+          errors: [
+            {
+              code: "INVALID_ARGUMENT",
+              field: "productIds",
+              message: "Payload detail should not win"
+            }
+          ]
+        }
+      },
+      [{ message: "database stacktrace" }]
+    );
+  });
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
 test("compare route allows a later save after the current request settles", async () => {
   const completions: Array<(response: unknown) => void> = [];
 
@@ -280,6 +311,67 @@ test("compare route clears save feedback when the selected comparison changes", 
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
+});
+
+test("compare route ignores stale save completions after the selected comparison changes", async () => {
+  let completeFirstSelection: ((response: unknown) => void) | undefined;
+
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    completeFirstSelection = onCompleted;
+  });
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  const { rerender } = render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
+  rerender(<CompareRoute />);
+
+  act(() => {
+    completeFirstSelection?.({
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    });
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+  expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
+});
+
+test("compare route enables saving a new selection while the previous Relay mutation is in flight", async () => {
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  const { rerender } = render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
+  mockedUseMutation.mockReturnValue([commitMutationMock, true]);
+  rerender(<CompareRoute />);
+
+  const saveButton = screen.getByRole("button", { name: "Save comparison" });
+  expect(saveButton).toBeEnabled();
+
+  fireEvent.click(saveButton);
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
 });
 
 function mockRouteQueryRefs() {

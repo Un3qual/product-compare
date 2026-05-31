@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
   use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Accounts
+  alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -25,9 +26,9 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                    "name" => "Node Product"
                  }
                }
-             } = graphql(conn, node_query(), %{"id" => relay_id("Product", product.id)})
+             } = graphql(conn, node_query(), %{"id" => relay_id(:product, product.id)})
 
-      assert product_id == relay_id("Product", product.id)
+      assert product_id == relay_id(:product, product.id)
     end
 
     test "node returns a brand for a valid brand global id", %{conn: conn} do
@@ -41,9 +42,9 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                    "name" => brand_name
                  }
                }
-             } = graphql(conn, node_query(), %{"id" => relay_id("Brand", product.brand_id)})
+             } = graphql(conn, node_query(), %{"id" => relay_id(:brand, product.brand_id)})
 
-      assert brand_id == relay_id("Brand", product.brand_id)
+      assert brand_id == relay_id(:brand, product.brand_id)
       assert is_binary(brand_name)
     end
 
@@ -60,9 +61,9 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                    "domain" => domain
                  }
                }
-             } = graphql(conn, node_query(), %{"id" => relay_id("Merchant", merchant.id)})
+             } = graphql(conn, node_query(), %{"id" => relay_id(:merchant, merchant.id)})
 
-      assert merchant_id == relay_id("Merchant", merchant.id)
+      assert merchant_id == relay_id(:merchant, merchant.id)
       assert domain == merchant.domain
     end
 
@@ -89,12 +90,47 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                }
              } =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("MerchantProduct", merchant_product.id)
+                 "id" => relay_id(:merchant_product, merchant_product.id)
                })
 
-      assert merchant_product_id == relay_id("MerchantProduct", merchant_product.id)
-      assert merchant_id == relay_id("Merchant", merchant.id)
-      assert product_id == relay_id("Product", product.id)
+      assert merchant_product_id == relay_id(:merchant_product, merchant_product.id)
+      assert merchant_id == relay_id(:merchant, merchant.id)
+      assert product_id == relay_id(:product, product.id)
+    end
+
+    test "node returns a price point for a valid price point global id", %{conn: conn} do
+      product = SpecsFixtures.product_fixture(%{slug: "node-price-point"})
+      merchant = merchant_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      observed_at = ~U[2026-05-30 10:00:00Z]
+
+      assert {:ok, price_point} =
+               Pricing.add_price_point(%{
+                 merchant_product_id: merchant_product.id,
+                 observed_at: observed_at,
+                 price: Decimal.new("129.99")
+               })
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "PricePoint",
+                   "id" => price_point_id,
+                   "merchantProductId" => merchant_product_id,
+                   "observedAt" => observed_at_value,
+                   "price" => "129.99"
+                 }
+               }
+             } =
+               graphql(conn, price_point_node_query(), %{
+                 "id" => relay_id(:price_point, price_point.id)
+               })
+
+      assert price_point_id == relay_id(:price_point, price_point.id)
+      assert merchant_product_id == relay_id(:merchant_product, merchant_product.id)
+
+      assert {:ok, parsed_observed_at, 0} = DateTime.from_iso8601(observed_at_value)
+      assert DateTime.compare(parsed_observed_at, observed_at) == :eq
     end
 
     test "node returns a saved comparison set for the authenticated owner", %{conn: conn} do
@@ -124,10 +160,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                }
              } =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("SavedComparisonSet", saved_set.entropy_id)
+                 "id" => relay_id(:saved_comparison_set, saved_set.entropy_id)
                })
 
-      assert saved_set_id == relay_id("SavedComparisonSet", saved_set.entropy_id)
+      assert saved_set_id == relay_id(:saved_comparison_set, saved_set.entropy_id)
 
       assert Enum.map(items, &{&1["position"], get_in(&1, ["product", "slug"])}) == [
                {1, first_product.slug},
@@ -153,7 +189,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
 
       assert %{"data" => %{"node" => nil}} =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("SavedComparisonSet", saved_set.entropy_id)
+                 "id" => relay_id(:saved_comparison_set, saved_set.entropy_id)
                })
     end
 
@@ -169,7 +205,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
 
       assert %{"data" => %{"node" => nil}} =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("SavedComparisonSet", saved_set.entropy_id)
+                 "id" => relay_id(:saved_comparison_set, saved_set.entropy_id)
                })
     end
 
@@ -185,7 +221,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
 
       assert {:ok, %{data: %{"node" => nil}}} =
                Absinthe.run(node_query(), Schema,
-                 variables: %{"id" => relay_id("SavedComparisonSet", saved_set.entropy_id)},
+                 variables: %{"id" => relay_id(:saved_comparison_set, saved_set.entropy_id)},
                  context: %{current_user: nil}
                )
     end
@@ -213,10 +249,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                }
              } =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("ApiToken", api_token.entropy_id)
+                 "id" => relay_id(:api_token, api_token.entropy_id)
                })
 
-      assert api_token_id == relay_id("ApiToken", api_token.entropy_id)
+      assert api_token_id == relay_id(:api_token, api_token.entropy_id)
       assert token_prefix == api_token.token_prefix
     end
 
@@ -234,7 +270,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
 
       assert %{"data" => %{"node" => nil}} =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("ApiToken", api_token.entropy_id)
+                 "id" => relay_id(:api_token, api_token.entropy_id)
                })
     end
 
@@ -246,8 +282,118 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
 
       assert %{"data" => %{"node" => nil}} =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("ApiToken", api_token.entropy_id)
+                 "id" => relay_id(:api_token, api_token.entropy_id)
                })
+    end
+
+    test "node returns affiliate entities for an authenticated viewer", %{conn: conn} do
+      viewer = AccountsFixtures.user_fixture()
+
+      %{
+        merchant: merchant,
+        merchant_product: merchant_product,
+        network: network,
+        program: program,
+        link: link,
+        coupon: coupon
+      } = affiliate_node_records()
+
+      conn =
+        conn
+        |> log_in_user(viewer)
+        |> put_req_header_same_origin()
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "AffiliateNetwork",
+                   "id" => network_id,
+                   "name" => network_name
+                 }
+               }
+             } =
+               graphql(conn, affiliate_node_query(), %{
+                 "id" => relay_id(:affiliate_network, network.id)
+               })
+
+      assert network_id == relay_id(:affiliate_network, network.id)
+      assert network_name == network.name
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "AffiliateProgram",
+                   "id" => program_id,
+                   "affiliateNetworkId" => program_network_id,
+                   "merchantId" => program_merchant_id,
+                   "programCode" => "NODE-PROGRAM",
+                   "status" => "active"
+                 }
+               }
+             } =
+               graphql(conn, affiliate_node_query(), %{
+                 "id" => relay_id(:affiliate_program, program.id)
+               })
+
+      assert program_id == relay_id(:affiliate_program, program.id)
+      assert program_network_id == relay_id(:affiliate_network, network.id)
+      assert program_merchant_id == relay_id(:merchant, merchant.id)
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "AffiliateLink",
+                   "id" => link_id,
+                   "merchantProductId" => link_merchant_product_id,
+                   "affiliateNetworkId" => link_network_id,
+                   "originalUrl" => "https://merchant.example.com/node-product",
+                   "affiliateUrl" => "https://affiliate.example.com/node-product"
+                 }
+               }
+             } =
+               graphql(conn, affiliate_node_query(), %{"id" => relay_id(:affiliate_link, link.id)})
+
+      assert link_id == relay_id(:affiliate_link, link.id)
+      assert link_merchant_product_id == relay_id(:merchant_product, merchant_product.id)
+      assert link_network_id == relay_id(:affiliate_network, network.id)
+
+      assert %{
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "Coupon",
+                   "id" => coupon_id,
+                   "merchantId" => coupon_merchant_id,
+                   "affiliateNetworkId" => coupon_network_id,
+                   "code" => "NODE-15",
+                   "discountType" => "PERCENT"
+                 }
+               }
+             } = graphql(conn, affiliate_node_query(), %{"id" => relay_id(:coupon, coupon.id)})
+
+      assert coupon_id == relay_id(:coupon, coupon.id)
+      assert coupon_merchant_id == relay_id(:merchant, merchant.id)
+      assert coupon_network_id == relay_id(:affiliate_network, network.id)
+    end
+
+    test "node returns nil for affiliate entity ids without authentication", %{conn: conn} do
+      %{
+        network: network,
+        program: program,
+        link: link,
+        coupon: coupon
+      } = affiliate_node_records()
+
+      for global_id <- [
+            relay_id(:affiliate_network, network.id),
+            relay_id(:affiliate_program, program.id),
+            relay_id(:affiliate_link, link.id),
+            relay_id(:coupon, coupon.id)
+          ] do
+        response = graphql(conn, node_id_query(), %{"id" => global_id})
+
+        assert %{"data" => %{"node" => nil}} = response
+        refute Map.has_key?(response, "errors")
+      end
     end
 
     test "node rejects invalid ids", %{conn: conn} do
@@ -263,7 +409,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
              } =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("Product", 9_223_372_036_854_775_808)
+                 "id" => relay_id(:product, 9_223_372_036_854_775_808)
                })
     end
 
@@ -272,7 +418,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
         assert %{
                  "data" => %{"node" => nil},
                  "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
-               } = graphql(conn, node_query(), %{"id" => relay_id("Product", local_id)})
+               } = graphql(conn, node_query(), %{"id" => relay_id(:product, local_id)})
       end
     end
 
@@ -280,19 +426,19 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
       assert %{
                "data" => %{"node" => nil},
                "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
-             } = graphql(conn, node_query(), %{"id" => relay_id("ApiToken", "not-a-uuid")})
+             } = graphql(conn, node_query(), %{"id" => relay_id(:api_token, "not-a-uuid")})
 
       assert %{
                "data" => %{"node" => nil},
                "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
              } =
                graphql(conn, node_query(), %{
-                 "id" => relay_id("SavedComparisonSet", "not-a-uuid")
+                 "id" => relay_id(:saved_comparison_set, "not-a-uuid")
                })
     end
 
     test "node rejects unsupported ids", %{conn: conn} do
-      unsupported_id = relay_id("PricePoint", 123)
+      unsupported_id = relay_id(:source_artifact, 123)
 
       assert %{
                "data" => %{"node" => nil},
@@ -314,13 +460,13 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                    "id" => product_id
                  }
                }
-             } = graphql(conn, node_id_query(), %{"id" => relay_id("Product", product.id)})
+             } = graphql(conn, node_id_query(), %{"id" => relay_id(:product, product.id)})
 
-      assert product_id == relay_id("Product", product.id)
+      assert product_id == relay_id(:product, product.id)
     end
 
     test "node returns nil without errors for a valid non-existent public node id", %{conn: conn} do
-      response = graphql(conn, node_query(), %{"id" => relay_id("Product", 2_147_483_647)})
+      response = graphql(conn, node_query(), %{"id" => relay_id(:product, 2_147_483_647)})
 
       assert %{"data" => %{"node" => nil}} = response
       refute Map.has_key?(response, "errors")
@@ -405,6 +551,57 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     """
   end
 
+  defp price_point_node_query do
+    """
+    query Node($id: ID!) {
+      node(id: $id) {
+        __typename
+        ... on PricePoint {
+          id
+          merchantProductId
+          observedAt
+          price
+        }
+      }
+    }
+    """
+  end
+
+  defp affiliate_node_query do
+    """
+    query Node($id: ID!) {
+      node(id: $id) {
+        __typename
+        ... on AffiliateNetwork {
+          id
+          name
+        }
+        ... on AffiliateProgram {
+          id
+          affiliateNetworkId
+          merchantId
+          programCode
+          status
+        }
+        ... on AffiliateLink {
+          id
+          merchantProductId
+          affiliateNetworkId
+          originalUrl
+          affiliateUrl
+        }
+        ... on Coupon {
+          id
+          merchantId
+          affiliateNetworkId
+          code
+          discountType
+        }
+      }
+    }
+    """
+  end
+
   defp node_id_query do
     """
     query NodeId($id: ID!) {
@@ -422,7 +619,48 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     |> json_response(200)
   end
 
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
-
   defp unique_domain(prefix), do: "#{prefix}-#{System.unique_integer([:positive])}.example.com"
+
+  defp affiliate_node_records do
+    merchant = merchant_fixture(%{name: "Node Affiliate Merchant"})
+    product = SpecsFixtures.product_fixture(%{slug: "node-affiliate-product"})
+    merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+    network_name = "Node Network #{System.unique_integer([:positive])}"
+
+    assert {:ok, network} = Affiliate.upsert_network(%{name: network_name})
+
+    assert {:ok, program} =
+             Affiliate.upsert_program(%{
+               affiliate_network_id: network.id,
+               merchant_id: merchant.id,
+               program_code: "NODE-PROGRAM",
+               status: "active"
+             })
+
+    assert {:ok, link} =
+             Affiliate.upsert_link(%{
+               merchant_product_id: merchant_product.id,
+               affiliate_network_id: network.id,
+               original_url: "https://merchant.example.com/node-product",
+               affiliate_url: "https://affiliate.example.com/node-product"
+             })
+
+    assert {:ok, coupon} =
+             Affiliate.create_coupon(%{
+               merchant_id: merchant.id,
+               affiliate_network_id: network.id,
+               code: "NODE-15",
+               discount_type: :percent,
+               discount_value: Decimal.new("15.00")
+             })
+
+    %{
+      merchant: merchant,
+      merchant_product: merchant_product,
+      network: network,
+      program: program,
+      link: link,
+      coupon: coupon
+    }
+  end
 end

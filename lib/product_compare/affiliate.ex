@@ -11,6 +11,18 @@ defmodule ProductCompare.Affiliate do
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
 
+  @spec get_affiliate_network(pos_integer()) :: AffiliateNetwork.t() | nil
+  def get_affiliate_network(id), do: Repo.get(AffiliateNetwork, id)
+
+  @spec get_affiliate_program(pos_integer()) :: AffiliateProgram.t() | nil
+  def get_affiliate_program(id), do: Repo.get(AffiliateProgram, id)
+
+  @spec get_affiliate_link(pos_integer()) :: AffiliateLink.t() | nil
+  def get_affiliate_link(id), do: Repo.get(AffiliateLink, id)
+
+  @spec get_coupon(pos_integer()) :: Coupon.t() | nil
+  def get_coupon(id), do: Repo.get(Coupon, id)
+
   @spec upsert_network(map()) :: {:ok, AffiliateNetwork.t()} | {:error, Ecto.Changeset.t()}
   def upsert_network(attrs) do
     now = DateTime.utc_now()
@@ -28,7 +40,7 @@ defmodule ProductCompare.Affiliate do
   def upsert_program(attrs) do
     now = DateTime.utc_now()
     changeset = AffiliateProgram.changeset(%AffiliateProgram{}, attrs)
-    update_fields = Map.take(changeset.changes, [:program_code, :status]) |> Map.to_list()
+    update_fields = conflict_update_fields(attrs, changeset, [:program_code, :status])
 
     Repo.insert(
       changeset,
@@ -44,13 +56,12 @@ defmodule ProductCompare.Affiliate do
     changeset = AffiliateLink.changeset(%AffiliateLink{}, attrs)
 
     update_fields =
-      Map.take(changeset.changes, [
+      conflict_update_fields(attrs, changeset, [
         :affiliate_network_id,
         :original_url,
         :affiliate_url,
         :last_verified_at
       ])
-      |> Map.to_list()
 
     Repo.insert(
       changeset,
@@ -82,4 +93,26 @@ defmodule ProductCompare.Affiliate do
     |> list_active_coupons_query(now)
     |> Repo.all()
   end
+
+  defp conflict_update_fields(attrs, changeset, fields) do
+    Enum.flat_map(fields, fn field ->
+      cond do
+        Map.has_key?(changeset.changes, field) -> [{field, Map.fetch!(changeset.changes, field)}]
+        attr_key_present?(attrs, field) -> [{field, fetch_attr(attrs, field)}]
+        true -> []
+      end
+    end)
+  end
+
+  defp fetch_attr(attrs, key) when is_map(attrs) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+  end
+
+  defp fetch_attr(_attrs, _key), do: nil
+
+  defp attr_key_present?(attrs, key) when is_map(attrs) do
+    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+  end
+
+  defp attr_key_present?(_attrs, _key), do: false
 end

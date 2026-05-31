@@ -184,6 +184,27 @@ test("login route hides transport details behind a generic alert", async () => {
   expect(alert).not.toHaveTextContent("database stacktrace");
 });
 
+test("login route hides synchronous Relay commit errors behind a generic alert", async () => {
+  commitMutationMock.mockImplementation(() => {
+    throw new Error("commit failed: database stacktrace");
+  });
+
+  renderRoute("/auth/login");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: "supersecretpass123" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+});
+
 test("login route hides top-level GraphQL error details behind a generic alert", async () => {
   renderRoute("/auth/login");
 
@@ -246,6 +267,27 @@ test("register route hides top-level GraphQL error details behind a generic aler
   expect(alert).toHaveTextContent("Request failed. Please try again.");
   expect(alert).not.toHaveTextContent("database stacktrace");
   expect(navigateMock).not.toHaveBeenCalled();
+});
+
+test("register route hides synchronous Relay commit errors behind a generic alert", async () => {
+  commitMutationMock.mockImplementation(() => {
+    throw new Error("commit failed: database stacktrace");
+  });
+
+  renderRoute("/auth/register");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.change(screen.getByLabelText(/^password$/i), {
+    target: { value: "supersecretpass123" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
 });
 
 test("login route shows a generic alert when the session payload fails without errors", async () => {

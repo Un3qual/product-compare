@@ -15,11 +15,16 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareSchemas.Accounts.ApiToken
+  alias ProductCompareSchemas.Affiliate.AffiliateLink
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.Affiliate.AffiliateProgram
+  alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
+  alias ProductCompareSchemas.Pricing.PricePoint
 
   @impl true
   def context(context) do
@@ -364,8 +369,10 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :affiliate_network do
+    interface(:node)
+
     field :id, non_null(:id) do
-      resolve(fn network, _, _ -> encode_required_global_id(:affiliate_network, network.id) end)
+      resolve(fn network, _, _ -> GlobalId.encode_required(:affiliate_network, network.id) end)
     end
 
     field :name, non_null(:string)
@@ -374,18 +381,20 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :affiliate_program do
+    interface(:node)
+
     field :id, non_null(:id) do
-      resolve(fn program, _, _ -> encode_required_global_id(:affiliate_program, program.id) end)
+      resolve(fn program, _, _ -> GlobalId.encode_required(:affiliate_program, program.id) end)
     end
 
     field :affiliate_network_id, non_null(:id) do
       resolve(fn program, _, _ ->
-        encode_required_global_id(:affiliate_network, program.affiliate_network_id)
+        GlobalId.encode_required(:affiliate_network, program.affiliate_network_id)
       end)
     end
 
     field :merchant_id, non_null(:id) do
-      resolve(fn program, _, _ -> encode_required_global_id(:merchant, program.merchant_id) end)
+      resolve(fn program, _, _ -> GlobalId.encode_required(:merchant, program.merchant_id) end)
     end
 
     field :program_code, :string
@@ -395,19 +404,21 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :affiliate_link do
+    interface(:node)
+
     field :id, non_null(:id) do
-      resolve(fn link, _, _ -> encode_required_global_id(:affiliate_link, link.id) end)
+      resolve(fn link, _, _ -> GlobalId.encode_required(:affiliate_link, link.id) end)
     end
 
     field :merchant_product_id, non_null(:id) do
       resolve(fn link, _, _ ->
-        encode_required_global_id(:merchant_product, link.merchant_product_id)
+        GlobalId.encode_required(:merchant_product, link.merchant_product_id)
       end)
     end
 
     field :affiliate_network_id, :id do
       resolve(fn link, _, _ ->
-        encode_optional_global_id(:affiliate_network, link.affiliate_network_id)
+        GlobalId.encode_optional(:affiliate_network, link.affiliate_network_id)
       end)
     end
 
@@ -419,23 +430,25 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :coupon do
+    interface(:node)
+
     field :id, non_null(:id) do
-      resolve(fn coupon, _, _ -> encode_required_global_id(:coupon, coupon.id) end)
+      resolve(fn coupon, _, _ -> GlobalId.encode_required(:coupon, coupon.id) end)
     end
 
     field :merchant_id, non_null(:id) do
-      resolve(fn coupon, _, _ -> encode_required_global_id(:merchant, coupon.merchant_id) end)
+      resolve(fn coupon, _, _ -> GlobalId.encode_required(:merchant, coupon.merchant_id) end)
     end
 
     field :affiliate_network_id, :id do
       resolve(fn coupon, _, _ ->
-        encode_optional_global_id(:affiliate_network, coupon.affiliate_network_id)
+        GlobalId.encode_optional(:affiliate_network, coupon.affiliate_network_id)
       end)
     end
 
     field :artifact_id, :id do
       resolve(fn coupon, _, _ ->
-        encode_optional_global_id(:source_artifact, coupon.artifact_id)
+        GlobalId.encode_optional(:source_artifact, coupon.artifact_id)
       end)
     end
 
@@ -533,7 +546,7 @@ defmodule ProductCompareWeb.Schema do
 
     field :id, non_null(:id) do
       resolve(fn saved_comparison_set, _, _ ->
-        encode_required_global_id(:saved_comparison_set, saved_comparison_set.entropy_id)
+        GlobalId.encode_required(:saved_comparison_set, saved_comparison_set.entropy_id)
       end)
     end
 
@@ -588,8 +601,13 @@ defmodule ProductCompareWeb.Schema do
       %Brand{}, _ -> :brand
       %Merchant{}, _ -> :merchant
       %MerchantProduct{}, _ -> :merchant_product
+      %PricePoint{}, _ -> :price_point
       %SavedComparisonSet{}, _ -> :saved_comparison_set
       %ApiToken{}, _ -> :api_token
+      %AffiliateNetwork{}, _ -> :affiliate_network
+      %AffiliateProgram{}, _ -> :affiliate_program
+      %AffiliateLink{}, _ -> :affiliate_link
+      %Coupon{}, _ -> :coupon
       _, _ -> nil
     end)
   end
@@ -598,7 +616,7 @@ defmodule ProductCompareWeb.Schema do
     interface(:node)
 
     field :id, non_null(:id) do
-      resolve(fn brand, _, _ -> encode_required_global_id(:brand, brand.id) end)
+      resolve(fn brand, _, _ -> GlobalId.encode_required(:brand, brand.id) end)
     end
 
     field :name, non_null(:string)
@@ -608,7 +626,7 @@ defmodule ProductCompareWeb.Schema do
     interface(:node)
 
     field :id, non_null(:id) do
-      resolve(fn merchant, _, _ -> encode_required_global_id(:merchant, merchant.id) end)
+      resolve(fn merchant, _, _ -> GlobalId.encode_required(:merchant, merchant.id) end)
     end
 
     field :name, non_null(:string)
@@ -631,7 +649,7 @@ defmodule ProductCompareWeb.Schema do
     interface(:node)
 
     field :id, non_null(:id) do
-      resolve(fn product, _, _ -> encode_required_global_id(:product, product.id) end)
+      resolve(fn product, _, _ -> GlobalId.encode_required(:product, product.id) end)
     end
 
     field :name, non_null(:string)
@@ -646,19 +664,19 @@ defmodule ProductCompareWeb.Schema do
 
     field :id, non_null(:id) do
       resolve(fn merchant_product, _, _ ->
-        encode_required_global_id(:merchant_product, merchant_product.id)
+        GlobalId.encode_required(:merchant_product, merchant_product.id)
       end)
     end
 
     field :merchant_id, non_null(:id) do
       resolve(fn merchant_product, _, _ ->
-        encode_required_global_id(:merchant, merchant_product.merchant_id)
+        GlobalId.encode_required(:merchant, merchant_product.merchant_id)
       end)
     end
 
     field :product_id, non_null(:id) do
       resolve(fn merchant_product, _, _ ->
-        encode_required_global_id(:product, merchant_product.product_id)
+        GlobalId.encode_required(:product, merchant_product.product_id)
       end)
     end
 
@@ -685,13 +703,15 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :price_point do
+    interface(:node)
+
     field :id, non_null(:id) do
-      resolve(fn price_point, _, _ -> encode_required_global_id(:price_point, price_point.id) end)
+      resolve(fn price_point, _, _ -> GlobalId.encode_required(:price_point, price_point.id) end)
     end
 
     field :merchant_product_id, non_null(:id) do
       resolve(fn price_point, _, _ ->
-        encode_required_global_id(:merchant_product, price_point.merchant_product_id)
+        GlobalId.encode_required(:merchant_product, price_point.merchant_product_id)
       end)
     end
 
@@ -730,17 +750,4 @@ defmodule ProductCompareWeb.Schema do
     field :cursor, non_null(:string)
     field :node, non_null(:product)
   end
-
-  defp encode_required_global_id(type, value) when is_integer(value) do
-    {:ok, GlobalId.encode(type, Integer.to_string(value))}
-  end
-
-  defp encode_required_global_id(type, value) when is_binary(value) do
-    {:ok, GlobalId.encode(type, value)}
-  end
-
-  defp encode_required_global_id(_type, _value), do: {:error, "invalid id"}
-
-  defp encode_optional_global_id(_type, nil), do: {:ok, nil}
-  defp encode_optional_global_id(type, value), do: encode_required_global_id(type, value)
 end

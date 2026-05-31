@@ -7,6 +7,7 @@ import {
   preloadRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
+import { recoverRouteLoaderError } from "../loader-errors";
 
 const BROWSE_PRODUCTS_PAGE_SIZE = 12;
 
@@ -19,10 +20,13 @@ export type BrowseProductsLoaderData =
       status: "error";
     };
 
-export async function browseLoader({ context, request }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
-  try {
-    const environment = getRelayEnvironmentFromRouterContext(context);
+export async function browseLoader({
+  context,
+  request
+}: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
 
+  try {
     return {
       status: "ready",
       query: await preloadRouteQuery<BrowseProductsRouteQuery>(
@@ -35,26 +39,12 @@ export async function browseLoader({ context, request }: LoaderFunctionArgs): Pr
       )
     };
   } catch (error) {
-    if (isAbortError(error)) {
-      throw error;
-    }
-
-    console.error("Failed to preload browse products route query.", { error });
-
-    return {
-      status: "error"
-    };
+    return recoverRouteLoaderError<BrowseProductsLoaderData>(
+      error,
+      "Failed to preload browse products route query.",
+      {
+        status: "error"
+      }
+    );
   }
-}
-
-function isAbortError(error: unknown) {
-  return getErrorName(error) === "AbortError";
-}
-
-function getErrorName(error: unknown) {
-  if (!error || typeof error !== "object" || !("name" in error)) {
-    return null;
-  }
-
-  return error.name;
 }

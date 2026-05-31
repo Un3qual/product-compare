@@ -58,7 +58,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
             "firstSlug" => first_product.slug,
             "secondSlug" => second_product.slug,
             "input" => %{
-              "productId" => relay_id("Product", first_product.id),
+              "productId" => relay_id(:product, first_product.id),
               "first" => 10
             }
           })
@@ -83,26 +83,26 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                }
              } = response
 
-      assert first_product_id == relay_id("Product", first_product.id)
-      assert second_product_id == relay_id("Product", second_product.id)
-      assert first_brand_id == relay_id("Brand", first_product.brand_id)
-      assert second_brand_id == relay_id("Brand", second_product.brand_id)
+      assert first_product_id == relay_id(:product, first_product.id)
+      assert second_product_id == relay_id(:product, second_product.id)
+      assert first_brand_id == relay_id(:brand, first_product.brand_id)
+      assert second_brand_id == relay_id(:brand, second_product.brand_id)
       assert length(edges) == 4
 
       Enum.each(merchant_products, fn {merchant_product, merchant, latest_price} ->
         assert Enum.any?(edges, fn edge ->
                  edge["node"] == %{
-                   "id" => relay_id("MerchantProduct", merchant_product.id),
+                   "id" => relay_id(:merchant_product, merchant_product.id),
                    "merchant" => %{
-                     "id" => relay_id("Merchant", merchant.id),
+                     "id" => relay_id(:merchant, merchant.id),
                      "name" => merchant.name
                    },
                    "product" => %{
-                     "id" => relay_id("Product", first_product.id),
+                     "id" => relay_id(:product, first_product.id),
                      "slug" => first_product.slug
                    },
                    "latestPrice" => %{
-                     "id" => relay_id("PricePoint", latest_price.id),
+                     "id" => relay_id(:price_point, latest_price.id),
                      "price" => Decimal.to_string(latest_price.price)
                    }
                  }
@@ -253,8 +253,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
   end
-
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
 
   defp unique_name(prefix), do: "#{prefix} #{System.unique_integer([:positive])}"
   defp unique_domain(prefix), do: "#{prefix}-#{System.unique_integer([:positive])}.example.com"

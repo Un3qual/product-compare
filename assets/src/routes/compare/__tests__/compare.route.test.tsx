@@ -1,18 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { fetchGraphQL } from "../../../relay/fetch-graphql";
-import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../relay/environment";
+import { createRelayEnvironment } from "../../../relay/environment";
 import {
-  createRelayRouterContext,
   fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../../relay/route-preload";
-import type { LoaderFunctionArgs } from "react-router-dom";
 import {
   MemoryRouter,
   useLoaderData
 } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import * as ReactRouterDom from "react-router-dom";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { compareLoader } from "../loader";
 import {
   isUnauthorizedSavedComparisonsResponse,
@@ -21,6 +19,15 @@ import {
 import { CompareErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
 import { SavedComparisonsRoute } from "../saved";
+import {
+  buildAbortableRequest,
+  buildCompareLoaderArgs,
+  buildGraphQLResponseWithErrors,
+  buildRouteLoaderGraphQLError,
+  buildSavedComparisonsLoaderArgs,
+  buildSuccessfulDeleteResponse
+} from "./saved-comparisons-test-helpers";
+import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 
 const {
   commitMutationMock,
@@ -37,17 +44,6 @@ const {
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
-
-vi.mock("../../../relay/fetch-graphql", async () => {
-  const actual = await vi.importActual<typeof import("../../../relay/fetch-graphql")>(
-    "../../../relay/fetch-graphql"
-  );
-
-  return {
-    ...actual,
-    fetchGraphQL: vi.fn()
-  };
-});
 
 vi.mock("../../../relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../relay/route-preload")>(
@@ -80,7 +76,6 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-const fetchGraphQLMock = vi.mocked(fetchGraphQL);
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
@@ -196,7 +191,7 @@ const buildSavedComparisonPage = ({
 });
 
 const buildFetchedSavedComparisonPage = (
-  data: ReturnType<typeof buildSavedComparisonPage>,
+  data: unknown,
   descriptor = SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR
 ) => ({
   data,
@@ -214,25 +209,9 @@ const buildReadyCompareLoaderData = () => ({
   ]
 });
 
-const createDeferred = <T,>() => {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-
-  return {
-    promise,
-    resolve,
-    reject
-  };
-};
-
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
-  fetchGraphQLMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
@@ -245,11 +224,7 @@ beforeEach(() => {
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
   await expect(
-    compareLoader({
-      request: new Request("https://app.example.com/compare"),
-      params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+    compareLoader(buildCompareLoaderArgs())
   ).resolves.toEqual({
     status: "empty",
     slugs: []
@@ -258,13 +233,13 @@ test("compare loader returns an empty state when no slugs are selected", async (
 
 test("compare loader rejects more than three selected slugs", async () => {
   await expect(
-    compareLoader({
-      request: new Request(
-        "https://app.example.com/compare?slug=one&slug=two&slug=three&slug=four"
-      ),
-      params: {},
-      context: undefined
-    } as LoaderFunctionArgs)
+    compareLoader(
+      buildCompareLoaderArgs({
+        request: new Request(
+          "https://app.example.com/compare?slug=one&slug=two&slug=three&slug=four"
+        )
+      })
+    )
   ).resolves.toEqual({
     status: "too_many",
     slugs: ["one", "two", "three", "four"]
@@ -282,11 +257,7 @@ test("compare loader requests selected product details and preserves URL order",
     .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
 
   await expect(
-    compareLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     slugs: ["detail-product", "second-product"],
@@ -322,11 +293,7 @@ test("compare loader forwards the route abort signal to each Relay preload", asy
     .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
     .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
 
-  await compareLoader({
-    request,
-    params: {},
-    context: createRelayRouterContext(environment)
-  } as unknown as LoaderFunctionArgs);
+  await compareLoader(buildCompareLoaderArgs({ environment, request }));
 
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
@@ -354,13 +321,14 @@ test("compare loader returns not_found when any selected product is missing", as
     .mockResolvedValueOnce(missingProductQuery);
 
   await expect(
-    compareLoader({
-      request: new Request(
-        "https://app.example.com/compare?slug=detail-product&slug=missing-product"
-      ),
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(
+      buildCompareLoaderArgs({
+        environment,
+        request: new Request(
+          "https://app.example.com/compare?slug=detail-product&slug=missing-product"
+        )
+      })
+    )
   ).resolves.toEqual({
     status: "not_found",
     slugs: ["detail-product", "missing-product"]
@@ -381,13 +349,14 @@ test("compare loader throws when any selected product request fails", async () =
     .mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
-    compareLoader({
-      request: new Request(
-        "https://app.example.com/compare?slug=detail-product&slug=broken-product"
-      ),
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(
+      buildCompareLoaderArgs({
+        environment,
+        request: new Request(
+          "https://app.example.com/compare?slug=detail-product&slug=broken-product"
+        )
+      })
+    )
   ).rejects.toThrow("Network request failed: boom");
   expect(fetchedProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
@@ -402,11 +371,12 @@ test("compare loader rethrows AbortError-like rejected reasons without wrapping"
   mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
 
   await expect(
-    compareLoader({
-      request: new Request("https://app.example.com/compare?slug=detail-product"),
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(
+      buildCompareLoaderArgs({
+        environment,
+        request: new Request("https://app.example.com/compare?slug=detail-product")
+      })
+    )
   ).rejects.toBe(abortError);
 });
 
@@ -418,11 +388,12 @@ test("compare loader wraps non-error rejected reasons with the original cause", 
   mockedFetchRouteQuery.mockRejectedValueOnce(rejectionReason);
 
   try {
-    await compareLoader({
-      request: new Request("https://app.example.com/compare?slug=detail-product"),
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs);
+    await compareLoader(
+      buildCompareLoaderArgs({
+        environment,
+        request: new Request("https://app.example.com/compare?slug=detail-product")
+      })
+    );
   } catch (error) {
     caughtError = error;
   }
@@ -435,25 +406,26 @@ test("compare loader wraps non-error rejected reasons with the original cause", 
 test("compare loader throws when a rejected request is mixed with a missing product", async () => {
   const environment = createRelayEnvironment();
   const missingProductQuery = {
-      data: {
-        product: null
-      },
-      descriptor: DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      dispose: vi.fn()
-    };
+    data: {
+      product: null
+    },
+    descriptor: DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
+  };
 
   mockedFetchRouteQuery
     .mockResolvedValueOnce(missingProductQuery)
     .mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
-    compareLoader({
-      request: new Request(
-        "https://app.example.com/compare?slug=detail-product&slug=broken-product"
-      ),
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    compareLoader(
+      buildCompareLoaderArgs({
+        environment,
+        request: new Request(
+          "https://app.example.com/compare?slug=detail-product&slug=broken-product"
+        )
+      })
+    )
   ).rejects.toThrow("Network request failed: boom");
   expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
@@ -566,6 +538,25 @@ test("compare route saves the current ready-state selection", async () => {
   expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
 });
 
+test("compare route reports a fallback error when the save commit throws synchronously", async () => {
+  commitMutationMock.mockImplementation(() => {
+    throw new Error("commit failed before callbacks registered");
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+
+  fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 test("renders a not-found message when any selected product is missing", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "not_found",
@@ -596,11 +587,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
@@ -659,11 +646,7 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
     );
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR, secondPageDescriptor],
@@ -697,27 +680,24 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
   );
 });
 
-test("saved comparisons loader returns unauthorized status when GraphQL returns an unauthorized error", async () => {
+test("saved comparisons loader returns unauthorized status when GraphQL returns UNAUTHENTICATED", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
 
   mockedFetchRouteQuery.mockRejectedValueOnce(
-    new RouteLoaderGraphQLError({
-      errors: [
-        {
-          message: "Unauthorized",
-          path: ["mySavedComparisonSets"]
+    buildRouteLoaderGraphQLError([
+      {
+        message: "Unauthorized",
+        path: ["mySavedComparisonSets"],
+        extensions: {
+          code: "UNAUTHENTICATED"
         }
-      ]
-    })
+      }
+    ])
   );
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "unauthorized",
     savedSetQueries: [],
@@ -730,6 +710,26 @@ test("saved comparisons loader returns unauthorized status when GraphQL returns 
     { first: 20 },
     { signal: request.signal }
   );
+});
+
+test("saved comparisons loader does not treat FORBIDDEN as a sign-in state", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  const forbiddenError = buildRouteLoaderGraphQLError([
+    {
+      message: "Forbidden",
+      path: ["mySavedComparisonSets"],
+      extensions: {
+        code: "FORBIDDEN"
+      }
+    }
+  ]);
+
+  mockedFetchRouteQuery.mockRejectedValueOnce(forbiddenError);
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).rejects.toBe(forbiddenError);
 });
 
 test("saved comparisons route renders persisted sets with reopen links", () => {
@@ -795,15 +795,8 @@ test("saved comparisons route exposes a named saved-set list and polite feedback
 });
 
 test("saved comparisons route removes a deleted set from the list", async () => {
-  fetchGraphQLMock.mockResolvedValue({
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: "saved-set-1"
-        },
-        errors: []
-      }
-    }
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 
   mockedUseLoaderData.mockReturnValue({
@@ -831,12 +824,12 @@ test("saved comparisons route removes a deleted set from the list", async () => 
   fireEvent.click(screen.getAllByRole("button", { name: "Delete comparison" })[0]);
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation DeleteSavedComparisonSet"),
-      {
-        savedComparisonSetId: "saved-set-1"
-      },
-      undefined
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
     );
   });
 
@@ -849,7 +842,9 @@ test("saved comparisons route removes a deleted set from the list", async () => 
 });
 
 test("saved comparisons route keeps the set visible when delete fails and clears pending state", async () => {
-  fetchGraphQLMock.mockRejectedValueOnce(new Error("Network request failed: boom"));
+  commitMutationMock.mockImplementation(({ onError }) => {
+    onError(new Error("Network request failed: boom"));
+  });
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -873,12 +868,12 @@ test("saved comparisons route keeps the set visible when delete fails and clears
   fireEvent.click(deleteButton);
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation DeleteSavedComparisonSet"),
-      {
-        savedComparisonSetId: "saved-set-1"
-      },
-      undefined
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
     );
   });
 
@@ -891,8 +886,8 @@ test("saved comparisons route keeps the set visible when delete fails and clears
 });
 
 test("saved comparisons route keeps the set visible when delete returns GraphQL errors and clears pending state", async () => {
-  fetchGraphQLMock.mockResolvedValueOnce({
-    data: {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
       deleteSavedComparisonSet: {
         savedComparisonSet: null,
         errors: [
@@ -903,7 +898,7 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
           }
         ]
       }
-    }
+    });
   });
 
   mockedUseLoaderData.mockReturnValue({
@@ -926,12 +921,12 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledWith(
-      expect.stringContaining("mutation DeleteSavedComparisonSet"),
-      {
-        savedComparisonSetId: "saved-set-1"
-      },
-      undefined
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          savedComparisonSetId: "saved-set-1"
+        }
+      })
     );
   });
 
@@ -944,30 +939,13 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
 });
 
 test("saved comparisons route applies overlapping delete responses against the latest list state", async () => {
-  const firstDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        } | null;
-        errors: [];
-      };
-    };
-  }>();
-  const secondDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        } | null;
-        errors: [];
-      };
-    };
-  }>();
+  const commits: Array<{
+    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
+  }> = [];
 
-  fetchGraphQLMock
-    .mockImplementationOnce(() => firstDelete.promise)
-    .mockImplementationOnce(() => secondDelete.promise);
+  commitMutationMock.mockImplementation((config) => {
+    commits.push(config);
+  });
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -997,37 +975,15 @@ test("saved comparisons route applies overlapping delete responses against the l
   fireEvent.click(deleteButtons[1]);
 
   await waitFor(() => {
-    expect(fetchGraphQLMock).toHaveBeenCalledTimes(2);
+    expect(commits).toHaveLength(2);
   });
 
-  await act(async () => {
-    secondDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-2"
-          },
-          errors: []
-        }
-      }
-    });
-
-    await secondDelete.promise;
+  act(() => {
+    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 
-  await act(async () => {
-    firstDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-1"
-          },
-          errors: []
-        }
-      }
-    });
-
-    await firstDelete.promise;
+  act(() => {
+    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 
   await waitFor(() => {
@@ -1039,30 +995,13 @@ test("saved comparisons route applies overlapping delete responses against the l
 });
 
 test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
-  const firstDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        } | null;
-        errors: [];
-      };
-    };
-  }>();
-  const secondDelete = createDeferred<{
-    data: {
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: string;
-        } | null;
-        errors: [];
-      };
-    };
-  }>();
+  const commits: Array<{
+    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
+  }> = [];
 
-  fetchGraphQLMock
-    .mockImplementationOnce(() => firstDelete.promise)
-    .mockImplementationOnce(() => secondDelete.promise);
+  commitMutationMock.mockImplementation((config) => {
+    commits.push(config);
+  });
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -1093,39 +1032,18 @@ test("saved comparisons route keeps later delete rows pending until their own re
 
   await waitFor(() => {
     expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);
+    expect(commits).toHaveLength(2);
   });
 
-  await act(async () => {
-    firstDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-1"
-          },
-          errors: []
-        }
-      }
-    });
-
-    await firstDelete.promise;
+  act(() => {
+    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 
   expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
-  await act(async () => {
-    secondDelete.resolve({
-      data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: {
-            id: "saved-set-2"
-          },
-          errors: []
-        }
-      }
-    });
-
-    await secondDelete.promise;
+  act(() => {
+    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 
   await waitFor(() => {
@@ -1151,38 +1069,55 @@ test("saved comparisons route prompts the user to sign in when the saved-set que
   ).toHaveAttribute("href", "/auth/login");
 });
 
-test("isUnauthorizedSavedComparisonsResponse detects an unauthorized GraphQL error targeting the saved sets field", () => {
+test("isUnauthorizedSavedComparisonsResponse detects a structured unauthorized GraphQL error targeting the saved sets field", () => {
   expect(
-    isUnauthorizedSavedComparisonsResponse({
-      errors: [
+    isUnauthorizedSavedComparisonsResponse(
+      buildGraphQLResponseWithErrors([
         {
           message: "Unauthorized",
-          path: ["mySavedComparisonSets"]
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "UNAUTHENTICATED"
+          }
         }
-      ]
-    })
+      ])
+    )
   ).toBe(true);
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response from extensions.code", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse(
-      {
-        errors: [
-          {
-            message: "Authentication failed",
-            path: ["mySavedComparisonSets"],
-            extensions: {
-              code: "UNAUTHENTICATED"
-            }
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Authentication failed",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "UNAUTHENTICATED"
           }
-        ]
-      } as unknown as Parameters<typeof isUnauthorizedSavedComparisonsResponse>[0]
+        }
+      ])
     )
   ).toBe(true);
 });
 
-test("isUnauthorizedSavedComparisonsResponse detects fuzzy auth messages without extensions.code", () => {
+test("isUnauthorizedSavedComparisonsResponse ignores a forbidden response from extensions.code", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse(
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Forbidden",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "FORBIDDEN"
+          }
+        }
+      ])
+    )
+  ).toBe(false);
+});
+
+test("isUnauthorizedSavedComparisonsResponse ignores fuzzy auth messages without extensions.code", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse({
       errors: [
@@ -1192,10 +1127,10 @@ test("isUnauthorizedSavedComparisonsResponse detects fuzzy auth messages without
         }
       ]
     })
-  ).toBe(true);
+  ).toBe(false);
 });
 
-test("isUnauthorizedSavedComparisonsResponse detects not authorized messages", () => {
+test("isUnauthorizedSavedComparisonsResponse ignores not authorized messages without extensions.code", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse({
       errors: [
@@ -1205,23 +1140,21 @@ test("isUnauthorizedSavedComparisonsResponse detects not authorized messages", (
         }
       ]
     })
-  ).toBe(true);
+  ).toBe(false);
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects pathless unauthorized errors with an empty path", () => {
   expect(
     isUnauthorizedSavedComparisonsResponse(
-      {
-        errors: [
-          {
-            message: "Unauthorized",
-            path: [],
-            extensions: {
-              code: "UNAUTHENTICATED"
-            }
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Unauthorized",
+          path: [],
+          extensions: {
+            code: "UNAUTHENTICATED"
           }
-        ]
-      } as unknown as Parameters<typeof isUnauthorizedSavedComparisonsResponse>[0]
+        }
+      ])
     )
   ).toBe(true);
 });
@@ -1278,15 +1211,32 @@ test("saved comparisons loader throws when the GraphQL response cannot be parsed
           endCursor: null
         }
       }
-    } as unknown as ReturnType<typeof buildSavedComparisonPage>)
+    })
   );
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).rejects.toThrow("Failed to parse saved comparison sets response");
+});
+
+test("saved comparisons loader throws when page metadata cannot be parsed", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedSavedComparisonPage({
+      mySavedComparisonSets: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: "yes",
+          endCursor: null
+        }
+      }
+    })
+  );
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
@@ -1321,11 +1271,7 @@ test("saved comparisons loader throws when page cap is reached before pagination
   });
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).rejects.toThrow("Saved comparison sets pagination limit exceeded");
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(50);
@@ -1343,11 +1289,9 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
     )
   );
 
-  const result = await savedComparisonsLoader({
-    request,
-    params: {},
-    context: createRelayRouterContext(environment)
-  } as unknown as LoaderFunctionArgs);
+  const result = await savedComparisonsLoader(
+    buildSavedComparisonsLoaderArgs({ environment, request })
+  );
 
   expect(result).toEqual({
     status: "empty",
@@ -1359,11 +1303,10 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
 test("saved comparisons loader aborts pagination when the request is cancelled", async () => {
   const controller = new AbortController();
   const environment = createRelayEnvironment();
-  const request = {
-    headers: new Headers(),
-    signal: controller.signal,
-    url: "https://app.example.com/compare/saved"
-  } as unknown as Request;
+  const request = buildAbortableRequest(
+    "https://app.example.com/compare/saved",
+    controller.signal
+  );
 
   mockedFetchRouteQuery.mockImplementationOnce(() => {
     controller.abort();
@@ -1386,11 +1329,7 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
   });
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).rejects.toThrow(/aborted/i);
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
@@ -1471,10 +1410,6 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
     );
 
   await expect(
-    savedComparisonsLoader({
-      request,
-      params: {},
-      context: createRelayRouterContext(environment)
-    } as unknown as LoaderFunctionArgs)
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).rejects.toThrow("Invalid pagination cursor");
 });

@@ -3,15 +3,17 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   import Ecto.Query
 
+  alias ProductCompareWeb.GraphQL.Input
+
   @default_page_size 50
   @max_page_size 100
   @cursor_prefix "cursor:"
 
   @spec from_list([term()], map()) :: {:ok, map()} | {:error, :invalid_cursor}
   def from_list(items, args) when is_list(items) and is_map(args) do
-    first = args |> fetch_arg(:first, @default_page_size) |> normalize_page_size()
+    first = args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()
 
-    with {:ok, start_index} <- args |> fetch_arg(:after, nil) |> decode_start_index() do
+    with {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       total_count = length(items)
 
       page_items =
@@ -45,9 +47,9 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, :invalid_cursor}
   def from_query(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    first = args |> fetch_arg(:first, @default_page_size) |> normalize_page_size()
+    first = args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()
 
-    with {:ok, start_index} <- args |> fetch_arg(:after, nil) |> decode_start_index() do
+    with {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       fetch_limit = first + 1
 
       query_rows =
@@ -82,11 +84,17 @@ defmodule ProductCompareWeb.GraphQL.Connection do
     end
   end
 
+  @spec from_query_result(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, String.t()}
+  def from_query_result(%Ecto.Query{} = query, args, repo)
+      when is_map(args) and is_atom(repo) do
+    case from_query(query, args, repo) do
+      {:ok, connection} -> {:ok, connection}
+      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
+    end
+  end
+
   defp edge_cursor(nil), do: nil
   defp edge_cursor(edge), do: edge.cursor
-
-  defp fetch_arg(args, key, default),
-    do: Map.get(args, key, Map.get(args, Atom.to_string(key), default))
 
   defp normalize_page_size(nil), do: @default_page_size
 

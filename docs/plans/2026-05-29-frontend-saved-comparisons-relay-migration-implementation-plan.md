@@ -85,17 +85,17 @@ Expected: PASS.
 - Modify: `docs/work/frontend-saved-comparisons-relay-migration.md`
 - Modify: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write the failing delete mutation test**
+- [x] **Step 1: Write the failing delete mutation test**
 
 Add coverage that clicks a saved-set delete button and expects `useMutation(DeleteSavedComparisonSetMutation)` to receive `savedComparisonSetId`, then verify success and typed error behavior still update the route UI.
 
-- [ ] **Step 2: Run the focused failing delete test**
+- [x] **Step 2: Run the focused failing delete test**
 
 Run: `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx src/routes/compare/__tests__/saved-comparisons-route-state.test.tsx`
 
 Expected: FAIL because delete still calls the manual `deleteSavedComparisonSet(...)` helper.
 
-- [ ] **Step 3: Add the Relay delete mutation source and generated artifact**
+- [x] **Step 3: Add the Relay delete mutation source and generated artifact**
 
 Create a Relay mutation for `deleteSavedComparisonSet(savedComparisonSetId:)` returning `savedComparisonSet.id` and typed `errors`.
 
@@ -103,15 +103,15 @@ Run: `cd assets && bun run relay`
 
 Expected: PASS and create `assets/src/__generated__/DeleteSavedComparisonSetMutation.graphql.ts`.
 
-- [ ] **Step 4: Commit deletes through Relay**
+- [x] **Step 4: Commit deletes through Relay**
 
 Update `SavedComparisonsRoute` to call `useMutation(DeleteSavedComparisonSetMutation)`, preserve duplicate-click suppression, per-row pending state, stale error clearing, successful local removal, and typed GraphQL error display.
 
-- [ ] **Step 5: Remove the manual saved-data helper**
+- [x] **Step 5: Remove the manual saved-data helper**
 
 Delete the manual `fetchGraphQL(...)` mutation helper and any remaining raw saved-comparison GraphQL strings from `saved-data.ts`. If the file only holds loader types and helpers, keep it named until a later small cleanup would avoid churn.
 
-- [ ] **Step 6: Run focused frontend verification**
+- [x] **Step 6: Run focused frontend verification**
 
 Run:
 
@@ -134,15 +134,15 @@ Expected: PASS.
 - Modify: `docs/plans/INDEX.md`
 - Modify: `ARCHITECTURE.md`
 
-- [ ] **Step 1: Mark the saved-route Relay migration complete**
+- [x] **Step 1: Mark the saved-route Relay migration complete**
 
 Record that `/compare/saved` uses Relay query/mutation APIs and no longer depends on raw saved-comparison GraphQL strings.
 
-- [ ] **Step 2: Re-open or close dependent compare/saved follow-up docs**
+- [x] **Step 2: Re-open or close dependent compare/saved follow-up docs**
 
 If no additional compare/saved polish is queued, keep the lane complete. If a concrete UI hardening batch remains, add it as a separate next batch with owned paths and verification commands.
 
-- [ ] **Step 3: Run full frontend verification**
+- [x] **Step 3: Run full frontend verification**
 
 Run:
 

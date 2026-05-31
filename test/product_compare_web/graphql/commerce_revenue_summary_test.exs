@@ -5,7 +5,6 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.GlobalId
 
   describe "/api/graphql commerce revenue summary" do
     test "returns an empty dashboard summary shape", %{conn: conn} do
@@ -95,8 +94,8 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
       create_purchase_price_fact!(approved, "100.00")
       create_purchase_price_fact!(paid, "60.00")
 
-      merchant_id = global_id(:merchant, merchant.id)
-      product_id = global_id(:product, product.id)
+      merchant_id = relay_id(:merchant, merchant.id)
+      product_id = relay_id(:product, product.id)
 
       assert %{
                "data" => %{
@@ -168,7 +167,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
              } =
                graphql(conn, revenue_summary_query(), %{
                  "input" => %{
-                   "merchantId" => global_id(:merchant, merchant.id)
+                   "merchantId" => relay_id(:merchant, merchant.id)
                  }
                })
     end
@@ -183,7 +182,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
              } =
                graphql(conn, revenue_summary_query(), %{
                  "input" => %{
-                   "merchantId" => global_id(:product, 123)
+                   "merchantId" => relay_id(:product, 123)
                  }
                })
 
@@ -344,6 +343,4 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
 
     fact
   end
-
-  defp global_id(type, local_id), do: GlobalId.encode(type, Integer.to_string(local_id))
 end

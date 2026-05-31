@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useMutation } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import loginMutation, { type LoginMutation } from "../../__generated__/LoginMutation.graphql";
+import { routeFormValue } from "../form-data";
+import { commitRouteMutation } from "../relay-mutations";
 import {
   findMutationError,
   type MutationError,
-  normalizeSessionPayload,
-  relayGraphQLError,
-  transportMutationError
+  resolveSessionMutationResult,
+  transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
 
@@ -22,32 +23,31 @@ export function LoginRoute() {
     setErrors([]);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
-    const password = String(formData.get("password") ?? "");
+    const email = routeFormValue(formData, "email");
+    const password = routeFormValue(formData, "password");
 
-    commitLogin({
-      variables: { email, password },
-      onCompleted(response, graphQLErrors) {
-        const graphQLError = relayGraphQLError(graphQLErrors);
+    commitRouteMutation(
+      commitLogin,
+      {
+        variables: { email, password },
+        onCompleted(response, graphQLErrors) {
+          const result = resolveSessionMutationResult(response?.login, graphQLErrors);
 
-        if (graphQLError) {
-          setErrors([graphQLError]);
-          return;
+          if (result.viewer) {
+            navigate("/");
+            return;
+          }
+
+          setErrors(result.errors);
+        },
+        onError(error) {
+          setErrors(transportMutationErrors(error));
         }
-
-        const result = normalizeSessionPayload(response?.login);
-
-        if (result.viewer) {
-          navigate("/");
-          return;
-        }
-
-        setErrors(result.errors);
       },
-      onError(error) {
-        setErrors([transportMutationError(error)]);
+      (error) => {
+        setErrors(transportMutationErrors(error));
       }
-    });
+    );
   }
 
   return (

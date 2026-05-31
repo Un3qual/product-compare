@@ -147,6 +147,25 @@ test("forgot password route hides top-level GraphQL error details behind a gener
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
+test("forgot password route hides synchronous Relay commit errors behind a generic alert", async () => {
+  commitMutationMock.mockImplementation(() => {
+    throw new Error("commit failed: database stacktrace");
+  });
+
+  renderRoute("/auth/forgot-password");
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
 test("reset password route reads the token from the URL and commits the new password", async () => {
   renderRoute("/auth/reset-password?token=reset-token");
 
@@ -253,6 +272,25 @@ test("reset password route hides top-level GraphQL error details behind a generi
 
   expect(alert).toHaveTextContent("Request failed. Please try again.");
   expect(alert).not.toHaveTextContent("database stacktrace");
+});
+
+test("reset password route hides synchronous Relay commit errors and unlocks the form", async () => {
+  commitMutationMock.mockImplementation(() => {
+    throw new Error("commit failed: database stacktrace");
+  });
+
+  renderRoute("/auth/reset-password?token=reset-token");
+
+  fireEvent.change(screen.getByLabelText(/^new password$/i), {
+    target: { value: "supersecretpass456" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
+
+  const alert = await screen.findByRole("alert");
+
+  expect(alert).toHaveTextContent("Request failed. Please try again.");
+  expect(alert).not.toHaveTextContent("database stacktrace");
+  expect(screen.getByRole("button", { name: /update password/i })).toBeEnabled();
 });
 
 test("reset password route clears stale success state when the token changes", async () => {

@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
+  alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
@@ -35,8 +36,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                }
              } = graphql(conn, product_query(), %{"slug" => "detail-product"})
 
-      assert product_id == relay_id("Product", product.id)
-      assert brand_id == relay_id("Brand", product.brand_id)
+      assert product_id == relay_id(:product, product.id)
+      assert brand_id == relay_id(:brand, product.brand_id)
     end
 
     test "product batches brand lookups across aliased selections", %{conn: conn} do
@@ -75,10 +76,10 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                }
              } = response
 
-      assert first_product_id == relay_id("Product", first_product.id)
-      assert second_product_id == relay_id("Product", second_product.id)
-      assert first_brand_id == relay_id("Brand", first_product.brand_id)
-      assert second_brand_id == relay_id("Brand", second_product.brand_id)
+      assert first_product_id == relay_id(:product, first_product.id)
+      assert second_product_id == relay_id(:product, second_product.id)
+      assert first_brand_id == relay_id(:brand, first_product.brand_id)
+      assert second_brand_id == relay_id(:brand, second_product.brand_id)
       assert length(queries) == 3
     end
 
@@ -123,8 +124,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
       assert first_cursor == first_start_cursor
       assert first_cursor == first_end_cursor
-      assert first_id == relay_id("Product", first_product.id)
-      assert first_brand_id == relay_id("Brand", first_product.brand_id)
+      assert first_id == relay_id(:product, first_product.id)
+      assert first_brand_id == relay_id(:brand, first_product.brand_id)
 
       assert %{
                "data" => %{
@@ -147,8 +148,33 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                }
              } = graphql(conn, products_query(), %{"first" => 10, "after" => first_cursor})
 
-      assert second_id == relay_id("Product", second_product.id)
-      assert second_brand_id == relay_id("Brand", second_product.brand_id)
+      assert second_id == relay_id(:product, second_product.id)
+      assert second_brand_id == relay_id(:brand, second_product.brand_id)
+    end
+
+    test "products resolver normalizes string-key pagination args" do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "catalog-direct-first",
+          name: "Catalog Direct First"
+        })
+
+      SpecsFixtures.product_fixture(%{
+        slug: "catalog-direct-second",
+        name: "Catalog Direct Second"
+      })
+
+      assert {:ok,
+              %{
+                edges: [
+                  %{
+                    node: %{id: first_product_id}
+                  }
+                ],
+                page_info: %{has_next_page: true}
+              }} = CatalogResolver.products(nil, %{"first" => 1}, %{})
+
+      assert first_product_id == first_product.id
     end
 
     test "products batches brand lookups for connection nodes", %{conn: conn} do
@@ -187,9 +213,9 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
         edges
         |> Enum.map(&get_in(&1, ["node", "id"]))
 
-      assert relay_id("Product", first_product.id) in product_ids
-      assert relay_id("Product", second_product.id) in product_ids
-      assert relay_id("Product", third_product.id) in product_ids
+      assert relay_id(:product, first_product.id) in product_ids
+      assert relay_id(:product, second_product.id) in product_ids
+      assert relay_id(:product, third_product.id) in product_ids
       assert length(queries) == 2
     end
 
@@ -234,7 +260,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "filters" => %{
                    "numeric" => [
                      %{
-                       "attributeId" => relay_id("Attribute", attribute.id),
+                       "attributeId" => relay_id(:attribute, attribute.id),
                        "min" => "100.0",
                        "max" => "200.0"
                      }
@@ -242,7 +268,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  }
                })
 
-      assert only_id == relay_id("Product", in_range.id)
+      assert only_id == relay_id(:product, in_range.id)
     end
 
     test "products supports boolean and enum filters", %{conn: conn} do
@@ -288,20 +314,20 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "filters" => %{
                    "booleans" => [
                      %{
-                       "attributeId" => relay_id("Attribute", bool_attribute.id),
+                       "attributeId" => relay_id(:attribute, bool_attribute.id),
                        "value" => true
                      }
                    ],
                    "enums" => [
                      %{
-                       "attributeId" => relay_id("Attribute", enum_attribute.id),
-                       "enumOptionId" => relay_id("EnumOption", option_a.id)
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, option_a.id)
                      }
                    ]
                  }
                })
 
-      assert only_id == relay_id("Product", matching_product.id)
+      assert only_id == relay_id(:product, matching_product.id)
     end
 
     test "products supports use-case taxon filters", %{conn: conn} do
@@ -356,11 +382,11 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } =
                graphql(conn, products_query(), %{
                  "filters" => %{
-                   "useCaseTaxonIds" => [relay_id("Taxon", gaming_taxon.id)]
+                   "useCaseTaxonIds" => [relay_id(:taxon, gaming_taxon.id)]
                  }
                })
 
-      assert only_id == relay_id("Product", gaming_product.id)
+      assert only_id == relay_id(:product, gaming_product.id)
     end
 
     test "products rejects invalid filter IDs", %{conn: conn} do
@@ -374,7 +400,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "filters" => %{
                    "numeric" => [
                      %{
-                       "attributeId" => relay_id("Product", 123),
+                       "attributeId" => relay_id(:product, 123),
                        "min" => "100.0"
                      }
                    ]
@@ -402,7 +428,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                })
 
       assert Enum.any?(edges, fn edge ->
-               get_in(edge, ["node", "id"]) == relay_id("Product", product.id)
+               get_in(edge, ["node", "id"]) == relay_id(:product, product.id)
              end)
     end
 
@@ -448,12 +474,12 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } =
                graphql(conn, products_query(), %{
                  "filters" => %{
-                   "primaryTypeTaxonId" => relay_id("Taxon", parent_taxon.id),
+                   "primaryTypeTaxonId" => relay_id(:taxon, parent_taxon.id),
                    "includeTypeDescendants" => true
                  }
                })
 
-      assert only_id == relay_id("Product", matching_product.id)
+      assert only_id == relay_id(:product, matching_product.id)
     end
 
     test "taxonomy fixture updates name for existing taxonomy code", %{conn: _conn} do
@@ -659,6 +685,4 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   end
 
   defp unique_code(prefix), do: "#{prefix}-#{System.unique_integer([:positive])}"
-
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
 end

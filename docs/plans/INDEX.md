@@ -11,13 +11,7 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Frontend saved comparisons Relay migration: `docs/plans/2026-05-29-frontend-saved-comparisons-relay-migration-implementation-plan.md`
-   - Status: active
-   - Source context: `ARCHITECTURE.md`, `docs/work/frontend-saved-comparisons-relay-migration.md`, and the completed frontend Relay route-data lane.
-   - Current scope: saved-set list loading/rendering now uses Relay route query descriptors; move the delete mutation to Relay next.
-   - Deferred: any additional compare/saved UI polish after the data path is unified.
-
-2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
@@ -28,9 +22,15 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 1. Backend lane follow-up
    - Depends on a new product/backend priority decision.
-   - Intended scope: decide whether to extend generic node lookup to the remaining auth/affiliate entities or move the backend lane to the next GraphQL contract slice.
+   - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
 
 ## Recently Completed
+
+- Review readability cleanups: `docs/work/review-readability-cleanups.md`
+  - Status: completed on 2026-05-31
+  - Source context: `ARCHITECTURE.md`, frontend Relay route data, GraphQL resolver helpers, and core backend contexts.
+  - Scope: consolidated frontend route helpers, backend GraphQL helpers, context-local attr cleanup, and saved-comparisons Relay delete migration cleanup.
+  - Result: repeated route/resolver plumbing now delegates to shared helpers where it pays off, core context attr handling stays local, and `/compare/saved` is on Relay query/mutation APIs.
 
 - Commerce attribution lane: `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
   - Status: completed on 2026-05-23

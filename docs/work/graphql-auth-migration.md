@@ -5,7 +5,7 @@
 - Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-05-02 after frontend auth routes moved onto Relay mutation APIs
+- Last verified: 2026-05-30 after typed mutation unauthenticated error-code cleanup
 - Historical context:
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
@@ -22,6 +22,7 @@
 - Frontend auth routes exist in `assets/src/routes/auth` for `login`, `register`, `forgot-password`, `reset-password`, and `verify-email`, and now commit the GraphQL auth contract through Relay mutation artifacts instead of route-local `fetchGraphQL(...)` helpers.
 - Route-level frontend coverage exists in `assets/src/routes/auth/__tests__/session.route.test.tsx` and `assets/src/routes/auth/__tests__/recovery.route.test.tsx`, including Relay mutation variable and callback behavior.
 - Browser-level frontend coverage now includes `assets/tests/e2e/auth.spec.ts` alongside `assets/tests/e2e/smoke.spec.ts`.
+- Backend GraphQL mutations that return typed payload errors now use `UNAUTHENTICATED` for missing-session failures, matching top-level auth-required query errors.
 
 ## Completed
 
@@ -33,6 +34,7 @@
 - Frontend auth browser-level Playwright coverage shipped.
 - Legacy browser-facing REST auth endpoints were removed.
 - Production reset/verification delivery is explicitly deferred in `docs/decisions/2026-03-17-auth-token-delivery-deferral.md`.
+- Missing-session typed mutation payloads now use the shared `UNAUTHENTICATED` code.
 
 ## Open Tracks
 
@@ -51,3 +53,4 @@
 - `rg -n "forgot_password|reset_password|verify_email" lib/product_compare_web/schema.ex`
 - `find assets/src/routes -maxdepth 4 -type f | sort`
 - `find assets/tests -maxdepth 3 -type f | sort`
+- `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs`

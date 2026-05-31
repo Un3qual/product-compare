@@ -60,7 +60,14 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
     test "mySavedComparisonSets rejects unauthorized requests", %{conn: conn} do
       assert %{
                "data" => %{"mySavedComparisonSets" => nil},
-               "errors" => [%{"message" => "unauthorized", "path" => ["mySavedComparisonSets"]} | _]
+               "errors" => [
+                 %{
+                   "message" => "unauthorized",
+                   "path" => ["mySavedComparisonSets"],
+                   "extensions" => %{"code" => "UNAUTHENTICATED"}
+                 }
+                 | _
+               ]
              } = graphql(conn, my_saved_comparison_sets_query(), %{"first" => 10})
     end
 
@@ -89,8 +96,8 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                  "input" => %{
                    "name" => "Travel setup",
                    "productIds" => [
-                     relay_id("Product", first_product.id),
-                     relay_id("Product", second_product.id)
+                     relay_id(:product, first_product.id),
+                     relay_id(:product, second_product.id)
                    ]
                  }
                })
@@ -130,8 +137,8 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                  "input" => %{
                    "name" => "Broken setup",
                    "productIds" => [
-                     relay_id("Brand", product.brand_id),
-                     relay_id("Product", product.id)
+                     relay_id(:brand, product.brand_id),
+                     relay_id(:product, product.id)
                    ]
                  }
                })
@@ -152,7 +159,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
         |> log_in_user(user)
         |> put_req_header_same_origin()
 
-      saved_set_id = relay_id("SavedComparisonSet", saved_set.entropy_id)
+      saved_set_id = relay_id(:saved_comparison_set, saved_set.entropy_id)
 
       assert %{
                "data" => %{
@@ -177,13 +184,13 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                  "deleteSavedComparisonSet" => %{
                    "savedComparisonSet" => nil,
                    "errors" => [
-                     %{"code" => "UNAUTHORIZED", "message" => "unauthorized", "field" => nil}
+                     %{"code" => "UNAUTHENTICATED", "message" => "unauthorized", "field" => nil}
                    ]
                  }
                }
              } =
                graphql(conn, delete_saved_comparison_set_mutation(), %{
-                 "savedComparisonSetId" => relay_id("SavedComparisonSet", Ecto.UUID.generate())
+                 "savedComparisonSetId" => relay_id(:saved_comparison_set, Ecto.UUID.generate())
                })
     end
 
@@ -220,7 +227,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                }
              } =
                graphql(conn, delete_saved_comparison_set_mutation(), %{
-                 "savedComparisonSetId" => relay_id("SavedComparisonSet", saved_set.entropy_id)
+                 "savedComparisonSetId" => relay_id(:saved_comparison_set, saved_set.entropy_id)
                })
 
       assert Repo.get(SavedComparisonSet, saved_set.id)
@@ -305,6 +312,4 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
     }
     """
   end
-
-  defp relay_id(type, local_id), do: Base.encode64("#{type}:#{local_id}")
 end

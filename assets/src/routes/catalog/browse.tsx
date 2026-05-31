@@ -15,7 +15,7 @@ export function BrowseRoute() {
     <section>
       <h1>Browse products</h1>
       {loaderData.status === "error" ? (
-        <p>Catalog unavailable.</p>
+        <BrowseProductsErrorFallback />
       ) : (
         <ResettableErrorBoundary
           fallback={<BrowseProductsErrorFallback />}
@@ -39,8 +39,15 @@ function BrowseProductsErrorFallback() {
   );
 }
 
-function BrowseProducts({ query }: { query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"] }) {
-  const queryRef = useRoutePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, query);
+function BrowseProducts({
+  query
+}: {
+  query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
+}) {
+  const queryRef = useRoutePreloadedQuery<BrowseProductsRouteQuery>(
+    browseProductsRouteQuery,
+    query
+  );
   const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
   const products = data.products.edges.map(({ node }) => node);
 

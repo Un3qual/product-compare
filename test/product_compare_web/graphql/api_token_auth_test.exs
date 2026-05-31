@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
   use ProductCompareWeb.ConnCase, async: true
 
   alias ProductCompare.Accounts
+  alias ProductCompareWeb.Resolvers.AuthResolver
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "/api/graphql authentication and token lifecycle" do
@@ -35,6 +36,34 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert %{"data" => %{"viewer" => nil}} = graphql(conn, query)
     end
 
+    test "myApiTokens returns structured unauthorized errors without authentication", %{
+      conn: conn
+    } do
+      query = """
+      query {
+        myApiTokens(first: 1) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }
+      """
+
+      assert %{
+               "data" => nil,
+               "errors" => [
+                 %{
+                   "message" => "unauthorized",
+                   "path" => ["myApiTokens"],
+                   "extensions" => %{"code" => "UNAUTHENTICATED"}
+                 }
+                 | _
+               ]
+             } = graphql(conn, query)
+    end
+
     test "authorized viewer and token lifecycle flow", %{conn: conn} do
       user = user_fixture()
 
@@ -61,7 +90,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                }
              } = graphql(authed_conn, viewer_query)
 
-      assert viewer_id == relay_id("User", Accounts.get_user!(user.id).entropy_id)
+      assert viewer_id == relay_id(:user, Accounts.get_user!(user.id).entropy_id)
       assert viewer_email == user.email
 
       create_token_mutation = """
@@ -163,7 +192,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
 
       assert first_cursor == first_start_cursor
       assert first_cursor == first_end_cursor
-      assert first_id == relay_id("ApiToken", first_expected_token.entropy_id)
+      assert first_id == relay_id(:api_token, first_expected_token.entropy_id)
       assert first_label == first_expected_token.label
 
       assert %{
@@ -183,9 +212,9 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert remaining_labels == Enum.map(remaining_expected_tokens, & &1.label)
 
       assert Enum.map(remaining_edges, &get_in(&1, ["node", "id"])) ==
-               Enum.map(remaining_expected_tokens, &relay_id("ApiToken", &1.entropy_id))
+               Enum.map(remaining_expected_tokens, &relay_id(:api_token, &1.entropy_id))
 
-      assert token_id == relay_id("ApiToken", find_token_by_label(user.id, "CLI").entropy_id)
+      assert token_id == relay_id(:api_token, find_token_by_label(user.id, "CLI").entropy_id)
 
       revoke_token_mutation = """
       mutation RevokeToken($tokenId: ID!) {
@@ -239,7 +268,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                  "createApiToken" => %{
                    "plainTextToken" => nil,
                    "errors" => [
-                     %{"code" => "UNAUTHORIZED", "message" => "unauthorized"}
+                     %{"code" => "UNAUTHENTICATED", "message" => "unauthorized"}
                    ]
                  }
                }
@@ -296,7 +325,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                    active_token,
                    find_token_by_label(user.id, "bootstrap")
                  ],
-                 &relay_id("ApiToken", &1.entropy_id)
+                 &relay_id(:api_token, &1.entropy_id)
                )
 
       assert %{"data" => %{"myApiTokens" => %{"edges" => active_edges}}} =
@@ -311,6 +340,117 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                graphql(authed_conn, query, %{"status" => "REVOKED"})
 
       assert Enum.map(revoked_edges, &get_in(&1, ["node", "label"])) == ["revoked"]
+    end
+
+    test "my_api_tokens resolver normalizes string-key status args" do
+      user = user_fixture()
+
+      assert {:ok, %{api_token: active_token}} =
+               Accounts.create_api_token(user.id, %{label: "active"})
+
+      assert {:ok, %{api_token: revoked_token}} =
+               Accounts.create_api_token(user.id, %{label: "revoked"})
+
+      assert {:ok, _revoked} = Accounts.revoke_api_token(user.id, revoked_token.entropy_id)
+
+      assert {:ok, %{edges: edges}} =
+               AuthResolver.my_api_tokens(
+                 nil,
+                 %{"status" => :active, "first" => 50},
+                 %{context: %{current_user: user}}
+               )
+
+      assert Enum.sort(Enum.map(edges, & &1.node.label)) == ["active"]
+      assert Enum.map(edges, & &1.node.entropy_id) == [active_token.entropy_id]
+    end
+
+    test "create_api_token resolver normalizes string-key optional attrs" do
+      user = user_fixture()
+      expires_at = DateTime.truncate(~U[2027-01-01 00:00:00Z], :microsecond)
+
+      assert {:ok,
+              %{
+                api_token: %{label: "direct-create", expires_at: created_expires_at},
+                errors: []
+              }} =
+               AuthResolver.create_api_token(
+                 nil,
+                 %{"label" => "direct-create", "expires_at" => expires_at},
+                 %{context: %{current_user: user}}
+               )
+
+      assert DateTime.compare(created_expires_at, expires_at) == :eq
+    end
+
+    test "create_api_token resolver preserves explicit nil expiry" do
+      user = user_fixture()
+
+      assert {:ok,
+              %{
+                api_token: %{label: "no-expiry", expires_at: nil},
+                errors: []
+              }} =
+               AuthResolver.create_api_token(
+                 nil,
+                 %{"label" => "no-expiry", "expires_at" => nil},
+                 %{context: %{current_user: user}}
+               )
+    end
+
+    test "rotate_api_token resolver normalizes string-key optional attrs" do
+      user = user_fixture()
+      expires_at = DateTime.truncate(~U[2027-01-01 00:00:00Z], :microsecond)
+
+      assert {:ok, %{api_token: old_token}} =
+               Accounts.create_api_token(user.id, %{label: "old-label"})
+
+      old_token_id = relay_id(:api_token, old_token.entropy_id)
+
+      assert {:ok,
+              %{
+                api_token: %{label: "direct-rotate", expires_at: rotated_expires_at},
+                errors: [],
+                plain_text_token: new_plain_text_token
+              }} =
+               AuthResolver.rotate_api_token(
+                 nil,
+                 %{
+                   :token_id => old_token_id,
+                   "label" => "direct-rotate",
+                   "expires_at" => expires_at
+                 },
+                 %{context: %{current_user: user}}
+               )
+
+      assert is_binary(new_plain_text_token)
+      assert DateTime.compare(rotated_expires_at, expires_at) == :eq
+    end
+
+    test "rotate_api_token resolver preserves explicit nil expiry" do
+      user = user_fixture()
+
+      assert {:ok, %{api_token: old_token}} =
+               Accounts.create_api_token(user.id, %{label: "old-label"})
+
+      old_token_id = relay_id(:api_token, old_token.entropy_id)
+
+      assert {:ok,
+              %{
+                api_token: %{label: "direct-rotate", expires_at: nil},
+                errors: [],
+                plain_text_token: new_plain_text_token
+              }} =
+               AuthResolver.rotate_api_token(
+                 nil,
+                 %{
+                   :token_id => old_token_id,
+                   "label" => "direct-rotate",
+                   "expires_at" => nil
+                 },
+                 %{context: %{current_user: user}}
+               )
+
+      assert is_binary(new_plain_text_token)
     end
 
     test "myApiTokens rejects invalid cursor input", %{conn: conn} do
@@ -349,7 +489,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                Accounts.create_api_token(user.id, %{label: "old-label"})
 
       authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
-      old_token_id = relay_id("ApiToken", old_token.entropy_id)
+      old_token_id = relay_id(:api_token, old_token.entropy_id)
 
       mutation = """
       mutation RotateApiToken($tokenId: ID!, $label: String) {
@@ -444,8 +584,6 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
   end
-
-  defp relay_id(type, entropy_id), do: Base.encode64("#{type}:#{entropy_id}")
 
   defp find_token_by_label(user_id, label) do
     user_id

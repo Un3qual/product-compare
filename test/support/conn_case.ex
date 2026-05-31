@@ -48,6 +48,10 @@ defmodule ProductCompareWeb.ConnCase do
     Plug.Conn.put_req_header(conn, "origin", request_origin(conn))
   end
 
+  def relay_id(type, local_id) when is_atom(type) do
+    ProductCompareWeb.GraphQL.GlobalId.encode(type, local_id)
+  end
+
   defp request_origin(conn) do
     scheme = Atom.to_string(conn.scheme)
 
