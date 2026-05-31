@@ -10,7 +10,7 @@ import {
   type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
-import { isRouteRecord } from "../route-records";
+import { isRouteRecord } from "../route-errors";
 
 export interface SavedComparisonSetSummary {
   id: string;

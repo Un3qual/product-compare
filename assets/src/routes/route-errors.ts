@@ -1,21 +1,14 @@
-import { isRouteRecord } from "./route-records";
-
 export const DEFAULT_ROUTE_ERROR_MESSAGE = "Request failed. Please try again.";
 
 export function hasRouteGraphQLErrors(errors: readonly unknown[] | null | undefined) {
   return Array.isArray(errors) && errors.length > 0;
 }
 
-/** Alias for hasRouteGraphQLErrors; checks top-level GraphQL errors on mutation responses. */
-export function hasRouteMutationGraphQLErrors(errors: readonly unknown[] | null | undefined) {
-  return hasRouteGraphQLErrors(errors);
-}
-
 export function routeMutationErrorMessage(
   errors: unknown,
   graphQLErrors?: readonly unknown[] | null
 ) {
-  if (hasRouteMutationGraphQLErrors(graphQLErrors)) {
+  if (hasRouteGraphQLErrors(graphQLErrors)) {
     return DEFAULT_ROUTE_ERROR_MESSAGE;
   }
 
@@ -41,4 +34,8 @@ export function isRouteMutationError(error: unknown): error is RouteMutationErro
       typeof error.message === "string" &&
       (error.field === undefined || error.field === null || typeof error.field === "string")
   );
+}
+
+export function isRouteRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

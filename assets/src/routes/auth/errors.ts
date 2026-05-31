@@ -1,10 +1,10 @@
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
+  isRouteRecord,
   isRouteMutationError,
   type RouteMutationError
 } from "../route-errors";
-import { isRouteRecord } from "../route-records";
 
 export type MutationError = RouteMutationError;
 

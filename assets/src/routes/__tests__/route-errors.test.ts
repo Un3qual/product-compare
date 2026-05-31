@@ -1,6 +1,7 @@
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
+  isRouteRecord,
   isRouteMutationError,
   routeMutationErrorMessage
 } from "../route-errors";
@@ -33,6 +34,21 @@ test("isRouteMutationError validates typed GraphQL mutation error entries", () =
   expect(isRouteMutationError(Object.assign([], { code: "INVALID_ARGUMENT", message: "array" }))).toBe(
     false
   );
+});
+
+test("isRouteRecord accepts object-shaped route payloads", () => {
+  expect(isRouteRecord({ id: "payload-1" })).toBe(true);
+});
+
+test("isRouteRecord rejects non-record route payloads", () => {
+  const missingPayload = undefined;
+
+  expect(isRouteRecord(null)).toBe(false);
+  expect(isRouteRecord(missingPayload)).toBe(false);
+  expect(isRouteRecord("payload")).toBe(false);
+  expect(isRouteRecord(42)).toBe(false);
+  expect(isRouteRecord(["payload"])).toBe(false);
+  expect(isRouteRecord(() => "payload")).toBe(false);
 });
 
 test("routeMutationErrorMessage returns the first typed mutation error message", () => {

@@ -18,7 +18,7 @@
 ### Frontend Relay And Route Helpers
 
 - Completed `/compare/saved` migration from manual delete helper calls to Relay mutation commits.
-- Added shared frontend route helpers for form string extraction, loader recovery and thrown-error normalization, Relay mutation promise handling, route mutation error normalization, GraphQL error presence checks, and route record guards.
+- Added shared frontend route helpers for form string extraction, loader recovery and thrown-error normalization, Relay mutation promise handling, route mutation error normalization, GraphQL error presence checks, and route payload guards.
 - Routed browser auth, catalog/product loaders, compare save/delete flows, and saved-comparison route data parsing through the shared helpers while preserving existing route behavior.
 
 ### Backend GraphQL Helpers
@@ -27,10 +27,9 @@
 - Routed Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema field resolver paths through the shared helpers.
 - Extended root node lookup coverage for authenticated affiliate entities and public price points while keeping `SourceArtifact` unsupported until a public object contract exists.
 
-### Core Backend Attr Helpers
+### Core Backend Attr Handling
 
-- Added `ProductCompare.Attrs` for atom/string/keyword lookup, map normalization, nil-skipping insertion, key-presence checks, and non-nil presence checks.
-- Routed Accounts API-token attr handling and Commerce Attribution conversion/revenue filter attr handling through the shared core helper.
+- Kept Accounts, Affiliate, and Commerce Attribution attr normalization local to the contexts that use it, including explicit nil API-token expiry handling and atom/string-key filter support.
 
 ### Queue And Planning Docs
 
@@ -39,8 +38,8 @@
 
 ## Verification
 
-- `cd assets && bun run check` - 200 tests passed.
-- `mix test` - 330 tests passed.
+- `cd assets && bun run check` - 204 tests passed.
+- `mix test` - 329 tests passed.
 - `mix format --check-formatted`
 - `mix compile --warnings-as-errors`
 - `mix typecheck`

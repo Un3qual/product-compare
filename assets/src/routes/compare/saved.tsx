@@ -12,7 +12,7 @@ import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteMutationGraphQLErrors,
+  hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
 import type {
@@ -61,7 +61,7 @@ export function SavedComparisonsRoute() {
           const payload = response.deleteSavedComparisonSet;
           const deletedSavedSetId = payload?.savedComparisonSet?.id;
 
-          if (deletedSavedSetId && !hasRouteMutationGraphQLErrors(graphQLErrors)) {
+          if (deletedSavedSetId && !hasRouteGraphQLErrors(graphQLErrors)) {
             setDeleteError(null);
             setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
               addSetValue(currentDeletedSavedSetIds, deletedSavedSetId)

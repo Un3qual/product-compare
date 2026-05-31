@@ -29,8 +29,8 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 - Review readability cleanups: `docs/work/review-readability-cleanups.md`
   - Status: completed on 2026-05-31
   - Source context: `ARCHITECTURE.md`, frontend Relay route data, GraphQL resolver helpers, and core backend contexts.
-  - Scope: consolidated frontend route helpers, backend GraphQL helpers, core attr helpers, and saved-comparisons Relay delete migration cleanup.
-  - Result: repeated route/resolver/context plumbing now delegates to shared helpers and `/compare/saved` is on Relay query/mutation APIs.
+  - Scope: consolidated frontend route helpers, backend GraphQL helpers, context-local attr cleanup, and saved-comparisons Relay delete migration cleanup.
+  - Result: repeated route/resolver plumbing now delegates to shared helpers where it pays off, core context attr handling stays local, and `/compare/saved` is on Relay query/mutation APIs.
 
 - Commerce attribution lane: `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
   - Status: completed on 2026-05-23

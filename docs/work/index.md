@@ -84,9 +84,9 @@ Commit only lane-local milestone changes.
 - Status: completed on 2026-05-31
 - Source of truth: `docs/work/review-readability-cleanups.md`
 - Outcome:
-  - Completed the saved-comparisons Relay delete migration and consolidated frontend route helpers for loader, mutation, auth, record, and GraphQL error handling.
+  - Completed the saved-comparisons Relay delete migration and consolidated frontend route helpers for loader, mutation, auth, payload, and GraphQL error handling.
   - Centralized backend GraphQL input, global ID, connection, mutation error, and unauthenticated-error helpers across Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema resolver paths.
-  - Added `ProductCompare.Attrs` and routed Accounts API-token plus Commerce Attribution attr handling through the shared core helper.
+  - Kept core attr handling local to Accounts, Affiliate, and Commerce Attribution instead of carrying a cross-context helper module.
   - Verification passed with `cd assets && bun run check`, `mix test`, `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix typecheck`, and `git diff --check`.
 
 ### Product Data Ingestion Persistence Task 2

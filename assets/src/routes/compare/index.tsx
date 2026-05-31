@@ -12,7 +12,7 @@ import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteMutationGraphQLErrors,
+  hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
 import { CompareShell } from "./compare-shell";
@@ -81,7 +81,7 @@ export function CompareRoute() {
 
           if (
             payload?.savedComparisonSet?.id &&
-            !hasRouteMutationGraphQLErrors(graphQLErrors)
+            !hasRouteGraphQLErrors(graphQLErrors)
           ) {
             setSaveMessage("Comparison saved.");
             setSaveError(null);

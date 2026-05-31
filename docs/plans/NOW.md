@@ -16,7 +16,7 @@
   - `/compare/saved` was the remaining explicit unblocked architecture gap after `/products`, `/products/:slug`, `/compare`, and browser auth moved onto Relay.
   - Task 1 moved saved-set list loading/rendering onto Relay route query descriptors.
   - The saved-set delete path now commits through Relay mutation artifacts, and the raw saved-comparison mutation helper is gone.
-  - Review-driven route helper cleanup centralized loader recovery, thrown-error normalization, mutation promise handling, typed mutation errors, GraphQL error checks, route record guards, form-data extraction, and auth route result helpers.
+  - Review-driven route helper cleanup centralized loader recovery, thrown-error normalization, mutation promise handling, typed mutation errors, GraphQL error checks, route payload guards, form-data extraction, and auth route result helpers.
   - No next frontend implementation lane is currently queued.
 
 ### Backend Lane
@@ -32,7 +32,7 @@
   - The follow-up to extend generic node lookup to public `PricePoint` entities is complete.
   - Missing-session typed mutation payloads now use `UNAUTHENTICATED`, matching top-level auth-required GraphQL errors.
   - Review-driven GraphQL cleanup centralized input lookup, Relay global ID helpers, connection mapping, mutation error helpers, field resolver wrappers, and test global ID construction.
-  - Review-driven core cleanup added `ProductCompare.Attrs` for shared attr lookup, normalization, insertion, key-presence, non-nil presence, and keyword/map lookup.
+  - Review-driven core cleanup kept Accounts, Affiliate, and Commerce Attribution attr normalization local after removing the cross-context attr helper abstraction.
   - No next backend implementation lane is currently queued.
 
 ### Commerce Attribution Lane
@@ -66,7 +66,7 @@
   - Completed `/compare/saved` Relay query/mutation migration and removed the remaining raw saved-comparison mutation helper.
   - Centralized frontend route loader, mutation, auth, record, and GraphQL error helper behavior across saved comparisons, compare save/delete, browser auth, and Relay-backed route loaders.
   - Centralized backend GraphQL input, global ID, connection, mutation error, unauthenticated-error, and field resolver helpers across Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema paths.
-  - Added `ProductCompare.Attrs` and routed Accounts API-token plus Commerce Attribution attr handling through the shared core helper.
+  - Kept Accounts, Affiliate, and Commerce Attribution attr handling local while preserving explicit nil expiry and atom/string-key input behavior.
   - Verified `cd assets && bun run check`, `mix test`, `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix typecheck`, and `git diff --check`.
 
 - Frontend Saved Comparisons Relay Migration, Task 1:

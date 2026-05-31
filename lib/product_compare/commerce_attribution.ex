@@ -5,7 +5,6 @@ defmodule ProductCompare.CommerceAttribution do
 
   import Ecto.Query
 
-  alias ProductCompare.Attrs
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -376,15 +375,22 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp normalize_revenue_filters(opts) do
     %{
-      currency: normalize_currency(Attrs.fetch(opts, :currency)),
-      from: normalize_date(Attrs.fetch(opts, :from)),
-      merchant_id: normalize_dimension_id(Attrs.fetch(opts, :merchant_id), :merchant_id),
-      min_conversions: normalize_min_conversions(Attrs.fetch(opts, :min_conversions)),
-      network: normalize_network(Attrs.fetch(opts, :network)),
-      product_id: normalize_dimension_id(Attrs.fetch(opts, :product_id), :product_id),
-      to: normalize_date(Attrs.fetch(opts, :to))
+      currency: normalize_currency(get_revenue_filter(opts, :currency)),
+      from: normalize_date(get_revenue_filter(opts, :from)),
+      merchant_id: normalize_dimension_id(get_revenue_filter(opts, :merchant_id), :merchant_id),
+      min_conversions: normalize_min_conversions(get_revenue_filter(opts, :min_conversions)),
+      network: normalize_network(get_revenue_filter(opts, :network)),
+      product_id: normalize_dimension_id(get_revenue_filter(opts, :product_id), :product_id),
+      to: normalize_date(get_revenue_filter(opts, :to))
     }
   end
+
+  defp get_revenue_filter(opts, key) when is_list(opts), do: Keyword.get(opts, key)
+
+  defp get_revenue_filter(opts, key) when is_map(opts),
+    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key)))
+
+  defp get_revenue_filter(_opts, _key), do: nil
 
   defp put_revenue_filter(opts, key, value) when is_list(opts), do: Keyword.put(opts, key, value)
   defp put_revenue_filter(opts, key, value) when is_map(opts), do: Map.put(opts, key, value)
@@ -518,17 +524,17 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp maybe_put_click_session_id(attrs) do
-    if Attrs.present?(attrs, :click_session_id) do
+    if attr_present?(attrs, :click_session_id) do
       attrs
     else
-      case Attrs.fetch(attrs, :public_click_id) do
+      case get_attr(attrs, :public_click_id) do
         nil ->
           attrs
 
         click_id ->
           case get_click_session_by_public_id(click_id) do
             nil -> attrs
-            %CommerceClickSession{id: id} -> Attrs.put_present(attrs, :click_session_id, id)
+            %CommerceClickSession{id: id} -> put_attr(attrs, :click_session_id, id)
           end
       end
     end
@@ -544,11 +550,11 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp put_default_attribution_confidence(attrs) do
     cond do
-      Attrs.has_key?(attrs, :attribution_confidence) ->
+      attr_key_present?(attrs, :attribution_confidence) ->
         attrs
 
-      Attrs.present?(attrs, :click_session_id) ->
-        Attrs.put_present(attrs, :attribution_confidence, :high)
+      attr_present?(attrs, :click_session_id) ->
+        put_attr(attrs, :attribution_confidence, :high)
 
       true ->
         attrs
@@ -557,7 +563,22 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp present_upsert_fields(attrs, changeset, fields) do
     for field <- fields,
-        Attrs.has_key?(attrs, field),
+        attr_key_present?(attrs, field),
         do: {field, Ecto.Changeset.get_field(changeset, field)}
   end
+
+  defp get_attr(attrs, key) when is_map(attrs),
+    do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+
+  defp get_attr(_attrs, _key), do: nil
+
+  defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
+  defp put_attr(attrs, _key, _value), do: attrs
+
+  defp attr_present?(attrs, key), do: not is_nil(get_attr(attrs, key))
+
+  defp attr_key_present?(attrs, key) when is_map(attrs),
+    do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+
+  defp attr_key_present?(_attrs, _key), do: false
 end

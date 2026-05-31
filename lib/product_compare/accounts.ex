@@ -6,7 +6,6 @@ defmodule ProductCompare.Accounts do
   import Ecto.Query
 
   alias ProductCompare.Accounts.UserAuth
-  alias ProductCompare.Attrs
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
@@ -476,7 +475,7 @@ defmodule ProductCompare.Accounts do
         token_hash: token_hash,
         expires_at: api_token_expiry(attrs, now)
       }
-      |> Attrs.put_present(:label, Attrs.fetch(attrs, :label))
+      |> maybe_put(:label, fetch_attr(attrs, :label))
 
     case %ApiToken{}
          |> ApiToken.changeset(token_attrs)
@@ -526,8 +525,8 @@ defmodule ProductCompare.Accounts do
 
   defp merge_rotation_defaults(attrs, token) do
     attrs
-    |> Attrs.ensure_map()
-    |> Attrs.put_present(:label, Attrs.fetch(attrs, :label) || token.label)
+    |> ensure_map()
+    |> maybe_put(:label, fetch_attr(attrs, :label) || token.label)
   end
 
   defp api_token_active?(%ApiToken{revoked_at: nil, expires_at: expires_at}, now) do
@@ -544,7 +543,7 @@ defmodule ProductCompare.Accounts do
 
   defp token_list_status_filter(opts) when is_map(opts) do
     opts
-    |> Attrs.fetch(:status)
+    |> fetch_attr(:status)
     |> normalize_api_token_status_filter()
   end
 
@@ -583,8 +582,8 @@ defmodule ProductCompare.Accounts do
   defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
   defp api_token_expiry(attrs, now) do
-    if Attrs.has_key?(attrs, :expires_at) do
-      explicit_api_token_expiry(Attrs.fetch(attrs, :expires_at), now)
+    if attr_key_present?(attrs, :expires_at) do
+      explicit_api_token_expiry(fetch_attr(attrs, :expires_at), now)
     else
       default_api_token_expiry(now)
     end
@@ -599,6 +598,24 @@ defmodule ProductCompare.Accounts do
 
   defp default_api_token_expiry(now),
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
+
+  defp fetch_attr(attrs, key) when is_map(attrs) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+  end
+
+  defp fetch_attr(_attrs, _key), do: nil
+
+  defp attr_key_present?(attrs, key) when is_map(attrs) do
+    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+  end
+
+  defp attr_key_present?(_attrs, _key), do: false
+
+  defp ensure_map(attrs) when is_map(attrs), do: attrs
+  defp ensure_map(_attrs), do: %{}
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp api_token_default_ttl_days do
     case Application.get_env(:product_compare, :api_token_default_ttl_days) do
