@@ -6,6 +6,7 @@ export function hasRouteGraphQLErrors(errors: readonly unknown[] | null | undefi
   return Array.isArray(errors) && errors.length > 0;
 }
 
+/** Alias for hasRouteGraphQLErrors; checks top-level GraphQL errors on mutation responses. */
 export function hasRouteMutationGraphQLErrors(errors: readonly unknown[] | null | undefined) {
   return hasRouteGraphQLErrors(errors);
 }

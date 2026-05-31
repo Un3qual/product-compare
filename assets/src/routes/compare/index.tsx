@@ -23,12 +23,20 @@ export function CompareRoute() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const isSaveInFlightRef = useRef(false);
+  const activeSelectionKeyRef = useRef<string | null>(null);
+  const activeSaveRequestRef = useRef<{ id: number; selectionKey: string } | null>(null);
+  const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet, isMutationInFlight] =
     useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
   const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
 
-  useEffect(() => {
+  if (activeSelectionKeyRef.current !== selectionKey) {
+    activeSelectionKeyRef.current = selectionKey;
+    activeSaveRequestRef.current = null;
     isSaveInFlightRef.current = false;
+  }
+
+  useEffect(() => {
     setSaveMessage(null);
     setSaveError(null);
   }, [selectionKey]);
@@ -43,6 +51,12 @@ export function CompareRoute() {
     }
 
     isSaveInFlightRef.current = true;
+    const saveRequest = {
+      id: nextSaveRequestIdRef.current + 1,
+      selectionKey
+    };
+    nextSaveRequestIdRef.current = saveRequest.id;
+    activeSaveRequestRef.current = saveRequest;
     setSaveMessage(null);
     setSaveError(null);
 
@@ -56,6 +70,10 @@ export function CompareRoute() {
           }
         },
         onCompleted: (response, graphQLErrors) => {
+          if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
+            return;
+          }
+
           const payload = response.createSavedComparisonSet;
 
           if (
@@ -68,15 +86,26 @@ export function CompareRoute() {
             setSaveError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
           }
 
+          activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
         },
         onError: () => {
+          if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
+            return;
+          }
+
           setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
         }
       },
       () => {
+        if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
+          return;
+        }
+
         setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        activeSaveRequestRef.current = null;
         isSaveInFlightRef.current = false;
       }
     );
@@ -188,6 +217,16 @@ function CompareProductCard({
         {product.description ? <p>{product.description}</p> : null}
       </article>
     </li>
+  );
+}
+
+function isActiveSaveRequest(
+  activeSaveRequest: { id: number; selectionKey: string } | null,
+  saveRequest: { id: number; selectionKey: string }
+) {
+  return (
+    activeSaveRequest?.id === saveRequest.id &&
+    activeSaveRequest.selectionKey === saveRequest.selectionKey
   );
 }
 

@@ -474,7 +474,7 @@ defmodule ProductCompare.Accounts do
         user_id: user_id,
         token_prefix: token_prefix_from_hash(token_hash),
         token_hash: token_hash,
-        expires_at: default_api_token_expiry(Attrs.fetch(attrs, :expires_at), now)
+        expires_at: api_token_expiry(attrs, now)
       }
       |> Attrs.put_present(:label, Attrs.fetch(attrs, :label))
 
@@ -582,10 +582,22 @@ defmodule ProductCompare.Accounts do
 
   defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
-  defp default_api_token_expiry(%DateTime{} = expires_at, _now),
+  defp api_token_expiry(attrs, now) do
+    if Attrs.has_key?(attrs, :expires_at) do
+      explicit_api_token_expiry(Attrs.fetch(attrs, :expires_at), now)
+    else
+      default_api_token_expiry(now)
+    end
+  end
+
+  defp explicit_api_token_expiry(nil, _now), do: nil
+
+  defp explicit_api_token_expiry(%DateTime{} = expires_at, _now),
     do: DateTime.truncate(expires_at, :microsecond)
 
-  defp default_api_token_expiry(_expires_at, now),
+  defp explicit_api_token_expiry(_expires_at, now), do: default_api_token_expiry(now)
+
+  defp default_api_token_expiry(now),
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
 
   defp api_token_default_ttl_days do

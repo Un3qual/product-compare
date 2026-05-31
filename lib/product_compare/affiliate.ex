@@ -5,6 +5,7 @@ defmodule ProductCompare.Affiliate do
 
   import Ecto.Query
 
+  alias ProductCompare.Attrs
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
@@ -40,7 +41,7 @@ defmodule ProductCompare.Affiliate do
   def upsert_program(attrs) do
     now = DateTime.utc_now()
     changeset = AffiliateProgram.changeset(%AffiliateProgram{}, attrs)
-    update_fields = Map.take(changeset.changes, [:program_code, :status]) |> Map.to_list()
+    update_fields = conflict_update_fields(attrs, changeset, [:program_code, :status])
 
     Repo.insert(
       changeset,
@@ -56,13 +57,12 @@ defmodule ProductCompare.Affiliate do
     changeset = AffiliateLink.changeset(%AffiliateLink{}, attrs)
 
     update_fields =
-      Map.take(changeset.changes, [
+      conflict_update_fields(attrs, changeset, [
         :affiliate_network_id,
         :original_url,
         :affiliate_url,
         :last_verified_at
       ])
-      |> Map.to_list()
 
     Repo.insert(
       changeset,
@@ -93,5 +93,15 @@ defmodule ProductCompare.Affiliate do
     merchant_id
     |> list_active_coupons_query(now)
     |> Repo.all()
+  end
+
+  defp conflict_update_fields(attrs, changeset, fields) do
+    Enum.flat_map(fields, fn field ->
+      cond do
+        Map.has_key?(changeset.changes, field) -> [{field, Map.fetch!(changeset.changes, field)}]
+        Attrs.has_key?(attrs, field) -> [{field, Attrs.fetch(attrs, field)}]
+        true -> []
+      end
+    end)
   end
 end

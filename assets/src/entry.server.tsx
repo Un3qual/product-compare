@@ -92,6 +92,10 @@ function bridgeAbortSignal(signal: AbortSignal) {
     controller.abort(signal.reason);
   } else {
     signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+    }
   }
 
   return controller.signal;

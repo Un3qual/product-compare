@@ -144,7 +144,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   @spec create_api_token(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
   def create_api_token(_parent, args, %{context: %{current_user: current_user}}) do
-    attrs = Input.take_present(args, [:label, :expires_at])
+    attrs = Input.take(args, [:label, :expires_at])
 
     case Accounts.create_api_token(current_user.id, attrs) do
       {:ok, result} ->
@@ -190,7 +190,7 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
   def rotate_api_token(_parent, %{token_id: token_id} = args, %{
         context: %{current_user: current_user}
       }) do
-    attrs = Input.take_present(args, [:label, :expires_at])
+    attrs = Input.take(args, [:label, :expires_at])
 
     with {:ok, token_entropy_id} <- resolve_token_entropy_id(token_id) do
       case Accounts.rotate_api_token(current_user.id, token_entropy_id, attrs) do

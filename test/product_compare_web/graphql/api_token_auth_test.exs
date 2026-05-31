@@ -382,6 +382,21 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert DateTime.compare(created_expires_at, expires_at) == :eq
     end
 
+    test "create_api_token resolver preserves explicit nil expiry" do
+      user = user_fixture()
+
+      assert {:ok,
+              %{
+                api_token: %{label: "no-expiry", expires_at: nil},
+                errors: []
+              }} =
+               AuthResolver.create_api_token(
+                 nil,
+                 %{"label" => "no-expiry", "expires_at" => nil},
+                 %{context: %{current_user: user}}
+               )
+    end
+
     test "rotate_api_token resolver normalizes string-key optional attrs" do
       user = user_fixture()
       expires_at = DateTime.truncate(~U[2027-01-01 00:00:00Z], :microsecond)
@@ -409,6 +424,33 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
 
       assert is_binary(new_plain_text_token)
       assert DateTime.compare(rotated_expires_at, expires_at) == :eq
+    end
+
+    test "rotate_api_token resolver preserves explicit nil expiry" do
+      user = user_fixture()
+
+      assert {:ok, %{api_token: old_token}} =
+               Accounts.create_api_token(user.id, %{label: "old-label"})
+
+      old_token_id = relay_id(:api_token, old_token.entropy_id)
+
+      assert {:ok,
+              %{
+                api_token: %{label: "direct-rotate", expires_at: nil},
+                errors: [],
+                plain_text_token: new_plain_text_token
+              }} =
+               AuthResolver.rotate_api_token(
+                 nil,
+                 %{
+                   :token_id => old_token_id,
+                   "label" => "direct-rotate",
+                   "expires_at" => nil
+                 },
+                 %{context: %{current_user: user}}
+               )
+
+      assert is_binary(new_plain_text_token)
     end
 
     test "myApiTokens rejects invalid cursor input", %{conn: conn} do

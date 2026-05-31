@@ -313,6 +313,42 @@ test("compare route clears save feedback when the selected comparison changes", 
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 
+test("compare route ignores stale save completions after the selected comparison changes", async () => {
+  let completeFirstSelection: ((response: unknown) => void) | undefined;
+
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    completeFirstSelection = onCompleted;
+  });
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  const { rerender } = render(<CompareRoute />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
+  rerender(<CompareRoute />);
+
+  act(() => {
+    completeFirstSelection?.({
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    });
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+  expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
+});
+
 function mockRouteQueryRefs() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === deskLampQueryDescriptor) {

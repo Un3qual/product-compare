@@ -27,6 +27,18 @@ defmodule ProductCompareWeb.GraphQL.Input do
     end)
   end
 
+  @spec take(map(), [atom()]) :: map()
+  def take(map, keys) when is_map(map) and is_list(keys) do
+    missing = make_ref()
+
+    Enum.reduce(keys, %{}, fn key, attrs ->
+      case fetch_value(map, key, missing) do
+        ^missing -> attrs
+        value -> Map.put(attrs, key, value)
+      end
+    end)
+  end
+
   @spec put_present(map(), atom(), any()) :: map()
   def put_present(map, _key, nil) when is_map(map), do: map
   def put_present(map, key, value) when is_map(map) and is_atom(key), do: Map.put(map, key, value)

@@ -139,7 +139,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
 
   defp normalize_attrs(attrs, id_fields, attr_fields) do
     with {:ok, attrs} <- normalize_ids(attrs, id_fields) do
-      {:ok, Input.take_present(attrs, attr_fields)}
+      {:ok, Input.take(attrs, attr_fields)}
     end
   end
 

@@ -82,6 +82,15 @@ defmodule ProductCompare.PricingTest do
       assert_raise FunctionClauseError, fn -> Pricing.get_merchant_product(oversized_id) end
     end
 
+    test "get_price_point/1 returns nil for invalid ids" do
+      oversized_id = 9_223_372_036_854_775_808
+
+      assert is_nil(Pricing.get_price_point(0))
+      assert is_nil(Pricing.get_price_point(-1))
+      assert is_nil(Pricing.get_price_point(oversized_id))
+      assert is_nil(Pricing.get_price_point("not-an-id"))
+    end
+
     test "list_merchant_products/1 filters by product and optional merchant/active flags", %{
       test: test_name
     } do

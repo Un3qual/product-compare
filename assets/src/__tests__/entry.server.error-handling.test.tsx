@@ -11,7 +11,7 @@ const {
   createRelayEnvironmentMock: vi.fn(() => ({})),
   createStaticHandlerMock: vi.fn(() => ({
     dataRoutes: [],
-    query: vi.fn(async () => ({}))
+    query: vi.fn(() => ({}))
   })),
   createStaticRouterMock: vi.fn(() => ({})),
   dehydrateRelayEnvironmentMock: vi.fn(() => ({})),
@@ -53,7 +53,7 @@ beforeEach(() => {
   createStaticHandlerMock.mockReset();
   createStaticHandlerMock.mockImplementation(() => ({
     dataRoutes: [],
-    query: vi.fn(async () => ({}))
+    query: vi.fn(() => ({}))
   }));
   createStaticRouterMock.mockReset();
   createStaticRouterMock.mockImplementation(() => ({}));
@@ -131,7 +131,7 @@ test("server render passes SSR context into the Relay environment", async () => 
 });
 
 test("server render passes the incoming request URL and headers into the static handler query", async () => {
-  const queryMock = vi.fn(async () => ({}));
+  const queryMock = vi.fn(() => ({}));
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
@@ -161,7 +161,7 @@ test("server render passes the incoming request URL and headers into the static 
 });
 
 test("server render forwards the incoming request abort signal into the static handler query", async () => {
-  const queryMock = vi.fn(async () => ({}));
+  const queryMock = vi.fn(() => ({}));
   const controller = new AbortController();
 
   createStaticHandlerMock.mockReturnValue({
@@ -194,7 +194,7 @@ test("server render forwards the incoming request abort signal into the static h
 });
 
 test("server render preserves cookieString when building the static-handler request", async () => {
-  const queryMock = vi.fn(async () => ({}));
+  const queryMock = vi.fn(() => ({}));
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
@@ -267,7 +267,7 @@ test("server render keeps recoverable SSR errors from failing the response", asy
 });
 
 test("server render logs and falls back when request URL resolution fails", async () => {
-  const queryMock = vi.fn(async () => ({}));
+  const queryMock = vi.fn(() => ({}));
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],

@@ -145,7 +145,7 @@ Commit only lane-local milestone changes.
 - Outcome:
   - Relay SSR hydration, route preloading, `/products`, `/products/:slug`, `/compare`, and browser auth Relay migrations are complete.
   - `fetchGraphQL` is now a thin GraphQL HTTP transport helper, with route-loader top-level GraphQL error rejection kept in the Relay environment.
-  - `/compare/saved` remains on the explicit `saved-data.ts` helper and should be tracked as a new cleanup if it is prioritized.
+  - The later saved-comparisons Relay migration moved `/compare/saved` onto Relay query/mutation APIs and closed the explicit helper cleanup.
 
 ### Frontend Compare And Saved Routes Hardening
 

@@ -5,8 +5,10 @@ test("isRouteRecord accepts object-shaped route payloads", () => {
 });
 
 test("isRouteRecord rejects non-record route payloads", () => {
+  const missingPayload: undefined = undefined;
+
   expect(isRouteRecord(null)).toBe(false);
-  expect(isRouteRecord(undefined)).toBe(false);
+  expect(isRouteRecord(missingPayload)).toBe(false);
   expect(isRouteRecord("payload")).toBe(false);
   expect(isRouteRecord(42)).toBe(false);
   expect(isRouteRecord(["payload"])).toBe(false);

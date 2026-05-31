@@ -53,6 +53,21 @@ defmodule ProductCompareWeb.GraphQL.InputTest do
     end
   end
 
+  describe "take/2" do
+    test "extracts requested input values including explicit nils into atom-key attrs" do
+      input = %{
+        "label" => "CLI",
+        :expires_at => nil,
+        "ignored" => "ignored"
+      }
+
+      assert Input.take(input, [:label, :expires_at, :missing]) == %{
+               label: "CLI",
+               expires_at: nil
+             }
+    end
+  end
+
   describe "put_present/3" do
     test "puts non-nil values and skips nil values" do
       input = %{existing: true}

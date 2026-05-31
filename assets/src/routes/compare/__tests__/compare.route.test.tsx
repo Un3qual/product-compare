@@ -680,37 +680,40 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
   );
 });
 
-test("saved comparisons loader returns unauthorized status when GraphQL returns an unauthorized error", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
+test.each(["UNAUTHENTICATED", "FORBIDDEN"])(
+  "saved comparisons loader returns unauthorized status when GraphQL returns %s",
+  async (code) => {
+    const environment = createRelayEnvironment();
+    const request = new Request("https://app.example.com/compare/saved");
 
-  mockedFetchRouteQuery.mockRejectedValueOnce(
-    buildRouteLoaderGraphQLError([
-      {
-        message: "Unauthorized",
-        path: ["mySavedComparisonSets"],
-        extensions: {
-          code: "UNAUTHENTICATED"
+    mockedFetchRouteQuery.mockRejectedValueOnce(
+      buildRouteLoaderGraphQLError([
+        {
+          message: "Unauthorized",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code
+          }
         }
-      }
-    ])
-  );
+      ])
+    );
 
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "unauthorized",
-    savedSetQueries: [],
-    savedSets: []
-  });
+    await expect(
+      savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    ).resolves.toEqual({
+      status: "unauthorized",
+      savedSetQueries: [],
+      savedSets: []
+    });
 
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal }
-  );
-});
+    expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+      environment,
+      expect.anything(),
+      { first: 20 },
+      { signal: request.signal }
+    );
+  }
+);
 
 test("saved comparisons route renders persisted sets with reopen links", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -958,11 +961,11 @@ test("saved comparisons route applies overlapping delete responses against the l
     expect(commits).toHaveLength(2);
   });
 
-  await act(async () => {
+  act(() => {
     commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 
-  await act(async () => {
+  act(() => {
     commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 
@@ -1015,14 +1018,14 @@ test("saved comparisons route keeps later delete rows pending until their own re
     expect(commits).toHaveLength(2);
   });
 
-  await act(async () => {
+  act(() => {
     commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 
   expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
-  await act(async () => {
+  act(() => {
     commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 
@@ -1074,6 +1077,22 @@ test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response fr
           path: ["mySavedComparisonSets"],
           extensions: {
             code: "UNAUTHENTICATED"
+          }
+        }
+      ])
+    )
+  ).toBe(true);
+});
+
+test("isUnauthorizedSavedComparisonsResponse detects a forbidden response from extensions.code", () => {
+  expect(
+    isUnauthorizedSavedComparisonsResponse(
+      buildGraphQLResponseWithErrors([
+        {
+          message: "Forbidden",
+          path: ["mySavedComparisonSets"],
+          extensions: {
+            code: "FORBIDDEN"
           }
         }
       ])

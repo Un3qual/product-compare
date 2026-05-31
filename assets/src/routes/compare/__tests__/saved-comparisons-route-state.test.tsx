@@ -80,7 +80,7 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
 
   expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
 
-  await act(async () => {
+  act(() => {
     completeDelete(buildSuccessfulDeleteResponse("saved-set-1"));
   });
 });
@@ -185,7 +185,7 @@ test("saved comparisons route clears stale delete errors when a later delete suc
     expect(commits).toHaveLength(2);
   });
 
-  await act(async () => {
+  act(() => {
     commits[0].onCompleted({
       deleteSavedComparisonSet: {
         savedComparisonSet: null,
@@ -200,7 +200,7 @@ test("saved comparisons route clears stale delete errors when a later delete suc
     });
   });
 
-  await act(async () => {
+  act(() => {
     commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
   });
 

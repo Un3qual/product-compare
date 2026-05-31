@@ -58,11 +58,15 @@ export const buildCompareLoaderArgs = ({
   }) as LoaderFunctionArgs;
 
 export const buildAbortableRequest = (url: string, signal: AbortSignal): Request =>
-  ({
-    headers: new Headers(),
-    signal,
-    url
-  }) as Request;
+  Object.defineProperty(
+    new Request(url, {
+      headers: new Headers()
+    }),
+    "signal",
+    {
+      value: signal
+    }
+  );
 
 export const buildSavedComparisonsLoaderArgs = ({
   environment = createRelayEnvironment(),

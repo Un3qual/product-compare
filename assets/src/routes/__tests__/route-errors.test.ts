@@ -6,10 +6,12 @@ import {
 } from "../route-errors";
 
 test("hasRouteGraphQLErrors detects non-empty top-level GraphQL error arrays", () => {
+  const missingErrors: undefined = undefined;
+
   expect(hasRouteGraphQLErrors([{ message: "GraphQL failure" }])).toBe(true);
   expect(hasRouteGraphQLErrors([])).toBe(false);
   expect(hasRouteGraphQLErrors(null)).toBe(false);
-  expect(hasRouteGraphQLErrors(undefined)).toBe(false);
+  expect(hasRouteGraphQLErrors(missingErrors)).toBe(false);
 });
 
 test("isRouteMutationError validates typed GraphQL mutation error entries", () => {
@@ -43,7 +45,9 @@ test("routeMutationErrorMessage returns the first typed mutation error message",
 });
 
 test("routeMutationErrorMessage falls back when errors are missing or malformed", () => {
-  expect(routeMutationErrorMessage(undefined)).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
+  const missingErrors: undefined = undefined;
+
+  expect(routeMutationErrorMessage(missingErrors)).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage([])).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage([{ code: "INVALID_ARGUMENT" }])).toBe(
     DEFAULT_ROUTE_ERROR_MESSAGE

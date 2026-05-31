@@ -624,6 +624,83 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  %{context: %{current_user: user_fixture()}}
                )
     end
+
+    test "upsertAffiliateProgram resolver preserves explicit nil attrs on conflict" do
+      merchant = merchant_fixture()
+      {:ok, network} = Affiliate.upsert_network(%{name: "Nullable Program Network"})
+
+      assert {:ok, %{program: %{status: "active"}, errors: []}} =
+               AffiliateResolver.upsert_affiliate_program(
+                 nil,
+                 %{
+                   input: %{
+                     "affiliate_network_id" => relay_id(:affiliate_network, network.id),
+                     "merchant_id" => relay_id(:merchant, merchant.id),
+                     "program_code" => "NULLABLE-PROGRAM",
+                     "status" => "active"
+                   }
+                 },
+                 %{context: %{current_user: user_fixture()}}
+               )
+
+      assert {:ok, %{program: %{status: nil}, errors: []}} =
+               AffiliateResolver.upsert_affiliate_program(
+                 nil,
+                 %{
+                   input: %{
+                     "affiliate_network_id" => relay_id(:affiliate_network, network.id),
+                     "merchant_id" => relay_id(:merchant, merchant.id),
+                     "program_code" => "NULLABLE-PROGRAM",
+                     "status" => nil
+                   }
+                 },
+                 %{context: %{current_user: user_fixture()}}
+               )
+    end
+
+    test "upsertAffiliateLink resolver preserves explicit nil attrs on conflict" do
+      merchant = merchant_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant})
+      {:ok, network} = Affiliate.upsert_network(%{name: "Nullable Link Network"})
+      verified_at = DateTime.truncate(~U[2027-01-01 00:00:00Z], :microsecond)
+
+      assert {:ok,
+              %{
+                link: %{affiliate_network_id: network_id, last_verified_at: created_verified_at},
+                errors: []
+              }} =
+               AffiliateResolver.upsert_affiliate_link(
+                 nil,
+                 %{
+                   input: %{
+                     "merchant_product_id" => relay_id(:merchant_product, merchant_product.id),
+                     "affiliate_network_id" => relay_id(:affiliate_network, network.id),
+                     "original_url" => "https://merchant.example.com/product",
+                     "affiliate_url" => "https://network.example.com/track",
+                     "last_verified_at" => verified_at
+                   }
+                 },
+                 %{context: %{current_user: user_fixture()}}
+               )
+
+      assert network_id == network.id
+      assert DateTime.compare(created_verified_at, verified_at) == :eq
+
+      assert {:ok, %{link: %{affiliate_network_id: nil, last_verified_at: nil}, errors: []}} =
+               AffiliateResolver.upsert_affiliate_link(
+                 nil,
+                 %{
+                   input: %{
+                     "merchant_product_id" => relay_id(:merchant_product, merchant_product.id),
+                     "affiliate_network_id" => nil,
+                     "original_url" => "https://merchant.example.com/product",
+                     "affiliate_url" => "https://network.example.com/track",
+                     "last_verified_at" => nil
+                   }
+                 },
+                 %{context: %{current_user: user_fixture()}}
+               )
+    end
   end
 
   defp assert_mutation_unauthorized(response, root_field, entity_field) do
