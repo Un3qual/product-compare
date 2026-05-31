@@ -4,7 +4,7 @@
 
 **Goal:** Make product comparison demoable from the UI by adding product selection controls and rendering current product attributes on product detail and compare pages.
 
-**Architecture:** Keep the first slice intentionally narrow: expose current product attributes through the existing GraphQL `Product` object, then consume that field from the existing Relay-backed product detail and compare routes. Selection stays URL-driven through repeated `slug` query params, with browse/detail links and an empty compare-page selector providing the missing UI path.
+**Architecture:** Keep the first slice intentionally narrow: expose current product attributes through the existing GraphQL `Product` object, then consume that field from the existing Relay-backed product detail and compare routes. Selection stays URL-driven through repeated `slug` query params, with browse/detail links for starting a comparison and a compare-page selector for appending products until the existing 3-product limit is reached.
 
 **Tech Stack:** Elixir, Phoenix, Absinthe, Ecto, Postgres, Bun, React Router, React Relay, TypeScript, Vitest.
 
@@ -33,18 +33,24 @@
   - Include `currentAttributes` in the product detail route query.
 - `assets/src/routes/products/detail.tsx`
   - Render a Specifications section and an add-to-compare link.
+- `assets/src/routes/products/product-attribute-list.tsx`
+  - Provide a shared attribute definition-list component used by product detail and compare cards.
 - `assets/src/routes/catalog/browse.tsx`
   - Render compare links for each browsed product.
 - `assets/src/routes/compare/index.tsx`
-  - Render an empty-state product selector and render selected product attributes on ready-state compare cards.
+  - Render a product selector in empty and ready states, append selected slugs into the current URL selection, and render selected product attributes on ready-state compare cards.
 - `assets/src/routes/compare/queries/CompareProductPickerQuery.ts`
-  - Add a small Relay query for the empty compare-page selector.
+  - Add a small Relay query for the compare-page selector.
 - `assets/src/routes/products/__tests__/detail.route.test.tsx`
   - Cover product specs and the product detail add-to-compare link.
 - `assets/src/routes/catalog/__tests__/browse.route.test.tsx`
   - Cover browse-page compare links.
 - `assets/src/routes/compare/__tests__/compare.route.test.tsx`
-  - Cover the empty compare selector and ready compare attribute rendering.
+  - Cover the empty compare selector, ready-state append links, and ready compare attribute rendering.
+- `assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx`
+  - Keep ready-state save fixtures compatible with the expanded product detail query.
+- `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`
+  - Keep ready-state Relay fixtures compatible with the expanded product detail query.
 - `docs/work/frontend-product-comparison-demo-parity.md`
   - New lane work doc created only when this plan is activated for implementation.
 - `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, `ARCHITECTURE.md`
@@ -346,6 +352,7 @@ git commit -m "feat(graphql): expose current product attributes"
 **Files:**
 - Modify: `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
 - Modify: `assets/src/routes/products/detail.tsx`
+- Create: `assets/src/routes/products/product-attribute-list.tsx`
 - Test: `assets/src/routes/products/__tests__/detail.route.test.tsx`
 - Generated: `assets/src/__generated__/ProductDetailRouteQuery.graphql.ts`
 - Generated: `assets/schema.graphql`
@@ -466,7 +473,7 @@ test("links from product detail to compare with the current product selected", (
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx
+(cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx)
 ```
 
 Expected: FAIL because the query and route do not render `currentAttributes` or the compare link.
@@ -504,6 +511,7 @@ In `assets/src/routes/products/detail.tsx`, import `Link`:
 
 ```ts
 import { Link, useLoaderData } from "react-router-dom";
+import { ProductAttributeList } from "./product-attribute-list";
 ```
 
 Add this near the product title/description before Active offers:
@@ -527,38 +535,60 @@ function ProductSpecifications({
     valueText: string;
   }>;
 }) {
-  if (attributes.length === 0) {
-    return (
-      <section>
-        <h2>Specifications</h2>
-        <p>No product attributes available yet.</p>
-      </section>
-    );
-  }
-
   return (
     <section>
       <h2>Specifications</h2>
-      <dl>
-        {attributes.map((attribute) => (
-          <div key={attribute.code}>
-            <dt>{attribute.displayName}</dt>
-            <dd>{attribute.valueText}</dd>
-          </div>
-        ))}
-      </dl>
+      <ProductAttributeList
+        attributes={attributes}
+        emptyMessage="No product attributes available yet."
+      />
     </section>
   );
 }
 ```
 
-- [ ] **Step 5: Regenerate Relay artifacts and verify the route test passes**
+Create `assets/src/routes/products/product-attribute-list.tsx`:
+
+```tsx
+export interface ProductAttributeListItem {
+  code: string;
+  displayName: string;
+  valueText: string;
+}
+
+export function ProductAttributeList({
+  attributes,
+  emptyMessage
+}: {
+  attributes: ReadonlyArray<ProductAttributeListItem>;
+  emptyMessage: string;
+}) {
+  if (attributes.length === 0) {
+    return <p>{emptyMessage}</p>;
+  }
+
+  return (
+    <dl>
+      {attributes.map((attribute) => (
+        <div key={attribute.code}>
+          <dt>{attribute.displayName}</dt>
+          <dd>{attribute.valueText}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+```
+
+- [ ] **Step 5: Update the frontend schema, regenerate Relay artifacts, and verify the route test passes**
+
+Before running Relay, update `assets/schema.graphql` to mirror the Absinthe schema changes from Task 1. Relay reads `assets/schema.graphql`; `bun run relay` does not refresh that schema file. Add `currentAttributes: [ProductAttributeValue!]!` to `type Product` and add the matching `type ProductAttributeValue` definition with `code`, `displayName`, `dataType`, and `valueText` string fields.
 
 Run:
 
 ```bash
-cd assets && bun run relay
-cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx
+(cd assets && bun run relay)
+(cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx)
 ```
 
 Expected: Relay generation succeeds and the product detail route test passes.
@@ -566,7 +596,7 @@ Expected: Relay generation succeeds and the product detail route test passes.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add assets/schema.graphql assets/src/__generated__/ProductDetailRouteQuery.graphql.ts assets/src/routes/products/queries/ProductDetailRouteQuery.ts assets/src/routes/products/detail.tsx assets/src/routes/products/__tests__/detail.route.test.tsx
+git add assets/schema.graphql assets/src/__generated__/ProductDetailRouteQuery.graphql.ts assets/src/routes/products/queries/ProductDetailRouteQuery.ts assets/src/routes/products/detail.tsx assets/src/routes/products/product-attribute-list.tsx assets/src/routes/products/__tests__/detail.route.test.tsx
 git commit -m "feat(frontend): show product specifications"
 ```
 
@@ -607,7 +637,7 @@ expect(screen.getByRole("link", { name: "Compare Recovered Product" })).toHaveAt
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx
+(cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx)
 ```
 
 Expected: FAIL because browse cards do not have compare links.
@@ -631,7 +661,7 @@ Keep the existing product detail link unchanged.
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx
+(cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx)
 ```
 
 Expected: PASS.
@@ -645,15 +675,17 @@ git commit -m "feat(frontend): link browse products into compare"
 
 ---
 
-### Task 4: Add An Empty Compare Page Product Selector
+### Task 4: Add A Compare Page Product Selector
 
 **Files:**
 - Create: `assets/src/routes/compare/queries/CompareProductPickerQuery.ts`
 - Modify: `assets/src/routes/compare/index.tsx`
 - Test: `assets/src/routes/compare/__tests__/compare.route.test.tsx`
+- Test: `assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx`
+- Test: `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`
 - Generated: `assets/src/__generated__/CompareProductPickerQuery.graphql.ts`
 
-- [ ] **Step 1: Write the failing compare empty-state test**
+- [ ] **Step 1: Write the failing compare selector tests**
 
 In `assets/src/routes/compare/__tests__/compare.route.test.tsx`, update the React Relay mock setup:
 
@@ -683,9 +715,40 @@ Reset it in `beforeEach`:
 
 ```ts
 useLazyLoadQueryMock.mockReset();
+mockedUseLazyLoadQuery.mockReturnValue({
+  products: {
+    edges: []
+  }
+});
 ```
 
-Then add this test after `renders an empty-state message when no products are selected`:
+Add a render helper so the new `Link` elements have a React Router context, then replace existing `render(<CompareRoute />)` calls in this file with `renderCompareRoute()`:
+
+```tsx
+function renderCompareRoute() {
+  return render(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+}
+```
+
+Also update `compare-save-feedback.test.tsx` and `compare-relay-migration.test.tsx` to mock `useLazyLoadQuery` with the same default empty picker result. In `compare-save-feedback.test.tsx`, add a `MemoryRouter` wrapper helper because the ready compare page now renders router `Link` elements:
+
+```tsx
+function compareRouteElement() {
+  return (
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+}
+```
+
+Use `render(compareRouteElement())` and `rerender(compareRouteElement())` for that suite's `<CompareRoute />` renders.
+
+Replace `renders an empty-state message when no products are selected` with:
 
 ```tsx
 test("empty compare page lets users choose products without editing the URL", () => {
@@ -716,7 +779,7 @@ test("empty compare page lets users choose products without editing the URL", ()
     }
   });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Choose products" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Compare Monitor A" })).toHaveAttribute(
@@ -726,6 +789,44 @@ test("empty compare page lets users choose products without editing the URL", ()
   expect(screen.getByRole("link", { name: "Compare Monitor B" })).toHaveAttribute(
     "href",
     "/compare?slug=monitor-b"
+  );
+});
+```
+
+Add this ready-state append test:
+
+```tsx
+test("ready compare page lets users append a product without editing the URL", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: DETAIL_PRODUCT.id,
+            name: DETAIL_PRODUCT.name,
+            slug: DETAIL_PRODUCT.slug,
+            brand: DETAIL_PRODUCT.brand
+          }
+        },
+        {
+          node: {
+            id: "Product:monitor-c",
+            name: "Monitor C",
+            slug: "monitor-c",
+            brand: { id: "Brand:panelco", name: "PanelCo" }
+          }
+        }
+      ]
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.queryByRole("link", { name: "Compare Detail Product" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c"
   );
 });
 ```
@@ -744,9 +845,9 @@ test("empty compare page handles an empty product picker", () => {
     }
   });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
-expect(screen.getByText("No products are available to compare yet.")).toBeInTheDocument();
+  expect(screen.getByText("No products are available to compare yet.")).toBeInTheDocument();
 });
 ```
 
@@ -755,10 +856,10 @@ expect(screen.getByText("No products are available to compare yet.")).toBeInTheD
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx
+(cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx)
 ```
 
-Expected: FAIL because the empty compare page does not query or render products.
+Expected: FAIL because the compare page does not query products or append selections.
 
 - [ ] **Step 3: Add the product picker query**
 
@@ -786,55 +887,98 @@ export const compareProductPickerQuery = graphql`
 `;
 ```
 
-- [ ] **Step 4: Render the empty compare selector**
+Use `first: 12` as a deliberately small demo-picker page size: it keeps the first implementation simple and bounded while leaving search, pagination, and ranking for a later discovery/polish batch.
+
+- [ ] **Step 4: Render the compare selector**
 
 In `assets/src/routes/compare/index.tsx`, import `useLazyLoadQuery` and the generated query:
 
 ```ts
-import { useLoaderData } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import compareProductPickerQuery, {
   type CompareProductPickerQuery
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 ```
 
+In the ready branch, render the picker after the selected product list while the current selection has fewer than 3 products:
+
+```tsx
+{loaderData.slugs.length < 3 ? (
+  <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+) : null}
+```
+
 Replace the empty state body with:
 
 ```tsx
-{loaderData.status === "empty" ? <CompareProductPicker /> : null}
+{loaderData.status === "empty" ? (
+  <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+) : null}
 ```
 
-Add this component:
+Add these components and helper:
 
 ```tsx
-function CompareProductPicker() {
+function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  return (
+    <ResettableErrorBoundary
+      resetToken={selectedSlugs.join("|")}
+      fallback={<p role="alert">Product picker unavailable.</p>}
+    >
+      <Suspense fallback={<p role="status">Loading products...</p>}>
+        <CompareProductPicker selectedSlugs={selectedSlugs} />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
+}
+
+function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
     { first: 12 },
     { fetchPolicy: "store-or-network" }
   );
   const products = data.products.edges.map(({ node }) => node);
+  const selectedSlugSet = new Set(selectedSlugs);
+  const availableProducts = products.filter((product) => !selectedSlugSet.has(product.slug));
 
-  if (products.length === 0) {
-    return <p>No products are available to compare yet.</p>;
+  if (availableProducts.length === 0) {
+    const message =
+      selectedSlugs.length === 0
+        ? "No products are available to compare yet."
+        : "No additional products are available to compare yet.";
+
+    return <p>{message}</p>;
   }
 
   return (
     <section>
       <h2>Choose products</h2>
       <ul>
-        {products.map((product) => (
+        {availableProducts.map((product) => (
           <li key={product.id}>
             <h3>{product.name}</h3>
             <p>{product.brand.name}</p>
-            <a href={`/compare?slug=${encodeURIComponent(product.slug)}`}>
+            <Link to={buildComparePath(selectedSlugs, product.slug)}>
               Compare {product.name}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>
     </section>
   );
+}
+
+function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
+  const params = new URLSearchParams();
+  const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(0, 3);
+
+  for (const slug of nextSlugs) {
+    params.append("slug", slug);
+  }
+
+  return `/compare?${params.toString()}`;
 }
 ```
 
@@ -843,16 +987,16 @@ function CompareProductPicker() {
 Run:
 
 ```bash
-cd assets && bun run relay
-cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx
+(cd assets && bun run relay)
+(cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx)
 ```
 
-Expected: Relay generation succeeds and the compare route test passes.
+Expected: Relay generation succeeds and the compare route, save-feedback, and relay-migration tests pass.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add assets/src/routes/compare/queries/CompareProductPickerQuery.ts assets/src/__generated__/CompareProductPickerQuery.graphql.ts assets/src/routes/compare/index.tsx assets/src/routes/compare/__tests__/compare.route.test.tsx
+git add assets/src/routes/compare/queries/CompareProductPickerQuery.ts assets/src/__generated__/CompareProductPickerQuery.graphql.ts assets/src/routes/compare/index.tsx assets/src/routes/compare/__tests__/compare.route.test.tsx assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx
 git commit -m "feat(frontend): add compare product picker"
 ```
 
@@ -863,10 +1007,14 @@ git commit -m "feat(frontend): add compare product picker"
 **Files:**
 - Modify: `assets/src/routes/compare/index.tsx`
 - Test: `assets/src/routes/compare/__tests__/compare.route.test.tsx`
+- Test: `assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx`
+- Test: `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`
 
 - [ ] **Step 1: Write the failing compare-ready test**
 
-In `assets/src/routes/compare/__tests__/compare.route.test.tsx`, add `currentAttributes: []` to `DETAIL_PRODUCT` and `SECOND_PRODUCT`, then add this test after `renders compared product cards returned by the route loader`:
+In `assets/src/routes/compare/__tests__/compare.route.test.tsx`, add `currentAttributes: []` to `DETAIL_PRODUCT` and `SECOND_PRODUCT`. Also add `currentAttributes: []` to the ready-product fixtures in `compare-save-feedback.test.tsx` and `compare-relay-migration.test.tsx`; those suites render ready-state `<CompareRoute />` and will receive the expanded `ProductDetailRouteQuery` shape after this task.
+
+Then add this test after `renders compared product cards returned by the route loader`:
 
 ```tsx
 test("ready compare cards render product attributes", () => {
@@ -907,7 +1055,7 @@ test("ready compare cards render product attributes", () => {
     throw new Error(`Unexpected query ref: ${String(queryRef)}`);
   });
 
-  render(<CompareRoute />);
+  renderCompareRoute();
 
   expect(screen.getByText("144 Hz")).toBeVisible();
   expect(screen.getByText("165 Hz")).toBeVisible();
@@ -920,46 +1068,26 @@ test("ready compare cards render product attributes", () => {
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx
+(cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx)
 ```
 
 Expected: FAIL because ready compare cards do not render `currentAttributes`.
 
 - [ ] **Step 3: Add attribute rendering to compare cards**
 
-In `assets/src/routes/compare/index.tsx`, inside `CompareProductCard`, render specs after the description:
+In `assets/src/routes/compare/index.tsx`, import the shared attribute list component:
 
-```tsx
-<CompareProductAttributes attributes={product.currentAttributes} />
+```ts
+import { ProductAttributeList } from "../products/product-attribute-list";
 ```
 
-Add this component:
+Inside `CompareProductCard`, render specs after the description:
 
 ```tsx
-function CompareProductAttributes({
-  attributes
-}: {
-  attributes: ReadonlyArray<{
-    code: string;
-    displayName: string;
-    valueText: string;
-  }>;
-}) {
-  if (attributes.length === 0) {
-    return <p>No product attributes available yet.</p>;
-  }
-
-  return (
-    <dl>
-      {attributes.map((attribute) => (
-        <div key={attribute.code}>
-          <dt>{attribute.displayName}</dt>
-          <dd>{attribute.valueText}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+<ProductAttributeList
+  attributes={product.currentAttributes}
+  emptyMessage="No product attributes available yet."
+/>
 ```
 
 Do not build a full aligned comparison matrix in this task. The demo requirement is that selected products display their attributes once they are selected.
@@ -969,7 +1097,7 @@ Do not build a full aligned comparison matrix in this task. The demo requirement
 Run:
 
 ```bash
-cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx
+(cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx)
 ```
 
 Expected: PASS.
@@ -977,7 +1105,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add assets/src/routes/compare/index.tsx assets/src/routes/compare/__tests__/compare.route.test.tsx
+git add assets/src/routes/compare/index.tsx assets/src/routes/compare/__tests__/compare.route.test.tsx assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx
 git commit -m "feat(frontend): show attributes on compare cards"
 ```
 
@@ -998,9 +1126,9 @@ Run:
 
 ```bash
 mix test test/product_compare_web/graphql/catalog_queries_test.exs
-cd assets && bun run relay
-cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx
-cd assets && bun run typecheck
+(cd assets && bun run relay)
+(cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx)
+(cd assets && bun run typecheck)
 git diff --check
 ```
 
@@ -1011,7 +1139,7 @@ Expected: all commands pass.
 Run:
 
 ```bash
-cd assets && bun run check
+(cd assets && bun run check)
 ```
 
 Expected: PASS.
@@ -1037,16 +1165,16 @@ Create `docs/work/frontend-product-comparison-demo-parity.md`:
 - GraphQL `Product.currentAttributes` exposes selected current product claims in a demo-friendly display format.
 - Product detail pages render a Specifications section and link the current product into `/compare`.
 - Browse product cards include compare links.
-- Empty `/compare` renders a small product selector so users can start a comparison without hand-editing query params.
+- `/compare` renders a small product selector so users can start from an empty comparison and append a second or third product without hand-editing query params.
 - Ready `/compare` cards render selected products' current attributes.
 
 ## Verification
 
 - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run check`
+- `(cd assets && bun run relay)`
+- `(cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx)`
+- `(cd assets && bun run typecheck)`
+- `(cd assets && bun run check)`
 - `git diff --check`
 
 ## Next Batch
@@ -1076,7 +1204,7 @@ Run:
 
 ```bash
 mix test test/product_compare_web/graphql/catalog_queries_test.exs
-cd assets && bun run check
+(cd assets && bun run check)
 git diff --check
 ```
 
@@ -1084,26 +1212,30 @@ Expected: all pass.
 
 - [ ] **Step 6: Commit**
 
+If Tasks 1-5 were committed as written, stage only the Task 6 status-documentation files here:
+
 ```bash
-git add ARCHITECTURE.md docs/work/frontend-product-comparison-demo-parity.md docs/work/index.md docs/plans/NOW.md docs/plans/INDEX.md docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md lib/product_compare/specs.ex lib/product_compare_web/resolvers/catalog_resolver.ex lib/product_compare_web/schema.ex test/product_compare_web/graphql/catalog_queries_test.exs assets/schema.graphql assets/src/__generated__ assets/src/routes/catalog assets/src/routes/products assets/src/routes/compare
-git commit -m "feat(frontend): make product comparison demoable"
+git add ARCHITECTURE.md docs/work/frontend-product-comparison-demo-parity.md docs/work/index.md docs/plans/NOW.md docs/plans/INDEX.md docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md
+git commit -m "docs(frontend): record comparison demo parity completion"
 ```
+
+If the implementation worker instead makes one milestone commit for the whole batch, stage the code, tests, generated Relay artifacts, schema, and docs once in that milestone commit. Do not create a standalone checklist-only PR.
 
 ---
 
 ## Completion Criteria
 
 - A user can start a comparison from `/products`, `/products/:slug`, or the empty `/compare` page.
-- A user can compare up to 3 selected products without editing the URL manually.
+- A user can compare up to 3 selected products without editing the URL manually, including adding a second or third product from the ready compare page.
 - Product detail pages display current product attributes when backend current claims exist.
 - Compare cards display each selected product's current attributes.
 - Existing compare save behavior remains intact.
 - Existing product offer rendering remains intact.
 - Backend GraphQL tests cover `Product.currentAttributes`.
-- Focused frontend route tests and `cd assets && bun run check` pass.
+- Focused frontend route tests and `(cd assets && bun run check)` pass.
 
 ## Self-Review
 
-- Spec coverage: covers compare selection, product detail attributes, compare attributes, backend GraphQL field, Relay generation, focused tests, broad frontend check, and queue-doc updates.
+- Spec coverage: covers additive compare selection, picker Suspense/error handling, product detail attributes, compare attributes, backend GraphQL field, frontend schema refresh, Relay generation, focused tests, broad frontend check, and queue-doc updates.
 - Placeholder scan: no placeholder work remains; every implementation task has exact files, code shape, and verification commands.
 - Type consistency: GraphQL field uses Absinthe snake_case `current_attributes` and Relay camelCase `currentAttributes`; frontend components use `code`, `displayName`, and `valueText` consistently.
