@@ -19,7 +19,8 @@
 - `/products/:slug` ships product detail, current specifications, compare-entry, and active-offer baselines.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, and renders current product attributes on selected compare cards.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
-- Browser auth, `/products`, `/products/:slug`, `/compare`, and `/compare/saved` now use Relay query or mutation APIs with SSR store hydration.
+- `/account/api-tokens` now ships a GraphQL-backed API-token management route with list, create, revoke, rotate, one-time token display, and navigation entry points.
+- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, and `/account/api-tokens` now use Relay query or mutation APIs with SSR store hydration.
 - Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
 
 ## Current Delivered Backend Baseline
@@ -39,6 +40,7 @@
 ## Next Planned Slice
 
 - Product comparison demo parity is complete: backend `Product.currentAttributes`, product-detail specifications, browse compare links, the `/compare` product picker, compare-card attributes, and full demo-slice verification have landed.
-- Frontend API token management demo parity is the next active unblocked slice. The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`; the frontend needs a Relay-backed `/account/api-tokens` route with list, create, revoke, rotate, and navigation coverage.
-- Later non-ingestion demo-parity candidates are affiliate/admin setup, revenue reporting, and merchant discovery.
+- Frontend API token management demo parity is complete: the existing `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken` GraphQL contract is demoable from `/account/api-tokens` without REST browser auth endpoints.
+- Frontend revenue reporting demo parity is the next active unblocked slice. The backend GraphQL contract already exposes public-safe `revenueSummary(input:)` with server-enforced suppression; the frontend needs a Relay-backed `/commerce/revenue` route with aggregate filters, suppressed/unsuppressed summary rendering, and navigation coverage.
+- Later non-ingestion demo-parity candidates are affiliate/admin setup and merchant discovery.
 - Live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.

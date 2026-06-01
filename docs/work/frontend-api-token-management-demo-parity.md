@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: in progress
+- Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 during Task 5 implementation.
+- Last verified: 2026-06-01 after Task 6 navigation, frontend, and backend contract verification.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
@@ -16,22 +16,20 @@
 - [x] Task 3: add the create-token flow with one-time token display.
 - [x] Task 4: add the revoke-token flow.
 - [x] Task 5: add the rotate-token flow.
-- [ ] Task 6: wire navigation and close the lane.
+- [x] Task 6: wire navigation and close the lane.
 
-## Current Batch
+## Completed Scope
 
-- Task: Task 6, wire navigation and close the lane.
-- Status: ready.
-- Owned paths:
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `docs/work/frontend-api-token-management-demo-parity.md`
-  - `docs/work/index.md`
-  - `docs/plans/NOW.md`
-  - `docs/plans/INDEX.md`
-  - `ARCHITECTURE.md`
-  - `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Immediate prerequisite: Task 5 added `RotateApiTokenMutation`, active-row rotate controls with optional replacement label and expiry fields, row-scoped pending state, replacement one-time token display, local replacement-token insertion, old-row revoked-status updates, and payload error handling without adding REST endpoints; Task 6 should wire navigation entry points and close the lane docs.
+- Task 6 completed on 2026-06-01:
+  - Added `API tokens` links to the primary navigation and home actions.
+  - Kept the route entry point at `/account/api-tokens`.
+  - Verified the route remains backed by the existing GraphQL API-token contract without adding browser REST endpoints.
+
+## Next Batch
+
+- Status: none queued.
+- Batch: none.
+- Follow-up: frontend revenue reporting demo parity is the next unblocked non-ingestion demo-parity lane in `docs/work/frontend-revenue-reporting-demo-parity.md`.
 
 ## Verification
 
@@ -68,7 +66,16 @@
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 16 tests, 0 failures.
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 20 tests, 0 failures.
   - `cd assets && bun run typecheck`
+- Task 6 RED:
+  - `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx` failed on missing `API tokens` links in both primary navigation and home actions.
+- Task 6 GREEN:
+  - `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx` - 2 tests, 0 failures.
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/__tests__/root.route.test.tsx` - 32 tests, 0 failures.
+  - `cd assets && bun run typecheck`
+  - `cd assets && bun run check` - 28 files, 243 tests, 0 failures.
+  - `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs` - 26 tests, 0 failures.
 
 ## Blockers
 
-- None for Task 6.
+- None for this completed lane.

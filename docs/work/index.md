@@ -41,12 +41,12 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
-- Frontend API token management demo parity lane
-  - Work doc: `docs/work/frontend-api-token-management-demo-parity.md`
-  - Status: in progress
+- Frontend revenue reporting demo parity lane
+  - Work doc: `docs/work/frontend-revenue-reporting-demo-parity.md`
+  - Status: ready
   - Priority: P1
-  - Next batch: Task 1, add the Relay route query and loader for `/account/api-tokens`.
-  - Owned paths: `assets/src/routes/account/api-tokens/**`, `assets/src/__generated__/**`, `docs/work/frontend-api-token-management-demo-parity.md`, `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+  - Next batch: Task 1, add the Relay route query and loader for `/commerce/revenue`.
+  - Owned paths: `assets/schema.graphql`, `assets/src/routes/commerce/revenue/**`, `assets/src/__generated__/**`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
@@ -92,6 +92,16 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend API Token Management Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/account/api-tokens` route that lists API tokens, renders active/revoked status, and supports create, revoke, and rotate flows through GraphQL.
+  - Added one-time token display for create/rotate flows and row-scoped pending/error states for lifecycle actions.
+  - Added `API tokens` links to primary navigation and home actions.
+  - Verification passed with `cd assets && bun run relay`, focused API-token/root Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs`, and `git diff --check`.
 
 ### Product Comparison Demo Parity
 
