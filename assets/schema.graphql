@@ -26,6 +26,7 @@ type Mutation {
   createSavedComparisonSet(input: CreateSavedComparisonSetInput!): CreateSavedComparisonSetPayload!
   deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
   createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
+  revokeApiToken(tokenId: ID!): RevokeApiTokenPayload!
 }
 
 type AuthSessionPayload {
@@ -221,6 +222,11 @@ scalar DateTime
 
 type CreateApiTokenPayload {
   plainTextToken: String
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
+
+type RevokeApiTokenPayload {
   apiToken: ApiToken
   errors: [MutationError!]!
 }

@@ -1,15 +1,18 @@
-import { Suspense, type FormEvent, useState } from "react";
+import { Suspense, type FormEvent, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createApiTokenMutation, {
   type CreateApiTokenMutation
 } from "../../../__generated__/CreateApiTokenMutation.graphql";
+import revokeApiTokenMutation, {
+  type RevokeApiTokenMutation
+} from "../../../__generated__/RevokeApiTokenMutation.graphql";
 import apiTokensRouteQuery, {
   type ApiTokensRouteQuery
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
-import { commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
@@ -27,14 +30,21 @@ const STATUS_FILTERS = [
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
   const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
+  const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenSummary>>(
+    new Map()
+  );
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createPending, setCreatePending] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [pendingRevokeIds, setPendingRevokeIds] = useState<ReadonlySet<string>>(new Set());
+  const inFlightRevokeIdsRef = useRef<Set<string>>(new Set());
   const [commitCreateApiToken, createMutationPending] = useMutation<CreateApiTokenMutation>(
     createApiTokenMutation
   );
+  const [commitRevokeApiToken] = useMutation<RevokeApiTokenMutation>(revokeApiTokenMutation);
   const tokenQueries = loaderData.status === "unauthorized" ? [] : loaderData.tokenQueries;
-  const viewState = buildApiTokensViewState(loaderData, createdTokens);
+  const viewState = buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates);
   const createSubmitting = createPending || createMutationPending;
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -78,6 +88,57 @@ export function ApiTokensRoute() {
     } finally {
       setCreatePending(false);
     }
+  }
+
+  function finishRevoke(tokenId: string) {
+    inFlightRevokeIdsRef.current.delete(tokenId);
+    setPendingRevokeIds((currentPendingRevokeIds) =>
+      removeSetValue(currentPendingRevokeIds, tokenId)
+    );
+  }
+
+  function handleRevoke(tokenId: string) {
+    if (inFlightRevokeIdsRef.current.has(tokenId)) {
+      return;
+    }
+
+    inFlightRevokeIdsRef.current.add(tokenId);
+    setPendingRevokeIds((currentPendingRevokeIds) =>
+      addSetValue(currentPendingRevokeIds, tokenId)
+    );
+    setRevokeError(null);
+
+    commitRouteMutation(
+      commitRevokeApiToken,
+      {
+        variables: {
+          tokenId
+        },
+        onCompleted: (response, graphQLErrors) => {
+          const payload = response.revokeApiToken;
+          const revokedToken = summarizeMutationApiToken(payload?.apiToken);
+
+          if (revokedToken && !hasRouteGraphQLErrors(graphQLErrors)) {
+            setRevokeError(null);
+            setApiTokenUpdates((currentUpdates) =>
+              upsertApiTokenSummaryMap(currentUpdates, revokedToken)
+            );
+          } else {
+            setRevokeError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+          }
+
+          finishRevoke(tokenId);
+        },
+        onError: () => {
+          setRevokeError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          finishRevoke(tokenId);
+        }
+      },
+      () => {
+        setRevokeError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        finishRevoke(tokenId);
+      }
+    );
   }
 
   return (
@@ -128,6 +189,7 @@ export function ApiTokensRoute() {
           </form>
 
           {createError ? <p role="alert">{createError}</p> : null}
+          {revokeError ? <p role="alert">{revokeError}</p> : null}
 
           {oneTimeToken ? (
             <section aria-labelledby="api-token-one-time-heading">
@@ -139,12 +201,22 @@ export function ApiTokensRoute() {
 
           {viewState.tokens.length > 0 && tokenQueries.length > 0 ? (
             <ResettableErrorBoundary
-              fallback={<ApiTokenList tokens={viewState.tokens} />}
+              fallback={
+                <ApiTokenList
+                  onRevoke={handleRevoke}
+                  pendingRevokeIds={pendingRevokeIds}
+                  tokens={viewState.tokens}
+                />
+              }
               resetToken={tokenQueries}
             >
               <Suspense fallback={<p role="status">Loading API tokens...</p>}>
                 <RelayApiTokenList
+                  apiTokenUpdates={apiTokenUpdates}
                   localTokens={viewState.localTokens}
+                  onRevoke={handleRevoke}
+                  pendingRevokeIds={pendingRevokeIds}
+                  tokenStatus={loaderData.tokenStatus}
                   tokenQueries={tokenQueries}
                 />
               </Suspense>
@@ -152,7 +224,11 @@ export function ApiTokensRoute() {
           ) : null}
 
           {viewState.tokens.length > 0 && tokenQueries.length === 0 ? (
-            <ApiTokenList tokens={viewState.tokens} />
+            <ApiTokenList
+              onRevoke={handleRevoke}
+              pendingRevokeIds={pendingRevokeIds}
+              tokens={viewState.tokens}
+            />
           ) : null}
         </>
       )}
@@ -161,52 +237,113 @@ export function ApiTokensRoute() {
 }
 
 function RelayApiTokenList({
+  apiTokenUpdates,
   localTokens,
+  onRevoke,
+  pendingRevokeIds,
+  tokenStatus,
   tokenQueries
 }: {
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
   localTokens: ApiTokenSummary[];
+  onRevoke: (tokenId: string) => void;
+  pendingRevokeIds: ReadonlySet<string>;
+  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
   tokenQueries: ApiTokenQueryDescriptor[];
 }) {
   return (
     <ul aria-label="API tokens">
       {localTokens.map((token) => (
-        <ApiTokenListItem key={token.id} token={token} />
+        <ApiTokenListItem
+          key={token.id}
+          onRevoke={onRevoke}
+          pendingRevokeIds={pendingRevokeIds}
+          token={token}
+        />
       ))}
       {tokenQueries.map((tokenQuery) => (
-        <RelayApiTokenPage key={apiTokenQueryKey(tokenQuery)} tokenQuery={tokenQuery} />
+        <RelayApiTokenPage
+          apiTokenUpdates={apiTokenUpdates}
+          key={apiTokenQueryKey(tokenQuery)}
+          onRevoke={onRevoke}
+          pendingRevokeIds={pendingRevokeIds}
+          tokenQuery={tokenQuery}
+          tokenStatus={tokenStatus}
+        />
       ))}
     </ul>
   );
 }
 
-function RelayApiTokenPage({ tokenQuery }: { tokenQuery: ApiTokenQueryDescriptor }) {
+function RelayApiTokenPage({
+  apiTokenUpdates,
+  onRevoke,
+  pendingRevokeIds,
+  tokenQuery,
+  tokenStatus
+}: {
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
+  onRevoke: (tokenId: string) => void;
+  pendingRevokeIds: ReadonlySet<string>;
+  tokenQuery: ApiTokenQueryDescriptor;
+  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
+}) {
   const queryRef = useRoutePreloadedQuery<ApiTokensRouteQuery>(
     apiTokensRouteQuery,
     tokenQuery
   );
   const data = usePreloadedQuery<ApiTokensRouteQuery>(apiTokensRouteQuery, queryRef);
   const page = summarizeApiTokensPage(data);
+  const tokens = applyApiTokenUpdates(page.tokens, apiTokenUpdates, tokenStatus);
 
   return (
     <>
-      {page.tokens.map((token) => (
-        <ApiTokenListItem key={token.id} token={token} />
+      {tokens.map((token) => (
+        <ApiTokenListItem
+          key={token.id}
+          onRevoke={onRevoke}
+          pendingRevokeIds={pendingRevokeIds}
+          token={token}
+        />
       ))}
     </>
   );
 }
 
-function ApiTokenList({ tokens }: { tokens: ApiTokenSummary[] }) {
+function ApiTokenList({
+  onRevoke,
+  pendingRevokeIds,
+  tokens
+}: {
+  onRevoke: (tokenId: string) => void;
+  pendingRevokeIds: ReadonlySet<string>;
+  tokens: ApiTokenSummary[];
+}) {
   return (
     <ul aria-label="API tokens">
       {tokens.map((token) => (
-        <ApiTokenListItem key={token.id} token={token} />
+        <ApiTokenListItem
+          key={token.id}
+          onRevoke={onRevoke}
+          pendingRevokeIds={pendingRevokeIds}
+          token={token}
+        />
       ))}
     </ul>
   );
 }
 
-function ApiTokenListItem({ token }: { token: ApiTokenSummary }) {
+function ApiTokenListItem({
+  onRevoke,
+  pendingRevokeIds,
+  token
+}: {
+  onRevoke: (tokenId: string) => void;
+  pendingRevokeIds: ReadonlySet<string>;
+  token: ApiTokenSummary;
+}) {
+  const revokePending = pendingRevokeIds.has(token.id);
+
   return (
     <li>
       <article>
@@ -233,6 +370,17 @@ function ApiTokenListItem({ token }: { token: ApiTokenSummary }) {
             <dd>{token.revokedAt ? "Revoked token" : "Active token"}</dd>
           </div>
         </dl>
+        {token.revokedAt ? null : (
+          <button
+            disabled={revokePending}
+            onClick={() => {
+              onRevoke(token.id);
+            }}
+            type="button"
+          >
+            {revokePending ? "Revoking token..." : "Revoke token"}
+          </button>
+        )}
       </article>
     </li>
   );
@@ -266,12 +414,13 @@ function padUtcPart(value: number) {
 
 function buildApiTokensViewState(
   loaderData: ApiTokensRouteLoaderData,
-  createdTokens: ApiTokenSummary[] = []
+  createdTokens: ApiTokenSummary[] = [],
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary> = new Map()
 ) {
   const localTokens =
     loaderData.status === "unauthorized"
       ? []
-      : createdTokens.filter((token) => apiTokenMatchesStatus(token, loaderData.tokenStatus));
+      : applyApiTokenUpdates(createdTokens, apiTokenUpdates, loaderData.tokenStatus);
 
   if (loaderData.status === "unauthorized") {
     return {
@@ -281,7 +430,12 @@ function buildApiTokensViewState(
     };
   }
 
-  const tokens = mergeApiTokenSummaries(localTokens, loaderData.tokens);
+  const loaderTokens = applyApiTokenUpdates(
+    loaderData.tokens,
+    apiTokenUpdates,
+    loaderData.tokenStatus
+  );
+  const tokens = mergeApiTokenSummaries(localTokens, loaderTokens);
 
   if (tokens.length === 0) {
     return {
@@ -325,9 +479,15 @@ function normalizeDateTimeLocalValue(value: string | null) {
   return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
 
-type MutationApiToken = NonNullable<
-  NonNullable<CreateApiTokenMutation["response"]["createApiToken"]>["apiToken"]
->;
+type MutationApiToken = {
+  readonly id: string;
+  readonly label: string | null | undefined;
+  readonly tokenPrefix: string;
+  readonly lastUsedAt: string | null | undefined;
+  readonly expiresAt: string | null | undefined;
+  readonly revokedAt: string | null | undefined;
+  readonly insertedAt: string;
+};
 
 function summarizeMutationApiToken(token: MutationApiToken | null | undefined) {
   if (!token) {
@@ -360,6 +520,17 @@ function apiTokenMatchesStatus(
   return token.revokedAt !== null;
 }
 
+function applyApiTokenUpdates(
+  tokens: ApiTokenSummary[],
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>,
+  status: ApiTokensRouteLoaderData["tokenStatus"]
+) {
+  return tokens.flatMap((token) => {
+    const updatedToken = apiTokenUpdates.get(token.id) ?? token;
+    return apiTokenMatchesStatus(updatedToken, status) ? [updatedToken] : [];
+  });
+}
+
 function mergeApiTokenSummaries(
   localTokens: ApiTokenSummary[],
   loaderTokens: ApiTokenSummary[]
@@ -374,4 +545,31 @@ function mergeApiTokenSummaries(
 
 function upsertApiTokenSummary(tokens: ApiTokenSummary[], nextToken: ApiTokenSummary) {
   return [nextToken, ...tokens.filter((token) => token.id !== nextToken.id)];
+}
+
+function upsertApiTokenSummaryMap(
+  tokens: ReadonlyMap<string, ApiTokenSummary>,
+  nextToken: ApiTokenSummary
+) {
+  const nextTokens = new Map(tokens);
+  nextTokens.set(nextToken.id, nextToken);
+  return nextTokens;
+}
+
+function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): ReadonlySet<T> {
+  if (currentValues.has(nextValue)) {
+    return currentValues;
+  }
+
+  return new Set(currentValues).add(nextValue);
+}
+
+function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): ReadonlySet<T> {
+  if (!currentValues.has(removedValue)) {
+    return currentValues;
+  }
+
+  const nextValues = new Set(currentValues);
+  nextValues.delete(removedValue);
+  return nextValues;
 }

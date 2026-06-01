@@ -428,13 +428,14 @@ git commit -m "feat(frontend): create api tokens from the browser"
 ### Task 4: Add Revoke Token Flow
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing revoke-flow tests**
+- [x] **Step 1: Write failing revoke-flow tests**
 
 Add route tests covering:
 
@@ -445,7 +446,7 @@ test("revoke token renders mutation payload errors");
 test("revoke token renders a generic alert for network errors");
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -455,7 +456,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because revoke is not implemented.
 
-- [ ] **Step 3: Add the revoke mutation**
+- [x] **Step 3: Add the revoke mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts`:
 
@@ -484,7 +485,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement revoke UI**
+- [x] **Step 4: Implement revoke UI**
 
 In `ApiTokensRoute`:
 
@@ -494,7 +495,7 @@ In `ApiTokensRoute`:
 - On success, update local row state so the revoked row displays revoked status.
 - Keep revoked rows visible when the current filter is `all` or `revoked`; hide them from the active filter after local status changes.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -504,7 +505,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/RevokeApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run revoke-flow tests**
+- [x] **Step 6: Run revoke-flow tests**
 
 Run:
 
@@ -514,7 +515,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -524,14 +525,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 4 complete, record verification, and advance the current batch to Task 5.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RevokeApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RevokeApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): revoke api tokens from the browser"
 ```
 

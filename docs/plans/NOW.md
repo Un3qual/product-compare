@@ -7,10 +7,10 @@
 ### Frontend API Token Management Demo Parity Lane
 
 - Status: in progress
-- Batch: Task 4, add the revoke-token flow
+- Batch: Task 5, add the rotate-token flow
 - Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Next step: write focused revoke-flow tests, add `RevokeApiTokenMutation`, render active-row revoke buttons, commit the selected token id through Relay, update local row status, and display mutation/network errors.
+- Next step: write focused rotate-flow tests, add `RotateApiTokenMutation`, render active-row rotate controls, commit the selected token id plus optional replacement label/expiry through Relay, display the replacement one-time token, update local row state, and display mutation errors.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
@@ -18,7 +18,8 @@
   - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`.
   - Task 1 added the local Relay schema snapshot for `myApiTokens`, `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` pagination, status-filter, unauthorized, cursor, and abort handling.
   - Task 2 registered `/account/api-tokens` and renders unauthorized, empty, ready, and status-filter states from `apiTokensLoader`.
-  - Task 3 added the local Relay schema snapshot for `createApiToken`, generated `CreateApiTokenMutation.graphql.ts`, and renders the create form, one-time token display, and mutation error handling, so the next unblocked work is the revoke-token mutation flow.
+  - Task 3 added the local Relay schema snapshot for `createApiToken`, generated `CreateApiTokenMutation.graphql.ts`, and renders the create form, one-time token display, and mutation error handling.
+  - Task 4 added the local Relay schema snapshot for `revokeApiToken`, generated `RevokeApiTokenMutation.graphql.ts`, renders active-row revoke buttons, updates local row status after revoke, suppresses duplicate row clicks, and displays payload/network errors, so the next unblocked work is the rotate-token mutation flow.
 
 ### Product Comparison Demo Parity Lane
 
@@ -94,6 +95,14 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend API Token Management Demo Parity, Task 4:
+  - Refreshed the frontend Relay schema snapshot for the existing `revokeApiToken` mutation contract.
+  - Added `RevokeApiTokenMutation` and generated `RevokeApiTokenMutation.graphql.ts`.
+  - Added active-row revoke buttons on `/account/api-tokens` with row-scoped pending state and duplicate-click suppression.
+  - Updates local token row state after revoke so Relay-preloaded and loader-summary rows show revoked status or disappear from the active filter.
+  - Displays revoke payload and network errors through the shared route mutation helpers.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend API Token Management Demo Parity, Task 3:
   - Refreshed the frontend Relay schema snapshot for the existing `createApiToken` mutation contract.

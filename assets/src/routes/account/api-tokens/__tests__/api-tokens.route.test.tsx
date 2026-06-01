@@ -7,13 +7,15 @@ import { ApiTokensRoute } from "../index";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../loader";
 
 const {
-  commitMutationMock,
+  commitCreateMutationMock,
+  commitRevokeMutationMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
-  commitMutationMock: vi.fn(),
+  commitCreateMutationMock: vi.fn(),
+  commitRevokeMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
@@ -75,6 +77,16 @@ const REVOKED_TOKEN: ApiTokenSummary = {
   insertedAt: "2026-05-29T12:00:00Z"
 };
 
+const BUILD_BOT_TOKEN: ApiTokenSummary = {
+  id: "QXBpVG9rZW46YnVpbGQtYm90LXRva2Vu",
+  label: "Build bot",
+  tokenPrefix: "112233aabbcc",
+  lastUsedAt: null,
+  expiresAt: null,
+  revokedAt: null,
+  insertedAt: "2026-05-30T12:00:00Z"
+};
+
 const API_TOKENS_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ApiTokensRouteQuery",
@@ -92,12 +104,16 @@ const API_TOKENS_QUERY_REF = {
 };
 
 beforeEach(() => {
-  commitMutationMock.mockReset();
+  commitCreateMutationMock.mockReset();
+  commitRevokeMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
-  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUseMutation.mockImplementation((mutation) => {
+    const name = (mutation as { params?: { name?: string } }).params?.name;
+    return [name === "RevokeApiTokenMutation" ? commitRevokeMutationMock : commitCreateMutationMock, false];
+  });
   mockedUseRoutePreloadedQuery.mockReturnValue(API_TOKENS_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
 });
@@ -201,7 +217,7 @@ test("create token submits label and displays the one-time plain text token", as
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
+    expect(commitCreateMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
           label: "CLI automation",
@@ -234,7 +250,7 @@ test("create token clears the one-time token when the next create starts", async
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
@@ -246,7 +262,7 @@ test("create token clears the one-time token when the next create starts", async
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(2);
   });
   expect(screen.queryByText("pc_live_123456789")).not.toBeInTheDocument();
 });
@@ -267,7 +283,7 @@ test("create token renders mutation payload errors", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
   });
   completeLatestCreateMutation({
     createApiToken: {
@@ -303,12 +319,135 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse(), [{ message: "boom" }]);
 
   expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
+});
+
+test("revoke token commits the selected token id and updates the row status", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+  mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          tokenId: ACTIVE_TOKEN.id
+        }
+      })
+    );
+  });
+
+  completeLatestRevokeMutation(buildSuccessfulRevokeResponse(ACTIVE_TOKEN));
+
+  expect(await screen.findByText("Revoked token")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Revoke token" })).not.toBeInTheDocument();
+});
+
+test("revoke token suppresses duplicate clicks while a row is pending", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildApiTokenQueryData([ACTIVE_TOKEN, BUILD_BOT_TOKEN]) as never
+  );
+
+  renderApiTokensRoute();
+
+  const revokeButtons = screen.getAllByRole("button", { name: "Revoke token" });
+
+  fireEvent.click(revokeButtons[0]);
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
+  });
+  expect(revokeButtons[0]).toBeDisabled();
+  expect(revokeButtons[1]).not.toBeDisabled();
+
+  fireEvent.click(revokeButtons[0]);
+
+  expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(revokeButtons[1]);
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledTimes(2);
+  });
+  expect(commitRevokeMutationMock).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({
+      variables: {
+        tokenId: BUILD_BOT_TOKEN.id
+      }
+    })
+  );
+});
+
+test("revoke token renders mutation payload errors", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestRevokeMutation({
+    revokeApiToken: {
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "Token cannot be revoked."
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Token cannot be revoked.");
+  expect(screen.getByText("Active token")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
+});
+
+test("revoke token renders a generic alert for network errors", async () => {
+  commitRevokeMutationMock.mockImplementation(({ onError }) => {
+    onError(new Error("Network request failed: boom"));
+  });
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
 });
 
 function renderApiTokensRoute() {
@@ -321,7 +460,13 @@ function renderApiTokensRoute() {
 
 function completeLatestCreateMutation(response: unknown, graphQLErrors?: unknown[]) {
   act(() => {
-    commitMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
+    commitCreateMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
+  });
+}
+
+function completeLatestRevokeMutation(response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    commitRevokeMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
   });
 }
 
@@ -337,6 +482,18 @@ function buildSuccessfulCreateResponse() {
         expiresAt: "2026-08-29T12:00:00Z",
         revokedAt: null,
         insertedAt: "2026-05-31T14:00:00Z"
+      },
+      errors: []
+    }
+  };
+}
+
+function buildSuccessfulRevokeResponse(token: ApiTokenSummary) {
+  return {
+    revokeApiToken: {
+      apiToken: {
+        ...token,
+        revokedAt: "2026-05-31T15:00:00Z"
       },
       errors: []
     }

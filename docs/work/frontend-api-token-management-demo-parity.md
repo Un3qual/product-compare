@@ -5,7 +5,7 @@
 - Status: in progress
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 during Task 3 implementation.
+- Last verified: 2026-06-01 during Task 4 implementation.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
@@ -14,13 +14,13 @@
 - [x] Task 1: add the Relay route query and loader for `/account/api-tokens`.
 - [x] Task 2: render the API-token management route.
 - [x] Task 3: add the create-token flow with one-time token display.
-- [ ] Task 4: add the revoke-token flow.
+- [x] Task 4: add the revoke-token flow.
 - [ ] Task 5: add the rotate-token flow.
 - [ ] Task 6: wire navigation and close the lane.
 
 ## Current Batch
 
-- Task: Task 4, add the revoke-token flow.
+- Task: Task 5, add the rotate-token flow.
 - Status: ready.
 - Owned paths:
   - `assets/schema.graphql`
@@ -28,7 +28,7 @@
   - `assets/src/__generated__/**`
   - `docs/work/frontend-api-token-management-demo-parity.md`
   - `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Immediate prerequisite: Task 3 added `CreateApiTokenMutation`, the authenticated create form, one-time token display, and payload/top-level GraphQL error handling without adding REST endpoints; Task 4 should add revoke-token mutation handling for active rows.
+- Immediate prerequisite: Task 4 added `RevokeApiTokenMutation`, active-row revoke buttons, row-scoped pending state, local revoked-status updates for loader and Relay-preloaded rows, and payload/network error handling without adding REST endpoints; Task 5 should add rotate-token mutation handling and replacement one-time token display for active rows.
 
 ## Verification
 
@@ -51,7 +51,14 @@
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 12 tests, 0 failures.
   - `cd assets && bun run typecheck`
   - `git diff --check`
+- Task 4 refreshed `assets/schema.graphql` for the existing `revokeApiToken` mutation contract because Relay reads the local schema snapshot.
+- Task 4 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on the missing revoke-token button.
+- Task 4 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 12 tests, 0 failures.
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 16 tests, 0 failures.
+  - `cd assets && bun run typecheck`
 
 ## Blockers
 
-- None for Task 4.
+- None for Task 5.
