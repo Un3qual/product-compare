@@ -66,7 +66,7 @@
 - Modify: `lib/product_compare_web/schema.ex`
 - Test: `test/product_compare_web/graphql/catalog_queries_test.exs`
 
-- [ ] **Step 1: Write the failing backend GraphQL test**
+- [x] **Step 1: Write the failing backend GraphQL test**
 
 Add this test near the existing product detail/catalog query tests in `test/product_compare_web/graphql/catalog_queries_test.exs`:
 
@@ -230,7 +230,7 @@ defp refresh_rate_attribute_with_unit_fixture do
 end
 ```
 
-- [ ] **Step 2: Run the backend test to verify it fails**
+- [x] **Step 2: Run the backend test to verify it fails**
 
 Run:
 
@@ -240,7 +240,7 @@ mix test test/product_compare_web/graphql/catalog_queries_test.exs
 
 Expected: FAIL because `currentAttributes` is not defined on GraphQL `Product`.
 
-- [ ] **Step 3: Add the Specs read helper**
+- [x] **Step 3: Add the Specs read helper**
 
 In `lib/product_compare/specs.ex`, add this public function after `select_current_claim/4`:
 
@@ -259,7 +259,7 @@ def list_current_attributes_for_product(product_id) do
 end
 ```
 
-- [ ] **Step 4: Add the GraphQL field and resolver**
+- [x] **Step 4: Add the GraphQL field and resolver**
 
 In `lib/product_compare_web/schema.ex`, add the field to `object :product`:
 
@@ -328,7 +328,7 @@ defp append_unit(value, %{code: code}) when is_binary(code) and code != "", do: 
 defp append_unit(value, _unit), do: value
 ```
 
-- [ ] **Step 5: Run the backend test to verify it passes**
+- [x] **Step 5: Run the backend test to verify it passes**
 
 Run:
 
@@ -357,7 +357,7 @@ git commit -m "feat(graphql): expose current product attributes"
 - Generated: `assets/src/__generated__/ProductDetailRouteQuery.graphql.ts`
 - Generated: `assets/schema.graphql`
 
-- [ ] **Step 1: Write the failing frontend route test**
+- [x] **Step 1: Write the failing frontend route test**
 
 In `assets/src/routes/products/__tests__/detail.route.test.tsx`, first add `currentAttributes: []` to the `DETAIL_PRODUCT` constant:
 
@@ -468,7 +468,7 @@ test("links from product detail to compare with the current product selected", (
 });
 ```
 
-- [ ] **Step 2: Run the frontend test to verify it fails**
+- [x] **Step 2: Run the frontend test to verify it fails**
 
 Run:
 
@@ -478,7 +478,7 @@ Run:
 
 Expected: FAIL because the query and route do not render `currentAttributes` or the compare link.
 
-- [ ] **Step 3: Add attributes to the Relay query**
+- [x] **Step 3: Add attributes to the Relay query**
 
 Update `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`:
 
@@ -505,7 +505,7 @@ export const productDetailRouteQuery = graphql`
 `;
 ```
 
-- [ ] **Step 4: Render the product detail specs and compare link**
+- [x] **Step 4: Render the product detail specs and compare link**
 
 In `assets/src/routes/products/detail.tsx`, import `Link`:
 
@@ -580,7 +580,7 @@ export function ProductAttributeList({
 }
 ```
 
-- [ ] **Step 5: Update the frontend schema, regenerate Relay artifacts, and verify the route test passes**
+- [x] **Step 5: Update the frontend schema, regenerate Relay artifacts, and verify the route test passes**
 
 Before running Relay, update `assets/schema.graphql` to mirror the Absinthe schema changes from Task 1. Relay reads `assets/schema.graphql`; `bun run relay` does not refresh that schema file. Add `currentAttributes: [ProductAttributeValue!]!` to `type Product` and add the matching `type ProductAttributeValue` definition with `code`, `displayName`, `dataType`, and `valueText` string fields.
 
@@ -608,7 +608,7 @@ git commit -m "feat(frontend): show product specifications"
 - Modify: `assets/src/routes/catalog/browse.tsx`
 - Test: `assets/src/routes/catalog/__tests__/browse.route.test.tsx`
 
-- [ ] **Step 1: Write the failing browse route test**
+- [x] **Step 1: Write the failing browse route test**
 
 In `assets/src/routes/catalog/__tests__/browse.route.test.tsx`, extend the existing `renders browse products from the Relay route query` test with this assertion:
 
@@ -632,7 +632,7 @@ expect(screen.getByRole("link", { name: "Compare Recovered Product" })).toHaveAt
 );
 ```
 
-- [ ] **Step 2: Run the browse route test to verify it fails**
+- [x] **Step 2: Run the browse route test to verify it fails**
 
 Run:
 
@@ -642,7 +642,7 @@ Run:
 
 Expected: FAIL because browse cards do not have compare links.
 
-- [ ] **Step 3: Add the browse compare link**
+- [x] **Step 3: Add the browse compare link**
 
 In `assets/src/routes/catalog/browse.tsx`, add a compare link inside each product `<li>`:
 
@@ -656,7 +656,7 @@ In `assets/src/routes/catalog/browse.tsx`, add a compare link inside each produc
 
 Keep the existing product detail link unchanged.
 
-- [ ] **Step 4: Run the browse route test to verify it passes**
+- [x] **Step 4: Run the browse route test to verify it passes**
 
 Run:
 
@@ -680,12 +680,13 @@ git commit -m "feat(frontend): link browse products into compare"
 **Files:**
 - Create: `assets/src/routes/compare/queries/CompareProductPickerQuery.ts`
 - Modify: `assets/src/routes/compare/index.tsx`
+- Modify: `assets/src/react-relay.d.ts`
 - Test: `assets/src/routes/compare/__tests__/compare.route.test.tsx`
 - Test: `assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx`
 - Test: `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`
 - Generated: `assets/src/__generated__/CompareProductPickerQuery.graphql.ts`
 
-- [ ] **Step 1: Write the failing compare selector tests**
+- [x] **Step 1: Write the failing compare selector tests**
 
 In `assets/src/routes/compare/__tests__/compare.route.test.tsx`, update the React Relay mock setup:
 
@@ -851,7 +852,7 @@ test("empty compare page handles an empty product picker", () => {
 });
 ```
 
-- [ ] **Step 2: Run the compare route test to verify it fails**
+- [x] **Step 2: Run the compare route test to verify it fails**
 
 Run:
 
@@ -861,7 +862,7 @@ Run:
 
 Expected: FAIL because the compare page does not query products or append selections.
 
-- [ ] **Step 3: Add the product picker query**
+- [x] **Step 3: Add the product picker query**
 
 Create `assets/src/routes/compare/queries/CompareProductPickerQuery.ts`:
 
@@ -889,7 +890,7 @@ export const compareProductPickerQuery = graphql`
 
 Use `first: 12` as a deliberately small demo-picker page size: it keeps the first implementation simple and bounded while leaving search, pagination, and ranking for a later discovery/polish batch.
 
-- [ ] **Step 4: Render the compare selector**
+- [x] **Step 4: Render the compare selector**
 
 In `assets/src/routes/compare/index.tsx`, import `useLazyLoadQuery` and the generated query:
 
@@ -982,7 +983,7 @@ function buildComparePath(selectedSlugs: readonly string[], productSlug: string)
 }
 ```
 
-- [ ] **Step 5: Regenerate Relay artifacts and verify the compare route test passes**
+- [x] **Step 5: Regenerate Relay artifacts and verify the compare route test passes**
 
 Run:
 
@@ -1010,7 +1011,7 @@ git commit -m "feat(frontend): add compare product picker"
 - Test: `assets/src/routes/compare/__tests__/compare-save-feedback.test.tsx`
 - Test: `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`
 
-- [ ] **Step 1: Write the failing compare-ready test**
+- [x] **Step 1: Write the failing compare-ready test**
 
 In `assets/src/routes/compare/__tests__/compare.route.test.tsx`, add `currentAttributes: []` to `DETAIL_PRODUCT` and `SECOND_PRODUCT`. Also add `currentAttributes: []` to the ready-product fixtures in `compare-save-feedback.test.tsx` and `compare-relay-migration.test.tsx`; those suites render ready-state `<CompareRoute />` and will receive the expanded `ProductDetailRouteQuery` shape after this task.
 
@@ -1063,7 +1064,7 @@ test("ready compare cards render product attributes", () => {
 });
 ```
 
-- [ ] **Step 2: Run the compare route test to verify it fails**
+- [x] **Step 2: Run the compare route test to verify it fails**
 
 Run:
 
@@ -1073,7 +1074,7 @@ Run:
 
 Expected: FAIL because ready compare cards do not render `currentAttributes`.
 
-- [ ] **Step 3: Add attribute rendering to compare cards**
+- [x] **Step 3: Add attribute rendering to compare cards**
 
 In `assets/src/routes/compare/index.tsx`, import the shared attribute list component:
 
@@ -1092,7 +1093,7 @@ Inside `CompareProductCard`, render specs after the description:
 
 Do not build a full aligned comparison matrix in this task. The demo requirement is that selected products display their attributes once they are selected.
 
-- [ ] **Step 4: Run the compare route test to verify it passes**
+- [x] **Step 4: Run the compare route test to verify it passes**
 
 Run:
 
@@ -1120,7 +1121,7 @@ git commit -m "feat(frontend): show attributes on compare cards"
 - Modify: `docs/plans/INDEX.md`
 - Modify: `ARCHITECTURE.md`
 
-- [ ] **Step 1: Run focused backend and frontend verification**
+- [x] **Step 1: Run focused backend and frontend verification**
 
 Run:
 
@@ -1134,7 +1135,7 @@ git diff --check
 
 Expected: all commands pass.
 
-- [ ] **Step 2: Run broader frontend check**
+- [x] **Step 2: Run broader frontend check**
 
 Run:
 
@@ -1144,7 +1145,7 @@ Run:
 
 Expected: PASS.
 
-- [ ] **Step 3: Create the lane work doc**
+- [x] **Step 3: Create the lane work doc**
 
 Create `docs/work/frontend-product-comparison-demo-parity.md`:
 
@@ -1187,7 +1188,7 @@ Create `docs/work/frontend-product-comparison-demo-parity.md`:
   - Add demo parity for API token management, affiliate admin setup, revenue reporting, and merchant discovery.
 ```
 
-- [ ] **Step 4: Update shared queue and architecture docs at the milestone boundary**
+- [x] **Step 4: Update shared queue and architecture docs at the milestone boundary**
 
 Update `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` to reflect:
 
@@ -1198,7 +1199,7 @@ Update `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `AR
 
 Do this only after the code and tests above pass. Keep the update bundled with the implementation diff; do not make a standalone checklist-only PR.
 
-- [ ] **Step 5: Final verification**
+- [x] **Step 5: Final verification**
 
 Run:
 

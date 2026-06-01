@@ -11,7 +11,13 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+1. Frontend API token management demo parity lane: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+   - Status: in progress
+   - Source context: `ARCHITECTURE.md`
+   - Current scope: Task 1 adds the Relay route query and loader for `/account/api-tokens`.
+   - Next scope: render the route, then add create, revoke, rotate, navigation, and final verification batches.
+
+2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
@@ -20,11 +26,21 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Next Candidate After Active Queue
 
-1. Backend lane follow-up
+1. Additional demo-parity frontend candidates
+   - Intended scope: affiliate/admin setup, revenue reporting, and merchant discovery, after API token management reaches demo parity.
+
+2. Backend lane follow-up
    - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
 
 ## Recently Completed
+
+- Product comparison demo parity lane: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-05-31
+  - Source context: `ARCHITECTURE.md`
+  - Scope: GraphQL `Product.currentAttributes`, product-detail specifications and compare entry, browse compare entry links, `/compare` product picker links, and compare-card attributes.
+  - Result: product comparison is demoable from browse/detail into `/compare` without manual URL editing, and selected products display current attributes on detail and compare surfaces.
+  - Verification passed with `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run relay`, focused browse/detail/compare Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
 
 - Review readability cleanups: `docs/work/review-readability-cleanups.md`
   - Status: completed on 2026-05-31

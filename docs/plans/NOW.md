@@ -4,6 +4,36 @@
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 
+### Frontend API Token Management Demo Parity Lane
+
+- Status: in progress
+- Batch: Task 1, add the Relay route query and loader for `/account/api-tokens`
+- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
+- Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+- Next step: verify the existing GraphQL API-token contract, add the Relay route query and React Router loader, add focused loader coverage, run Relay generation, and update this lane to Task 2.
+- Why this batch is current:
+  - Product comparison demo parity is complete.
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
+  - `ARCHITECTURE.md` lists API token management as the first non-ingestion demo-parity candidate after product comparison.
+  - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`, so the next unblocked work is the browser Relay route.
+
+### Product Comparison Demo Parity Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-product-comparison-demo-parity.md`
+- Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+- Next step: no unblocked product-comparison demo parity batch remains in this lane; if no other unblocked current batch exists, consult `docs/plans/INDEX.md` and `ARCHITECTURE.md` for the next implementation plan.
+- Why this batch is current:
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
+  - The product comparison demo-parity plan is the next unblocked implementation plan already present in this worktree.
+  - Task 1 now exposes selected current product attributes through GraphQL `Product.currentAttributes`.
+  - Task 2 now renders current product attributes and a compare entry link on the Relay-backed product detail route.
+  - Task 3 now adds direct compare entry links from product browse cards.
+  - Task 4 now adds in-page product picker links for empty and ready `/compare` states.
+  - Task 5 now renders current product attributes on selected compare cards.
+  - Task 6 ran the focused demo-slice verification, broader frontend check, and queue-doc closure.
+
 ### Frontend Lane
 
 - Status: completed
@@ -61,6 +91,35 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Product Comparison Demo Parity, Task 6:
+  - Ran the final focused backend/frontend demo-slice verification for GraphQL current attributes, product detail specifications, browse compare links, compare picker links, and compare-card attributes.
+  - Ran the broader frontend workspace check after the focused demo-slice verification.
+  - Closed the product-comparison demo parity lane with no remaining unblocked batch in that lane.
+  - Verified `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx src/routes/products/__tests__/detail.route.test.tsx src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
+
+- Product Comparison Demo Parity, Task 5:
+  - Rendered the shared product attribute list inside ready-state `/compare` product cards.
+  - Added compare route coverage for selected cards rendering current product attributes.
+  - Updated compare route ready-state fixtures to include `currentAttributes`.
+  - Verified `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`, `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx`, `cd assets && bun run typecheck`, and `git diff --check`.
+
+- Product Comparison Demo Parity, Task 4:
+  - Added a Relay-backed compare product picker with a bounded first page of products.
+  - Rendered picker links for empty `/compare` states and ready selections with fewer than 3 products, excluding already-selected slugs.
+  - Updated compare route, save-feedback, and Relay migration coverage for the picker query and router links.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx src/routes/compare/__tests__/compare-save-feedback.test.tsx src/routes/compare/__tests__/compare-relay-migration.test.tsx`, and `cd assets && bun run typecheck`.
+
+- Product Comparison Demo Parity, Task 3:
+  - Added compare links to product browse cards while preserving product-detail links.
+  - Added focused browse route coverage for initial product results and recovered route data.
+  - Verified `cd assets && bun x vitest run src/routes/catalog/__tests__/browse.route.test.tsx` and `cd assets && bun run typecheck`.
+
+- Product Comparison Demo Parity, Task 2:
+  - Updated the frontend Relay schema and `ProductDetailRouteQuery` to consume `Product.currentAttributes`.
+  - Added a shared product attribute definition-list component and rendered a `Specifications` section on `/products/:slug`.
+  - Added a product-detail compare entry link to `/compare?slug=<product slug>`.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, and `cd assets && bun run typecheck`.
 
 - Review Readability Cleanups:
   - Completed `/compare/saved` Relay query/mutation migration and removed the remaining raw saved-comparison mutation helper.

@@ -657,6 +657,17 @@ defmodule ProductCompareWeb.Schema do
     field :model_number, :string
     field :description, :string
     field :brand, :brand, resolve: dataloader(Catalog, use_parent: true)
+
+    field :current_attributes, non_null(list_of(non_null(:product_attribute_value))) do
+      resolve(&CatalogResolver.current_attributes/3)
+    end
+  end
+
+  object :product_attribute_value do
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :data_type, non_null(:string)
+    field :value_text, non_null(:string)
   end
 
   object :merchant_product do

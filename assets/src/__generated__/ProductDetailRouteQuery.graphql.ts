@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<0c809cce17ebd7b4584963098ebd693c>>
+ * @generated SignedSource<<f09a85c07101995335edba4707d7621e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -18,6 +18,12 @@ export type ProductDetailRouteQuery$data = {
       readonly id: string;
       readonly name: string;
     };
+    readonly currentAttributes: ReadonlyArray<{
+      readonly code: string;
+      readonly dataType: string;
+      readonly displayName: string;
+      readonly valueText: string;
+    }>;
     readonly description: string | null | undefined;
     readonly id: string;
     readonly name: string;
@@ -94,6 +100,45 @@ v3 = [
           (v2/*: any*/)
         ],
         "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductAttributeValue",
+        "kind": "LinkedField",
+        "name": "currentAttributes",
+        "plural": true,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "code",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "displayName",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "dataType",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "valueText",
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
       }
     ],
     "storageKey": null
@@ -117,16 +162,16 @@ return {
     "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "76ca971e37664b6a21ff805506cad608",
+    "cacheID": "981b2b39810306c0a22e55fa9bd1f7b5",
     "id": null,
     "metadata": {},
     "name": "ProductDetailRouteQuery",
     "operationKind": "query",
-    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n  }\n}\n"
+    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      code\n      displayName\n      dataType\n      valueText\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "1ec799590b25b7b4f6f684229f4abe52";
+(node as any).hash = "7623e15c81514e656db9341617ac0e90";
 
 export default node;

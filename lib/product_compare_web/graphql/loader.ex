@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -25,6 +26,15 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       default_params: params,
       run_batch: &pricing_run_batch/5
     )
+  end
+
+  defp catalog_query(ProductAttributeCurrent, _params) do
+    import Ecto.Query
+
+    ProductAttributeCurrent
+    |> join(:inner, [current], attribute in assoc(current, :attribute))
+    |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
+    |> preload([_current, attribute], attribute: attribute, claim: [:unit, :enum_option])
   end
 
   defp catalog_query(queryable, _params), do: queryable

@@ -11,6 +11,12 @@ export const productDetailRouteQuery = graphql`
         id
         name
       }
+      currentAttributes {
+        code
+        displayName
+        dataType
+        valueText
+      }
     }
   }
 `;

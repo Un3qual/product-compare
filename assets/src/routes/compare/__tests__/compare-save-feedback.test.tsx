@@ -1,18 +1,20 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import { CompareRoute } from "../index";
 
 const {
   commitMutationMock,
+  useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
@@ -24,6 +26,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -50,6 +53,7 @@ vi.mock("react-router-dom", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -62,7 +66,8 @@ const DESK_LAMP = {
   brand: {
     id: "brand-1",
     name: "Acme"
-  }
+  },
+  currentAttributes: []
 } as const;
 
 const DESK_CHAIR = {
@@ -73,7 +78,8 @@ const DESK_CHAIR = {
   brand: {
     id: "brand-2",
     name: "OfficeCo"
-  }
+  },
+  currentAttributes: []
 } as const;
 
 const deskLampQueryDescriptor = {
@@ -134,12 +140,18 @@ const SECOND_READY_LOADER_DATA = {
 
 beforeEach(() => {
   commitMutationMock.mockReset();
+  useLazyLoadQueryMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   deskLampQueryRef.dispose.mockReset();
   deskChairQueryRef.dispose.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: []
+    }
+  });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockRouteQueryRefs();
   mockProductQueries();
@@ -153,7 +165,7 @@ test("compare route only submits one save mutation while the request is in fligh
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  render(<CompareRoute />);
+  render(compareRouteElement());
 
   const saveButton = screen.getByRole("button", { name: "Save comparison" });
 
@@ -193,7 +205,7 @@ test("compare route keeps a stable status region in the DOM before and after sav
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  render(<CompareRoute />);
+  render(compareRouteElement());
 
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 
@@ -239,7 +251,7 @@ test("compare route reports a generic error when save completes with top-level G
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  render(<CompareRoute />);
+  render(compareRouteElement());
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
@@ -255,7 +267,7 @@ test("compare route allows a later save after the current request settles", asyn
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  render(<CompareRoute />);
+  render(compareRouteElement());
 
   const saveButton = screen.getByRole("button", { name: "Save comparison" });
 
@@ -296,7 +308,7 @@ test("compare route clears save feedback when the selected comparison changes", 
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  const { rerender } = render(<CompareRoute />);
+  const { rerender } = render(compareRouteElement());
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
@@ -305,7 +317,7 @@ test("compare route clears save feedback when the selected comparison changes", 
   });
 
   mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
-  rerender(<CompareRoute />);
+  rerender(compareRouteElement());
 
   await waitFor(() => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
@@ -321,7 +333,7 @@ test("compare route ignores stale save completions after the selected comparison
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  const { rerender } = render(<CompareRoute />);
+  const { rerender } = render(compareRouteElement());
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
@@ -330,7 +342,7 @@ test("compare route ignores stale save completions after the selected comparison
   });
 
   mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
-  rerender(<CompareRoute />);
+  rerender(compareRouteElement());
 
   act(() => {
     completeFirstSelection?.({
@@ -352,7 +364,7 @@ test("compare route ignores stale save completions after the selected comparison
 test("compare route enables saving a new selection while the previous Relay mutation is in flight", async () => {
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
 
-  const { rerender } = render(<CompareRoute />);
+  const { rerender } = render(compareRouteElement());
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
@@ -362,7 +374,7 @@ test("compare route enables saving a new selection while the previous Relay muta
 
   mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
   mockedUseMutation.mockReturnValue([commitMutationMock, true]);
-  rerender(<CompareRoute />);
+  rerender(compareRouteElement());
 
   const saveButton = screen.getByRole("button", { name: "Save comparison" });
   expect(saveButton).toBeEnabled();
@@ -386,6 +398,14 @@ function mockRouteQueryRefs() {
 
     throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
   });
+}
+
+function compareRouteElement() {
+  return (
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
 }
 
 function mockProductQueries() {

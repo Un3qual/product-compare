@@ -27,6 +27,13 @@ declare module "react-relay" {
     networkCacheConfig?: CacheConfig | null;
   }
 
+  export interface LazyLoadQueryOptions {
+    fetchKey?: string | number;
+    fetchPolicy?: FetchPolicy | null;
+    networkCacheConfig?: CacheConfig | null;
+    UNSTABLE_renderPolicy?: "full" | "partial";
+  }
+
   export const RelayEnvironmentProvider: ComponentType<{
     children?: ReactNode;
     environment: Environment;
@@ -42,6 +49,12 @@ declare module "react-relay" {
   export function usePreloadedQuery<TQuery extends OperationType>(
     query: GraphQLTaggedNode,
     preloadedQuery: PreloadedQuery<TQuery>
+  ): TQuery["response"];
+
+  export function useLazyLoadQuery<TQuery extends OperationType>(
+    query: GraphQLTaggedNode,
+    variables: TQuery["variables"],
+    options?: LazyLoadQueryOptions
   ): TQuery["response"];
 
   export interface MutationCommitFn<TMutation extends MutationParameters> {

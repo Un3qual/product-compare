@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../relay/environment";
 import {
@@ -19,6 +19,7 @@ import {
 const {
   commitMutationMock,
   fetchRouteQueryMock,
+  useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
@@ -26,6 +27,7 @@ const {
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
@@ -53,6 +55,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -69,6 +72,7 @@ vi.mock("react-router-dom", async () => {
 
 const mockedFetchGraphQL = vi.mocked(fetchGraphQL);
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
@@ -82,7 +86,8 @@ const DETAIL_PRODUCT = {
   brand: {
     id: "brand-1",
     name: "Acme"
-  }
+  },
+  currentAttributes: []
 } as const;
 
 const SECOND_PRODUCT = {
@@ -93,7 +98,8 @@ const SECOND_PRODUCT = {
   brand: {
     id: "brand-2",
     name: "Bravo"
-  }
+  },
+  currentAttributes: []
 } as const;
 
 const detailProductQueryDescriptor = {
@@ -139,6 +145,7 @@ beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
   mockedFetchGraphQL.mockReset();
+  useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
@@ -146,6 +153,11 @@ beforeEach(() => {
   detailProductQueryRef.dispose.mockReset();
   secondProductQueryRef.dispose.mockReset();
   savedComparisonsQueryRef.dispose.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: []
+    }
+  });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 

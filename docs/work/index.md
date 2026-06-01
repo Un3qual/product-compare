@@ -41,6 +41,20 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Frontend API token management demo parity lane
+  - Work doc: `docs/work/frontend-api-token-management-demo-parity.md`
+  - Status: in progress
+  - Priority: P1
+  - Next batch: Task 1, add the Relay route query and loader for `/account/api-tokens`.
+  - Owned paths: `assets/src/routes/account/api-tokens/**`, `assets/src/__generated__/**`, `docs/work/frontend-api-token-management-demo-parity.md`, `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+
+- Product comparison demo parity lane
+  - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked product-comparison demo parity batch remains in this lane; coordinator follow-up can choose a future demo-parity candidate if priorities change.
+  - Owned paths: `lib/product_compare/specs.ex`, `lib/product_compare_web/resolvers/catalog_resolver.ex`, `lib/product_compare_web/schema.ex`, `test/product_compare_web/graphql/catalog_queries_test.exs`, `assets/**`, `docs/work/frontend-product-comparison-demo-parity.md`, `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+
 - Frontend lane
   - Work doc: `docs/work/review-readability-cleanups.md`
   - Status: completed
@@ -78,6 +92,18 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Product Comparison Demo Parity
+
+- Status: completed on 2026-05-31
+- Source of truth: `docs/work/frontend-product-comparison-demo-parity.md`
+- Outcome:
+  - Added GraphQL `Product.currentAttributes` for selected current product claims in display-ready form.
+  - Product detail pages render current specifications and link the selected product into `/compare`.
+  - Browse product cards include direct compare entry links.
+  - `/compare` now has in-page product picker links for empty comparisons and ready comparisons with fewer than three products.
+  - Ready `/compare` product cards render current attributes for selected products.
+  - Verification passed with `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run relay`, focused browse/detail/compare Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Review Readability Cleanups
 
