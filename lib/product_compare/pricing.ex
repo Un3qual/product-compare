@@ -144,12 +144,13 @@ defmodule ProductCompare.Pricing do
   def price_history_query(merchant_product_id, filters \\ %{}) do
     from_dt = get_filter_value(filters, :from)
     to_dt = get_filter_value(filters, :to)
+    order = get_filter_value(filters, :order)
 
     PricePoint
     |> where([pp], pp.merchant_product_id == ^merchant_product_id)
     |> maybe_where_from(from_dt)
     |> maybe_where_to(to_dt)
-    |> order_by([pp], asc: pp.observed_at, asc: pp.id)
+    |> order_price_history(order)
   end
 
   @spec price_history(pos_integer(), map()) ::
@@ -199,6 +200,12 @@ defmodule ProductCompare.Pricing do
 
   defp maybe_where_to(query, nil), do: query
   defp maybe_where_to(query, to_dt), do: where(query, [pp], pp.observed_at <= ^to_dt)
+
+  defp order_price_history(query, :desc),
+    do: order_by(query, [pp], desc: pp.observed_at, desc: pp.id)
+
+  defp order_price_history(query, _order),
+    do: order_by(query, [pp], asc: pp.observed_at, asc: pp.id)
 
   defp maybe_where_merchant_id(query, nil), do: query
 

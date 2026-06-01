@@ -17,6 +17,35 @@ export const productOffersRouteQuery = graphql`
             id
             price
           }
+          activeCoupons(first: 2) {
+            edges {
+              cursor
+              node {
+                code
+                description
+                discountType
+                discountValue
+                currency
+                validTo
+                terms
+              }
+            }
+            pageInfo {
+              hasNextPage
+            }
+          }
+          priceHistory(first: 3) {
+            edges {
+              node {
+                id
+                price
+                observedAt
+              }
+            }
+            pageInfo {
+              hasNextPage
+            }
+          }
         }
       }
       pageInfo {

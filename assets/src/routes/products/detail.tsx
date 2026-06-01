@@ -152,7 +152,11 @@ function ProductOffers({
         id: node.id,
         merchantName,
         url: safeUrl,
-        priceText: formatPriceText(node.latestPrice?.price, node.currency)
+        priceText: formatPriceText(node.latestPrice?.price, node.currency),
+        coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
+        couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
+        priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
+        priceHistoryHasMore: node.priceHistory?.pageInfo.hasNextPage ?? false
       }
     ];
   });
@@ -169,10 +173,145 @@ function ProductOffers({
             {offer.merchantName}
           </a>
           {offer.priceText ? <p>{offer.priceText}</p> : null}
+          <OfferPriceHistory
+            merchantName={offer.merchantName}
+            historyRows={offer.priceHistory}
+            hasMore={offer.priceHistoryHasMore}
+          />
+          <OfferCoupons
+            merchantName={offer.merchantName}
+            coupons={offer.coupons}
+            hasMore={offer.couponsHasMore}
+          />
         </li>
       ))}
     </ul>
   );
+}
+
+function OfferPriceHistory({
+  merchantName,
+  historyRows,
+  hasMore
+}: {
+  merchantName: string;
+  historyRows: ReadonlyArray<{
+    id: string;
+    observedAt: string;
+    observedDate: string;
+    priceText: string;
+  }>;
+  hasMore: boolean;
+}) {
+  if (historyRows.length === 0) {
+    return <p>No price history for this offer yet.</p>;
+  }
+
+  return (
+    <section>
+      <h3>Price history</h3>
+      <ul aria-label={`${merchantName} price history`}>
+        {historyRows.map((row) => (
+          <li key={row.id}>
+            <time dateTime={row.observedAt}>{row.observedDate}</time>
+            <span>{row.priceText}</span>
+          </li>
+        ))}
+      </ul>
+      {hasMore ? <p>More price history available.</p> : null}
+    </section>
+  );
+}
+
+function OfferCoupons({
+  merchantName,
+  coupons,
+  hasMore
+}: {
+  merchantName: string;
+  coupons: ReadonlyArray<{
+    key: string;
+    code: string;
+    description: string | null | undefined;
+    discountText: string | null;
+    validToText: string | null;
+    terms: string | null | undefined;
+  }>;
+  hasMore: boolean;
+}) {
+  if (coupons.length === 0) {
+    return <p>No active coupons for this offer.</p>;
+  }
+
+  return (
+    <>
+      <ul aria-label={`${merchantName} active coupons`}>
+        {coupons.map((coupon) => (
+          <li key={coupon.key}>
+            <strong>{coupon.code}</strong>
+            {coupon.description ? <p>{coupon.description}</p> : null}
+            {coupon.discountText ? <p>{coupon.discountText}</p> : null}
+            {coupon.validToText ? <p>{coupon.validToText}</p> : null}
+            {coupon.terms ? <p>{coupon.terms}</p> : null}
+          </li>
+        ))}
+      </ul>
+      {hasMore ? <p>More coupons available.</p> : null}
+    </>
+  );
+}
+
+function buildCouponRows(
+  edges: ReadonlyArray<{
+    readonly cursor: string;
+    readonly node: {
+      readonly code: string;
+      readonly description: string | null | undefined;
+      readonly discountType: string;
+      readonly discountValue: unknown;
+      readonly currency: string | null | undefined;
+      readonly validTo: unknown;
+      readonly terms: string | null | undefined;
+    };
+  }>
+) {
+  return edges.map(({ cursor, node }) => ({
+    key: cursor,
+    code: node.code,
+    description: node.description,
+    discountText: formatCouponDiscountText(node.discountType, node.discountValue, node.currency),
+    validToText: formatCouponValidToText(node.validTo),
+    terms: node.terms
+  }));
+}
+
+function buildPriceHistoryRows(
+  edges: ReadonlyArray<{
+    readonly node: {
+      readonly id: string;
+      readonly price: unknown;
+      readonly observedAt: unknown;
+    };
+  }>,
+  currency: unknown
+) {
+  return edges.flatMap(({ node }) => {
+    const observedDate = formatObservedDate(node.observedAt);
+    const priceText = formatPriceText(node.price, currency);
+
+    if (!observedDate || !priceText || typeof node.observedAt !== "string") {
+      return [];
+    }
+
+    return [
+      {
+        id: node.id,
+        observedAt: node.observedAt,
+        observedDate,
+        priceText
+      }
+    ];
+  });
 }
 
 function formatPriceText(price: unknown, currency: unknown) {
@@ -189,6 +328,68 @@ function formatPriceText(price: unknown, currency: unknown) {
   }
 
   return null;
+}
+
+function formatObservedDate(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:[T\s]|$)/.exec(value);
+
+  return sourceDate?.[1] ?? parsed.toISOString().slice(0, 10);
+}
+
+function formatCouponDiscountText(discountType: string, discountValue: unknown, currency: unknown) {
+  if (discountType === "FREE_SHIPPING") {
+    return "Free shipping";
+  }
+
+  const valueText = formatFiniteNumberText(discountValue);
+
+  if (!valueText) {
+    return null;
+  }
+
+  if (discountType === "PERCENT") {
+    return `${valueText}%`;
+  }
+
+  if (discountType === "AMOUNT" && typeof currency === "string" && currency !== "") {
+    return `${valueText} ${currency}`;
+  }
+
+  return null;
+}
+
+function formatCouponValidToText(validTo: unknown) {
+  const dateText = formatObservedDate(validTo);
+
+  return dateText ? `Valid through ${dateText}` : null;
+}
+
+function formatFiniteNumberText(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === "") {
+    return null;
+  }
+
+  return Number.isFinite(Number(trimmedValue)) ? trimmedValue : null;
 }
 
 function normalizeOfferUrl(rawUrl: unknown): string | null {

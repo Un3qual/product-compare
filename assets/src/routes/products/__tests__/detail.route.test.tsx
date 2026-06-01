@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -365,6 +365,403 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
+test("renders active coupon details for product offers", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-1",
+              node: {
+                code: "SAVE20",
+                description: "Save on the detail product.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: null,
+                terms: "Online orders only."
+              }
+            },
+            {
+              cursor: "coupon-cursor-2",
+              node: {
+                code: "DEAL15",
+                description: "Take a percent discount.",
+                discountType: "PERCENT",
+                discountValue: "15",
+                currency: null,
+                validTo: "not-a-date",
+                terms: null
+              }
+            },
+            {
+              cursor: "coupon-cursor-3",
+              node: {
+                code: "FREESHIP",
+                description: "Free standard delivery.",
+                discountType: "FREE_SHIPPING",
+                discountValue: null,
+                currency: null,
+                validTo: "2026-07-01T00:00:00Z",
+                terms: null
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true
+          }
+        }
+      }
+    ])
+  );
+
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  try {
+    render(
+      <MemoryRouter>
+        <ProductDetailRoute />
+      </MemoryRouter>
+    );
+
+    const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+
+    expect(offerItem).not.toBeNull();
+    const offer = within(offerItem as HTMLElement);
+
+    expect(offer.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
+    expect(offer.getByText("SAVE20")).toBeVisible();
+    expect(offer.getByText("Save on the detail product.")).toBeVisible();
+    expect(offer.getByText("20.00 USD")).toBeVisible();
+    expect(offer.getByText("Online orders only.")).toBeVisible();
+    expect(offer.getByText("DEAL15")).toBeVisible();
+    expect(offer.getByText("15%")).toBeVisible();
+    expect(offer.getByText("FREESHIP")).toBeVisible();
+    expect(offer.getByText("Free standard delivery.")).toBeVisible();
+    expect(offer.getByText("Free shipping")).toBeVisible();
+    expect(offer.getByText("Valid through 2026-07-01")).toBeVisible();
+    expect(offer.getByText("More coupons available.")).toBeVisible();
+    expect(offer.queryByText("Valid through not-a-date")).not.toBeInTheDocument();
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("renders duplicate active coupon codes without React key warnings", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-1",
+              node: {
+                code: "SAVE20",
+                description: "First duplicate coupon.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: null,
+                terms: null
+              }
+            },
+            {
+              cursor: "coupon-cursor-2",
+              node: {
+                code: "SAVE20",
+                description: "Second duplicate coupon.",
+                discountType: "PERCENT",
+                discountValue: "15",
+                currency: null,
+                validTo: null,
+                terms: null
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ])
+  );
+
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  try {
+    render(
+      <MemoryRouter>
+        <ProductDetailRoute />
+      </MemoryRouter>
+    );
+
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
+    expect(screen.getByText("First duplicate coupon.")).toBeVisible();
+    expect(screen.getByText("Second duplicate coupon.")).toBeVisible();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("renders offers when a merchant has no active coupons", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+
+  expect(offerItem).not.toBeNull();
+  expect(within(offerItem as HTMLElement).getByText("199.99 USD")).toBeVisible();
+  expect(within(offerItem as HTMLElement).getByText("No active coupons for this offer.")).toBeVisible();
+});
+
+test("renders active offer price history rows", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-3",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-1",
+              node: {
+                code: "SAVE20",
+                description: "Save on the detail product.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: "2026-07-01T00:00:00Z",
+                terms: "Online orders only."
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        },
+        priceHistory: {
+          edges: [
+            {
+              node: {
+                id: "price-1",
+                price: "249.99",
+                observedAt: "2026-05-30T10:00:00Z"
+              }
+            },
+            {
+              node: {
+                id: "price-2",
+                price: "229.99",
+                observedAt: "2026-06-01T00:30:00+02:00"
+              }
+            },
+            {
+              node: {
+                id: "price-invalid-date",
+                price: "219.99",
+                observedAt: "not-a-date"
+              }
+            },
+            {
+              node: {
+                id: "price-invalid-price",
+                price: "",
+                observedAt: "2026-06-02T10:00:00Z"
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true
+          }
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+
+  expect(offerItem).not.toBeNull();
+
+  const offer = within(offerItem as HTMLElement);
+  const historyList = offer.getByRole("list", { name: "Acme price history" });
+  const firstObservedAt = offer.getByText("2026-05-30");
+  const secondObservedAt = offer.getByText("2026-06-01");
+  const offerText = offerItem?.textContent ?? "";
+
+  expect(historyList).toBeVisible();
+  expect(firstObservedAt).toBeVisible();
+  expect(firstObservedAt).toHaveAttribute("dateTime", "2026-05-30T10:00:00Z");
+  expect(offer.getByText("249.99 USD")).toBeVisible();
+  expect(secondObservedAt).toBeVisible();
+  expect(secondObservedAt).toHaveAttribute("dateTime", "2026-06-01T00:30:00+02:00");
+  expect(offer.getByText("229.99 USD")).toBeVisible();
+  expect(offer.getByText("More price history available.")).toBeVisible();
+  expect(offer.queryByText("not-a-date")).not.toBeInTheDocument();
+  expect(offer.queryByText("219.99 USD")).not.toBeInTheDocument();
+  expect(offer.queryByText("2026-06-02")).not.toBeInTheDocument();
+  expect(offerText.indexOf("199.99 USD")).toBeLessThan(offerText.indexOf("2026-05-30"));
+  expect(offerText.indexOf("2026-06-01")).toBeLessThan(offerText.indexOf("SAVE20"));
+});
+
+test("renders empty price history state for active offers", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        },
+        priceHistory: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+
+  expect(offerItem).not.toBeNull();
+
+  const offer = within(offerItem as HTMLElement);
+
+  expect(offer.getByText("199.99 USD")).toBeVisible();
+  expect(offer.getByText("No price history for this offer yet.")).toBeVisible();
+  expect(offer.queryByText("More price history available.")).not.toBeInTheDocument();
+});
+
 test("renders product specifications from current attributes", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -649,6 +1046,15 @@ function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRO
   });
 }
 
+function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
+  return consoleErrorSpy.mock.calls.filter(
+    ([message]) =>
+      typeof message === "string" &&
+      (message.includes("Encountered two children with the same key") ||
+        message.includes('Each child in a list should have a unique "key" prop'))
+  );
+}
+
 function buildOffersData(
   nodes: Array<{
     id: string;
@@ -662,12 +1068,55 @@ function buildOffersData(
       id: string;
       price: string;
     } | null;
+    activeCoupons?: {
+      edges: Array<{
+        cursor: string;
+        node: {
+          code: string;
+          description: string | null;
+          discountType: string | null;
+          discountValue: string | number | null;
+          currency: string | null;
+          validTo: string | null;
+          terms: string | null;
+        };
+      }>;
+      pageInfo?: {
+        hasNextPage: boolean;
+      };
+    };
+    priceHistory?: {
+      edges: Array<{
+        node: {
+          id: string;
+          price: string | number | null;
+          observedAt: string | null;
+        };
+      }>;
+      pageInfo: {
+        hasNextPage: boolean;
+      };
+    };
   }>
 ) {
   return {
     merchantProducts: {
       edges: nodes.map((node) => ({
-        node
+        node: {
+          ...node,
+          activeCoupons: {
+            edges: node.activeCoupons?.edges ?? [],
+            pageInfo: {
+              hasNextPage: node.activeCoupons?.pageInfo?.hasNextPage ?? false
+            }
+          },
+          priceHistory: node.priceHistory ?? {
+            edges: [],
+            pageInfo: {
+              hasNextPage: false
+            }
+          }
+        }
       }))
     }
   };

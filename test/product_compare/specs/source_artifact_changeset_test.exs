@@ -2,6 +2,7 @@ defmodule ProductCompare.Specs.SourceArtifactChangesetTest do
   use ProductCompare.DataCase, async: true
 
   alias Ecto.Adapters.SQL
+  alias ProductCompare.Specs
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -60,6 +61,12 @@ defmodule ProductCompare.Specs.SourceArtifactChangesetTest do
       Repo.delete!(source)
 
       refute Repo.get(SourceArtifact, artifact.id)
+    end
+  end
+
+  describe "source artifact public reads" do
+    test "returns nil for IDs outside the signed bigint range" do
+      refute Specs.get_source_artifact(9_223_372_036_854_775_808)
     end
   end
 end

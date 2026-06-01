@@ -9,6 +9,8 @@ interface Node {
 
 type Query {
   viewer: User
+  node(id: ID!): Node
+  sourceArtifact(id: ID!): SourceArtifact
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchants(first: Int, after: String): MerchantConnection
@@ -170,6 +172,35 @@ type Coupon implements Node {
   updatedAt: DateTime!
 }
 
+type SourceArtifact implements Node {
+  id: ID!
+  sourceKind: String!
+  sourceName: String!
+  sourceDomain: String
+  url: String
+  fetchedAt: DateTime!
+}
+
+type ActiveCoupon {
+  code: String!
+  description: String
+  discountType: CouponDiscountType!
+  discountValue: Decimal
+  currency: String
+  validTo: DateTime
+  terms: String
+}
+
+type ActiveCouponConnection {
+  edges: [ActiveCouponEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ActiveCouponEdge {
+  node: ActiveCoupon!
+  cursor: String!
+}
+
 enum CouponDiscountType {
   PERCENT
   AMOUNT
@@ -188,12 +219,25 @@ type MerchantProduct implements Node {
   merchant: Merchant
   product: Product
   latestPrice: PricePoint
+  activeCoupons(first: Int, after: String): ActiveCouponConnection
+  priceHistory(first: Int, after: String, from: DateTime, to: DateTime): PricePointConnection
 }
 
-type PricePoint {
+type PricePoint implements Node {
   id: ID!
   merchantProductId: ID!
+  observedAt: DateTime!
   price: Decimal!
+}
+
+type PricePointConnection {
+  edges: [PricePointEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PricePointEdge {
+  node: PricePoint!
+  cursor: String!
 }
 
 type MerchantProductConnection {

@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
 
@@ -311,8 +312,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                              %{
                                "cursor" => history_cursor,
                                "node" => %{
-                                 "id" => middle_price_id,
-                                 "price" => "149.99"
+                                 "id" => latest_history_price_id,
+                                 "price" => "99.99"
                                }
                              }
                            ],
@@ -329,7 +330,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } = graphql(conn, merchant_product_pricing_query(), variables)
 
       assert latest_price_id == relay_id(:price_point, latest_price.id)
-      assert middle_price_id == relay_id(:price_point, middle_price.id)
+      assert latest_history_price_id == relay_id(:price_point, latest_price.id)
       assert oldest_price.id < middle_price.id
 
       assert %{
@@ -342,8 +343,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                            "edges" => [
                              %{
                                "node" => %{
-                                 "id" => latest_history_price_id,
-                                 "price" => "99.99"
+                                 "id" => middle_history_price_id,
+                                 "price" => "149.99"
                                }
                              }
                            ],
@@ -364,7 +365,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  Map.put(variables, "historyAfter", history_cursor)
                )
 
-      assert latest_history_price_id == relay_id(:price_point, latest_price.id)
+      assert middle_history_price_id == relay_id(:price_point, middle_price.id)
 
       assert %{
                "errors" => [
@@ -380,6 +381,196 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  merchant_product_pricing_query(),
                  Map.put(variables, "historyAfter", "bad-cursor")
                )
+    end
+
+    test "merchantProducts exposes public display active coupons for product offers", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-coupon-product"})
+
+      merchant =
+        merchant_fixture(%{name: unique_name("Coupon Merchant"), domain: unique_domain("coupon")})
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: true
+        })
+
+      other_merchant =
+        merchant_fixture(%{name: unique_name("Other Merchant"), domain: unique_domain("other")})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      one_hour_from_now = DateTime.add(now, 3600, :second)
+      two_hours_from_now = DateTime.add(now, 7200, :second)
+      three_hours_from_now = DateTime.add(now, 10_800, :second)
+      one_hour_from_now_iso = DateTime.to_iso8601(one_hour_from_now)
+      two_hours_from_now_iso = DateTime.to_iso8601(two_hours_from_now)
+
+      {:ok, amount_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-20",
+          description: "Twenty dollars off",
+          discount_type: :amount,
+          discount_value: Decimal.new("20.00"),
+          currency: "USD",
+          valid_to: one_hour_from_now,
+          terms: "One use per customer"
+        })
+
+      {:ok, percent_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-10",
+          description: "Ten percent off",
+          discount_type: :percent,
+          discount_value: Decimal.new("10"),
+          valid_to: two_hours_from_now
+        })
+
+      {:ok, _third_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-30",
+          description: "Third active coupon",
+          discount_type: :other,
+          valid_to: three_hours_from_now
+        })
+
+      {:ok, _future_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "FUTURE-COUPON",
+          discount_type: :other,
+          valid_from: one_hour_from_now
+        })
+
+      {:ok, _other_merchant_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: other_merchant.id,
+          code: "OTHER-MERCHANT",
+          discount_type: :other
+        })
+
+      assert %{
+               "data" => %{
+                 "merchantProducts" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "id" => merchant_product_id,
+                         "merchant" => %{"name" => merchant_name},
+                         "activeCoupons" => %{
+                           "edges" => coupon_edges,
+                           "pageInfo" => %{
+                             "hasNextPage" => true,
+                             "hasPreviousPage" => false
+                           }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, merchant_product_active_coupons_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "activeOnly" => true,
+                   "first" => 1
+                 },
+                 "couponFirst" => 2
+               })
+
+      assert merchant_product_id == relay_id(:merchant_product, merchant_product.id)
+      assert merchant_name == merchant.name
+
+      assert [
+               %{
+                 "cursor" => amount_coupon_cursor,
+                 "node" => %{
+                   "code" => "SAVE-20",
+                   "description" => "Twenty dollars off",
+                   "discountType" => "AMOUNT",
+                   "discountValue" => "20.00",
+                   "currency" => "USD",
+                   "validTo" => ^one_hour_from_now_iso,
+                   "terms" => "One use per customer"
+                 }
+               },
+               %{
+                 "cursor" => percent_coupon_cursor,
+                 "node" => %{
+                   "code" => "SAVE-10",
+                   "description" => "Ten percent off",
+                   "discountType" => "PERCENT",
+                   "discountValue" => "10",
+                   "currency" => nil,
+                   "validTo" => ^two_hours_from_now_iso,
+                   "terms" => nil
+                 }
+               }
+             ] = coupon_edges
+
+      assert is_binary(amount_coupon_cursor)
+      assert is_binary(percent_coupon_cursor)
+      assert amount_coupon_cursor != percent_coupon_cursor
+      assert amount_coupon.id != percent_coupon.id
+    end
+
+    test "merchantProducts public display active coupons do not expose coupon node IDs", %{
+      conn: conn
+    } do
+      assert %{
+               "data" => %{
+                 "__type" => %{
+                   "fields" => fields
+                 }
+               }
+             } = graphql(conn, active_coupon_type_fields_query(), %{})
+
+      field_names = Enum.map(fields, & &1["name"])
+
+      refute "id" in field_names
+    end
+
+    test "merchantProducts public display active coupons reject client-supplied timestamps", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-timestamp-product"})
+      merchant = merchant_fixture(%{name: unique_name("Timestamp Merchant")})
+
+      _merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: true
+        })
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => message
+                 }
+                 | _
+               ]
+             } =
+               graphql(conn, merchant_product_active_coupons_with_at_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "activeOnly" => true,
+                   "first" => 1
+                 },
+                 "couponFirst" => 10,
+                 "at" => DateTime.utc_now() |> DateTime.add(365, :day) |> DateTime.to_iso8601()
+               })
+
+      assert message =~ "Unknown argument"
+      assert message =~ "at"
     end
 
     test "merchantProducts batches merchant product and latest price lookups", %{
@@ -571,6 +762,80 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                 hasPreviousPage
                 startCursor
                 endCursor
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_product_active_coupons_query do
+    """
+    query MerchantProductActiveCoupons(
+      $input: MerchantProductsInput!
+      $couponFirst: Int!
+    ) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            id
+            merchant {
+              name
+            }
+            activeCoupons(first: $couponFirst) {
+              edges {
+                cursor
+                node {
+                  code
+                  description
+                  discountType
+                  discountValue
+                  currency
+                  validTo
+                  terms
+                }
+              }
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp active_coupon_type_fields_query do
+    """
+    query ActiveCouponTypeFields {
+      __type(name: "ActiveCoupon") {
+        fields {
+          name
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_product_active_coupons_with_at_query do
+    """
+    query MerchantProductActiveCouponsWithAt(
+      $input: MerchantProductsInput!
+      $couponFirst: Int!
+      $at: DateTime!
+    ) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            activeCoupons(first: $couponFirst, at: $at) {
+              edges {
+                node {
+                  code
+                }
               }
             }
           }
