@@ -18,6 +18,8 @@ import { savedComparisonsLoader } from "./routes/compare/saved-data";
 import { CompareRoute } from "./routes/compare";
 import { SavedComparisonsRoute } from "./routes/compare/saved";
 import { RouteErrorBoundary } from "./routes/compare/error-boundary";
+import { MerchantDirectoryRoute } from "./routes/merchants";
+import { merchantDirectoryLoader } from "./routes/merchants/loader";
 import { ProductDetailRoute } from "./routes/products/detail";
 import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
@@ -46,6 +48,11 @@ export const routes: RouteObject[] = [
         path: "products/:slug",
         loader: productDetailLoader,
         element: <ProductDetailRoute />
+      },
+      {
+        path: "merchants",
+        loader: merchantDirectoryLoader,
+        element: <MerchantDirectoryRoute />
       },
       {
         path: "compare",

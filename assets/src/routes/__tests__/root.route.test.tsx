@@ -32,6 +32,10 @@ test("root layout renders primitive-backed links in the primary navigation", () 
     "href",
     "/commerce/revenue"
   );
+  expect(within(primaryNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
+    "href",
+    "/merchants"
+  );
 });
 
 test("root route keeps home actions as links while using the shared button wrapper", () => {
@@ -63,6 +67,10 @@ test("root route keeps home actions as links while using the shared button wrapp
   expect(within(homeActions).getByRole("link", { name: "Revenue" })).toHaveAttribute(
     "href",
     "/commerce/revenue"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Merchants" })).toHaveAttribute(
+    "href",
+    "/merchants"
   );
   expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
 });

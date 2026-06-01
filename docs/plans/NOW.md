@@ -6,21 +6,20 @@
 
 ### Frontend Merchant Discovery Demo Parity Lane
 
-- Status: ready
-- Batch: Task 3, wire navigation and close the lane
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-- Next step: add failing router and root-navigation expectations for `/merchants`, register `MerchantDirectoryRoute` with `merchantDirectoryLoader`, add `Merchants` links to primary navigation and home actions, run focused route/root/router verification plus frontend typecheck/check, then close the merchant discovery lane in work and coordinator docs.
+- Next step: no unblocked merchant discovery demo parity batch remains in this lane; `docs/plans/INDEX.md` lists additional demo-parity frontend candidates for a future implementation plan if priorities continue toward affiliate/admin setup.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
   - Revenue reporting demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
-  - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
   - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
   - Task 1 added `MerchantDirectoryRouteQuery`, `merchantDirectoryLoader`, generated `MerchantDirectoryRouteQuery.graphql.ts`, and refreshed the local `assets/schema.graphql` merchant query and connection shape.
   - Task 2 added `MerchantDirectoryRoute` with ready, empty, next-page, loader-error, and query-error fallback rendering.
-  - Task 3 is the next unblocked slice in `docs/work/frontend-merchant-discovery-demo-parity.md`.
+  - Task 3 registered `/merchants`, exposed `Merchants` in primary navigation and home actions, ran focused frontend and backend contract verification, and closed the lane.
 
 ### Frontend Revenue Reporting Demo Parity Lane
 
@@ -124,6 +123,14 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Merchant Discovery Demo Parity, Task 3:
+  - Registered `/merchants` with `MerchantDirectoryRoute` and `merchantDirectoryLoader`.
+  - Added `Merchants` links to primary navigation and home actions.
+  - Closed the merchant discovery demo parity lane and moved it out of the active unblocked queue.
+  - Verified RED with `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx` failing because the route and links were absent.
+  - Restored backend test prerequisites with `mix deps.get` and `docker compose up -d db`.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts src/routes/merchants/__tests__/merchant-directory.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 - Frontend Merchant Discovery Demo Parity, Task 2:
   - Added `MerchantDirectoryRoute` for `/merchants` route rendering.

@@ -250,7 +250,7 @@ Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NO
 - Modify: `ARCHITECTURE.md`
 - Modify: this implementation plan
 
-- [ ] **Step 1: Write failing route registration and navigation tests**
+- [x] **Step 1: Write failing route registration and navigation tests**
 
 Update tests to assert:
 
@@ -263,7 +263,7 @@ expect(screen.getByRole("link", { name: "Merchants" })).toHaveAttribute(
 
 Assert the link exists in both primary navigation and home actions. Add a router test that the route list includes `merchants` with `merchantDirectoryLoader`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -273,7 +273,7 @@ cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tes
 
 Expected: FAIL because the navigation link and route registration are not present.
 
-- [ ] **Step 3: Register the route and navigation**
+- [x] **Step 3: Register the route and navigation**
 
 Modify `assets/src/router.tsx`:
 
@@ -294,7 +294,7 @@ Add a child route:
 
 Update `RootLayout` and `RootRoute` in `assets/src/routes/root.tsx` to add `Merchants` links to `/merchants`.
 
-- [ ] **Step 4: Run focused frontend verification**
+- [x] **Step 4: Run focused frontend verification**
 
 Run:
 
@@ -306,7 +306,7 @@ cd assets && bun run typecheck
 
 Expected: all commands pass.
 
-- [ ] **Step 5: Run backend contract verification**
+- [x] **Step 5: Run backend contract verification**
 
 Run:
 
@@ -316,7 +316,7 @@ mix test test/product_compare_web/graphql/catalog_queries_test.exs
 
 Expected: PASS.
 
-- [ ] **Step 6: Close queue docs**
+- [x] **Step 6: Close queue docs**
 
 Update queue and architecture docs to mark the merchant discovery demo parity lane completed:
 
@@ -327,7 +327,7 @@ Update queue and architecture docs to mark the merchant discovery demo parity la
 - `ARCHITECTURE.md`
 - this implementation plan
 
-- [ ] **Step 7: Final verification**
+- [x] **Step 7: Final verification**
 
 Run:
 
