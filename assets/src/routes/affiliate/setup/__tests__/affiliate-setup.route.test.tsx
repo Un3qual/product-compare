@@ -164,6 +164,24 @@ test("affiliate setup route renders unavailable fallback when merchants payload 
   expect(screen.queryByRole("form", { name: "Save affiliate network" })).not.toBeInTheDocument();
 });
 
+test("affiliate setup route preserves hook order when merchants payload recovers", () => {
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce({ merchants: null } as never)
+    .mockReturnValue(buildAffiliateSetupData() as never);
+
+  const { rerender } = renderAffiliateSetupRoute();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Affiliate setup unavailable.");
+
+  rerender(
+    <MemoryRouter>
+      <AffiliateSetupRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("form", { name: "Save affiliate network" })).toBeInTheDocument();
+});
+
 test("affiliate setup route commits network upsert and displays the saved network", async () => {
   renderAffiliateSetupRoute();
 

@@ -91,12 +91,6 @@ function AffiliateSetupPanel({
     merchantQuery
   );
   const data = usePreloadedQuery<AffiliateSetupRouteQuery>(affiliateSetupRouteQuery, queryRef);
-
-  if (!data.merchants) {
-    return <AffiliateSetupUnavailableFallback />;
-  }
-
-  const merchantChoices = buildMerchantChoices(data.merchants);
   const [networkResult, setNetworkResult] = useState<NetworkResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [networkPending, setNetworkPending] = useState(false);
@@ -124,6 +118,12 @@ function AffiliateSetupPanel({
     upsertAffiliateLinkMutation
   );
   const [commitCreateCoupon] = useMutation<CreateCouponMutation>(createCouponMutation);
+
+  if (!data.merchants) {
+    return <AffiliateSetupUnavailableFallback />;
+  }
+
+  const merchantChoices = buildMerchantChoices(data.merchants);
 
   async function handleNetworkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
