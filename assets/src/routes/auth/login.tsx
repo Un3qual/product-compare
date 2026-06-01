@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation } from "react-relay";
+import { useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import loginMutation, { type LoginMutation } from "../../__generated__/LoginMutation.graphql";
 import { routeFormValue } from "../form-data";
@@ -12,8 +12,10 @@ import {
   transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { setRootViewer } from "./viewer-store";
 
 export function LoginRoute() {
+  const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [commitLogin, isSubmitting] = useMutation<LoginMutation>(loginMutation);
@@ -34,6 +36,7 @@ export function LoginRoute() {
           const result = resolveSessionMutationResult(response?.login, graphQLErrors);
 
           if (result.viewer) {
+            setRootViewer(relayEnvironment, result.viewer);
             navigate("/");
             return;
           }

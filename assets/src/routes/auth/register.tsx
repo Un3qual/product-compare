@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation } from "react-relay";
+import { useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import registerMutation, {
   type RegisterMutation
@@ -14,8 +14,10 @@ import {
   transportMutationErrors
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { setRootViewer } from "./viewer-store";
 
 export function RegisterRoute() {
+  const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [commitRegister, isSubmitting] = useMutation<RegisterMutation>(registerMutation);
@@ -36,6 +38,7 @@ export function RegisterRoute() {
           const result = resolveSessionMutationResult(response?.register, graphQLErrors);
 
           if (result.viewer) {
+            setRootViewer(relayEnvironment, result.viewer);
             navigate("/");
             return;
           }
