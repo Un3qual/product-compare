@@ -7,15 +7,20 @@
 ### Frontend API Token Management Demo Parity Lane
 
 - Status: in progress
-- Batch: Task 1, add the Relay route query and loader for `/account/api-tokens`
+- Batch: Task 6, wire navigation and close the lane
 - Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Next step: verify the existing GraphQL API-token contract, add the Relay route query and React Router loader, add focused loader coverage, run Relay generation, and update this lane to Task 2.
+- Next step: write focused root navigation tests, add `API tokens` links to the primary navigation and home actions, run focused API-token/root verification plus frontend typecheck/check, verify the backend API-token contract, and close the lane docs.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `ARCHITECTURE.md` lists API token management as the first non-ingestion demo-parity candidate after product comparison.
-  - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`, so the next unblocked work is the browser Relay route.
+  - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`.
+  - Task 1 added the local Relay schema snapshot for `myApiTokens`, `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` pagination, status-filter, unauthorized, cursor, and abort handling.
+  - Task 2 registered `/account/api-tokens` and renders unauthorized, empty, ready, and status-filter states from `apiTokensLoader`.
+  - Task 3 added the local Relay schema snapshot for `createApiToken`, generated `CreateApiTokenMutation.graphql.ts`, and renders the create form, one-time token display, and mutation error handling.
+  - Task 4 added the local Relay schema snapshot for `revokeApiToken`, generated `RevokeApiTokenMutation.graphql.ts`, renders active-row revoke buttons, updates local row status after revoke, suppresses duplicate row clicks, and displays payload/network errors.
+  - Task 5 added the local Relay schema snapshot for `rotateApiToken`, generated `RotateApiTokenMutation.graphql.ts`, renders active-row rotate controls, displays replacement one-time tokens, updates local row state for replacement and old revoked rows, and displays payload errors, so the next unblocked work is navigation and lane closure.
 
 ### Product Comparison Demo Parity Lane
 
@@ -91,6 +96,43 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend API Token Management Demo Parity, Task 5:
+  - Refreshed the frontend Relay schema snapshot for the existing `rotateApiToken` mutation contract.
+  - Added `RotateApiTokenMutation` and generated `RotateApiTokenMutation.graphql.ts`.
+  - Added active-row rotate controls on `/account/api-tokens` with optional replacement label and expiry fields.
+  - Commits the selected token id through Relay, falls back to the selected row label when no replacement label is entered, and tracks row-scoped pending state.
+  - Displays the returned replacement plain text token in the one-time-visible region and updates local row state for the replacement token and old revoked token.
+  - Displays rotate payload errors through the shared route mutation helpers.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend API Token Management Demo Parity, Task 4:
+  - Refreshed the frontend Relay schema snapshot for the existing `revokeApiToken` mutation contract.
+  - Added `RevokeApiTokenMutation` and generated `RevokeApiTokenMutation.graphql.ts`.
+  - Added active-row revoke buttons on `/account/api-tokens` with row-scoped pending state and duplicate-click suppression.
+  - Updates local token row state after revoke so Relay-preloaded and loader-summary rows show revoked status or disappear from the active filter.
+  - Displays revoke payload and network errors through the shared route mutation helpers.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend API Token Management Demo Parity, Task 3:
+  - Refreshed the frontend Relay schema snapshot for the existing `createApiToken` mutation contract.
+  - Added `CreateApiTokenMutation` and generated `CreateApiTokenMutation.graphql.ts`.
+  - Added a create-token form on `/account/api-tokens` that submits label and optional expiry through Relay.
+  - Displays the returned plain text token in a dedicated one-time-visible region, clears that secret when another create starts, and renders payload or top-level GraphQL errors through the shared route mutation helpers.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend API Token Management Demo Parity, Task 2:
+  - Added the `/account/api-tokens` route component with unauthorized sign-in, empty-state, ready-list, and status-filter rendering.
+  - Registered the route with `apiTokensLoader`.
+  - Rendered Relay-preloaded token pages behind Suspense and `ResettableErrorBoundary`, with loader-summary fallback when Relay records are unavailable.
+  - Added focused route coverage for unauthenticated, empty, ready token fields/status, and status-filter link behavior.
+  - Verified `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` and `cd assets && bun run typecheck`.
+
+- Frontend API Token Management Demo Parity, Task 1:
+  - Refreshed the frontend Relay schema snapshot for the existing `myApiTokens` query contract.
+  - Added `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` with status filter normalization, paginated summaries, unauthorized handling, invalid-cursor guards, and abort propagation.
+  - Added focused loader coverage for unauthenticated GraphQL responses, paginated token summaries, invalid cursors, and aborted requests.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Product Comparison Demo Parity, Task 6:
   - Ran the final focused backend/frontend demo-slice verification for GraphQL current attributes, product detail specifications, browse compare links, compare picker links, and compare-card attributes.

@@ -34,6 +34,7 @@
 - Modify `assets/src/router.tsx` to register `/account/api-tokens`.
 - Modify `assets/src/routes/root.tsx` and `assets/src/routes/__tests__/root.route.test.tsx` to expose the route from primary navigation and home actions.
 - Modify `assets/src/react-relay.d.ts` only if the current Relay shim lacks a needed hook signature.
+- Modify `assets/schema.graphql` when the local Relay schema snapshot is missing the already-exposed backend API-token contract.
 - Generated Relay artifacts under `assets/src/__generated__/**` are produced by `bun run relay`.
 - Update `docs/work/frontend-api-token-management-demo-parity.md`, `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` with each completed batch.
 
@@ -42,13 +43,14 @@
 ### Task 1: Add The Relay Route Query And Loader
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts`
 - Create: `assets/src/routes/account/api-tokens/loader.ts`
 - Create: `assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` with coverage for:
 
@@ -73,7 +75,7 @@ const TOKEN_NODE = {
 };
 ```
 
-- [ ] **Step 2: Run the loader tests to verify they fail**
+- [x] **Step 2: Run the loader tests to verify they fail**
 
 Run:
 
@@ -83,7 +85,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the route query and loader do not exist.
 
-- [ ] **Step 3: Add the route query**
+- [x] **Step 3: Add the route query**
 
 Create `assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts`:
 
@@ -120,7 +122,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Add the loader**
+- [x] **Step 4: Add the loader**
 
 Create `assets/src/routes/account/api-tokens/loader.ts` using the same route-preload pattern as saved comparisons:
 
@@ -162,7 +164,7 @@ export type ApiTokensRouteLoaderData =
     };
 ```
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -172,7 +174,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/ApiTokensRouteQuery.graphql.ts`.
 
-- [ ] **Step 6: Run the loader tests to verify they pass**
+- [x] **Step 6: Run the loader tests to verify they pass**
 
 Run:
 
@@ -182,7 +184,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -192,7 +194,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Update `docs/work/frontend-api-token-management-demo-parity.md` and `docs/plans/NOW.md`:
 
@@ -200,12 +202,12 @@ Update `docs/work/frontend-api-token-management-demo-parity.md` and `docs/plans/
 - Record the exact verification commands.
 - Advance the current batch to Task 2.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 If committing at this milestone, include the query, loader, tests, generated artifact, and docs in one commit:
 
 ```bash
-git add assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts assets/src/routes/account/api-tokens/loader.ts assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts assets/src/__generated__/ApiTokensRouteQuery.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts assets/src/routes/account/api-tokens/loader.ts assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts assets/src/__generated__/ApiTokensRouteQuery.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): preload api token management route"
 ```
 
@@ -220,7 +222,7 @@ git commit -m "feat(frontend): preload api token management route"
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route render tests**
+- [x] **Step 1: Write failing route render tests**
 
 Create route tests covering:
 
@@ -233,7 +235,7 @@ test("API token route links status filters without losing the route path");
 
 The ready-state assertion must treat `revokedAt === null` as active and non-null `revokedAt` as revoked.
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -243,7 +245,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the route component does not exist.
 
-- [ ] **Step 3: Add the route component**
+- [x] **Step 3: Add the route component**
 
 Create `assets/src/routes/account/api-tokens/index.tsx` with:
 
@@ -254,7 +256,7 @@ Create `assets/src/routes/account/api-tokens/index.tsx` with:
 - A Suspense + `ResettableErrorBoundary` path that renders Relay-preloaded token pages when `tokenQueries` are present.
 - A summary fallback list from loader summaries when Relay records are unavailable.
 
-- [ ] **Step 4: Register the route**
+- [x] **Step 4: Register the route**
 
 Modify `assets/src/router.tsx`:
 
@@ -273,7 +275,7 @@ Add a child route:
 }
 ```
 
-- [ ] **Step 5: Run route tests**
+- [x] **Step 5: Run route tests**
 
 Run:
 
@@ -283,7 +285,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 6: Run frontend typecheck**
+- [x] **Step 6: Run frontend typecheck**
 
 Run:
 
@@ -293,11 +295,11 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Update queue docs**
+- [x] **Step 7: Update queue docs**
 
 Mark Task 2 complete, record verification, and advance the current batch to Task 3.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/router.tsx docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
@@ -309,13 +311,14 @@ git commit -m "feat(frontend): render api token management route"
 ### Task 3: Add Create Token Flow
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing create-flow tests**
+- [x] **Step 1: Write failing create-flow tests**
 
 Add route tests covering:
 
@@ -328,7 +331,7 @@ test("create token renders a generic alert for top-level GraphQL errors");
 
 The success response fixture must include both `plainTextToken` and `apiToken`, and the UI must label the secret as one-time visible.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -338,7 +341,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the create mutation and form are not implemented.
 
-- [ ] **Step 3: Add the create mutation**
+- [x] **Step 3: Add the create mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts`:
 
@@ -368,7 +371,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement the create form**
+- [x] **Step 4: Implement the create form**
 
 In `ApiTokensRoute`:
 
@@ -379,7 +382,7 @@ In `ApiTokensRoute`:
 - Do not store or display `plainTextToken` after a subsequent mutation starts.
 - Render payload errors through `routeMutationErrorMessage`.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -389,7 +392,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/CreateApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run create-flow tests**
+- [x] **Step 6: Run create-flow tests**
 
 Run:
 
@@ -399,7 +402,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -409,14 +412,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 3 complete, record verification, and advance the current batch to Task 4.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/CreateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/CreateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): create api tokens from the browser"
 ```
 
@@ -425,13 +428,14 @@ git commit -m "feat(frontend): create api tokens from the browser"
 ### Task 4: Add Revoke Token Flow
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing revoke-flow tests**
+- [x] **Step 1: Write failing revoke-flow tests**
 
 Add route tests covering:
 
@@ -442,7 +446,7 @@ test("revoke token renders mutation payload errors");
 test("revoke token renders a generic alert for network errors");
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -452,7 +456,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because revoke is not implemented.
 
-- [ ] **Step 3: Add the revoke mutation**
+- [x] **Step 3: Add the revoke mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts`:
 
@@ -481,7 +485,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement revoke UI**
+- [x] **Step 4: Implement revoke UI**
 
 In `ApiTokensRoute`:
 
@@ -491,7 +495,7 @@ In `ApiTokensRoute`:
 - On success, update local row state so the revoked row displays revoked status.
 - Keep revoked rows visible when the current filter is `all` or `revoked`; hide them from the active filter after local status changes.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -501,7 +505,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/RevokeApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run revoke-flow tests**
+- [x] **Step 6: Run revoke-flow tests**
 
 Run:
 
@@ -511,7 +515,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -521,14 +525,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 4 complete, record verification, and advance the current batch to Task 5.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RevokeApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/RevokeApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RevokeApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): revoke api tokens from the browser"
 ```
 
@@ -538,12 +542,13 @@ git commit -m "feat(frontend): revoke api tokens from the browser"
 
 **Files:**
 - Create: `assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts`
+- Modify: `assets/schema.graphql`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing rotate-flow tests**
+- [x] **Step 1: Write failing rotate-flow tests**
 
 Add route tests covering:
 
@@ -554,7 +559,7 @@ test("rotate token disables only the pending row");
 test("rotate token renders mutation payload errors");
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -564,7 +569,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because rotate is not implemented.
 
-- [ ] **Step 3: Add the rotate mutation**
+- [x] **Step 3: Add the rotate mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts`:
 
@@ -594,7 +599,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement rotate UI**
+- [x] **Step 4: Implement rotate UI**
 
 In `ApiTokensRoute`:
 
@@ -604,7 +609,7 @@ In `ApiTokensRoute`:
 - On success, show the replacement `plainTextToken` in the same one-time secret region used by create.
 - Add the replacement token to local row state and mark the old row revoked from the mutation response when the response contains enough data.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -614,7 +619,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/RotateApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run rotate-flow tests**
+- [x] **Step 6: Run rotate-flow tests**
 
 Run:
 
@@ -624,7 +629,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -634,14 +639,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 5 complete, record verification, and advance the current batch to Task 6.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RotateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RotateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): rotate api tokens from the browser"
 ```
 

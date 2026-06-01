@@ -13,6 +13,7 @@ type Query {
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
+  myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
 }
 
 type Mutation {
@@ -24,6 +25,9 @@ type Mutation {
   verifyEmail(token: String!): AuthActionPayload!
   createSavedComparisonSet(input: CreateSavedComparisonSetInput!): CreateSavedComparisonSetPayload!
   deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
+  createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
+  revokeApiToken(tokenId: ID!): RevokeApiTokenPayload!
+  rotateApiToken(tokenId: ID!, label: String, expiresAt: DateTime): CreateApiTokenPayload!
 }
 
 type AuthSessionPayload {
@@ -50,6 +54,32 @@ type MutationError {
 type User implements Node {
   id: ID!
   email: String!
+}
+
+type ApiToken implements Node {
+  id: ID!
+  label: String
+  tokenPrefix: String!
+  lastUsedAt: DateTime
+  expiresAt: DateTime
+  revokedAt: DateTime
+  insertedAt: DateTime!
+}
+
+type ApiTokenConnection {
+  edges: [ApiTokenEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ApiTokenEdge {
+  node: ApiToken!
+  cursor: String!
+}
+
+enum ApiTokenStatusFilter {
+  ACTIVE
+  REVOKED
+  ALL
 }
 
 type Product implements Node {
@@ -188,6 +218,19 @@ input ProductFiltersInput {
 Decimal values are serialized as base-10 strings to preserve precision.
 """
 scalar Decimal
+
+scalar DateTime
+
+type CreateApiTokenPayload {
+  plainTextToken: String
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
+
+type RevokeApiTokenPayload {
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
 
 type CreateSavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet

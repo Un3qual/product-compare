@@ -5,34 +5,70 @@
 - Status: in progress
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-05-31 during plan creation; implementation not started.
+- Last verified: 2026-06-01 during Task 5 implementation.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
 
-- [ ] Task 1: add the Relay route query and loader for `/account/api-tokens`.
-- [ ] Task 2: render the API-token management route.
-- [ ] Task 3: add the create-token flow with one-time token display.
-- [ ] Task 4: add the revoke-token flow.
-- [ ] Task 5: add the rotate-token flow.
+- [x] Task 1: add the Relay route query and loader for `/account/api-tokens`.
+- [x] Task 2: render the API-token management route.
+- [x] Task 3: add the create-token flow with one-time token display.
+- [x] Task 4: add the revoke-token flow.
+- [x] Task 5: add the rotate-token flow.
 - [ ] Task 6: wire navigation and close the lane.
 
 ## Current Batch
 
-- Task: Task 1, add the Relay route query and loader for `/account/api-tokens`.
+- Task: Task 6, wire navigation and close the lane.
 - Status: ready.
 - Owned paths:
-  - `assets/src/routes/account/api-tokens/**`
-  - `assets/src/__generated__/**`
+  - `assets/src/routes/root.tsx`
+  - `assets/src/routes/__tests__/root.route.test.tsx`
   - `docs/work/frontend-api-token-management-demo-parity.md`
+  - `docs/work/index.md`
+  - `docs/plans/NOW.md`
+  - `docs/plans/INDEX.md`
+  - `ARCHITECTURE.md`
   - `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Immediate prerequisite: GraphQL already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`; Task 1 should verify the schema/query names before adding frontend route data.
+- Immediate prerequisite: Task 5 added `RotateApiTokenMutation`, active-row rotate controls with optional replacement label and expiry fields, row-scoped pending state, replacement one-time token display, local replacement-token insertion, old-row revoked-status updates, and payload error handling without adding REST endpoints; Task 6 should wire navigation entry points and close the lane docs.
 
 ## Verification
 
 - Plan creation verified the existing backend contract by reading `lib/product_compare_web/schema.ex` and `test/product_compare_web/graphql/api_token_auth_test.exs`.
+- Task 1 refreshed `assets/schema.graphql` for the `myApiTokens` query contract because Relay reads the local schema snapshot.
+- Task 1 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` failed on the missing `../loader` import after `bun install` restored local frontend dependencies.
+- Task 1 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 4 tests, 0 failures.
+  - `cd assets && bun run typecheck`
+- Task 2 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on the missing `../index` route component import.
+- Task 2 GREEN:
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 8 tests, 0 failures.
+  - `cd assets && bun run typecheck`
+- Task 3 refreshed `assets/schema.graphql` for the existing `createApiToken` mutation contract because Relay reads the local schema snapshot.
+- Task 3 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on the missing create-form label.
+- Task 3 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 8 tests, 0 failures.
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 12 tests, 0 failures.
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Task 4 refreshed `assets/schema.graphql` for the existing `revokeApiToken` mutation contract because Relay reads the local schema snapshot.
+- Task 4 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on the missing revoke-token button.
+- Task 4 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 12 tests, 0 failures.
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 16 tests, 0 failures.
+  - `cd assets && bun run typecheck`
+- Task 5 refreshed `assets/schema.graphql` for the existing `rotateApiToken` mutation contract because Relay reads the local schema snapshot.
+- Task 5 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on missing rotate-token controls while the prior 12 tests passed.
+- Task 5 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 16 tests, 0 failures.
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 20 tests, 0 failures.
+  - `cd assets && bun run typecheck`
 
 ## Blockers
 
-- None for Task 1.
+- None for Task 6.
