@@ -34,6 +34,7 @@
 - Modify `assets/src/router.tsx` to register `/account/api-tokens`.
 - Modify `assets/src/routes/root.tsx` and `assets/src/routes/__tests__/root.route.test.tsx` to expose the route from primary navigation and home actions.
 - Modify `assets/src/react-relay.d.ts` only if the current Relay shim lacks a needed hook signature.
+- Modify `assets/schema.graphql` when the local Relay schema snapshot is missing the already-exposed backend API-token contract.
 - Generated Relay artifacts under `assets/src/__generated__/**` are produced by `bun run relay`.
 - Update `docs/work/frontend-api-token-management-demo-parity.md`, `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` with each completed batch.
 
@@ -42,13 +43,14 @@
 ### Task 1: Add The Relay Route Query And Loader
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts`
 - Create: `assets/src/routes/account/api-tokens/loader.ts`
 - Create: `assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` with coverage for:
 
@@ -73,7 +75,7 @@ const TOKEN_NODE = {
 };
 ```
 
-- [ ] **Step 2: Run the loader tests to verify they fail**
+- [x] **Step 2: Run the loader tests to verify they fail**
 
 Run:
 
@@ -83,7 +85,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the route query and loader do not exist.
 
-- [ ] **Step 3: Add the route query**
+- [x] **Step 3: Add the route query**
 
 Create `assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts`:
 
@@ -120,7 +122,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Add the loader**
+- [x] **Step 4: Add the loader**
 
 Create `assets/src/routes/account/api-tokens/loader.ts` using the same route-preload pattern as saved comparisons:
 
@@ -162,7 +164,7 @@ export type ApiTokensRouteLoaderData =
     };
 ```
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -172,7 +174,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/ApiTokensRouteQuery.graphql.ts`.
 
-- [ ] **Step 6: Run the loader tests to verify they pass**
+- [x] **Step 6: Run the loader tests to verify they pass**
 
 Run:
 
@@ -182,7 +184,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -192,7 +194,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Update `docs/work/frontend-api-token-management-demo-parity.md` and `docs/plans/NOW.md`:
 
@@ -205,7 +207,7 @@ Update `docs/work/frontend-api-token-management-demo-parity.md` and `docs/plans/
 If committing at this milestone, include the query, loader, tests, generated artifact, and docs in one commit:
 
 ```bash
-git add assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts assets/src/routes/account/api-tokens/loader.ts assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts assets/src/__generated__/ApiTokensRouteQuery.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/queries/ApiTokensRouteQuery.ts assets/src/routes/account/api-tokens/loader.ts assets/src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts assets/src/__generated__/ApiTokensRouteQuery.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): preload api token management route"
 ```
 

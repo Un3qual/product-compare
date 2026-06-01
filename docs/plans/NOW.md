@@ -7,15 +7,16 @@
 ### Frontend API Token Management Demo Parity Lane
 
 - Status: in progress
-- Batch: Task 1, add the Relay route query and loader for `/account/api-tokens`
+- Batch: Task 2, render the API-token management route
 - Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Next step: verify the existing GraphQL API-token contract, add the Relay route query and React Router loader, add focused loader coverage, run Relay generation, and update this lane to Task 2.
+- Next step: write focused route render tests, add the `/account/api-tokens` route component, register the route, and render unauthorized, empty, ready, and status-filter states from `apiTokensLoader` data.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `ARCHITECTURE.md` lists API token management as the first non-ingestion demo-parity candidate after product comparison.
-  - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`, so the next unblocked work is the browser Relay route.
+  - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`.
+  - Task 1 added the local Relay schema snapshot for `myApiTokens`, `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` pagination, status-filter, unauthorized, cursor, and abort handling, so the next unblocked work is rendering the browser route.
 
 ### Product Comparison Demo Parity Lane
 
@@ -91,6 +92,12 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend API Token Management Demo Parity, Task 1:
+  - Refreshed the frontend Relay schema snapshot for the existing `myApiTokens` query contract.
+  - Added `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` with status filter normalization, paginated summaries, unauthorized handling, invalid-cursor guards, and abort propagation.
+  - Added focused loader coverage for unauthenticated GraphQL responses, paginated token summaries, invalid cursors, and aborted requests.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Product Comparison Demo Parity, Task 6:
   - Ran the final focused backend/frontend demo-slice verification for GraphQL current attributes, product detail specifications, browse compare links, compare picker links, and compare-card attributes.

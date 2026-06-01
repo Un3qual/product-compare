@@ -13,6 +13,7 @@ type Query {
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
+  myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
 }
 
 type Mutation {
@@ -50,6 +51,32 @@ type MutationError {
 type User implements Node {
   id: ID!
   email: String!
+}
+
+type ApiToken implements Node {
+  id: ID!
+  label: String
+  tokenPrefix: String!
+  lastUsedAt: DateTime
+  expiresAt: DateTime
+  revokedAt: DateTime
+  insertedAt: DateTime!
+}
+
+type ApiTokenConnection {
+  edges: [ApiTokenEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ApiTokenEdge {
+  node: ApiToken!
+  cursor: String!
+}
+
+enum ApiTokenStatusFilter {
+  ACTIVE
+  REVOKED
+  ALL
 }
 
 type Product implements Node {
@@ -188,6 +215,8 @@ input ProductFiltersInput {
 Decimal values are serialized as base-10 strings to preserve precision.
 """
 scalar Decimal
+
+scalar DateTime
 
 type CreateSavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet
