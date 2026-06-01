@@ -392,7 +392,9 @@ test("renders active coupon details for product offers", () => {
         activeCoupons: {
           edges: [
             {
+              cursor: "coupon-cursor-1",
               node: {
+                id: "coupon-1",
                 code: "SAVE20",
                 description: "Save on the detail product.",
                 discountType: "AMOUNT",
@@ -403,7 +405,9 @@ test("renders active coupon details for product offers", () => {
               }
             },
             {
+              cursor: "coupon-cursor-2",
               node: {
+                id: "coupon-2",
                 code: "DEAL15",
                 description: "Take a percent discount.",
                 discountType: "PERCENT",
@@ -414,7 +418,9 @@ test("renders active coupon details for product offers", () => {
               }
             },
             {
+              cursor: "coupon-cursor-3",
               node: {
+                id: "coupon-3",
                 code: "FREESHIP",
                 description: "Free standard delivery.",
                 discountType: "FREE_SHIPPING",
@@ -424,7 +430,10 @@ test("renders active coupon details for product offers", () => {
                 terms: null
               }
             }
-          ]
+          ],
+          pageInfo: {
+            hasNextPage: true
+          }
         }
       }
     ])
@@ -439,17 +448,103 @@ test("renders active coupon details for product offers", () => {
   const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
-  expect(within(offerItem as HTMLElement).getByText("SAVE20")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("Save on the detail product.")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("20.00 USD")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("Online orders only.")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("DEAL15")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("15%")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("FREESHIP")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("Free standard delivery.")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("Free shipping")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("Valid through 2026-07-01")).toBeVisible();
-  expect(within(offerItem as HTMLElement).queryByText("Valid through not-a-date")).not.toBeInTheDocument();
+  const offer = within(offerItem as HTMLElement);
+
+  expect(offer.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
+  expect(offer.getByText("SAVE20")).toBeVisible();
+  expect(offer.getByText("Save on the detail product.")).toBeVisible();
+  expect(offer.getByText("20.00 USD")).toBeVisible();
+  expect(offer.getByText("Online orders only.")).toBeVisible();
+  expect(offer.getByText("DEAL15")).toBeVisible();
+  expect(offer.getByText("15%")).toBeVisible();
+  expect(offer.getByText("FREESHIP")).toBeVisible();
+  expect(offer.getByText("Free standard delivery.")).toBeVisible();
+  expect(offer.getByText("Free shipping")).toBeVisible();
+  expect(offer.getByText("Valid through 2026-07-01")).toBeVisible();
+  expect(offer.getByText("More coupons available.")).toBeVisible();
+  expect(offer.queryByText("Valid through not-a-date")).not.toBeInTheDocument();
+});
+
+test("renders duplicate active coupon codes without React key warnings", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-1",
+              node: {
+                id: "coupon-1",
+                code: "SAVE20",
+                description: "First duplicate coupon.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: null,
+                terms: null
+              }
+            },
+            {
+              cursor: "coupon-cursor-2",
+              node: {
+                id: "coupon-2",
+                code: "SAVE20",
+                description: "Second duplicate coupon.",
+                discountType: "PERCENT",
+                discountValue: "15",
+                currency: null,
+                validTo: null,
+                terms: null
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ])
+  );
+
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  try {
+    render(
+      <MemoryRouter>
+        <ProductDetailRoute />
+      </MemoryRouter>
+    );
+
+    const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter(([message]) =>
+      typeof message === "string" && message.includes("Encountered two children with the same key")
+    );
+
+    expect(duplicateKeyWarnings).toHaveLength(0);
+    expect(screen.getByText("First duplicate coupon.")).toBeVisible();
+    expect(screen.getByText("Second duplicate coupon.")).toBeVisible();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("renders offers when a merchant has no active coupons", () => {
@@ -477,7 +572,10 @@ test("renders offers when a merchant has no active coupons", () => {
           price: "199.99"
         },
         activeCoupons: {
-          edges: []
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
         }
       }
     ])
@@ -523,7 +621,9 @@ test("renders active offer price history rows", () => {
         activeCoupons: {
           edges: [
             {
+              cursor: "coupon-cursor-1",
               node: {
+                id: "coupon-1",
                 code: "SAVE20",
                 description: "Save on the detail product.",
                 discountType: "AMOUNT",
@@ -533,7 +633,10 @@ test("renders active offer price history rows", () => {
                 terms: "Online orders only."
               }
             }
-          ]
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
         },
         priceHistory: {
           edges: [
@@ -548,7 +651,7 @@ test("renders active offer price history rows", () => {
               node: {
                 id: "price-2",
                 price: "229.99",
-                observedAt: "2026-05-31T10:00:00Z"
+                observedAt: "2026-06-01T00:30:00+02:00"
               }
             },
             {
@@ -562,7 +665,7 @@ test("renders active offer price history rows", () => {
               node: {
                 id: "price-invalid-price",
                 price: "",
-                observedAt: "2026-06-01T10:00:00Z"
+                observedAt: "2026-06-02T10:00:00Z"
               }
             }
           ],
@@ -587,7 +690,7 @@ test("renders active offer price history rows", () => {
   const offer = within(offerItem as HTMLElement);
   const historyList = offer.getByRole("list", { name: "Acme price history" });
   const firstObservedAt = offer.getByText("2026-05-30");
-  const secondObservedAt = offer.getByText("2026-05-31");
+  const secondObservedAt = offer.getByText("2026-06-01");
   const offerText = offerItem?.textContent ?? "";
 
   expect(historyList).toBeVisible();
@@ -595,14 +698,14 @@ test("renders active offer price history rows", () => {
   expect(firstObservedAt).toHaveAttribute("dateTime", "2026-05-30T10:00:00Z");
   expect(offer.getByText("249.99 USD")).toBeVisible();
   expect(secondObservedAt).toBeVisible();
-  expect(secondObservedAt).toHaveAttribute("dateTime", "2026-05-31T10:00:00Z");
+  expect(secondObservedAt).toHaveAttribute("dateTime", "2026-06-01T00:30:00+02:00");
   expect(offer.getByText("229.99 USD")).toBeVisible();
   expect(offer.getByText("More price history available.")).toBeVisible();
   expect(offer.queryByText("not-a-date")).not.toBeInTheDocument();
   expect(offer.queryByText("219.99 USD")).not.toBeInTheDocument();
-  expect(offer.queryByText("2026-06-01")).not.toBeInTheDocument();
+  expect(offer.queryByText("2026-06-02")).not.toBeInTheDocument();
   expect(offerText.indexOf("199.99 USD")).toBeLessThan(offerText.indexOf("2026-05-30"));
-  expect(offerText.indexOf("2026-05-31")).toBeLessThan(offerText.indexOf("SAVE20"));
+  expect(offerText.indexOf("2026-06-01")).toBeLessThan(offerText.indexOf("SAVE20"));
 });
 
 test("renders empty price history state for active offers", () => {
@@ -630,7 +733,10 @@ test("renders empty price history state for active offers", () => {
           price: "199.99"
         },
         activeCoupons: {
-          edges: []
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
         },
         priceHistory: {
           edges: [],
@@ -958,7 +1064,9 @@ function buildOffersData(
     } | null;
     activeCoupons?: {
       edges: Array<{
+        cursor?: string;
         node: {
+          id: string;
           code: string;
           description: string | null;
           discountType: string | null;
@@ -968,6 +1076,9 @@ function buildOffersData(
           terms: string | null;
         };
       }>;
+      pageInfo?: {
+        hasNextPage: boolean;
+      };
     };
     priceHistory?: {
       edges: Array<{
@@ -988,8 +1099,11 @@ function buildOffersData(
       edges: nodes.map((node) => ({
         node: {
           ...node,
-          activeCoupons: node.activeCoupons ?? {
-            edges: []
+          activeCoupons: {
+            edges: node.activeCoupons?.edges ?? [],
+            pageInfo: {
+              hasNextPage: node.activeCoupons?.pageInfo?.hasNextPage ?? false
+            }
           },
           priceHistory: node.priceHistory ?? {
             edges: [],

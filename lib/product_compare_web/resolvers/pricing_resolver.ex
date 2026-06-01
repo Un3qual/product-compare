@@ -46,7 +46,8 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     query =
       Pricing.price_history_query(merchant_product_id, %{
         from: Input.fetch_value(args || %{}, :from),
-        to: Input.fetch_value(args || %{}, :to)
+        to: Input.fetch_value(args || %{}, :to),
+        order: :desc
       })
 
     Connection.from_query_result(query, Input.connection_args(args), Repo)

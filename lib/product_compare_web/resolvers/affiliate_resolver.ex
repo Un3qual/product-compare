@@ -106,16 +106,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def active_coupons(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
     with {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]) do
-      now =
-        case Input.fetch_value(attrs, :at) do
-          %DateTime{} = at -> at
-          _ -> DateTime.utc_now()
-        end
-
-      connection_args = Input.connection_args(attrs)
-      query = Affiliate.list_active_coupons_query(merchant_id, now)
-
-      case Connection.from_query_result(query, connection_args, Repo) do
+      case active_coupon_connection(merchant_id, attrs) do
         {:ok, connection} ->
           {:ok, %{coupons: connection}}
 
@@ -141,26 +132,23 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           {:ok, map()} | {:error, String.t()}
   def merchant_product_active_coupons(%{merchant_id: merchant_id}, args, _resolution)
       when is_integer(merchant_id) do
+    active_coupon_connection(merchant_id, args)
+  end
+
+  def merchant_product_active_coupons(_parent, _args, _resolution),
+    do: {:error, "invalid merchant product"}
+
+  defp active_coupon_connection(merchant_id, args) do
     now =
       case Input.fetch_value(args, :at) do
         %DateTime{} = at -> at
         _ -> DateTime.utc_now()
       end
 
-    connection_args = Input.connection_args(args)
-    query = Affiliate.list_active_coupons_query(merchant_id, now)
-
-    case Connection.from_query_result(query, connection_args, Repo) do
-      {:ok, connection} ->
-        {:ok, connection}
-
-      {:error, message} ->
-        {:error, message}
-    end
+    merchant_id
+    |> Affiliate.list_active_coupons_query(now)
+    |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
-
-  def merchant_product_active_coupons(_parent, _args, _resolution),
-    do: {:error, "invalid merchant product"}
 
   defp normalize_attrs(attrs, id_fields, attr_fields) do
     with {:ok, attrs} <- normalize_ids(attrs, id_fields) do

@@ -9,6 +9,8 @@ interface Node {
 
 type Query {
   viewer: User
+  node(id: ID!): Node
+  sourceArtifact(id: ID!): SourceArtifact
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchants(first: Int, after: String): MerchantConnection
@@ -170,7 +172,17 @@ type Coupon implements Node {
   updatedAt: DateTime!
 }
 
+type SourceArtifact implements Node {
+  id: ID!
+  sourceKind: String!
+  sourceName: String!
+  sourceDomain: String
+  url: String
+  fetchedAt: DateTime!
+}
+
 type ActiveCoupon {
+  id: ID!
   code: String!
   description: String
   discountType: CouponDiscountType!

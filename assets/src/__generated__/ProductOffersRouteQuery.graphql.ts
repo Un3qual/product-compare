@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1c3cc2d1c0aa2d24c8a503aaab2363ac>>
+ * @generated SignedSource<<cd1ee9b5a0d8ae3dc7d516ee20d75532>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -28,10 +28,14 @@ export type ProductOffersRouteQuery$data = {
               readonly description: string | null | undefined;
               readonly discountType: CouponDiscountType;
               readonly discountValue: any | null | undefined;
+              readonly id: string;
               readonly terms: string | null | undefined;
               readonly validTo: any | null | undefined;
             };
           }>;
+          readonly pageInfo: {
+            readonly hasNextPage: boolean;
+          };
         } | null | undefined;
         readonly currency: string;
         readonly id: string;
@@ -113,7 +117,19 @@ v6 = {
   "name": "hasNextPage",
   "storageKey": null
 },
-v7 = [
+v7 = {
+  "alias": null,
+  "args": null,
+  "concreteType": "PageInfo",
+  "kind": "LinkedField",
+  "name": "pageInfo",
+  "plural": false,
+  "selections": [
+    (v6/*: any*/)
+  ],
+  "storageKey": null
+},
+v8 = [
   {
     "alias": null,
     "args": [
@@ -243,6 +259,7 @@ v7 = [
                         "name": "node",
                         "plural": false,
                         "selections": [
+                          (v3/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -291,7 +308,8 @@ v7 = [
                       }
                     ],
                     "storageKey": null
-                  }
+                  },
+                  (v7/*: any*/)
                 ],
                 "storageKey": "activeCoupons(first:2)"
               },
@@ -340,18 +358,7 @@ v7 = [
                     ],
                     "storageKey": null
                   },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "PageInfo",
-                    "kind": "LinkedField",
-                    "name": "pageInfo",
-                    "plural": false,
-                    "selections": [
-                      (v6/*: any*/)
-                    ],
-                    "storageKey": null
-                  }
+                  (v7/*: any*/)
                 ],
                 "storageKey": "priceHistory(first:3)"
               }
@@ -394,7 +401,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductOffersRouteQuery",
-    "selections": (v7/*: any*/),
+    "selections": (v8/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -407,19 +414,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ProductOffersRouteQuery",
-    "selections": (v7/*: any*/)
+    "selections": (v8/*: any*/)
   },
   "params": {
-    "cacheID": "8889daff328dc632c0552f7f32aa4b1a",
+    "cacheID": "eb6f99086aa8e10c5808eb4ae8528249",
     "id": null,
     "metadata": {},
     "name": "ProductOffersRouteQuery",
     "operationKind": "query",
-    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n        }\n        activeCoupons(first: 2) {\n          edges {\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n        }\n        activeCoupons(first: 2) {\n          edges {\n            node {\n              id\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "707abb6e62d4864f357fef50791344f9";
+(node as any).hash = "301d0eef53bd6ee4d66c9e93f3945af2";
 
 export default node;

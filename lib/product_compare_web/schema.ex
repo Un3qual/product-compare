@@ -507,6 +507,10 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :active_coupon do
+    field :id, non_null(:id) do
+      resolve(fn coupon, _, _ -> GlobalId.encode_required(:coupon, coupon.id) end)
+    end
+
     field :code, non_null(:string)
     field :description, :string
     field :discount_type, non_null(:coupon_discount_type)

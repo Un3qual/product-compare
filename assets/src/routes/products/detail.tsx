@@ -154,6 +154,7 @@ function ProductOffers({
         url: safeUrl,
         priceText: formatPriceText(node.latestPrice?.price, node.currency),
         coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
+        couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
         priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
         priceHistoryHasMore: node.priceHistory?.pageInfo.hasNextPage ?? false
       }
@@ -177,7 +178,11 @@ function ProductOffers({
             historyRows={offer.priceHistory}
             hasMore={offer.priceHistoryHasMore}
           />
-          <OfferCoupons coupons={offer.coupons} />
+          <OfferCoupons
+            merchantName={offer.merchantName}
+            coupons={offer.coupons}
+            hasMore={offer.couponsHasMore}
+          />
         </li>
       ))}
     </ul>
@@ -219,38 +224,47 @@ function OfferPriceHistory({
 }
 
 function OfferCoupons({
-  coupons
+  merchantName,
+  coupons,
+  hasMore
 }: {
+  merchantName: string;
   coupons: ReadonlyArray<{
+    key: string;
     code: string;
     description: string | null | undefined;
     discountText: string | null;
     validToText: string | null;
     terms: string | null | undefined;
   }>;
+  hasMore: boolean;
 }) {
   if (coupons.length === 0) {
     return <p>No active coupons for this offer.</p>;
   }
 
   return (
-    <ul aria-label="Active coupons">
-      {coupons.map((coupon) => (
-        <li key={coupon.code}>
-          <strong>{coupon.code}</strong>
-          {coupon.description ? <p>{coupon.description}</p> : null}
-          {coupon.discountText ? <p>{coupon.discountText}</p> : null}
-          {coupon.validToText ? <p>{coupon.validToText}</p> : null}
-          {coupon.terms ? <p>{coupon.terms}</p> : null}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul aria-label={`${merchantName} active coupons`}>
+        {coupons.map((coupon) => (
+          <li key={coupon.key}>
+            <strong>{coupon.code}</strong>
+            {coupon.description ? <p>{coupon.description}</p> : null}
+            {coupon.discountText ? <p>{coupon.discountText}</p> : null}
+            {coupon.validToText ? <p>{coupon.validToText}</p> : null}
+            {coupon.terms ? <p>{coupon.terms}</p> : null}
+          </li>
+        ))}
+      </ul>
+      {hasMore ? <p>More coupons available.</p> : null}
+    </>
   );
 }
 
 function buildCouponRows(
   edges: ReadonlyArray<{
     readonly node: {
+      readonly id: string;
       readonly code: string;
       readonly description: string | null | undefined;
       readonly discountType: string;
@@ -262,6 +276,7 @@ function buildCouponRows(
   }>
 ) {
   return edges.map(({ node }) => ({
+    key: node.id,
     code: node.code,
     description: node.description,
     discountText: formatCouponDiscountText(node.discountType, node.discountValue, node.currency),
@@ -326,7 +341,9 @@ function formatObservedDate(value: unknown) {
     return null;
   }
 
-  return parsed.toISOString().slice(0, 10);
+  const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:[T\s]|$)/.exec(value);
+
+  return sourceDate?.[1] ?? parsed.toISOString().slice(0, 10);
 }
 
 function formatCouponDiscountText(discountType: string, discountValue: unknown, currency: unknown) {

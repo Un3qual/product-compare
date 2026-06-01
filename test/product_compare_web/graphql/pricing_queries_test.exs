@@ -312,8 +312,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                              %{
                                "cursor" => history_cursor,
                                "node" => %{
-                                 "id" => middle_price_id,
-                                 "price" => "149.99"
+                                 "id" => latest_history_price_id,
+                                 "price" => "99.99"
                                }
                              }
                            ],
@@ -330,7 +330,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } = graphql(conn, merchant_product_pricing_query(), variables)
 
       assert latest_price_id == relay_id(:price_point, latest_price.id)
-      assert middle_price_id == relay_id(:price_point, middle_price.id)
+      assert latest_history_price_id == relay_id(:price_point, latest_price.id)
       assert oldest_price.id < middle_price.id
 
       assert %{
@@ -343,8 +343,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                            "edges" => [
                              %{
                                "node" => %{
-                                 "id" => latest_history_price_id,
-                                 "price" => "99.99"
+                                 "id" => middle_history_price_id,
+                                 "price" => "149.99"
                                }
                              }
                            ],
@@ -365,7 +365,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  Map.put(variables, "historyAfter", history_cursor)
                )
 
-      assert latest_history_price_id == relay_id(:price_point, latest_price.id)
+      assert middle_history_price_id == relay_id(:price_point, middle_price.id)
 
       assert %{
                "errors" => [
@@ -409,7 +409,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       one_hour_from_now_iso = DateTime.to_iso8601(one_hour_from_now)
       two_hours_from_now_iso = DateTime.to_iso8601(two_hours_from_now)
 
-      {:ok, _amount_coupon} =
+      {:ok, amount_coupon} =
         Affiliate.create_coupon(%{
           merchant_id: merchant.id,
           code: "SAVE-20",
@@ -421,7 +421,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           terms: "One use per customer"
         })
 
-      {:ok, _percent_coupon} =
+      {:ok, percent_coupon} =
         Affiliate.create_coupon(%{
           merchant_id: merchant.id,
           code: "SAVE-10",
@@ -492,6 +492,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       assert [
                %{
                  "node" => %{
+                   "id" => amount_coupon_id,
                    "code" => "SAVE-20",
                    "description" => "Twenty dollars off",
                    "discountType" => "AMOUNT",
@@ -503,6 +504,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                },
                %{
                  "node" => %{
+                   "id" => percent_coupon_id,
                    "code" => "SAVE-10",
                    "description" => "Ten percent off",
                    "discountType" => "PERCENT",
@@ -513,6 +515,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  }
                }
              ] = coupon_edges
+
+      assert amount_coupon_id == relay_id(:coupon, amount_coupon.id)
+      assert percent_coupon_id == relay_id(:coupon, percent_coupon.id)
     end
 
     test "merchantProducts batches merchant product and latest price lookups", %{
@@ -730,6 +735,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
             activeCoupons(first: $couponFirst, at: $at) {
               edges {
                 node {
+                  id
                   code
                   description
                   discountType

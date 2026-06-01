@@ -18,6 +18,8 @@ defmodule ProductCompare.Specs do
   alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Specs.Unit
 
+  @max_bigint_id 9_223_372_036_854_775_807
+
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
     now = DateTime.utc_now()
@@ -116,12 +118,14 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  @spec get_source_artifact(pos_integer()) :: SourceArtifact.t() | nil
-  def get_source_artifact(id) when is_integer(id) and id > 0 do
+  @spec get_source_artifact(integer()) :: SourceArtifact.t() | nil
+  def get_source_artifact(id) when is_integer(id) and id >= 1 and id <= @max_bigint_id do
     SourceArtifact
     |> Repo.get(id)
     |> Repo.preload(:source)
   end
+
+  def get_source_artifact(_id), do: nil
 
   @spec propose_claim(pos_integer(), pos_integer(), map(), map()) ::
           {:ok, ProductAttributeClaim.t()} | {:error, term()}

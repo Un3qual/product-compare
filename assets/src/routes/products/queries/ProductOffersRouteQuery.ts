@@ -20,6 +20,7 @@ export const productOffersRouteQuery = graphql`
           activeCoupons(first: 2) {
             edges {
               node {
+                id
                 code
                 description
                 discountType
@@ -28,6 +29,9 @@ export const productOffersRouteQuery = graphql`
                 validTo
                 terms
               }
+            }
+            pageInfo {
+              hasNextPage
             }
           }
           priceHistory(first: 3) {

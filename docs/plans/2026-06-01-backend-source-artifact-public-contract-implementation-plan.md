@@ -4,7 +4,7 @@
 
 **Goal:** Add a narrow GraphQL contract for safe source-artifact metadata without exposing raw provider payloads.
 
-**Architecture:** Add a dedicated `sourceArtifact(id:)` query and a `SourceArtifact` object that returns only global ID, source display metadata, source URL, and fetch timestamp. Keep generic `node(id:)` support for `SourceArtifact` out of this slice so Relay root-node semantics do not outrun the field-visibility policy.
+**Architecture:** Add a dedicated `sourceArtifact(id:)` query and a `SourceArtifact` object that returns only global ID, source display metadata, source URL, and fetch timestamp. Generic `node(id:)` support for `SourceArtifact` is handled by the completed backend source-artifact node lookup follow-up, using this slice's field-visibility policy.
 
 **Tech Stack:** Phoenix Absinthe GraphQL, Ecto, existing `ProductCompare.Specs` context, ExUnit GraphQL tests.
 
@@ -13,8 +13,8 @@
 ## Existing Contract
 
 - `ProductCompareWeb.GraphQL.GlobalId` already maps `:source_artifact` to `SourceArtifact`.
-- `ProductCompareWeb.Resolvers.NodeResolver` does not include `:source_artifact` in public, authenticated, or owner-scoped node types.
-- `test/product_compare_web/graphql/node_query_test.exs` currently expects a `source_artifact` global ID passed to `node(id:)` to fail as an unsupported type.
+- `ProductCompareWeb.Resolvers.NodeResolver` now includes `:source_artifact` in public node lookup via the completed backend source-artifact node lookup follow-up.
+- `test/product_compare_web/graphql/node_query_test.exs` now expects a `source_artifact` global ID passed to `node(id:)` to resolve safe metadata fields.
 - `ProductCompareSchemas.Specs.SourceArtifact` stores `url`, `fetched_at`, `content_hash`, `raw_json`, and `raw_text`, so the GraphQL object must explicitly omit `content_hash`, `raw_json`, and `raw_text`.
 
 ## File Structure
@@ -23,7 +23,7 @@
 - Create `lib/product_compare_web/resolvers/specs_resolver.ex` for source-artifact GraphQL decoding/fetching.
 - Modify `lib/product_compare_web/schema.ex` to add the `sourceArtifact(id:)` query and display-only `SourceArtifact` object.
 - Create `test/product_compare_web/graphql/source_artifact_query_test.exs` for the new contract.
-- Modify `test/product_compare_web/graphql/node_query_test.exs` only to rename the existing unsupported-source-artifact assertion if needed; do not make `SourceArtifact` implement `Node` in this plan.
+- `test/product_compare_web/graphql/node_query_test.exs` was updated by the follow-up node lookup plan after this public contract landed; `SourceArtifact` now implements `Node` with the same safe metadata fields.
 - Update `docs/work/backend-source-artifact-public-contract.md`, `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` at the closing milestone.
 
 ---
@@ -179,7 +179,7 @@ Run:
 mix test test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/node_query_test.exs
 ```
 
-Expected: PASS, including the existing assertion that `node(id:)` still rejects `source_artifact` IDs.
+Expected for this public-contract task at the time: PASS, with node lookup still deferred to a follow-up lane.
 
 - [x] **Step 7: Update queue docs**
 
@@ -189,9 +189,9 @@ Mark Task 1 complete, record RED/GREEN verification, and advance the current bat
 
 - RED: `mix test test/product_compare_web/graphql/source_artifact_query_test.exs` failed with 4 tests / 4 failures because `sourceArtifact` and `SourceArtifact` were not yet defined.
 - GREEN: `mix test test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/node_query_test.exs` passed with 25 tests / 0 failures.
-- The implemented `SourceArtifact` object intentionally does not implement the `Node` interface and exposes only `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`.
+- The Task 1 `SourceArtifact` object exposed only `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`; the later node lookup lane made the same safe object implement `Node`.
 - Introspection coverage verifies `contentHash`, `rawJson`, and `rawText` are absent.
-- `node(id:)` remains unsupported for `source_artifact` global IDs.
+- `node(id:)` support for `source_artifact` global IDs was deferred from this task and later completed by the backend source-artifact node lookup lane.
 - Backend lane current batch advanced to Task 2 in `docs/work/backend-source-artifact-public-contract.md`. Coordinator-owned docs were not updated in this backend-worker batch.
 
 ---
