@@ -46,7 +46,7 @@ Commit only lane-local milestone changes.
   - Status: ready
   - Priority: P1
   - Next batch: Task 1, add the Relay route query and loader for `/merchants`.
-  - Owned paths: `assets/src/routes/merchants/**`, `assets/src/__generated__/**`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+  - Owned paths: `assets/src/routes/merchants/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`

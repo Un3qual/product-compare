@@ -56,7 +56,7 @@ export async function revenueSummaryLoader({
         environment,
         revenueSummaryRouteQuery,
         {
-          input: Object.keys(filters).length > 0 ? filters : null
+          input: filters
         },
         { signal: request.signal }
       )
