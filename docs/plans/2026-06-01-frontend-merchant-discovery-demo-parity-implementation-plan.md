@@ -120,7 +120,7 @@ Create `assets/src/routes/merchants/loader.ts` with:
 Update `assets/schema.graphql` so `Query` includes the existing backend field:
 
 ```graphql
-merchants(first: Int, after: String): MerchantConnection!
+merchants(first: Int, after: String): MerchantConnection
 ```
 
 Expected: the local schema snapshot has both the merchant connection types and the `Query.merchants` entry needed by Relay generation.

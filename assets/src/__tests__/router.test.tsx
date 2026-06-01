@@ -23,7 +23,7 @@ test("revenue summary route is registered under the root route", () => {
       path: "commerce/revenue",
       loader: revenueSummaryLoader,
       element: <RevenueSummaryRoute />,
-      errorElement: <CompareErrorBoundary title="Revenue" />
+      errorElement: <CompareErrorBoundary resourceName="revenue report" title="Revenue" />
     })
   );
 });

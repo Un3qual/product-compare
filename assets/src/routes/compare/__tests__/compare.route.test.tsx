@@ -829,6 +829,24 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
   }
 });
 
+test("compare error boundary supports route-specific resource copy", () => {
+  const useRouteErrorSpy = vi
+    .spyOn(ReactRouterDom, "useRouteError")
+    .mockReturnValue(new Error("Network request failed: boom"));
+
+  try {
+    render(<CompareErrorBoundary resourceName="revenue report" title="Revenue" />);
+
+    expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A network error occurred while loading the revenue report."
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
+  } finally {
+    useRouteErrorSpy.mockRestore();
+  }
+});
+
 test("compare route saves the current ready-state selection", async () => {
   commitMutationMock.mockImplementation(({ onCompleted }) => {
     onCompleted({
