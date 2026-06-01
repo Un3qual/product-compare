@@ -7,6 +7,9 @@ import createApiTokenMutation, {
 import revokeApiTokenMutation, {
   type RevokeApiTokenMutation
 } from "../../../__generated__/RevokeApiTokenMutation.graphql";
+import rotateApiTokenMutation, {
+  type RotateApiTokenMutation
+} from "../../../__generated__/RotateApiTokenMutation.graphql";
 import apiTokensRouteQuery, {
   type ApiTokensRouteQuery
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
@@ -39,10 +42,14 @@ export function ApiTokensRoute() {
   const [revokeError, setRevokeError] = useState<string | null>(null);
   const [pendingRevokeIds, setPendingRevokeIds] = useState<ReadonlySet<string>>(new Set());
   const inFlightRevokeIdsRef = useRef<Set<string>>(new Set());
+  const [rotateError, setRotateError] = useState<string | null>(null);
+  const [pendingRotateIds, setPendingRotateIds] = useState<ReadonlySet<string>>(new Set());
+  const inFlightRotateIdsRef = useRef<Set<string>>(new Set());
   const [commitCreateApiToken, createMutationPending] = useMutation<CreateApiTokenMutation>(
     createApiTokenMutation
   );
   const [commitRevokeApiToken] = useMutation<RevokeApiTokenMutation>(revokeApiTokenMutation);
+  const [commitRotateApiToken] = useMutation<RotateApiTokenMutation>(rotateApiTokenMutation);
   const tokenQueries = loaderData.status === "unauthorized" ? [] : loaderData.tokenQueries;
   const viewState = buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates);
   const createSubmitting = createPending || createMutationPending;
@@ -94,6 +101,72 @@ export function ApiTokensRoute() {
     inFlightRevokeIdsRef.current.delete(tokenId);
     setPendingRevokeIds((currentPendingRevokeIds) =>
       removeSetValue(currentPendingRevokeIds, tokenId)
+    );
+  }
+
+  function finishRotate(tokenId: string) {
+    inFlightRotateIdsRef.current.delete(tokenId);
+    setPendingRotateIds((currentPendingRotateIds) =>
+      removeSetValue(currentPendingRotateIds, tokenId)
+    );
+  }
+
+  function handleRotate(token: ApiTokenSummary, form: HTMLFormElement) {
+    if (inFlightRotateIdsRef.current.has(token.id)) {
+      return;
+    }
+
+    const variables = buildRotateApiTokenVariables(token, new FormData(form));
+
+    inFlightRotateIdsRef.current.add(token.id);
+    setPendingRotateIds((currentPendingRotateIds) =>
+      addSetValue(currentPendingRotateIds, token.id)
+    );
+    setRotateError(null);
+    setOneTimeToken(null);
+
+    commitRouteMutation(
+      commitRotateApiToken,
+      {
+        variables,
+        onCompleted: (response, graphQLErrors) => {
+          const payload = response.rotateApiToken;
+          const rotatedToken = summarizeMutationApiToken(payload?.apiToken);
+
+          if (
+            payload?.plainTextToken &&
+            rotatedToken &&
+            !hasRouteGraphQLErrors(graphQLErrors)
+          ) {
+            const revokedPreviousToken = markTokenRotated(token, rotatedToken);
+
+            setRotateError(null);
+            setCreatedTokens((currentTokens) =>
+              upsertApiTokenSummary(currentTokens, rotatedToken)
+            );
+            setApiTokenUpdates((currentUpdates) =>
+              upsertApiTokenSummaryMap(
+                upsertApiTokenSummaryMap(currentUpdates, rotatedToken),
+                revokedPreviousToken
+              )
+            );
+            setOneTimeToken(payload.plainTextToken);
+            form.reset();
+          } else {
+            setRotateError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+          }
+
+          finishRotate(token.id);
+        },
+        onError: () => {
+          setRotateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          finishRotate(token.id);
+        }
+      },
+      () => {
+        setRotateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        finishRotate(token.id);
+      }
     );
   }
 
@@ -190,6 +263,7 @@ export function ApiTokensRoute() {
 
           {createError ? <p role="alert">{createError}</p> : null}
           {revokeError ? <p role="alert">{revokeError}</p> : null}
+          {rotateError ? <p role="alert">{rotateError}</p> : null}
 
           {oneTimeToken ? (
             <section aria-labelledby="api-token-one-time-heading">
@@ -203,8 +277,10 @@ export function ApiTokensRoute() {
             <ResettableErrorBoundary
               fallback={
                 <ApiTokenList
+                  onRotate={handleRotate}
                   onRevoke={handleRevoke}
                   pendingRevokeIds={pendingRevokeIds}
+                  pendingRotateIds={pendingRotateIds}
                   tokens={viewState.tokens}
                 />
               }
@@ -214,8 +290,10 @@ export function ApiTokensRoute() {
                 <RelayApiTokenList
                   apiTokenUpdates={apiTokenUpdates}
                   localTokens={viewState.localTokens}
+                  onRotate={handleRotate}
                   onRevoke={handleRevoke}
                   pendingRevokeIds={pendingRevokeIds}
+                  pendingRotateIds={pendingRotateIds}
                   tokenStatus={loaderData.tokenStatus}
                   tokenQueries={tokenQueries}
                 />
@@ -225,8 +303,10 @@ export function ApiTokensRoute() {
 
           {viewState.tokens.length > 0 && tokenQueries.length === 0 ? (
             <ApiTokenList
+              onRotate={handleRotate}
               onRevoke={handleRevoke}
               pendingRevokeIds={pendingRevokeIds}
+              pendingRotateIds={pendingRotateIds}
               tokens={viewState.tokens}
             />
           ) : null}
@@ -239,15 +319,19 @@ export function ApiTokensRoute() {
 function RelayApiTokenList({
   apiTokenUpdates,
   localTokens,
+  onRotate,
   onRevoke,
   pendingRevokeIds,
+  pendingRotateIds,
   tokenStatus,
   tokenQueries
 }: {
   apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
   localTokens: ApiTokenSummary[];
+  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
+  pendingRotateIds: ReadonlySet<string>;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
   tokenQueries: ApiTokenQueryDescriptor[];
 }) {
@@ -256,8 +340,10 @@ function RelayApiTokenList({
       {localTokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
+          onRotate={onRotate}
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
+          pendingRotateIds={pendingRotateIds}
           token={token}
         />
       ))}
@@ -265,8 +351,10 @@ function RelayApiTokenList({
         <RelayApiTokenPage
           apiTokenUpdates={apiTokenUpdates}
           key={apiTokenQueryKey(tokenQuery)}
+          onRotate={onRotate}
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
+          pendingRotateIds={pendingRotateIds}
           tokenQuery={tokenQuery}
           tokenStatus={tokenStatus}
         />
@@ -277,14 +365,18 @@ function RelayApiTokenList({
 
 function RelayApiTokenPage({
   apiTokenUpdates,
+  onRotate,
   onRevoke,
   pendingRevokeIds,
+  pendingRotateIds,
   tokenQuery,
   tokenStatus
 }: {
   apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
+  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
+  pendingRotateIds: ReadonlySet<string>;
   tokenQuery: ApiTokenQueryDescriptor;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
 }) {
@@ -301,8 +393,10 @@ function RelayApiTokenPage({
       {tokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
+          onRotate={onRotate}
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
+          pendingRotateIds={pendingRotateIds}
           token={token}
         />
       ))}
@@ -311,12 +405,16 @@ function RelayApiTokenPage({
 }
 
 function ApiTokenList({
+  onRotate,
   onRevoke,
   pendingRevokeIds,
+  pendingRotateIds,
   tokens
 }: {
+  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
+  pendingRotateIds: ReadonlySet<string>;
   tokens: ApiTokenSummary[];
 }) {
   return (
@@ -324,8 +422,10 @@ function ApiTokenList({
       {tokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
+          onRotate={onRotate}
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
+          pendingRotateIds={pendingRotateIds}
           token={token}
         />
       ))}
@@ -334,20 +434,31 @@ function ApiTokenList({
 }
 
 function ApiTokenListItem({
+  onRotate,
   onRevoke,
   pendingRevokeIds,
+  pendingRotateIds,
   token
 }: {
+  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
+  pendingRotateIds: ReadonlySet<string>;
   token: ApiTokenSummary;
 }) {
+  const displayLabel = token.label ?? "Unlabeled token";
   const revokePending = pendingRevokeIds.has(token.id);
+  const rotatePending = pendingRotateIds.has(token.id);
+
+  function handleRotateSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onRotate(token, event.currentTarget);
+  }
 
   return (
     <li>
       <article>
-        <h2>{token.label ?? "Unlabeled token"}</h2>
+        <h2>{displayLabel}</h2>
         <dl>
           <div>
             <dt>Token prefix</dt>
@@ -371,15 +482,30 @@ function ApiTokenListItem({
           </div>
         </dl>
         {token.revokedAt ? null : (
-          <button
-            disabled={revokePending}
-            onClick={() => {
-              onRevoke(token.id);
-            }}
-            type="button"
-          >
-            {revokePending ? "Revoking token..." : "Revoke token"}
-          </button>
+          <>
+            <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={handleRotateSubmit}>
+              <label>
+                {`Replacement label for ${displayLabel}`}
+                <input autoComplete="off" name="label" type="text" />
+              </label>
+              <label>
+                {`Replacement expiry for ${displayLabel}`}
+                <input name="expiresAt" type="datetime-local" />
+              </label>
+              <button disabled={rotatePending} type="submit">
+                {rotatePending ? "Rotating token..." : "Rotate token"}
+              </button>
+            </form>
+            <button
+              disabled={revokePending}
+              onClick={() => {
+                onRevoke(token.id);
+              }}
+              type="button"
+            >
+              {revokePending ? "Revoking token..." : "Revoke token"}
+            </button>
+          </>
         )}
       </article>
     </li>
@@ -461,6 +587,19 @@ function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenMutatio
   };
 }
 
+function buildRotateApiTokenVariables(
+  token: ApiTokenSummary,
+  formData: FormData
+): RotateApiTokenMutation["variables"] {
+  const expiresAt = normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
+
+  return {
+    tokenId: token.id,
+    label: optionalFormText(formData.get("label")) ?? token.label,
+    expiresAt
+  };
+}
+
 function optionalFormText(value: FormDataEntryValue | null) {
   if (typeof value !== "string") {
     return null;
@@ -502,6 +641,13 @@ function summarizeMutationApiToken(token: MutationApiToken | null | undefined) {
     expiresAt: token.expiresAt ?? null,
     revokedAt: token.revokedAt ?? null,
     insertedAt: token.insertedAt
+  } satisfies ApiTokenSummary;
+}
+
+function markTokenRotated(previousToken: ApiTokenSummary, rotatedToken: ApiTokenSummary) {
+  return {
+    ...previousToken,
+    revokedAt: previousToken.revokedAt ?? rotatedToken.insertedAt
   } satisfies ApiTokenSummary;
 }
 

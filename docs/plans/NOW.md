@@ -7,10 +7,10 @@
 ### Frontend API Token Management Demo Parity Lane
 
 - Status: in progress
-- Batch: Task 5, add the rotate-token flow
+- Batch: Task 6, wire navigation and close the lane
 - Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Next step: write focused rotate-flow tests, add `RotateApiTokenMutation`, render active-row rotate controls, commit the selected token id plus optional replacement label/expiry through Relay, display the replacement one-time token, update local row state, and display mutation errors.
+- Next step: write focused root navigation tests, add `API tokens` links to the primary navigation and home actions, run focused API-token/root verification plus frontend typecheck/check, verify the backend API-token contract, and close the lane docs.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
@@ -19,7 +19,8 @@
   - Task 1 added the local Relay schema snapshot for `myApiTokens`, `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` pagination, status-filter, unauthorized, cursor, and abort handling.
   - Task 2 registered `/account/api-tokens` and renders unauthorized, empty, ready, and status-filter states from `apiTokensLoader`.
   - Task 3 added the local Relay schema snapshot for `createApiToken`, generated `CreateApiTokenMutation.graphql.ts`, and renders the create form, one-time token display, and mutation error handling.
-  - Task 4 added the local Relay schema snapshot for `revokeApiToken`, generated `RevokeApiTokenMutation.graphql.ts`, renders active-row revoke buttons, updates local row status after revoke, suppresses duplicate row clicks, and displays payload/network errors, so the next unblocked work is the rotate-token mutation flow.
+  - Task 4 added the local Relay schema snapshot for `revokeApiToken`, generated `RevokeApiTokenMutation.graphql.ts`, renders active-row revoke buttons, updates local row status after revoke, suppresses duplicate row clicks, and displays payload/network errors.
+  - Task 5 added the local Relay schema snapshot for `rotateApiToken`, generated `RotateApiTokenMutation.graphql.ts`, renders active-row rotate controls, displays replacement one-time tokens, updates local row state for replacement and old revoked rows, and displays payload errors, so the next unblocked work is navigation and lane closure.
 
 ### Product Comparison Demo Parity Lane
 
@@ -95,6 +96,15 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend API Token Management Demo Parity, Task 5:
+  - Refreshed the frontend Relay schema snapshot for the existing `rotateApiToken` mutation contract.
+  - Added `RotateApiTokenMutation` and generated `RotateApiTokenMutation.graphql.ts`.
+  - Added active-row rotate controls on `/account/api-tokens` with optional replacement label and expiry fields.
+  - Commits the selected token id through Relay, falls back to the selected row label when no replacement label is entered, and tracks row-scoped pending state.
+  - Displays the returned replacement plain text token in the one-time-visible region and updates local row state for the replacement token and old revoked token.
+  - Displays rotate payload errors through the shared route mutation helpers.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend API Token Management Demo Parity, Task 4:
   - Refreshed the frontend Relay schema snapshot for the existing `revokeApiToken` mutation contract.

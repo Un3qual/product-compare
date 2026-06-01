@@ -27,6 +27,7 @@ type Mutation {
   deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
   createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
   revokeApiToken(tokenId: ID!): RevokeApiTokenPayload!
+  rotateApiToken(tokenId: ID!, label: String, expiresAt: DateTime): CreateApiTokenPayload!
 }
 
 type AuthSessionPayload {

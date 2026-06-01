@@ -5,7 +5,7 @@
 - Status: in progress
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 during Task 4 implementation.
+- Last verified: 2026-06-01 during Task 5 implementation.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
@@ -15,20 +15,23 @@
 - [x] Task 2: render the API-token management route.
 - [x] Task 3: add the create-token flow with one-time token display.
 - [x] Task 4: add the revoke-token flow.
-- [ ] Task 5: add the rotate-token flow.
+- [x] Task 5: add the rotate-token flow.
 - [ ] Task 6: wire navigation and close the lane.
 
 ## Current Batch
 
-- Task: Task 5, add the rotate-token flow.
+- Task: Task 6, wire navigation and close the lane.
 - Status: ready.
 - Owned paths:
-  - `assets/schema.graphql`
-  - `assets/src/routes/account/api-tokens/**`
-  - `assets/src/__generated__/**`
+  - `assets/src/routes/root.tsx`
+  - `assets/src/routes/__tests__/root.route.test.tsx`
   - `docs/work/frontend-api-token-management-demo-parity.md`
+  - `docs/work/index.md`
+  - `docs/plans/NOW.md`
+  - `docs/plans/INDEX.md`
+  - `ARCHITECTURE.md`
   - `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Immediate prerequisite: Task 4 added `RevokeApiTokenMutation`, active-row revoke buttons, row-scoped pending state, local revoked-status updates for loader and Relay-preloaded rows, and payload/network error handling without adding REST endpoints; Task 5 should add rotate-token mutation handling and replacement one-time token display for active rows.
+- Immediate prerequisite: Task 5 added `RotateApiTokenMutation`, active-row rotate controls with optional replacement label and expiry fields, row-scoped pending state, replacement one-time token display, local replacement-token insertion, old-row revoked-status updates, and payload error handling without adding REST endpoints; Task 6 should wire navigation entry points and close the lane docs.
 
 ## Verification
 
@@ -58,7 +61,14 @@
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 12 tests, 0 failures.
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 16 tests, 0 failures.
   - `cd assets && bun run typecheck`
+- Task 5 refreshed `assets/schema.graphql` for the existing `rotateApiToken` mutation contract because Relay reads the local schema snapshot.
+- Task 5 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on missing rotate-token controls while the prior 12 tests passed.
+- Task 5 GREEN:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` - 16 tests, 0 failures.
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 20 tests, 0 failures.
+  - `cd assets && bun run typecheck`
 
 ## Blockers
 
-- None for Task 5.
+- None for Task 6.

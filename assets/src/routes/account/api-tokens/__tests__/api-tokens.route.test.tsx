@@ -9,6 +9,7 @@ import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../loader";
 const {
   commitCreateMutationMock,
   commitRevokeMutationMock,
+  commitRotateMutationMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
@@ -16,6 +17,7 @@ const {
 } = vi.hoisted(() => ({
   commitCreateMutationMock: vi.fn(),
   commitRevokeMutationMock: vi.fn(),
+  commitRotateMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
@@ -106,13 +108,22 @@ const API_TOKENS_QUERY_REF = {
 beforeEach(() => {
   commitCreateMutationMock.mockReset();
   commitRevokeMutationMock.mockReset();
+  commitRotateMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
-    return [name === "RevokeApiTokenMutation" ? commitRevokeMutationMock : commitCreateMutationMock, false];
+    if (name === "RevokeApiTokenMutation") {
+      return [commitRevokeMutationMock, false];
+    }
+
+    if (name === "RotateApiTokenMutation") {
+      return [commitRotateMutationMock, false];
+    }
+
+    return [commitCreateMutationMock, false];
   });
   mockedUseRoutePreloadedQuery.mockReturnValue(API_TOKENS_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
@@ -450,6 +461,142 @@ test("revoke token renders a generic alert for network errors", async () => {
   expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
 });
 
+test("rotate token commits the selected token id and displays the replacement one-time token", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+  mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
+
+  renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Replacement label for CLI"), {
+    target: { value: "CLI replacement" }
+  });
+  fireEvent.change(screen.getByLabelText("Replacement expiry for CLI"), {
+    target: { value: "2026-09-01T12:00" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          tokenId: ACTIVE_TOKEN.id,
+          label: "CLI replacement",
+          expiresAt: new Date("2026-09-01T12:00").toISOString()
+        }
+      })
+    );
+  });
+
+  completeLatestRotateMutation(buildSuccessfulRotateResponse());
+
+  const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
+  expect(oneTimeRegion).toHaveTextContent("pc_live_rotated_123456");
+  expect(screen.getByRole("heading", { name: "CLI replacement" })).toBeInTheDocument();
+  expect(screen.getByText("Revoked token")).toBeInTheDocument();
+});
+
+test("rotate token uses the selected row label when no replacement label is entered", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          tokenId: ACTIVE_TOKEN.id,
+          label: "CLI",
+          expiresAt: null
+        }
+      })
+    );
+  });
+});
+
+test("rotate token disables only the pending row", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  const rotateButtons = screen.getAllByRole("button", { name: "Rotate token" });
+
+  fireEvent.click(rotateButtons[0]);
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledTimes(1);
+  });
+  expect(rotateButtons[0]).toBeDisabled();
+  expect(rotateButtons[1]).not.toBeDisabled();
+
+  fireEvent.click(rotateButtons[1]);
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledTimes(2);
+  });
+  expect(commitRotateMutationMock).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({
+      variables: {
+        tokenId: BUILD_BOT_TOKEN.id,
+        label: "Build bot",
+        expiresAt: null
+      }
+    })
+  );
+});
+
+test("rotate token renders mutation payload errors", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestRotateMutation({
+    rotateApiToken: {
+      plainTextToken: null,
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "Token cannot be rotated."
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Token cannot be rotated.");
+  expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
+  expect(screen.getByText("Active token")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Rotate token" })).not.toBeDisabled();
+});
+
 function renderApiTokensRoute() {
   return render(
     <MemoryRouter>
@@ -470,6 +617,12 @@ function completeLatestRevokeMutation(response: unknown, graphQLErrors?: unknown
   });
 }
 
+function completeLatestRotateMutation(response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    commitRotateMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
+  });
+}
+
 function buildSuccessfulCreateResponse() {
   return {
     createApiToken: {
@@ -482,6 +635,24 @@ function buildSuccessfulCreateResponse() {
         expiresAt: "2026-08-29T12:00:00Z",
         revokedAt: null,
         insertedAt: "2026-05-31T14:00:00Z"
+      },
+      errors: []
+    }
+  };
+}
+
+function buildSuccessfulRotateResponse() {
+  return {
+    rotateApiToken: {
+      plainTextToken: "pc_live_rotated_123456",
+      apiToken: {
+        id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
+        label: "CLI replacement",
+        tokenPrefix: "998877aabbcc",
+        lastUsedAt: null,
+        expiresAt: "2026-09-01T12:00:00Z",
+        revokedAt: null,
+        insertedAt: "2026-06-01T12:00:00Z"
       },
       errors: []
     }

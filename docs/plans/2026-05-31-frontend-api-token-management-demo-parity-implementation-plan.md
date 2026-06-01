@@ -542,12 +542,13 @@ git commit -m "feat(frontend): revoke api tokens from the browser"
 
 **Files:**
 - Create: `assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts`
+- Modify: `assets/schema.graphql`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing rotate-flow tests**
+- [x] **Step 1: Write failing rotate-flow tests**
 
 Add route tests covering:
 
@@ -558,7 +559,7 @@ test("rotate token disables only the pending row");
 test("rotate token renders mutation payload errors");
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -568,7 +569,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because rotate is not implemented.
 
-- [ ] **Step 3: Add the rotate mutation**
+- [x] **Step 3: Add the rotate mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts`:
 
@@ -598,7 +599,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement rotate UI**
+- [x] **Step 4: Implement rotate UI**
 
 In `ApiTokensRoute`:
 
@@ -608,7 +609,7 @@ In `ApiTokensRoute`:
 - On success, show the replacement `plainTextToken` in the same one-time secret region used by create.
 - Add the replacement token to local row state and mark the old row revoked from the mutation response when the response contains enough data.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -618,7 +619,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/RotateApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run rotate-flow tests**
+- [x] **Step 6: Run rotate-flow tests**
 
 Run:
 
@@ -628,7 +629,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -638,14 +639,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 5 complete, record verification, and advance the current batch to Task 6.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RotateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/RotateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/RotateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): rotate api tokens from the browser"
 ```
 
