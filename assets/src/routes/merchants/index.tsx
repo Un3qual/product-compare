@@ -90,6 +90,11 @@ function MerchantDirectoryList({
           </li>
         ))}
       </ul>
+      {connection.pageInfo.hasPreviousPage && pagination.after ? (
+        <p>
+          <Link to="/merchants">Previous merchants</Link>
+        </p>
+      ) : null}
       {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
         <p>
           <Link to={merchantDirectoryNextPagePath(pagination, connection.pageInfo.endCursor)}>

@@ -54,7 +54,8 @@ export const routes: RouteObject[] = [
       {
         path: "merchants",
         loader: merchantDirectoryLoader,
-        element: <MerchantDirectoryRoute />
+        element: <MerchantDirectoryRoute />,
+        errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
       },
       {
         path: "affiliate/setup",

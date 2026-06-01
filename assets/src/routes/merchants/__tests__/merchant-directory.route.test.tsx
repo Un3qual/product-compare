@@ -125,6 +125,30 @@ test("merchant directory renders next-page navigation when available", () => {
   );
 });
 
+test("merchant directory renders previous-page navigation when cursor-paged", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 30,
+      after: "cursor-1"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      hasPreviousPage: true,
+      startCursor: "cursor-2"
+    })
+  );
+
+  expect(screen.queryByRole("link", { name: "Previous merchants" })).not.toBeInTheDocument();
+
+  renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("link", { name: "Previous merchants" })).toHaveAttribute(
+    "href",
+    "/merchants"
+  );
+});
+
 test("merchant directory renders the loader error state", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "error",
@@ -166,6 +190,7 @@ function buildReadyLoaderData(
 function buildMerchantDirectoryData({
   endCursor = "cursor-2",
   hasNextPage = false,
+  hasPreviousPage = false,
   merchants = [
     {
       id: "merchant-1",
@@ -177,11 +202,14 @@ function buildMerchantDirectoryData({
       name: "Globex Supply",
       domain: "globex.example"
     }
-  ]
+  ],
+  startCursor = merchants.length === 0 ? null : "cursor-1"
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
   merchants?: Array<{ id: string; name: string; domain: string }>;
+  startCursor?: string | null;
 } = {}) {
   return {
     merchants: {
@@ -191,8 +219,8 @@ function buildMerchantDirectoryData({
       })),
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: false,
-        startCursor: merchants.length === 0 ? null : "cursor-1",
+        hasPreviousPage,
+        startCursor,
         endCursor
       }
     }

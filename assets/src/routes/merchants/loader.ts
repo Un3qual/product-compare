@@ -8,14 +8,12 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
+import {
+  merchantPaginationFromUrl,
+  type MerchantPagination
+} from "./pagination";
 
-const MERCHANT_DIRECTORY_DEFAULT_PAGE_SIZE = 20;
-const MERCHANT_DIRECTORY_MAX_PAGE_SIZE = 50;
-
-export interface MerchantDirectoryPagination {
-  after: string | null;
-  first: number;
-}
+export type MerchantDirectoryPagination = MerchantPagination;
 
 export type MerchantDirectoryLoaderData =
   | {
@@ -33,7 +31,7 @@ export async function merchantDirectoryLoader({
   request
 }: LoaderFunctionArgs): Promise<MerchantDirectoryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const pagination = merchantDirectoryPaginationFromUrl(new URL(request.url));
+  const pagination = merchantPaginationFromUrl(new URL(request.url));
 
   try {
     return {
@@ -56,31 +54,4 @@ export async function merchantDirectoryLoader({
       }
     );
   }
-}
-
-export function merchantDirectoryPaginationFromUrl(url: URL): MerchantDirectoryPagination {
-  return {
-    first: normalizeMerchantDirectoryPageSize(url.searchParams.get("first")),
-    after: normalizeMerchantDirectoryCursor(url.searchParams.get("after"))
-  };
-}
-
-function normalizeMerchantDirectoryPageSize(value: string | null) {
-  const normalized = value?.trim();
-
-  if (!normalized || !/^\d+$/.test(normalized)) {
-    return MERCHANT_DIRECTORY_DEFAULT_PAGE_SIZE;
-  }
-
-  const pageSize = Number(normalized);
-
-  return pageSize >= 1 && pageSize <= MERCHANT_DIRECTORY_MAX_PAGE_SIZE
-    ? pageSize
-    : MERCHANT_DIRECTORY_DEFAULT_PAGE_SIZE;
-}
-
-function normalizeMerchantDirectoryCursor(value: string | null) {
-  const normalized = value?.trim();
-
-  return normalized ? normalized : null;
 }

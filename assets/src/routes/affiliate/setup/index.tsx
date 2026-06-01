@@ -52,6 +52,10 @@ type CouponResult = NonNullable<
   NonNullable<CreateCouponMutation["response"]["createCoupon"]>["coupon"]
 >;
 
+type AffiliateSetupMerchantConnection = NonNullable<
+  AffiliateSetupRouteQuery["response"]["merchants"]
+>;
+
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
 
@@ -87,7 +91,12 @@ function AffiliateSetupPanel({
     merchantQuery
   );
   const data = usePreloadedQuery<AffiliateSetupRouteQuery>(affiliateSetupRouteQuery, queryRef);
-  const merchantChoices = buildMerchantChoices(data);
+
+  if (!data.merchants) {
+    return <AffiliateSetupUnavailableFallback />;
+  }
+
+  const merchantChoices = buildMerchantChoices(data.merchants);
   const [networkResult, setNetworkResult] = useState<NetworkResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [networkPending, setNetworkPending] = useState(false);
@@ -412,19 +421,40 @@ function AffiliateSetupPanel({
             Create coupon
           </button>
           {couponError ? <p role="alert">{couponError}</p> : null}
-          {couponResult ? (
-            <section aria-label="Coupon result">
-              <h3>{couponResult.code}</h3>
-              <p>{couponResult.id}</p>
-              {couponResult.discountValue && couponResult.currency ? (
-                <p>{`${couponResult.discountValue} ${couponResult.currency}`}</p>
-              ) : null}
-            </section>
-          ) : null}
+          {couponResult ? <CouponResultPanel coupon={couponResult} /> : null}
         </form>
       )}
     </>
   );
+}
+
+function CouponResultPanel({ coupon }: { coupon: CouponResult }) {
+  const discountText = couponDiscountText(coupon);
+
+  return (
+    <section aria-label="Coupon result">
+      <h3>{coupon.code}</h3>
+      <p>{coupon.id}</p>
+      {discountText ? <p>{discountText}</p> : null}
+    </section>
+  );
+}
+
+function couponDiscountText(coupon: CouponResult) {
+  const value = coupon.discountValue == null ? null : String(coupon.discountValue);
+
+  switch (coupon.discountType) {
+    case "AMOUNT":
+      return value && coupon.currency ? `${value} ${coupon.currency}` : null;
+    case "PERCENT":
+      return value ? `${value}% off` : null;
+    case "FREE_SHIPPING":
+      return "Free shipping";
+    case "OTHER":
+      return value ? `${value} off` : "Other discount";
+    default:
+      return null;
+  }
 }
 
 function AffiliateSetupUnavailableFallback() {
@@ -435,22 +465,20 @@ function AffiliateSetupUnavailableFallback() {
   );
 }
 
-function buildMerchantChoices(data: AffiliateSetupRouteQuery["response"]): MerchantChoice[] {
-  return (
-    data.merchants?.edges.flatMap(({ node }) => {
-      if (!node?.id || !node.name || !node.domain) {
-        return [];
-      }
+function buildMerchantChoices(merchants: AffiliateSetupMerchantConnection): MerchantChoice[] {
+  return merchants.edges.flatMap(({ node }) => {
+    if (!node?.id || !node.name || !node.domain) {
+      return [];
+    }
 
-      return [
-        {
-          id: node.id,
-          name: node.name,
-          domain: node.domain
-        }
-      ];
-    }) ?? []
-  );
+    return [
+      {
+        id: node.id,
+        name: node.name,
+        domain: node.domain
+      }
+    ];
+  });
 }
 
 function buildNetworkVariables(

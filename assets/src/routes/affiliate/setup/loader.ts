@@ -8,14 +8,12 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
+import {
+  merchantPaginationFromUrl,
+  type MerchantPagination
+} from "../../merchants/pagination";
 
-const AFFILIATE_SETUP_DEFAULT_MERCHANT_PAGE_SIZE = 20;
-const AFFILIATE_SETUP_MAX_MERCHANT_PAGE_SIZE = 50;
-
-export interface AffiliateSetupMerchantPagination {
-  after: string | null;
-  first: number;
-}
+export type AffiliateSetupMerchantPagination = MerchantPagination;
 
 export type AffiliateSetupLoaderData =
   | {
@@ -33,7 +31,7 @@ export async function affiliateSetupLoader({
   request
 }: LoaderFunctionArgs): Promise<AffiliateSetupLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const merchantPagination = affiliateSetupMerchantPaginationFromUrl(new URL(request.url));
+  const merchantPagination = merchantPaginationFromUrl(new URL(request.url));
 
   try {
     return {
@@ -56,33 +54,4 @@ export async function affiliateSetupLoader({
       }
     );
   }
-}
-
-export function affiliateSetupMerchantPaginationFromUrl(
-  url: URL
-): AffiliateSetupMerchantPagination {
-  return {
-    first: normalizeAffiliateSetupMerchantPageSize(url.searchParams.get("first")),
-    after: normalizeAffiliateSetupMerchantCursor(url.searchParams.get("after"))
-  };
-}
-
-function normalizeAffiliateSetupMerchantPageSize(value: string | null) {
-  const normalized = value?.trim();
-
-  if (!normalized || !/^\d+$/.test(normalized)) {
-    return AFFILIATE_SETUP_DEFAULT_MERCHANT_PAGE_SIZE;
-  }
-
-  const pageSize = Number(normalized);
-
-  return pageSize >= 1 && pageSize <= AFFILIATE_SETUP_MAX_MERCHANT_PAGE_SIZE
-    ? pageSize
-    : AFFILIATE_SETUP_DEFAULT_MERCHANT_PAGE_SIZE;
-}
-
-function normalizeAffiliateSetupMerchantCursor(value: string | null) {
-  const normalized = value?.trim();
-
-  return normalized ? normalized : null;
 }

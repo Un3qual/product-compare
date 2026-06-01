@@ -39,7 +39,8 @@ test("merchant directory route is registered under the root route", () => {
     expect.objectContaining({
       path: "merchants",
       loader: merchantDirectoryLoader,
-      element: <MerchantDirectoryRoute />
+      element: <MerchantDirectoryRoute />,
+      errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
     })
   );
 });

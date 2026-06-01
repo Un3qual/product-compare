@@ -155,6 +155,15 @@ test("affiliate setup route renders loader error fallback", () => {
   expect(screen.getByRole("alert")).toHaveTextContent("Affiliate setup unavailable.");
 });
 
+test("affiliate setup route renders unavailable fallback when merchants payload is missing", () => {
+  mockedUsePreloadedQuery.mockReturnValue({ merchants: null } as never);
+
+  renderAffiliateSetupRoute();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Affiliate setup unavailable.");
+  expect(screen.queryByRole("form", { name: "Save affiliate network" })).not.toBeInTheDocument();
+});
+
 test("affiliate setup route commits network upsert and displays the saved network", async () => {
   renderAffiliateSetupRoute();
 
@@ -459,6 +468,87 @@ test("affiliate setup route commits coupon creation and displays the created cou
   expect(resultRegion).toHaveTextContent(COUPON_ID);
   expect(resultRegion).toHaveTextContent("SAVE-20");
   expect(resultRegion).toHaveTextContent("20.00 USD");
+});
+
+test("affiliate setup route displays percent coupon discount details without currency", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Coupon code"), {
+    target: { value: "SAVE-20PCT" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount type"), {
+    target: { value: "PERCENT" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount value"), {
+    target: { value: "20.00" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
+
+  await waitFor(() => {
+    expect(commitCouponMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCouponMutation({
+    createCoupon: {
+      coupon: {
+        id: COUPON_ID,
+        merchantId: MERCHANT_ID,
+        affiliateNetworkId: null,
+        code: "SAVE-20PCT",
+        discountType: "PERCENT",
+        discountValue: "20.00",
+        currency: null,
+        validFrom: null,
+        validTo: null
+      },
+      errors: []
+    }
+  });
+
+  const resultRegion = await screen.findByRole("region", {
+    name: "Coupon result"
+  });
+
+  expect(resultRegion).toHaveTextContent("SAVE-20PCT");
+  expect(resultRegion).toHaveTextContent("20.00% off");
+});
+
+test("affiliate setup route displays other coupon discount details without an amount", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Coupon code"), {
+    target: { value: "MEMBER-PERK" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount type"), {
+    target: { value: "OTHER" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
+
+  await waitFor(() => {
+    expect(commitCouponMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCouponMutation({
+    createCoupon: {
+      coupon: {
+        id: COUPON_ID,
+        merchantId: MERCHANT_ID,
+        affiliateNetworkId: null,
+        code: "MEMBER-PERK",
+        discountType: "OTHER",
+        discountValue: null,
+        currency: null,
+        validFrom: null,
+        validTo: null
+      },
+      errors: []
+    }
+  });
+
+  const resultRegion = await screen.findByRole("region", {
+    name: "Coupon result"
+  });
+
+  expect(resultRegion).toHaveTextContent("MEMBER-PERK");
+  expect(resultRegion).toHaveTextContent("Other discount");
 });
 
 test("affiliate setup route normalizes optional link and coupon inputs", async () => {

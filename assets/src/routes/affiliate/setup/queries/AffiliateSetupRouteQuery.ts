@@ -6,9 +6,7 @@ export default graphql`
       edges {
         cursor
         node {
-          id
-          name
-          domain
+          ...MerchantListItemFragment @relay(mask: false)
         }
       }
       pageInfo {
