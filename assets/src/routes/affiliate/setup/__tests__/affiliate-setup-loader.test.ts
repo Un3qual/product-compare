@@ -55,7 +55,7 @@ test("affiliateSetupLoader preloads the default merchant choices page", async ()
 test("affiliateSetupLoader preserves supported merchant cursor and page-size params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?merchantAfter=merchant-cursor&merchantFirst=50"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=50"
   );
   const descriptor = affiliateSetupQueryDescriptor({ first: 50, after: "merchant-cursor" });
 
@@ -76,7 +76,7 @@ test("affiliateSetupLoader preserves supported merchant cursor and page-size par
 test("affiliateSetupLoader drops invalid merchant page-size params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?merchantAfter=merchant-cursor&merchantFirst=500"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=500"
   );
   const descriptor = affiliateSetupQueryDescriptor({ first: 20, after: "merchant-cursor" });
 
@@ -97,7 +97,7 @@ test("affiliateSetupLoader drops invalid merchant page-size params", async () =>
 test("affiliateSetupLoader returns error state when merchant preloading fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?merchantAfter=merchant-cursor&merchantFirst=30"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=30"
   );
   const preloadError = new Error("Network request failed: affiliate setup boom");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);

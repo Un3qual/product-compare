@@ -62,8 +62,8 @@ export function affiliateSetupMerchantPaginationFromUrl(
   url: URL
 ): AffiliateSetupMerchantPagination {
   return {
-    first: normalizeAffiliateSetupMerchantPageSize(url.searchParams.get("merchantFirst")),
-    after: normalizeAffiliateSetupMerchantCursor(url.searchParams.get("merchantAfter"))
+    first: normalizeAffiliateSetupMerchantPageSize(url.searchParams.get("first")),
+    after: normalizeAffiliateSetupMerchantCursor(url.searchParams.get("after"))
   };
 }
 
