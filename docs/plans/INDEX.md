@@ -26,6 +26,13 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Recently Completed
 
+- Frontend logout route baseline lane: `docs/plans/2026-06-01-frontend-logout-route-baseline-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `docs/work/graphql-auth-migration.md`, and the existing GraphQL `logout` mutation contract.
+  - Scope: Relay-backed `/auth/logout` route, logout mutation artifact, route registration, navigation link, and auth-slice verification.
+  - Result: browser logout is now reachable from the frontend and clears the Phoenix session through GraphQL without adding REST endpoints.
+  - Verification passed with `cd assets && bun run relay`, focused auth/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
 - Backend source artifact node lookup lane: `docs/plans/2026-06-01-backend-source-artifact-node-lookup-implementation-plan.md`
   - Status: completed on 2026-06-01
   - Source context: `ARCHITECTURE.md`, `docs/work/backend-source-artifact-public-contract.md`, and GraphQL node contract tests.

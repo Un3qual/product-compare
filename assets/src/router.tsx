@@ -8,6 +8,7 @@ import { AffiliateSetupRoute } from "./routes/affiliate/setup";
 import { affiliateSetupLoader } from "./routes/affiliate/setup/loader";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
+import { LogoutRoute } from "./routes/auth/logout";
 import { RegisterRoute } from "./routes/auth/register";
 import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
@@ -90,6 +91,10 @@ export const routes: RouteObject[] = [
       {
         path: "auth/login",
         element: <LoginRoute />
+      },
+      {
+        path: "auth/logout",
+        element: <LogoutRoute />
       },
       {
         path: "auth/register",

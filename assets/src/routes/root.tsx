@@ -77,6 +77,9 @@ export function RootLayout() {
                 <Link to="/auth/login">Sign in</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/auth/logout">Sign out</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/auth/register">Create account</Link>
               </Button>
             </div>
@@ -120,6 +123,9 @@ export function RootRoute() {
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/auth/login">Sign in</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/auth/logout">Sign out</Link>
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/auth/register">Create account</Link>

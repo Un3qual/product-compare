@@ -1,6 +1,7 @@
 import { routes } from "../router";
 import { AffiliateSetupRoute } from "../routes/affiliate/setup";
 import { affiliateSetupLoader } from "../routes/affiliate/setup/loader";
+import { LogoutRoute } from "../routes/auth/logout";
 import { RouteErrorBoundary } from "../routes/compare/error-boundary";
 import { RevenueSummaryRoute } from "../routes/commerce/revenue";
 import { revenueSummaryLoader } from "../routes/commerce/revenue/loader";
@@ -56,6 +57,17 @@ test("affiliate setup route is registered under the root route", () => {
       loader: affiliateSetupLoader,
       element: <AffiliateSetupRoute />,
       errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+    })
+  );
+});
+
+test("logout route is registered under the root route", () => {
+  const logoutRoute = routes[0]?.children?.find((route) => route.path === "auth/logout");
+
+  expect(logoutRoute).toEqual(
+    expect.objectContaining({
+      path: "auth/logout",
+      element: <LogoutRoute />
     })
   );
 });

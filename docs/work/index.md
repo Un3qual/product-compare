@@ -41,6 +41,13 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Frontend logout route baseline lane
+  - Work doc: `docs/work/frontend-logout-route-baseline.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked logout route baseline batch remains.
+  - Owned paths: `assets/src/routes/auth/__tests__/session.route.test.tsx`, `assets/src/routes/auth/mutations/LogoutMutation.ts`, `assets/src/routes/auth/logout.tsx`, `assets/src/__generated__/LogoutMutation.graphql.ts`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `docs/work/frontend-logout-route-baseline.md`, `docs/work/graphql-auth-migration.md`, `docs/plans/2026-06-01-frontend-logout-route-baseline-implementation-plan.md`
+
 - Backend source artifact node lookup lane
   - Work doc: `docs/work/backend-source-artifact-node-lookup.md`
   - Status: completed
@@ -127,6 +134,15 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend Logout Route Baseline
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-logout-route-baseline.md`
+- Outcome:
+  - Added Relay `LogoutMutation`, `/auth/logout`, route registration, and `Sign out` navigation/home-action links.
+  - Kept logout on the GraphQL `/api/graphql` contract and Phoenix session cookie authority.
+  - Verification passed with `cd assets && bun run relay`, focused auth/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Backend Source Artifact Node Lookup
 

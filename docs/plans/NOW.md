@@ -5,6 +5,20 @@
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 - No current unblocked batch is queued. Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
 
+### Frontend Logout Route Baseline Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-logout-route-baseline.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-logout-route-baseline-implementation-plan.md`
+- Next step: no unblocked logout route baseline batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Why this batch is current:
+  - `ARCHITECTURE.md` says browser auth routes include logout.
+  - Backend GraphQL already exposes cookie-backed `logout`, and `session_auth_test.exs` covers session deletion.
+  - Task 1 added the missing Relay `LogoutMutation`, `/auth/logout` route, route registration, and `Sign out` navigation link.
+  - Task 2 ran focused auth/frontend verification, broader frontend check, and diff whitespace verification, then closed the lane.
+  - Product ingestion remains blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
+
 ### Backend Source Artifact Node Lookup Lane
 
 - Status: completed
@@ -195,6 +209,16 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Logout Route Baseline, Task 2:
+  - Ran final auth-slice verification for the Relay-backed `/auth/logout` route.
+  - Closed the logout route baseline lane and returned the active queue to blocked product ingestion only.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend Logout Route Baseline, Task 1:
+  - Added `LogoutMutation`, `/auth/logout`, route registration, and `Sign out` primary-navigation/home-action links.
+  - Verified RED with `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx` failing because `LogoutRoute` was missing and the `Sign out` link was absent.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, and `cd assets && bun run typecheck`.
 
 - Backend Source Artifact Node Lookup, Task 2:
   - Ran final backend verification for safe `SourceArtifact` generic `node(id:)` lookup.

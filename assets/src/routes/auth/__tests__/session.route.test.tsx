@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useMutation } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { LoginRoute } from "../login";
+import { LogoutRoute } from "../logout";
 import { RegisterRoute } from "../register";
 
 const navigateMock = vi.fn();
@@ -35,6 +36,7 @@ function renderRoute(initialEntry: string) {
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/auth/login" element={<LoginRoute />} />
+        <Route path="/auth/logout" element={<LogoutRoute />} />
         <Route path="/auth/register" element={<RegisterRoute />} />
       </Routes>
     </MemoryRouter>
@@ -106,6 +108,63 @@ test("login route commits credentials through Relay and redirects after a succes
   await waitFor(() => {
     expect(navigateMock).toHaveBeenCalledWith("/");
   });
+});
+
+test("logout route commits the Relay logout mutation and redirects after Phoenix clears the session", async () => {
+  renderRoute("/auth/logout");
+
+  expect(screen.getByRole("heading", { name: /sign out/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /sign out/i })).toHaveAttribute(
+    "data-slot",
+    "button"
+  );
+  expect(screen.getByRole("link", { name: /back to sign in/i })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {}
+      })
+    );
+  });
+
+  completeMutation({
+    logout: {
+      ok: true,
+      errors: []
+    }
+  });
+
+  await waitFor(() => {
+    expect(navigateMock).toHaveBeenCalledWith("/auth/login");
+  });
+});
+
+test("logout route hides failed action payload details behind a generic alert", async () => {
+  renderRoute("/auth/logout");
+
+  fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalled();
+  });
+
+  completeMutation({
+    logout: {
+      ok: false,
+      errors: []
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Request failed. Please try again."
+  );
+  expect(navigateMock).not.toHaveBeenCalled();
 });
 
 test("register route renders typed GraphQL validation errors from a Relay payload", async () => {

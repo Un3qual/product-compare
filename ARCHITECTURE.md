@@ -14,7 +14,7 @@
 
 ## Current Delivered Frontend Baseline
 
-- Browser auth routes exist for register, login, logout, forgot-password, reset-password, and verify-email.
+- Browser auth routes exist for register, login, logout, forgot-password, reset-password, and verify-email, including a Relay-backed logout confirmation route.
 - `/products` ships a GraphQL-backed browse baseline with compare entry links.
 - `/products/:slug` ships product detail, current specifications, compare-entry, active-offer baselines, shopper-facing active coupon display, and compact price-history rows.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, and renders current product attributes on selected compare cards.
@@ -44,6 +44,7 @@
 ## Next Planned Slice
 
 - No unblocked implementation slice is currently selected; live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.
+- Frontend logout route baseline is complete: `/auth/logout` clears the Phoenix browser session through the existing GraphQL logout mutation and is reachable from primary navigation.
 - Backend source artifact node lookup is complete: generic `node(id:)` supports the safe `SourceArtifact` GraphQL object without exposing raw payload fields.
 - Frontend product-detail price history demo parity is complete: `/products/:slug` renders bounded price-history rows, empty history state, and has-more state in the Active offers section.
 - Backend source artifact public contract is complete: `sourceArtifact(id:)` exposes safe metadata while raw payload fields remain unexposed.
