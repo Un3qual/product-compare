@@ -223,7 +223,7 @@ type MerchantProduct implements Node {
   priceHistory(first: Int, after: String, from: DateTime, to: DateTime): PricePointConnection
 }
 
-type PricePoint {
+type PricePoint implements Node {
   id: ID!
   merchantProductId: ID!
   observedAt: DateTime!
