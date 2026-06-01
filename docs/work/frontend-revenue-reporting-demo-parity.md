@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01, Task 2 frontend route render verification
+- Last verified: 2026-06-01, Task 3 route registration, navigation, and lane closure verification
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
 
@@ -13,12 +13,12 @@
 
 - [x] Task 1: add the Relay route query and loader for `/commerce/revenue`.
 - [x] Task 2: render the revenue reporting route.
-- [ ] Task 3: wire navigation and close the lane.
+- [x] Task 3: wire navigation and close the lane.
 
 ## Current Batch
 
-- Task: Task 3, wire navigation and close the lane.
-- Status: ready.
+- Task: none.
+- Status: completed.
 - Owned paths:
   - `assets/src/routes/commerce/revenue/**`
   - `assets/src/router.tsx`
@@ -29,7 +29,7 @@
   - `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
   - `docs/work/index.md`
   - `docs/plans/NOW.md`
-- Immediate prerequisite: Task 2 added `RevenueSummaryRoute` with a GET filter form, loader-filter echoing, Relay-preloaded metric rendering, public-safe suppression copy, and loader/query error fallback. Task 3 should register `/commerce/revenue`, expose it from navigation, run focused frontend verification, verify the existing backend revenue summary contract, and close the lane.
+- Immediate prerequisite: all planned revenue reporting demo parity tasks are complete. `/commerce/revenue` is registered with `revenueSummaryLoader`, exposed from primary navigation and home actions, and verified against the existing backend revenue summary contract.
 
 ## Verification
 
@@ -38,7 +38,12 @@
 - Task 1 implementation verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts`, and `cd assets && bun run typecheck`.
 - Task 2 RED verification: `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx` failed because `../index` did not exist.
 - Task 2 implementation verification passed with `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts` and `cd assets && bun run typecheck`.
+- Task 3 RED verification:
+  - `cd assets && bun x vitest run src/__tests__/router.test.tsx` failed because `commerce/revenue` was not registered.
+  - `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx` failed because the `Revenue` links were not present.
+  - After code review, `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx` failed because the home actions did not yet have an accessible `Home actions` group.
+- Task 3 implementation verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, and `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`.
 
 ## Blockers
 
-- None for Task 2.
+- None.

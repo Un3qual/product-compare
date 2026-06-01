@@ -4,21 +4,33 @@
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 
-### Frontend Revenue Reporting Demo Parity Lane
+### Frontend Merchant Discovery Demo Parity Lane
 
 - Status: ready
-- Batch: Task 3, wire navigation and close the lane
-- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
-- Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
-- Next step: write focused route registration and navigation tests, register `/commerce/revenue` with `revenueSummaryLoader`, add `Revenue` links to primary navigation and home actions, run focused frontend verification plus the existing backend revenue summary contract tests, then close the lane.
+- Batch: Task 1, add the Relay route query and loader for `/merchants`
+- Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, run Relay generation and focused frontend verification, then advance to route rendering.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
+  - Revenue reporting demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
-  - `ARCHITECTURE.md` lists revenue reporting as the next unblocked non-ingestion demo-parity candidate after API token management.
-  - The backend GraphQL contract already exposes read-only `revenueSummary(input:)` with public-safe suppression.
+  - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
+  - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
+  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape.
+
+### Frontend Revenue Reporting Demo Parity Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+- Next step: no unblocked revenue reporting demo parity batch remains in this lane.
+- Why this batch is current:
   - Task 1 refreshed the local `assets/schema.graphql` revenue summary contract, generated `RevenueSummaryRouteQuery.graphql.ts`, and added `revenueSummaryLoader`.
-  - Task 2 added the `/commerce/revenue` route UI with filter controls, Relay-preloaded metric rendering, suppression copy, and loader error fallback; Task 3 now wires route registration and navigation.
+  - Task 2 added the `/commerce/revenue` route UI with filter controls, Relay-preloaded metric rendering, suppression copy, and loader error fallback.
+  - Task 3 registered `/commerce/revenue`, exposed `Revenue` in primary navigation and home actions, ran focused frontend verification, ran the existing backend revenue summary contract tests, and closed the lane.
 
 ### Frontend API Token Management Demo Parity Lane
 
@@ -110,6 +122,14 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Revenue Reporting Demo Parity, Task 3:
+  - Registered `/commerce/revenue` with `RevenueSummaryRoute` and `revenueSummaryLoader`.
+  - Added `Revenue` links to primary navigation and home actions.
+  - Hardened the root route test by adding an accessible `Home actions` group instead of relying on DOM parent structure.
+  - Closed the revenue reporting demo parity lane and advanced NOW to frontend merchant discovery demo parity.
+  - Verified RED router and root tests failed before implementation because the route and links were absent, and the post-review root test failed until the `Home actions` group existed.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 - Frontend Revenue Reporting Demo Parity, Task 2:
   - Added `RevenueSummaryRoute` for `/commerce/revenue` with GET filters for network, currency, and date range.

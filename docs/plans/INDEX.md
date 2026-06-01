@@ -11,11 +11,11 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Frontend revenue reporting demo parity lane: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+1. Frontend merchant discovery demo parity lane: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
    - Status: ready
    - Source context: `ARCHITECTURE.md`
-   - Current scope: Task 1 adds the Relay route query and loader for `/commerce/revenue`.
-   - Next scope: render the revenue reporting route, then wire navigation and final verification.
+   - Current scope: Task 1 adds the Relay route query and loader for `/merchants`.
+   - Next scope: render the merchant discovery route, then wire navigation and final verification.
 
 2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
@@ -27,13 +27,20 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Intended scope: affiliate/admin setup and merchant discovery after revenue reporting reaches demo parity.
+   - Intended scope: affiliate/admin setup after merchant discovery reaches demo parity.
 
 2. Backend lane follow-up
    - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
 
 ## Recently Completed
+
+- Frontend revenue reporting demo parity lane: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`
+  - Scope: Relay-backed `/commerce/revenue` route loading, aggregate filter controls, suppressed and unsuppressed metric rendering, navigation links, and final verification.
+  - Result: the existing public-safe `revenueSummary(input:)` GraphQL contract is demoable from the browser UI without adding REST endpoints.
+  - Verification passed with `cd assets && bun run relay`, focused revenue/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 - Frontend API token management demo parity lane: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
   - Status: completed on 2026-06-01

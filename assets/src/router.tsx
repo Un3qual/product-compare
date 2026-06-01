@@ -11,6 +11,8 @@ import { ResetPasswordRoute } from "./routes/auth/reset-password";
 import { VerifyEmailRoute } from "./routes/auth/verify-email";
 import { browseLoader } from "./routes/catalog/loader";
 import { BrowseRoute } from "./routes/catalog/browse";
+import { RevenueSummaryRoute } from "./routes/commerce/revenue";
+import { revenueSummaryLoader } from "./routes/commerce/revenue/loader";
 import { compareLoader } from "./routes/compare/loader";
 import { savedComparisonsLoader } from "./routes/compare/saved-data";
 import { CompareRoute } from "./routes/compare";
@@ -56,6 +58,11 @@ export const routes: RouteObject[] = [
         loader: savedComparisonsLoader,
         element: <SavedComparisonsRoute />,
         errorElement: <CompareErrorBoundary title="Saved comparisons" />
+      },
+      {
+        path: "commerce/revenue",
+        loader: revenueSummaryLoader,
+        element: <RevenueSummaryRoute />
       },
       {
         path: "account/api-tokens",

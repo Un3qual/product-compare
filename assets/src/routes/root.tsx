@@ -62,6 +62,9 @@ export function RootLayout() {
                 <Link to="/compare/saved">Saved comparisons</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/commerce/revenue">Revenue</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/account/api-tokens">API tokens</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
@@ -87,7 +90,7 @@ export function RootRoute() {
         <h1>Product Compare</h1>
         <p>GraphQL-backed browser auth flows now live alongside the frontend routes.</p>
       </div>
-      <div {...stylex.props(styles.actions)}>
+      <div aria-label="Home actions" role="group" {...stylex.props(styles.actions)}>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/products">Browse products</Link>
         </Button>
@@ -96,6 +99,9 @@ export function RootRoute() {
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/compare/saved">Saved comparisons</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/commerce/revenue">Revenue</Link>
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/account/api-tokens">API tokens</Link>

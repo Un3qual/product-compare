@@ -41,12 +41,12 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
-- Frontend revenue reporting demo parity lane
-  - Work doc: `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Frontend merchant discovery demo parity lane
+  - Work doc: `docs/work/frontend-merchant-discovery-demo-parity.md`
   - Status: ready
   - Priority: P1
-  - Next batch: Task 3, wire navigation and close the lane.
-  - Owned paths: `assets/src/routes/commerce/revenue/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+  - Next batch: Task 1, add the Relay route query and loader for `/merchants`.
+  - Owned paths: `assets/src/routes/merchants/**`, `assets/src/__generated__/**`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
@@ -92,6 +92,16 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend Revenue Reporting Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/commerce/revenue` route that preloads the existing `revenueSummary(input:)` query.
+  - Rendered aggregate revenue filters, active normalized filters, suppressed and unsuppressed metric states, and a loader/query fallback.
+  - Added `Revenue` links to primary navigation and home actions, and registered `/commerce/revenue` with `revenueSummaryLoader`.
+  - Verification passed with `cd assets && bun run relay`, focused revenue/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Frontend API Token Management Demo Parity
 
