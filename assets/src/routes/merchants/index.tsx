@@ -92,7 +92,7 @@ function MerchantDirectoryList({
       </ul>
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
-          <Link to="/merchants">Previous merchants</Link>
+          <Link to="/merchants">First merchants</Link>
         </p>
       ) : null}
       {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (

@@ -125,7 +125,7 @@ test("merchant directory renders next-page navigation when available", () => {
   );
 });
 
-test("merchant directory renders previous-page navigation when cursor-paged", () => {
+test("merchant directory renders first-page navigation when cursor-paged", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 30,
@@ -139,11 +139,11 @@ test("merchant directory renders previous-page navigation when cursor-paged", ()
     })
   );
 
-  expect(screen.queryByRole("link", { name: "Previous merchants" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "First merchants" })).not.toBeInTheDocument();
 
   renderMerchantDirectoryRoute();
 
-  expect(screen.getByRole("link", { name: "Previous merchants" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
     "href",
     "/merchants"
   );
