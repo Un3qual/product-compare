@@ -1,8 +1,14 @@
 import * as stylex from "@stylexjs/stylex";
-import { Link, Outlet } from "react-router-dom";
+import { usePreloadedQuery } from "react-relay";
+import { Link, Outlet, useLoaderData, useOutletContext } from "react-router-dom";
+import rootViewerRouteQuery, {
+  type RootViewerRouteQuery
+} from "../__generated__/RootViewerRouteQuery.graphql";
+import { useRoutePreloadedQuery } from "../relay/route-preload";
 import { AppShell } from "../ui/components/layout/app-shell";
 import { Button } from "../ui/primitives";
 import { AppProviders } from "../ui/providers/app-providers";
+import type { RootLoaderData, RootViewer } from "./root/loader";
 
 const styles = stylex.create({
   home: {
@@ -42,7 +48,35 @@ const styles = stylex.create({
   }
 });
 
+type RootOutletContext = {
+  viewer: RootViewer | null;
+};
+
 export function RootLayout() {
+  const loaderData = useLoaderData() as RootLoaderData;
+
+  if (loaderData.status === "guest") {
+    return <RootLayoutShell viewer={null} />;
+  }
+
+  return <ReadyRootLayout loaderData={loaderData} />;
+}
+
+function ReadyRootLayout({
+  loaderData
+}: {
+  loaderData: Extract<RootLoaderData, { status: "ready" }>;
+}) {
+  const queryRef = useRoutePreloadedQuery<RootViewerRouteQuery>(
+    rootViewerRouteQuery,
+    loaderData.viewerQuery
+  );
+  const data = usePreloadedQuery<RootViewerRouteQuery>(rootViewerRouteQuery, queryRef);
+
+  return <RootLayoutShell viewer={rootViewerFromQuery(data.viewer)} />;
+}
+
+function RootLayoutShell({ viewer }: RootOutletContext) {
   return (
     <AppProviders>
       <AppShell
@@ -73,26 +107,20 @@ export function RootLayout() {
               <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/account/api-tokens">API tokens</Link>
               </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/auth/login">Sign in</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/auth/logout">Sign out</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/auth/register">Create account</Link>
-              </Button>
+              <AuthLinks viewer={viewer} />
             </div>
           </div>
         }
       >
-        <Outlet />
+        <Outlet context={{ viewer }} />
       </AppShell>
     </AppProviders>
   );
 }
 
 export function RootRoute() {
+  const { viewer } = useOutletContext<RootOutletContext>();
+
   return (
     <section {...stylex.props(styles.home)}>
       <div>
@@ -121,16 +149,42 @@ export function RootRoute() {
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/account/api-tokens">API tokens</Link>
         </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/auth/login">Sign in</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/auth/logout">Sign out</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/auth/register">Create account</Link>
-        </Button>
+        <AuthLinks viewer={viewer} />
       </div>
     </section>
   );
+}
+
+function AuthLinks({ viewer }: { viewer: RootViewer | null }) {
+  if (viewer) {
+    return (
+      <Button asChild {...stylex.props(styles.link)}>
+        <Link to="/auth/logout">Sign out</Link>
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button asChild {...stylex.props(styles.link)}>
+        <Link to="/auth/login">Sign in</Link>
+      </Button>
+      <Button asChild {...stylex.props(styles.link)}>
+        <Link to="/auth/register">Create account</Link>
+      </Button>
+    </>
+  );
+}
+
+function rootViewerFromQuery(
+  viewer: RootViewerRouteQuery["response"]["viewer"]
+): RootViewer | null {
+  if (!viewer) {
+    return null;
+  }
+
+  return {
+    id: viewer.id,
+    email: viewer.email
+  };
 }

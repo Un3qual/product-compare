@@ -26,6 +26,7 @@ import { merchantDirectoryLoader } from "./routes/merchants/loader";
 import { ProductDetailRoute } from "./routes/products/detail";
 import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
+import { rootLoader, ROOT_ROUTE_ID } from "./routes/root/loader";
 
 declare global {
   interface Window {
@@ -36,6 +37,8 @@ declare global {
 export const routes: RouteObject[] = [
   {
     path: "/",
+    id: ROOT_ROUTE_ID,
+    loader: rootLoader,
     element: <RootLayout />,
     children: [
       {

@@ -248,10 +248,29 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     assert %{"data" => %{"viewer" => nil}} = graphql(viewer_conn, viewer_query())
   end
 
+  test "logout without an active session is idempotent", %{conn: conn} do
+    conn =
+      conn
+      |> put_req_header_same_origin()
+      |> graphql_request(logout_mutation())
+
+    assert %{
+             "data" => %{
+               "logout" => %{
+                 "ok" => true,
+                 "errors" => []
+               }
+             }
+           } = json_response(conn, 200)
+
+    assert conn.private[:plug_session_info] == :drop
+  end
+
   test "untrusted origins cannot use session-writing auth mutations", %{conn: conn} do
     user = user_fixture(%{password: "supersecretpass123"})
+    user_email = user.email
 
-    conn =
+    login_conn =
       conn
       |> put_req_header("origin", "https://evil.example.com")
       |> graphql_request(login_mutation(), %{
@@ -272,9 +291,70 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
                  ]
                }
              }
-           } = json_response(conn, 200)
+           } = json_response(login_conn, 200)
 
-    refute get_session(conn, :user_token)
+    refute get_session(login_conn, :user_token)
+
+    email = "untrusted-register-#{System.unique_integer([:positive])}@example.com"
+
+    register_conn =
+      conn
+      |> recycle()
+      |> put_req_header("origin", "https://evil.example.com")
+      |> graphql_request(register_mutation(), %{
+        "email" => email,
+        "password" => "supersecretpass123"
+      })
+
+    assert %{
+             "data" => %{
+               "register" => %{
+                 "viewer" => nil,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_ORIGIN",
+                     "message" => "cross-origin request rejected",
+                     "field" => nil
+                   }
+                 ]
+               }
+             }
+           } = json_response(register_conn, 200)
+
+    refute get_session(register_conn, :user_token)
+    assert is_nil(Accounts.get_user_by_email(email))
+
+    logout_conn =
+      conn
+      |> recycle()
+      |> log_in_user(user)
+      |> put_req_header("origin", "https://evil.example.com")
+      |> graphql_request(logout_mutation())
+
+    assert %{
+             "data" => %{
+               "logout" => %{
+                 "ok" => false,
+                 "errors" => [
+                   %{
+                     "code" => "INVALID_ORIGIN",
+                     "message" => "cross-origin request rejected",
+                     "field" => nil
+                   }
+                 ]
+               }
+             }
+    } = json_response(logout_conn, 200)
+
+    refute logout_conn.private[:plug_session_info] == :drop
+
+    viewer_conn =
+      logout_conn
+      |> recycle()
+      |> put_req_header_same_origin()
+
+    assert %{"data" => %{"viewer" => %{"email" => ^user_email}}} =
+             graphql(viewer_conn, viewer_query())
   end
 
   test "forgotPassword returns ok and issues a reset token for an existing user", %{conn: conn} do

@@ -3,7 +3,23 @@
 ## Current Batches
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
-- No current unblocked batch is queued. Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Current unblocked batch: none. Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+
+### Frontend Auth State Hardening Lane
+
+- Status: completed
+- Batch: none queued.
+- Source of truth: `docs/work/frontend-auth-state-hardening.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
+- Next step: no unblocked auth state hardening batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Why this batch is current:
+  - The logout route baseline branch added `/auth/logout`, and this lane fixed the follow-up root-shell auth state gap.
+  - Backend GraphQL already exposes `viewer`, and frontend route loaders already have request-scoped Relay preload infrastructure.
+  - Task 1 added root `viewer` route preload and guest/authenticated root auth links.
+  - Task 2 keeps the root `viewer` record fresh after successful login, register, and logout mutations so the shell does not show stale auth links after auth actions.
+  - Task 3 closed the remaining pre-PR coverage gap around browser logout and backend session-auth edge cases.
+  - Task 4 ran focused and broader verification, then closed the auth state hardening lane.
+  - Product ingestion remains blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
 
 ### Frontend Logout Route Baseline Lane
 

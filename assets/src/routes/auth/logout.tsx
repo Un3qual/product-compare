@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation } from "react-relay";
+import { useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import logoutMutation, {
   type LogoutMutation
@@ -13,8 +13,10 @@ import {
   transportMutationErrors
 } from "./errors";
 import { AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { clearRootViewer } from "./viewer-store";
 
 export function LogoutRoute() {
+  const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [commitLogout, isSubmitting] = useMutation<LogoutMutation>(logoutMutation);
@@ -31,6 +33,7 @@ export function LogoutRoute() {
           const result = resolveActionMutationResult(response?.logout, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
+            clearRootViewer(relayEnvironment);
             navigate("/auth/login");
             return;
           }

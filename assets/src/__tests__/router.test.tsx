@@ -7,6 +7,16 @@ import { RevenueSummaryRoute } from "../routes/commerce/revenue";
 import { revenueSummaryLoader } from "../routes/commerce/revenue/loader";
 import { MerchantDirectoryRoute } from "../routes/merchants";
 import { merchantDirectoryLoader } from "../routes/merchants/loader";
+import { rootLoader, ROOT_ROUTE_ID } from "../routes/root/loader";
+
+test("root route preloads viewer state", () => {
+  expect(routes[0]).toEqual(
+    expect.objectContaining({
+      id: ROOT_ROUTE_ID,
+      loader: rootLoader
+    })
+  );
+});
 
 test("API token route has a route-level error boundary", () => {
   const apiTokensRoute = routes[0]?.children?.find(

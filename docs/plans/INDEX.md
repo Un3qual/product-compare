@@ -26,6 +26,13 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Recently Completed
 
+- Frontend auth state hardening lane: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `docs/work/graphql-auth-migration.md`, and the completed frontend logout route baseline lane.
+  - Scope: root `viewer` route preload, guest/authenticated auth links in the root shell, success-gated Relay root `viewer` updates after login/register/logout mutations, browser logout e2e coverage, backend session-auth contract hardening, and final auth-state verification.
+  - Result: browser auth state now follows the GraphQL `viewer` session state without adding REST auth endpoints or token-bearing browser auth.
+  - Verification passed with `cd assets && bun run relay`, focused root/router/auth Vitest suites, `cd assets && bun x playwright test tests/e2e/auth.spec.ts`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
+
 - Frontend logout route baseline lane: `docs/plans/2026-06-01-frontend-logout-route-baseline-implementation-plan.md`
   - Status: completed on 2026-06-01
   - Source context: `ARCHITECTURE.md`, `docs/work/graphql-auth-migration.md`, and the existing GraphQL `logout` mutation contract.

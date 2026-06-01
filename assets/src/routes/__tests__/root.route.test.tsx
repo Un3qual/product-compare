@@ -1,30 +1,138 @@
 import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { usePreloadedQuery } from "react-relay";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import type { LoaderFunctionArgs } from "react-router-dom";
+import { createRelayEnvironment } from "../../relay/environment";
+import {
+  createRelayRouterContext,
+  fetchRouteQuery,
+  useRoutePreloadedQuery
+} from "../../relay/route-preload";
 import { RootLayout, RootRoute } from "../root";
+import { rootLoader, type RootLoaderData } from "../root/loader";
 
-test("root layout renders primitive-backed links in the primary navigation", () => {
-  render(
-    <MemoryRouter>
-      <RootLayout />
-    </MemoryRouter>
+const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
+  () => ({
+    fetchRouteQueryMock: vi.fn(),
+    usePreloadedQueryMock: vi.fn(),
+    useRoutePreloadedQueryMock: vi.fn()
+  })
+);
+
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    usePreloadedQuery: usePreloadedQueryMock
+  };
+});
+
+vi.mock("../../relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../relay/route-preload")>(
+    "../../relay/route-preload"
   );
 
-  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+  return {
+    ...actual,
+    fetchRouteQuery: fetchRouteQueryMock,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+  };
+});
+
+const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+
+const ROOT_VIEWER_QUERY_REF = { dispose: vi.fn() };
+
+const guestLoaderData: Extract<RootLoaderData, { status: "guest" }> = {
+  status: "guest",
+  viewer: null,
+  viewerQuery: null
+};
+
+const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
+  status: "ready",
+  viewer: {
+    id: "viewer-1",
+    email: "person@example.com"
+  },
+  viewerQuery: {
+    __relayQuery: {
+      operationName: "RootViewerRouteQuery",
+      text: null,
+      variables: {}
+    }
+  }
+};
+
+const readyLoaderDataWithoutSnapshotViewer: Extract<RootLoaderData, { status: "ready" }> = {
+  status: "ready",
+  viewer: null,
+  viewerQuery: authenticatedLoaderData.viewerQuery
+};
+
+beforeEach(() => {
+  mockedFetchRouteQuery.mockReset();
+  mockedUsePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReturnValue(ROOT_VIEWER_QUERY_REF as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    viewer: {
+      id: "viewer-1",
+      email: "person@example.com"
+    }
+  } as never);
+});
+
+function renderRootRoute(loaderData: RootLoaderData) {
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        id: "root",
+        element: <RootLayout />,
+        children: [
+          {
+            index: true,
+            element: <RootRoute />
+          }
+        ]
+      }
+    ],
+    {
+      hydrationData: {
+        loaderData: {
+          root: loaderData
+        }
+      },
+      initialEntries: ["/"]
+    }
+  );
+
+  return render(<RouterProvider router={router} />);
+}
+
+test("root layout renders guest auth links in the primary navigation", async () => {
+  renderRootRoute(guestLoaderData);
+
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
 
   expect(primaryNavigation).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "Compare products" })).toHaveAttribute(
+  expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+  expect(within(primaryNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "API tokens" })).toHaveAttribute(
+  expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
     "/account/api-tokens"
   );
@@ -40,37 +148,72 @@ test("root layout renders primitive-backed links in the primary navigation", () 
     "href",
     "/affiliate/setup"
   );
+  expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register"
+  );
+  expect(within(primaryNavigation).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+});
+
+test("root layout renders authenticated auth links in the primary navigation", async () => {
+  renderRootRoute(authenticatedLoaderData);
+
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+
   expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
+  expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  expect(
+    within(primaryNavigation).queryByRole("link", { name: "Create account" })
+  ).not.toBeInTheDocument();
 });
 
-test("root route keeps home actions as links while using the shared button wrapper", () => {
-  render(
-    <MemoryRouter>
-      <RootRoute />
-    </MemoryRouter>
-  );
+test("root layout reads authenticated viewer state from the preloaded root query", async () => {
+  renderRootRoute(readyLoaderDataWithoutSnapshotViewer);
 
-  expect(screen.getByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+
+  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+    "href",
+    "/auth/logout"
+  );
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    readyLoaderDataWithoutSnapshotViewer.viewerQuery
+  );
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
+});
+
+test("root route renders guest home actions as links while using the shared button wrapper", async () => {
+  renderRootRoute(guestLoaderData);
+
+  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  const homeActions = screen.getByRole("group", { name: "Home actions" });
+
+  expect(within(homeActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "Compare products" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(screen.getByRole("link", { name: "API tokens" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
     "/account/api-tokens"
   );
-  const homeActions = screen.getByRole("group", { name: "Home actions" });
 
   expect(within(homeActions).getByRole("link", { name: "Revenue" })).toHaveAttribute(
     "href",
@@ -84,9 +227,75 @@ test("root route keeps home actions as links while using the shared button wrapp
     "href",
     "/affiliate/setup"
   );
+  expect(within(homeActions).getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register"
+  );
+  expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
+});
+
+test("root route renders authenticated home actions", async () => {
+  renderRootRoute(authenticatedLoaderData);
+
+  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  const homeActions = screen.getByRole("group", { name: "Home actions" });
+
   expect(within(homeActions).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
-  expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
+  expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
 });
+
+test("rootLoader propagates aborted viewer preloads instead of falling back to guest", async () => {
+  const controller = new AbortController();
+  const environment = createRelayEnvironment();
+  const abortReason = new Error("Route load cancelled");
+  const request = buildAbortableRequest("https://app.example.com/", controller.signal);
+
+  mockedFetchRouteQuery.mockImplementationOnce(() => {
+    controller.abort(abortReason);
+
+    return Promise.reject(new Error("Viewer fetch cancelled"));
+  });
+
+  await expect(rootLoader(buildRootLoaderArgs({ environment, request }))).rejects.toBe(abortReason);
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {},
+    { signal: request.signal }
+  );
+});
+
+function buildRootLoaderArgs({
+  environment = createRelayEnvironment(),
+  request = new Request("https://app.example.com/")
+}: {
+  environment?: ReturnType<typeof createRelayEnvironment>;
+  request?: Request;
+} = {}): LoaderFunctionArgs {
+  return {
+    request,
+    params: {},
+    context: createRelayRouterContext(environment)
+  } as LoaderFunctionArgs;
+}
+
+function buildAbortableRequest(url: string, signal: AbortSignal): Request {
+  return Object.defineProperty(
+    new Request(url, {
+      headers: new Headers()
+    }),
+    "signal",
+    {
+      value: signal
+    }
+  );
+}

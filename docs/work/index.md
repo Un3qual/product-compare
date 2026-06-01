@@ -41,6 +41,13 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Frontend auth state hardening lane
+  - Work doc: `docs/work/frontend-auth-state-hardening.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked frontend auth state hardening batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+  - Owned paths: `assets/src/routes/root.tsx`, `assets/src/routes/root/loader.ts`, `assets/src/routes/root/queries/RootViewerRouteQuery.ts`, `assets/src/__generated__/RootViewerRouteQuery.graphql.ts`, `assets/src/router.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/src/routes/auth/viewer-store.ts`, `assets/src/routes/auth/login.tsx`, `assets/src/routes/auth/register.tsx`, `assets/src/routes/auth/logout.tsx`, `assets/src/routes/auth/__tests__/session.route.test.tsx`, `assets/tests/e2e/auth.spec.ts`, `test/product_compare_web/graphql/session_auth_test.exs`, `docs/work/frontend-auth-state-hardening.md`, `docs/work/graphql-auth-migration.md`, `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
+
 - Frontend logout route baseline lane
   - Work doc: `docs/work/frontend-logout-route-baseline.md`
   - Status: completed
@@ -134,6 +141,16 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend Auth State Hardening
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-auth-state-hardening.md`
+- Outcome:
+  - Added root `viewer` route preload and rendered guest/authenticated auth links from GraphQL viewer state in primary navigation and home actions.
+  - Updated login, register, and logout routes to change Relay's root `viewer` record only after graphQLError-aware successful mutation results.
+  - Added browser logout e2e coverage and backend session-auth edge-case coverage for idempotent logout and untrusted-origin register/login/logout rejection.
+  - Verification passed with `cd assets && bun run relay`, focused root/router/auth Vitest suites, `cd assets && bun x playwright test tests/e2e/auth.spec.ts`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Frontend Logout Route Baseline
 
