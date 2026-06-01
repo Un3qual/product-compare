@@ -45,8 +45,8 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/frontend-revenue-reporting-demo-parity.md`
   - Status: ready
   - Priority: P1
-  - Next batch: Task 2, render the revenue reporting route.
-  - Owned paths: `assets/src/routes/commerce/revenue/**`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+  - Next batch: Task 3, wire navigation and close the lane.
+  - Owned paths: `assets/src/routes/commerce/revenue/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`

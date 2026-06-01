@@ -7,17 +7,18 @@
 ### Frontend Revenue Reporting Demo Parity Lane
 
 - Status: ready
-- Batch: Task 2, render the revenue reporting route
+- Batch: Task 3, wire navigation and close the lane
 - Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
-- Next step: write focused route render tests, add the `/commerce/revenue` route component that renders preloaded `revenueSummary` data plus the loader error state, run focused route/loader verification and frontend typecheck, then advance the lane to navigation wiring.
+- Next step: write focused route registration and navigation tests, register `/commerce/revenue` with `revenueSummaryLoader`, add `Revenue` links to primary navigation and home actions, run focused frontend verification plus the existing backend revenue summary contract tests, then close the lane.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `ARCHITECTURE.md` lists revenue reporting as the next unblocked non-ingestion demo-parity candidate after API token management.
   - The backend GraphQL contract already exposes read-only `revenueSummary(input:)` with public-safe suppression.
-  - Task 1 refreshed the local `assets/schema.graphql` revenue summary contract, generated `RevenueSummaryRouteQuery.graphql.ts`, and added `revenueSummaryLoader`; Task 2 now renders that preloaded summary.
+  - Task 1 refreshed the local `assets/schema.graphql` revenue summary contract, generated `RevenueSummaryRouteQuery.graphql.ts`, and added `revenueSummaryLoader`.
+  - Task 2 added the `/commerce/revenue` route UI with filter controls, Relay-preloaded metric rendering, suppression copy, and loader error fallback; Task 3 now wires route registration and navigation.
 
 ### Frontend API Token Management Demo Parity Lane
 
@@ -109,6 +110,12 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Revenue Reporting Demo Parity, Task 2:
+  - Added `RevenueSummaryRoute` for `/commerce/revenue` with GET filters for network, currency, and date range.
+  - Rendered active loader-normalized filters, Relay-preloaded revenue metrics, server-enforced suppression copy, and loader/query error fallback.
+  - Verified the RED route render test failed before implementation because `../index` did not exist.
+  - Verified `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend Revenue Reporting Demo Parity, Task 1:
   - Refreshed the local frontend Relay schema snapshot for the existing `revenueSummary(input:)` GraphQL contract.

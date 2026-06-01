@@ -315,7 +315,7 @@ Update `docs/work/frontend-revenue-reporting-demo-parity.md` and `docs/plans/NOW
 - Modify after verification: `docs/work/frontend-revenue-reporting-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route render tests**
+- [x] **Step 1: Write failing route render tests**
 
 Create route tests covering:
 
@@ -355,7 +355,7 @@ The unsuppressed fixture should include:
 }
 ```
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -365,7 +365,7 @@ cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summ
 
 Expected: FAIL because the route component does not exist.
 
-- [ ] **Step 3: Add the route component**
+- [x] **Step 3: Add the route component**
 
 Create `assets/src/routes/commerce/revenue/index.tsx` with:
 
@@ -377,7 +377,7 @@ Create `assets/src/routes/commerce/revenue/index.tsx` with:
 - Suppression copy when `suppression.suppressed` is true.
 - Metric cards or a definition list for `clicks`, `conversions`, `grossOrderValue`, `commissionRevenue`, and `averagePaidPrice` when unsuppressed.
 
-- [ ] **Step 4: Run route tests**
+- [x] **Step 4: Run route tests**
 
 Run:
 
@@ -387,7 +387,7 @@ cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summ
 
 Expected: PASS.
 
-- [ ] **Step 5: Run frontend typecheck**
+- [x] **Step 5: Run frontend typecheck**
 
 Run:
 
@@ -397,7 +397,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Update queue docs**
+- [x] **Step 6: Update queue docs**
 
 Update `docs/work/frontend-revenue-reporting-demo-parity.md` and `docs/plans/NOW.md`:
 
