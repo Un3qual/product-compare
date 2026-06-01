@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import compareProductPickerQuery, {
@@ -28,6 +28,9 @@ import {
 } from "./loader";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
+
+type ComparePickerProduct =
+  CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
@@ -196,18 +199,26 @@ function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readon
 
 function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
   const [after, setAfter] = useState<string | null>(null);
+  const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
     { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" }
   );
+  const pageProducts = useMemo(
+    () => data.products.edges.map(({ node }) => node),
+    [data.products.edges]
+  );
+  const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
-  const availableProducts = data.products.edges
-    .map(({ node }) => node)
-    .filter((product) => !selectedSlugSet.has(product.slug));
+  const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
   const pageInfo = data.products.pageInfo ?? { hasNextPage: false, endCursor: null };
   const nextCursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+
+  useEffect(() => {
+    setLoadedProducts((products) => appendUniqueProducts(products, pageProducts));
+  }, [pageProducts]);
 
   if (availableProducts.length === 0 && !nextCursor) {
     const message =
@@ -331,6 +342,29 @@ function buildComparePath(selectedSlugs: readonly string[], productSlug: string)
   }
 
   return `/compare?${params.toString()}`;
+}
+
+function appendUniqueProducts(
+  existingProducts: ComparePickerProduct[],
+  newProducts: readonly ComparePickerProduct[]
+) {
+  if (newProducts.length === 0) {
+    return existingProducts;
+  }
+
+  const seenProductIds = new Set(existingProducts.map((product) => product.id));
+  const nextProducts = [...existingProducts];
+
+  for (const product of newProducts) {
+    if (seenProductIds.has(product.id)) {
+      continue;
+    }
+
+    seenProductIds.add(product.id);
+    nextProducts.push(product);
+  }
+
+  return nextProducts.length === existingProducts.length ? existingProducts : nextProducts;
 }
 
 function isActiveSaveRequest(

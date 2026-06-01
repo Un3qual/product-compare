@@ -494,8 +494,29 @@ test("product picker can advance beyond the first picker page", () => {
     status: "empty",
     slugs: []
   });
-  mockedUseLazyLoadQuery
-    .mockReturnValueOnce({
+  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
+    if ((variables as { after?: string | null }).after === "next-products") {
+      return {
+        products: {
+          edges: [
+            {
+              node: {
+                id: "Product:monitor-c",
+                name: "Monitor C",
+                slug: "monitor-c",
+                brand: { id: "Brand:panelco", name: "PanelCo" }
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: null
+          }
+        }
+      };
+    }
+
+    return {
       products: {
         edges: [],
         pageInfo: {
@@ -503,25 +524,8 @@ test("product picker can advance beyond the first picker page", () => {
           endCursor: "next-products"
         }
       }
-    })
-    .mockReturnValueOnce({
-      products: {
-        edges: [
-          {
-            node: {
-              id: "Product:monitor-c",
-              name: "Monitor C",
-              slug: "monitor-c",
-              brand: { id: "Brand:panelco", name: "PanelCo" }
-            }
-          }
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null
-        }
-      }
-    });
+    };
+  });
 
   renderCompareRoute();
 
@@ -536,6 +540,62 @@ test("product picker can advance beyond the first picker page", () => {
     "href",
     "/compare?slug=monitor-c"
   );
+});
+
+test("product picker keeps previous products visible when loading another page", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
+    if ((variables as { after?: string | null }).after === "next-products") {
+      return {
+        products: {
+          edges: [
+            {
+              node: {
+                id: "Product:monitor-c",
+                name: "Monitor C",
+                slug: "monitor-c",
+                brand: { id: "Brand:panelco", name: "PanelCo" }
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: null
+          }
+        }
+      };
+    }
+
+    return {
+      products: {
+        edges: [
+          {
+            node: {
+              id: "Product:monitor-a",
+              name: "Monitor A",
+              slug: "monitor-a",
+              brand: { id: "Brand:displayco", name: "DisplayCo" }
+            }
+          }
+        ],
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "next-products"
+        }
+      }
+    };
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeInTheDocument();
 });
 
 test("product picker resets pagination before rendering a changed selected set", () => {
