@@ -7,10 +7,10 @@
 ### Frontend Merchant Discovery Demo Parity Lane
 
 - Status: ready
-- Batch: Task 1, add the Relay route query and loader for `/merchants`
+- Batch: Task 2, render the merchant discovery route
 - Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, refresh the local schema snapshot with `Query.merchants(first:, after:)`, run Relay generation and focused frontend verification, then advance to route rendering.
+- Next step: write focused route render tests, add `MerchantDirectoryRoute` in `assets/src/routes/merchants/index.tsx`, consume `merchantDirectoryLoader` data through `useLoaderData`, render ready, empty, next-page, and loader-error states, then run the focused route and loader suites plus frontend typecheck before advancing to navigation.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
@@ -18,7 +18,8 @@
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
   - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
-  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape; the active Task 1 includes adding the missing local `Query.merchants(first:, after:)` entry before Relay generation.
+  - Task 1 added `MerchantDirectoryRouteQuery`, `merchantDirectoryLoader`, generated `MerchantDirectoryRouteQuery.graphql.ts`, and refreshed the local `assets/schema.graphql` merchant query and connection shape.
+  - Task 2 is the next unblocked slice in `docs/work/frontend-merchant-discovery-demo-parity.md`.
 
 ### Frontend Revenue Reporting Demo Parity Lane
 
@@ -122,6 +123,13 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Merchant Discovery Demo Parity, Task 1:
+  - Added `MerchantDirectoryRouteQuery` for public `merchants(first:, after:)` with merchant id, name, domain, cursor edges, and page info.
+  - Added `merchantDirectoryLoader` with default page size `20`, max supported page size `50`, cursor normalization, Relay route preloading, normalized pagination data, and recoverable loader error state.
+  - Refreshed `assets/schema.graphql` with `Query.merchants(first:, after:)`; Relay generation also exposed stale snapshot drift where `MerchantConnection` and `MerchantEdge` were missing, so those local snapshot types were added from the backend schema contract.
+  - Verified RED with `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts` failing because `../loader` did not exist after restoring dependencies with `cd assets && bun install`.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend Revenue Reporting Demo Parity, Task 3:
   - Registered `/commerce/revenue` with `RevenueSummaryRoute` and `revenueSummaryLoader`.

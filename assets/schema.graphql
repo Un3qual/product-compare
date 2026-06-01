@@ -11,6 +11,7 @@ type Query {
   viewer: User
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
+  merchants(first: Int, after: String): MerchantConnection
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
@@ -108,6 +109,16 @@ type Merchant implements Node {
   id: ID!
   name: String!
   domain: String!
+}
+
+type MerchantConnection {
+  edges: [MerchantEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MerchantEdge {
+  node: Merchant!
+  cursor: String!
 }
 
 type MerchantProduct implements Node {

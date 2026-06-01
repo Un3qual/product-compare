@@ -45,7 +45,7 @@
 - Modify after verification: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `assets/src/routes/merchants/__tests__/merchant-directory-loader.test.ts` with coverage for:
 
@@ -65,7 +65,7 @@ Expected default variables:
 }
 ```
 
-- [ ] **Step 2: Run the loader tests to verify they fail**
+- [x] **Step 2: Run the loader tests to verify they fail**
 
 Run:
 
@@ -75,7 +75,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-
 
 Expected: FAIL because the route query and loader do not exist.
 
-- [ ] **Step 3: Add the route query**
+- [x] **Step 3: Add the route query**
 
 Create `assets/src/routes/merchants/queries/MerchantDirectoryRouteQuery.ts`:
 
@@ -104,7 +104,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Add the loader**
+- [x] **Step 4: Add the loader**
 
 Create `assets/src/routes/merchants/loader.ts` with:
 
@@ -115,7 +115,7 @@ Create `assets/src/routes/merchants/loader.ts` with:
 - Recoverable route preload error state using `recoverRouteLoaderError`.
 - Loader data that includes normalized pagination params plus the Relay route query descriptor when ready.
 
-- [ ] **Step 5: Refresh the local Relay schema snapshot**
+- [x] **Step 5: Refresh the local Relay schema snapshot**
 
 Update `assets/schema.graphql` so `Query` includes the existing backend field:
 
@@ -125,7 +125,7 @@ merchants(first: Int, after: String): MerchantConnection
 
 Expected: the local schema snapshot has both the merchant connection types and the `Query.merchants` entry needed by Relay generation.
 
-- [ ] **Step 6: Generate Relay artifacts**
+- [x] **Step 6: Generate Relay artifacts**
 
 Run:
 
@@ -135,7 +135,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/MerchantDirectoryRouteQuery.graphql.ts`.
 
-- [ ] **Step 7: Run the loader tests to verify they pass**
+- [x] **Step 7: Run the loader tests to verify they pass**
 
 Run:
 
@@ -145,7 +145,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-
 
 Expected: PASS.
 
-- [ ] **Step 8: Run frontend typecheck**
+- [x] **Step 8: Run frontend typecheck**
 
 Run:
 
@@ -155,7 +155,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 9: Update queue docs**
+- [x] **Step 9: Update queue docs**
 
 Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NOW.md`:
 
