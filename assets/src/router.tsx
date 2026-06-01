@@ -2,6 +2,8 @@ import type { HydrationState, RouteObject } from "react-router-dom";
 import { createBrowserRouter } from "react-router-dom";
 import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
+import { ApiTokensRoute } from "./routes/account/api-tokens";
+import { apiTokensLoader } from "./routes/account/api-tokens/loader";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
@@ -54,6 +56,11 @@ export const routes: RouteObject[] = [
         loader: savedComparisonsLoader,
         element: <SavedComparisonsRoute />,
         errorElement: <CompareErrorBoundary title="Saved comparisons" />
+      },
+      {
+        path: "account/api-tokens",
+        loader: apiTokensLoader,
+        element: <ApiTokensRoute />
       },
       {
         path: "auth/login",

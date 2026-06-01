@@ -5,14 +5,14 @@
 - Status: in progress
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 during Task 1 implementation.
+- Last verified: 2026-06-01 during Task 2 implementation.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
 
 - [x] Task 1: add the Relay route query and loader for `/account/api-tokens`.
-- [ ] Task 2: render the API-token management route.
+- [x] Task 2: render the API-token management route.
 - [ ] Task 3: add the create-token flow with one-time token display.
 - [ ] Task 4: add the revoke-token flow.
 - [ ] Task 5: add the rotate-token flow.
@@ -20,7 +20,7 @@
 
 ## Current Batch
 
-- Task: Task 2, render the API-token management route.
+- Task: Task 3, add the create-token flow with one-time token display.
 - Status: ready.
 - Owned paths:
   - `assets/schema.graphql`
@@ -28,7 +28,7 @@
   - `assets/src/__generated__/**`
   - `docs/work/frontend-api-token-management-demo-parity.md`
   - `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Immediate prerequisite: Task 1 added the `ApiTokensRouteQuery`, generated Relay artifact, and `apiTokensLoader` summaries for `/account/api-tokens`; Task 2 should render those loader states before adding mutation flows.
+- Immediate prerequisite: Task 2 registered `/account/api-tokens` and renders unauthorized, empty, ready, and status-filter states from `apiTokensLoader`; Task 3 should add the create-token mutation flow without adding REST endpoints.
 
 ## Verification
 
@@ -39,7 +39,11 @@
   - `cd assets && bun run relay`
   - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 4 tests, 0 failures.
   - `cd assets && bun run typecheck`
+- Task 2 RED: `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx` failed on the missing `../index` route component import.
+- Task 2 GREEN:
+  - `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts` - 8 tests, 0 failures.
+  - `cd assets && bun run typecheck`
 
 ## Blockers
 
-- None for Task 2.
+- None for Task 3.

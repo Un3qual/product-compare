@@ -202,7 +202,7 @@ Update `docs/work/frontend-api-token-management-demo-parity.md` and `docs/plans/
 - Record the exact verification commands.
 - Advance the current batch to Task 2.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 If committing at this milestone, include the query, loader, tests, generated artifact, and docs in one commit:
 
@@ -222,7 +222,7 @@ git commit -m "feat(frontend): preload api token management route"
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route render tests**
+- [x] **Step 1: Write failing route render tests**
 
 Create route tests covering:
 
@@ -235,7 +235,7 @@ test("API token route links status filters without losing the route path");
 
 The ready-state assertion must treat `revokedAt === null` as active and non-null `revokedAt` as revoked.
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -245,7 +245,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the route component does not exist.
 
-- [ ] **Step 3: Add the route component**
+- [x] **Step 3: Add the route component**
 
 Create `assets/src/routes/account/api-tokens/index.tsx` with:
 
@@ -256,7 +256,7 @@ Create `assets/src/routes/account/api-tokens/index.tsx` with:
 - A Suspense + `ResettableErrorBoundary` path that renders Relay-preloaded token pages when `tokenQueries` are present.
 - A summary fallback list from loader summaries when Relay records are unavailable.
 
-- [ ] **Step 4: Register the route**
+- [x] **Step 4: Register the route**
 
 Modify `assets/src/router.tsx`:
 
@@ -275,7 +275,7 @@ Add a child route:
 }
 ```
 
-- [ ] **Step 5: Run route tests**
+- [x] **Step 5: Run route tests**
 
 Run:
 
@@ -285,7 +285,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 6: Run frontend typecheck**
+- [x] **Step 6: Run frontend typecheck**
 
 Run:
 
@@ -295,7 +295,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Update queue docs**
+- [x] **Step 7: Update queue docs**
 
 Mark Task 2 complete, record verification, and advance the current batch to Task 3.
 

@@ -1,0 +1,198 @@
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { usePreloadedQuery } from "react-relay";
+import { useRoutePreloadedQuery } from "../../../../relay/route-preload";
+import { ApiTokensRoute } from "../index";
+import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../loader";
+
+const {
+  useLoaderDataMock,
+  usePreloadedQueryMock,
+  useRoutePreloadedQueryMock
+} = vi.hoisted(() => ({
+  useLoaderDataMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn()
+}));
+
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+
+  return {
+    ...actual,
+    useLoaderData: useLoaderDataMock
+  };
+});
+
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+
+  return {
+    ...actual,
+    usePreloadedQuery: usePreloadedQueryMock
+  };
+});
+
+vi.mock("../../../../relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../../../relay/route-preload")>(
+    "../../../../relay/route-preload"
+  );
+
+  return {
+    ...actual,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+  };
+});
+
+const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+
+const ACTIVE_TOKEN: ApiTokenSummary = {
+  id: "QXBpVG9rZW46MDEyMzQ1NjctODlhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
+  label: "CLI",
+  tokenPrefix: "abcdef123456",
+  lastUsedAt: null,
+  expiresAt: "2026-08-29T12:00:00Z",
+  revokedAt: null,
+  insertedAt: "2026-05-31T12:00:00Z"
+};
+
+const REVOKED_TOKEN: ApiTokenSummary = {
+  id: "QXBpVG9rZW46OTg3NjU0MzItMTBhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
+  label: "Old automation",
+  tokenPrefix: "fedcba654321",
+  lastUsedAt: "2026-05-30T12:00:00Z",
+  expiresAt: null,
+  revokedAt: "2026-05-31T13:00:00Z",
+  insertedAt: "2026-05-29T12:00:00Z"
+};
+
+const API_TOKENS_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "ApiTokensRouteQuery",
+    text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
+    variables: {
+      first: 20,
+      status: "ALL" as const
+    }
+  }
+};
+
+const API_TOKENS_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: API_TOKENS_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
+beforeEach(() => {
+  mockedUseLoaderData.mockReset();
+  mockedUsePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReturnValue(API_TOKENS_QUERY_REF as never);
+  mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
+});
+
+test("API token route prompts unauthenticated users to sign in", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "unauthorized",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("heading", { name: "API tokens" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Sign in to manage API tokens.");
+  expect(screen.getByRole("link", { name: "Sign in to manage API tokens" })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+});
+
+test("API token route renders an empty state for authenticated users without tokens", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("status")).toHaveTextContent("No API tokens yet.");
+  expect(screen.queryByRole("list", { name: "API tokens" })).not.toBeInTheDocument();
+});
+
+test("API token route renders token label, prefix, expiry, last-used, created, and status", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN, REVOKED_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildApiTokenQueryData([ACTIVE_TOKEN, REVOKED_TOKEN]) as never
+  );
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("heading", { name: "API tokens" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
+  expect(screen.getByText("abcdef123456")).toBeInTheDocument();
+  expect(screen.getByText("2026-08-29 12:00 UTC")).toBeInTheDocument();
+  expect(screen.getByText("Never used")).toBeInTheDocument();
+  expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
+  expect(screen.getByText("Active token")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Old automation" })).toBeInTheDocument();
+  expect(screen.getByText("Revoked token")).toBeInTheDocument();
+});
+
+test("API token route links status filters without losing the route path", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "active"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("link", { name: "All" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=all"
+  );
+  expect(screen.getByRole("link", { name: "Active" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=active"
+  );
+  expect(screen.getByRole("link", { name: "Revoked" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=revoked"
+  );
+});
+
+function renderApiTokensRoute() {
+  return render(
+    <MemoryRouter>
+      <ApiTokensRoute />
+    </MemoryRouter>
+  );
+}
+
+function buildApiTokenQueryData(tokens: ApiTokenSummary[]) {
+  return {
+    myApiTokens: {
+      edges: tokens.map((token) => ({
+        cursor: `cursor:${token.id}`,
+        node: token
+      })),
+      pageInfo: {
+        endCursor: tokens.length > 0 ? `cursor:${tokens[tokens.length - 1]?.id}` : null,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: tokens.length > 0 ? `cursor:${tokens[0]?.id}` : null
+      }
+    }
+  };
+}
