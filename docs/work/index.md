@@ -45,8 +45,8 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/frontend-revenue-reporting-demo-parity.md`
   - Status: ready
   - Priority: P1
-  - Next batch: Task 1, add the Relay route query and loader for `/commerce/revenue`.
-  - Owned paths: `assets/schema.graphql`, `assets/src/routes/commerce/revenue/**`, `assets/src/__generated__/**`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+  - Next batch: Task 2, render the revenue reporting route.
+  - Owned paths: `assets/src/routes/commerce/revenue/**`, `docs/work/frontend-revenue-reporting-demo-parity.md`, `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`

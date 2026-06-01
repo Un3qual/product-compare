@@ -46,7 +46,7 @@
 - Modify after verification: `docs/work/frontend-revenue-reporting-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `assets/src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts` with coverage for:
 
@@ -76,7 +76,7 @@ Expected variables:
 }
 ```
 
-- [ ] **Step 2: Run the loader tests to verify they fail**
+- [x] **Step 2: Run the loader tests to verify they fail**
 
 Run:
 
@@ -86,7 +86,7 @@ cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summ
 
 Expected: FAIL because the route query and loader do not exist.
 
-- [ ] **Step 3: Refresh the local schema snapshot**
+- [x] **Step 3: Refresh the local schema snapshot**
 
 Update `assets/schema.graphql` from the existing backend contract so it includes:
 
@@ -134,7 +134,7 @@ type RevenueSummarySuppression {
 }
 ```
 
-- [ ] **Step 4: Add the route query**
+- [x] **Step 4: Add the route query**
 
 Create `assets/src/routes/commerce/revenue/queries/RevenueSummaryRouteQuery.ts`:
 
@@ -169,7 +169,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 5: Add the loader**
+- [x] **Step 5: Add the loader**
 
 Create `assets/src/routes/commerce/revenue/loader.ts` with:
 
@@ -267,7 +267,7 @@ function normalizeNetworkFilter(value: string | null) {
 }
 ```
 
-- [ ] **Step 6: Generate Relay artifacts**
+- [x] **Step 6: Generate Relay artifacts**
 
 Run:
 
@@ -277,7 +277,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/RevenueSummaryRouteQuery.graphql.ts`.
 
-- [ ] **Step 7: Run the loader tests to verify they pass**
+- [x] **Step 7: Run the loader tests to verify they pass**
 
 Run:
 
@@ -287,7 +287,7 @@ cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summ
 
 Expected: PASS.
 
-- [ ] **Step 8: Run frontend typecheck**
+- [x] **Step 8: Run frontend typecheck**
 
 Run:
 
@@ -297,7 +297,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 9: Update queue docs**
+- [x] **Step 9: Update queue docs**
 
 Update `docs/work/frontend-revenue-reporting-demo-parity.md` and `docs/plans/NOW.md`:
 
