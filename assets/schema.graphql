@@ -25,6 +25,7 @@ type Mutation {
   verifyEmail(token: String!): AuthActionPayload!
   createSavedComparisonSet(input: CreateSavedComparisonSetInput!): CreateSavedComparisonSetPayload!
   deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
+  createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
 }
 
 type AuthSessionPayload {
@@ -217,6 +218,12 @@ Decimal values are serialized as base-10 strings to preserve precision.
 scalar Decimal
 
 scalar DateTime
+
+type CreateApiTokenPayload {
+  plainTextToken: String
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
 
 type CreateSavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet

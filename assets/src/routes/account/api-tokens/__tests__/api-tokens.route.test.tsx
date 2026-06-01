@@ -1,16 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../relay/route-preload";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../route-errors";
 import { ApiTokensRoute } from "../index";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../loader";
 
 const {
+  commitMutationMock,
   useLoaderDataMock,
+  useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
+  commitMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
@@ -29,6 +34,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
 });
@@ -45,6 +51,7 @@ vi.mock("../../../../relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -85,9 +92,12 @@ const API_TOKENS_QUERY_REF = {
 };
 
 beforeEach(() => {
+  commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseMutation.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
+  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockedUseRoutePreloadedQuery.mockReturnValue(API_TOKENS_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
 });
@@ -172,12 +182,165 @@ test("API token route links status filters without losing the route path", () =>
   );
 });
 
+test("create token submits label and displays the one-time plain text token", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Label"), {
+    target: { value: "CLI automation" }
+  });
+  fireEvent.change(screen.getByLabelText("Expires at"), {
+    target: { value: "2026-08-29T12:00" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          label: "CLI automation",
+          expiresAt: new Date("2026-08-29T12:00").toISOString()
+        }
+      })
+    );
+  });
+
+  completeLatestCreateMutation(buildSuccessfulCreateResponse());
+
+  const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
+  expect(oneTimeRegion).toHaveTextContent("Visible only once");
+  expect(oneTimeRegion).toHaveTextContent("pc_live_123456789");
+});
+
+test("create token clears the one-time token when the next create starts", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Label"), {
+    target: { value: "First token" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCreateMutation(buildSuccessfulCreateResponse());
+
+  expect(await screen.findByText("pc_live_123456789")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText("Label"), {
+    target: { value: "Second token" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+  });
+  expect(screen.queryByText("pc_live_123456789")).not.toBeInTheDocument();
+});
+
+test("create token renders mutation payload errors", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Label"), {
+    target: { value: "CLI automation" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCreateMutation({
+    createApiToken: {
+      plainTextToken: null,
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "label",
+          message: "Label is too long."
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Label is too long.");
+  expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
+});
+
+test("create token renders a generic alert for top-level GraphQL errors", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Label"), {
+    target: { value: "CLI automation" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCreateMutation(buildSuccessfulCreateResponse(), [{ message: "boom" }]);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
+});
+
 function renderApiTokensRoute() {
   return render(
     <MemoryRouter>
       <ApiTokensRoute />
     </MemoryRouter>
   );
+}
+
+function completeLatestCreateMutation(response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    commitMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
+  });
+}
+
+function buildSuccessfulCreateResponse() {
+  return {
+    createApiToken: {
+      plainTextToken: "pc_live_123456789",
+      apiToken: {
+        id: "QXBpVG9rZW46Y3JlYXRlZC10b2tlbg==",
+        label: "CLI automation",
+        tokenPrefix: "123456abcdef",
+        lastUsedAt: null,
+        expiresAt: "2026-08-29T12:00:00Z",
+        revokedAt: null,
+        insertedAt: "2026-05-31T14:00:00Z"
+      },
+      errors: []
+    }
+  };
 }
 
 function buildApiTokenQueryData(tokens: ApiTokenSummary[]) {

@@ -299,7 +299,7 @@ Expected: PASS.
 
 Mark Task 2 complete, record verification, and advance the current batch to Task 3.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/router.tsx docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
@@ -311,13 +311,14 @@ git commit -m "feat(frontend): render api token management route"
 ### Task 3: Add Create Token Flow
 
 **Files:**
+- Modify: `assets/schema.graphql`
 - Create: `assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts`
 - Modify: `assets/src/routes/account/api-tokens/index.tsx`
 - Modify: `assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx`
 - Modify after verification: `docs/work/frontend-api-token-management-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing create-flow tests**
+- [x] **Step 1: Write failing create-flow tests**
 
 Add route tests covering:
 
@@ -330,7 +331,7 @@ test("create token renders a generic alert for top-level GraphQL errors");
 
 The success response fixture must include both `plainTextToken` and `apiToken`, and the UI must label the secret as one-time visible.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -340,7 +341,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: FAIL because the create mutation and form are not implemented.
 
-- [ ] **Step 3: Add the create mutation**
+- [x] **Step 3: Add the create mutation**
 
 Create `assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts`:
 
@@ -370,7 +371,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Implement the create form**
+- [x] **Step 4: Implement the create form**
 
 In `ApiTokensRoute`:
 
@@ -381,7 +382,7 @@ In `ApiTokensRoute`:
 - Do not store or display `plainTextToken` after a subsequent mutation starts.
 - Render payload errors through `routeMutationErrorMessage`.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [x] **Step 5: Generate Relay artifacts**
 
 Run:
 
@@ -391,7 +392,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/CreateApiTokenMutation.graphql.ts`.
 
-- [ ] **Step 6: Run create-flow tests**
+- [x] **Step 6: Run create-flow tests**
 
 Run:
 
@@ -401,7 +402,7 @@ cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [x] **Step 7: Run frontend typecheck**
 
 Run:
 
@@ -411,14 +412,14 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [x] **Step 8: Update queue docs**
 
 Mark Task 3 complete, record verification, and advance the current batch to Task 4.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
-git add assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/CreateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
+git add assets/schema.graphql assets/src/routes/account/api-tokens/mutations/CreateApiTokenMutation.ts assets/src/routes/account/api-tokens/index.tsx assets/src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx assets/src/__generated__/CreateApiTokenMutation.graphql.ts docs/work/frontend-api-token-management-demo-parity.md docs/plans/NOW.md
 git commit -m "feat(frontend): create api tokens from the browser"
 ```
 
