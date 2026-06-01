@@ -11,7 +11,7 @@ import {
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import * as ReactRouterDom from "react-router-dom";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
-import { compareLoader } from "../loader";
+import { compareLoader, type CompareRouteLoaderData } from "../loader";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
@@ -536,6 +536,80 @@ test("product picker can advance beyond the first picker page", () => {
     "href",
     "/compare?slug=monitor-c"
   );
+});
+
+test("product picker resets pagination before rendering a changed selected set", () => {
+  let loaderData: CompareRouteLoaderData = {
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug],
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
+    products: [buildProductSummary(DETAIL_PRODUCT)]
+  };
+  mockedUseLoaderData.mockImplementation(() => loaderData);
+  mockedUseLazyLoadQuery
+    .mockReturnValueOnce({
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "next-products"
+        }
+      }
+    })
+    .mockReturnValueOnce({
+      products: {
+        edges: [
+          {
+            node: {
+              id: "Product:monitor-c",
+              name: "Monitor C",
+              slug: "monitor-c",
+              brand: { id: "Brand:panelco", name: "PanelCo" }
+            }
+          }
+        ],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    })
+    .mockReturnValue({
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    });
+
+  const { rerender } = renderCompareRoute();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { first: 24, after: "next-products" },
+    { fetchPolicy: "store-or-network" }
+  );
+
+  const callsBeforeSelectionChange = mockedUseLazyLoadQuery.mock.calls.length;
+  loaderData = {
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)]
+  };
+
+  rerender(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+
+  expect(mockedUseLazyLoadQuery.mock.calls[callsBeforeSelectionChange]?.[1]).toEqual({
+    first: 24,
+    after: null
+  });
 });
 
 test("empty compare page handles an empty product picker", () => {

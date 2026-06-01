@@ -180,13 +180,15 @@ export function CompareRoute() {
 }
 
 function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  const resetToken = selectedSlugs.join("|");
+
   return (
     <ResettableErrorBoundary
-      resetToken={selectedSlugs.join("|")}
+      resetToken={resetToken}
       fallback={<p role="alert">Product picker unavailable.</p>}
     >
       <Suspense fallback={<p role="status">Loading products...</p>}>
-        <CompareProductPicker selectedSlugs={selectedSlugs} />
+        <CompareProductPicker key={resetToken} selectedSlugs={selectedSlugs} />
       </Suspense>
     </ResettableErrorBoundary>
   );
@@ -194,11 +196,6 @@ function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readon
 
 function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
   const [after, setAfter] = useState<string | null>(null);
-  const selectedSlugsKey = selectedSlugs.join("|");
-
-  useEffect(() => {
-    setAfter(null);
-  }, [selectedSlugsKey]);
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,

@@ -31,7 +31,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     end
   end
 
-  @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) :: {:ok, [map()]}
+  @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) ::
+          {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
   def current_attributes(%Product{id: product_id}, _args, %{context: %{loader: loader}})
       when is_integer(product_id) do
     loader
