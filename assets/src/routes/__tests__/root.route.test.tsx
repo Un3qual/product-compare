@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { RootLayout, RootRoute } from "../root";
 
@@ -9,7 +9,9 @@ test("root layout renders primitive-backed links in the primary navigation", () 
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
+  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+
+  expect(primaryNavigation).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
     "data-slot",
     "button"
@@ -21,6 +23,14 @@ test("root layout renders primitive-backed links in the primary navigation", () 
   expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "data-slot",
     "button"
+  );
+  expect(screen.getByRole("link", { name: "API tokens" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Revenue" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
   );
 });
 
@@ -43,6 +53,16 @@ test("root route keeps home actions as links while using the shared button wrapp
   expect(screen.getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "data-slot",
     "button"
+  );
+  expect(screen.getByRole("link", { name: "API tokens" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens"
+  );
+  const homeActions = screen.getByRole("group", { name: "Home actions" });
+
+  expect(within(homeActions).getByRole("link", { name: "Revenue" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
   );
   expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
 });

@@ -11,11 +11,11 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Frontend API token management demo parity lane: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-   - Status: in progress
+1. Frontend merchant discovery demo parity lane: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+   - Status: ready
    - Source context: `ARCHITECTURE.md`
-   - Current scope: Task 1 adds the Relay route query and loader for `/account/api-tokens`.
-   - Next scope: render the route, then add create, revoke, rotate, navigation, and final verification batches.
+   - Current scope: Task 1 adds the Relay route query and loader for `/merchants`.
+   - Next scope: render the merchant discovery route, then wire navigation and final verification.
 
 2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
@@ -27,13 +27,27 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Intended scope: affiliate/admin setup, revenue reporting, and merchant discovery, after API token management reaches demo parity.
+   - Intended scope: affiliate/admin setup after merchant discovery reaches demo parity.
 
 2. Backend lane follow-up
    - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
 
 ## Recently Completed
+
+- Frontend revenue reporting demo parity lane: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`
+  - Scope: Relay-backed `/commerce/revenue` route loading, aggregate filter controls, suppressed and unsuppressed metric rendering, navigation links, and final verification.
+  - Result: the existing public-safe `revenueSummary(input:)` GraphQL contract is demoable from the browser UI without adding REST endpoints.
+  - Verification passed with `cd assets && bun run relay`, focused revenue/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend API token management demo parity lane: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`
+  - Scope: Relay-backed `/account/api-tokens` route loading, token list rendering, create/revoke/rotate mutation flows, one-time token display, navigation links, and final verification.
+  - Result: API token lifecycle management is demoable from the browser UI through GraphQL and Phoenix session cookies, without adding REST endpoints or token-bearing browser auth.
+  - Verification passed with `cd assets && bun run relay`, focused API-token/root Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs`, and `git diff --check`.
 
 - Product comparison demo parity lane: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
   - Status: completed on 2026-05-31

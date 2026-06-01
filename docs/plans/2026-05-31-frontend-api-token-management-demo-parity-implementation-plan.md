@@ -8,6 +8,8 @@
 
 **Tech Stack:** Phoenix Absinthe GraphQL, React Router loaders, React Relay, Bun, Vitest, Testing Library, StyleX primitives.
 
+Status: completed on 2026-06-01.
+
 ---
 
 ## Existing Contract
@@ -664,7 +666,7 @@ git commit -m "feat(frontend): rotate api tokens from the browser"
 - Modify: `ARCHITECTURE.md`
 - Modify: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 
-- [ ] **Step 1: Write failing navigation tests**
+- [x] **Step 1: Write failing navigation tests**
 
 Update `assets/src/routes/__tests__/root.route.test.tsx` to assert:
 
@@ -677,7 +679,7 @@ expect(screen.getByRole("link", { name: "API tokens" })).toHaveAttribute(
 
 Assert the link exists in both primary navigation and home actions.
 
-- [ ] **Step 2: Run navigation tests to verify they fail**
+- [x] **Step 2: Run navigation tests to verify they fail**
 
 Run:
 
@@ -687,11 +689,11 @@ cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx
 
 Expected: FAIL because the navigation link is not rendered.
 
-- [ ] **Step 3: Add navigation links**
+- [x] **Step 3: Add navigation links**
 
 Update `RootLayout` and `RootRoute` in `assets/src/routes/root.tsx` to add `API tokens` links to `/account/api-tokens`.
 
-- [ ] **Step 4: Run focused frontend verification**
+- [x] **Step 4: Run focused frontend verification**
 
 Run:
 
@@ -703,7 +705,7 @@ cd assets && bun run typecheck
 
 Expected: all commands pass.
 
-- [ ] **Step 5: Run broader frontend verification**
+- [x] **Step 5: Run broader frontend verification**
 
 Run:
 
@@ -713,7 +715,7 @@ cd assets && bun run check
 
 Expected: PASS.
 
-- [ ] **Step 6: Run backend contract verification**
+- [x] **Step 6: Run backend contract verification**
 
 Run:
 
@@ -723,7 +725,7 @@ mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_c
 
 Expected: PASS.
 
-- [ ] **Step 7: Close queue docs**
+- [x] **Step 7: Close queue docs**
 
 Update queue and architecture docs to mark the API-token management demo parity lane completed:
 
@@ -734,7 +736,7 @@ Update queue and architecture docs to mark the API-token management demo parity 
 - `ARCHITECTURE.md`
 - this implementation plan
 
-- [ ] **Step 8: Final verification**
+- [x] **Step 8: Final verification**
 
 Run:
 
@@ -746,9 +748,11 @@ git diff --check
 
 Expected: all commands pass.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 If Tasks 1-5 were committed individually, include only Task 6 files here. If this lane is committed as one milestone, include all route, Relay artifact, test, and doc changes together.
+
+Completed in commit `e214853` (`feat(frontend): finish api token demo parity`).
 
 ```bash
 git add assets/src/routes/root.tsx assets/src/routes/__tests__/root.route.test.tsx docs/work/frontend-api-token-management-demo-parity.md docs/work/index.md docs/plans/NOW.md docs/plans/INDEX.md ARCHITECTURE.md docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md

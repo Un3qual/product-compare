@@ -4,23 +4,49 @@
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 
-### Frontend API Token Management Demo Parity Lane
+### Frontend Merchant Discovery Demo Parity Lane
 
-- Status: in progress
-- Batch: Task 6, wire navigation and close the lane
-- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
-- Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
-- Next step: write focused root navigation tests, add `API tokens` links to the primary navigation and home actions, run focused API-token/root verification plus frontend typecheck/check, verify the backend API-token contract, and close the lane docs.
+- Status: ready
+- Batch: Task 1, add the Relay route query and loader for `/merchants`
+- Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, refresh the local schema snapshot with `Query.merchants(first:, after:)`, run Relay generation and focused frontend verification, then advance to route rendering.
 - Why this batch is current:
   - Product comparison demo parity is complete.
+  - API token management demo parity is complete.
+  - Revenue reporting demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
-  - `ARCHITECTURE.md` lists API token management as the first non-ingestion demo-parity candidate after product comparison.
+  - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
+  - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
+  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape; the active Task 1 includes adding the missing local `Query.merchants(first:, after:)` entry before Relay generation.
+
+### Frontend Revenue Reporting Demo Parity Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+- Next step: no unblocked revenue reporting demo parity batch remains in this lane.
+- Why this batch is current:
+  - Task 1 refreshed the local `assets/schema.graphql` revenue summary contract, generated `RevenueSummaryRouteQuery.graphql.ts`, and added `revenueSummaryLoader`.
+  - Task 2 added the `/commerce/revenue` route UI with filter controls, Relay-preloaded metric rendering, suppression copy, and loader error fallback.
+  - Task 3 registered `/commerce/revenue`, exposed `Revenue` in primary navigation and home actions, ran focused frontend verification, ran the existing backend revenue summary contract tests, and closed the lane.
+
+### Frontend API Token Management Demo Parity Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
+- Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+- Next step: no unblocked API-token management demo parity batch remains in this lane.
+- Why this batch is current:
   - The backend GraphQL contract already exposes `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken`.
   - Task 1 added the local Relay schema snapshot for `myApiTokens`, `ApiTokensRouteQuery`, generated `ApiTokensRouteQuery.graphql.ts`, and `apiTokensLoader` pagination, status-filter, unauthorized, cursor, and abort handling.
   - Task 2 registered `/account/api-tokens` and renders unauthorized, empty, ready, and status-filter states from `apiTokensLoader`.
   - Task 3 added the local Relay schema snapshot for `createApiToken`, generated `CreateApiTokenMutation.graphql.ts`, and renders the create form, one-time token display, and mutation error handling.
   - Task 4 added the local Relay schema snapshot for `revokeApiToken`, generated `RevokeApiTokenMutation.graphql.ts`, renders active-row revoke buttons, updates local row status after revoke, suppresses duplicate row clicks, and displays payload/network errors.
-  - Task 5 added the local Relay schema snapshot for `rotateApiToken`, generated `RotateApiTokenMutation.graphql.ts`, renders active-row rotate controls, displays replacement one-time tokens, updates local row state for replacement and old revoked rows, and displays payload errors, so the next unblocked work is navigation and lane closure.
+  - Task 5 added the local Relay schema snapshot for `rotateApiToken`, generated `RotateApiTokenMutation.graphql.ts`, renders active-row rotate controls, displays replacement one-time tokens, updates local row state for replacement and old revoked rows, and displays payload errors.
+  - Task 6 added `API tokens` links to primary navigation and home actions, ran focused frontend verification, broader frontend check, backend API-token contract tests, and queue-doc closure.
 
 ### Product Comparison Demo Parity Lane
 
@@ -96,6 +122,34 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Revenue Reporting Demo Parity, Task 3:
+  - Registered `/commerce/revenue` with `RevenueSummaryRoute` and `revenueSummaryLoader`.
+  - Added `Revenue` links to primary navigation and home actions.
+  - Hardened the root route test by adding an accessible `Home actions` group instead of relying on DOM parent structure.
+  - Closed the revenue reporting demo parity lane and advanced NOW to frontend merchant discovery demo parity.
+  - Verified RED router and root tests failed before implementation because the route and links were absent, and the post-review root test failed until the `Home actions` group existed.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend Revenue Reporting Demo Parity, Task 2:
+  - Added `RevenueSummaryRoute` for `/commerce/revenue` with GET filters for network, currency, and date range.
+  - Rendered active loader-normalized filters, Relay-preloaded revenue metrics, server-enforced suppression copy, and loader/query error fallback.
+  - Verified the RED route render test failed before implementation because `../index` did not exist.
+  - Verified `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary.route.test.tsx src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend Revenue Reporting Demo Parity, Task 1:
+  - Refreshed the local frontend Relay schema snapshot for the existing `revenueSummary(input:)` GraphQL contract.
+  - Added `RevenueSummaryRouteQuery` and generated `RevenueSummaryRouteQuery.graphql.ts`.
+  - Added `revenueSummaryLoader` with aggregate default variables, network/currency/date search-param normalization, invalid scalar filter dropping, and recoverable preload error state.
+  - Verified the RED loader test failed before implementation because `../loader` did not exist.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/commerce/revenue/__tests__/revenue-summary-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend API Token Management Demo Parity, Task 6:
+  - Added `API tokens` links to the primary navigation and home actions.
+  - Kept navigation pointed at the existing Relay-backed `/account/api-tokens` route.
+  - Verified the backend API-token GraphQL contract after restoring local Elixir dependencies with `mix deps.get`.
+  - Closed the API-token management demo parity lane and advanced NOW to frontend revenue reporting demo parity.
+  - Verified `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/account/api-tokens/__tests__/api-tokens-loader.test.ts src/routes/account/api-tokens/__tests__/api-tokens.route.test.tsx src/routes/__tests__/root.route.test.tsx`, `cd assets && bun run typecheck`, `cd assets && bun run check`, `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs`, and `git diff --check`.
 
 - Frontend API Token Management Demo Parity, Task 5:
   - Refreshed the frontend Relay schema snapshot for the existing `rotateApiToken` mutation contract.

@@ -14,6 +14,7 @@ type Query {
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
+  revenueSummary(input: RevenueSummaryInput): RevenueSummary
 }
 
 type Mutation {
@@ -212,6 +213,44 @@ input ProductFiltersInput {
   booleans: [ProductBooleanFilterInput!]
   enums: [ProductEnumFilterInput!]
   useCaseTaxonIds: [ID!]
+}
+
+input RevenueSummaryInput {
+  merchantId: ID
+  productId: ID
+  network: String
+  currency: String
+  from: String
+  to: String
+}
+
+type RevenueSummary {
+  filters: RevenueSummaryFilters!
+  metrics: RevenueSummaryMetrics!
+  suppression: RevenueSummarySuppression!
+}
+
+type RevenueSummaryFilters {
+  merchantId: ID
+  productId: ID
+  network: String
+  currency: String
+  from: String
+  to: String
+}
+
+type RevenueSummaryMetrics {
+  clicks: Int
+  conversions: Int
+  grossOrderValue: String
+  commissionRevenue: String
+  averagePaidPrice: String
+  currency: String
+}
+
+type RevenueSummarySuppression {
+  suppressed: Boolean!
+  threshold: Int!
 }
 
 """

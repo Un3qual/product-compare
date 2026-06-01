@@ -41,12 +41,12 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
-- Frontend API token management demo parity lane
-  - Work doc: `docs/work/frontend-api-token-management-demo-parity.md`
-  - Status: in progress
+- Frontend merchant discovery demo parity lane
+  - Work doc: `docs/work/frontend-merchant-discovery-demo-parity.md`
+  - Status: ready
   - Priority: P1
-  - Next batch: Task 1, add the Relay route query and loader for `/account/api-tokens`.
-  - Owned paths: `assets/src/routes/account/api-tokens/**`, `assets/src/__generated__/**`, `docs/work/frontend-api-token-management-demo-parity.md`, `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+  - Next batch: Task 1, add the Relay route query and loader for `/merchants`.
+  - Owned paths: `assets/src/routes/merchants/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane
   - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
@@ -92,6 +92,26 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend Revenue Reporting Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/commerce/revenue` route that preloads the existing `revenueSummary(input:)` query.
+  - Rendered aggregate revenue filters, active normalized filters, suppressed and unsuppressed metric states, and a loader/query fallback.
+  - Added `Revenue` links to primary navigation and home actions, and registered `/commerce/revenue` with `revenueSummaryLoader`.
+  - Verification passed with `cd assets && bun run relay`, focused revenue/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+### Frontend API Token Management Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/account/api-tokens` route that lists API tokens, renders active/revoked status, and supports create, revoke, and rotate flows through GraphQL.
+  - Added one-time token display for create/rotate flows and row-scoped pending/error states for lifecycle actions.
+  - Added `API tokens` links to primary navigation and home actions.
+  - Verification passed with `cd assets && bun run relay`, focused API-token/root Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs`, and `git diff --check`.
 
 ### Product Comparison Demo Parity
 
