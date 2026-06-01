@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<36b08f1bcb2836a2f49be412cb5b2c65>>
+ * @generated SignedSource<<9c89da1c480888006747f0f412daec54>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -32,8 +32,6 @@ export type ApiTokensRouteQuery$data = {
     readonly pageInfo: {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
-      readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
     };
   };
 };
@@ -180,20 +178,6 @@ v3 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "hasPreviousPage",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "startCursor",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
             "name": "endCursor",
             "storageKey": null
           }
@@ -230,16 +214,16 @@ return {
     "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "5a99fcac6efffea4be88bf4504d42f0c",
+    "cacheID": "12ff3ee47fcf130a0f71262031921669",
     "id": null,
     "metadata": {},
     "name": "ApiTokensRouteQuery",
     "operationKind": "query",
-    "text": "query ApiTokensRouteQuery(\n  $first: Int!\n  $after: String\n  $status: ApiTokenStatusFilter\n) {\n  myApiTokens(first: $first, after: $after, status: $status) {\n    edges {\n      cursor\n      node {\n        id\n        label\n        tokenPrefix\n        lastUsedAt\n        expiresAt\n        revokedAt\n        insertedAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query ApiTokensRouteQuery(\n  $first: Int!\n  $after: String\n  $status: ApiTokenStatusFilter\n) {\n  myApiTokens(first: $first, after: $after, status: $status) {\n    edges {\n      cursor\n      node {\n        id\n        label\n        tokenPrefix\n        lastUsedAt\n        expiresAt\n        revokedAt\n        insertedAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4f30aee2bb7fac3f3ffa17ce423ecc43";
+(node as any).hash = "c254af49cb00623f2b1c2b5a1ff90496";
 
 export default node;

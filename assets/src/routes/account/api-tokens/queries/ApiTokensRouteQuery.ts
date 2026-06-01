@@ -21,8 +21,6 @@ export default graphql`
       }
       pageInfo {
         hasNextPage
-        hasPreviousPage
-        startCursor
         endCursor
       }
     }

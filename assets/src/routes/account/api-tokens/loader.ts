@@ -161,10 +161,18 @@ function throwIfAborted(signal?: AbortSignal) {
   }
 
   if (signal.reason !== undefined) {
-    throw signal.reason;
+    throw normalizeAbortReason(signal.reason);
   }
 
   throw new Error("Request aborted");
+}
+
+function normalizeAbortReason(reason: unknown) {
+  if (reason instanceof Error) {
+    return reason;
+  }
+
+  return new Error(String(reason));
 }
 
 export function summarizeApiTokensPage(data: unknown): {

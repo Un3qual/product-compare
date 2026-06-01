@@ -60,7 +60,8 @@ export const routes: RouteObject[] = [
       {
         path: "account/api-tokens",
         loader: apiTokensLoader,
-        element: <ApiTokensRoute />
+        element: <ApiTokensRoute />,
+        errorElement: <CompareErrorBoundary title="API tokens" />
       },
       {
         path: "auth/login",

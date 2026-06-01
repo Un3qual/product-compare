@@ -39,10 +39,15 @@ export function ApiTokensRoute() {
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createPending, setCreatePending] = useState(false);
-  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const createInFlightRef = useRef(false);
+  const [revokeErrorsByTokenId, setRevokeErrorsByTokenId] = useState<
+    ReadonlyMap<string, string>
+  >(new Map());
   const [pendingRevokeIds, setPendingRevokeIds] = useState<ReadonlySet<string>>(new Set());
   const inFlightRevokeIdsRef = useRef<Set<string>>(new Set());
-  const [rotateError, setRotateError] = useState<string | null>(null);
+  const [rotateErrorsByTokenId, setRotateErrorsByTokenId] = useState<
+    ReadonlyMap<string, string>
+  >(new Map());
   const [pendingRotateIds, setPendingRotateIds] = useState<ReadonlySet<string>>(new Set());
   const inFlightRotateIdsRef = useRef<Set<string>>(new Set());
   const [commitCreateApiToken, createMutationPending] = useMutation<CreateApiTokenMutation>(
@@ -57,13 +62,14 @@ export function ApiTokensRoute() {
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (createSubmitting) {
+    if (createInFlightRef.current || createSubmitting) {
       return;
     }
 
     const form = event.currentTarget;
     const variables = buildCreateApiTokenVariables(new FormData(form));
 
+    createInFlightRef.current = true;
     setCreatePending(true);
     setCreateError(null);
     setOneTimeToken(null);
@@ -93,6 +99,7 @@ export function ApiTokensRoute() {
     } catch {
       setCreateError(DEFAULT_ROUTE_ERROR_MESSAGE);
     } finally {
+      createInFlightRef.current = false;
       setCreatePending(false);
     }
   }
@@ -122,7 +129,7 @@ export function ApiTokensRoute() {
     setPendingRotateIds((currentPendingRotateIds) =>
       addSetValue(currentPendingRotateIds, token.id)
     );
-    setRotateError(null);
+    setRotateErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, token.id));
     setOneTimeToken(null);
 
     commitRouteMutation(
@@ -140,7 +147,7 @@ export function ApiTokensRoute() {
           ) {
             const revokedPreviousToken = markTokenRotated(token, rotatedToken);
 
-            setRotateError(null);
+            setRotateErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, token.id));
             setCreatedTokens((currentTokens) =>
               upsertApiTokenSummary(currentTokens, rotatedToken)
             );
@@ -153,18 +160,28 @@ export function ApiTokensRoute() {
             setOneTimeToken(payload.plainTextToken);
             form.reset();
           } else {
-            setRotateError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+            setRotateErrorsByTokenId((currentErrors) =>
+              upsertMapValue(
+                currentErrors,
+                token.id,
+                routeMutationErrorMessage(payload?.errors, graphQLErrors)
+              )
+            );
           }
 
           finishRotate(token.id);
         },
         onError: () => {
-          setRotateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setRotateErrorsByTokenId((currentErrors) =>
+            upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE)
+          );
           finishRotate(token.id);
         }
       },
       () => {
-        setRotateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setRotateErrorsByTokenId((currentErrors) =>
+          upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE)
+        );
         finishRotate(token.id);
       }
     );
@@ -179,7 +196,7 @@ export function ApiTokensRoute() {
     setPendingRevokeIds((currentPendingRevokeIds) =>
       addSetValue(currentPendingRevokeIds, tokenId)
     );
-    setRevokeError(null);
+    setRevokeErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, tokenId));
 
     commitRouteMutation(
       commitRevokeApiToken,
@@ -192,23 +209,33 @@ export function ApiTokensRoute() {
           const revokedToken = summarizeMutationApiToken(payload?.apiToken);
 
           if (revokedToken && !hasRouteGraphQLErrors(graphQLErrors)) {
-            setRevokeError(null);
+            setRevokeErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, tokenId));
             setApiTokenUpdates((currentUpdates) =>
               upsertApiTokenSummaryMap(currentUpdates, revokedToken)
             );
           } else {
-            setRevokeError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+            setRevokeErrorsByTokenId((currentErrors) =>
+              upsertMapValue(
+                currentErrors,
+                tokenId,
+                routeMutationErrorMessage(payload?.errors, graphQLErrors)
+              )
+            );
           }
 
           finishRevoke(tokenId);
         },
         onError: () => {
-          setRevokeError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setRevokeErrorsByTokenId((currentErrors) =>
+            upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE)
+          );
           finishRevoke(tokenId);
         }
       },
       () => {
-        setRevokeError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setRevokeErrorsByTokenId((currentErrors) =>
+          upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE)
+        );
         finishRevoke(tokenId);
       }
     );
@@ -262,8 +289,6 @@ export function ApiTokensRoute() {
           </form>
 
           {createError ? <p role="alert">{createError}</p> : null}
-          {revokeError ? <p role="alert">{revokeError}</p> : null}
-          {rotateError ? <p role="alert">{rotateError}</p> : null}
 
           {oneTimeToken ? (
             <section aria-labelledby="api-token-one-time-heading">
@@ -281,6 +306,8 @@ export function ApiTokensRoute() {
                   onRevoke={handleRevoke}
                   pendingRevokeIds={pendingRevokeIds}
                   pendingRotateIds={pendingRotateIds}
+                  revokeErrorsByTokenId={revokeErrorsByTokenId}
+                  rotateErrorsByTokenId={rotateErrorsByTokenId}
                   tokens={viewState.tokens}
                 />
               }
@@ -294,6 +321,8 @@ export function ApiTokensRoute() {
                   onRevoke={handleRevoke}
                   pendingRevokeIds={pendingRevokeIds}
                   pendingRotateIds={pendingRotateIds}
+                  revokeErrorsByTokenId={revokeErrorsByTokenId}
+                  rotateErrorsByTokenId={rotateErrorsByTokenId}
                   tokenStatus={loaderData.tokenStatus}
                   tokenQueries={tokenQueries}
                 />
@@ -307,6 +336,8 @@ export function ApiTokensRoute() {
               onRevoke={handleRevoke}
               pendingRevokeIds={pendingRevokeIds}
               pendingRotateIds={pendingRotateIds}
+              revokeErrorsByTokenId={revokeErrorsByTokenId}
+              rotateErrorsByTokenId={rotateErrorsByTokenId}
               tokens={viewState.tokens}
             />
           ) : null}
@@ -323,6 +354,8 @@ function RelayApiTokenList({
   onRevoke,
   pendingRevokeIds,
   pendingRotateIds,
+  revokeErrorsByTokenId,
+  rotateErrorsByTokenId,
   tokenStatus,
   tokenQueries
 }: {
@@ -332,6 +365,8 @@ function RelayApiTokenList({
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;
+  revokeErrorsByTokenId: ReadonlyMap<string, string>;
+  rotateErrorsByTokenId: ReadonlyMap<string, string>;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
   tokenQueries: ApiTokenQueryDescriptor[];
 }) {
@@ -344,6 +379,8 @@ function RelayApiTokenList({
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
           pendingRotateIds={pendingRotateIds}
+          revokeError={revokeErrorsByTokenId.get(token.id) ?? null}
+          rotateError={rotateErrorsByTokenId.get(token.id) ?? null}
           token={token}
         />
       ))}
@@ -355,6 +392,8 @@ function RelayApiTokenList({
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
           pendingRotateIds={pendingRotateIds}
+          revokeErrorsByTokenId={revokeErrorsByTokenId}
+          rotateErrorsByTokenId={rotateErrorsByTokenId}
           tokenQuery={tokenQuery}
           tokenStatus={tokenStatus}
         />
@@ -369,6 +408,8 @@ function RelayApiTokenPage({
   onRevoke,
   pendingRevokeIds,
   pendingRotateIds,
+  revokeErrorsByTokenId,
+  rotateErrorsByTokenId,
   tokenQuery,
   tokenStatus
 }: {
@@ -377,6 +418,8 @@ function RelayApiTokenPage({
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;
+  revokeErrorsByTokenId: ReadonlyMap<string, string>;
+  rotateErrorsByTokenId: ReadonlyMap<string, string>;
   tokenQuery: ApiTokenQueryDescriptor;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
 }) {
@@ -397,6 +440,8 @@ function RelayApiTokenPage({
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
           pendingRotateIds={pendingRotateIds}
+          revokeError={revokeErrorsByTokenId.get(token.id) ?? null}
+          rotateError={rotateErrorsByTokenId.get(token.id) ?? null}
           token={token}
         />
       ))}
@@ -409,12 +454,16 @@ function ApiTokenList({
   onRevoke,
   pendingRevokeIds,
   pendingRotateIds,
+  revokeErrorsByTokenId,
+  rotateErrorsByTokenId,
   tokens
 }: {
   onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;
+  revokeErrorsByTokenId: ReadonlyMap<string, string>;
+  rotateErrorsByTokenId: ReadonlyMap<string, string>;
   tokens: ApiTokenSummary[];
 }) {
   return (
@@ -426,6 +475,8 @@ function ApiTokenList({
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
           pendingRotateIds={pendingRotateIds}
+          revokeError={revokeErrorsByTokenId.get(token.id) ?? null}
+          rotateError={rotateErrorsByTokenId.get(token.id) ?? null}
           token={token}
         />
       ))}
@@ -438,12 +489,16 @@ function ApiTokenListItem({
   onRevoke,
   pendingRevokeIds,
   pendingRotateIds,
+  revokeError,
+  rotateError,
   token
 }: {
   onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;
+  revokeError: string | null;
+  rotateError: string | null;
   token: ApiTokenSummary;
 }) {
   const displayLabel = token.label ?? "Unlabeled token";
@@ -459,56 +514,107 @@ function ApiTokenListItem({
     <li>
       <article>
         <h2>{displayLabel}</h2>
-        <dl>
-          <div>
-            <dt>Token prefix</dt>
-            <dd>{token.tokenPrefix}</dd>
-          </div>
-          <div>
-            <dt>Expires</dt>
-            <dd>{formatOptionalDateTime(token.expiresAt, "Never expires")}</dd>
-          </div>
-          <div>
-            <dt>Last used</dt>
-            <dd>{formatOptionalDateTime(token.lastUsedAt, "Never used")}</dd>
-          </div>
-          <div>
-            <dt>Created</dt>
-            <dd>{formatUtcDateTime(token.insertedAt)}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>{token.revokedAt ? "Revoked token" : "Active token"}</dd>
-          </div>
-        </dl>
-        {token.revokedAt ? null : (
-          <>
-            <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={handleRotateSubmit}>
-              <label>
-                {`Replacement label for ${displayLabel}`}
-                <input autoComplete="off" name="label" type="text" />
-              </label>
-              <label>
-                {`Replacement expiry for ${displayLabel}`}
-                <input name="expiresAt" type="datetime-local" />
-              </label>
-              <button disabled={rotatePending} type="submit">
-                {rotatePending ? "Rotating token..." : "Rotate token"}
-              </button>
-            </form>
-            <button
-              disabled={revokePending}
-              onClick={() => {
-                onRevoke(token.id);
-              }}
-              type="button"
-            >
-              {revokePending ? "Revoking token..." : "Revoke token"}
-            </button>
-          </>
-        )}
+        <ApiTokenDetails token={token} />
+        <ApiTokenRowErrors revokeError={revokeError} rotateError={rotateError} />
+        <ApiTokenActions
+          displayLabel={displayLabel}
+          onRevoke={onRevoke}
+          onRotateSubmit={handleRotateSubmit}
+          revokePending={revokePending}
+          rotatePending={rotatePending}
+          token={token}
+        />
       </article>
     </li>
+  );
+}
+
+function ApiTokenDetails({ token }: { token: ApiTokenSummary }) {
+  return (
+    <dl>
+      <div>
+        <dt>Token prefix</dt>
+        <dd>{token.tokenPrefix}</dd>
+      </div>
+      <div>
+        <dt>Expires</dt>
+        <dd>{formatOptionalDateTime(token.expiresAt, "Never expires")}</dd>
+      </div>
+      <div>
+        <dt>Last used</dt>
+        <dd>{formatOptionalDateTime(token.lastUsedAt, "Never used")}</dd>
+      </div>
+      <div>
+        <dt>Created</dt>
+        <dd>{formatUtcDateTime(token.insertedAt)}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>{token.revokedAt ? "Revoked token" : "Active token"}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function ApiTokenRowErrors({
+  revokeError,
+  rotateError
+}: {
+  revokeError: string | null;
+  rotateError: string | null;
+}) {
+  return (
+    <>
+      {rotateError ? <p role="alert">{rotateError}</p> : null}
+      {revokeError ? <p role="alert">{revokeError}</p> : null}
+    </>
+  );
+}
+
+function ApiTokenActions({
+  displayLabel,
+  onRevoke,
+  onRotateSubmit,
+  revokePending,
+  rotatePending,
+  token
+}: {
+  displayLabel: string;
+  onRevoke: (tokenId: string) => void;
+  onRotateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  revokePending: boolean;
+  rotatePending: boolean;
+  token: ApiTokenSummary;
+}) {
+  if (token.revokedAt) {
+    return null;
+  }
+
+  return (
+    <>
+      <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit}>
+        <label>
+          {`Replacement label for ${displayLabel}`}
+          <input autoComplete="off" name="label" type="text" />
+        </label>
+        <label>
+          {`Replacement expiry for ${displayLabel}`}
+          <input name="expiresAt" type="datetime-local" />
+        </label>
+        <button disabled={rotatePending} type="submit">
+          {rotatePending ? "Rotating token..." : "Rotate token"}
+        </button>
+      </form>
+      <button
+        disabled={revokePending}
+        onClick={() => {
+          onRevoke(token.id);
+        }}
+        type="button"
+      >
+        {revokePending ? "Revoking token..." : "Revoke token"}
+      </button>
+    </>
   );
 }
 
@@ -543,14 +649,9 @@ function buildApiTokensViewState(
   createdTokens: ApiTokenSummary[] = [],
   apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary> = new Map()
 ) {
-  const localTokens =
-    loaderData.status === "unauthorized"
-      ? []
-      : applyApiTokenUpdates(createdTokens, apiTokenUpdates, loaderData.tokenStatus);
-
   if (loaderData.status === "unauthorized") {
     return {
-      localTokens,
+      localTokens: [],
       statusMessage: "Sign in to manage API tokens.",
       tokens: []
     };
@@ -561,6 +662,12 @@ function buildApiTokensViewState(
     apiTokenUpdates,
     loaderData.tokenStatus
   );
+  const loaderTokenIds = new Set(loaderTokens.map((token) => token.id));
+  const localTokens = applyApiTokenUpdates(
+    createdTokens,
+    apiTokenUpdates,
+    loaderData.tokenStatus
+  ).filter((token) => !loaderTokenIds.has(token.id));
   const tokens = mergeApiTokenSummaries(localTokens, loaderTokens);
 
   if (tokens.length === 0) {
@@ -615,7 +722,7 @@ function normalizeDateTimeLocalValue(value: string | null) {
   }
 
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 type MutationApiToken = {
@@ -672,9 +779,23 @@ function applyApiTokenUpdates(
   status: ApiTokensRouteLoaderData["tokenStatus"]
 ) {
   return tokens.flatMap((token) => {
-    const updatedToken = apiTokenUpdates.get(token.id) ?? token;
+    const updatedToken = mergeApiTokenUpdate(token, apiTokenUpdates.get(token.id));
     return apiTokenMatchesStatus(updatedToken, status) ? [updatedToken] : [];
   });
+}
+
+function mergeApiTokenUpdate(
+  token: ApiTokenSummary,
+  updatedToken: ApiTokenSummary | undefined
+) {
+  if (!updatedToken) {
+    return token;
+  }
+
+  return {
+    ...token,
+    revokedAt: token.revokedAt ?? updatedToken.revokedAt
+  } satisfies ApiTokenSummary;
 }
 
 function mergeApiTokenSummaries(
@@ -700,6 +821,26 @@ function upsertApiTokenSummaryMap(
   const nextTokens = new Map(tokens);
   nextTokens.set(nextToken.id, nextToken);
   return nextTokens;
+}
+
+function upsertMapValue<K, V>(
+  values: ReadonlyMap<K, V>,
+  key: K,
+  value: V
+): ReadonlyMap<K, V> {
+  const nextValues = new Map(values);
+  nextValues.set(key, value);
+  return nextValues;
+}
+
+function removeMapValue<K, V>(values: ReadonlyMap<K, V>, key: K): ReadonlyMap<K, V> {
+  if (!values.has(key)) {
+    return values;
+  }
+
+  const nextValues = new Map(values);
+  nextValues.delete(key);
+  return nextValues;
 }
 
 function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): ReadonlySet<T> {

@@ -192,6 +192,34 @@ test("apiTokensLoader propagates aborted requests", async () => {
   ).rejects.toBe(abortReason);
 });
 
+test("apiTokensLoader normalizes non-error abort reasons", async () => {
+  const controller = new AbortController();
+  const environment = createRelayEnvironment();
+  const request = buildAbortableRequest(
+    "https://app.example.com/account/api-tokens",
+    controller.signal
+  );
+
+  fetchRouteQueryMock.mockImplementationOnce(() => {
+    controller.abort("Route load cancelled");
+
+    return Promise.resolve(
+      buildFetchedApiTokenPage(
+        buildApiTokenPage({
+          endCursor: "cursor-1",
+          hasNextPage: true,
+          tokens: [TOKEN_NODE]
+        })
+      )
+    );
+  });
+
+  await apiTokensLoader(buildApiTokensLoaderArgs({ environment, request })).catch((error) => {
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toHaveProperty("message", "Route load cancelled");
+  });
+});
+
 function buildApiTokensLoaderArgs({
   environment = createRelayEnvironment(),
   request = new Request("https://app.example.com/account/api-tokens")

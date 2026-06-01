@@ -245,6 +245,57 @@ test("create token submits label and displays the one-time plain text token", as
   expect(oneTimeRegion).toHaveTextContent("pc_live_123456789");
 });
 
+test("create token ignores duplicate submits while the request is in flight", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  const createForm = screen.getByRole("form", { name: "Create API token" });
+
+  act(() => {
+    fireEvent.submit(createForm);
+    fireEvent.submit(createForm);
+  });
+
+  await waitFor(() => {
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("create token sends null for invalid expiry input", async () => {
+  const formDataSpy = stubFormDataExpiry("invalid-date");
+
+  try {
+    mockedUseLoaderData.mockReturnValue({
+      status: "empty",
+      tokenQueries: [],
+      tokens: [],
+      tokenStatus: "all"
+    } satisfies ApiTokensRouteLoaderData);
+
+    renderApiTokensRoute();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+    await waitFor(() => {
+      expect(commitCreateMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: expect.objectContaining({
+            expiresAt: null
+          })
+        })
+      );
+    });
+  } finally {
+    formDataSpy.mockRestore();
+  }
+});
+
 test("create token clears the one-time token when the next create starts", async () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
@@ -442,6 +493,54 @@ test("revoke token renders mutation payload errors", async () => {
   expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
 });
 
+test("revoke token keeps concurrent row errors scoped to each token", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  const revokeButtons = screen.getAllByRole("button", { name: "Revoke token" });
+  fireEvent.click(revokeButtons[0]);
+  fireEvent.click(revokeButtons[1]);
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeRevokeMutationAt(0, {
+    revokeApiToken: {
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "CLI cannot be revoked."
+        }
+      ]
+    }
+  });
+  completeRevokeMutationAt(1, {
+    revokeApiToken: {
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "Build bot cannot be revoked."
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByText("CLI cannot be revoked.")).toBeInTheDocument();
+  expect(screen.getByText("Build bot cannot be revoked.")).toBeInTheDocument();
+  expect(screen.getAllByRole("alert")).toHaveLength(2);
+});
+
 test("revoke token renders a generic alert for network errors", async () => {
   commitRevokeMutationMock.mockImplementation(({ onError }) => {
     onError(new Error("Network request failed: boom"));
@@ -525,6 +624,35 @@ test("rotate token uses the selected row label when no replacement label is ente
   });
 });
 
+test("rotate token sends null for invalid replacement expiry input", async () => {
+  const formDataSpy = stubFormDataExpiry("not-a-real-date");
+
+  try {
+    mockedUseLoaderData.mockReturnValue({
+      status: "ready",
+      tokenQueries: [],
+      tokens: [ACTIVE_TOKEN],
+      tokenStatus: "all"
+    } satisfies ApiTokensRouteLoaderData);
+
+    renderApiTokensRoute();
+
+    fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
+
+    await waitFor(() => {
+      expect(commitRotateMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: expect.objectContaining({
+            expiresAt: null
+          })
+        })
+      );
+    });
+  } finally {
+    formDataSpy.mockRestore();
+  }
+});
+
 test("rotate token disables only the pending row", async () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -597,6 +725,108 @@ test("rotate token renders mutation payload errors", async () => {
   expect(screen.getByRole("button", { name: "Rotate token" })).not.toBeDisabled();
 });
 
+test("rotate token keeps concurrent row errors scoped to each token", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  const rotateButtons = screen.getAllByRole("button", { name: "Rotate token" });
+  fireEvent.click(rotateButtons[0]);
+  fireEvent.click(rotateButtons[1]);
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledTimes(2);
+  });
+
+  completeRotateMutationAt(0, {
+    rotateApiToken: {
+      plainTextToken: null,
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "CLI cannot be rotated."
+        }
+      ]
+    }
+  });
+  completeRotateMutationAt(1, {
+    rotateApiToken: {
+      plainTextToken: null,
+      apiToken: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "tokenId",
+          message: "Build bot cannot be rotated."
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByText("CLI cannot be rotated.")).toBeInTheDocument();
+  expect(screen.getByText("Build bot cannot be rotated.")).toBeInTheDocument();
+  expect(screen.getAllByRole("alert")).toHaveLength(2);
+});
+
+test("server token snapshots supersede local mutation snapshots after reload", async () => {
+  let loaderData: ApiTokensRouteLoaderData = {
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "all"
+  };
+  const serverRotatedToken: ApiTokenSummary = {
+    id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
+    label: "Server replacement",
+    tokenPrefix: "998877aabbcc",
+    lastUsedAt: "2026-06-01T13:00:00Z",
+    expiresAt: "2026-09-02T12:00:00Z",
+    revokedAt: null,
+    insertedAt: "2026-06-01T12:00:00Z"
+  };
+
+  mockedUseLoaderData.mockImplementation(() => loaderData);
+  mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
+
+  const { rerender } = renderApiTokensRoute();
+
+  fireEvent.change(screen.getByLabelText("Replacement label for CLI"), {
+    target: { value: "Local replacement" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
+
+  await waitFor(() => {
+    expect(commitRotateMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestRotateMutation(buildSuccessfulRotateResponse());
+
+  expect(await screen.findByRole("heading", { name: "CLI replacement" })).toBeInTheDocument();
+
+  loaderData = {
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [serverRotatedToken],
+    tokenStatus: "all"
+  };
+  mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([serverRotatedToken]) as never);
+
+  rerender(
+    <MemoryRouter>
+      <ApiTokensRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("heading", { name: "Server replacement" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "CLI replacement" })).not.toBeInTheDocument();
+});
+
 function renderApiTokensRoute() {
   return render(
     <MemoryRouter>
@@ -617,10 +847,39 @@ function completeLatestRevokeMutation(response: unknown, graphQLErrors?: unknown
   });
 }
 
+function completeRevokeMutationAt(index: number, response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    commitRevokeMutationMock.mock.calls[index]?.[0]?.onCompleted(response, graphQLErrors);
+  });
+}
+
 function completeLatestRotateMutation(response: unknown, graphQLErrors?: unknown[]) {
   act(() => {
     commitRotateMutationMock.mock.calls.at(-1)?.[0]?.onCompleted(response, graphQLErrors);
   });
+}
+
+function completeRotateMutationAt(index: number, response: unknown, graphQLErrors?: unknown[]) {
+  act(() => {
+    commitRotateMutationMock.mock.calls[index]?.[0]?.onCompleted(response, graphQLErrors);
+  });
+}
+
+function stubFormDataExpiry(expiresAt: string) {
+  const RealFormData = globalThis.FormData;
+
+  return vi
+    .spyOn(
+      globalThis as typeof globalThis & {
+        FormData: (form?: HTMLFormElement, submitter?: HTMLElement | null) => FormData;
+      },
+      "FormData"
+    )
+    .mockImplementation((form?: HTMLFormElement, submitter?: HTMLElement | null) => {
+      const formData = new RealFormData(form, submitter);
+      formData.set("expiresAt", expiresAt);
+      return formData;
+    });
 }
 
 function buildSuccessfulCreateResponse() {
