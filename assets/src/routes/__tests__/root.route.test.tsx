@@ -8,6 +8,7 @@ import {
   fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../relay/route-preload";
+import { setRootViewer } from "../auth/viewer-store";
 import { RootLayout, RootRoute } from "../root";
 import { rootLoader, type RootLoaderData } from "../root/loader";
 
@@ -45,11 +46,18 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const ROOT_VIEWER_QUERY_REF = { dispose: vi.fn() };
+const ROOT_VIEWER_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "RootViewerRouteQuery",
+    text: null,
+    variables: {}
+  }
+};
 
-const guestLoaderData: Extract<RootLoaderData, { status: "guest" }> = {
-  status: "guest",
+const guestLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
+  status: "ready",
   viewer: null,
-  viewerQuery: null
+  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR
 };
 
 const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
@@ -58,13 +66,7 @@ const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
     id: "viewer-1",
     email: "person@example.com"
   },
-  viewerQuery: {
-    __relayQuery: {
-      operationName: "RootViewerRouteQuery",
-      text: null,
-      variables: {}
-    }
-  }
+  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR
 };
 
 const readyLoaderDataWithoutSnapshotViewer: Extract<RootLoaderData, { status: "ready" }> = {
@@ -72,6 +74,15 @@ const readyLoaderDataWithoutSnapshotViewer: Extract<RootLoaderData, { status: "r
   viewer: null,
   viewerQuery: authenticatedLoaderData.viewerQuery
 };
+
+const degradedAuthenticatedLoaderData = {
+  status: "degraded",
+  viewer: {
+    id: "viewer-1",
+    email: "person@example.com"
+  },
+  viewerQuery: null
+} satisfies RootLoaderData;
 
 beforeEach(() => {
   mockedFetchRouteQuery.mockReset();
@@ -115,6 +126,7 @@ function renderRootRoute(loaderData: RootLoaderData) {
 }
 
 test("root layout renders guest auth links in the primary navigation", async () => {
+  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
   renderRootRoute(guestLoaderData);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
@@ -157,8 +169,11 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "/auth/register"
   );
   expect(within(primaryNavigation).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
-  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    guestLoaderData.viewerQuery
+  );
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
 });
 
 test("root layout renders authenticated auth links in the primary navigation", async () => {
@@ -193,6 +208,7 @@ test("root layout reads authenticated viewer state from the preloaded root query
 });
 
 test("root route renders guest home actions as links while using the shared button wrapper", async () => {
+  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
   renderRootRoute(guestLoaderData);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
@@ -239,6 +255,20 @@ test("root route renders guest home actions as links while using the shared butt
   expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
 });
 
+test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {
+  renderRootRoute(degradedAuthenticatedLoaderData);
+
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+
+  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+    "href",
+    "/auth/logout"
+  );
+  expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+});
+
 test("root route renders authenticated home actions", async () => {
   renderRootRoute(authenticatedLoaderData);
 
@@ -272,6 +302,26 @@ test("rootLoader propagates aborted viewer preloads instead of falling back to g
     {},
     { signal: request.signal }
   );
+});
+
+test("rootLoader preserves the cached root viewer when the viewer preload fails", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products");
+
+  setRootViewer(environment, {
+    id: "viewer-1",
+    email: "person@example.com"
+  });
+  mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Viewer fetch failed"));
+
+  await expect(rootLoader(buildRootLoaderArgs({ environment, request }))).resolves.toEqual({
+    status: "degraded",
+    viewer: {
+      id: "viewer-1",
+      email: "person@example.com"
+    },
+    viewerQuery: null
+  });
 });
 
 function buildRootLoaderArgs({

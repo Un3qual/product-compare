@@ -1,4 +1,4 @@
-import type { HydrationState, RouteObject } from "react-router-dom";
+import type { HydrationState, RouteObject, ShouldRevalidateFunctionArgs } from "react-router-dom";
 import { createBrowserRouter } from "react-router-dom";
 import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
@@ -34,11 +34,19 @@ declare global {
   }
 }
 
+export function shouldRevalidateRootLoader({
+  currentUrl,
+  nextUrl
+}: ShouldRevalidateFunctionArgs) {
+  return isAuthRoutePath(currentUrl.pathname) || isAuthRoutePath(nextUrl.pathname);
+}
+
 export const routes: RouteObject[] = [
   {
     path: "/",
     id: ROOT_ROUTE_ID,
     loader: rootLoader,
+    shouldRevalidate: shouldRevalidateRootLoader,
     element: <RootLayout />,
     children: [
       {
@@ -119,9 +127,17 @@ export const routes: RouteObject[] = [
   }
 ];
 
-export function createClientRouter(relayEnvironment?: Environment) {
+export function createClientRouter(relayEnvironment: Environment) {
+  if (!relayEnvironment) {
+    throw new Error("Relay environment is required to create the client router");
+  }
+
   return createBrowserRouter(routes, {
-    getContext: relayEnvironment ? () => createRelayRouterContext(relayEnvironment) : undefined,
+    getContext: () => createRelayRouterContext(relayEnvironment),
     hydrationData: typeof window === "undefined" ? undefined : window.__staticRouterHydrationData
   });
+}
+
+function isAuthRoutePath(pathname: string) {
+  return pathname === "/auth" || pathname.startsWith("/auth/");
 }

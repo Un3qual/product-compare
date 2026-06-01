@@ -21,6 +21,7 @@ export function setRootViewer(environment: Environment, viewer: RootViewer) {
 
 export function clearRootViewer(environment: Environment) {
   commitLocalUpdate(environment, (store: RecordSourceProxy) => {
+    // Relay rejects setLinkedRecord(null), so clear the root link with a scalar null write.
     store.getRoot().setValue(null, "viewer");
   });
 }

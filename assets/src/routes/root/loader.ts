@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import type { Environment } from "relay-runtime";
 import rootViewerRouteQuery, {
   type RootViewerRouteQuery
 } from "../../__generated__/RootViewerRouteQuery.graphql";
@@ -9,6 +10,8 @@ import {
 } from "../../relay/route-preload";
 
 export const ROOT_ROUTE_ID = "root";
+const RELAY_ROOT_ID = "client:root";
+const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 
 export type RootViewer = {
   id: string;
@@ -26,8 +29,8 @@ export type RootLoaderData =
       viewerQuery: RootViewerQueryDescriptor;
     }
   | {
-      status: "guest";
-      viewer: null;
+      status: "degraded";
+      viewer: RootViewer | null;
       viewerQuery: null;
     };
 
@@ -54,11 +57,35 @@ export async function rootLoader({
     throwIfAborted(request.signal);
 
     return {
-      status: "guest",
-      viewer: null,
+      status: "degraded",
+      viewer: readCachedRootViewer(environment),
       viewerQuery: null
     };
   }
+}
+
+function readCachedRootViewer(environment: Environment): RootViewer | null {
+  const source = environment.getStore().getSource();
+  const rootRecord = source.get(RELAY_ROOT_ID);
+  const viewerRecordId = linkedRecordId(rootRecord?.viewer);
+
+  if (!viewerRecordId) {
+    return null;
+  }
+
+  return normalizeViewer(source.get(viewerRecordId));
+}
+
+function linkedRecordId(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const recordId = (value as { [RELAY_LINKED_RECORD_REF_KEY]?: unknown })[
+    RELAY_LINKED_RECORD_REF_KEY
+  ];
+
+  return typeof recordId === "string" ? recordId : null;
 }
 
 function throwIfAborted(signal?: AbortSignal) {

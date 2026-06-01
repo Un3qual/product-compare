@@ -55,8 +55,8 @@ type RootOutletContext = {
 export function RootLayout() {
   const loaderData = useLoaderData() as RootLoaderData;
 
-  if (loaderData.status === "guest") {
-    return <RootLayoutShell viewer={null} />;
+  if (loaderData.status === "degraded") {
+    return <RootLayoutShell viewer={loaderData.viewer} />;
   }
 
   return <ReadyRootLayout loaderData={loaderData} />;

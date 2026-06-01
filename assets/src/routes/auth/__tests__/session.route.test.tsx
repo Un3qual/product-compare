@@ -203,6 +203,7 @@ test("logout route commits the Relay logout mutation and redirects after Phoenix
   renderRoute("/auth/logout");
 
   expect(screen.getByRole("heading", { name: /sign out/i })).toBeInTheDocument();
+  expect(screen.getByText("Sign out of your account.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /sign out/i })).toHaveAttribute(
     "data-slot",
     "button"

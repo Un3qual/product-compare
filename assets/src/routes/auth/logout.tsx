@@ -52,7 +52,7 @@ export function LogoutRoute() {
 
   return (
     <AuthFormShell
-      description="Clear the Phoenix browser session with the GraphQL logout flow."
+      description="Sign out of your account."
       errors={errors}
       footerLinks={[
         { label: "Back to sign in", to: "/auth/login" },

@@ -1,4 +1,4 @@
-import { routes } from "../router";
+import { createClientRouter, routes, shouldRevalidateRootLoader } from "../router";
 import { AffiliateSetupRoute } from "../routes/affiliate/setup";
 import { affiliateSetupLoader } from "../routes/affiliate/setup/loader";
 import { LogoutRoute } from "../routes/auth/logout";
@@ -13,8 +13,28 @@ test("root route preloads viewer state", () => {
   expect(routes[0]).toEqual(
     expect.objectContaining({
       id: ROOT_ROUTE_ID,
-      loader: rootLoader
+      loader: rootLoader,
+      shouldRevalidate: shouldRevalidateRootLoader
     })
+  );
+});
+
+test("root route revalidates viewer state only around auth route navigations", () => {
+  expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare"))).toBe(
+    false
+  );
+  expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/auth/login", "/"))).toBe(true);
+  expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/compare", "/auth/logout"))).toBe(
+    true
+  );
+  expect(
+    shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare?slug=one"))
+  ).toBe(false);
+});
+
+test("client router requires Relay context for route loaders", () => {
+  expect(() => createClientRouter(undefined as never)).toThrow(
+    "Relay environment is required to create the client router"
   );
 });
 
@@ -81,3 +101,21 @@ test("logout route is registered under the root route", () => {
     })
   );
 });
+
+function buildShouldRevalidateArgs(
+  currentPath: string,
+  nextPath: string
+) {
+  return {
+    actionResult: undefined,
+    currentParams: {},
+    currentUrl: new URL(currentPath, "https://app.example.com"),
+    defaultShouldRevalidate: true,
+    formAction: undefined,
+    formData: undefined,
+    formEncType: undefined,
+    formMethod: undefined,
+    nextParams: {},
+    nextUrl: new URL(nextPath, "https://app.example.com")
+  };
+}
