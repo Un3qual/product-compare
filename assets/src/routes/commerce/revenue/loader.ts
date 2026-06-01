@@ -30,6 +30,10 @@ export type RevenueSummaryLoaderData =
       filters: RevenueSummaryFilters;
     }
   | {
+      status: "invalidDateRange";
+      filters: RevenueSummaryFilters;
+    }
+  | {
       status: "error";
       filters: RevenueSummaryFilters;
     };
@@ -44,6 +48,13 @@ export async function revenueSummaryLoader({
   if (!filters.currency) {
     return {
       status: "needsCurrency",
+      filters
+    };
+  }
+
+  if (hasInvertedDateRange(filters)) {
+    return {
+      status: "invalidDateRange",
       filters
     };
   }
@@ -81,16 +92,9 @@ export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
     to: normalizeDateFilter(url.searchParams.get("to"))
   };
 
-  const normalized = Object.fromEntries(
+  return Object.fromEntries(
     Object.entries(filters).filter(([, value]) => value !== undefined)
   ) as RevenueSummaryFilters;
-
-  if (normalized.from && normalized.to && normalized.from > normalized.to) {
-    delete normalized.from;
-    delete normalized.to;
-  }
-
-  return normalized;
 }
 
 function normalizeCurrencyFilter(value: string | null) {
@@ -120,4 +124,8 @@ function normalizeNetworkFilter(value: string | null) {
   const normalized = value?.trim().toLowerCase();
 
   return normalized && SUPPORTED_NETWORKS.has(normalized) ? normalized : undefined;
+}
+
+function hasInvertedDateRange(filters: RevenueSummaryFilters) {
+  return Boolean(filters.from && filters.to && filters.from > filters.to);
 }

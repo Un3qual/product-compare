@@ -265,6 +265,29 @@ test("revenue route asks for a currency before loading metrics", () => {
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
+test("revenue route asks for a valid date range before loading metrics", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "invalidDateRange",
+    filters: {
+      currency: "USD",
+      from: "2026-06-01",
+      to: "2026-05-31"
+    }
+  } satisfies RevenueSummaryLoaderData);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Enter a start date on or before the end date to load revenue metrics."
+  );
+  expect(screen.getByLabelText("Currency")).toHaveValue("USD");
+  expect(screen.getByLabelText("From")).toHaveValue("2026-06-01");
+  expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
+  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+});
+
 test("revenue route renders the loader error state", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "error",

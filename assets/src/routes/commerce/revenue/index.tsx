@@ -33,6 +33,8 @@ export function RevenueSummaryRoute() {
         <RevenueSummaryUnavailableFallback />
       ) : loaderData.status === "needsCurrency" ? (
         <RevenueSummaryCurrencyRequiredFallback />
+      ) : loaderData.status === "invalidDateRange" ? (
+        <RevenueSummaryInvalidDateRangeFallback />
       ) : (
         <ResettableErrorBoundary
           fallback={<RevenueSummaryUnavailableFallback />}
@@ -166,6 +168,10 @@ function RevenueSummaryUnavailableFallback() {
 
 function RevenueSummaryCurrencyRequiredFallback() {
   return <p role="status">Enter a currency code to load revenue metrics.</p>;
+}
+
+function RevenueSummaryInvalidDateRangeFallback() {
+  return <p role="status">Enter a start date on or before the end date to load revenue metrics.</p>;
 }
 
 function revenueSummaryFilterKey(filters: RevenueSummaryLoaderData["filters"]) {
