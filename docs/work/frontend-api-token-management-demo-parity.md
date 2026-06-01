@@ -29,7 +29,7 @@
 
 - Status: none queued.
 - Batch: none.
-- Follow-up: frontend revenue reporting demo parity is the next unblocked non-ingestion demo-parity lane in `docs/work/frontend-revenue-reporting-demo-parity.md`.
+- Follow-up: frontend merchant discovery demo parity is the next unblocked non-ingestion demo-parity lane in `docs/work/frontend-merchant-discovery-demo-parity.md`.
 
 ## Verification
 

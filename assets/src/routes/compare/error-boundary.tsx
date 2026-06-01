@@ -1,15 +1,15 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import { CompareShell } from "./compare-shell";
 
-type CompareErrorBoundaryProps = {
+type RouteErrorBoundaryProps = {
   resourceName?: string;
   title?: string;
 };
 
-export function CompareErrorBoundary({
+export function RouteErrorBoundary({
   resourceName = "comparison",
   title = "Compare products"
-}: CompareErrorBoundaryProps = {}) {
+}: RouteErrorBoundaryProps = {}) {
   const error = useRouteError();
 
   let errorMessage = `${capitalizeResourceName(resourceName)} unavailable.`;

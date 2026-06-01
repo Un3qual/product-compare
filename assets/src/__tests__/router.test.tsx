@@ -1,5 +1,5 @@
 import { routes } from "../router";
-import { CompareErrorBoundary } from "../routes/compare/error-boundary";
+import { RouteErrorBoundary } from "../routes/compare/error-boundary";
 import { RevenueSummaryRoute } from "../routes/commerce/revenue";
 import { revenueSummaryLoader } from "../routes/commerce/revenue/loader";
 
@@ -9,7 +9,7 @@ test("API token route has a route-level error boundary", () => {
   );
 
   expect(apiTokensRoute?.errorElement).toEqual(
-    <CompareErrorBoundary title="API tokens" />
+    <RouteErrorBoundary title="API tokens" />
   );
 });
 
@@ -23,7 +23,7 @@ test("revenue summary route is registered under the root route", () => {
       path: "commerce/revenue",
       loader: revenueSummaryLoader,
       element: <RevenueSummaryRoute />,
-      errorElement: <CompareErrorBoundary resourceName="revenue report" title="Revenue" />
+      errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
     })
   );
 });

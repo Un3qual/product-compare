@@ -16,7 +16,7 @@ import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
 } from "../saved-data";
-import { CompareErrorBoundary } from "../error-boundary";
+import { RouteErrorBoundary } from "../error-boundary";
 import { CompareRoute } from "../index";
 import { SavedComparisonsRoute } from "../saved";
 import {
@@ -795,7 +795,7 @@ test("compare route renders the compare error boundary when the loader throws", 
     .mockReturnValue(new Error("Network request failed: boom"));
 
   try {
-    render(<CompareErrorBoundary />);
+    render(<RouteErrorBoundary />);
 
     expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
@@ -815,7 +815,7 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
     .mockReturnValue(new TypeError("Cannot read properties of undefined"));
 
   try {
-    render(<CompareErrorBoundary title="Compare products" />);
+    render(<RouteErrorBoundary title="Compare products" />);
 
     expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
@@ -835,7 +835,7 @@ test("compare error boundary supports route-specific resource copy", () => {
     .mockReturnValue(new Error("Network request failed: boom"));
 
   try {
-    render(<CompareErrorBoundary resourceName="revenue report" title="Revenue" />);
+    render(<RouteErrorBoundary resourceName="revenue report" title="Revenue" />);
 
     expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(

@@ -17,7 +17,7 @@ import { compareLoader } from "./routes/compare/loader";
 import { savedComparisonsLoader } from "./routes/compare/saved-data";
 import { CompareRoute } from "./routes/compare";
 import { SavedComparisonsRoute } from "./routes/compare/saved";
-import { CompareErrorBoundary } from "./routes/compare/error-boundary";
+import { RouteErrorBoundary } from "./routes/compare/error-boundary";
 import { ProductDetailRoute } from "./routes/products/detail";
 import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
@@ -51,25 +51,25 @@ export const routes: RouteObject[] = [
         path: "compare",
         loader: compareLoader,
         element: <CompareRoute />,
-        errorElement: <CompareErrorBoundary />
+        errorElement: <RouteErrorBoundary />
       },
       {
         path: "compare/saved",
         loader: savedComparisonsLoader,
         element: <SavedComparisonsRoute />,
-        errorElement: <CompareErrorBoundary title="Saved comparisons" />
+        errorElement: <RouteErrorBoundary title="Saved comparisons" />
       },
       {
         path: "commerce/revenue",
         loader: revenueSummaryLoader,
         element: <RevenueSummaryRoute />,
-        errorElement: <CompareErrorBoundary resourceName="revenue report" title="Revenue" />
+        errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
       },
       {
         path: "account/api-tokens",
         loader: apiTokensLoader,
         element: <ApiTokensRoute />,
-        errorElement: <CompareErrorBoundary title="API tokens" />
+        errorElement: <RouteErrorBoundary title="API tokens" />
       },
       {
         path: "auth/login",

@@ -748,9 +748,11 @@ git diff --check
 
 Expected: all commands pass.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 If Tasks 1-5 were committed individually, include only Task 6 files here. If this lane is committed as one milestone, include all route, Relay artifact, test, and doc changes together.
+
+Completed in commit `e214853` (`feat(frontend): finish api token demo parity`).
 
 ```bash
 git add assets/src/routes/root.tsx assets/src/routes/__tests__/root.route.test.tsx docs/work/frontend-api-token-management-demo-parity.md docs/work/index.md docs/plans/NOW.md docs/plans/INDEX.md ARCHITECTURE.md docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md
