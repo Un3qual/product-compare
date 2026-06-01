@@ -89,6 +89,16 @@ const BUILD_BOT_TOKEN: ApiTokenSummary = {
   insertedAt: "2026-05-30T12:00:00Z"
 };
 
+const EXPIRED_TOKEN: ApiTokenSummary = {
+  id: "QXBpVG9rZW46ZXhwaXJlZC10b2tlbg==",
+  label: "Expired token",
+  tokenPrefix: "deadbeef1234",
+  lastUsedAt: null,
+  expiresAt: "2000-01-01T00:00:00Z",
+  revokedAt: null,
+  insertedAt: "2026-05-28T12:00:00Z"
+};
+
 const API_TOKENS_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ApiTokensRouteQuery",
@@ -105,7 +115,10 @@ const API_TOKENS_QUERY_REF = {
   variables: API_TOKENS_QUERY_DESCRIPTOR.__relayQuery.variables
 };
 
+const ROUTE_NOW = Date.parse("2026-06-01T00:00:00Z");
+
 beforeEach(() => {
+  vi.spyOn(Date, "now").mockReturnValue(ROUTE_NOW);
   commitCreateMutationMock.mockReset();
   commitRevokeMutationMock.mockReset();
   commitRotateMutationMock.mockReset();
@@ -127,6 +140,10 @@ beforeEach(() => {
   });
   mockedUseRoutePreloadedQuery.mockReturnValue(API_TOKENS_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 test("API token route prompts unauthenticated users to sign in", () => {
@@ -183,6 +200,25 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
   expect(screen.getByText("Active token")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Old automation" })).toBeInTheDocument();
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
+});
+
+test("API token route hides rotation controls for expired tokens", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [],
+    tokens: [EXPIRED_TOKEN],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("heading", { name: "Expired token" })).toBeInTheDocument();
+  expect(screen.getAllByText("Expired token")).toHaveLength(2);
+  expect(
+    screen.queryByRole("form", { name: "Rotate Expired token API token" })
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Rotate token" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Revoke token" })).toBeInTheDocument();
 });
 
 test("API token route links status filters without losing the route path", () => {
@@ -265,6 +301,29 @@ test("create token ignores duplicate submits while the request is in flight", as
   await waitFor(() => {
     expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
   });
+});
+
+test("create token preserves the default expiry when the expiry field is blank", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
+  });
+
+  const variables = commitCreateMutationMock.mock.calls[0]?.[0]?.variables;
+  expect(variables).toEqual({
+    label: null
+  });
+  expect(variables).not.toHaveProperty("expiresAt");
 });
 
 test("create token sends null for invalid expiry input", async () => {
@@ -432,6 +491,8 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
   renderApiTokensRoute();
 
   const revokeButtons = screen.getAllByRole("button", { name: "Revoke token" });
+  const rotateButtons = screen.getAllByRole("button", { name: "Rotate token" });
+  const rotateForms = screen.getAllByRole("form", { name: /Rotate .* API token/ });
 
   fireEvent.click(revokeButtons[0]);
 
@@ -440,6 +501,12 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
   });
   expect(revokeButtons[0]).toBeDisabled();
   expect(revokeButtons[1]).not.toBeDisabled();
+  expect(rotateButtons[0]).toBeDisabled();
+  expect(rotateButtons[1]).not.toBeDisabled();
+
+  fireEvent.submit(rotateForms[0]);
+
+  expect(commitRotateMutationMock).not.toHaveBeenCalled();
 
   fireEvent.click(revokeButtons[0]);
 
@@ -458,6 +525,33 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
       }
     })
   );
+});
+
+test("revoke token clears the one-time token when revoke starts", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCreateMutation(buildSuccessfulCreateResponse());
+
+  expect(await screen.findByText("pc_live_123456789")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+
+  await waitFor(() => {
+    expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
+  });
+  expect(screen.queryByText("pc_live_123456789")).not.toBeInTheDocument();
 });
 
 test("revoke token renders mutation payload errors", async () => {
@@ -616,12 +710,14 @@ test("rotate token uses the selected row label when no replacement label is ente
       expect.objectContaining({
         variables: {
           tokenId: ACTIVE_TOKEN.id,
-          label: "CLI",
-          expiresAt: null
+          label: "CLI"
         }
       })
     );
   });
+
+  const variables = commitRotateMutationMock.mock.calls[0]?.[0]?.variables;
+  expect(variables).not.toHaveProperty("expiresAt");
 });
 
 test("rotate token sends null for invalid replacement expiry input", async () => {
@@ -664,6 +760,7 @@ test("rotate token disables only the pending row", async () => {
   renderApiTokensRoute();
 
   const rotateButtons = screen.getAllByRole("button", { name: "Rotate token" });
+  const revokeButtons = screen.getAllByRole("button", { name: "Revoke token" });
 
   fireEvent.click(rotateButtons[0]);
 
@@ -672,6 +769,12 @@ test("rotate token disables only the pending row", async () => {
   });
   expect(rotateButtons[0]).toBeDisabled();
   expect(rotateButtons[1]).not.toBeDisabled();
+  expect(revokeButtons[0]).toBeDisabled();
+  expect(revokeButtons[1]).not.toBeDisabled();
+
+  fireEvent.click(revokeButtons[0]);
+
+  expect(commitRevokeMutationMock).not.toHaveBeenCalled();
 
   fireEvent.click(rotateButtons[1]);
 
@@ -683,8 +786,7 @@ test("rotate token disables only the pending row", async () => {
     expect.objectContaining({
       variables: {
         tokenId: BUILD_BOT_TOKEN.id,
-        label: "Build bot",
-        expiresAt: null
+        label: "Build bot"
       }
     })
   );

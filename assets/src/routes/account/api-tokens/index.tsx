@@ -119,7 +119,11 @@ export function ApiTokensRoute() {
   }
 
   function handleRotate(token: ApiTokenSummary, form: HTMLFormElement) {
-    if (inFlightRotateIdsRef.current.has(token.id)) {
+    if (
+      inFlightRotateIdsRef.current.has(token.id) ||
+      inFlightRevokeIdsRef.current.has(token.id) ||
+      !apiTokenIsActive(token)
+    ) {
       return;
     }
 
@@ -188,7 +192,7 @@ export function ApiTokensRoute() {
   }
 
   function handleRevoke(tokenId: string) {
-    if (inFlightRevokeIdsRef.current.has(tokenId)) {
+    if (inFlightRevokeIdsRef.current.has(tokenId) || inFlightRotateIdsRef.current.has(tokenId)) {
       return;
     }
 
@@ -197,6 +201,7 @@ export function ApiTokensRoute() {
       addSetValue(currentPendingRevokeIds, tokenId)
     );
     setRevokeErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, tokenId));
+    setOneTimeToken(null);
 
     commitRouteMutation(
       commitRevokeApiToken,
@@ -550,7 +555,7 @@ function ApiTokenDetails({ token }: { token: ApiTokenSummary }) {
       </div>
       <div>
         <dt>Status</dt>
-        <dd>{token.revokedAt ? "Revoked token" : "Active token"}</dd>
+        <dd>{apiTokenStatusLabel(token)}</dd>
       </div>
     </dl>
   );
@@ -590,23 +595,28 @@ function ApiTokenActions({
     return null;
   }
 
+  const lifecyclePending = revokePending || rotatePending;
+  const tokenActive = apiTokenIsActive(token);
+
   return (
     <>
-      <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit}>
-        <label>
-          {`Replacement label for ${displayLabel}`}
-          <input autoComplete="off" name="label" type="text" />
-        </label>
-        <label>
-          {`Replacement expiry for ${displayLabel}`}
-          <input name="expiresAt" type="datetime-local" />
-        </label>
-        <button disabled={rotatePending} type="submit">
-          {rotatePending ? "Rotating token..." : "Rotate token"}
-        </button>
-      </form>
+      {tokenActive ? (
+        <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit}>
+          <label>
+            {`Replacement label for ${displayLabel}`}
+            <input autoComplete="off" name="label" type="text" />
+          </label>
+          <label>
+            {`Replacement expiry for ${displayLabel}`}
+            <input name="expiresAt" type="datetime-local" />
+          </label>
+          <button disabled={lifecyclePending} type="submit">
+            {rotatePending ? "Rotating token..." : "Rotate token"}
+          </button>
+        </form>
+      ) : null}
       <button
-        disabled={revokePending}
+        disabled={lifecyclePending}
         onClick={() => {
           onRevoke(token.id);
         }}
@@ -687,11 +697,15 @@ function buildApiTokensViewState(
 
 function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenMutation["variables"] {
   const expiresAt = normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
-
-  return {
-    label: optionalFormText(formData.get("label")),
-    expiresAt
+  const variables: CreateApiTokenMutation["variables"] = {
+    label: optionalFormText(formData.get("label"))
   };
+
+  if (expiresAt !== undefined) {
+    variables.expiresAt = expiresAt;
+  }
+
+  return variables;
 }
 
 function buildRotateApiTokenVariables(
@@ -699,12 +713,16 @@ function buildRotateApiTokenVariables(
   formData: FormData
 ): RotateApiTokenMutation["variables"] {
   const expiresAt = normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
-
-  return {
+  const variables: RotateApiTokenMutation["variables"] = {
     tokenId: token.id,
-    label: optionalFormText(formData.get("label")) ?? token.label,
-    expiresAt
+    label: optionalFormText(formData.get("label")) ?? token.label
   };
+
+  if (expiresAt !== undefined) {
+    variables.expiresAt = expiresAt;
+  }
+
+  return variables;
 }
 
 function optionalFormText(value: FormDataEntryValue | null) {
@@ -718,11 +736,32 @@ function optionalFormText(value: FormDataEntryValue | null) {
 
 function normalizeDateTimeLocalValue(value: string | null) {
   if (!value) {
-    return null;
+    return undefined;
   }
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function apiTokenStatusLabel(token: ApiTokenSummary) {
+  if (token.revokedAt) {
+    return "Revoked token";
+  }
+
+  return apiTokenIsActive(token) ? "Active token" : "Expired token";
+}
+
+function apiTokenIsActive(token: ApiTokenSummary) {
+  if (token.revokedAt) {
+    return false;
+  }
+
+  if (!token.expiresAt) {
+    return true;
+  }
+
+  const expiresAt = new Date(token.expiresAt).getTime();
+  return Number.isNaN(expiresAt) || expiresAt > Date.now();
 }
 
 type MutationApiToken = {
@@ -767,7 +806,7 @@ function apiTokenMatchesStatus(
   }
 
   if (status === "active") {
-    return token.revokedAt === null;
+    return apiTokenIsActive(token);
   }
 
   return token.revokedAt !== null;
