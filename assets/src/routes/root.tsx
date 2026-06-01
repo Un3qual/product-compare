@@ -56,6 +56,12 @@ export function RootLayout() {
                 <Link to="/products">Browse products</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/merchants">Merchants</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/affiliate/setup">Affiliate setup</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/compare">Compare products</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
@@ -93,6 +99,12 @@ export function RootRoute() {
       <div aria-label="Home actions" role="group" {...stylex.props(styles.actions)}>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/products">Browse products</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/merchants">Merchants</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/affiliate/setup">Affiliate setup</Link>
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/compare">Compare products</Link>

@@ -4,21 +4,39 @@
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 
+### Frontend Affiliate Setup Demo Parity Lane
+
+- Status: completed
+- Batch: none queued
+- Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+- Next step: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live CJ credentials, representative payloads, quota behavior, and compliance signoff.
+- Why this batch is current:
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
+  - Product comparison demo parity, API token management demo parity, revenue reporting demo parity, and merchant discovery demo parity are complete.
+  - `docs/plans/INDEX.md` identifies affiliate setup as the next demo-parity candidate after merchant discovery.
+  - The backend GraphQL contract already exposes authenticated affiliate setup mutations and public merchant discovery for merchant ID choices.
+  - Task 1 added `AffiliateSetupRouteQuery`, `affiliateSetupLoader`, generated `AffiliateSetupRouteQuery.graphql.ts`, normalized merchant choice pagination, and kept loader preload failures recoverable.
+  - Task 2 refreshed the local Relay schema snapshot for the existing affiliate network/program mutation contract, generated the network/program mutation artifacts, and rendered network/program setup forms with typed payload error handling.
+  - Task 3 refreshed the local Relay schema snapshot for the existing affiliate link/coupon mutation contract, generated the link/coupon mutation artifacts, and rendered link/coupon setup forms with typed payload error handling.
+  - Task 4 registered `/affiliate/setup`, exposed `Affiliate setup` in primary navigation and home actions, ran focused frontend and backend contract verification, and closed the lane.
+
 ### Frontend Merchant Discovery Demo Parity Lane
 
-- Status: ready
-- Batch: Task 1, add the Relay route query and loader for `/merchants`
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, refresh the local schema snapshot with `Query.merchants(first:, after:)`, run Relay generation and focused frontend verification, then advance to route rendering.
+- Next step: no unblocked merchant discovery demo parity batch remains in this lane; `docs/plans/INDEX.md` lists additional demo-parity frontend candidates for a future implementation plan if priorities continue toward affiliate setup.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
   - Revenue reporting demo parity is complete.
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
-  - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
   - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
-  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape; the active Task 1 includes adding the missing local `Query.merchants(first:, after:)` entry before Relay generation.
+  - Task 1 added `MerchantDirectoryRouteQuery`, `merchantDirectoryLoader`, generated `MerchantDirectoryRouteQuery.graphql.ts`, and refreshed the local `assets/schema.graphql` merchant query and connection shape.
+  - Task 2 added `MerchantDirectoryRoute` with ready, empty, next-page, loader-error, and query-error fallback rendering.
+  - Task 3 registered `/merchants`, exposed `Merchants` in primary navigation and home actions, ran focused frontend and backend contract verification, and closed the lane.
 
 ### Frontend Revenue Reporting Demo Parity Lane
 
@@ -122,6 +140,42 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Affiliate Setup Demo Parity, Task 4:
+  - Registered `/affiliate/setup` with `AffiliateSetupRoute` and `affiliateSetupLoader`.
+  - Added `Affiliate setup` links to primary navigation and home actions.
+  - Closed the affiliate setup demo parity lane and moved it out of the active unblocked queue.
+  - Verified RED with `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx` failing because the route and links were absent.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend Affiliate Setup Demo Parity, Task 3:
+  - Refreshed the local frontend Relay schema snapshot for the existing `upsertAffiliateLink` and `createCoupon` mutation contracts.
+  - Added `UpsertAffiliateLinkMutation`, `CreateCouponMutation`, and generated Relay artifacts.
+  - Rendered affiliate link and coupon setup controls with optional network/date/currency normalization, typed payload errors, and returned entity summaries.
+  - Verified RED with `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx` failing because the link and coupon controls were absent.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts`, and `cd assets && bun run typecheck`.
+
+- Frontend Merchant Discovery Demo Parity, Task 3:
+  - Registered `/merchants` with `MerchantDirectoryRoute` and `merchantDirectoryLoader`.
+  - Added `Merchants` links to primary navigation and home actions.
+  - Closed the merchant discovery demo parity lane and moved it out of the active unblocked queue.
+  - Verified RED with `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx` failing because the route and links were absent.
+  - Restored backend test prerequisites with `mix deps.get` and `docker compose up -d db`.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts src/routes/merchants/__tests__/merchant-directory.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend Merchant Discovery Demo Parity, Task 2:
+  - Added `MerchantDirectoryRoute` for `/merchants` route rendering.
+  - Rendered merchant names and domains from the Relay-preloaded `merchants` connection.
+  - Added empty-state copy, next-page links preserving normalized page size with `after=<endCursor>`, and shared unavailable fallback for loader/query failures.
+  - Verified RED with `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory.route.test.tsx` failing because `../index` did not exist.
+  - Verified `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory.route.test.tsx src/routes/merchants/__tests__/merchant-directory-loader.test.ts` and `cd assets && bun run typecheck`.
+
+- Frontend Merchant Discovery Demo Parity, Task 1:
+  - Added `MerchantDirectoryRouteQuery` for public `merchants(first:, after:)` with merchant id, name, domain, cursor edges, and page info.
+  - Added `merchantDirectoryLoader` with default page size `20`, max supported page size `50`, cursor normalization, Relay route preloading, normalized pagination data, and recoverable loader error state.
+  - Refreshed `assets/schema.graphql` with `Query.merchants(first:, after:)`; Relay generation also exposed stale snapshot drift where `MerchantConnection` and `MerchantEdge` were missing, so those local snapshot types were added from the backend schema contract.
+  - Verified RED with `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts` failing because `../loader` did not exist after restoring dependencies with `cd assets && bun install`.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend Revenue Reporting Demo Parity, Task 3:
   - Registered `/commerce/revenue` with `RevenueSummaryRoute` and `revenueSummaryLoader`.

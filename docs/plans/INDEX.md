@@ -11,13 +11,7 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Frontend merchant discovery demo parity lane: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-   - Status: ready
-   - Source context: `ARCHITECTURE.md`
-   - Current scope: Task 1 adds the Relay route query and loader for `/merchants`.
-   - Next scope: render the merchant discovery route, then wire navigation and final verification.
-
-2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
@@ -27,13 +21,27 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Intended scope: affiliate/admin setup after merchant discovery reaches demo parity.
+   - Intended scope: choose the next frontend demo-parity target after product/backend priority input.
 
 2. Backend lane follow-up
    - Depends on a new product/backend priority decision.
    - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
 
 ## Recently Completed
+
+- Frontend affiliate setup demo parity lane: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`
+  - Scope: Relay-backed `/affiliate/setup` route loading, merchant choice rendering, authenticated affiliate network/program/link/coupon mutation forms, typed payload errors, navigation links, and final backend contract verification.
+  - Result: the existing authenticated affiliate setup GraphQL mutations are demoable from the browser UI without adding REST endpoints or role/admin semantics beyond the current session-auth contract.
+  - Verification passed with `cd assets && bun run relay`, focused affiliate/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend merchant discovery demo parity lane: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`
+  - Scope: Relay-backed `/merchants` route loading, merchant list rendering, cursor next-page navigation, empty/error states, navigation links, and final verification.
+  - Result: the existing public `merchants(first:, after:)` GraphQL contract is demoable from the browser UI without adding REST endpoints.
+  - Verification passed with `cd assets && bun run relay`, focused merchant/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 - Frontend revenue reporting demo parity lane: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
   - Status: completed on 2026-06-01

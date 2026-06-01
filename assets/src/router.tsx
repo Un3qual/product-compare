@@ -4,6 +4,8 @@ import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
 import { ApiTokensRoute } from "./routes/account/api-tokens";
 import { apiTokensLoader } from "./routes/account/api-tokens/loader";
+import { AffiliateSetupRoute } from "./routes/affiliate/setup";
+import { affiliateSetupLoader } from "./routes/affiliate/setup/loader";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
@@ -18,6 +20,8 @@ import { savedComparisonsLoader } from "./routes/compare/saved-data";
 import { CompareRoute } from "./routes/compare";
 import { SavedComparisonsRoute } from "./routes/compare/saved";
 import { RouteErrorBoundary } from "./routes/compare/error-boundary";
+import { MerchantDirectoryRoute } from "./routes/merchants";
+import { merchantDirectoryLoader } from "./routes/merchants/loader";
 import { ProductDetailRoute } from "./routes/products/detail";
 import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
@@ -46,6 +50,18 @@ export const routes: RouteObject[] = [
         path: "products/:slug",
         loader: productDetailLoader,
         element: <ProductDetailRoute />
+      },
+      {
+        path: "merchants",
+        loader: merchantDirectoryLoader,
+        element: <MerchantDirectoryRoute />,
+        errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
+      },
+      {
+        path: "affiliate/setup",
+        loader: affiliateSetupLoader,
+        element: <AffiliateSetupRoute />,
+        errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
       },
       {
         path: "compare",

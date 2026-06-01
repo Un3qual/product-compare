@@ -45,7 +45,7 @@
 - Modify after verification: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `assets/src/routes/merchants/__tests__/merchant-directory-loader.test.ts` with coverage for:
 
@@ -65,7 +65,7 @@ Expected default variables:
 }
 ```
 
-- [ ] **Step 2: Run the loader tests to verify they fail**
+- [x] **Step 2: Run the loader tests to verify they fail**
 
 Run:
 
@@ -75,7 +75,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-
 
 Expected: FAIL because the route query and loader do not exist.
 
-- [ ] **Step 3: Add the route query**
+- [x] **Step 3: Add the route query**
 
 Create `assets/src/routes/merchants/queries/MerchantDirectoryRouteQuery.ts`:
 
@@ -104,7 +104,7 @@ export default graphql`
 `;
 ```
 
-- [ ] **Step 4: Add the loader**
+- [x] **Step 4: Add the loader**
 
 Create `assets/src/routes/merchants/loader.ts` with:
 
@@ -115,7 +115,7 @@ Create `assets/src/routes/merchants/loader.ts` with:
 - Recoverable route preload error state using `recoverRouteLoaderError`.
 - Loader data that includes normalized pagination params plus the Relay route query descriptor when ready.
 
-- [ ] **Step 5: Refresh the local Relay schema snapshot**
+- [x] **Step 5: Refresh the local Relay schema snapshot**
 
 Update `assets/schema.graphql` so `Query` includes the existing backend field:
 
@@ -125,7 +125,7 @@ merchants(first: Int, after: String): MerchantConnection
 
 Expected: the local schema snapshot has both the merchant connection types and the `Query.merchants` entry needed by Relay generation.
 
-- [ ] **Step 6: Generate Relay artifacts**
+- [x] **Step 6: Generate Relay artifacts**
 
 Run:
 
@@ -135,7 +135,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/MerchantDirectoryRouteQuery.graphql.ts`.
 
-- [ ] **Step 7: Run the loader tests to verify they pass**
+- [x] **Step 7: Run the loader tests to verify they pass**
 
 Run:
 
@@ -145,7 +145,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-
 
 Expected: PASS.
 
-- [ ] **Step 8: Run frontend typecheck**
+- [x] **Step 8: Run frontend typecheck**
 
 Run:
 
@@ -155,7 +155,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 9: Update queue docs**
+- [x] **Step 9: Update queue docs**
 
 Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NOW.md`:
 
@@ -173,7 +173,7 @@ Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NO
 - Modify after verification: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route render tests**
+- [x] **Step 1: Write failing route render tests**
 
 Create route tests covering:
 
@@ -184,7 +184,7 @@ test("merchant directory renders next-page navigation when available");
 test("merchant directory renders the loader error state");
 ```
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -194,7 +194,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory.
 
 Expected: FAIL because the route component does not exist.
 
-- [ ] **Step 3: Add the route component**
+- [x] **Step 3: Add the route component**
 
 Create `assets/src/routes/merchants/index.tsx` with:
 
@@ -206,7 +206,7 @@ Create `assets/src/routes/merchants/index.tsx` with:
 - A next-page link that preserves `after=<endCursor>` and the normalized page size when `pageInfo.hasNextPage` is true.
 - A loader/query fallback with `role="alert"`.
 
-- [ ] **Step 4: Run route tests**
+- [x] **Step 4: Run route tests**
 
 Run:
 
@@ -216,7 +216,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory.
 
 Expected: PASS.
 
-- [ ] **Step 5: Run frontend typecheck**
+- [x] **Step 5: Run frontend typecheck**
 
 Run:
 
@@ -226,7 +226,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Update queue docs**
+- [x] **Step 6: Update queue docs**
 
 Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NOW.md`:
 
@@ -250,7 +250,7 @@ Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NO
 - Modify: `ARCHITECTURE.md`
 - Modify: this implementation plan
 
-- [ ] **Step 1: Write failing route registration and navigation tests**
+- [x] **Step 1: Write failing route registration and navigation tests**
 
 Update tests to assert:
 
@@ -263,7 +263,7 @@ expect(screen.getByRole("link", { name: "Merchants" })).toHaveAttribute(
 
 Assert the link exists in both primary navigation and home actions. Add a router test that the route list includes `merchants` with `merchantDirectoryLoader`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run:
 
@@ -273,7 +273,7 @@ cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tes
 
 Expected: FAIL because the navigation link and route registration are not present.
 
-- [ ] **Step 3: Register the route and navigation**
+- [x] **Step 3: Register the route and navigation**
 
 Modify `assets/src/router.tsx`:
 
@@ -294,7 +294,7 @@ Add a child route:
 
 Update `RootLayout` and `RootRoute` in `assets/src/routes/root.tsx` to add `Merchants` links to `/merchants`.
 
-- [ ] **Step 4: Run focused frontend verification**
+- [x] **Step 4: Run focused frontend verification**
 
 Run:
 
@@ -306,7 +306,7 @@ cd assets && bun run typecheck
 
 Expected: all commands pass.
 
-- [ ] **Step 5: Run backend contract verification**
+- [x] **Step 5: Run backend contract verification**
 
 Run:
 
@@ -316,7 +316,7 @@ mix test test/product_compare_web/graphql/catalog_queries_test.exs
 
 Expected: PASS.
 
-- [ ] **Step 6: Close queue docs**
+- [x] **Step 6: Close queue docs**
 
 Update queue and architecture docs to mark the merchant discovery demo parity lane completed:
 
@@ -327,7 +327,7 @@ Update queue and architecture docs to mark the merchant discovery demo parity la
 - `ARCHITECTURE.md`
 - this implementation plan
 
-- [ ] **Step 7: Final verification**
+- [x] **Step 7: Final verification**
 
 Run:
 
