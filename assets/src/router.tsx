@@ -62,7 +62,8 @@ export const routes: RouteObject[] = [
       {
         path: "commerce/revenue",
         loader: revenueSummaryLoader,
-        element: <RevenueSummaryRoute />
+        element: <RevenueSummaryRoute />,
+        errorElement: <CompareErrorBoundary title="Revenue" />
       },
       {
         path: "account/api-tokens",

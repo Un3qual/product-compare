@@ -109,10 +109,10 @@ test("revenue route renders suppressed metrics with threshold copy", () => {
       ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
       metrics: {
         averagePaidPrice: null,
-        clicks: 2,
+        clicks: null,
         commissionRevenue: null,
-        conversions: 1,
-        currency: "USD",
+        conversions: null,
+        currency: null,
         grossOrderValue: null
       },
       suppression: {
@@ -129,8 +129,26 @@ test("revenue route renders suppressed metrics with threshold copy", () => {
     "Revenue metrics are hidden until at least 2 conversions match the current filters."
   );
   expect(screen.getByText("Clicks")).toBeInTheDocument();
-  expect(screen.getByText("2")).toBeInTheDocument();
+  expect(screen.getAllByText("Hidden")).toHaveLength(5);
   expect(screen.queryByText("20.00 USD")).not.toBeInTheDocument();
+});
+
+test("revenue route renders unavailable null counts when metrics are unsuppressed", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+  mockedUsePreloadedQuery.mockReturnValue({
+    revenueSummary: {
+      ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
+      metrics: {
+        ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary.metrics,
+        clicks: null,
+        conversions: null
+      }
+    }
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getAllByText("Not available")).toHaveLength(2);
 });
 
 test("revenue route renders unsuppressed revenue metrics", () => {
@@ -171,6 +189,59 @@ test("revenue route renders active filters from the loader", () => {
   expect(within(activeFilters).getByText("impact")).toBeInTheDocument();
   expect(within(activeFilters).getByText("Date range")).toBeInTheDocument();
   expect(within(activeFilters).getByText("2026-05-01 to 2026-05-31")).toBeInTheDocument();
+});
+
+test("revenue route updates filter field values when loader filters change", () => {
+  mockedUseLoaderData.mockReturnValueOnce(
+    buildReadyLoaderData({
+      currency: "USD",
+      from: "2026-05-01",
+      network: "impact",
+      to: "2026-05-31"
+    })
+  );
+  mockedUseLoaderData.mockReturnValueOnce(buildReadyLoaderData({ currency: "USD" }));
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByLabelText("Network")).toHaveValue("impact");
+  expect(screen.getByLabelText("From")).toHaveValue("2026-05-01");
+  expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
+
+  rerender(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByLabelText("Network")).toHaveValue("");
+  expect(screen.getByLabelText("Currency")).toHaveValue("USD");
+  expect(screen.getByLabelText("From")).toHaveValue("");
+  expect(screen.getByLabelText("To")).toHaveValue("");
+});
+
+test("revenue route asks for a currency before loading metrics", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "needsCurrency",
+    filters: {
+      network: "impact"
+    }
+  } satisfies RevenueSummaryLoaderData);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Enter a currency code to load revenue metrics."
+  );
+  expect(screen.getByLabelText("Network")).toHaveValue("impact");
+  expect(screen.getByLabelText("Currency")).toHaveValue("");
+  expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
 test("revenue route renders the loader error state", () => {

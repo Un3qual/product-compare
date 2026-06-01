@@ -10,7 +10,7 @@
 - Batch: Task 1, add the Relay route query and loader for `/merchants`
 - Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, run Relay generation and focused frontend verification, then advance to route rendering.
+- Next step: write focused loader tests, add `MerchantDirectoryRouteQuery`, add `merchantDirectoryLoader` with cursor and page-size normalization, refresh the local schema snapshot with `Query.merchants(first:, after:)`, run Relay generation and focused frontend verification, then advance to route rendering.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
@@ -18,7 +18,7 @@
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - `ARCHITECTURE.md` lists merchant discovery as the next active unblocked non-ingestion demo-parity candidate after revenue reporting.
   - The backend GraphQL contract already exposes public `merchants(first:, after:)`.
-  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape.
+  - Plan creation verified `ProductCompareWeb.Schema`, `PricingResolver.merchants/3`, and the local `assets/schema.graphql` merchant connection shape; the active Task 1 includes adding the missing local `Query.merchants(first:, after:)` entry before Relay generation.
 
 ### Frontend Revenue Reporting Demo Parity Lane
 

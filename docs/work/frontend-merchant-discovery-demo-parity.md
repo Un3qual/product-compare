@@ -21,12 +21,13 @@
 - Status: ready.
 - Owned paths:
   - `assets/src/routes/merchants/**`
+  - `assets/schema.graphql`
   - `assets/src/__generated__/**`
   - `docs/work/frontend-merchant-discovery-demo-parity.md`
   - `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
   - `docs/work/index.md`
   - `docs/plans/NOW.md`
-- Immediate prerequisite: `ARCHITECTURE.md` records merchant discovery as an existing GraphQL backend surface and the next non-ingestion demo-parity candidate after revenue reporting. `ProductCompareWeb.Schema` exposes public `merchants(first:, after:)`, `assets/schema.graphql` already includes `Merchant`, `MerchantConnection`, and `MerchantEdge`, and `PricingResolver.merchants/3` returns cursor-paginated merchants.
+- Immediate prerequisite: `ARCHITECTURE.md` records merchant discovery as an existing GraphQL backend surface and the next non-ingestion demo-parity candidate after revenue reporting. `ProductCompareWeb.Schema` exposes public `merchants(first:, after:)`, `assets/schema.graphql` already includes `Merchant`, `MerchantConnection`, and `MerchantEdge`, and `PricingResolver.merchants/3` returns cursor-paginated merchants. Task 1 must add the missing `Query.merchants(first:, after:)` entry to the local schema snapshot before Relay generation.
 
 ## Verification
 

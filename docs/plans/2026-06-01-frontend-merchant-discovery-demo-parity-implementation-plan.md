@@ -40,6 +40,7 @@
 - Create: `assets/src/routes/merchants/queries/MerchantDirectoryRouteQuery.ts`
 - Create: `assets/src/routes/merchants/loader.ts`
 - Create: `assets/src/routes/merchants/__tests__/merchant-directory-loader.test.ts`
+- Modify: `assets/schema.graphql`
 - Modify generated: `assets/src/__generated__/MerchantDirectoryRouteQuery.graphql.ts`
 - Modify after verification: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
@@ -114,7 +115,17 @@ Create `assets/src/routes/merchants/loader.ts` with:
 - Recoverable route preload error state using `recoverRouteLoaderError`.
 - Loader data that includes normalized pagination params plus the Relay route query descriptor when ready.
 
-- [ ] **Step 5: Generate Relay artifacts**
+- [ ] **Step 5: Refresh the local Relay schema snapshot**
+
+Update `assets/schema.graphql` so `Query` includes the existing backend field:
+
+```graphql
+merchants(first: Int, after: String): MerchantConnection!
+```
+
+Expected: the local schema snapshot has both the merchant connection types and the `Query.merchants` entry needed by Relay generation.
+
+- [ ] **Step 6: Generate Relay artifacts**
 
 Run:
 
@@ -124,7 +135,7 @@ cd assets && bun run relay
 
 Expected: PASS and create `assets/src/__generated__/MerchantDirectoryRouteQuery.graphql.ts`.
 
-- [ ] **Step 6: Run the loader tests to verify they pass**
+- [ ] **Step 7: Run the loader tests to verify they pass**
 
 Run:
 
@@ -134,7 +145,7 @@ cd assets && bun x vitest run src/routes/merchants/__tests__/merchant-directory-
 
 Expected: PASS.
 
-- [ ] **Step 7: Run frontend typecheck**
+- [ ] **Step 8: Run frontend typecheck**
 
 Run:
 
@@ -144,7 +155,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Update queue docs**
+- [ ] **Step 9: Update queue docs**
 
 Update `docs/work/frontend-merchant-discovery-demo-parity.md` and `docs/plans/NOW.md`:
 

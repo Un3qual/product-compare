@@ -23,11 +23,16 @@ export function RevenueSummaryRoute() {
         <h1>Revenue reporting</h1>
       </header>
 
-      <RevenueSummaryFilterForm filters={loaderData.filters} />
+      <RevenueSummaryFilterForm
+        key={revenueSummaryFilterKey(loaderData.filters)}
+        filters={loaderData.filters}
+      />
       <ActiveRevenueFilters filters={loaderData.filters} />
 
       {loaderData.status === "error" ? (
         <RevenueSummaryUnavailableFallback />
+      ) : loaderData.status === "needsCurrency" ? (
+        <RevenueSummaryCurrencyRequiredFallback />
       ) : (
         <ResettableErrorBoundary
           fallback={<RevenueSummaryUnavailableFallback />}
@@ -159,6 +164,14 @@ function RevenueSummaryUnavailableFallback() {
   );
 }
 
+function RevenueSummaryCurrencyRequiredFallback() {
+  return <p role="status">Enter a currency code to load revenue metrics.</p>;
+}
+
+function revenueSummaryFilterKey(filters: RevenueSummaryLoaderData["filters"]) {
+  return [filters.network, filters.currency, filters.from, filters.to].join("|");
+}
+
 function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {
   return [
     filters.network ? { label: "Network", value: filters.network } : null,
@@ -181,7 +194,7 @@ function buildRevenueSummaryMetrics(
   return [
     {
       label: "Clicks",
-      value: formatCount(summary.metrics.clicks)
+      value: suppressed ? "Hidden" : formatCount(summary.metrics.clicks)
     },
     {
       label: "Conversions",
@@ -205,7 +218,7 @@ function buildRevenueSummaryMetrics(
 }
 
 function formatCount(value: number | null | undefined) {
-  return value === null || value === undefined ? "0" : String(value);
+  return value === null || value === undefined ? "Not available" : String(value);
 }
 
 function formatCurrencyAmount(value: string | null | undefined, currency: string) {

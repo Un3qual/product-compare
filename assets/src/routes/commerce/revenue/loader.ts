@@ -10,7 +10,7 @@ import {
 import { recoverRouteLoaderError } from "../../loader-errors";
 
 const DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const NETWORK_FILTER_PATTERN = /^[a-z0-9_-]+$/;
+const SUPPORTED_NETWORKS = new Set(["impact", "awin", "rakuten", "cj", "amazon_associates"]);
 
 export interface RevenueSummaryFilters {
   currency?: string;
@@ -26,6 +26,10 @@ export type RevenueSummaryLoaderData =
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | {
+      status: "needsCurrency";
+      filters: RevenueSummaryFilters;
+    }
+  | {
       status: "error";
       filters: RevenueSummaryFilters;
     };
@@ -36,6 +40,13 @@ export async function revenueSummaryLoader({
 }: LoaderFunctionArgs): Promise<RevenueSummaryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const filters = revenueSummaryFiltersFromUrl(new URL(request.url));
+
+  if (!filters.currency) {
+    return {
+      status: "needsCurrency",
+      filters
+    };
+  }
 
   try {
     return {
@@ -84,11 +95,22 @@ function normalizeCurrencyFilter(value: string | null) {
 function normalizeDateFilter(value: string | null) {
   const normalized = value?.trim();
 
-  return normalized && DATE_FILTER_PATTERN.test(normalized) ? normalized : undefined;
+  if (!normalized || !DATE_FILTER_PATTERN.test(normalized)) {
+    return undefined;
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+    ? normalized
+    : undefined;
 }
 
 function normalizeNetworkFilter(value: string | null) {
   const normalized = value?.trim().toLowerCase();
 
-  return normalized && NETWORK_FILTER_PATTERN.test(normalized) ? normalized : undefined;
+  return normalized && SUPPORTED_NETWORKS.has(normalized) ? normalized : undefined;
 }

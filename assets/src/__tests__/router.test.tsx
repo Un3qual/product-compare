@@ -22,7 +22,8 @@ test("revenue summary route is registered under the root route", () => {
     expect.objectContaining({
       path: "commerce/revenue",
       loader: revenueSummaryLoader,
-      element: <RevenueSummaryRoute />
+      element: <RevenueSummaryRoute />,
+      errorElement: <CompareErrorBoundary title="Revenue" />
     })
   );
 });

@@ -33,28 +33,18 @@ beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
 
-test("revenueSummaryLoader preloads the default aggregate summary query", async () => {
+test("revenueSummaryLoader asks for currency before preloading the summary query", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.test/commerce/revenue");
-
-  preloadRouteQueryMock.mockResolvedValue(REVENUE_QUERY_DESCRIPTOR);
 
   await expect(
     revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request }))
   ).resolves.toEqual({
-    status: "ready",
-    filters: {},
-    query: REVENUE_QUERY_DESCRIPTOR
+    status: "needsCurrency",
+    filters: {}
   });
 
-  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    {
-      input: null
-    },
-    { signal: request.signal }
-  );
+  expect(preloadRouteQueryMock).not.toHaveBeenCalled();
 });
 
 test("revenueSummaryLoader normalizes supported network currency and date filters", async () => {
@@ -101,13 +91,14 @@ test("revenueSummaryLoader normalizes supported network currency and date filter
   );
 });
 
-test("revenueSummaryLoader drops invalid scalar filters instead of broadening them", async () => {
+test("revenueSummaryLoader drops invalid scalar filters before preloading", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/commerce/revenue?network=impact!&currency=US&from=not-a-date&to=2026-05-31"
+    "https://app.example.test/commerce/revenue?network=unknown-network&currency=usd&from=2026-02-30&to=2026-05-31"
   );
   const descriptor = revenueSummaryQueryDescriptor({
     input: {
+      currency: "USD",
       to: "2026-05-31"
     }
   });
@@ -119,6 +110,7 @@ test("revenueSummaryLoader drops invalid scalar filters instead of broadening th
   ).resolves.toEqual({
     status: "ready",
     filters: {
+      currency: "USD",
       to: "2026-05-31"
     },
     query: descriptor
@@ -129,11 +121,31 @@ test("revenueSummaryLoader drops invalid scalar filters instead of broadening th
     expect.anything(),
     {
       input: {
+        currency: "USD",
         to: "2026-05-31"
       }
     },
     { signal: request.signal }
   );
+});
+
+test("revenueSummaryLoader drops invalid currency and waits for a supported currency", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/commerce/revenue?network=impact&currency=US&from=2026-05-01"
+  );
+
+  await expect(
+    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "needsCurrency",
+    filters: {
+      from: "2026-05-01",
+      network: "impact"
+    }
+  });
+
+  expect(preloadRouteQueryMock).not.toHaveBeenCalled();
 });
 
 test("revenueSummaryLoader returns error state when route preloading fails", async () => {
