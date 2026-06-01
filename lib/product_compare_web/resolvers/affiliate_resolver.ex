@@ -137,6 +137,31 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   def active_coupons(_parent, _args, _resolution),
     do: {:error, GraphQLErrors.unauthenticated()}
 
+  @spec merchant_product_active_coupons(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def merchant_product_active_coupons(%{merchant_id: merchant_id}, args, _resolution)
+      when is_integer(merchant_id) do
+    now =
+      case Input.fetch_value(args, :at) do
+        %DateTime{} = at -> at
+        _ -> DateTime.utc_now()
+      end
+
+    connection_args = Input.connection_args(args)
+    query = Affiliate.list_active_coupons_query(merchant_id, now)
+
+    case Connection.from_query_result(query, connection_args, Repo) do
+      {:ok, connection} ->
+        {:ok, connection}
+
+      {:error, message} ->
+        {:error, message}
+    end
+  end
+
+  def merchant_product_active_coupons(_parent, _args, _resolution),
+    do: {:error, "invalid merchant product"}
+
   defp normalize_attrs(attrs, id_fields, attr_fields) do
     with {:ok, attrs} <- normalize_ids(attrs, id_fields) do
       {:ok, Input.take(attrs, attr_fields)}

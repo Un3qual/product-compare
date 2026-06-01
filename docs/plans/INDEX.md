@@ -21,13 +21,38 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Intended scope: choose the next frontend demo-parity target after product/backend priority input.
-
-2. Backend lane follow-up
    - Depends on a new product/backend priority decision.
-   - Intended scope: decide whether to extend generic node lookup to `SourceArtifact` after a public GraphQL object contract exists, or move the backend lane to the next GraphQL contract slice.
+   - Intended scope: choose the next frontend demo-parity target after the completed product-detail price history lane.
 
 ## Recently Completed
+
+- Backend source artifact node lookup lane: `docs/plans/2026-06-01-backend-source-artifact-node-lookup-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `docs/work/backend-source-artifact-public-contract.md`, and GraphQL node contract tests.
+  - Scope: generic `node(id:)` support for the safe `SourceArtifact` GraphQL object, positive source-artifact node coverage, non-existent node behavior, and final backend verification.
+  - Result: source artifacts are addressable through generic `node(id:)` without exposing `contentHash`, `rawJson`, or `rawText`.
+  - Verification passed with focused source-artifact/node/source-artifact changeset tests, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
+
+- Frontend product-detail price history demo parity lane: `docs/plans/2026-06-01-frontend-product-detail-price-history-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md` and `docs/plans/2026-03-05-frontend-fullstack-design.md`
+  - Scope: Relay-backed product-detail offers query refresh for `MerchantProduct.priceHistory`, active-offer price-history rendering, coupon free-shipping and valid-through display, and final demo-slice verification.
+  - Result: `/products/:slug` now renders bounded price-history rows, empty history state, and has-more state inside Active offers.
+  - Verification passed with `cd assets && bun run relay`, product-detail route Vitest, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Backend source artifact public contract lane: `docs/plans/2026-06-01-backend-source-artifact-public-contract-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `ProductCompareSchemas.Specs.SourceArtifact`, and GraphQL node contract tests.
+  - Scope: safe `sourceArtifact(id:)` GraphQL object/query contract, raw-payload field exclusion, and final backend verification while keeping generic node lookup out of scope.
+  - Result: source artifacts have a public-safe GraphQL contract; `SourceArtifact` generic `node(id:)` support is complete in the follow-up node lookup lane.
+  - Verification passed with focused source-artifact/node/source-artifact changeset tests, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
+
+- Frontend product-detail coupon demo parity lane: `docs/plans/2026-06-01-frontend-product-detail-coupon-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md` and `docs/plans/2026-03-05-frontend-fullstack-design.md`
+  - Scope: public display-scoped product-offer coupon GraphQL, product detail Relay query refresh, active coupon rendering under Active offers, and final demo-slice verification.
+  - Result: `/products/:slug` now renders active coupon code, description, amount/percent discount details, terms, and no-coupon rows through the product offers query without exposing authenticated affiliate-management fields.
+  - Verification passed with `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
 
 - Frontend affiliate setup demo parity lane: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
   - Status: completed on 2026-06-01

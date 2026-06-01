@@ -14,6 +14,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.SpecsResolver
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
@@ -25,6 +26,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   @impl true
   def context(context) do
@@ -47,6 +49,13 @@ defmodule ProductCompareWeb.Schema do
       arg(:id, non_null(:id))
 
       resolve(&NodeResolver.node/3)
+    end
+
+    @desc "Returns safe display metadata for a source artifact."
+    field :source_artifact, :source_artifact do
+      arg(:id, non_null(:id))
+
+      resolve(&SpecsResolver.source_artifact/3)
     end
 
     @desc "Returns API tokens owned by the current authenticated user."
@@ -464,6 +473,29 @@ defmodule ProductCompareWeb.Schema do
     field :updated_at, non_null(:datetime)
   end
 
+  object :source_artifact do
+    interface(:node)
+
+    field :id, non_null(:id) do
+      resolve(fn artifact, _, _ -> GlobalId.encode_required(:source_artifact, artifact.id) end)
+    end
+
+    field :source_kind, non_null(:string) do
+      resolve(fn %{source: %{kind: kind}}, _, _ -> {:ok, kind} end)
+    end
+
+    field :source_name, non_null(:string) do
+      resolve(fn %{source: %{name: name}}, _, _ -> {:ok, name} end)
+    end
+
+    field :source_domain, :string do
+      resolve(fn %{source: source}, _, _ -> {:ok, source.domain} end)
+    end
+
+    field :url, :string
+    field :fetched_at, non_null(:datetime)
+  end
+
   object :coupon_connection do
     field :edges, non_null(list_of(non_null(:coupon_edge)))
     field :page_info, non_null(:page_info)
@@ -472,6 +504,26 @@ defmodule ProductCompareWeb.Schema do
   object :coupon_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:coupon)
+  end
+
+  object :active_coupon do
+    field :code, non_null(:string)
+    field :description, :string
+    field :discount_type, non_null(:coupon_discount_type)
+    field :discount_value, :decimal
+    field :currency, :string
+    field :valid_to, :datetime
+    field :terms, :string
+  end
+
+  object :active_coupon_connection do
+    field :edges, non_null(list_of(non_null(:active_coupon_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :active_coupon_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:active_coupon)
   end
 
   enum :coupon_discount_type do
@@ -608,6 +660,7 @@ defmodule ProductCompareWeb.Schema do
       %AffiliateProgram{}, _ -> :affiliate_program
       %AffiliateLink{}, _ -> :affiliate_link
       %Coupon{}, _ -> :coupon
+      %SourceArtifact{}, _ -> :source_artifact
       _, _ -> nil
     end)
   end
@@ -699,6 +752,14 @@ defmodule ProductCompareWeb.Schema do
     field :merchant, :merchant, resolve: dataloader(Pricing, use_parent: true)
     field :product, :product, resolve: dataloader(Pricing, use_parent: true)
     field :latest_price, :price_point, resolve: &PricingResolver.latest_price/3
+
+    field :active_coupons, :active_coupon_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:at, :datetime)
+
+      resolve(&AffiliateResolver.merchant_product_active_coupons/3)
+    end
 
     field :price_history, :price_point_connection do
       arg(:first, :integer)

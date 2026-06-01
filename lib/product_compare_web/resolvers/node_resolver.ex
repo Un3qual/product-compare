@@ -5,10 +5,18 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
+  alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Accounts.User
 
-  @public_types [:product, :brand, :merchant, :merchant_product, :price_point]
+  @public_types [
+    :product,
+    :brand,
+    :merchant,
+    :merchant_product,
+    :price_point,
+    :source_artifact
+  ]
   @authenticated_types [:affiliate_network, :affiliate_program, :affiliate_link, :coupon]
   @owner_scoped_types [:saved_comparison_set, :api_token]
 
@@ -53,6 +61,7 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     do: fetch_record(Pricing.get_merchant_product(id))
 
   defp fetch_public_node(:price_point, id), do: fetch_record(Pricing.get_price_point(id))
+  defp fetch_public_node(:source_artifact, id), do: fetch_record(Specs.get_source_artifact(id))
 
   defp fetch_authenticated_node(type, id, %{context: %{current_user: %User{}}}) do
     fetch_record(fetch_affiliate_node(type, id))

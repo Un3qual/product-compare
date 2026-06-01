@@ -16,7 +16,7 @@
 
 - Browser auth routes exist for register, login, logout, forgot-password, reset-password, and verify-email.
 - `/products` ships a GraphQL-backed browse baseline with compare entry links.
-- `/products/:slug` ships product detail, current specifications, compare-entry, and active-offer baselines.
+- `/products/:slug` ships product detail, current specifications, compare-entry, active-offer baselines, shopper-facing active coupon display, and compact price-history rows.
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, and renders current product attributes on selected compare cards.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
 - `/account/api-tokens` now ships a GraphQL-backed API-token management route with list, create, revoke, rotate, one-time token display, and navigation entry points.
@@ -30,9 +30,10 @@
 
 - GraphQL exposes viewer/session auth mutations, catalog browse/detail, merchant discovery, merchant products, and active coupons, with `UNAUTHENTICATED` used consistently for missing-session GraphQL failures.
 - GraphQL request-level Dataloader batching is in place for catalog/pricing associations and latest-price lookups.
-- Relay-style global IDs are used where the schema already requires them, with root node lookup covering public catalog/pricing entities including price points, owner-scoped saved/API-token entities, and authenticated affiliate entities.
+- Relay-style global IDs are used where the schema already requires them, with root node lookup covering public catalog/pricing entities including price points and source artifacts, owner-scoped saved/API-token entities, and authenticated affiliate entities.
 - GraphQL global ID local-value normalization, encoding, and integer/UUID decoding are centralized in `ProductCompareWeb.GraphQL.GlobalId`.
 - GraphQL `Product.currentAttributes` exposes selected current product claims in a display-ready shape for product-detail and comparison UI surfaces.
+- GraphQL `sourceArtifact(id:)` and generic `node(id:)` expose public-safe source-artifact metadata without raw payload fields.
 - Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, a query-backed revenue summary contract, and read-only GraphQL `revenueSummary` exposure.
 
 ## Active Gap
@@ -42,6 +43,11 @@
 
 ## Next Planned Slice
 
+- No unblocked implementation slice is currently selected; live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.
+- Backend source artifact node lookup is complete: generic `node(id:)` supports the safe `SourceArtifact` GraphQL object without exposing raw payload fields.
+- Frontend product-detail price history demo parity is complete: `/products/:slug` renders bounded price-history rows, empty history state, and has-more state in the Active offers section.
+- Backend source artifact public contract is complete: `sourceArtifact(id:)` exposes safe metadata while raw payload fields remain unexposed.
+- Frontend product-detail coupon demo parity is complete: product offers expose public display-scoped active coupons, and `/products/:slug` renders active coupon codes and discount details in the Active offers section.
 - Product comparison demo parity is complete: backend `Product.currentAttributes`, product-detail specifications, browse compare links, the `/compare` product picker, compare-card attributes, and full demo-slice verification have landed.
 - Frontend API token management demo parity is complete: the existing `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken` GraphQL contract is demoable from `/account/api-tokens` without REST browser auth endpoints.
 - Frontend revenue reporting demo parity is complete: the existing public-safe `revenueSummary(input:)` GraphQL contract is demoable from `/commerce/revenue` with aggregate filters, suppressed/unsuppressed summary rendering, and navigation coverage.

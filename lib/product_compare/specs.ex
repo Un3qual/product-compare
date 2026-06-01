@@ -15,6 +15,7 @@ defmodule ProductCompare.Specs do
   alias ProductCompareSchemas.Specs.EnumSet
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Specs.Unit
 
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
@@ -113,6 +114,13 @@ defmodule ProductCompare.Specs do
       nil -> {:error, :unit_not_found}
       unit -> {:ok, UnitConversion.to_base(value_num, unit)}
     end
+  end
+
+  @spec get_source_artifact(pos_integer()) :: SourceArtifact.t() | nil
+  def get_source_artifact(id) when is_integer(id) and id > 0 do
+    SourceArtifact
+    |> Repo.get(id)
+    |> Repo.preload(:source)
   end
 
   @spec propose_claim(pos_integer(), pos_integer(), map(), map()) ::

@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
 
@@ -382,6 +383,138 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                )
     end
 
+    test "merchantProducts exposes public display active coupons for product offers", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-coupon-product"})
+
+      merchant =
+        merchant_fixture(%{name: unique_name("Coupon Merchant"), domain: unique_domain("coupon")})
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: true
+        })
+
+      other_merchant =
+        merchant_fixture(%{name: unique_name("Other Merchant"), domain: unique_domain("other")})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      one_hour_from_now = DateTime.add(now, 3600, :second)
+      two_hours_from_now = DateTime.add(now, 7200, :second)
+      three_hours_from_now = DateTime.add(now, 10_800, :second)
+      one_hour_from_now_iso = DateTime.to_iso8601(one_hour_from_now)
+      two_hours_from_now_iso = DateTime.to_iso8601(two_hours_from_now)
+
+      {:ok, _amount_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-20",
+          description: "Twenty dollars off",
+          discount_type: :amount,
+          discount_value: Decimal.new("20.00"),
+          currency: "USD",
+          valid_to: one_hour_from_now,
+          terms: "One use per customer"
+        })
+
+      {:ok, _percent_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-10",
+          description: "Ten percent off",
+          discount_type: :percent,
+          discount_value: Decimal.new("10"),
+          valid_to: two_hours_from_now
+        })
+
+      {:ok, _third_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "SAVE-30",
+          description: "Third active coupon",
+          discount_type: :other,
+          valid_to: three_hours_from_now
+        })
+
+      {:ok, _future_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "FUTURE-COUPON",
+          discount_type: :other,
+          valid_from: one_hour_from_now
+        })
+
+      {:ok, _other_merchant_coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: other_merchant.id,
+          code: "OTHER-MERCHANT",
+          discount_type: :other
+        })
+
+      assert %{
+               "data" => %{
+                 "merchantProducts" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "id" => merchant_product_id,
+                         "merchant" => %{"name" => merchant_name},
+                         "activeCoupons" => %{
+                           "edges" => coupon_edges,
+                           "pageInfo" => %{
+                             "hasNextPage" => true,
+                             "hasPreviousPage" => false
+                           }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, merchant_product_active_coupons_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "activeOnly" => true,
+                   "first" => 1
+                 },
+                 "couponFirst" => 2,
+                 "at" => DateTime.to_iso8601(now)
+               })
+
+      assert merchant_product_id == relay_id(:merchant_product, merchant_product.id)
+      assert merchant_name == merchant.name
+
+      assert [
+               %{
+                 "node" => %{
+                   "code" => "SAVE-20",
+                   "description" => "Twenty dollars off",
+                   "discountType" => "AMOUNT",
+                   "discountValue" => "20.00",
+                   "currency" => "USD",
+                   "validTo" => ^one_hour_from_now_iso,
+                   "terms" => "One use per customer"
+                 }
+               },
+               %{
+                 "node" => %{
+                   "code" => "SAVE-10",
+                   "description" => "Ten percent off",
+                   "discountType" => "PERCENT",
+                   "discountValue" => "10",
+                   "currency" => nil,
+                   "validTo" => ^two_hours_from_now_iso,
+                   "terms" => nil
+                 }
+               }
+             ] = coupon_edges
+    end
+
     test "merchantProducts batches merchant product and latest price lookups", %{
       conn: conn,
       test: test_name
@@ -571,6 +704,44 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                 hasPreviousPage
                 startCursor
                 endCursor
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_product_active_coupons_query do
+    """
+    query MerchantProductActiveCoupons(
+      $input: MerchantProductsInput!
+      $couponFirst: Int!
+      $at: DateTime!
+    ) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            id
+            merchant {
+              name
+            }
+            activeCoupons(first: $couponFirst, at: $at) {
+              edges {
+                node {
+                  code
+                  description
+                  discountType
+                  discountValue
+                  currency
+                  validTo
+                  terms
+                }
+              }
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
               }
             }
           }

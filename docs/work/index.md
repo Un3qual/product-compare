@@ -41,6 +41,34 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Backend source artifact node lookup lane
+  - Work doc: `docs/work/backend-source-artifact-node-lookup.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no lane-owned source artifact node lookup batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+  - Owned paths: `lib/product_compare_web/resolvers/node_resolver.ex`, `lib/product_compare_web/schema.ex`, `test/product_compare_web/graphql/node_query_test.exs`, `docs/work/backend-source-artifact-node-lookup.md`, `docs/plans/2026-06-01-backend-source-artifact-node-lookup-implementation-plan.md`
+
+- Frontend product-detail price history demo parity lane
+  - Work doc: `docs/work/frontend-product-detail-price-history-demo-parity.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked product-detail price-history demo parity batch remains in this lane.
+  - Owned paths: `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`, `assets/src/routes/products/detail.tsx`, `assets/src/routes/products/__tests__/detail.route.test.tsx`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-product-detail-price-history-demo-parity.md`, `docs/plans/2026-06-01-frontend-product-detail-price-history-demo-parity-implementation-plan.md`
+
+- Backend source artifact public contract lane
+  - Work doc: `docs/work/backend-source-artifact-public-contract.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: safe source-artifact object/query contract and generic node lookup are complete.
+  - Owned paths: `lib/product_compare/specs.ex`, `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/specs_resolver.ex`, `test/product_compare_web/graphql/source_artifact_query_test.exs`, `test/product_compare_web/graphql/node_query_test.exs`, `docs/work/backend-source-artifact-public-contract.md`, `docs/plans/2026-06-01-backend-source-artifact-public-contract-implementation-plan.md`
+
+- Frontend product-detail coupon demo parity lane
+  - Work doc: `docs/work/frontend-product-detail-coupon-demo-parity.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked product-detail coupon demo parity batch remains in this lane; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+  - Owned paths: `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/affiliate_resolver.ex`, `test/product_compare_web/graphql/pricing_queries_test.exs`, `assets/src/routes/products/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-product-detail-coupon-demo-parity.md`, `docs/plans/2026-06-01-frontend-product-detail-coupon-demo-parity-implementation-plan.md`
+
 - Frontend affiliate setup demo parity lane
   - Work doc: `docs/work/frontend-affiliate-setup-demo-parity.md`
   - Status: completed
@@ -99,6 +127,46 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Backend Source Artifact Node Lookup
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/backend-source-artifact-node-lookup.md`
+- Outcome:
+  - Added safe `SourceArtifact` support to generic GraphQL `node(id:)` lookup.
+  - Kept `SourceArtifact` raw payload fields unexposed while returning `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`.
+  - Added positive node lookup and valid non-existent node coverage for `source_artifact` global IDs.
+  - Verification passed with focused source-artifact/node/source-artifact changeset tests, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
+
+### Frontend Product Detail Price History Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-product-detail-price-history-demo-parity.md`
+- Outcome:
+  - Refreshed the frontend Relay schema/query for the existing backend `MerchantProduct.priceHistory(first:, after:, from:, to:)` contract.
+  - Rendered compact per-offer price-history rows, empty state, and has-more state in the product detail Active offers section.
+  - Rendered free-shipping coupon labels and valid-through dates for active coupon rows while preserving amount/percent discount rendering.
+  - Verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+### Backend Source Artifact Public Contract
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/backend-source-artifact-public-contract.md`
+- Outcome:
+  - Added `sourceArtifact(id:)` with safe metadata only: `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`.
+  - Added focused GraphQL coverage proving `contentHash`, `rawJson`, and `rawText` are not exposed.
+  - Kept generic `node(id:)` support unsupported for `source_artifact` IDs until the now-completed follow-up node lookup lane.
+  - Verification passed with `mix test test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/specs/source_artifact_changeset_test.exs`, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
+
+### Frontend Product Detail Coupon Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-product-detail-coupon-demo-parity.md`
+- Outcome:
+  - Added public display-scoped `MerchantProduct.activeCoupons(first:, after:, at:)` under product offers without changing the authenticated top-level affiliate-management `activeCoupons(input:)` query.
+  - Refreshed the frontend Relay schema/query artifacts for `ProductOffersRouteQuery`.
+  - Rendered active coupon code, description, amount/percent discount text, terms, and empty coupon rows inside product detail Active offers.
+  - Verification passed with `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Frontend Affiliate Setup Demo Parity
 

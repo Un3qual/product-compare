@@ -7,7 +7,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompare.Repo
   alias ProductCompareWeb.Schema
+  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "/api/graphql node query" do
     test "node returns a product for a valid product global id", %{conn: conn} do
@@ -437,13 +440,62 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                })
     end
 
-    test "node rejects unsupported ids", %{conn: conn} do
-      unsupported_id = relay_id(:source_artifact, 123)
+    test "node returns a source artifact for a valid source artifact global id", %{conn: conn} do
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: "CJ",
+          domain: "cj.example.com"
+        })
+        |> Repo.insert!()
+
+      fetched_at = ~U[2026-06-01 10:00:00Z]
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://merchant.example.com/product",
+          fetched_at: fetched_at,
+          content_hash: "hash-1",
+          raw_json: %{"secret" => "payload"},
+          raw_text: "raw payload"
+        })
+        |> Repo.insert!()
 
       assert %{
-               "data" => %{"node" => nil},
-               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
-             } = graphql(conn, node_query(), %{"id" => unsupported_id})
+               "data" => %{
+                 "node" => %{
+                   "__typename" => "SourceArtifact",
+                   "id" => artifact_id,
+                   "sourceKind" => "affiliate",
+                   "sourceName" => "CJ",
+                   "sourceDomain" => "cj.example.com",
+                   "url" => "https://merchant.example.com/product",
+                   "fetchedAt" => fetched_at_value
+                 }
+               }
+             } =
+               graphql(conn, source_artifact_node_query(), %{
+                 "id" => relay_id(:source_artifact, artifact.id)
+               })
+
+      assert artifact_id == relay_id(:source_artifact, artifact.id)
+      assert {:ok, parsed_fetched_at, 0} = DateTime.from_iso8601(fetched_at_value)
+      assert DateTime.compare(parsed_fetched_at, fetched_at) == :eq
+    end
+
+    test "node returns nil without errors for a valid non-existent source artifact node id", %{
+      conn: conn
+    } do
+      response =
+        graphql(conn, source_artifact_node_query(), %{
+          "id" => relay_id(:source_artifact, 2_147_483_647)
+        })
+
+      assert %{"data" => %{"node" => nil}} = response
+      refute Map.has_key?(response, "errors")
     end
 
     test "node exposes the global id directly through the node field", %{conn: conn} do
@@ -596,6 +648,24 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
           affiliateNetworkId
           code
           discountType
+        }
+      }
+    }
+    """
+  end
+
+  defp source_artifact_node_query do
+    """
+    query Node($id: ID!) {
+      node(id: $id) {
+        __typename
+        ... on SourceArtifact {
+          id
+          sourceKind
+          sourceName
+          sourceDomain
+          url
+          fetchedAt
         }
       }
     }
