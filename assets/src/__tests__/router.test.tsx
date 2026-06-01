@@ -9,7 +9,7 @@ test("API token route has a route-level error boundary", () => {
   );
 
   expect(apiTokensRoute?.errorElement).toEqual(
-    <RouteErrorBoundary title="API tokens" />
+    <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
   );
 });
 
