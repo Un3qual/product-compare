@@ -182,7 +182,6 @@ type SourceArtifact implements Node {
 }
 
 type ActiveCoupon {
-  id: ID!
   code: String!
   description: String
   discountType: CouponDiscountType!
@@ -220,7 +219,7 @@ type MerchantProduct implements Node {
   merchant: Merchant
   product: Product
   latestPrice: PricePoint
-  activeCoupons(first: Int, after: String, at: DateTime): ActiveCouponConnection
+  activeCoupons(first: Int, after: String): ActiveCouponConnection
   priceHistory(first: Int, after: String, from: DateTime, to: DateTime): PricePointConnection
 }
 

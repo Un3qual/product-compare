@@ -263,8 +263,8 @@ function OfferCoupons({
 
 function buildCouponRows(
   edges: ReadonlyArray<{
+    readonly cursor: string;
     readonly node: {
-      readonly id: string;
       readonly code: string;
       readonly description: string | null | undefined;
       readonly discountType: string;
@@ -275,8 +275,8 @@ function buildCouponRows(
     };
   }>
 ) {
-  return edges.map(({ node }) => ({
-    key: node.id,
+  return edges.map(({ cursor, node }) => ({
+    key: cursor,
     code: node.code,
     description: node.description,
     discountText: formatCouponDiscountText(node.discountType, node.discountValue, node.currency),

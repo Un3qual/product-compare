@@ -19,8 +19,8 @@ export const productOffersRouteQuery = graphql`
           }
           activeCoupons(first: 2) {
             edges {
+              cursor
               node {
-                id
                 code
                 description
                 discountType

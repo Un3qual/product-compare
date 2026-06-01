@@ -132,17 +132,21 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           {:ok, map()} | {:error, String.t()}
   def merchant_product_active_coupons(%{merchant_id: merchant_id}, args, _resolution)
       when is_integer(merchant_id) do
-    active_coupon_connection(merchant_id, args)
+    active_coupon_connection(merchant_id, args, allow_at?: false)
   end
 
   def merchant_product_active_coupons(_parent, _args, _resolution),
     do: {:error, "invalid merchant product"}
 
-  defp active_coupon_connection(merchant_id, args) do
+  defp active_coupon_connection(merchant_id, args, opts \\ []) do
     now =
-      case Input.fetch_value(args, :at) do
-        %DateTime{} = at -> at
-        _ -> DateTime.utc_now()
+      if Keyword.get(opts, :allow_at?, true) do
+        case Input.fetch_value(args, :at) do
+          %DateTime{} = at -> at
+          _ -> DateTime.utc_now()
+        end
+      else
+        DateTime.utc_now()
       end
 
     merchant_id

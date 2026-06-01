@@ -482,8 +482,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                    "activeOnly" => true,
                    "first" => 1
                  },
-                 "couponFirst" => 2,
-                 "at" => DateTime.to_iso8601(now)
+                 "couponFirst" => 2
                })
 
       assert merchant_product_id == relay_id(:merchant_product, merchant_product.id)
@@ -491,8 +490,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
       assert [
                %{
+                 "cursor" => amount_coupon_cursor,
                  "node" => %{
-                   "id" => amount_coupon_id,
                    "code" => "SAVE-20",
                    "description" => "Twenty dollars off",
                    "discountType" => "AMOUNT",
@@ -503,8 +502,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  }
                },
                %{
+                 "cursor" => percent_coupon_cursor,
                  "node" => %{
-                   "id" => percent_coupon_id,
                    "code" => "SAVE-10",
                    "description" => "Ten percent off",
                    "discountType" => "PERCENT",
@@ -516,8 +515,62 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                }
              ] = coupon_edges
 
-      assert amount_coupon_id == relay_id(:coupon, amount_coupon.id)
-      assert percent_coupon_id == relay_id(:coupon, percent_coupon.id)
+      assert is_binary(amount_coupon_cursor)
+      assert is_binary(percent_coupon_cursor)
+      assert amount_coupon_cursor != percent_coupon_cursor
+      assert amount_coupon.id != percent_coupon.id
+    end
+
+    test "merchantProducts public display active coupons do not expose coupon node IDs", %{
+      conn: conn
+    } do
+      assert %{
+               "data" => %{
+                 "__type" => %{
+                   "fields" => fields
+                 }
+               }
+             } = graphql(conn, active_coupon_type_fields_query(), %{})
+
+      field_names = Enum.map(fields, & &1["name"])
+
+      refute "id" in field_names
+    end
+
+    test "merchantProducts public display active coupons reject client-supplied timestamps", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-timestamp-product"})
+      merchant = merchant_fixture(%{name: unique_name("Timestamp Merchant")})
+
+      _merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: true
+        })
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => message
+                 }
+                 | _
+               ]
+             } =
+               graphql(conn, merchant_product_active_coupons_with_at_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "activeOnly" => true,
+                   "first" => 1
+                 },
+                 "couponFirst" => 10,
+                 "at" => DateTime.utc_now() |> DateTime.add(365, :day) |> DateTime.to_iso8601()
+               })
+
+      assert message =~ "Unknown argument"
+      assert message =~ "at"
     end
 
     test "merchantProducts batches merchant product and latest price lookups", %{
@@ -723,7 +776,6 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     query MerchantProductActiveCoupons(
       $input: MerchantProductsInput!
       $couponFirst: Int!
-      $at: DateTime!
     ) {
       merchantProducts(input: $input) {
         edges {
@@ -732,10 +784,10 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
             merchant {
               name
             }
-            activeCoupons(first: $couponFirst, at: $at) {
+            activeCoupons(first: $couponFirst) {
               edges {
+                cursor
                 node {
-                  id
                   code
                   description
                   discountType
@@ -748,6 +800,42 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
               pageInfo {
                 hasNextPage
                 hasPreviousPage
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp active_coupon_type_fields_query do
+    """
+    query ActiveCouponTypeFields {
+      __type(name: "ActiveCoupon") {
+        fields {
+          name
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_product_active_coupons_with_at_query do
+    """
+    query MerchantProductActiveCouponsWithAt(
+      $input: MerchantProductsInput!
+      $couponFirst: Int!
+      $at: DateTime!
+    ) {
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            activeCoupons(first: $couponFirst, at: $at) {
+              edges {
+                node {
+                  code
+                }
               }
             }
           }

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cd1ee9b5a0d8ae3dc7d516ee20d75532>>
+ * @generated SignedSource<<80c08971bf4cc47300e8a20309b73d2f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -22,13 +22,13 @@ export type ProductOffersRouteQuery$data = {
       readonly node: {
         readonly activeCoupons: {
           readonly edges: ReadonlyArray<{
+            readonly cursor: string;
             readonly node: {
               readonly code: string;
               readonly currency: string | null | undefined;
               readonly description: string | null | undefined;
               readonly discountType: CouponDiscountType;
               readonly discountValue: any | null | undefined;
-              readonly id: string;
               readonly terms: string | null | undefined;
               readonly validTo: any | null | undefined;
             };
@@ -93,31 +93,38 @@ v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "cursor",
   "storageKey": null
 },
 v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "currency",
+  "name": "id",
   "storageKey": null
 },
 v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "price",
+  "name": "currency",
   "storageKey": null
 },
 v6 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "hasNextPage",
+  "name": "price",
   "storageKey": null
 },
 v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "hasNextPage",
+  "storageKey": null
+},
+v8 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -125,11 +132,11 @@ v7 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v6/*: any*/)
+    (v7/*: any*/)
   ],
   "storageKey": null
 },
-v8 = [
+v9 = [
   {
     "alias": null,
     "args": [
@@ -173,13 +180,7 @@ v8 = [
         "name": "edges",
         "plural": true,
         "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "cursor",
-            "storageKey": null
-          },
+          (v3/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -188,7 +189,7 @@ v8 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v3/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -196,7 +197,7 @@ v8 = [
                 "name": "url",
                 "storageKey": null
               },
-              (v4/*: any*/),
+              (v5/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -205,7 +206,7 @@ v8 = [
                 "name": "merchant",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
+                  (v4/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -224,8 +225,8 @@ v8 = [
                 "name": "latestPrice",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
-                  (v5/*: any*/)
+                  (v4/*: any*/),
+                  (v6/*: any*/)
                 ],
                 "storageKey": null
               },
@@ -251,6 +252,7 @@ v8 = [
                     "name": "edges",
                     "plural": true,
                     "selections": [
+                      (v3/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -259,7 +261,6 @@ v8 = [
                         "name": "node",
                         "plural": false,
                         "selections": [
-                          (v3/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -288,7 +289,7 @@ v8 = [
                             "name": "discountValue",
                             "storageKey": null
                           },
-                          (v4/*: any*/),
+                          (v5/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -309,7 +310,7 @@ v8 = [
                     ],
                     "storageKey": null
                   },
-                  (v7/*: any*/)
+                  (v8/*: any*/)
                 ],
                 "storageKey": "activeCoupons(first:2)"
               },
@@ -343,8 +344,8 @@ v8 = [
                         "name": "node",
                         "plural": false,
                         "selections": [
-                          (v3/*: any*/),
-                          (v5/*: any*/),
+                          (v4/*: any*/),
+                          (v6/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -358,7 +359,7 @@ v8 = [
                     ],
                     "storageKey": null
                   },
-                  (v7/*: any*/)
+                  (v8/*: any*/)
                 ],
                 "storageKey": "priceHistory(first:3)"
               }
@@ -383,7 +384,7 @@ v8 = [
             "name": "endCursor",
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v7/*: any*/)
         ],
         "storageKey": null
       }
@@ -401,7 +402,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductOffersRouteQuery",
-    "selections": (v8/*: any*/),
+    "selections": (v9/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -414,19 +415,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ProductOffersRouteQuery",
-    "selections": (v8/*: any*/)
+    "selections": (v9/*: any*/)
   },
   "params": {
-    "cacheID": "eb6f99086aa8e10c5808eb4ae8528249",
+    "cacheID": "c1a4730611bdf50b2cd367d680534eb2",
     "id": null,
     "metadata": {},
     "name": "ProductOffersRouteQuery",
     "operationKind": "query",
-    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n        }\n        activeCoupons(first: 2) {\n          edges {\n            node {\n              id\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "301d0eef53bd6ee4d66c9e93f3945af2";
+(node as any).hash = "44b6d01b38739abc6f002ee28dc1e30d";
 
 export default node;

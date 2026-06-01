@@ -394,7 +394,6 @@ test("renders active coupon details for product offers", () => {
             {
               cursor: "coupon-cursor-1",
               node: {
-                id: "coupon-1",
                 code: "SAVE20",
                 description: "Save on the detail product.",
                 discountType: "AMOUNT",
@@ -407,7 +406,6 @@ test("renders active coupon details for product offers", () => {
             {
               cursor: "coupon-cursor-2",
               node: {
-                id: "coupon-2",
                 code: "DEAL15",
                 description: "Take a percent discount.",
                 discountType: "PERCENT",
@@ -420,7 +418,6 @@ test("renders active coupon details for product offers", () => {
             {
               cursor: "coupon-cursor-3",
               node: {
-                id: "coupon-3",
                 code: "FREESHIP",
                 description: "Free standard delivery.",
                 discountType: "FREE_SHIPPING",
@@ -439,30 +436,37 @@ test("renders active coupon details for product offers", () => {
     ])
   );
 
-  render(
-    <MemoryRouter>
-      <ProductDetailRoute />
-    </MemoryRouter>
-  );
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  try {
+    render(
+      <MemoryRouter>
+        <ProductDetailRoute />
+      </MemoryRouter>
+    );
 
-  expect(offerItem).not.toBeNull();
-  const offer = within(offerItem as HTMLElement);
+    const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
-  expect(offer.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
-  expect(offer.getByText("SAVE20")).toBeVisible();
-  expect(offer.getByText("Save on the detail product.")).toBeVisible();
-  expect(offer.getByText("20.00 USD")).toBeVisible();
-  expect(offer.getByText("Online orders only.")).toBeVisible();
-  expect(offer.getByText("DEAL15")).toBeVisible();
-  expect(offer.getByText("15%")).toBeVisible();
-  expect(offer.getByText("FREESHIP")).toBeVisible();
-  expect(offer.getByText("Free standard delivery.")).toBeVisible();
-  expect(offer.getByText("Free shipping")).toBeVisible();
-  expect(offer.getByText("Valid through 2026-07-01")).toBeVisible();
-  expect(offer.getByText("More coupons available.")).toBeVisible();
-  expect(offer.queryByText("Valid through not-a-date")).not.toBeInTheDocument();
+    expect(offerItem).not.toBeNull();
+    const offer = within(offerItem as HTMLElement);
+
+    expect(offer.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
+    expect(offer.getByText("SAVE20")).toBeVisible();
+    expect(offer.getByText("Save on the detail product.")).toBeVisible();
+    expect(offer.getByText("20.00 USD")).toBeVisible();
+    expect(offer.getByText("Online orders only.")).toBeVisible();
+    expect(offer.getByText("DEAL15")).toBeVisible();
+    expect(offer.getByText("15%")).toBeVisible();
+    expect(offer.getByText("FREESHIP")).toBeVisible();
+    expect(offer.getByText("Free standard delivery.")).toBeVisible();
+    expect(offer.getByText("Free shipping")).toBeVisible();
+    expect(offer.getByText("Valid through 2026-07-01")).toBeVisible();
+    expect(offer.getByText("More coupons available.")).toBeVisible();
+    expect(offer.queryByText("Valid through not-a-date")).not.toBeInTheDocument();
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("renders duplicate active coupon codes without React key warnings", () => {
@@ -494,7 +498,6 @@ test("renders duplicate active coupon codes without React key warnings", () => {
             {
               cursor: "coupon-cursor-1",
               node: {
-                id: "coupon-1",
                 code: "SAVE20",
                 description: "First duplicate coupon.",
                 discountType: "AMOUNT",
@@ -507,7 +510,6 @@ test("renders duplicate active coupon codes without React key warnings", () => {
             {
               cursor: "coupon-cursor-2",
               node: {
-                id: "coupon-2",
                 code: "SAVE20",
                 description: "Second duplicate coupon.",
                 discountType: "PERCENT",
@@ -535,11 +537,7 @@ test("renders duplicate active coupon codes without React key warnings", () => {
       </MemoryRouter>
     );
 
-    const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter(([message]) =>
-      typeof message === "string" && message.includes("Encountered two children with the same key")
-    );
-
-    expect(duplicateKeyWarnings).toHaveLength(0);
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
     expect(screen.getByText("First duplicate coupon.")).toBeVisible();
     expect(screen.getByText("Second duplicate coupon.")).toBeVisible();
   } finally {
@@ -623,7 +621,6 @@ test("renders active offer price history rows", () => {
             {
               cursor: "coupon-cursor-1",
               node: {
-                id: "coupon-1",
                 code: "SAVE20",
                 description: "Save on the detail product.",
                 discountType: "AMOUNT",
@@ -1049,6 +1046,15 @@ function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRO
   });
 }
 
+function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
+  return consoleErrorSpy.mock.calls.filter(
+    ([message]) =>
+      typeof message === "string" &&
+      (message.includes("Encountered two children with the same key") ||
+        message.includes('Each child in a list should have a unique "key" prop'))
+  );
+}
+
 function buildOffersData(
   nodes: Array<{
     id: string;
@@ -1064,9 +1070,8 @@ function buildOffersData(
     } | null;
     activeCoupons?: {
       edges: Array<{
-        cursor?: string;
+        cursor: string;
         node: {
-          id: string;
           code: string;
           description: string | null;
           discountType: string | null;

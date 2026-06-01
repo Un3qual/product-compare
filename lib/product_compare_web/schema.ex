@@ -507,10 +507,6 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :active_coupon do
-    field :id, non_null(:id) do
-      resolve(fn coupon, _, _ -> GlobalId.encode_required(:coupon, coupon.id) end)
-    end
-
     field :code, non_null(:string)
     field :description, :string
     field :discount_type, non_null(:coupon_discount_type)
@@ -760,7 +756,6 @@ defmodule ProductCompareWeb.Schema do
     field :active_coupons, :active_coupon_connection do
       arg(:first, :integer)
       arg(:after, :string)
-      arg(:at, :datetime)
 
       resolve(&AffiliateResolver.merchant_product_active_coupons/3)
     end
