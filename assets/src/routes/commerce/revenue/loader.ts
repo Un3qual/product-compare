@@ -81,9 +81,16 @@ export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
     to: normalizeDateFilter(url.searchParams.get("to"))
   };
 
-  return Object.fromEntries(
+  const normalized = Object.fromEntries(
     Object.entries(filters).filter(([, value]) => value !== undefined)
   ) as RevenueSummaryFilters;
+
+  if (normalized.from && normalized.to && normalized.from > normalized.to) {
+    delete normalized.from;
+    delete normalized.to;
+  }
+
+  return normalized;
 }
 
 function normalizeCurrencyFilter(value: string | null) {

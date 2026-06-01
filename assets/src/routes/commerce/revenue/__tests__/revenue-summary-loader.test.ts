@@ -129,6 +129,41 @@ test("revenueSummaryLoader drops invalid scalar filters before preloading", asyn
   );
 });
 
+test("revenueSummaryLoader drops inverted date ranges before preloading", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/commerce/revenue?currency=usd&from=2026-06-01&to=2026-05-31"
+  );
+  const descriptor = revenueSummaryQueryDescriptor({
+    input: {
+      currency: "USD"
+    }
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      currency: "USD"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      input: {
+        currency: "USD"
+      }
+    },
+    { signal: request.signal }
+  );
+});
+
 test("revenueSummaryLoader drops invalid currency and waits for a supported currency", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
