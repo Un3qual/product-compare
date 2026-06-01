@@ -41,11 +41,18 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Frontend affiliate setup demo parity lane
+  - Work doc: `docs/work/frontend-affiliate-setup-demo-parity.md`
+  - Status: in progress
+  - Priority: P1
+  - Next batch: Task 2, render affiliate network and program setup.
+  - Owned paths: `assets/src/routes/affiliate/setup/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-affiliate-setup-demo-parity.md`, `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+
 - Frontend merchant discovery demo parity lane
   - Work doc: `docs/work/frontend-merchant-discovery-demo-parity.md`
   - Status: completed
   - Priority: P1
-  - Next batch: no unblocked merchant discovery demo parity batch remains in this lane; coordinator follow-up can choose the next demo-parity candidate from `docs/plans/INDEX.md` if priorities continue toward affiliate/admin setup.
+  - Next batch: no unblocked merchant discovery demo parity batch remains in this lane; coordinator follow-up can choose the next demo-parity candidate from `docs/plans/INDEX.md` if priorities continue toward affiliate setup.
   - Owned paths: `assets/src/routes/merchants/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 
 - Product comparison demo parity lane

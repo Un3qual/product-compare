@@ -1,0 +1,199 @@
+/**
+ * @generated SignedSource<<388a9d94e4ffdf5bfff705f17fbf5807>>
+ * @lightSyntaxTransform
+ * @nogrep
+ */
+
+/* tslint:disable */
+/* eslint-disable */
+// @ts-nocheck
+
+import { ConcreteRequest } from 'relay-runtime';
+export type AffiliateSetupRouteQuery$variables = {
+  after?: string | null | undefined;
+  first?: number | null | undefined;
+};
+export type AffiliateSetupRouteQuery$data = {
+  readonly merchants: {
+    readonly edges: ReadonlyArray<{
+      readonly cursor: string;
+      readonly node: {
+        readonly domain: string;
+        readonly id: string;
+        readonly name: string;
+      };
+    }>;
+    readonly pageInfo: {
+      readonly endCursor: string | null | undefined;
+      readonly hasNextPage: boolean;
+      readonly hasPreviousPage: boolean;
+      readonly startCursor: string | null | undefined;
+    };
+  } | null | undefined;
+};
+export type AffiliateSetupRouteQuery = {
+  response: AffiliateSetupRouteQuery$data;
+  variables: AffiliateSetupRouteQuery$variables;
+};
+
+const node: ConcreteRequest = (function(){
+var v0 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "after"
+},
+v1 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "first"
+},
+v2 = [
+  {
+    "alias": null,
+    "args": [
+      {
+        "kind": "Variable",
+        "name": "after",
+        "variableName": "after"
+      },
+      {
+        "kind": "Variable",
+        "name": "first",
+        "variableName": "first"
+      }
+    ],
+    "concreteType": "MerchantConnection",
+    "kind": "LinkedField",
+    "name": "merchants",
+    "plural": false,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "MerchantEdge",
+        "kind": "LinkedField",
+        "name": "edges",
+        "plural": true,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "cursor",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Merchant",
+            "kind": "LinkedField",
+            "name": "node",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "id",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "name",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "domain",
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "PageInfo",
+        "kind": "LinkedField",
+        "name": "pageInfo",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "hasNextPage",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "hasPreviousPage",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "startCursor",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "endCursor",
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
+    ],
+    "storageKey": null
+  }
+];
+return {
+  "fragment": {
+    "argumentDefinitions": [
+      (v0/*: any*/),
+      (v1/*: any*/)
+    ],
+    "kind": "Fragment",
+    "metadata": null,
+    "name": "AffiliateSetupRouteQuery",
+    "selections": (v2/*: any*/),
+    "type": "Query",
+    "abstractKey": null
+  },
+  "kind": "Request",
+  "operation": {
+    "argumentDefinitions": [
+      (v1/*: any*/),
+      (v0/*: any*/)
+    ],
+    "kind": "Operation",
+    "name": "AffiliateSetupRouteQuery",
+    "selections": (v2/*: any*/)
+  },
+  "params": {
+    "cacheID": "c8328f003574d9dd0c8d034c18de0ff6",
+    "id": null,
+    "metadata": {},
+    "name": "AffiliateSetupRouteQuery",
+    "operationKind": "query",
+    "text": "query AffiliateSetupRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+  }
+};
+})();
+
+(node as any).hash = "e9d8c5a26167084747a5c6aadac24dba";
+
+export default node;

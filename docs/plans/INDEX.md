@@ -11,7 +11,12 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+1. Frontend affiliate setup demo parity lane: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+   - Status: in progress
+   - Source context: `ARCHITECTURE.md`
+   - Scope: make existing authenticated affiliate setup mutations demoable from `/affiliate/setup` with Relay route loading, mutation forms, typed payload errors, navigation, and focused backend contract verification.
+
+2. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Status: blocked
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
@@ -21,7 +26,7 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Intended scope: affiliate/admin setup after merchant discovery reaches demo parity.
+   - Intended scope: choose after affiliate setup reaches demo parity.
 
 2. Backend lane follow-up
    - Depends on a new product/backend priority decision.

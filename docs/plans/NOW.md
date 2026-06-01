@@ -4,13 +4,28 @@
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
 
+### Frontend Affiliate Setup Demo Parity Lane
+
+- Status: in progress
+- Batch: Task 2, render affiliate network and program setup
+- Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+- Next step: refresh the local schema snapshot for the affiliate network/program mutation fields, verify RED for `affiliate-setup.route.test.tsx`, then render the network and program setup forms.
+- Why this batch is current:
+  - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
+  - Product comparison demo parity, API token management demo parity, revenue reporting demo parity, and merchant discovery demo parity are complete.
+  - `docs/plans/INDEX.md` identifies affiliate setup as the next demo-parity candidate after merchant discovery.
+  - The backend GraphQL contract already exposes authenticated affiliate setup mutations and public merchant discovery for merchant ID choices.
+  - Task 1 added `AffiliateSetupRouteQuery`, `affiliateSetupLoader`, generated `AffiliateSetupRouteQuery.graphql.ts`, normalized merchant choice pagination, and kept loader preload failures recoverable.
+  - The local frontend schema snapshot still needs the affiliate mutation fields before network/program mutation artifacts can be generated.
+
 ### Frontend Merchant Discovery Demo Parity Lane
 
 - Status: completed
 - Batch: none queued
 - Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-- Next step: no unblocked merchant discovery demo parity batch remains in this lane; `docs/plans/INDEX.md` lists additional demo-parity frontend candidates for a future implementation plan if priorities continue toward affiliate/admin setup.
+- Next step: no unblocked merchant discovery demo parity batch remains in this lane; `docs/plans/INDEX.md` lists additional demo-parity frontend candidates for a future implementation plan if priorities continue toward affiliate setup.
 - Why this batch is current:
   - Product comparison demo parity is complete.
   - API token management demo parity is complete.
