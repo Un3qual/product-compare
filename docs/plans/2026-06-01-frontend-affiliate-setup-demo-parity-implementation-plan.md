@@ -110,11 +110,11 @@ Mark Task 1 complete, record verification, advance the current batch to Task 2, 
 - Modify after verification: `docs/work/frontend-affiliate-setup-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Cover rendering merchant choices from the preloaded merchant query, loader/query unavailable fallback, successful network upsert result with returned global ID, network payload errors, successful program upsert using selected merchant and network IDs, and program payload errors.
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -124,15 +124,15 @@ cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-set
 
 Expected: FAIL because the route component and mutation files do not exist.
 
-- [ ] **Step 3: Refresh the local schema snapshot**
+- [x] **Step 3: Refresh the local schema snapshot**
 
 Add the affiliate mutation fields, input objects, payload objects, `AffiliateNetwork`, `AffiliateProgram`, and `MutationError` fields needed by the route.
 
-- [ ] **Step 4: Add the mutation documents and route UI**
+- [x] **Step 4: Add the mutation documents and route UI**
 
 Add Relay mutation documents and render forms that commit through `commitRouteMutationPromise`, display typed payload errors, suppress duplicate submissions, and keep returned network/program IDs visible for follow-on setup.
 
-- [ ] **Step 5: Generate Relay artifacts and verify**
+- [x] **Step 5: Generate Relay artifacts and verify**
 
 Run:
 
@@ -144,7 +144,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Update queue docs and commit**
+- [x] **Step 6: Update queue docs and commit**
 
 Mark Task 2 complete, record verification, advance the current batch to Task 3, then commit the code/test/doc slice.
 
