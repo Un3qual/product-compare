@@ -167,6 +167,27 @@ test("revenue route renders unsuppressed revenue metrics", () => {
   expect(screen.getByText("80.00 USD")).toBeInTheDocument();
 });
 
+test("revenue route preserves empty string revenue amounts", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+  mockedUsePreloadedQuery.mockReturnValue({
+    revenueSummary: {
+      ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
+      metrics: {
+        ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary.metrics,
+        grossOrderValue: ""
+      }
+    }
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const grossOrderMetric = screen.getByText("Gross order value").closest("div");
+
+  expect(grossOrderMetric).not.toBeNull();
+  expect(within(grossOrderMetric as HTMLElement).queryByText("Not available")).not.toBeInTheDocument();
+  expect(within(grossOrderMetric as HTMLElement).getByText("USD")).toBeInTheDocument();
+});
+
 test("revenue route renders active filters from the loader", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({

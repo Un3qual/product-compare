@@ -222,7 +222,7 @@ function formatCount(value: number | null | undefined) {
 }
 
 function formatCurrencyAmount(value: string | null | undefined, currency: string) {
-  if (!value) {
+  if (value === null || value === undefined) {
     return "Not available";
   }
 
