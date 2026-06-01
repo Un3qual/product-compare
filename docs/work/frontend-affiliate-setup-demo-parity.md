@@ -5,7 +5,7 @@
 - Status: in progress
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01, Task 2 network and program setup
+- Last verified: 2026-06-01, Task 3 link and coupon setup
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
 
@@ -13,12 +13,12 @@
 
 - [x] Task 1: add the Relay route query and loader for `/affiliate/setup`.
 - [x] Task 2: render affiliate network and program setup.
-- [ ] Task 3: add affiliate link and coupon setup.
+- [x] Task 3: add affiliate link and coupon setup.
 - [ ] Task 4: wire navigation, verify the backend contract, and close the lane.
 
 ## Current Batch
 
-- Task: Task 3, add affiliate link and coupon setup.
+- Task: Task 4, wire navigation, verify the backend contract, and close the lane.
 - Status: pending.
 - Owned paths:
   - `assets/src/router.tsx`
@@ -34,7 +34,7 @@
   - `docs/plans/NOW.md`
   - `docs/plans/INDEX.md`
   - `ARCHITECTURE.md`
-- Next step: refresh the local schema snapshot for the affiliate link and coupon mutation fields, verify RED for the expanded route tests, then add link and coupon setup forms.
+- Next step: verify RED for route registration and navigation, then register `/affiliate/setup`, expose navigation links, run focused frontend and backend contract verification, and close the lane.
 
 ## Verification
 
@@ -48,6 +48,9 @@
 - Task 2 verified RED with `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx` failing because `../index` did not exist.
 - Task 2 refreshed `assets/schema.graphql` with the existing affiliate network/program mutation contract and generated `UpsertAffiliateNetworkMutation.graphql.ts` plus `UpsertAffiliateProgramMutation.graphql.ts`.
 - Task 2 GREEN verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts`, and `cd assets && bun run typecheck`.
+- Task 3 verified RED with `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx` failing because the link and coupon controls were absent.
+- Task 3 refreshed `assets/schema.graphql` with the existing affiliate link/coupon mutation contract and generated `UpsertAffiliateLinkMutation.graphql.ts` plus `CreateCouponMutation.graphql.ts`.
+- Task 3 GREEN verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 ## Blockers
 

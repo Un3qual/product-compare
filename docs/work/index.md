@@ -45,7 +45,7 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/frontend-affiliate-setup-demo-parity.md`
   - Status: in progress
   - Priority: P1
-  - Next batch: Task 3, add affiliate link and coupon setup.
+  - Next batch: Task 4, wire navigation, verify the backend contract, and close the lane.
   - Owned paths: `assets/src/routes/affiliate/setup/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-affiliate-setup-demo-parity.md`, `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 
 - Frontend merchant discovery demo parity lane

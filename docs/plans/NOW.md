@@ -7,10 +7,10 @@
 ### Frontend Affiliate Setup Demo Parity Lane
 
 - Status: in progress
-- Batch: Task 3, add affiliate link and coupon setup
+- Batch: Task 4, wire navigation, verify the backend contract, and close the lane
 - Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
-- Next step: refresh the local schema snapshot for the affiliate link and coupon mutation fields, verify RED for the expanded route tests, then add link and coupon setup forms.
+- Next step: verify RED for route registration and navigation, then register `/affiliate/setup`, expose navigation links, run focused frontend and backend contract verification, and close the lane.
 - Why this batch is current:
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - Product comparison demo parity, API token management demo parity, revenue reporting demo parity, and merchant discovery demo parity are complete.
@@ -18,7 +18,7 @@
   - The backend GraphQL contract already exposes authenticated affiliate setup mutations and public merchant discovery for merchant ID choices.
   - Task 1 added `AffiliateSetupRouteQuery`, `affiliateSetupLoader`, generated `AffiliateSetupRouteQuery.graphql.ts`, normalized merchant choice pagination, and kept loader preload failures recoverable.
   - Task 2 refreshed the local Relay schema snapshot for the existing affiliate network/program mutation contract, generated the network/program mutation artifacts, and rendered network/program setup forms with typed payload error handling.
-  - The local frontend schema snapshot still needs the affiliate link/coupon fields before link/coupon mutation artifacts can be generated.
+  - Task 3 refreshed the local Relay schema snapshot for the existing affiliate link/coupon mutation contract, generated the link/coupon mutation artifacts, and rendered link/coupon setup forms with typed payload error handling.
 
 ### Frontend Merchant Discovery Demo Parity Lane
 

@@ -1,6 +1,12 @@
 import { Suspense, type FormEvent, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
+import createCouponMutation, {
+  type CreateCouponMutation
+} from "../../../__generated__/CreateCouponMutation.graphql";
+import upsertAffiliateLinkMutation, {
+  type UpsertAffiliateLinkMutation
+} from "../../../__generated__/UpsertAffiliateLinkMutation.graphql";
 import upsertAffiliateNetworkMutation, {
   type UpsertAffiliateNetworkMutation
 } from "../../../__generated__/UpsertAffiliateNetworkMutation.graphql";
@@ -36,6 +42,14 @@ type ProgramResult = NonNullable<
   NonNullable<
     UpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"]
   >["program"]
+>;
+
+type LinkResult = NonNullable<
+  NonNullable<UpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]>["link"]
+>;
+
+type CouponResult = NonNullable<
+  NonNullable<CreateCouponMutation["response"]["createCoupon"]>["coupon"]
 >;
 
 export function AffiliateSetupRoute() {
@@ -82,6 +96,14 @@ function AffiliateSetupPanel({
   const [programError, setProgramError] = useState<string | null>(null);
   const [programPending, setProgramPending] = useState(false);
   const programInFlightRef = useRef(false);
+  const [linkResult, setLinkResult] = useState<LinkResult | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkPending, setLinkPending] = useState(false);
+  const linkInFlightRef = useRef(false);
+  const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponPending, setCouponPending] = useState(false);
+  const couponInFlightRef = useRef(false);
   const [affiliateNetworkId, setAffiliateNetworkId] = useState("");
   const [commitUpsertAffiliateNetwork] = useMutation<UpsertAffiliateNetworkMutation>(
     upsertAffiliateNetworkMutation
@@ -89,6 +111,10 @@ function AffiliateSetupPanel({
   const [commitUpsertAffiliateProgram] = useMutation<UpsertAffiliateProgramMutation>(
     upsertAffiliateProgramMutation
   );
+  const [commitUpsertAffiliateLink] = useMutation<UpsertAffiliateLinkMutation>(
+    upsertAffiliateLinkMutation
+  );
+  const [commitCreateCoupon] = useMutation<CreateCouponMutation>(createCouponMutation);
 
   async function handleNetworkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -159,6 +185,74 @@ function AffiliateSetupPanel({
     }
   }
 
+  async function handleLinkSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (linkInFlightRef.current) {
+      return;
+    }
+
+    linkInFlightRef.current = true;
+    setLinkPending(true);
+    setLinkError(null);
+    setLinkResult(null);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(
+        commitUpsertAffiliateLink,
+        {
+          variables: buildLinkVariables(new FormData(event.currentTarget))
+        }
+      );
+      const payload = response.upsertAffiliateLink;
+
+      if (payload?.link && !hasRouteGraphQLErrors(graphQLErrors)) {
+        setLinkResult(payload.link);
+      } else {
+        setLinkError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      }
+    } catch {
+      setLinkError(DEFAULT_ROUTE_ERROR_MESSAGE);
+    } finally {
+      linkInFlightRef.current = false;
+      setLinkPending(false);
+    }
+  }
+
+  async function handleCouponSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (couponInFlightRef.current) {
+      return;
+    }
+
+    couponInFlightRef.current = true;
+    setCouponPending(true);
+    setCouponError(null);
+    setCouponResult(null);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(
+        commitCreateCoupon,
+        {
+          variables: buildCouponVariables(new FormData(event.currentTarget))
+        }
+      );
+      const payload = response.createCoupon;
+
+      if (payload?.coupon && !hasRouteGraphQLErrors(graphQLErrors)) {
+        setCouponResult(payload.coupon);
+      } else {
+        setCouponError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      }
+    } catch {
+      setCouponError(DEFAULT_ROUTE_ERROR_MESSAGE);
+    } finally {
+      couponInFlightRef.current = false;
+      setCouponPending(false);
+    }
+  }
+
   return (
     <>
       <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit}>
@@ -225,6 +319,110 @@ function AffiliateSetupPanel({
           ) : null}
         </form>
       )}
+
+      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit}>
+        <h2>Link</h2>
+        <label>
+          Merchant product ID
+          <input autoComplete="off" name="merchantProductId" type="text" />
+        </label>
+        <label>
+          Link affiliate network ID
+          <input autoComplete="off" name="linkAffiliateNetworkId" type="text" />
+        </label>
+        <label>
+          Original URL
+          <input autoComplete="off" name="originalUrl" type="url" />
+        </label>
+        <label>
+          Affiliate URL
+          <input autoComplete="off" name="affiliateUrl" type="url" />
+        </label>
+        <label>
+          Last verified at
+          <input name="lastVerifiedAt" type="datetime-local" />
+        </label>
+        <button disabled={linkPending} type="submit">
+          Save link
+        </button>
+        {linkError ? <p role="alert">{linkError}</p> : null}
+        {linkResult ? (
+          <section aria-label="Affiliate link result">
+            <h3>{linkResult.id}</h3>
+            <p>{linkResult.affiliateUrl}</p>
+          </section>
+        ) : null}
+      </form>
+
+      {merchantChoices.length === 0 ? null : (
+        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit}>
+          <h2>Coupon</h2>
+          <label>
+            Coupon merchant
+            <select defaultValue={merchantChoices[0]?.id ?? ""} name="couponMerchantId">
+              {merchantChoices.map((merchant) => (
+                <option key={merchant.id} value={merchant.id}>
+                  {merchant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Coupon affiliate network ID
+            <input autoComplete="off" name="couponAffiliateNetworkId" type="text" />
+          </label>
+          <label>
+            Coupon code
+            <input autoComplete="off" name="couponCode" type="text" />
+          </label>
+          <label>
+            Description
+            <input autoComplete="off" name="couponDescription" type="text" />
+          </label>
+          <label>
+            Discount type
+            <select defaultValue="OTHER" name="discountType">
+              <option value="OTHER">OTHER</option>
+              <option value="PERCENT">PERCENT</option>
+              <option value="AMOUNT">AMOUNT</option>
+              <option value="FREE_SHIPPING">FREE_SHIPPING</option>
+            </select>
+          </label>
+          <label>
+            Discount value
+            <input autoComplete="off" name="discountValue" type="text" />
+          </label>
+          <label>
+            Currency
+            <input autoComplete="off" maxLength={3} name="currency" type="text" />
+          </label>
+          <label>
+            Valid from
+            <input name="validFrom" type="datetime-local" />
+          </label>
+          <label>
+            Valid to
+            <input name="validTo" type="datetime-local" />
+          </label>
+          <label>
+            Terms
+            <input autoComplete="off" name="terms" type="text" />
+          </label>
+          <button disabled={couponPending} type="submit">
+            Create coupon
+          </button>
+          {couponError ? <p role="alert">{couponError}</p> : null}
+          {couponResult ? (
+            <section aria-label="Coupon result">
+              <h3>{couponResult.code}</h3>
+              <p>{couponResult.id}</p>
+              {couponResult.discountValue && couponResult.currency ? (
+                <p>{`${couponResult.discountValue} ${couponResult.currency}`}</p>
+              ) : null}
+            </section>
+          ) : null}
+        </form>
+      )}
     </>
   );
 }
@@ -278,6 +476,36 @@ function buildProgramVariables(
   };
 }
 
+function buildLinkVariables(formData: FormData): UpsertAffiliateLinkMutation["variables"] {
+  return {
+    input: {
+      merchantProductId: requiredFormString(formData, "merchantProductId"),
+      affiliateNetworkId: optionalFormString(formData, "linkAffiliateNetworkId"),
+      originalUrl: requiredFormString(formData, "originalUrl"),
+      affiliateUrl: requiredFormString(formData, "affiliateUrl"),
+      lastVerifiedAt: optionalDateTimeString(formData, "lastVerifiedAt")
+    }
+  };
+}
+
+function buildCouponVariables(formData: FormData): CreateCouponMutation["variables"] {
+  return {
+    input: {
+      merchantId: requiredFormString(formData, "couponMerchantId"),
+      affiliateNetworkId: optionalFormString(formData, "couponAffiliateNetworkId"),
+      artifactId: null,
+      code: requiredFormString(formData, "couponCode"),
+      description: optionalFormString(formData, "couponDescription"),
+      discountType: requiredFormString(formData, "discountType") as CreateCouponMutation["variables"]["input"]["discountType"],
+      discountValue: optionalFormString(formData, "discountValue"),
+      currency: optionalCurrencyString(formData, "currency"),
+      validFrom: optionalDateTimeString(formData, "validFrom"),
+      validTo: optionalDateTimeString(formData, "validTo"),
+      terms: optionalFormString(formData, "terms")
+    }
+  };
+}
+
 function requiredFormString(formData: FormData, name: string) {
   const value = formData.get(name);
 
@@ -288,4 +516,22 @@ function optionalFormString(formData: FormData, name: string) {
   const value = requiredFormString(formData, name);
 
   return value || null;
+}
+
+function optionalCurrencyString(formData: FormData, name: string) {
+  const value = optionalFormString(formData, name);
+
+  return value ? value.toUpperCase() : null;
+}
+
+function optionalDateTimeString(formData: FormData, name: string) {
+  const value = optionalFormString(formData, name);
+
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }

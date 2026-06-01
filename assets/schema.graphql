@@ -32,6 +32,8 @@ type Mutation {
   rotateApiToken(tokenId: ID!, label: String, expiresAt: DateTime): CreateApiTokenPayload!
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
   upsertAffiliateProgram(input: UpsertAffiliateProgramInput!): UpsertAffiliateProgramPayload
+  upsertAffiliateLink(input: UpsertAffiliateLinkInput!): UpsertAffiliateLinkPayload
+  createCoupon(input: CreateCouponInput!): CreateCouponPayload
 }
 
 type AuthSessionPayload {
@@ -140,6 +142,41 @@ type AffiliateProgram implements Node {
   updatedAt: DateTime!
 }
 
+type AffiliateLink implements Node {
+  id: ID!
+  merchantProductId: ID!
+  affiliateNetworkId: ID
+  originalUrl: String!
+  affiliateUrl: String!
+  lastVerifiedAt: DateTime
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Coupon implements Node {
+  id: ID!
+  merchantId: ID!
+  affiliateNetworkId: ID
+  artifactId: ID
+  code: String!
+  description: String
+  discountType: CouponDiscountType!
+  discountValue: Decimal
+  currency: String
+  validFrom: DateTime
+  validTo: DateTime
+  terms: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum CouponDiscountType {
+  PERCENT
+  AMOUNT
+  FREE_SHIPPING
+  OTHER
+}
+
 type MerchantProduct implements Node {
   id: ID!
   merchantId: ID!
@@ -231,6 +268,28 @@ input UpsertAffiliateProgramInput {
   status: String
 }
 
+input UpsertAffiliateLinkInput {
+  merchantProductId: ID!
+  affiliateNetworkId: ID
+  originalUrl: String!
+  affiliateUrl: String!
+  lastVerifiedAt: DateTime
+}
+
+input CreateCouponInput {
+  merchantId: ID!
+  affiliateNetworkId: ID
+  artifactId: ID
+  code: String!
+  description: String
+  discountType: CouponDiscountType!
+  discountValue: Decimal
+  currency: String
+  validFrom: DateTime
+  validTo: DateTime
+  terms: String
+}
+
 input ProductNumericFilterInput {
   attributeId: ID!
   min: Decimal
@@ -319,6 +378,16 @@ type UpsertAffiliateNetworkPayload {
 
 type UpsertAffiliateProgramPayload {
   program: AffiliateProgram
+  errors: [MutationError!]!
+}
+
+type UpsertAffiliateLinkPayload {
+  link: AffiliateLink
+  errors: [MutationError!]!
+}
+
+type CreateCouponPayload {
+  coupon: Coupon
   errors: [MutationError!]!
 }
 

@@ -163,11 +163,11 @@ Mark Task 2 complete, record verification, advance the current batch to Task 3, 
 - Modify after verification: `docs/work/frontend-affiliate-setup-demo-parity.md`
 - Modify after verification: `docs/plans/NOW.md`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Cover successful affiliate link upsert, link payload errors, successful coupon creation, coupon payload errors, and expected field normalization for optional network/date/currency inputs.
 
-- [ ] **Step 2: Run the route tests to verify they fail**
+- [x] **Step 2: Run the route tests to verify they fail**
 
 Run:
 
@@ -177,15 +177,15 @@ cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-set
 
 Expected: FAIL because link and coupon setup controls are not implemented.
 
-- [ ] **Step 3: Add schema snapshot fields and mutation documents**
+- [x] **Step 3: Add schema snapshot fields and mutation documents**
 
 Add `AffiliateLink`, `Coupon`, coupon discount enum, link/coupon input and payload types, and the two mutation documents.
 
-- [ ] **Step 4: Implement link and coupon setup controls**
+- [x] **Step 4: Implement link and coupon setup controls**
 
 Commit link and coupon mutations through Relay, reuse the route mutation error helpers, clear stale success/error state on new submissions, and render returned entity IDs plus the most important returned fields.
 
-- [ ] **Step 5: Generate Relay artifacts and verify**
+- [x] **Step 5: Generate Relay artifacts and verify**
 
 Run:
 
@@ -197,7 +197,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Update queue docs and commit**
+- [x] **Step 6: Update queue docs and commit**
 
 Mark Task 3 complete, record verification, advance the current batch to Task 4, then commit the code/test/doc slice.
 

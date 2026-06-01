@@ -6,6 +6,8 @@ import { AffiliateSetupRoute } from "../index";
 import type { AffiliateSetupLoaderData } from "../loader";
 
 const {
+  commitCouponMutationMock,
+  commitLinkMutationMock,
   commitNetworkMutationMock,
   commitProgramMutationMock,
   useLoaderDataMock,
@@ -13,6 +15,8 @@ const {
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
+  commitCouponMutationMock: vi.fn(),
+  commitLinkMutationMock: vi.fn(),
   commitNetworkMutationMock: vi.fn(),
   commitProgramMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
@@ -58,8 +62,11 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const MERCHANT_ID = "TWVyY2hhbnQ6MQ==";
 const SECOND_MERCHANT_ID = "TWVyY2hhbnQ6Mg==";
+const MERCHANT_PRODUCT_ID = "TWVyY2hhbnRQcm9kdWN0OjE=";
 const NETWORK_ID = "QWZmaWxpYXRlTmV0d29yazox";
 const PROGRAM_ID = "QWZmaWxpYXRlUHJvZ3JhbTox";
+const LINK_ID = "QWZmaWxpYXRlTGluazox";
+const COUPON_ID = "Q291cG9uOjE=";
 
 const AFFILIATE_SETUP_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -78,6 +85,8 @@ const AFFILIATE_SETUP_QUERY_REF = {
 };
 
 beforeEach(() => {
+  commitCouponMutationMock.mockReset();
+  commitLinkMutationMock.mockReset();
   commitNetworkMutationMock.mockReset();
   commitProgramMutationMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -91,6 +100,14 @@ beforeEach(() => {
 
     if (name === "UpsertAffiliateProgramMutation") {
       return [commitProgramMutationMock, false];
+    }
+
+    if (name === "UpsertAffiliateLinkMutation") {
+      return [commitLinkMutationMock, false];
+    }
+
+    if (name === "CreateCouponMutation") {
+      return [commitCouponMutationMock, false];
     }
 
     return [commitNetworkMutationMock, false];
@@ -285,12 +302,266 @@ test("affiliate setup route renders program payload errors", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("invalid affiliate network id");
 });
 
+test("affiliate setup route commits link upsert and displays the saved link", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Merchant product ID"), {
+    target: { value: MERCHANT_PRODUCT_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Link affiliate network ID"), {
+    target: { value: NETWORK_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Original URL"), {
+    target: { value: "https://merchant.example/products/1" }
+  });
+  fireEvent.change(screen.getByLabelText("Affiliate URL"), {
+    target: { value: "https://network.example/track/1" }
+  });
+  fireEvent.change(screen.getByLabelText("Last verified at"), {
+    target: { value: "2026-06-01T12:30" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+  await waitFor(() => {
+    expect(commitLinkMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            merchantProductId: MERCHANT_PRODUCT_ID,
+            affiliateNetworkId: NETWORK_ID,
+            originalUrl: "https://merchant.example/products/1",
+            affiliateUrl: "https://network.example/track/1",
+            lastVerifiedAt: new Date("2026-06-01T12:30").toISOString()
+          }
+        }
+      })
+    );
+  });
+
+  completeLatestLinkMutation({
+    upsertAffiliateLink: {
+      link: {
+        id: LINK_ID,
+        merchantProductId: MERCHANT_PRODUCT_ID,
+        affiliateNetworkId: NETWORK_ID,
+        originalUrl: "https://merchant.example/products/1",
+        affiliateUrl: "https://network.example/track/1",
+        lastVerifiedAt: new Date("2026-06-01T12:30").toISOString()
+      },
+      errors: []
+    }
+  });
+
+  const resultRegion = await screen.findByRole("region", {
+    name: "Affiliate link result"
+  });
+
+  expect(resultRegion).toHaveTextContent(LINK_ID);
+  expect(resultRegion).toHaveTextContent("https://network.example/track/1");
+});
+
+test("affiliate setup route renders link payload errors", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Merchant product ID"), {
+    target: { value: "not-a-global-id" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+  await waitFor(() => {
+    expect(commitLinkMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestLinkMutation({
+    upsertAffiliateLink: {
+      link: null,
+      errors: [
+        {
+          code: "INVALID_ID",
+          field: "merchantProductId",
+          message: "invalid merchant product id"
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("invalid merchant product id");
+});
+
+test("affiliate setup route commits coupon creation and displays the created coupon", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
+    target: { value: SECOND_MERCHANT_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Coupon affiliate network ID"), {
+    target: { value: NETWORK_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Coupon code"), {
+    target: { value: "SAVE-20" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount type"), {
+    target: { value: "AMOUNT" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount value"), {
+    target: { value: "20.00" }
+  });
+  fireEvent.change(screen.getByLabelText("Currency"), {
+    target: { value: "usd" }
+  });
+  fireEvent.change(screen.getByLabelText("Valid from"), {
+    target: { value: "2026-06-01T00:00" }
+  });
+  fireEvent.change(screen.getByLabelText("Valid to"), {
+    target: { value: "2026-06-30T23:59" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
+
+  await waitFor(() => {
+    expect(commitCouponMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: expect.objectContaining({
+            merchantId: SECOND_MERCHANT_ID,
+            affiliateNetworkId: NETWORK_ID,
+            code: "SAVE-20",
+            discountType: "AMOUNT",
+            discountValue: "20.00",
+            currency: "USD",
+            validFrom: new Date("2026-06-01T00:00").toISOString(),
+            validTo: new Date("2026-06-30T23:59").toISOString()
+          })
+        }
+      })
+    );
+  });
+
+  completeLatestCouponMutation({
+    createCoupon: {
+      coupon: {
+        id: COUPON_ID,
+        merchantId: SECOND_MERCHANT_ID,
+        affiliateNetworkId: NETWORK_ID,
+        code: "SAVE-20",
+        discountType: "AMOUNT",
+        discountValue: "20.00",
+        currency: "USD",
+        validFrom: new Date("2026-06-01T00:00").toISOString(),
+        validTo: new Date("2026-06-30T23:59").toISOString()
+      },
+      errors: []
+    }
+  });
+
+  const resultRegion = await screen.findByRole("region", {
+    name: "Coupon result"
+  });
+
+  expect(resultRegion).toHaveTextContent(COUPON_ID);
+  expect(resultRegion).toHaveTextContent("SAVE-20");
+  expect(resultRegion).toHaveTextContent("20.00 USD");
+});
+
+test("affiliate setup route normalizes optional link and coupon inputs", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Merchant product ID"), {
+    target: { value: MERCHANT_PRODUCT_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Original URL"), {
+    target: { value: "https://merchant.example/products/optional" }
+  });
+  fireEvent.change(screen.getByLabelText("Affiliate URL"), {
+    target: { value: "https://network.example/optional" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+  await waitFor(() => {
+    expect(commitLinkMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: expect.objectContaining({
+            affiliateNetworkId: null,
+            lastVerifiedAt: null
+          })
+        }
+      })
+    );
+  });
+
+  fireEvent.change(screen.getByLabelText("Coupon code"), {
+    target: { value: "INFO-ONLY" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount type"), {
+    target: { value: "OTHER" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
+
+  await waitFor(() => {
+    expect(commitCouponMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: expect.objectContaining({
+            affiliateNetworkId: null,
+            currency: null,
+            discountValue: null,
+            validFrom: null,
+            validTo: null
+          })
+        }
+      })
+    );
+  });
+});
+
+test("affiliate setup route renders coupon payload errors", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Coupon code"), {
+    target: { value: "INVALID-SHAPE" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount type"), {
+    target: { value: "OTHER" }
+  });
+  fireEvent.change(screen.getByLabelText("Discount value"), {
+    target: { value: "10.00" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
+
+  await waitFor(() => {
+    expect(commitCouponMutationMock).toHaveBeenCalledTimes(1);
+  });
+  completeLatestCouponMutation({
+    createCoupon: {
+      coupon: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "discountValue",
+          message: "must be empty for other discounts"
+        }
+      ]
+    }
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "must be empty for other discounts"
+  );
+});
+
 function completeLatestNetworkMutation(response: unknown) {
   commitNetworkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
 }
 
 function completeLatestProgramMutation(response: unknown) {
   commitProgramMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+}
+
+function completeLatestLinkMutation(response: unknown) {
+  commitLinkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+}
+
+function completeLatestCouponMutation(response: unknown) {
+  commitCouponMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
 }
 
 function renderAffiliateSetupRoute() {
