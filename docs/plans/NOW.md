@@ -6,11 +6,11 @@
 
 ### Frontend Affiliate Setup Demo Parity Lane
 
-- Status: in progress
-- Batch: Task 4, wire navigation, verify the backend contract, and close the lane
+- Status: completed
+- Batch: none queued
 - Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
-- Next step: verify RED for route registration and navigation, then register `/affiliate/setup`, expose navigation links, run focused frontend and backend contract verification, and close the lane.
+- Next step: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live CJ credentials, representative payloads, quota behavior, and compliance signoff.
 - Why this batch is current:
   - Product ingestion's remaining local work is blocked on live CJ credential, quota, representative sample payload, and compliance evidence.
   - Product comparison demo parity, API token management demo parity, revenue reporting demo parity, and merchant discovery demo parity are complete.
@@ -19,6 +19,7 @@
   - Task 1 added `AffiliateSetupRouteQuery`, `affiliateSetupLoader`, generated `AffiliateSetupRouteQuery.graphql.ts`, normalized merchant choice pagination, and kept loader preload failures recoverable.
   - Task 2 refreshed the local Relay schema snapshot for the existing affiliate network/program mutation contract, generated the network/program mutation artifacts, and rendered network/program setup forms with typed payload error handling.
   - Task 3 refreshed the local Relay schema snapshot for the existing affiliate link/coupon mutation contract, generated the link/coupon mutation artifacts, and rendered link/coupon setup forms with typed payload error handling.
+  - Task 4 registered `/affiliate/setup`, exposed `Affiliate setup` in primary navigation and home actions, ran focused frontend and backend contract verification, and closed the lane.
 
 ### Frontend Merchant Discovery Demo Parity Lane
 
@@ -139,6 +140,20 @@
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 
 ## Just Completed
+
+- Frontend Affiliate Setup Demo Parity, Task 4:
+  - Registered `/affiliate/setup` with `AffiliateSetupRoute` and `affiliateSetupLoader`.
+  - Added `Affiliate setup` links to primary navigation and home actions.
+  - Closed the affiliate setup demo parity lane and moved it out of the active unblocked queue.
+  - Verified RED with `cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx` failing because the route and links were absent.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run check`, and `git diff --check`.
+
+- Frontend Affiliate Setup Demo Parity, Task 3:
+  - Refreshed the local frontend Relay schema snapshot for the existing `upsertAffiliateLink` and `createCoupon` mutation contracts.
+  - Added `UpsertAffiliateLinkMutation`, `CreateCouponMutation`, and generated Relay artifacts.
+  - Rendered affiliate link and coupon setup controls with optional network/date/currency normalization, typed payload errors, and returned entity summaries.
+  - Verified RED with `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx` failing because the link and coupon controls were absent.
+  - Verified `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts`, and `cd assets && bun run typecheck`.
 
 - Frontend Merchant Discovery Demo Parity, Task 3:
   - Registered `/merchants` with `MerchantDirectoryRoute` and `merchantDirectoryLoader`.

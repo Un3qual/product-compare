@@ -216,11 +216,11 @@ Mark Task 3 complete, record verification, advance the current batch to Task 4, 
 - Modify: `docs/plans/INDEX.md`
 - Modify: `ARCHITECTURE.md`
 
-- [ ] **Step 1: Write failing route registration and navigation tests**
+- [x] **Step 1: Write failing route registration and navigation tests**
 
 Cover `/affiliate/setup` registration with `affiliateSetupLoader`, the route error boundary, and `Affiliate setup` links in primary navigation and home actions.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run:
 
@@ -230,11 +230,11 @@ cd assets && bun x vitest run src/routes/__tests__/root.route.test.tsx src/__tes
 
 Expected: FAIL because the route and links are absent.
 
-- [ ] **Step 3: Wire the route and navigation**
+- [x] **Step 3: Wire the route and navigation**
 
 Register `/affiliate/setup` under the root route and add `Affiliate setup` navigation links.
 
-- [ ] **Step 4: Run focused frontend verification**
+- [x] **Step 4: Run focused frontend verification**
 
 Run:
 
@@ -246,7 +246,7 @@ cd assets && bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 5: Run backend contract verification**
+- [x] **Step 5: Run backend contract verification**
 
 Run:
 
@@ -256,7 +256,7 @@ mix test test/product_compare_web/graphql/affiliate_workflows_test.exs
 
 Expected: PASS.
 
-- [ ] **Step 6: Run final gates**
+- [x] **Step 6: Run final gates**
 
 Run:
 
@@ -267,6 +267,6 @@ git diff --check
 
 Expected: PASS.
 
-- [ ] **Step 7: Close the lane and commit**
+- [x] **Step 7: Close the lane and commit**
 
 Mark the lane complete in `docs/work/frontend-affiliate-setup-demo-parity.md`, update coordinator docs, record exact verification, and commit the closure slice.

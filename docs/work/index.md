@@ -43,9 +43,9 @@ Commit only lane-local milestone changes.
 
 - Frontend affiliate setup demo parity lane
   - Work doc: `docs/work/frontend-affiliate-setup-demo-parity.md`
-  - Status: in progress
+  - Status: completed
   - Priority: P1
-  - Next batch: Task 4, wire navigation, verify the backend contract, and close the lane.
+  - Next batch: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
   - Owned paths: `assets/src/routes/affiliate/setup/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-affiliate-setup-demo-parity.md`, `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 
 - Frontend merchant discovery demo parity lane
@@ -99,6 +99,17 @@ Commit only lane-local milestone changes.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
 ## Recently Completed
+
+### Frontend Affiliate Setup Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/affiliate/setup` route that preloads merchant choices from the existing public `merchants(first:, after:)` query.
+  - Rendered authenticated setup forms for affiliate networks, programs, merchant-product links, and coupons through the existing GraphQL mutations.
+  - Displayed returned entity IDs and typed mutation payload errors for follow-on setup.
+  - Added `Affiliate setup` links to primary navigation and home actions, and registered `/affiliate/setup` with `affiliateSetupLoader`.
+  - Verification passed with `cd assets && bun run relay`, focused affiliate/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run check`, and `git diff --check`.
 
 ### Frontend Merchant Discovery Demo Parity
 

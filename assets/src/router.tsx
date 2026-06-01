@@ -4,6 +4,8 @@ import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
 import { ApiTokensRoute } from "./routes/account/api-tokens";
 import { apiTokensLoader } from "./routes/account/api-tokens/loader";
+import { AffiliateSetupRoute } from "./routes/affiliate/setup";
+import { affiliateSetupLoader } from "./routes/affiliate/setup/loader";
 import { ForgotPasswordRoute } from "./routes/auth/forgot-password";
 import { LoginRoute } from "./routes/auth/login";
 import { RegisterRoute } from "./routes/auth/register";
@@ -53,6 +55,12 @@ export const routes: RouteObject[] = [
         path: "merchants",
         loader: merchantDirectoryLoader,
         element: <MerchantDirectoryRoute />
+      },
+      {
+        path: "affiliate/setup",
+        loader: affiliateSetupLoader,
+        element: <AffiliateSetupRoute />,
+        errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
       },
       {
         path: "compare",

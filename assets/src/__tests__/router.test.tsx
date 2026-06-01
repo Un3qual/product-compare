@@ -1,4 +1,6 @@
 import { routes } from "../router";
+import { AffiliateSetupRoute } from "../routes/affiliate/setup";
+import { affiliateSetupLoader } from "../routes/affiliate/setup/loader";
 import { RouteErrorBoundary } from "../routes/compare/error-boundary";
 import { RevenueSummaryRoute } from "../routes/commerce/revenue";
 import { revenueSummaryLoader } from "../routes/commerce/revenue/loader";
@@ -38,6 +40,21 @@ test("merchant directory route is registered under the root route", () => {
       path: "merchants",
       loader: merchantDirectoryLoader,
       element: <MerchantDirectoryRoute />
+    })
+  );
+});
+
+test("affiliate setup route is registered under the root route", () => {
+  const affiliateSetupRoute = routes[0]?.children?.find(
+    (route) => route.path === "affiliate/setup"
+  );
+
+  expect(affiliateSetupRoute).toEqual(
+    expect.objectContaining({
+      path: "affiliate/setup",
+      loader: affiliateSetupLoader,
+      element: <AffiliateSetupRoute />,
+      errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
     })
   );
 });
