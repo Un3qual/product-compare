@@ -31,6 +31,7 @@
 ## Verification Commands
 
 - `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`
+- `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run check`
 - `git diff --check`
@@ -47,5 +48,6 @@
 
 - Task 2:
   - Ran focused compare route and compare Relay migration verification.
+  - Ran `cd assets && bun x vitest run src/routes/compare/__tests__/compare-relay-migration.test.tsx`.
   - Ran `cd assets && bun run typecheck`.
   - Ran `cd assets && bun run check`.

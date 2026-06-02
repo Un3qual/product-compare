@@ -105,6 +105,7 @@ function OfferListItem({ offer }: { offer: OfferNode }) {
   const latestPriceLabel = priceLabel(offer.latestPrice?.price, offer.currency);
   const priceHistory = offer.priceHistory ?? emptyPriceHistoryConnection();
   const activeCoupons = offer.activeCoupons ?? emptyCouponConnection();
+  const offerHref = safeHttpUrl(offer.url);
   const historyRows = priceHistory.edges
     .map(({ node }) => priceHistoryRow(node, offer.currency))
     .filter((row): row is PriceHistoryRow => row !== null);
@@ -117,14 +118,12 @@ function OfferListItem({ offer }: { offer: OfferNode }) {
           <p>{offer.isActive ? "Active" : "Inactive"}</p>
         </header>
 
-        {offer.merchant ? (
-          <>
-            <p>
-              <a href={offer.url}>{offer.merchant.name}</a>
-            </p>
-            <p>{offer.merchant.domain}</p>
-          </>
+        {offerHref ? (
+          <p>
+            <a href={offerHref}>{offer.merchant?.name ?? "Visit offer"}</a>
+          </p>
         ) : null}
+        {offer.merchant?.domain ? <p>{offer.merchant.domain}</p> : null}
 
         <p>{latestPriceLabel ?? "No latest price."}</p>
 

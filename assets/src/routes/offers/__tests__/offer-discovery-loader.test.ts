@@ -255,6 +255,28 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
   }
 });
 
+test("offerDiscoveryLoader rethrows aborted preloads", async () => {
+  const environment = createRelayEnvironment();
+  const request = {
+    signal: new AbortController().signal,
+    url: `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}`
+  } as Request;
+  const abortError = new DOMException("The operation was aborted.", "AbortError");
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  preloadRouteQueryMock.mockRejectedValue(abortError);
+
+  try {
+    await expect(
+      offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    ).rejects.toBe(abortError);
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
 function buildOfferDiscoveryLoaderArgs({
   environment = createRelayEnvironment(),
   request = new Request("https://app.example.test/offers")

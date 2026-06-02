@@ -135,6 +135,38 @@ test("offer discovery renders ready offer rows", () => {
   );
 });
 
+test("offer discovery keeps offer links when merchant metadata is unavailable", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        {
+          id: "merchant-product-without-merchant",
+          url: "https://merchant.example.com/no-merchant-offer",
+          currency: "USD",
+          isActive: true,
+          merchant: null,
+          product: {
+            id: "product-1",
+            name: "Detail Product",
+            slug: "detail-product"
+          },
+          latestPrice: null,
+          activeCoupons: buildCouponConnection([]),
+          priceHistory: buildPriceHistoryConnection([])
+        }
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/no-merchant-offer"
+  );
+  expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
+});
+
 test("offer discovery renders inactive filter state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
