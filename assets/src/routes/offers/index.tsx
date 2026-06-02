@@ -18,6 +18,7 @@ type OfferConnection = NonNullable<
 type OfferNode = OfferConnection["edges"][number]["node"];
 type ActiveCouponsConnection = NonNullable<OfferNode["activeCoupons"]>;
 type PriceHistoryConnection = NonNullable<OfferNode["priceHistory"]>;
+type CouponEdge = ActiveCouponsConnection["edges"][number];
 type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
 type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
 
@@ -133,7 +134,7 @@ function OfferListItem({ offer }: { offer: OfferNode }) {
           rows={historyRows}
         />
         <CouponSummary
-          coupons={activeCoupons.edges.map(({ node }) => node)}
+          couponEdges={activeCoupons.edges}
           hasMore={activeCoupons.pageInfo.hasNextPage}
           merchantName={offer.merchant?.name ?? "Offer"}
         />
@@ -171,29 +172,33 @@ function PriceHistorySummary({
 }
 
 function CouponSummary({
-  coupons,
+  couponEdges,
   hasMore,
   merchantName
 }: {
-  coupons: readonly CouponNode[];
+  couponEdges: readonly CouponEdge[];
   hasMore: boolean;
   merchantName: string;
 }) {
-  if (coupons.length === 0) {
+  if (couponEdges.length === 0) {
     return <p>No active coupons for this offer.</p>;
   }
 
   return (
     <>
       <ul aria-label={`${merchantName} active coupons`}>
-        {coupons.map((coupon, index) => (
-          <li key={`${coupon.code}-${index}`}>
-            <strong>{coupon.code}</strong>
-            {coupon.description ? <p>{coupon.description}</p> : null}
-            {discountLabel(coupon) ? <p>{discountLabel(coupon)}</p> : null}
-            {coupon.terms ? <p>{coupon.terms}</p> : null}
-          </li>
-        ))}
+        {couponEdges.map(({ cursor, node: coupon }) => {
+          const couponDiscountLabel = discountLabel(coupon);
+
+          return (
+            <li key={cursor}>
+              <strong>{coupon.code}</strong>
+              {coupon.description ? <p>{coupon.description}</p> : null}
+              {couponDiscountLabel ? <p>{couponDiscountLabel}</p> : null}
+              {coupon.terms ? <p>{coupon.terms}</p> : null}
+            </li>
+          );
+        })}
       </ul>
       {hasMore ? <p>More coupons available.</p> : null}
     </>

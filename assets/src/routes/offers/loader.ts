@@ -95,11 +95,7 @@ function offerDiscoveryInputFromFilters(filters: OfferDiscoveryFilters) {
 function activeOnlyFromUrl(url: URL) {
   const value = nonBlankParam(url, "activeOnly");
 
-  if (value === "false") {
-    return false;
-  }
-
-  return true;
+  return value !== "false";
 }
 
 function pageSizeFromUrl(url: URL) {
