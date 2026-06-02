@@ -11,20 +11,35 @@ Start at `docs/work/index.md` for the active execution state. Use this file only
 
 ## Active Queue
 
-1. Product data ingestion lane: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+1. Product data ingestion lane: `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
    - Status: blocked
+   - Previous implementation plan: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
    - Source context: `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
    - Completed: CJ fixture-backed source selection, ingestion execution ADR, source-agnostic ingestion boundary, merchant source identity persistence, and fixture-backed normalized listing persistence into catalog/pricing/spec targets.
-   - Next scope: no unblocked local ingestion batch remains before live provider validation.
+   - Next scope: Task 1 in the live CJ provider validation and source onboarding plan remains blocked until CJ credential access, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff are recorded.
    - Deferred: live CJ credential validation, quota behavior, account-scoped sample payloads, source onboarding compliance signoff, and any Tier-3 scraping activation.
 
 ## Next Candidate After Active Queue
 
 1. Additional demo-parity frontend candidates
-   - Depends on a new product/backend priority decision.
-   - Intended scope: choose the next frontend demo-parity target after the completed product-detail price history lane.
+   - Depends on a new product/backend priority decision after offer discovery is complete.
+   - Intended scope: choose the next frontend demo-parity target after the completed offer discovery lane.
 
 ## Recently Completed
+
+- Frontend compare shared attribute matrix lane: `docs/plans/2026-06-01-frontend-compare-shared-attribute-matrix-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `docs/work/frontend-product-comparison-demo-parity.md`, and `assets/src/routes/compare/index.tsx`
+  - Scope: render shared current attributes as an aligned `/compare` matrix while preserving existing compare cards.
+  - Result: `/compare` now shows shared specifications in a row/column matrix for selected products with overlapping attribute codes.
+  - Verification passed with focused compare route and compare Relay migration Vitest suites, `cd assets && bun run typecheck`, and `cd assets && bun run check`.
+
+- Frontend offer discovery demo parity lane: `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+  - Status: completed on 2026-06-01
+  - Source context: `ARCHITECTURE.md`, `lib/product_compare_web/schema.ex`, and `test/product_compare_web/graphql/pricing_queries_test.exs`
+  - Scope: Relay-backed `/offers` route for the existing top-level `merchantProducts(input:)` query, linked from product browse cards and root navigation.
+  - Result: offer discovery is demoable from the browser without manual GraphQL queries or URL ID editing from browse.
+  - Verification passed with `cd assets && bun run relay`, focused offer/browse/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, and `cd assets && bun run check`.
 
 - Frontend auth state hardening lane: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
   - Status: completed on 2026-06-01

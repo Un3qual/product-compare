@@ -41,6 +41,20 @@ Commit only lane-local milestone changes.
 
 ## Active Work Lanes
 
+- Frontend offer discovery demo parity lane
+  - Work doc: `docs/work/frontend-offer-discovery-demo-parity.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked offer-discovery batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+  - Owned paths: `assets/src/routes/offers/**`, `assets/src/routes/catalog/browse.tsx`, `assets/src/routes/catalog/__tests__/browse.route.test.tsx`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/schema.graphql`, `assets/src/__generated__/**`, `test/product_compare_web/graphql/pricing_queries_test.exs`, `docs/work/frontend-offer-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+
+- Frontend compare shared attribute matrix lane
+  - Work doc: `docs/work/frontend-compare-shared-attribute-matrix.md`
+  - Status: completed
+  - Priority: P1
+  - Next batch: no unblocked shared-attribute matrix batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+  - Owned paths: `assets/src/routes/compare/index.tsx`, `assets/src/routes/compare/loader.ts`, `assets/src/routes/compare/__tests__/compare.route.test.tsx`, `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`, `docs/work/frontend-compare-shared-attribute-matrix.md`, `docs/plans/2026-06-01-frontend-compare-shared-attribute-matrix-implementation-plan.md`
+
 - Frontend auth state hardening lane
   - Work doc: `docs/work/frontend-auth-state-hardening.md`
   - Status: completed
@@ -129,8 +143,8 @@ Commit only lane-local milestone changes.
   - Work doc: `docs/work/product-data-scraping.md`
   - Status: blocked
   - Priority: P2
-  - Next batch: no unblocked local ingestion batch is queued from this worktree; live CJ validation and source onboarding compliance signoff must unblock before live provider polling or Tier-3 scraping work begins.
-  - Owned paths: `lib/product_compare/ingestion/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_schemas/ingestion/**`, `lib/product_compare_schemas/specs/**`, `lib/product_compare_schemas/pricing/**`, `priv/repo/migrations/**`, `test/product_compare/ingestion/**`, `test/support/fixtures/cj/**`, `docs/work/product-data-scraping.md`, `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`, `docs/decisions/2026-05-23-ingestion-execution-boundary.md`
+  - Next batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` remains blocked; live CJ validation and source onboarding compliance signoff must unblock before live provider polling or Tier-3 scraping work begins.
+  - Owned paths: `lib/product_compare/ingestion/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_schemas/ingestion/**`, `lib/product_compare_schemas/specs/**`, `lib/product_compare_schemas/pricing/**`, `priv/repo/migrations/**`, `test/product_compare/ingestion/**`, `test/support/fixtures/cj/**`, `docs/work/product-data-scraping.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`, `docs/decisions/2026-05-23-ingestion-execution-boundary.md`
 
 ## Blocked / Needs Decision
 
@@ -140,7 +154,32 @@ Commit only lane-local milestone changes.
   - Reason: live CJ credential path, quota behavior, and account-scoped sample payloads are not yet recorded.
   - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
 
+- Next demo-parity frontend candidate
+  - Status: needs decision
+  - Priority: P1
+  - Reason: the shared comparison matrix lane is complete, `ARCHITECTURE.md` has no remaining unblocked frontend demo-parity gap selected by policy, and `docs/plans/INDEX.md` requires a fresh product/backend priority decision before creating the next candidate plan.
+
 ## Recently Completed
+
+### Frontend Compare Shared Attribute Matrix
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-compare-shared-attribute-matrix.md`
+- Outcome:
+  - Added a shared current-attribute matrix to ready `/compare` pages when at least two selected products have overlapping attribute codes.
+  - Preserved selected product order for columns and first selected product shared-attribute order for rows.
+  - Kept non-shared attributes visible in existing per-product cards and added a no-shared-specifications state.
+  - Verification passed with focused compare route and compare Relay migration Vitest suites, `cd assets && bun run typecheck`, and `cd assets && bun run check`.
+
+### Frontend Offer Discovery Demo Parity
+
+- Status: completed on 2026-06-01
+- Source of truth: `docs/work/frontend-offer-discovery-demo-parity.md`
+- Outcome:
+  - Added a Relay-backed `/offers` route for the existing top-level `merchantProducts(input:)` GraphQL contract.
+  - Rendered missing-product, ready, inactive, empty, pagination, loader-error, and query-error states.
+  - Added `Offers` links to primary navigation and home actions, plus browse-card links to `/offers?productId=<product-id>`.
+  - Verification passed with `cd assets && bun run relay`, focused offer/browse/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, and `cd assets && bun run check`.
 
 ### Frontend Auth State Hardening
 

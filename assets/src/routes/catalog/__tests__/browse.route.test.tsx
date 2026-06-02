@@ -247,9 +247,17 @@ test("renders browse products from the Relay route query", () => {
     "href",
     "/compare?slug=catalog-first"
   );
+  expect(screen.getByRole("link", { name: "Offers for Catalog First" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product-1"
+  );
   expect(screen.getByRole("link", { name: "Compare Catalog Second" })).toHaveAttribute(
     "href",
     "/compare?slug=catalog-second"
+  );
+  expect(screen.getByRole("link", { name: "Offers for Catalog Second" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product-2"
   );
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
@@ -372,6 +380,10 @@ test("resets the local unavailable state when fresh loader data arrives", async 
     expect(screen.getByRole("link", { name: "Compare Recovered Product" })).toHaveAttribute(
       "href",
       "/compare?slug=recovered-product"
+    );
+    expect(screen.getByRole("link", { name: "Offers for Recovered Product" })).toHaveAttribute(
+      "href",
+      "/offers?productId=product-recovered"
     );
   } finally {
     consoleErrorSpy.mockRestore();

@@ -1048,7 +1048,7 @@ function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRO
 
 function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
   return consoleErrorSpy.mock.calls.filter(
-    ([message]) =>
+    ([message]: unknown[]) =>
       typeof message === "string" &&
       (message.includes("Encountered two children with the same key") ||
         message.includes('Each child in a list should have a unique "key" prop'))

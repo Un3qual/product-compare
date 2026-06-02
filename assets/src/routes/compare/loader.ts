@@ -18,6 +18,13 @@ export interface CompareProductSummary {
   slug: string;
   description: string | null;
   brandName: string | null;
+  currentAttributes: CompareProductAttributeSummary[];
+}
+
+export interface CompareProductAttributeSummary {
+  code: string;
+  displayName: string;
+  valueText: string;
 }
 
 export type CompareRouteLoaderData =
@@ -121,7 +128,12 @@ function summarizeProduct(
     name: product.name,
     slug: product.slug,
     description: typeof product.description === "string" ? product.description : null,
-    brandName: product.brand?.name ?? null
+    brandName: product.brand?.name ?? null,
+    currentAttributes: product.currentAttributes.map((attribute) => ({
+      code: attribute.code,
+      displayName: attribute.displayName,
+      valueText: attribute.valueText
+    }))
   };
 }
 

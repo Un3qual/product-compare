@@ -969,19 +969,18 @@ function completeRotateMutationAt(index: number, response: unknown, graphQLError
 
 function stubFormDataExpiry(expiresAt: string) {
   const RealFormData = globalThis.FormData;
+  const FormDataWithExpiry = function (
+    form?: HTMLFormElement,
+    submitter?: HTMLElement | null
+  ) {
+    const formData = new RealFormData(form, submitter);
+    formData.set("expiresAt", expiresAt);
+    return formData;
+  } as unknown as typeof FormData;
 
   return vi
-    .spyOn(
-      globalThis as typeof globalThis & {
-        FormData: (form?: HTMLFormElement, submitter?: HTMLElement | null) => FormData;
-      },
-      "FormData"
-    )
-    .mockImplementation((form?: HTMLFormElement, submitter?: HTMLElement | null) => {
-      const formData = new RealFormData(form, submitter);
-      formData.set("expiresAt", expiresAt);
-      return formData;
-    });
+    .spyOn(globalThis, "FormData")
+    .mockImplementation(FormDataWithExpiry);
 }
 
 function buildSuccessfulCreateResponse() {

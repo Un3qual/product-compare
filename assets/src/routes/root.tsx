@@ -96,6 +96,9 @@ function RootLayoutShell({ viewer }: RootOutletContext) {
                 <Link to="/affiliate/setup">Affiliate setup</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
+                <Link to="/offers">Offers</Link>
+              </Button>
+              <Button asChild {...stylex.props(styles.link)}>
                 <Link to="/compare">Compare products</Link>
               </Button>
               <Button asChild {...stylex.props(styles.link)}>
@@ -136,6 +139,9 @@ export function RootRoute() {
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/affiliate/setup">Affiliate setup</Link>
+        </Button>
+        <Button asChild {...stylex.props(styles.link)}>
+          <Link to="/offers">Offers</Link>
         </Button>
         <Button asChild {...stylex.props(styles.link)}>
           <Link to="/compare">Compare products</Link>

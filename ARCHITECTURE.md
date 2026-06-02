@@ -18,13 +18,14 @@
 - The root shell preloads GraphQL `viewer` state, renders guest/authenticated auth links from that viewer, and updates Relay's root `viewer` record after successful login, register, and logout mutations.
 - `/products` ships a GraphQL-backed browse baseline with compare entry links.
 - `/products/:slug` ships product detail, current specifications, compare-entry, active-offer baselines, shopper-facing active coupon display, and compact price-history rows.
-- `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, and renders current product attributes on selected compare cards.
+- `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, renders current product attributes on selected compare cards, and aligns shared current attributes in a comparison matrix.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
 - `/account/api-tokens` now ships a GraphQL-backed API-token management route with list, create, revoke, rotate, one-time token display, and navigation entry points.
 - `/commerce/revenue` now ships a GraphQL-backed revenue reporting route with aggregate filters, public-safe suppression rendering, and navigation entry points.
 - `/merchants` now ships a Relay-backed merchant discovery route with cursor pagination, empty/error states, and navigation entry points.
 - `/affiliate/setup` now ships a Relay-backed affiliate setup route with merchant choices, authenticated network/program/link/coupon mutation forms, typed payload errors, and navigation entry points.
-- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, and `/affiliate/setup` now use Relay query or mutation APIs with SSR store hydration.
+- `/offers` now ships a Relay-backed offer discovery route for the existing top-level `merchantProducts(input:)` contract, with browse-card and root navigation entry points.
+- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, and `/offers` now use Relay query or mutation APIs with SSR store hydration.
 - Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
 
 ## Current Delivered Backend Baseline
@@ -52,8 +53,10 @@
 - Backend source artifact public contract is complete: `sourceArtifact(id:)` exposes safe metadata while raw payload fields remain unexposed.
 - Frontend product-detail coupon demo parity is complete: product offers expose public display-scoped active coupons, and `/products/:slug` renders active coupon codes and discount details in the Active offers section.
 - Product comparison demo parity is complete: backend `Product.currentAttributes`, product-detail specifications, browse compare links, the `/compare` product picker, compare-card attributes, and full demo-slice verification have landed.
+- Frontend compare shared attribute matrix is complete: `/compare` now renders shared selected-product attributes in an aligned matrix while keeping non-shared attributes in per-product cards.
 - Frontend API token management demo parity is complete: the existing `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken` GraphQL contract is demoable from `/account/api-tokens` without REST browser auth endpoints.
 - Frontend revenue reporting demo parity is complete: the existing public-safe `revenueSummary(input:)` GraphQL contract is demoable from `/commerce/revenue` with aggregate filters, suppressed/unsuppressed summary rendering, and navigation coverage.
 - Frontend merchant discovery demo parity is complete: the existing public `merchants(first:, after:)` GraphQL contract is demoable from `/merchants` with cursor pagination, empty/error states, and navigation coverage.
 - Frontend affiliate setup demo parity is complete: the existing authenticated affiliate setup mutations are demoable from `/affiliate/setup` without REST browser flows or new admin-role semantics.
+- Frontend offer discovery demo parity is complete: the existing top-level `merchantProducts(input:)` GraphQL contract is demoable from `/offers`, with product browse card links passing product global IDs.
 - Live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.

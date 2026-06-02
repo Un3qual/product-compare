@@ -23,6 +23,8 @@ import { SavedComparisonsRoute } from "./routes/compare/saved";
 import { RouteErrorBoundary } from "./routes/compare/error-boundary";
 import { MerchantDirectoryRoute } from "./routes/merchants";
 import { merchantDirectoryLoader } from "./routes/merchants/loader";
+import { OfferDiscoveryRoute } from "./routes/offers";
+import { offerDiscoveryLoader } from "./routes/offers/loader";
 import { ProductDetailRoute } from "./routes/products/detail";
 import { productDetailLoader } from "./routes/products/loader";
 import { RootLayout, RootRoute } from "./routes/root";
@@ -74,6 +76,12 @@ export const routes: RouteObject[] = [
         loader: affiliateSetupLoader,
         element: <AffiliateSetupRoute />,
         errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+      },
+      {
+        path: "offers",
+        loader: offerDiscoveryLoader,
+        element: <OfferDiscoveryRoute />,
+        errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
       },
       {
         path: "compare",

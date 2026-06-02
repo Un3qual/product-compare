@@ -267,16 +267,109 @@ function CompareProductList({
   loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
 }) {
   return (
-    <ul>
-      {loaderData.productQueries.map((productQuery, index) => (
-        <CompareProductCard
-          key={loaderData.slugs[index] ?? productQuery.__relayQuery.operationName}
-          productQuery={productQuery}
-          summary={loaderData.products[index]}
-        />
-      ))}
-    </ul>
+    <>
+      <SharedAttributeMatrix products={loaderData.products} />
+      <ul>
+        {loaderData.productQueries.map((productQuery, index) => (
+          <CompareProductCard
+            key={loaderData.slugs[index] ?? productQuery.__relayQuery.operationName}
+            productQuery={productQuery}
+            summary={loaderData.products[index]}
+          />
+        ))}
+      </ul>
+    </>
   );
+}
+
+function SharedAttributeMatrix({ products }: { products: CompareProductSummary[] }) {
+  if (products.length < 2) {
+    return null;
+  }
+
+  const rows = buildSharedAttributeRows(products);
+
+  return (
+    <section>
+      <h2>Shared specifications</h2>
+      {rows.length === 0 ? (
+        <p>No shared specifications across these products yet.</p>
+      ) : (
+        <table aria-label="Shared specifications">
+          <thead>
+            <tr>
+              <th scope="col">Specification</th>
+              {products.map((product) => (
+                <th key={product.id} scope="col">
+                  {product.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.code}>
+                <th scope="row">{row.displayName}</th>
+                {row.values.map((value, index) => (
+                  <td key={`${row.code}-${products[index]?.id ?? index}`}>{value}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+function buildSharedAttributeRows(products: CompareProductSummary[]) {
+  const [firstProduct, ...remainingProducts] = products;
+
+  if (!firstProduct || remainingProducts.length === 0) {
+    return [];
+  }
+
+  const attributeMaps = products.map((product) =>
+    buildFirstAttributeByCode(product.currentAttributes)
+  );
+  const seenCodes = new Set<string>();
+
+  return firstProduct.currentAttributes.flatMap((attribute) => {
+    if (seenCodes.has(attribute.code)) {
+      return [];
+    }
+
+    seenCodes.add(attribute.code);
+    const sharedAttributes = attributeMaps.map((attributesByCode) =>
+      attributesByCode.get(attribute.code)
+    );
+
+    if (sharedAttributes.some((sharedAttribute) => !sharedAttribute)) {
+      return [];
+    }
+
+    return [
+      {
+        code: attribute.code,
+        displayName: attribute.displayName,
+        values: sharedAttributes.map((sharedAttribute) => sharedAttribute?.valueText ?? "")
+      }
+    ];
+  });
+}
+
+function buildFirstAttributeByCode(
+  attributes: CompareProductSummary["currentAttributes"]
+) {
+  const attributesByCode = new Map<string, CompareProductSummary["currentAttributes"][number]>();
+
+  for (const attribute of attributes ?? []) {
+    if (!attributesByCode.has(attribute.code)) {
+      attributesByCode.set(attribute.code, attribute);
+    }
+  }
+
+  return attributesByCode;
 }
 
 function CompareProductSummaryList({ products }: { products: CompareProductSummary[] }) {
