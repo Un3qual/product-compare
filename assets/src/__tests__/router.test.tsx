@@ -7,6 +7,8 @@ import { RevenueSummaryRoute } from "../routes/commerce/revenue";
 import { revenueSummaryLoader } from "../routes/commerce/revenue/loader";
 import { MerchantDirectoryRoute } from "../routes/merchants";
 import { merchantDirectoryLoader } from "../routes/merchants/loader";
+import { OfferDiscoveryRoute } from "../routes/offers";
+import { offerDiscoveryLoader } from "../routes/offers/loader";
 import { rootLoader, ROOT_ROUTE_ID } from "../routes/root/loader";
 
 test("root route preloads viewer state", () => {
@@ -87,6 +89,19 @@ test("affiliate setup route is registered under the root route", () => {
       loader: affiliateSetupLoader,
       element: <AffiliateSetupRoute />,
       errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+    })
+  );
+});
+
+test("offer discovery route is registered under the root route", () => {
+  const offerDiscoveryRoute = routes[0]?.children?.find((route) => route.path === "offers");
+
+  expect(offerDiscoveryRoute).toEqual(
+    expect.objectContaining({
+      path: "offers",
+      loader: offerDiscoveryLoader,
+      element: <OfferDiscoveryRoute />,
+      errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
     })
   );
 });

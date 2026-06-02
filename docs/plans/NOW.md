@@ -3,7 +3,42 @@
 ## Current Batches
 
 - Parallel mode note: this file is coordinator-owned whenever frontend and backend lanes run at the same time.
-- Current unblocked batch: none. Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Current unblocked batch: none.
+- Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Blocker-resolution plan for ingestion: `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`.
+- Completion-boundary check on 2026-06-01 found no additional unblocked architecture slice after the shared current-attribute matrix. The next demo-parity frontend candidate requires a fresh product/backend priority decision before plan creation.
+
+### Frontend Compare Shared Attribute Matrix Lane
+
+- Status: completed
+- Batch: none queued.
+- Source of truth: `docs/work/frontend-compare-shared-attribute-matrix.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-compare-shared-attribute-matrix-implementation-plan.md`
+- Next step: no unblocked shared-attribute matrix batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Why this batch is current:
+  - Product data ingestion remains externally blocked.
+  - `docs/work/frontend-product-comparison-demo-parity.md` lists an aligned comparison matrix as a concrete follow-up candidate.
+  - `/compare` already preloads selected products with `currentAttributes`.
+  - Current compare cards show attributes independently, but do not align shared attributes across products.
+  - Task 1 added shared-matrix rendering plus focused route coverage.
+  - Task 2 ran final frontend verification and closed the lane.
+
+### Frontend Offer Discovery Demo Parity Lane
+
+- Status: completed
+- Batch: none queued.
+- Source of truth: `docs/work/frontend-offer-discovery-demo-parity.md`
+- Implementation plan: `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+- Next step: no unblocked offer-discovery batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Why this batch is current:
+  - Product data ingestion remains externally blocked.
+  - `docs/plans/INDEX.md` allows a new demo-parity frontend candidate after a product/backend priority decision.
+  - Backend GraphQL already exposes and tests the top-level `merchantProducts(input:)` contract.
+  - The frontend currently uses that contract only inside `/products/:slug`, so standalone offer discovery remains un-demoed.
+  - Task 1 added the Relay query, loader, generated artifact, and focused loader coverage.
+  - Task 2 added the display route and focused route-state coverage.
+  - Task 3 registered `/offers`, exposed root and browse entry points, and passed focused route-entry verification.
+  - Task 4 ran final frontend/backend verification and closed the lane.
 
 ### Frontend Auth State Hardening Lane
 
@@ -216,11 +251,13 @@
 - Status: blocked
 - Batch: none queued
 - Source of truth: `docs/work/product-data-scraping.md`
-- Implementation plan: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
-- Next step: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff before live provider polling or Tier-3 scraping work begins.
+- Implementation plan: `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
+- Previous implementation plan: `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
+- Next step: execute Task 1 of the live CJ provider validation and source onboarding plan only after CJ credential access, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff can be recorded without committing secrets.
 - Why this batch is current:
   - Product Data Ingestion Foundation Task 1 selected CJ, recorded the sync-pilot ADR, added `merchant_source_identities`, and scaffolded fixture-backed parser coverage.
   - Product Data Ingestion Persistence Task 2 now persists fixture-backed normalized listings into the existing catalog/pricing/spec persistence path with replay idempotency and stale-observation guards.
+  - The live CJ provider validation and source onboarding plan now records the next blocker-resolution path.
   - No unblocked local ingestion batch remains before live provider validation.
   - Live CJ credential validation, quota behavior, account-scoped samples, account-manager automation, and Tier-3 scraping remain blocked.
 

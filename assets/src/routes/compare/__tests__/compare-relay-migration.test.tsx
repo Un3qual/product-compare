@@ -198,14 +198,16 @@ test("compare loader preloads selected product detail queries through Relay", as
         name: DETAIL_PRODUCT.name,
         slug: DETAIL_PRODUCT.slug,
         description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
+        brandName: DETAIL_PRODUCT.brand.name,
+        currentAttributes: []
       },
       {
         id: SECOND_PRODUCT.id,
         name: SECOND_PRODUCT.name,
         slug: SECOND_PRODUCT.slug,
         description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
+        brandName: SECOND_PRODUCT.brand.name,
+        currentAttributes: []
       }
     ]
   });
@@ -494,14 +496,16 @@ function buildReadyLoaderData() {
         name: DETAIL_PRODUCT.name,
         slug: DETAIL_PRODUCT.slug,
         description: DETAIL_PRODUCT.description,
-        brandName: DETAIL_PRODUCT.brand.name
+        brandName: DETAIL_PRODUCT.brand.name,
+        currentAttributes: []
       },
       {
         id: SECOND_PRODUCT.id,
         name: SECOND_PRODUCT.name,
         slug: SECOND_PRODUCT.slug,
         description: SECOND_PRODUCT.description,
-        brandName: SECOND_PRODUCT.brand.name
+        brandName: SECOND_PRODUCT.brand.name,
+        currentAttributes: []
       }
     ]
   };

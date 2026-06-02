@@ -160,6 +160,10 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "href",
     "/affiliate/setup"
   );
+  expect(within(primaryNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
+    "href",
+    "/offers"
+  );
   expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login"
@@ -242,6 +246,10 @@ test("root route renders guest home actions as links while using the shared butt
   expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
     "href",
     "/affiliate/setup"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Offers" })).toHaveAttribute(
+    "href",
+    "/offers"
   );
   expect(within(homeActions).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",

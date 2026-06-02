@@ -5,7 +5,7 @@
 - Status: blocked
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-24 after Task 2 verification
+- Last verified: 2026-06-01 after queue review confirmed no unblocked local ingestion batch remains before live provider validation
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -13,6 +13,8 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
+  - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
+- Previous implementation plan:
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
 - Objective:
   - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched legally, and how it lands in existing Catalog/Pricing models.
@@ -43,7 +45,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Next Batch
 
 - Status: blocked
-- Batch: no unblocked local ingestion batch is queued from this worktree.
+- Batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` remains blocked on external CJ access and compliance evidence; no unblocked local ingestion batch is queued from this worktree.
 - Next unblock target: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and the source onboarding compliance checklist before live provider polling or Tier-3 scraping work begins.
 - Remaining blockers:
   - **Live CJ product-scope validation**

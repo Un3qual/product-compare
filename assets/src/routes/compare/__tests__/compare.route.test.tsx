@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../relay/environment";
 import {
   fetchRouteQuery,
@@ -85,6 +85,24 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+
+type CompareTestProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  brand: {
+    id: string;
+    name: string;
+  };
+  currentAttributes: ReadonlyArray<{
+    code: string;
+    displayName: string;
+    dataType: string;
+    valueText: string;
+  }>;
+};
+
 const DETAIL_PRODUCT = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
@@ -95,7 +113,7 @@ const DETAIL_PRODUCT = {
     name: "Acme"
   },
   currentAttributes: []
-} as const;
+} satisfies CompareTestProduct;
 const SECOND_PRODUCT = {
   id: "UHJvZHVjdDoy",
   name: "Second Product",
@@ -106,7 +124,7 @@ const SECOND_PRODUCT = {
     name: "Bravo"
   },
   currentAttributes: []
-} as const;
+} satisfies CompareTestProduct;
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -145,7 +163,7 @@ const savedComparisonsQueryDescriptor = (variables: { first: number; after?: str
 const SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR = savedComparisonsQueryDescriptor({ first: 20 });
 
 const buildFetchedProductQuery = (
-  product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT | null,
+  product: CompareTestProduct | null,
   descriptor: typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
 ) => ({
   data: {
@@ -155,12 +173,17 @@ const buildFetchedProductQuery = (
   dispose: vi.fn()
 });
 
-const buildProductSummary = (product: typeof DETAIL_PRODUCT | typeof SECOND_PRODUCT) => ({
+const buildProductSummary = (product: CompareTestProduct) => ({
   id: product.id,
   name: product.name,
   slug: product.slug,
   description: product.description,
-  brandName: product.brand.name
+  brandName: product.brand.name,
+  currentAttributes: product.currentAttributes.map((attribute) => ({
+    code: attribute.code,
+    displayName: attribute.displayName,
+    valueText: attribute.valueText
+  }))
 });
 
 const buildSavedComparisonPage = ({
@@ -753,6 +776,249 @@ test("ready compare cards render product attributes", () => {
   expect(screen.getByText("144 Hz")).toBeVisible();
   expect(screen.getByText("165 Hz")).toBeVisible();
   expect(screen.getAllByText("Refresh rate")).toHaveLength(2);
+});
+
+test("ready compare page aligns shared product attributes in a matrix", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      dataType: "numeric",
+      valueText: "144 Hz"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      dataType: "enum",
+      valueText: "IPS"
+    },
+    {
+      code: "brightness",
+      displayName: "Brightness",
+      dataType: "numeric",
+      valueText: "350 nits"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      dataType: "enum",
+      valueText: "OLED"
+    },
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      dataType: "numeric",
+      valueText: "165 Hz"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyCompareLoaderData(),
+    products: [
+      {
+        ...buildProductSummary(DETAIL_PRODUCT),
+        currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      },
+      {
+        ...buildProductSummary(SECOND_PRODUCT),
+        currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      }
+    ]
+  });
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...DETAIL_PRODUCT,
+          currentAttributes: detailProductAttributes
+        }
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...SECOND_PRODUCT,
+          currentAttributes: secondProductAttributes
+        }
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Shared specifications" });
+  const rows = within(matrix).getAllByRole("row");
+
+  expect(within(rows[0]).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+    "Specification",
+    "Detail Product",
+    "Second Product"
+  ]);
+  expect(rows[1]).toHaveTextContent("Refresh rate");
+  expect(rows[1]).toHaveTextContent("144 Hz");
+  expect(rows[1]).toHaveTextContent("165 Hz");
+  expect(rows[2]).toHaveTextContent("Panel type");
+  expect(rows[2]).toHaveTextContent("IPS");
+  expect(rows[2]).toHaveTextContent("OLED");
+  expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
+  expect(screen.getByText("350 nits")).toBeVisible();
+});
+
+test("ready compare page renders an empty shared-attribute state when no attributes overlap", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      dataType: "numeric",
+      valueText: "144 Hz"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      dataType: "enum",
+      valueText: "OLED"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyCompareLoaderData(),
+    products: [
+      {
+        ...buildProductSummary(DETAIL_PRODUCT),
+        currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      },
+      {
+        ...buildProductSummary(SECOND_PRODUCT),
+        currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      }
+    ]
+  });
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...DETAIL_PRODUCT,
+          currentAttributes: detailProductAttributes
+        }
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...SECOND_PRODUCT,
+          currentAttributes: secondProductAttributes
+        }
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
+  expect(screen.getByText("No shared specifications across these products yet.")).toBeVisible();
+  expect(screen.queryByRole("table", { name: "Shared specifications" })).not.toBeInTheDocument();
+});
+
+test("ready compare matrix uses the first attribute value for duplicate codes", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      dataType: "numeric",
+      valueText: "144 Hz"
+    },
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate duplicate",
+      dataType: "numeric",
+      valueText: "Overwritten duplicate"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      dataType: "numeric",
+      valueText: "165 Hz"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyCompareLoaderData(),
+    products: [
+      {
+        ...buildProductSummary(DETAIL_PRODUCT),
+        currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      },
+      {
+        ...buildProductSummary(SECOND_PRODUCT),
+        currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
+          code,
+          displayName,
+          valueText
+        }))
+      }
+    ]
+  });
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...DETAIL_PRODUCT,
+          currentAttributes: detailProductAttributes
+        }
+      };
+    }
+
+    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
+      return {
+        product: {
+          ...SECOND_PRODUCT,
+          currentAttributes: secondProductAttributes
+        }
+      };
+    }
+
+    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Shared specifications" });
+
+  expect(within(matrix).getByText("144 Hz")).toBeVisible();
+  expect(within(matrix).queryByText("Overwritten duplicate")).not.toBeInTheDocument();
+  expect(within(matrix).queryByText("Refresh rate duplicate")).not.toBeInTheDocument();
 });
 
 test("ready compare page lets users append a product without editing the URL", () => {
