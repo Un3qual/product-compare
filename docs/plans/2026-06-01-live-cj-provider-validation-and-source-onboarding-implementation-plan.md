@@ -1,6 +1,8 @@
 # Live CJ Provider Validation And Source Onboarding Implementation Plan (2026-06-01)
 
-Execution status lives in `docs/work/product-data-scraping.md`, `docs/work/index.md`, and `docs/plans/NOW.md`.
+Execution status lives in `docs/work/index.md`. Lane-specific blocker details
+live in `docs/work/product-data-scraping.md`. `docs/plans/NOW.md` is only a
+compatibility pointer back to the live queue.
 
 Status: created on 2026-06-01 as the next product-ingestion blocker-resolution plan. Task execution remains blocked until the live CJ credential path, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff can be recorded without committing secrets.
 
@@ -40,7 +42,7 @@ Status: blocked.
 - Update: `test/product_compare/ingestion/ingestion_test.exs`
 - Update, only if the redacted live sample proves a real mapping gap: `lib/product_compare/ingestion/sources/cj/product_parser.ex`
 - Update: `docs/work/product-data-scraping.md`
-- Update: `docs/plans/NOW.md`
+- Update: `docs/work/index.md`
 
 ### Step 1: Capture The Non-Secret Validation Record
 
@@ -251,14 +253,14 @@ Expected: all pass.
 If CJ is sufficient:
 
 - Mark this task complete in `docs/work/product-data-scraping.md`.
-- Update `docs/plans/NOW.md` to the next unblocked CJ connector implementation batch.
+- Promote the next unblocked CJ connector implementation batch in `docs/work/index.md`.
 - Add or promote a follow-up plan for the first live CJ connector implementation.
 - Keep Tier-3 scraping blocked unless the onboarding decision explicitly approves it.
 
 If CJ is insufficient:
 
 - Record the exact insufficiency in the decision doc.
-- Keep `docs/plans/NOW.md` blocked for CJ.
+- Keep the CJ row blocked or closed in `docs/work/index.md` with the insufficiency named.
 - Create the eBay Browse fallback implementation plan named from the current date.
 
 ## Task 2: Prepare The First Live Connector Batch
@@ -271,7 +273,6 @@ Status: blocked until Task 1 records that CJ is sufficient.
 - Update: `docs/work/product-data-scraping.md`
 - Update: `docs/work/index.md`
 - Update: `docs/plans/INDEX.md`
-- Update: `docs/plans/NOW.md`
 
 ### Steps
 
@@ -289,4 +290,4 @@ This blocker-resolution plan is complete only when:
 - The decision doc records non-secret CJ access, quota behavior, product scope, and a named compliance approver.
 - A redacted representative sample fixture exists and is covered by parser and persistence tests.
 - Focused ingestion tests, adjacent source-artifact/pricing GraphQL tests, `mix typecheck`, and `git diff --check` pass.
-- `docs/work/product-data-scraping.md`, `docs/work/index.md`, `docs/plans/INDEX.md`, and `docs/plans/NOW.md` agree on the next unblocked implementation batch or the continuing blocker.
+- `docs/work/product-data-scraping.md`, `docs/work/index.md`, and `docs/plans/INDEX.md` agree on the next unblocked implementation batch or the continuing blocker.
