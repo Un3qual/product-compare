@@ -5,7 +5,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
 
   @endpoint "https://ads.api.cj.com/query"
 
-  @query """
+  @product_query """
   query(
     $companyId: ID!,
     $keywords: [String!],
@@ -48,6 +48,38 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   }
   """
 
+  @feed_query """
+  query(
+    $companyId: ID!,
+    $limit: Int!,
+    $offset: Int!,
+    $advertiserCountry: String
+  ) {
+    shoppingProductFeeds(
+      companyId: $companyId,
+      limit: $limit,
+      offset: $offset,
+      advertiserCountry: $advertiserCountry
+    ) {
+      totalCount
+      count
+      limit
+      resultList {
+        adId
+        advertiserId
+        advertiserName
+        advertiserCountry
+        sourceFeedType
+        currency
+        language
+        feedName
+        lastUpdated
+        productCount
+      }
+    }
+  }
+  """
+
   @type request :: %{
           required(:method) => :post,
           required(:url) => String.t(),
@@ -63,9 +95,23 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     opts = Map.new(opts)
 
     with {:ok, config} <- config_from_env(opts),
-         {:ok, request, offset, limit} <- build_request(cursor, opts, config),
+         {:ok, request, offset, limit} <- build_product_request(cursor, opts, config),
          {:ok, response} <- transport(opts).(request),
          {:ok, records, next_cursor} <- decode_response(response, offset, limit) do
+      {:ok, records, next_cursor}
+    end
+  end
+
+  @spec fetch_feeds(term(), map() | keyword()) ::
+          {:ok, [map()], non_neg_integer() | nil} | {:error, term()}
+  def fetch_feeds(cursor, opts) do
+    opts = Map.new(opts)
+
+    with {:ok, config} <- config_from_env(opts),
+         {:ok, request, offset, limit} <- build_feed_request(cursor, opts, config),
+         {:ok, response} <- transport(opts).(request),
+         {:ok, records, next_cursor} <-
+           decode_response(response, offset, limit, "shoppingProductFeeds") do
       {:ok, records, next_cursor}
     end
   end
@@ -96,13 +142,13 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     end
   end
 
-  defp build_request(cursor, opts, %{api_token: api_token, company_id: company_id}) do
+  defp build_product_request(cursor, opts, %{api_token: api_token, company_id: company_id}) do
     offset = cursor || Map.get(opts, :offset, 0)
     limit = Map.get(opts, :limit, 25)
 
     body =
       Jason.encode!(%{
-        query: @query,
+        query: @product_query,
         variables: %{
           companyId: company_id,
           keywords: Map.get(opts, :keywords, ["shoe"]),
@@ -110,6 +156,34 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
           offset: offset,
           currency: Map.get(opts, :currency, "USD"),
           serviceableAreas: serviceable_areas(opts)
+        }
+      })
+
+    request = %{
+      method: :post,
+      url: @endpoint,
+      headers: [
+        {"Authorization", "Bearer #{api_token}"},
+        {"Content-Type", "application/json"}
+      ],
+      body: body
+    }
+
+    {:ok, request, offset, limit}
+  end
+
+  defp build_feed_request(cursor, opts, %{api_token: api_token, company_id: company_id}) do
+    offset = cursor || Map.get(opts, :offset, 0)
+    limit = Map.get(opts, :limit, 25)
+
+    body =
+      Jason.encode!(%{
+        query: @feed_query,
+        variables: %{
+          companyId: company_id,
+          limit: limit,
+          offset: offset,
+          advertiserCountry: Map.get(opts, :advertiser_country, "US")
         }
       })
 
@@ -153,18 +227,21 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     end
   end
 
-  defp decode_response(%{status: status, body: body}, _offset, _limit)
+  defp decode_response(response, offset, limit),
+    do: decode_response(response, offset, limit, "shoppingProducts")
+
+  defp decode_response(%{status: status, body: body}, _offset, _limit, _field)
        when status < 200 or status > 299 do
     {:error, {:http_error, status, body}}
   end
 
-  defp decode_response(%{status: _status, body: body}, offset, limit) do
+  defp decode_response(%{status: _status, body: body}, offset, limit, field) do
     with {:ok, decoded} <- Jason.decode(body),
          :ok <- reject_graphql_errors(decoded),
-         {:ok, products} <- shopping_products(decoded) do
-      records = Map.get(products, "resultList", [])
-      count = Map.get(products, "count", length(records))
-      total_count = Map.get(products, "totalCount", offset + count)
+         {:ok, result_set} <- result_set(decoded, field) do
+      records = Map.get(result_set, "resultList", [])
+      count = Map.get(result_set, "count", length(records))
+      total_count = Map.get(result_set, "totalCount", offset + count)
       next_cursor = next_cursor(offset, count, total_count, limit)
 
       {:ok, records, next_cursor}
@@ -179,10 +256,14 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
 
   defp reject_graphql_errors(_decoded), do: :ok
 
-  defp shopping_products(%{"data" => %{"shoppingProducts" => products}}) when is_map(products),
-    do: {:ok, products}
+  defp result_set(%{"data" => data}, field) when is_map(data) do
+    case Map.get(data, field) do
+      result_set when is_map(result_set) -> {:ok, result_set}
+      _missing -> {:error, {:missing_result_set, field}}
+    end
+  end
 
-  defp shopping_products(_decoded), do: {:error, :missing_shopping_products}
+  defp result_set(_decoded, field), do: {:error, {:missing_result_set, field}}
 
   defp next_cursor(offset, count, total_count, limit)
        when count == limit and offset + count < total_count do

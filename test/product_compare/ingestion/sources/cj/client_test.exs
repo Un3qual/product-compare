@@ -119,4 +119,77 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
                Client.fetch_batch(nil, transport: transport)
     end
   end
+
+  describe "fetch_feeds/2" do
+    test "posts a shoppingProductFeeds query with runtime credentials and requested filters" do
+      System.put_env("CJ_API_TOKEN", "test-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+
+      parent = self()
+
+      transport = fn request ->
+        send(parent, {:request, request})
+
+        {:ok,
+         %{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "data" => %{
+                 "shoppingProductFeeds" => %{
+                   "count" => 1,
+                   "limit" => 1,
+                   "totalCount" => 2,
+                   "resultList" => [
+                     %{
+                       "adId" => "feed-1",
+                       "advertiserCountry" => "US",
+                       "advertiserId" => "adv-1",
+                       "advertiserName" => "Merchant",
+                       "currency" => "USD",
+                       "feedName" => "US Shopping",
+                       "language" => "EN",
+                       "lastUpdated" => "2026-06-04T18:34:49Z",
+                       "productCount" => 10,
+                       "sourceFeedType" => "SHOPPING"
+                     }
+                   ]
+                 }
+               }
+             })
+         }}
+      end
+
+      assert {:ok, [%{"feedName" => "US Shopping"}], 1} =
+               Client.fetch_feeds(nil,
+                 advertiser_country: "US",
+                 limit: 1,
+                 transport: transport
+               )
+
+      assert_receive {:request,
+                      %{
+                        body: body,
+                        headers: headers,
+                        method: :post,
+                        url: "https://ads.api.cj.com/query"
+                      }}
+
+      assert {"Authorization", "Bearer test-token"} in headers
+      assert {"Content-Type", "application/json"} in headers
+
+      assert %{
+               "query" => query,
+               "variables" => %{
+                 "advertiserCountry" => "US",
+                 "companyId" => "1234567",
+                 "limit" => 1,
+                 "offset" => 0
+               }
+             } = Jason.decode!(body)
+
+      assert query =~ "shoppingProductFeeds"
+      assert query =~ "$advertiserCountry: String"
+    end
+  end
 end
