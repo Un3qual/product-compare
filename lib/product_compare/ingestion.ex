@@ -804,6 +804,29 @@ defmodule ProductCompare.Ingestion do
   defp blank_to_nil(value), do: value
 
   defp normalize_review_attrs(attrs) when is_map(attrs) do
+    %{}
+    |> put_review_attr(attrs, :review_status)
+    |> put_review_attr(attrs, :review_note)
+    |> put_review_attr(attrs, :reviewed_at)
+    |> normalize_review_note()
+  end
+
+  defp put_review_attr(normalized_attrs, attrs, key) do
+    string_key = Atom.to_string(key)
+
+    cond do
+      Map.has_key?(attrs, key) ->
+        Map.put(normalized_attrs, key, Map.fetch!(attrs, key))
+
+      Map.has_key?(attrs, string_key) ->
+        Map.put(normalized_attrs, key, Map.fetch!(attrs, string_key))
+
+      true ->
+        normalized_attrs
+    end
+  end
+
+  defp normalize_review_note(attrs) do
     if Map.has_key?(attrs, :review_note) do
       Map.update!(attrs, :review_note, &blank_to_nil/1)
     else

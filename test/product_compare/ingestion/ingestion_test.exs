@@ -377,6 +377,27 @@ defmodule ProductCompare.IngestionTest do
       assert %DateTime{} = updated_candidate.reviewed_at
     end
 
+    test "reviewing a candidate normalizes string-key review_note attrs" do
+      source = source_fixture()
+
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 last_seen_at: ~U[2026-06-04 20:00:00Z],
+                 provider: "cj",
+                 provider_feed_id: "feed-1"
+               })
+
+      assert {:ok, %MerchantFeedCandidate{} = reviewed_candidate} =
+               Ingestion.review_merchant_feed_candidate(candidate_id, %{
+                 "review_status" => "dismissed",
+                 "review_note" => "   "
+               })
+
+      assert reviewed_candidate.review_status == "dismissed"
+      assert is_nil(reviewed_candidate.review_note)
+      assert %DateTime{} = reviewed_candidate.reviewed_at
+    end
+
     test "reviewing a candidate rejects invalid status and missing candidates" do
       source = source_fixture()
 
