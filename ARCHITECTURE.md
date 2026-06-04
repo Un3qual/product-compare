@@ -46,11 +46,11 @@
 
 ## Next Planned Slice
 
-- There is no unblocked implementation batch; see `docs/work/index.md` for the
-  current queue.
-- Captured CJ merchant feed candidates are now exposed through a non-secret
-  GraphQL read model and a read-only Relay route at
-  `/ingestion/feed-candidates`.
+- The current ready batch adds durable review status to captured CJ merchant
+  feed candidates and route controls for marking candidates pending,
+  shortlisted, or dismissed; see `docs/work/index.md`.
+- Captured CJ merchant feed candidates are already exposed through a non-secret
+  GraphQL read model and a read-only Relay route at `/ingestion/feed-candidates`.
 - CJ credential access, product-scope validation, quota observation,
   representative redacted sample evidence, and owner approval are recorded for
   the manual connector path.

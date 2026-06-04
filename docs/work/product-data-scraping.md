@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed from `docs/work/index.md`
+- Live queue row: ready in `docs/work/index.md`
 - Last verified: 2026-06-04 after focused backend/frontend tests, adjacent CJ regressions, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
@@ -14,7 +14,7 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - none
+  - `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
@@ -51,9 +51,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: completed
-- Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`.
-- Completed action: exposed persisted CJ merchant feed candidates through a non-secret GraphQL read model and a read-only Relay route at `/ingestion/feed-candidates`.
+- Status: ready
+- Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
+- Next action: add durable review status to CJ merchant feed candidates and browser controls for pending, shortlisted, and dismissed states.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -64,12 +64,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProducts` remains the manual product import surface.
   - `shoppingProductFeeds` is now available through a manual discovery task.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring workflow, candidate approval mutations, or Tier-3 direct scraping in this batch.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring algorithm, merchant application submission, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
-- `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `cd assets && bun run relay`
 - `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`
 - `cd assets && bun run typecheck`
