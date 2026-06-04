@@ -12,13 +12,13 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-| State | Plan | Use When | Promotion Rule |
+| Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
 | blocked | `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` | Product ingestion can proceed only after CJ access, quota behavior, a representative redacted sample, and compliance signoff are recorded. | Promote Task 1 to `ready` in `docs/work/index.md` once the unblock prerequisites are available. |
 
 ## Candidate Pool
 
-| State | Candidate | Create Or Promote When | Notes |
+| Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | needs_decision | Next demo-parity/frontend candidate | Product/backend priority chooses a specific browser-demo gap after completed offer discovery and compare matrix work. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
 | conditional | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |

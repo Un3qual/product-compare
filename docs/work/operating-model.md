@@ -139,9 +139,3 @@ Next row promoted:
   next row or an explicit "no ready work" state.
 - If a selected row requires files outside its owned paths, stop and record a
   blocker instead of widening scope silently.
-
-## Current Invariant
-
-As of 2026-06-03, there is no ready implementation row. Product ingestion is
-blocked on CJ/compliance evidence, and additional demo-parity work needs a
-fresh product/backend priority decision before plan creation.

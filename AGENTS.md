@@ -2,6 +2,7 @@
 
 ## Execution Entry Point
 
+- Filename glossary: `NOW.md` is the legacy current-work pointer; `INDEX.md` is the plan catalog.
 - Start plan discovery at `docs/work/index.md`.
 - Read `docs/work/operating-model.md` for the dispatch rules, prompt templates, and handoff format.
 - Treat `docs/work/index.md` as the only live dispatch queue. Execute only rows marked `ready`.

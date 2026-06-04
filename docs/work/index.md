@@ -13,6 +13,8 @@ For the operating rules, prompt templates, and handoff format, read
   one concrete `ready` row or leave the blocker recorded.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
+- `active` rows are already owned by a named worker or branch. Do not start a
+  second worker on them unless the coordinator reassigns the row.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
