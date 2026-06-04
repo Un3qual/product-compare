@@ -2,7 +2,7 @@
 
 ## Execution Entry Point
 
-- Filename glossary: NOW means the legacy current-work pointer file (`docs/plans/NOW.md`); INDEX means the plan catalog file (`docs/plans/INDEX.md`).
+- Filename glossary: Now (NOW) is the legacy current-work pointer file (`docs/plans/NOW.md`); Index (INDEX) is the plan catalog file (`docs/plans/INDEX.md`).
 - Start plan discovery at `docs/work/index.md`.
 - Read `docs/work/operating-model.md` for the dispatch rules, prompt templates, and handoff format.
 - Treat `docs/work/index.md` as the only live dispatch queue. Execute only rows marked `ready`.
