@@ -25,7 +25,7 @@
 - Modify: `lib/product_compare/ingestion.ex`
 - Modify: `test/product_compare/ingestion/ingestion_test.exs`
 
-- [ ] **Step 1: Write failing candidate persistence tests**
+- [x] **Step 1: Write failing candidate persistence tests**
 
 Add tests for `Ingestion.upsert_merchant_feed_candidate/2` and `Ingestion.list_merchant_feed_candidates/1` that create a CJ source, persist one candidate, then replay the same provider feed id with updated feed metadata.
 
@@ -33,7 +33,7 @@ Run: `mix test test/product_compare/ingestion/ingestion_test.exs`
 
 Expected: fail because the schema/table/context functions do not exist.
 
-- [ ] **Step 2: Add migration, schema, and context helpers**
+- [x] **Step 2: Add migration, schema, and context helpers**
 
 Create `merchant_feed_candidates` and `ProductCompareSchemas.Ingestion.MerchantFeedCandidate`. Implement idempotent upsert and source-filtered list helpers in `ProductCompare.Ingestion`.
 
@@ -47,7 +47,7 @@ Expected: pass.
 - Modify: `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`
 - Modify: `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
 
-- [ ] **Step 1: Write failing task persistence test**
+- [x] **Step 1: Write failing task persistence test**
 
 Extend the `CjFeeds.run_discovery/1` test so an injected feed result creates one `MerchantFeedCandidate` row and the task report includes `candidates_persisted`.
 
@@ -55,7 +55,7 @@ Run: `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
 
 Expected: fail because the task does not persist candidates.
 
-- [ ] **Step 2: Persist candidates in the manual task**
+- [x] **Step 2: Persist candidates in the manual task**
 
 Map each fetched feed into `Ingestion.upsert_merchant_feed_candidate/2`, count successful writes, record the persisted count on the `ingestion_runs` row, and print only aggregate counts.
 

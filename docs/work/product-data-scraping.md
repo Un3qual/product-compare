@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-04 after focused tests, adjacent regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and a bounded live manual CJ import
+- Live queue row: completed and removed from `docs/work/index.md`
+- Last verified: 2026-06-04 after focused tests, adjacent CJ regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and source-scoped candidate count inspection
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -47,11 +47,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
-## Next Batch
+## Current Batch
 
-- Status: ready
+- Status: completed
 - Batch: `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
-- Next action: persist manual `shoppingProductFeeds` discovery results as source-scoped merchant/feed candidates.
+- Completed action: persisted manual `shoppingProductFeeds` discovery results as source-scoped merchant/feed candidates.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -78,6 +78,15 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- CJ feed candidate capture:
+  - Added `merchant_feed_candidates` plus `ProductCompareSchemas.Ingestion.MerchantFeedCandidate` for non-secret, source-scoped CJ feed metadata.
+  - Added `ProductCompare.Ingestion.upsert_merchant_feed_candidate/2` and `list_merchant_feed_candidates/1`.
+  - Updated `mix product_compare.ingestion.cj_feeds` to persist each fetched feed as a candidate and report `candidates_persisted`.
+  - Live feed discovery reported `feeds_fetched=1 candidates_persisted=1 pages_fetched=1 failed=0`.
+  - Non-secret row counts after live discovery: `merchant_feed_candidates=1`.
+  - Latest non-secret feed run metadata: `status=succeeded`, `pages_requested=1`, `pages_fetched=1`, `records_fetched=1`, `records_persisted=1`, `records_failed=0`, `cursor_start=0`, `cursor_end=1`.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`, `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - CJ ingestion expansion:
   - Added `ingestion_runs` plus `ProductCompareSchemas.Ingestion.ImportRun` and `ProductCompare.Ingestion.start_import_run/1` / `complete_import_run/2` for durable run metadata.

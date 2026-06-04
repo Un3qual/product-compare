@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md` | Product ingestion should persist manual CJ `shoppingProductFeeds` discovery results as reviewable merchant/feed candidates. | Close the row when focused persistence/task tests, adjacent CJ tests, `mix typecheck`, `git diff --check`, and one live feed discovery with non-secret candidate counts pass. |
+| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
 
 ## Candidate Pool
 
@@ -30,6 +30,8 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ feed candidate capture from manual feed discovery:
+  `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
 - Product ingestion: CJ import observability, manual feed discovery, and bounded
   manual product import pagination:
   `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
