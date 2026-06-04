@@ -2,16 +2,21 @@
 
 ## Execution Entry Point
 
+- Filename glossary: Now (NOW) is the legacy current-work pointer file (`docs/plans/NOW.md`); Index (INDEX) is the plan catalog file (`docs/plans/INDEX.md`).
 - Start plan discovery at `docs/work/index.md`.
-- Treat `docs/work/*.md` as the source of truth for active execution status, priority, blockers, and the next batch of work.
-- Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links them as the current active work item.
-- When `docs/work/index.md` lists multiple active lanes, assign exactly one lane per worker. Default lanes are `frontend` and `backend`.
-- Verify the selected batch against the codebase before assuming an unchecked item is still unimplemented.
-- Update the relevant `docs/work/*.md` file when batch status, blockers, or priorities change.
-- In parallel mode, a worker may edit only files in its lane's `Owned paths` plus its lane work doc.
-- Treat `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` as coordinator-owned shared docs during parallel execution. Update them only from the coordinating session or at integration boundaries.
+- Read `docs/work/operating-model.md` for the dispatch rules, prompt templates, and handoff templates.
+- Treat `docs/work/index.md` as the only live dispatch queue. Execute only rows marked `ready`.
+- Treat `docs/work/*.md` as lane context and lane-local status evidence, not as a second queue.
+- Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links one as the active plan for a `ready` row.
+- Treat `docs/plans/NOW.md` as a compatibility pointer back to `docs/work/index.md`, not as a separate ledger.
+- If no `ready` row exists, do not search historical plans for work. Report or resolve the highest-ranked `needs_decision` or `blocked` row instead.
+- Verify the selected batch against the codebase before assuming it is still unimplemented.
+- Update the relevant `docs/work/*.md` file when lane-local batch status or blockers change.
+- In parallel mode, a worker may edit only files in its row's `Target Paths` plus its lane work doc.
+- Treat `docs/work/index.md`, `docs/plans/INDEX.md`, `docs/plans/NOW.md`, and `ARCHITECTURE.md` as coordinator-owned shared docs unless the selected queue row explicitly names them as `Target Paths`.
 - If the selected batch requires another lane's files or a coordinator-owned doc, record the blocker in the lane work doc instead of crossing lanes.
 - Commit only at milestone boundaries that include the related code/test/doc changes; do not make standalone checkbox-only or docs-only progress commits.
+- A docs-only commit is acceptable when the docs/workflow system itself is the requested deliverable.
 
 ## Auth Contract
 

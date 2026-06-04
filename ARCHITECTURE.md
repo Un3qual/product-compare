@@ -2,9 +2,10 @@
 
 ## Execution Entry Points
 
-- Active execution starts at `docs/work/index.md`.
-- `docs/plans/INDEX.md` is the repo-level queue of implementation plans.
-- `docs/plans/NOW.md` records the currently selected batch and immediate next step, or the current frontend/backend lane batches when work is running in parallel.
+- Active execution starts at `docs/work/index.md`, the only live dispatch queue.
+- `docs/work/operating-model.md` defines prompt templates, status values, and handoff rules.
+- `docs/plans/INDEX.md` is the plan catalog and candidate pool, not a second live queue.
+- `docs/plans/NOW.md` is a compatibility pointer back to `docs/work/index.md`.
 
 ## System Overview
 
@@ -45,18 +46,10 @@
 
 ## Next Planned Slice
 
-- Frontend auth state hardening is complete: root `viewer` route preload, guest/authenticated auth links in the root shell, Relay root viewer updates after auth mutations, logout browser e2e coverage, and backend session-auth contract hardening have landed.
-- Live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.
-- Frontend logout route baseline is complete: `/auth/logout` clears the Phoenix browser session through the existing GraphQL logout mutation and is reachable from primary navigation.
-- Backend source artifact node lookup is complete: generic `node(id:)` supports the safe `SourceArtifact` GraphQL object without exposing raw payload fields.
-- Frontend product-detail price history demo parity is complete: `/products/:slug` renders bounded price-history rows, empty history state, and has-more state in the Active offers section.
-- Backend source artifact public contract is complete: `sourceArtifact(id:)` exposes safe metadata while raw payload fields remain unexposed.
-- Frontend product-detail coupon demo parity is complete: product offers expose public display-scoped active coupons, and `/products/:slug` renders active coupon codes and discount details in the Active offers section.
-- Product comparison demo parity is complete: backend `Product.currentAttributes`, product-detail specifications, browse compare links, the `/compare` product picker, compare-card attributes, and full demo-slice verification have landed.
-- Frontend compare shared attribute matrix is complete: `/compare` now renders shared selected-product attributes in an aligned matrix while keeping non-shared attributes in per-product cards.
-- Frontend API token management demo parity is complete: the existing `myApiTokens`, `createApiToken`, `revokeApiToken`, and `rotateApiToken` GraphQL contract is demoable from `/account/api-tokens` without REST browser auth endpoints.
-- Frontend revenue reporting demo parity is complete: the existing public-safe `revenueSummary(input:)` GraphQL contract is demoable from `/commerce/revenue` with aggregate filters, suppressed/unsuppressed summary rendering, and navigation coverage.
-- Frontend merchant discovery demo parity is complete: the existing public `merchants(first:, after:)` GraphQL contract is demoable from `/merchants` with cursor pagination, empty/error states, and navigation coverage.
-- Frontend affiliate setup demo parity is complete: the existing authenticated affiliate setup mutations are demoable from `/affiliate/setup` without REST browser flows or new admin-role semantics.
-- Frontend offer discovery demo parity is complete: the existing top-level `merchantProducts(input:)` GraphQL contract is demoable from `/offers`, with product browse card links passing product global IDs.
-- Live CJ provider validation remains blocked until credentials, quota behavior, representative sample payloads, and source onboarding compliance signoff are recorded.
+- There is no unblocked implementation batch; see `docs/work/index.md` for the
+  current queue.
+- Live CJ provider validation remains blocked until credentials, quota behavior,
+  representative sample payloads, and source onboarding compliance signoff are
+  recorded.
+- The next demo-parity/frontend candidate needs a fresh product/backend priority
+  decision before plan creation.

@@ -1,489 +1,67 @@
-# Active Work Index
+# Work Dispatch Index
 
-Start here before opening dated plans or checkpoint logs.
+Start here. This file is the only live dispatch queue.
 
-## How To Use This Folder
+For the operating rules, prompt templates, and handoff format, read
+`docs/work/operating-model.md`.
 
-- Read this file first.
-- In single-agent mode, open only the highest-priority unblocked active lane.
-- In parallel mode, assign one worker to the highest-priority unblocked frontend lane and one worker to the highest-priority unblocked backend lane.
-- Each worker stays inside its lane's `Owned paths`; shared planning docs stay coordinator-owned.
-- Verify the selected batch against the codebase before editing.
-- Workers update only their lane work doc as they go.
-- Coordinators update this file plus `docs/plans/NOW.md` and `docs/plans/INDEX.md` whenever lane status, priority, or blockers change.
+## Queue Rules
 
-## Suggested Executor Prompts
+- A worker should execute only rows with `Status: ready`.
+- If no `ready` row exists, do not scan historical plans looking for work.
+- `needs_decision` rows are coordinator work: make one decision, then promote exactly
+  one concrete `ready` row, remove the decision row so the selected `blocked` row
+  becomes highest-ranked, or leave the missing decision named.
+- `blocked` rows need external evidence or a product decision. Do not code around
+  them.
+- `active` rows are already owned by a named worker or branch. Do not start a
+  second worker on them unless the coordinator reassigns the row.
+- Completed lanes do not stay in this queue. Their history remains in the lane
+  work doc and dated plan archive.
+
+## Current Queue
+
+Updated: 2026-06-04
+
+| Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | needs_decision | Product/backend priority | `docs/plans/INDEX.md` | Choose exactly one path: keep CJ validation as the next blocker to clear, declare CJ unavailable and plan the eBay Browse fallback, or create one new demo-parity/frontend candidate. | `docs/work/index.md`, `docs/plans/INDEX.md`, `docs/plans/NOW.md`, and the selected lane doc or new plan only. | `git diff --check`; verify the promoted row has concrete target paths and verification. | Decision recorded by either promoting exactly one `ready` row, or removing this row and making the CJ blocker the highest-ranked row until evidence arrives; otherwise this row remains `needs_decision` with the missing decision named. |
+| 2 | blocked | Product data ingestion | `docs/work/product-data-scraping.md` | Record non-secret CJ credential access, product catalog surface and quota behavior, permission for one redacted account-scoped sample, and a named compliance approver. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Before unblock: evidence review only. After unblock: run the focused commands in `docs/work/product-data-scraping.md`. | Promote CJ validation Task 1 to `ready`, or record why CJ is unavailable and promote the fallback-planning row. |
+
+## No Ready Work
+
+There is currently no unblocked implementation batch. The next useful action is a
+coordinator decision or the external CJ/compliance evidence listed above.
+
+## Executor Prompts
+
+Coordinator:
 
 ```text
-Coordinator prompt:
 Start at docs/work/index.md.
 
-Run in parallel-lane mode.
-Assign one worker to the highest-priority unblocked frontend lane and one worker to the highest-priority unblocked backend lane.
-Keep `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, and `ARCHITECTURE.md` coordinator-owned.
-Do not let workers edit the same files.
-If a worker reports a blocker outside its owned paths, update the lane docs instead of having it cross lanes.
-Integrate shared-doc updates only after reviewing both lane results.
-Open or update a PR only when the coordinated slice is ready.
+Read docs/work/operating-model.md.
+Process the highest-ranked non-ready row.
+Make exactly one decision or unblock exactly one blocker.
+Update only the live queue plus the directly affected lane or plan docs.
+End with either one ready row or a clearly named blocker.
 ```
+
+Worker:
 
 ```text
-Lane worker prompt:
-Start at docs/work/index.md and open only the active {frontend|backend} lane assigned to you.
+Start at docs/work/index.md.
 
-Execute the `Next batch` from that lane's work doc.
-Before coding, verify the selected batch against the codebase and correct any drift in that lane doc.
-Edit only the lane's `Owned paths` and that lane's work doc.
-Do not edit `docs/work/index.md`, `docs/plans/NOW.md`, `docs/plans/INDEX.md`, or `ARCHITECTURE.md` unless your prompt explicitly says you are the coordinator.
-If the work requires another lane's files or a coordinator-owned doc, record a blocker in your lane doc and stop.
-Commit only lane-local milestone changes.
+Read docs/work/operating-model.md.
+Execute only the highest-ranked row whose Status is ready.
+Open only that row's Work Doc, linked active plan if any, Target Paths, and immediate tests.
+Update the lane work doc as the batch changes.
+Do not edit coordinator-owned docs unless the ready row names them as Target Paths.
+Stop if the row is blocked, stale, or needs a decision.
 ```
 
-## Active Work Lanes
-
-- Frontend offer discovery demo parity lane
-  - Work doc: `docs/work/frontend-offer-discovery-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked offer-discovery batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `assets/src/routes/offers/**`, `assets/src/routes/catalog/browse.tsx`, `assets/src/routes/catalog/__tests__/browse.route.test.tsx`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/schema.graphql`, `assets/src/__generated__/**`, `test/product_compare_web/graphql/pricing_queries_test.exs`, `docs/work/frontend-offer-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
-
-- Frontend compare shared attribute matrix lane
-  - Work doc: `docs/work/frontend-compare-shared-attribute-matrix.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked shared-attribute matrix batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `assets/src/routes/compare/index.tsx`, `assets/src/routes/compare/loader.ts`, `assets/src/routes/compare/__tests__/compare.route.test.tsx`, `assets/src/routes/compare/__tests__/compare-relay-migration.test.tsx`, `docs/work/frontend-compare-shared-attribute-matrix.md`, `docs/plans/2026-06-01-frontend-compare-shared-attribute-matrix-implementation-plan.md`
-
-- Frontend auth state hardening lane
-  - Work doc: `docs/work/frontend-auth-state-hardening.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked frontend auth state hardening batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `assets/src/routes/root.tsx`, `assets/src/routes/root/loader.ts`, `assets/src/routes/root/queries/RootViewerRouteQuery.ts`, `assets/src/__generated__/RootViewerRouteQuery.graphql.ts`, `assets/src/router.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/src/routes/auth/viewer-store.ts`, `assets/src/routes/auth/login.tsx`, `assets/src/routes/auth/register.tsx`, `assets/src/routes/auth/logout.tsx`, `assets/src/routes/auth/__tests__/session.route.test.tsx`, `assets/tests/e2e/auth.spec.ts`, `test/product_compare_web/graphql/session_auth_test.exs`, `docs/work/frontend-auth-state-hardening.md`, `docs/work/graphql-auth-migration.md`, `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
-
-- Frontend logout route baseline lane
-  - Work doc: `docs/work/frontend-logout-route-baseline.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked logout route baseline batch remains.
-  - Owned paths: `assets/src/routes/auth/__tests__/session.route.test.tsx`, `assets/src/routes/auth/mutations/LogoutMutation.ts`, `assets/src/routes/auth/logout.tsx`, `assets/src/__generated__/LogoutMutation.graphql.ts`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `docs/work/frontend-logout-route-baseline.md`, `docs/work/graphql-auth-migration.md`, `docs/plans/2026-06-01-frontend-logout-route-baseline-implementation-plan.md`
-
-- Backend source artifact node lookup lane
-  - Work doc: `docs/work/backend-source-artifact-node-lookup.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no lane-owned source artifact node lookup batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `lib/product_compare_web/resolvers/node_resolver.ex`, `lib/product_compare_web/schema.ex`, `test/product_compare_web/graphql/node_query_test.exs`, `docs/work/backend-source-artifact-node-lookup.md`, `docs/plans/2026-06-01-backend-source-artifact-node-lookup-implementation-plan.md`
-
-- Frontend product-detail price history demo parity lane
-  - Work doc: `docs/work/frontend-product-detail-price-history-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked product-detail price-history demo parity batch remains in this lane.
-  - Owned paths: `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`, `assets/src/routes/products/detail.tsx`, `assets/src/routes/products/__tests__/detail.route.test.tsx`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-product-detail-price-history-demo-parity.md`, `docs/plans/2026-06-01-frontend-product-detail-price-history-demo-parity-implementation-plan.md`
-
-- Backend source artifact public contract lane
-  - Work doc: `docs/work/backend-source-artifact-public-contract.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: safe source-artifact object/query contract and generic node lookup are complete.
-  - Owned paths: `lib/product_compare/specs.ex`, `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/specs_resolver.ex`, `test/product_compare_web/graphql/source_artifact_query_test.exs`, `test/product_compare_web/graphql/node_query_test.exs`, `docs/work/backend-source-artifact-public-contract.md`, `docs/plans/2026-06-01-backend-source-artifact-public-contract-implementation-plan.md`
-
-- Frontend product-detail coupon demo parity lane
-  - Work doc: `docs/work/frontend-product-detail-coupon-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked product-detail coupon demo parity batch remains in this lane; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/affiliate_resolver.ex`, `test/product_compare_web/graphql/pricing_queries_test.exs`, `assets/src/routes/products/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `docs/work/frontend-product-detail-coupon-demo-parity.md`, `docs/plans/2026-06-01-frontend-product-detail-coupon-demo-parity-implementation-plan.md`
-
-- Frontend affiliate setup demo parity lane
-  - Work doc: `docs/work/frontend-affiliate-setup-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - Owned paths: `assets/src/routes/affiliate/setup/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-affiliate-setup-demo-parity.md`, `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
-
-- Frontend merchant discovery demo parity lane
-  - Work doc: `docs/work/frontend-merchant-discovery-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked merchant discovery demo parity batch remains in this lane; coordinator follow-up can choose the next demo-parity candidate from `docs/plans/INDEX.md` if priorities continue toward affiliate setup.
-  - Owned paths: `assets/src/routes/merchants/**`, `assets/schema.graphql`, `assets/src/__generated__/**`, `assets/src/router.tsx`, `assets/src/routes/root.tsx`, `assets/src/routes/__tests__/root.route.test.tsx`, `assets/src/__tests__/router.test.tsx`, `docs/work/frontend-merchant-discovery-demo-parity.md`, `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-
-- Product comparison demo parity lane
-  - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
-  - Status: completed
-  - Priority: P1
-  - Next batch: no unblocked product-comparison demo parity batch remains in this lane; coordinator follow-up can choose a future demo-parity candidate if priorities change.
-  - Owned paths: `lib/product_compare/specs.ex`, `lib/product_compare_web/resolvers/catalog_resolver.ex`, `lib/product_compare_web/schema.ex`, `test/product_compare_web/graphql/catalog_queries_test.exs`, `assets/**`, `docs/work/frontend-product-comparison-demo-parity.md`, `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
-
-- Frontend lane
-  - Work doc: `docs/work/review-readability-cleanups.md`
-  - Status: completed
-  - Priority: P2
-  - Next batch: no unblocked frontend batch is queued from this worktree; coordinator follow-up can choose a future frontend lane if priorities change.
-  - Owned paths: `assets/**`, `docs/work/review-readability-cleanups.md`
-
-- Backend lane
-  - Work doc: `docs/work/review-readability-cleanups.md`
-  - Status: completed
-  - Priority: P2
-  - Next batch: no unblocked backend batch is queued from this worktree; coordinator follow-up can choose another review-driven backend slice if priorities change.
-  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare/**`, `test/product_compare_web/graphql/**`, `test/support/conn_case.ex`, `docs/work/review-readability-cleanups.md`
-
-- Commerce attribution lane
-  - Work doc: `docs/work/affiliate-revenue-attribution.md`
-  - Status: completed
-  - Priority: P2
-  - Next batch: no unblocked commerce attribution batch remains in this worktree; CJ/Awin source-field mapping is deferred pending account docs or sample payloads.
-  - Owned paths: `lib/product_compare/**`, `lib/product_compare_web/**`, `priv/repo/migrations/**`, `test/product_compare/**`, `docs/work/affiliate-revenue-attribution.md`, `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`, `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
-
-- Product data ingestion lane
-  - Work doc: `docs/work/product-data-scraping.md`
-  - Status: blocked
-  - Priority: P2
-  - Next batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` remains blocked; live CJ validation and source onboarding compliance signoff must unblock before live provider polling or Tier-3 scraping work begins.
-  - Owned paths: `lib/product_compare/ingestion/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_schemas/ingestion/**`, `lib/product_compare_schemas/specs/**`, `lib/product_compare_schemas/pricing/**`, `priv/repo/migrations/**`, `test/product_compare/ingestion/**`, `test/support/fixtures/cj/**`, `docs/work/product-data-scraping.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`, `docs/decisions/2026-05-23-ingestion-execution-boundary.md`
-
-## Blocked / Needs Decision
-
-- Live product-provider validation
-  - Status: blocked
-  - Priority: P2
-  - Reason: live CJ credential path, quota behavior, and account-scoped sample payloads are not yet recorded.
-  - Next batch after unblock: validate the live CJ product catalog scope; fall back to eBay Browse only if CJ scope is insufficient.
-
-- Next demo-parity frontend candidate
-  - Status: needs decision
-  - Priority: P1
-  - Reason: the shared comparison matrix lane is complete, `ARCHITECTURE.md` has no remaining unblocked frontend demo-parity gap selected by policy, and `docs/plans/INDEX.md` requires a fresh product/backend priority decision before creating the next candidate plan.
-
-## Recently Completed
-
-### Frontend Compare Shared Attribute Matrix
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-compare-shared-attribute-matrix.md`
-- Outcome:
-  - Added a shared current-attribute matrix to ready `/compare` pages when at least two selected products have overlapping attribute codes.
-  - Preserved selected product order for columns and first selected product shared-attribute order for rows.
-  - Kept non-shared attributes visible in existing per-product cards and added a no-shared-specifications state.
-  - Verification passed with focused compare route and compare Relay migration Vitest suites, `cd assets && bun run typecheck`, and `cd assets && bun run check`.
-
-### Frontend Offer Discovery Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-offer-discovery-demo-parity.md`
-- Outcome:
-  - Added a Relay-backed `/offers` route for the existing top-level `merchantProducts(input:)` GraphQL contract.
-  - Rendered missing-product, ready, inactive, empty, pagination, loader-error, and query-error states.
-  - Added `Offers` links to primary navigation and home actions, plus browse-card links to `/offers?productId=<product-id>`.
-  - Verification passed with `cd assets && bun run relay`, focused offer/browse/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, and `cd assets && bun run check`.
-
-### Frontend Auth State Hardening
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-auth-state-hardening.md`
-- Outcome:
-  - Added root `viewer` route preload and rendered guest/authenticated auth links from GraphQL viewer state in primary navigation and home actions.
-  - Updated login, register, and logout routes to change Relay's root `viewer` record only after graphQLError-aware successful mutation results.
-  - Added browser logout e2e coverage and backend session-auth edge-case coverage for idempotent logout and untrusted-origin register/login/logout rejection.
-  - Verification passed with `cd assets && bun run relay`, focused root/router/auth Vitest suites, `cd assets && bun x playwright test tests/e2e/auth.spec.ts`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
-
-### Frontend Logout Route Baseline
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-logout-route-baseline.md`
-- Outcome:
-  - Added Relay `LogoutMutation`, `/auth/logout`, route registration, and `Sign out` navigation/home-action links.
-  - Kept logout on the GraphQL `/api/graphql` contract and Phoenix session cookie authority.
-  - Verification passed with `cd assets && bun run relay`, focused auth/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/session_auth_test.exs`, `cd assets && bun run check`, and `git diff --check`.
-
-### Backend Source Artifact Node Lookup
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/backend-source-artifact-node-lookup.md`
-- Outcome:
-  - Added safe `SourceArtifact` support to generic GraphQL `node(id:)` lookup.
-  - Kept `SourceArtifact` raw payload fields unexposed while returning `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`.
-  - Added positive node lookup and valid non-existent node coverage for `source_artifact` global IDs.
-  - Verification passed with focused source-artifact/node/source-artifact changeset tests, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
-
-### Frontend Product Detail Price History Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-product-detail-price-history-demo-parity.md`
-- Outcome:
-  - Refreshed the frontend Relay schema/query for the existing backend `MerchantProduct.priceHistory(first:, after:, from:, to:)` contract.
-  - Rendered compact per-offer price-history rows, empty state, and has-more state in the product detail Active offers section.
-  - Rendered free-shipping coupon labels and valid-through dates for active coupon rows while preserving amount/percent discount rendering.
-  - Verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
-
-### Backend Source Artifact Public Contract
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/backend-source-artifact-public-contract.md`
-- Outcome:
-  - Added `sourceArtifact(id:)` with safe metadata only: `id`, `sourceKind`, `sourceName`, `sourceDomain`, `url`, and `fetchedAt`.
-  - Added focused GraphQL coverage proving `contentHash`, `rawJson`, and `rawText` are not exposed.
-  - Kept generic `node(id:)` support unsupported for `source_artifact` IDs until the now-completed follow-up node lookup lane.
-  - Verification passed with `mix test test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/specs/source_artifact_changeset_test.exs`, `mix test test/product_compare_web/graphql`, `mix typecheck`, and `git diff --check`.
-
-### Frontend Product Detail Coupon Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-product-detail-coupon-demo-parity.md`
-- Outcome:
-  - Added public display-scoped `MerchantProduct.activeCoupons(first:, after:, at:)` under product offers without changing the authenticated top-level affiliate-management `activeCoupons(input:)` query.
-  - Refreshed the frontend Relay schema/query artifacts for `ProductOffersRouteQuery`.
-  - Rendered active coupon code, description, amount/percent discount text, terms, and empty coupon rows inside product detail Active offers.
-  - Verification passed with `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
-
-### Frontend Affiliate Setup Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-affiliate-setup-demo-parity.md`
-- Outcome:
-  - Added a Relay-backed `/affiliate/setup` route that preloads merchant choices from the existing public `merchants(first:, after:)` query.
-  - Rendered authenticated setup forms for affiliate networks, programs, merchant-product links, and coupons through the existing GraphQL mutations.
-  - Displayed returned entity IDs and typed mutation payload errors for follow-on setup.
-  - Added `Affiliate setup` links to primary navigation and home actions, and registered `/affiliate/setup` with `affiliateSetupLoader`.
-  - Verification passed with `cd assets && bun run relay`, focused affiliate/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`, `cd assets && bun run check`, and `git diff --check`.
-
-### Frontend Merchant Discovery Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-merchant-discovery-demo-parity.md`
-- Outcome:
-  - Added a Relay-backed `/merchants` route that preloads the existing public `merchants(first:, after:)` query.
-  - Rendered merchant names/domains, empty state, cursor next-page links, and loader/query unavailable fallback.
-  - Added `Merchants` links to primary navigation and home actions, and registered `/merchants` with `merchantDirectoryLoader`.
-  - Verification passed with `cd assets && bun run relay`, focused merchant/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run check`, and `git diff --check`.
-
-### Frontend Revenue Reporting Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-revenue-reporting-demo-parity.md`
-- Outcome:
-  - Added a Relay-backed `/commerce/revenue` route that preloads the existing `revenueSummary(input:)` query.
-  - Rendered aggregate revenue filters, active normalized filters, suppressed and unsuppressed metric states, and a loader/query fallback.
-  - Added `Revenue` links to primary navigation and home actions, and registered `/commerce/revenue` with `revenueSummaryLoader`.
-  - Verification passed with `cd assets && bun run relay`, focused revenue/root/router Vitest suites, `cd assets && bun run typecheck`, `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `cd assets && bun run check`, and `git diff --check`.
-
-### Frontend API Token Management Demo Parity
-
-- Status: completed on 2026-06-01
-- Source of truth: `docs/work/frontend-api-token-management-demo-parity.md`
-- Outcome:
-  - Added a Relay-backed `/account/api-tokens` route that lists API tokens, renders active/revoked status, and supports create, revoke, and rotate flows through GraphQL.
-  - Added one-time token display for create/rotate flows and row-scoped pending/error states for lifecycle actions.
-  - Added `API tokens` links to primary navigation and home actions.
-  - Verification passed with `cd assets && bun run relay`, focused API-token/root Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, `mix test test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare/accounts/api_token_test.exs`, and `git diff --check`.
-
-### Product Comparison Demo Parity
-
-- Status: completed on 2026-05-31
-- Source of truth: `docs/work/frontend-product-comparison-demo-parity.md`
-- Outcome:
-  - Added GraphQL `Product.currentAttributes` for selected current product claims in display-ready form.
-  - Product detail pages render current specifications and link the selected product into `/compare`.
-  - Browse product cards include direct compare entry links.
-  - `/compare` now has in-page product picker links for empty comparisons and ready comparisons with fewer than three products.
-  - Ready `/compare` product cards render current attributes for selected products.
-  - Verification passed with `mix test test/product_compare_web/graphql/catalog_queries_test.exs`, `cd assets && bun run relay`, focused browse/detail/compare Vitest suites, `cd assets && bun run typecheck`, `cd assets && bun run check`, and `git diff --check`.
-
-### Review Readability Cleanups
-
-- Status: completed on 2026-05-31
-- Source of truth: `docs/work/review-readability-cleanups.md`
-- Outcome:
-  - Completed the saved-comparisons Relay delete migration and consolidated frontend route helpers for loader, mutation, auth, payload, and GraphQL error handling.
-  - Centralized backend GraphQL input, global ID, connection, mutation error, and unauthenticated-error helpers across Auth, Catalog, Pricing, Affiliate, Commerce Attribution, Node, and schema resolver paths.
-  - Kept core attr handling local to Accounts, Affiliate, and Commerce Attribution instead of carrying a cross-context helper module.
-  - Verification passed with `cd assets && bun run check`, `mix test`, `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix typecheck`, and `git diff --check`.
-
-### Product Data Ingestion Persistence Task 2
-
-- Status: completed on 2026-05-24
-- Source of truth: `docs/work/product-data-scraping.md`
-- Outcome:
-  - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to persist fixture-backed normalized listings into `SourceArtifact`, `ExternalProduct`, generated catalog product shells, `MerchantProduct`, and `PricePoint`.
-  - Reused source-scoped merchant identities for merchant resolution and added replay idempotency for exact normalized listing replays.
-  - Added stale-observation guards so older listing observations do not overwrite current merchant product state or add older price points.
-  - Added database uniqueness indexes for replay-safe source artifact and price point writes.
-  - Verification passed with `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs` and `mix typecheck`.
-
-### Product Data Ingestion Foundation Task 1
-
-- Status: completed on 2026-05-23
-- Source of truth: `docs/work/product-data-scraping.md`
-- Outcome:
-  - Selected CJ as the first fixture-backed source and recorded the synchronous pilot boundary in `docs/decisions/2026-05-23-ingestion-execution-boundary.md`.
-  - Added `merchant_source_identities` plus the ingestion schema/context boundary for deterministic source-scoped merchant resolution.
-  - Added the normalized listing contract, adapter behavior, CJ fixture parser, and focused ingestion/parser tests.
-  - Verification passed with `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs`, `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix typecheck`.
-
-### Commerce Attribution Task 3
-
-- Status: completed on 2026-05-23
-- Source of truth: `docs/work/affiliate-revenue-attribution.md`
-- Outcome:
-  - Added a read-only GraphQL `revenueSummary` query over the Task 2 dashboard summary contract.
-  - Added Relay global ID normalization for merchant/product filters plus explicit network, currency, and date inputs.
-  - Returned GraphQL-safe filter, metric, and server-enforced suppression objects while rejecting invalid filters.
-  - Verification passed with `mix test test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`, `mix typecheck`, and `git diff --check`.
-
-### Commerce Attribution Task 2
-
-- Status: completed on 2026-05-22
-- Source of truth: `docs/work/affiliate-revenue-attribution.md`
-- Outcome:
-  - Added a query-backed revenue projection over click sessions, approved/paid conversions, and purchase-price facts.
-  - Added merchant, product, network, and dashboard revenue summary context functions with JSON-ready metric and suppression shapes.
-  - Verification passed with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`, `mix typecheck`, and `git diff --check`.
-
-### Commerce Attribution Task 1
-
-- Status: completed on 2026-05-21
-- Source of truth: `docs/work/affiliate-revenue-attribution.md`
-- Outcome:
-  - Added the redirect/attribution ADR plus core `commerce_links`, `commerce_click_sessions`, `commerce_conversions`, and `purchase_price_facts` persistence.
-  - Added redirect resolution, idempotent conversion ingest, an Impact adapter, and focused redirect/context tests.
-  - Verification passed with `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs`.
-
-### Frontend Relay Route-Data Adoption
-
-- Status: completed on 2026-05-21
-- Source of truth: `docs/work/frontend-relay-route-data.md`
-- Outcome:
-  - Relay SSR hydration, route preloading, `/products`, `/products/:slug`, `/compare`, and browser auth Relay migrations are complete.
-  - `fetchGraphQL` is now a thin GraphQL HTTP transport helper, with route-loader top-level GraphQL error rejection kept in the Relay environment.
-  - The later saved-comparisons Relay migration moved `/compare/saved` onto Relay query/mutation APIs and closed the explicit helper cleanup.
-
-### Frontend Compare And Saved Routes Hardening
-
-- Status: completed on 2026-05-21
-- Source of truth: `docs/work/frontend-compare-saved-hardening.md`
-- Outcome:
-  - Shared compare shell, route-local status semantics, and compare-scoped route error boundaries are already in place.
-  - The prior queue-rebaseline blocker is closed because Relay route-data Task 6 is complete.
-
-### Frontend Relay Auth Mutation Migration
-
-- Status: completed on 2026-05-02
-- Source of truth: `docs/work/frontend-relay-route-data.md`
-- Outcome:
-  - Login, register, forgot-password, reset-password, and verify-email routes now commit the existing GraphQL auth contract through Relay mutation artifacts.
-  - Removed the route-local `assets/src/routes/auth/actions.ts` helper and moved shared payload/error normalization to `assets/src/routes/auth/errors.ts`.
-  - Verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx`, and `cd assets && bun run typecheck`.
-
-### GraphQL Relay Contract Hardening
-
-- Status: completed on 2026-04-30
-- Source of truth: `docs/work/graphql-relay-contract-hardening.md`
-- Outcome:
-  - Root `node(id: ID!)` support covers public catalog/pricing nodes plus owner-scoped saved comparison sets and API tokens.
-  - Verification passed with `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/api_token_auth_test.exs && mix typecheck`.
-
-### Frontend Saved Comparisons UI
-
-- Status: completed on 2026-03-19
-- Source of truth: `docs/work/frontend-saved-comparisons-ui.md`
-- Outcome:
-  - `/compare` now saves ready-state selections through `createSavedComparisonSet`.
-  - `/compare/saved` now lists private saved sets, reopens them back into `/compare` with repeated `slug` params, and deletes them from the UI.
-  - Frontend verification passed with `cd assets && /opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run src/routes/compare/__tests__/compare.route.test.tsx src/routes/__tests__/root.route.test.tsx` and `cd assets && /opt/homebrew/bin/node ./node_modules/typescript/bin/tsc --noEmit`.
-
-### Saved Comparisons Backend
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/saved-comparisons-backend.md`
-- Outcome:
-  - Added owner-scoped `saved_comparison_sets` and `saved_comparison_items` persistence with ordered product items.
-  - Added catalog APIs and GraphQL query/mutation support for listing, creating, and deleting private saved comparison sets.
-  - Verification passed with `mix test test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs` and `mix typecheck`.
-
-### GraphQL Dataloader Adoption
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/graphql-dataloader-adoption.md`
-- Outcome:
-  - Added a request-level GraphQL batching regression test at `test/product_compare_web/graphql/dataloader_batching_test.exs`.
-  - Locked the relevant SQL envelope for one request spanning aliased `product` selections plus `merchantProducts`: three `products` selects and one each for `brands`, `merchant_products`, `merchants`, and `price_points`.
-  - Verification passed with `mix test test/product_compare_web/graphql/dataloader_batching_test.exs`, `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, and `mix test test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`.
-
-### Frontend Radix Primitives
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/frontend-radix-primitives.md`
-- Outcome:
-  - Added a shared frontend Radix wrapper layer at `assets/src/ui/primitives/` for `Button`, `Label`, `Separator`, and `Slot`.
-  - Migrated the app shell, root navigation/actions, and shared auth form shell onto that wrapper layer while keeping existing route behavior and link semantics intact.
-  - Verification passed with `cd assets && bun x vitest run src/ui/__tests__/primitives.test.tsx src/ui/__tests__/app-providers.test.tsx src/ui/__tests__/app-shell.test.tsx src/routes/__tests__/root.route.test.tsx src/routes/auth/__tests__/form-shell.test.tsx src/routes/auth/__tests__/session.route.test.tsx src/routes/auth/__tests__/recovery.route.test.tsx` and `cd assets && bun run check`.
-
-### Frontend Compare Baseline
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/frontend-compare-baseline.md`
-- Outcome:
-  - `/compare` now SSR-renders up to three product cards from repeated `slug` query params using the existing GraphQL product-detail path.
-  - The route now distinguishes empty, over-limit, ready, missing-product, and unavailable states with focused compare-route coverage.
-  - Frontend verification passed with `cd assets && bun x vitest run src/routes/compare/__tests__/compare.route.test.tsx`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
-
-### Frontend Product Offers Baseline
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/frontend-product-offers.md`
-- Outcome:
-  - `/products/:slug` now renders an `Active offers` section from the existing GraphQL pricing surface.
-  - The detail route now distinguishes offer-ready, offer-empty, and offer-unavailable states without regressing product-ready, not-found, or unavailable handling.
-  - Verification passed with `cd assets && bun x vitest run src/routes/products/__tests__/detail.route.test.tsx`, `mix test test/product_compare_web/graphql/pricing_queries_test.exs`, `cd assets && bun run typecheck`, and `cd assets && bun run test:unit`.
-
-### Frontend Product Detail Baseline
-
-- Status: completed on 2026-03-18
-- Source of truth: `docs/work/frontend-product-detail.md`
-- Outcome:
-  - `/products/:slug` now SSR-renders basic product details from GraphQL.
-  - The route now distinguishes product-ready, not-found, and unavailable states with focused route regression coverage.
-  - Browse product names now navigate into the detail route from `/products`.
-
-### GraphQL Auth Migration Follow-up
-
-- Status: completed on 2026-03-17
-- Source of truth: `docs/work/graphql-auth-migration.md`
-- Outcome:
-  - Added `docs/decisions/2026-03-17-auth-token-delivery-deferral.md` to make the remaining transport gap explicit.
-  - Closed the auth migration follow-up doc without reopening browser-auth implementation scope.
-
-### Frontend Auth Browser Coverage
-
-- Status: completed on 2026-03-17
-- Source of truth: `docs/work/frontend-auth-browser-coverage.md`
-- Outcome:
-  - Added Playwright coverage for the existing frontend session, recovery, and verification routes.
-
-### Frontend Catalog Browse
-
-- Status: completed on 2026-03-17
-- Source of truth: `docs/work/frontend-catalog-browse.md`
-- Outcome:
-  - `/products` now SSR-renders the first catalog page from GraphQL.
-  - The route now handles empty and unavailable catalog states with focused route regression coverage.
-  - Frontend verification passed with `cd assets && bun run typecheck` and `cd assets && bun run test:unit`.
-
-## Historical Plan Notes
-
-### Frontend Fullstack Plan
-
-- Status: rebaselined on 2026-03-17
-- Source: `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
-- Reason:
-  - The older umbrella plan remains historical context only.
-  - Its browse, product-detail, product-offers, and compare follow-ons are complete.
-
-## Historical / Reference Only
-
-- `docs/implementation-checklist.md` is a checkpoint log, not the active work queue.
-- Dated files in `docs/plans/` are design and implementation baselines unless this index links them as active work.
+## Completed Work
+
+Completed lane summaries remain in their lane work docs under `docs/work/*.md`.
+Dated implementation plans remain under `docs/plans/`. They are historical
+reference unless this queue links one as the active plan for a `ready` row.

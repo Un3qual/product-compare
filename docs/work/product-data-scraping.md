@@ -5,7 +5,8 @@
 - Status: blocked
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-06-01 after queue review confirmed no unblocked local ingestion batch remains before live provider validation
+- Live queue row: `docs/work/index.md`
+- Last verified: 2026-06-03 after dispatch redesign confirmed no unblocked local ingestion batch remains before live provider validation
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -47,6 +48,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Status: blocked
 - Batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` remains blocked on external CJ access and compliance evidence; no unblocked local ingestion batch is queued from this worktree.
 - Next unblock target: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and the source onboarding compliance checklist before live provider polling or Tier-3 scraping work begins.
+- Dispatch note: keep this lane `blocked` in `docs/work/index.md` until the unblock target is recorded. Do not update `docs/plans/NOW.md` beyond its queue-pointer role.
 - Remaining blockers:
   - **Live CJ product-scope validation**
     - Owner: Ryan (backend/ingestion lead)
