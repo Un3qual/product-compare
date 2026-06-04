@@ -25,12 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | blocked | Product data ingestion | `docs/work/product-data-scraping.md` | Record non-secret CJ credential access, product catalog surface and quota behavior, permission for one redacted account-scoped sample, and a named compliance approver. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Before unblock: evidence review only. After unblock: run the focused commands in `docs/work/product-data-scraping.md`. | Promote CJ validation Task 1 to `ready`, or record why CJ is unavailable and promote the fallback-planning row. |
+| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Execute CJ Product Search validation: record env-var-only credential handling, product catalog surface and quota behavior, personal-project owner approval, and one redacted account-scoped sample; then cover the sample with parser and persistence tests. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Run the focused commands in `docs/work/product-data-scraping.md`. | If CJ Product Search is sufficient, promote the first manual CJ connector batch; if it is unavailable or insufficient, record the evidence and promote the eBay Browse fallback-planning row. |
 
-## No Ready Work
+## Ready Work
 
-No ready implementation work remains.
-Product data ingestion is blocked on the external CJ evidence listed above.
+Product data ingestion has one ready blocker-resolution row. Keep the batch
+manual and fixture-backed: no scheduled polling, credential config, or Tier-3
+direct scraping in this row.
 
 ## Executor Prompts
 

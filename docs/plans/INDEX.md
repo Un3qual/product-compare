@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| blocked | `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` | Product ingestion can proceed only after CJ access, quota behavior, a representative redacted sample, and compliance signoff are recorded. | Promote Task 1 to `ready` in `docs/work/index.md` once the unblock prerequisites are available. |
+| ready | `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` | Product ingestion should execute the CJ Product Search validation batch now that owner approval and expected account access are available. | After Task 1 records Product Search scope, quota behavior, env-var-only secret handling, and a representative redacted sample, promote the first manual CJ connector batch or the eBay Browse fallback plan. |
 
 ## Candidate Pool
 

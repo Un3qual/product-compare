@@ -4,35 +4,42 @@ Execution status lives in `docs/work/index.md`. Lane-specific blocker details
 live in `docs/work/product-data-scraping.md`. `docs/plans/NOW.md` is only a
 compatibility pointer back to the live queue.
 
-Status: created on 2026-06-01 as the next product-ingestion blocker-resolution plan. Task execution remains blocked until the live CJ credential path, quota behavior, representative account-scoped sample payloads, and source onboarding compliance signoff can be recorded without committing secrets.
+Status: ready as of 2026-06-04. Execute Task 1 as a manual CJ Product Search
+validation batch. Keep credentials in local runtime environment variables only,
+commit only redacted sample data, and keep scheduled polling and Tier-3 direct
+scraping out of scope.
 
 ## Goal
 
-Resolve the remaining product-ingestion blocker by validating whether the approved CJ account has usable product catalog scope, preserving representative redacted sample payloads, and recording the minimum source onboarding compliance evidence required before live provider polling or any Tier-3 scraping activation.
+Resolve the remaining product-ingestion blocker by validating whether the approved CJ account has usable Product Search catalog scope, preserving one representative redacted sample payload, and recording owner-approved source onboarding evidence for this personal project before the first manual connector batch.
 
 ## Architecture
 
 - Keep this as a validation and onboarding slice, not a scheduled ingestion or scraping slice.
 - Do not add recurring jobs, Oban scheduling, account-manager automation, or Tier-3 direct scraping in this plan.
+- Validate CJ Product Search first. Treat Product Feeds as a fallback or follow-up only if Product Search is unavailable or too limited for the first connector.
 - Use the existing source-agnostic ingestion boundary:
   - `ProductCompare.Ingestion.Sources.CJ.ProductParser.normalize/1`
   - `ProductCompare.Ingestion.persist_normalized_listing/2`
   - `ProductCompare.Ingestion.NormalizedListing`
 - Treat live provider payloads as sensitive operational evidence. Commit only redacted samples that remove secrets, account IDs not needed for mapping, tracking parameters that identify the account, and any personally identifying data.
+- Store development secrets outside git in ignored `.env.local` or `.env` files, or export them in the shell before running manual validation. Planned variable names are `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and `CJ_WEBSITE_ID`; adjust only if CJ's Product Search auth contract requires different names.
+- Read CJ secrets with `System.get_env/1` only at the manual task/client boundary. Do not add CJ credentials to `config/dev.exs`, committed docs, fixtures, tests, app config, or persisted records.
 - If CJ scope is insufficient, record the failure evidence and create an eBay Browse fallback implementation plan instead of forcing the CJ connector forward.
 
-## Unblock Prerequisites
+## Ready Preconditions
 
-Do not start Task 1 until all of the following are available:
+Task 1 is ready because the project owner confirmed expected CJ access and approved the validation approach. Before committing the batch, the executor must record:
 
-- A non-secret description of where CJ credentials are stored and who can access them.
-- CJ product catalog access to either Product Search or Product Feeds for the approved account.
-- Permission to capture one small representative account-scoped product sample and commit a redacted fixture.
-- A named compliance/legal approver for Tier-1 provider onboarding.
+- A non-secret description of where local CJ credentials are stored and who can access them.
+- CJ Product Search catalog access for the approved account, or a Product Search insufficiency note that triggers the Product Feeds/eBay fallback path.
+- Permission confirmation for one small redacted account-scoped product sample fixture.
+- Ryan's owner approval for CJ account use in this personal project.
+- Confirmation that Tier-3 direct scraping remains out of scope for this batch.
 
-## Task 1: Record CJ Access, Quota, Sample, And Compliance Evidence
+## Task 1: Record CJ Access, Quota, Sample, And Owner Approval Evidence
 
-Status: blocked.
+Status: ready.
 
 ### Files
 
@@ -51,19 +58,21 @@ Create `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboard
 ```markdown
 # Live CJ Provider Validation And Source Onboarding
 
-Date: 2026-06-01
-Status: draft until compliance approver is recorded
+Date: 2026-06-04
+Status: draft until CJ Product Search evidence and redacted fixture are recorded
 
 ## CJ Access Path
 
-- Credential storage path:
-- Credential owner:
-- Validated data surface: Product Search or Product Feeds
+- Credential storage path: local ignored `.env.local` or shell-exported runtime environment variables
+- Credential owner: Ryan
+- Runtime variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, `CJ_WEBSITE_ID`
+- Validated data surface: Product Search
+- Fallback data surface if Product Search is unavailable: Product Feeds
 - Validation timestamp:
 
 ## Product Scope And Quota Evidence
 
-- Product catalog surface validated: Product Search or Product Feeds
+- Product catalog surface validated: Product Search
 - Representative query shape: category plus one known approved merchant
 - Result count observed:
 - Quota or rate-limit behavior observed:
@@ -78,13 +87,14 @@ Status: draft until compliance approver is recorded
   - Replaced account-specific advertiser names only when necessary.
   - Kept field names, value types, price/currency shape, product identifiers, merchant identifiers, URLs, availability, and timestamps needed to validate mapping.
 
-## Source Onboarding Checklist
+## Owner Approval And Scope
 
-- Provider terms reviewed by:
-- Legal/compliance approver:
-- Approved for Tier-1 fixture-backed validation:
-- Approved for live provider polling:
-- Approved for Tier-3 scraping fallback:
+- Project posture: personal project
+- Owner approval: Ryan approves CJ account use for Tier-1 validation
+- Approved for one redacted account-scoped fixture: yes/no
+- Approved for first manual CJ connector batch after this validation: yes/no
+- Approved for scheduled live provider polling: no, deferred until a later manual connector import succeeds
+- Approved for Tier-3 direct scraping fallback: no, out of scope for this batch
 
 ## Decision
 
@@ -93,7 +103,7 @@ Status: draft until compliance approver is recorded
 - Follow-up implementation plan:
 ```
 
-Expected: the file contains no secrets and names the approver before any live provider polling is unblocked.
+Expected: the file contains no secrets, records Product Search first, records owner approval for this personal project, and keeps scheduled polling plus Tier-3 scraping deferred.
 
 ### Step 2: Add The Redacted Sample Fixture
 
@@ -123,7 +133,7 @@ Create `test/support/fixtures/cj/product_validation_sample.redacted.json` in thi
 }
 ```
 
-Expected: the committed fixture keeps the real field names and value types from CJ while removing credentials and account-sensitive values.
+Expected: the committed fixture keeps the real field names and value types from CJ while removing credentials, account-sensitive IDs not needed for mapping, account-specific tracking parameters, and any personally identifying data.
 
 ### Step 3: Write The Failing Parser Validation Test
 
@@ -185,6 +195,7 @@ Keep these constraints:
 
 - Do not add live network calls.
 - Do not add provider credentials to config.
+- Do not add dotenv loading or secret persistence in parser code.
 - Keep exact CJ field names isolated in `ProductParser`.
 - Return deterministic mapping errors in the existing shape: `{:error, %{reason: atom(), field: atom() | nil}}`.
 
@@ -255,7 +266,7 @@ If CJ is sufficient:
 - Mark this task complete in `docs/work/product-data-scraping.md`.
 - Promote the next unblocked CJ connector implementation batch in `docs/work/index.md`.
 - Add or promote a follow-up plan for the first live CJ connector implementation.
-- Keep Tier-3 scraping blocked unless the onboarding decision explicitly approves it.
+- Keep Tier-3 direct scraping out of scope until a later explicit decision.
 
 If CJ is insufficient:
 
@@ -281,13 +292,13 @@ Status: blocked until Task 1 records that CJ is sufficient.
    - CJ insufficient: plan the eBay Browse fallback connector spike.
 2. Keep the first live connector batch bounded to manual execution and fixture-backed tests.
 3. Defer recurring provider polling, Oban scheduling, and alerting until after one manual live connector import succeeds.
-4. Keep direct scraping out of scope unless the source onboarding decision explicitly approves the Tier-3 gate.
+4. Keep direct scraping out of scope until a later explicit decision.
 
 ## Verification Before Closing This Plan
 
 This blocker-resolution plan is complete only when:
 
-- The decision doc records non-secret CJ access, quota behavior, product scope, and a named compliance approver.
+- The decision doc records non-secret CJ access, Product Search quota behavior, product scope, env-var-only secret handling, owner approval, and Tier-3 scraping deferral.
 - A redacted representative sample fixture exists and is covered by parser and persistence tests.
 - Focused ingestion tests, adjacent source-artifact/pricing GraphQL tests, `mix typecheck`, and `git diff --check` pass.
 - `docs/work/product-data-scraping.md`, `docs/work/index.md`, and `docs/plans/INDEX.md` agree on the next unblocked implementation batch or the continuing blocker.

@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: blocked
+- Status: ready
 - Priority: P2
 - Source of truth: this file
 - Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-03 after dispatch redesign confirmed no unblocked local ingestion batch remains before live provider validation
+- Last verified: 2026-06-04 after collaborative planning promoted CJ Product Search validation to a ready manual evidence-and-fixture batch
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -18,7 +18,7 @@
 - Previous implementation plan:
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
 - Objective:
-  - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched legally, and how it lands in existing Catalog/Pricing models.
+  - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched through approved provider surfaces, and how it lands in existing Catalog/Pricing models.
 
 ## Research Summary
 
@@ -26,7 +26,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 1. Tier 1: official APIs and affiliate feeds (CJ, eBay, Best Buy, Awin, Amazon PA-API).
 2. Tier 2: merchant-provided feeds and exports.
-3. Tier 3: selective direct scraping only behind an explicit legal and robots gate.
+3. Tier 3: selective direct scraping only behind a later explicit owner, terms, and robots gate.
 
 ## Verified Current State
 
@@ -39,25 +39,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Current Recommendation
 
 - Start with a single Tier-1 connector MVP, defaulting to CJ because an approved account already exists and falling back to eBay only if CJ scope is insufficient for the first spike.
+- Validate CJ Product Search first because it gives the fastest account-scoped proof of product scope, quota behavior, and mapping shape. Treat Product Feeds as a fallback or follow-up if Product Search is missing or too limited.
 - Run a weekly CJ-driven merchant discovery loop (candidate export -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
 - Defer broad direct-site scraping until at least two official source connectors are operational.
-- Keep legal and compliance review as a hard gate for any Tier-3 scraping activation.
+- This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
 ## Next Batch
 
-- Status: blocked
-- Batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` remains blocked on external CJ access and compliance evidence; no unblocked local ingestion batch is queued from this worktree.
-- Next unblock target: record live CJ credential access, quota behavior, representative account-scoped sample payloads, and the source onboarding compliance checklist before live provider polling or Tier-3 scraping work begins.
-- Dispatch note: keep this lane `blocked` in `docs/work/index.md` until the unblock target is recorded. Do not update `docs/plans/NOW.md` beyond its queue-pointer role.
-- Remaining blockers:
-  - **Live CJ product-scope validation**
-    - Owner: Ryan (backend/ingestion lead)
-    - Target date: after Task 1 foundation lands
-    - Unblock criteria: CJ credential path, quota behavior, and representative account-scoped sample payloads are recorded.
-  - **Compliance signoff checklist process**
-    - Owner: Ryan (interim compliance coordinator)
-    - Target date: before any live provider polling or Tier-3 scraping activation
-    - Unblock criteria: minimal source-agnostic Tier-1 provider onboarding checklist drafted and approved; named legal approver recorded before any Tier-3 scraping gate can open.
+- Status: ready
+- Batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`.
+- Next action: run a manual CJ Product Search validation using local runtime environment variables only, capture product surface and quota evidence, commit one redacted account-scoped fixture, and cover that fixture with parser and persistence tests.
+- Secret handling:
+  - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
+  - Planned variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and `CJ_WEBSITE_ID`, adjusted only if CJ's Product Search auth contract requires different names.
+  - Read secrets at the manual task/client boundary with `System.get_env/1`.
+  - Do not commit tokens, account-sensitive tracking parameters, live credentials, or credential-derived config.
+- Owner approval: Ryan approves CJ account use for this personal project and permits one small redacted account-scoped sample fixture for validation.
+- Scope guardrails:
+  - Product Search is the first validation surface.
+  - Product Feeds are fallback or follow-up if Product Search is unavailable or insufficient.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
