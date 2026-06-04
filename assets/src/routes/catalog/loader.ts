@@ -25,6 +25,15 @@ export async function browseLoader({
   request
 }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
+  const after = new URL(request.url).searchParams.get("after");
+  const variables: BrowseProductsRouteQuery["variables"] = after
+    ? {
+        first: BROWSE_PRODUCTS_PAGE_SIZE,
+        after
+      }
+    : {
+        first: BROWSE_PRODUCTS_PAGE_SIZE
+      };
 
   try {
     return {
@@ -32,9 +41,7 @@ export async function browseLoader({
       query: await preloadRouteQuery<BrowseProductsRouteQuery>(
         environment,
         browseProductsRouteQuery,
-        {
-          first: BROWSE_PRODUCTS_PAGE_SIZE
-        },
+        variables,
         { signal: request.signal }
       )
     };
