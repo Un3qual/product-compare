@@ -25,13 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Implement the first manual CJ connector batch against `ads.api.cj.com/query`: add an env-var-backed GraphQL client, wire `ProductParser.fetch_batch/2`, and add a one-page manual import Mix task. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`, `lib/product_compare/ingestion/sources/cj/client.ex`, `lib/product_compare/ingestion/sources/cj/product_parser.ex`, `lib/mix/tasks/product_compare.ingestion.cj_import.ex`, `test/product_compare/ingestion/sources/cj/client_test.exs`, `test/product_compare/ingestion/sources/cj/product_parser_test.exs`, `test/product_compare/ingestion/ingestion_test.exs`, `test/mix/tasks/product_compare_ingestion_cj_import_test.exs` | `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`; `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`; `mix typecheck`; `git diff --check` | Promote a live manual import verification row, or record the exact CJ API/client/persistence blocker. |
+| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Run one live manual CJ import with local env credentials, then inspect non-secret persisted row counts for source artifacts, external products, merchant identities, merchant products, and price points. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md` | `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_import --keywords shoe --limit 1`; inspect persisted CJ row counts without printing raw payloads; `git diff --check` | Close the manual CJ connector MVP if the live import persists one row successfully, or record the exact CJ API/data/persistence blocker. |
 
 ## Ready Work
 
-Product data ingestion has one ready manual connector row. Keep the batch
-manual and env-var-backed: no scheduled polling, credential config, account
-automation, or Tier-3 direct scraping in this row.
+Product data ingestion has one ready live manual import verification row. Keep
+the batch manual and env-var-backed: no scheduled polling, credential config,
+account automation, or Tier-3 direct scraping in this row.
 
 ## Executor Prompts
 

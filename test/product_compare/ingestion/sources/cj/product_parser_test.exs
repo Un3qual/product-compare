@@ -11,6 +11,43 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParserTest do
       assert function_exported?(ProductParser, :fetch_batch, 2)
       assert function_exported?(ProductParser, :normalize, 1)
     end
+
+    test "fetch_batch delegates to the CJ GraphQL client" do
+      transport = fn _request ->
+        {:ok,
+         %{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "data" => %{
+                 "shoppingProducts" => %{
+                   "count" => 1,
+                   "limit" => 1,
+                   "totalCount" => 1,
+                   "resultList" => [
+                     %{
+                       "adId" => "CJ-1",
+                       "advertiserId" => "A-1",
+                       "title" => "Trail shoe",
+                       "link" => "https://merchant.example/p/trail-shoe",
+                       "price" => %{"amount" => "129.99", "currency" => "USD"},
+                       "lastUpdated" => "2026-06-04T18:34:49Z"
+                     }
+                   ]
+                 }
+               }
+             })
+         }}
+      end
+
+      assert {:ok, [%{"adId" => "CJ-1"}], nil} =
+               ProductParser.fetch_batch(nil,
+                 api_token: "test-token",
+                 company_id: "1234567",
+                 limit: 1,
+                 transport: transport
+               )
+    end
   end
 
   describe "normalize/1" do

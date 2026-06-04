@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md` | Product ingestion should implement the first manual CJ connector after live GraphQL validation proved one joined shopping product can be fetched. | After the manual connector and Mix task pass focused tests, promote a live manual import verification row or record the exact CJ API/client/persistence blocker. |
+| ready | `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md` | Product ingestion should run one live manual CJ import after the client, parser delegation, and Mix task passed focused tests. | Close the manual CJ connector MVP if the live import persists one row successfully, or record the exact CJ API/data/persistence blocker. |
 
 ## Candidate Pool
 

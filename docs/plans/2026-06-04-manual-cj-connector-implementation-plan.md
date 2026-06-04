@@ -10,6 +10,8 @@
 
 ---
 
+Status: implementation completed on 2026-06-04. Live manual import verification remains the ready dispatch row in `docs/work/index.md`.
+
 ## Scope
 
 - Build only a manual connector path.
@@ -35,7 +37,7 @@
 - Modify: `lib/product_compare/ingestion/sources/cj/product_parser.ex`
 - Modify: `test/product_compare/ingestion/sources/cj/product_parser_test.exs`
 
-- [ ] **Step 1: Write the failing client config and request tests**
+- [x] **Step 1: Write the failing client config and request tests**
 
 Add tests that set temporary env vars, inject a transport function, and assert the client posts to `https://ads.api.cj.com/query` with a Bearer token, `companyId`, `keywords`, `partnerStatus: JOINED`, `limit`, `offset`, `currency`, and `serviceableAreas`.
 
@@ -43,7 +45,7 @@ Run: `mix test test/product_compare/ingestion/sources/cj/client_test.exs`
 
 Expected: fail because `ProductCompare.Ingestion.Sources.CJ.Client` does not exist.
 
-- [ ] **Step 2: Implement the minimal client**
+- [x] **Step 2: Implement the minimal client**
 
 Create `ProductCompare.Ingestion.Sources.CJ.Client` with:
 
@@ -57,7 +59,7 @@ Run: `mix test test/product_compare/ingestion/sources/cj/client_test.exs`
 
 Expected: pass.
 
-- [ ] **Step 3: Write fetch delegation test**
+- [x] **Step 3: Write fetch delegation test**
 
 Update `ProductParserTest` so `fetch_batch/2` delegates to the client when passed an injected transport/config option and returns raw CJ product maps.
 
@@ -65,7 +67,7 @@ Run: `mix test test/product_compare/ingestion/sources/cj/product_parser_test.exs
 
 Expected: fail while `ProductParser.fetch_batch/2` still returns `{:error, :not_configured}`.
 
-- [ ] **Step 4: Implement fetch delegation**
+- [x] **Step 4: Implement fetch delegation**
 
 Update `ProductCompare.Ingestion.Sources.CJ.ProductParser.fetch_batch/2` to call `ProductCompare.Ingestion.Sources.CJ.Client.fetch_batch/2`.
 
@@ -80,7 +82,7 @@ Expected: pass.
 - Create: `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - Modify: `docs/work/product-data-scraping.md`
 
-- [ ] **Step 1: Write the failing Mix task test**
+- [x] **Step 1: Write the failing Mix task test**
 
 Create a test that inserts or reuses a `Source` with `domain: "cj.com"`, injects one redacted fixture record through the task, runs normalization plus `persist_normalized_listing/2`, and asserts the task reports `fetched=1 normalized=1 persisted=1 failed=0`.
 
@@ -88,7 +90,7 @@ Run: `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 
 Expected: fail because the Mix task does not exist.
 
-- [ ] **Step 2: Implement the manual task**
+- [x] **Step 2: Implement the manual task**
 
 Create `Mix.Tasks.ProductCompare.Ingestion.CjImport` with:
 
@@ -111,7 +113,7 @@ Expected: pass.
 - Modify: `docs/plans/INDEX.md`
 - Modify: `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`
 
-- [ ] **Step 1: Run focused tests**
+- [x] **Step 1: Run focused tests**
 
 Run:
 
@@ -121,7 +123,7 @@ mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Run adjacent regression tests**
+- [x] **Step 2: Run adjacent regression tests**
 
 Run:
 
@@ -133,7 +135,7 @@ git diff --check
 
 Expected: all commands pass.
 
-- [ ] **Step 3: Update dispatch docs**
+- [x] **Step 3: Update dispatch docs**
 
 Update the lane doc and index so the next row is either:
 

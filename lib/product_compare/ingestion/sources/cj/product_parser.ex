@@ -6,9 +6,10 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
   @behaviour ProductCompare.Ingestion.Sources.Adapter
 
   alias ProductCompare.Ingestion.NormalizedListing
+  alias ProductCompare.Ingestion.Sources.CJ.Client
 
   @impl true
-  def fetch_batch(_cursor, _opts), do: {:error, :not_configured}
+  def fetch_batch(cursor, opts), do: Client.fetch_batch(cursor, opts)
 
   @impl true
   def normalize(record) when is_map(record) do
