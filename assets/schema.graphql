@@ -14,6 +14,7 @@ type Query {
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchants(first: Int, after: String): MerchantConnection
+  merchantFeedCandidates(first: Int, after: String): MerchantFeedCandidateConnection
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
@@ -124,6 +125,32 @@ type MerchantConnection {
 
 type MerchantEdge {
   node: Merchant!
+  cursor: String!
+}
+
+type MerchantFeedCandidate {
+  id: ID!
+  provider: String!
+  providerFeedId: String!
+  advertiserId: String
+  advertiserName: String
+  advertiserCountry: String
+  sourceFeedType: String
+  currency: String
+  language: String
+  feedName: String
+  productCount: Int
+  providerLastUpdatedAt: DateTime
+  lastSeenAt: DateTime!
+}
+
+type MerchantFeedCandidateConnection {
+  edges: [MerchantFeedCandidateEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MerchantFeedCandidateEdge {
+  node: MerchantFeedCandidate!
   cursor: String!
 }
 
