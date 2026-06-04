@@ -21,7 +21,7 @@ of active and candidate plans, not the dispatch queue.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | needs_decision | Next demo-parity/frontend candidate | Product/backend priority chooses a specific browser-demo gap after completed offer discovery and compare matrix work. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
-| conditional | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
+| blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
 

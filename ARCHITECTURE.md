@@ -46,7 +46,8 @@
 
 ## Next Planned Slice
 
-- There is no unblocked implementation batch as of 2026-06-03.
+- There is no unblocked implementation batch; see `docs/work/index.md` for the
+  current queue.
 - Live CJ provider validation remains blocked until credentials, quota behavior,
   representative sample payloads, and source onboarding compliance signoff are
   recorded.
