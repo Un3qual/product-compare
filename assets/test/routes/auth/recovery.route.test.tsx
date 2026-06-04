@@ -333,7 +333,7 @@ test("reset password route clears stale success state when the token changes", a
 
     expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
 
-    await act(async () => {
+    act(() => {
       window.history.pushState({}, "", "/auth/reset-password?token=second-token");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
@@ -384,7 +384,7 @@ test("reset password route ignores stale responses after the token changes", asy
 
     const firstRequest = latestMutationOptions();
 
-    await act(async () => {
+    act(() => {
       window.history.pushState({}, "", "/auth/reset-password?token=second-token");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });

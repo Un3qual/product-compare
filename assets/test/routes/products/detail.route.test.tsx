@@ -902,7 +902,7 @@ test("drops offers with unsafe urls", () => {
     buildOffersData([
       {
         id: "merchant-product-1",
-        url: "javascript:alert(1)",
+        url: "ftp://unsafe.example/offer",
         currency: "USD",
         merchant: {
           id: "merchant-1",

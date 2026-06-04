@@ -6,10 +6,10 @@ import {
 } from "../../../src/relay/route-preload";
 import {
   MemoryRouter,
-  useLoaderData
+  useLoaderData,
+  useRouteError
 } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
-import * as ReactRouterDom from "react-router-dom";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { compareLoader, type CompareRouteLoaderData } from "../../../src/routes/compare/loader";
 import {
@@ -36,6 +36,7 @@ const {
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
+  useRouteErrorMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
@@ -44,6 +45,7 @@ const {
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
+  useRouteErrorMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
 
@@ -75,7 +77,8 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
+    useRouteError: useRouteErrorMock
   };
 });
 
@@ -84,6 +87,7 @@ const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRouteError = vi.mocked(useRouteError);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 type CompareTestProduct = {
@@ -245,6 +249,7 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
+  useRouteErrorMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   DETAIL_PRODUCT_QUERY_REF.dispose.mockReset();
   SECOND_PRODUCT_QUERY_REF.dispose.mockReset();
@@ -1055,62 +1060,44 @@ test("ready compare page lets users append a product without editing the URL", (
   );
 });
 
-test("compare route renders the compare error boundary when the loader throws", async () => {
-  const useRouteErrorSpy = vi
-    .spyOn(ReactRouterDom, "useRouteError")
-    .mockReturnValue(new Error("Network request failed: boom"));
+test("compare route renders the compare error boundary when the loader throws", () => {
+  mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
-  try {
-    render(<RouteErrorBoundary />);
+  render(<RouteErrorBoundary />);
 
-    expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "A network error occurred while loading the comparison."
-    );
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Please check your internet connection and try again."
-    );
-  } finally {
-    useRouteErrorSpy.mockRestore();
-  }
+  expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "A network error occurred while loading the comparison."
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Please check your internet connection and try again."
+  );
 });
 
 test("compare route keeps non-network TypeErrors on the generic error path", () => {
-  const useRouteErrorSpy = vi
-    .spyOn(ReactRouterDom, "useRouteError")
-    .mockReturnValue(new TypeError("Cannot read properties of undefined"));
+  mockedUseRouteError.mockReturnValue(new TypeError("Cannot read properties of undefined"));
 
-  try {
-    render(<RouteErrorBoundary title="Compare products" />);
+  render(<RouteErrorBoundary title="Compare products" />);
 
-    expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "An unexpected error occurred while loading the comparison."
-    );
-    expect(screen.getByRole("alert")).not.toHaveTextContent(
-      "Please check your internet connection and try again."
-    );
-  } finally {
-    useRouteErrorSpy.mockRestore();
-  }
+  expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the comparison."
+  );
+  expect(screen.getByRole("alert")).not.toHaveTextContent(
+    "Please check your internet connection and try again."
+  );
 });
 
 test("compare error boundary supports route-specific resource copy", () => {
-  const useRouteErrorSpy = vi
-    .spyOn(ReactRouterDom, "useRouteError")
-    .mockReturnValue(new Error("Network request failed: boom"));
+  mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
-  try {
-    render(<RouteErrorBoundary resourceName="revenue report" title="Revenue" />);
+  render(<RouteErrorBoundary resourceName="revenue report" title="Revenue" />);
 
-    expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "A network error occurred while loading the revenue report."
-    );
-    expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
-  } finally {
-    useRouteErrorSpy.mockRestore();
-  }
+  expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "A network error occurred while loading the revenue report."
+  );
+  expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
 });
 
 test("compare route saves the current ready-state selection", async () => {
