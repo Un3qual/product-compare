@@ -36,15 +36,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     fetcher = Keyword.get(opts, :fetcher, &ProductParser.fetch_batch/2)
     cursor = Keyword.get(opts, :cursor)
     fetch_opts = fetch_opts(opts)
+    pages = page_count(opts)
 
     with {:ok, source} <- fetch_source(),
-         {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, opts),
-         {:ok, records, next_cursor} <- fetcher.(cursor, fetch_opts),
-         report <- persist_records(source, records),
-         {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
-      print_report(report)
+         {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
+      case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
+        {:ok, report, next_cursor} ->
+          with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
+            print_report(report)
 
-      {:ok, report}
+            {:ok, report}
+          end
+
+        {:error, reason, report, next_cursor} ->
+          _completed_run =
+            Ingestion.complete_import_run(import_run, %{
+              error_summary: inspect(reason),
+              status: "failed",
+              cursor_end: next_cursor,
+              pages_fetched: report.pages_fetched,
+              records_failed: report.failed,
+              records_fetched: report.fetched,
+              records_normalized: report.normalized,
+              records_persisted: report.persisted
+            })
+
+          {:error, reason}
+      end
     end
   end
 
@@ -67,6 +85,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           keywords: :string,
           limit: :integer,
           offset: :integer,
+          pages: :integer,
           serviceable_area: :string
         ]
       )
@@ -76,6 +95,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.put_new(:limit, 25)
     |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
     |> Keyword.put_new(:currency, "USD")
+    |> Keyword.put_new(:pages, 1)
     |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
   end
 
@@ -99,7 +119,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     ]
   end
 
-  defp start_import_run(source, cursor, fetch_opts, opts) do
+  defp page_count(opts) do
+    case Keyword.get(opts, :pages, 1) do
+      value when is_integer(value) and value > 0 -> value
+      _invalid -> 1
+    end
+  end
+
+  defp start_import_run(source, cursor, fetch_opts, pages) do
     Ingestion.start_import_run(%{
       source_id: source.id,
       provider: "cj",
@@ -111,7 +138,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       },
       cursor_start: cursor || 0,
       page_size: Keyword.fetch!(fetch_opts, :limit),
-      pages_requested: Keyword.get(opts, :pages, 1)
+      pages_requested: pages
     })
   end
 
@@ -121,7 +148,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     Ingestion.complete_import_run(import_run, %{
       status: status,
       cursor_end: next_cursor,
-      pages_fetched: 1,
+      pages_fetched: report.pages_fetched,
       records_fetched: report.fetched,
       records_normalized: report.normalized,
       records_persisted: report.persisted,
@@ -148,6 +175,49 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
         |> Source.changeset(%{kind: "affiliate_feed", name: "CJ", domain: "cj.com"})
         |> Repo.insert()
     end
+  end
+
+  defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
+    Enum.reduce_while(1..pages, {:ok, initial_aggregate_report(), cursor}, fn _page,
+                                                                              {:ok, report,
+                                                                               current_cursor} ->
+      case fetcher.(current_cursor, fetch_opts) do
+        {:ok, records, next_cursor} ->
+          page_report = persist_records(source, records)
+
+          report =
+            report
+            |> merge_report(page_report)
+            |> Map.update!(:pages_fetched, &(&1 + 1))
+
+          if is_nil(next_cursor) do
+            {:halt, {:ok, report, next_cursor}}
+          else
+            {:cont, {:ok, report, next_cursor}}
+          end
+
+        {:error, reason} ->
+          {:halt, {:error, reason, report, current_cursor}}
+      end
+    end)
+  end
+
+  defp initial_aggregate_report do
+    %{
+      failed: 0,
+      fetched: 0,
+      normalized: 0,
+      pages_fetched: 0,
+      persisted: 0
+    }
+  end
+
+  defp merge_report(report, page_report) do
+    report
+    |> Map.update!(:failed, &(&1 + page_report.failed))
+    |> Map.update!(:fetched, &(&1 + page_report.fetched))
+    |> Map.update!(:normalized, &(&1 + page_report.normalized))
+    |> Map.update!(:persisted, &(&1 + page_report.persisted))
   end
 
   defp persist_records(source, records) do
@@ -178,7 +248,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   defp print_report(report) do
     IO.puts(
-      "fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed}"
+      "fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
     )
   end
 end

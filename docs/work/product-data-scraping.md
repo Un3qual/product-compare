@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-04 after the live manual CJ import persisted one source-scoped row and replay remained idempotent; the next expansion row was promoted by request
+- Live queue row: completed and removed from `docs/work/index.md`
+- Last verified: 2026-06-04 after focused tests, adjacent regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and a bounded live manual CJ import
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -14,8 +14,10 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
+  - `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`
+- Previous implementation plans:
+  - `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`
   - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
-- Previous implementation plan:
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
 - Objective:
   - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched through approved provider surfaces, and how it lands in existing Catalog/Pricing models.
@@ -44,11 +46,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
-## Next Batch
+## Current Batch
 
-- Status: ready
+- Status: completed
 - Batch: `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
-- Next action: add import run observability, manual `shoppingProductFeeds` discovery, and bounded multi-page manual imports.
+- Completed action: added import run observability, manual `shoppingProductFeeds` discovery, and bounded multi-page manual imports.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -56,26 +58,37 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Do not commit tokens, account-sensitive tracking parameters, live credentials, or credential-derived config.
 - Owner approval: Ryan approves CJ account use for this personal project and permits one small redacted account-scoped sample fixture for validation.
 - Scope guardrails:
-  - `shoppingProducts` is the first connector surface.
-  - `shoppingProductFeeds` is available for later feed discovery if joined product search is too narrow.
+  - `shoppingProducts` remains the manual product import surface.
+  - `shoppingProductFeeds` is now available through a manual discovery task.
   - No scheduled polling, Oban jobs, provider credential config, account-manager automation, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
-- `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_import --keywords shoe --limit 1`
+- `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_feeds --limit 1 --pages 1`
+- `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_import --keywords shoe --limit 1 --pages 2`
 - Inspect persisted CJ row counts without printing raw payloads.
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs`
-- `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
 - `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`
 - `mix typecheck`
 - `git diff --check`
-- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
+- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|shoppingProductFeeds|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
 
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- CJ ingestion expansion:
+  - Added `ingestion_runs` plus `ProductCompareSchemas.Ingestion.ImportRun` and `ProductCompare.Ingestion.start_import_run/1` / `complete_import_run/2` for durable run metadata.
+  - Updated `mix product_compare.ingestion.cj_import` to record completed runs with cursor, page, and record counts.
+  - Added `ProductCompare.Ingestion.Sources.CJ.Client.fetch_feeds/2` and `mix product_compare.ingestion.cj_feeds` for manual `shoppingProductFeeds` discovery.
+  - Added bounded manual product pagination through `--pages`; imports stop when the page limit is reached or CJ returns no next cursor.
+  - Live feed discovery reported `feeds_fetched=1 pages_fetched=1 failed=0`.
+  - Bounded live product import requested two pages and reported `fetched=1 normalized=1 persisted=1 failed=0 pages_fetched=1` because CJ returned no next cursor after the first page.
+  - Latest non-secret run metadata: `shoppingProducts` succeeded with `pages_requested=2`, `pages_fetched=1`, `records_fetched=1`, `records_persisted=1`, `records_failed=0`, `cursor_start=0`, `cursor_end=nil`; `shoppingProductFeeds` succeeded with `pages_requested=1`, `pages_fetched=1`, `records_fetched=1`, `records_persisted=0`, `records_failed=0`, `cursor_start=0`, `cursor_end=1`.
+  - Non-secret row counts after replay: CJ source-scoped `source_artifacts=1`, `external_products=1`, `merchant_source_identities=1`; current dev pricing totals `merchant_products=2`, `price_points=4`.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`, `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`, `mix typecheck`, and `git diff --check`.
 
 - Live CJ provider validation, Task 1:
   - Confirmed the legacy REST Product Search endpoint returns a deprecation response pointing to `ads.api.cj.com`.

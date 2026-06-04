@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md` | Product ingestion should add import observability, feed discovery, and bounded manual pagination after the one-page manual CJ import MVP completed. | Close the row when focused tests, adjacent regressions, one live feed discovery, and one bounded live import all pass with non-secret counts recorded. |
+| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
 
 ## Candidate Pool
 
@@ -30,6 +30,9 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ import observability, manual feed discovery, and bounded
+  manual product import pagination:
+  `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
 - Frontend catalog browse pagination demo parity:
   `docs/plans/2026-06-04-frontend-catalog-browse-pagination-demo-parity-implementation-plan.md`.
 - Product ingestion: live CJ provider validation and redacted sample fixture:

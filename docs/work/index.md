@@ -25,13 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Execute CJ ingestion expansion: add import run observability, manual `shoppingProductFeeds` discovery, and bounded multi-page manual imports. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`, `priv/repo/migrations/20260604191000_create_ingestion_runs.exs`, `lib/product_compare_schemas/ingestion/import_run.ex`, `lib/product_compare/ingestion.ex`, `lib/product_compare/ingestion/sources/cj/client.ex`, `lib/mix/tasks/product_compare.ingestion.cj_import.ex`, `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`, `test/product_compare/ingestion/ingestion_test.exs`, `test/product_compare/ingestion/sources/cj/client_test.exs`, `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`, `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs` | Focused ingestion/client/task tests, adjacent source-artifact/pricing tests, `mix typecheck`, `git diff --check`, one live feed discovery, and one bounded live import with non-secret count inspection. | Close the CJ ingestion expansion row if observability, feed discovery, and pagination all verify; otherwise record the exact blocker in the lane doc. |
+| - | - | - | - | No ready rows. | - | - | - |
 
 ## Ready Work
 
-Product data ingestion has one ready CJ ingestion expansion row. Keep the batch
-manual and env-var-backed: no scheduled polling, credential config, account
-automation, or Tier-3 direct scraping in this row.
+No ready rows remain after the CJ ingestion expansion batch. A coordinator should
+promote exactly one concrete next row from a current lane decision before any new
+worker starts implementation.
 
 ## Executor Prompts
 
