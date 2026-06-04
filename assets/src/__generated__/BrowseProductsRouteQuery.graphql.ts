@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e255c8686a826a112697f1454f112db7>>
+ * @generated SignedSource<<b7a2f47c4fb580689aeb1978f4578248>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -66,54 +66,94 @@ v3 = {
 v4 = [
   {
     "alias": null,
-    "args": null,
-    "concreteType": "ProductEdge",
+    "args": [
+      {
+        "kind": "Variable",
+        "name": "after",
+        "variableName": "after"
+      },
+      {
+        "kind": "Variable",
+        "name": "first",
+        "variableName": "first"
+      }
+    ],
+    "concreteType": "ProductConnection",
     "kind": "LinkedField",
-    "name": "edges",
-    "plural": true,
+    "name": "products",
+    "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "kind": "ScalarField",
-        "name": "cursor",
+        "concreteType": "ProductEdge",
+        "kind": "LinkedField",
+        "name": "edges",
+        "plural": true,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "cursor",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Product",
+            "kind": "LinkedField",
+            "name": "node",
+            "plural": false,
+            "selections": [
+              (v2/*: any*/),
+              (v3/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "slug",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "Brand",
+                "kind": "LinkedField",
+                "name": "brand",
+                "plural": false,
+                "selections": [
+                  (v2/*: any*/),
+                  (v3/*: any*/)
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
         "storageKey": null
       },
       {
         "alias": null,
         "args": null,
-        "concreteType": "Product",
+        "concreteType": "PageInfo",
         "kind": "LinkedField",
-        "name": "node",
+        "name": "pageInfo",
         "plural": false,
         "selections": [
-          (v2/*: any*/),
-          (v3/*: any*/),
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "slug",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "Brand",
-            "kind": "LinkedField",
-            "name": "brand",
-            "plural": false,
-            "selections": [
-              (v2/*: any*/),
-              (v3/*: any*/)
-            ],
+            "name": "hasNextPage",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "__typename",
+            "name": "endCursor",
             "storageKey": null
           }
         ],
@@ -121,43 +161,6 @@ v4 = [
       }
     ],
     "storageKey": null
-  },
-  {
-    "alias": null,
-    "args": null,
-    "concreteType": "PageInfo",
-    "kind": "LinkedField",
-    "name": "pageInfo",
-    "plural": false,
-    "selections": [
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "hasNextPage",
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "endCursor",
-        "storageKey": null
-      }
-    ],
-    "storageKey": null
-  }
-],
-v5 = [
-  {
-    "kind": "Variable",
-    "name": "after",
-    "variableName": "after"
-  },
-  {
-    "kind": "Variable",
-    "name": "first",
-    "variableName": "first"
   }
 ];
 return {
@@ -169,18 +172,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "BrowseProductsRouteQuery",
-    "selections": [
-      {
-        "alias": "products",
-        "args": null,
-        "concreteType": "ProductConnection",
-        "kind": "LinkedField",
-        "name": "__BrowseProductsRouteQuery_products_connection",
-        "plural": false,
-        "selections": (v4/*: any*/),
-        "storageKey": null
-      }
-    ],
+    "selections": (v4/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -192,50 +184,19 @@ return {
     ],
     "kind": "Operation",
     "name": "BrowseProductsRouteQuery",
-    "selections": [
-      {
-        "alias": null,
-        "args": (v5/*: any*/),
-        "concreteType": "ProductConnection",
-        "kind": "LinkedField",
-        "name": "products",
-        "plural": false,
-        "selections": (v4/*: any*/),
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": (v5/*: any*/),
-        "filters": null,
-        "handle": "connection",
-        "key": "BrowseProductsRouteQuery_products",
-        "kind": "LinkedHandle",
-        "name": "products"
-      }
-    ]
+    "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "36c1c5158c5695dd5a42d3bcf6aac918",
+    "cacheID": "9e7d53d104c77878d194425c7bcfeb12",
     "id": null,
-    "metadata": {
-      "connection": [
-        {
-          "count": "first",
-          "cursor": "after",
-          "direction": "forward",
-          "path": [
-            "products"
-          ]
-        }
-      ]
-    },
+    "metadata": {},
     "name": "BrowseProductsRouteQuery",
     "operationKind": "query",
-    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        __typename\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "099e7f020e607fadd21077117cc1c845";
+(node as any).hash = "83817b0b333c8d1d581dddca9a213df9";
 
 export default node;

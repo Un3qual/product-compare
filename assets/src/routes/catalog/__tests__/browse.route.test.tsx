@@ -2,8 +2,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
+import { createOperationDescriptor } from "relay-runtime";
 import { createRelayEnvironment } from "../../../relay/environment";
-import browseProductsRouteQueryArtifact from "../../../__generated__/BrowseProductsRouteQuery.graphql";
+import browseProductsRouteQueryArtifact, {
+  type BrowseProductsRouteQuery
+} from "../../../__generated__/BrowseProductsRouteQuery.graphql";
 import {
   createRelayRouterContext,
   preloadRouteQuery,
@@ -92,6 +95,38 @@ function getBrowseProductsRouteQueryArtifact() {
   };
 }
 
+function buildBrowseProductsConnection({
+  endCursor,
+  hasNextPage,
+  products
+}: {
+  endCursor: string | null;
+  hasNextPage: boolean;
+  products: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
+}) {
+  return {
+    edges: products.map((product, index) => ({
+      cursor: `cursor-${index + 1}`,
+      node: {
+        ...product,
+        __typename: "Product",
+        brand: {
+          id: `brand-${product.id}`,
+          name: `Brand for ${product.name}`
+        }
+      }
+    })),
+    pageInfo: {
+      hasNextPage,
+      endCursor
+    }
+  };
+}
+
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -116,6 +151,27 @@ test("browse loader preloads and returns the Relay browse route query", async ()
     environment,
     expect.anything(),
     { first: 12 },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader forwards the requested pagination cursor", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?after=cursor-next-page");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12, after: "cursor-next-page" },
     { signal: request.signal }
   );
 });
@@ -178,21 +234,60 @@ test("browse loader rethrows aborted route preloads", async () => {
   }
 });
 
-test("browse route query carries Relay connection pagination metadata", () => {
+test("browse route query keeps URL-driven pages as separate store entries", () => {
   const artifact = getBrowseProductsRouteQueryArtifact();
 
   expect(artifact.params?.text).toContain("after: $after");
   expect(artifact.params?.text).toContain("pageInfo");
   expect(artifact.params?.text).toContain("hasNextPage");
   expect(artifact.params?.text).toContain("endCursor");
-  expect(artifact.params?.metadata?.connection).toEqual([
-    expect.objectContaining({
-      count: "first",
-      cursor: "after",
-      direction: "forward",
-      path: ["products"]
+  expect(artifact.params?.text).not.toContain("__BrowseProductsRouteQuery_products_connection");
+  expect(artifact.params?.metadata?.connection).toBeUndefined();
+});
+
+test("Relay store reads each URL-driven browse page without previous page edges", () => {
+  const environment = createRelayEnvironment();
+  const firstPageOperation = createOperationDescriptor(browseProductsRouteQueryArtifact, {
+    first: 12
+  });
+  const secondPageOperation = createOperationDescriptor(browseProductsRouteQueryArtifact, {
+    first: 12,
+    after: "cursor-page-1"
+  });
+
+  environment.commitPayload(firstPageOperation, {
+    products: buildBrowseProductsConnection({
+      endCursor: "cursor-page-1",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-page-1",
+          name: "Page One Product",
+          slug: "page-one-product"
+        }
+      ]
     })
-  ]);
+  });
+  environment.commitPayload(secondPageOperation, {
+    products: buildBrowseProductsConnection({
+      endCursor: "cursor-page-2",
+      hasNextPage: false,
+      products: [
+        {
+          id: "product-page-2",
+          name: "Page Two Product",
+          slug: "page-two-product"
+        }
+      ]
+    })
+  });
+
+  const pageTwoSnapshot = environment.lookup(secondPageOperation.fragment);
+  const pageTwoProductIds = (
+    pageTwoSnapshot.data as BrowseProductsRouteQuery["response"]
+  ).products.edges.map(({ node }) => node.id);
+
+  expect(pageTwoProductIds).toEqual(["product-page-2"]);
 });
 
 test("renders browse products from the Relay route query", () => {
@@ -228,7 +323,11 @@ test("renders browse products from the Relay route query", () => {
             }
           }
         }
-      ]
+      ],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "cursor-next-page"
+      }
     }
   });
 
@@ -264,6 +363,100 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
+});
+
+test("renders next and first-page pagination links from the browse query", () => {
+  const cursorDescriptor = {
+    __relayQuery: {
+      ...browseQueryDescriptor.__relayQuery,
+      variables: { first: 12, after: "cursor-current-page" }
+    }
+  };
+  const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "cursor-current-page" } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: cursorDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-page-2",
+            name: "Page Two Product",
+            slug: "page-two-product",
+            brand: {
+              id: "brand-page-2",
+              name: "Page Two Brand"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "cursor-next-page"
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/products?after=cursor-current-page"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "Page Two Product" })).toHaveAttribute(
+    "href",
+    "/products/page-two-product"
+  );
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?after=cursor-next-page"
+  );
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute("href", "/products");
+});
+
+test("omits browse pagination links on the first page when there is no next page", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-final-page",
+            name: "Final Page Product",
+            slug: "final-page-product",
+            brand: {
+              id: "brand-final-page",
+              name: "Final Page Brand"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/products"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "Final Page Product" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
 });
 
 test("renders a local loading state while the Relay route query suspends", () => {
@@ -362,7 +555,11 @@ test("resets the local unavailable state when fresh loader data arrives", async 
               }
             }
           }
-        ]
+        ],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
       }
     });
 
@@ -400,7 +597,11 @@ test("renders an empty-state message when the Relay query returns no products", 
   mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
   mockedUsePreloadedQuery.mockReturnValue({
     products: {
-      edges: []
+      edges: [],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "cursor-without-products"
+      }
     }
   });
 
@@ -411,6 +612,8 @@ test("renders an empty-state message when the Relay query returns no products", 
   );
 
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
 });
 
 test("renders an unavailable-state message when the preload path fails", () => {

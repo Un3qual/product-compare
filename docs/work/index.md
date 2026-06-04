@@ -25,13 +25,12 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | needs_decision | Product/backend priority | `docs/plans/INDEX.md` | Choose exactly one path: keep CJ validation as the next blocker to clear, declare CJ unavailable and plan the eBay Browse fallback, or create one new demo-parity/frontend candidate. | `docs/work/index.md`, `docs/plans/INDEX.md`, `docs/plans/NOW.md`, and the selected lane doc or new plan only. | `git diff --check`; verify the promoted row has concrete target paths and verification. | Decision recorded by either promoting exactly one `ready` row, or removing this row and making the CJ blocker the highest-ranked row until evidence arrives; otherwise this row remains `needs_decision` with the missing decision named. |
-| 2 | blocked | Product data ingestion | `docs/work/product-data-scraping.md` | Record non-secret CJ credential access, product catalog surface and quota behavior, permission for one redacted account-scoped sample, and a named compliance approver. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Before unblock: evidence review only. After unblock: run the focused commands in `docs/work/product-data-scraping.md`. | Promote CJ validation Task 1 to `ready`, or record why CJ is unavailable and promote the fallback-planning row. |
+| 1 | blocked | Product data ingestion | `docs/work/product-data-scraping.md` | Record non-secret CJ credential access, product catalog surface and quota behavior, permission for one redacted account-scoped sample, and a named compliance approver. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Before unblock: evidence review only. After unblock: run the focused commands in `docs/work/product-data-scraping.md`. | Promote CJ validation Task 1 to `ready`, or record why CJ is unavailable and promote the fallback-planning row. |
 
 ## No Ready Work
 
-There is currently no unblocked implementation batch. The next useful action is a
-coordinator decision or the external CJ/compliance evidence listed above.
+No ready implementation work remains.
+Product data ingestion is blocked on the external CJ evidence listed above.
 
 ## Executor Prompts
 

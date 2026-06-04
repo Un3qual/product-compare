@@ -20,7 +20,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| needs_decision | Next demo-parity/frontend candidate | Product/backend priority chooses a specific browser-demo gap after completed offer discovery and compare matrix work. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
+| candidate | Next demo-parity/frontend candidate | The catalog browse pagination lane closes and product/backend priority chooses another specific browser-demo gap. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
@@ -30,6 +30,8 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Frontend catalog browse pagination demo parity:
+  `docs/plans/2026-06-04-frontend-catalog-browse-pagination-demo-parity-implementation-plan.md`.
 - Frontend demo parity: compare matrix, offer discovery, merchant discovery,
   affiliate setup, revenue reporting, API token management, product comparison,
   product-detail coupons, and product-detail price history.
