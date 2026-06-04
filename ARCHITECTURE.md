@@ -41,15 +41,17 @@
 
 ## Active Gap
 
-- CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
-- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, and fixture parser tests.
+- CJ/Awin source-field mapping remains deferred pending additional account docs or sample payloads beyond the validated first CJ manual connector path.
+- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, and persisted merchant feed candidates.
 
 ## Next Planned Slice
 
-- There is no unblocked implementation batch; see `docs/work/index.md` for the
-  current queue.
-- Live CJ provider validation remains blocked until credentials, quota behavior,
-  representative sample payloads, and source onboarding compliance signoff are
-  recorded.
-- The next demo-parity/frontend candidate needs a fresh product/backend priority
-  decision before plan creation.
+- The current ready batch exposes captured CJ merchant feed candidates through a
+  non-secret GraphQL read model and a read-only Relay route at
+  `/ingestion/feed-candidates`; see `docs/work/index.md`.
+- CJ credential access, product-scope validation, quota observation,
+  representative redacted sample evidence, and owner approval are recorded for
+  the manual connector path.
+- Scheduled CJ discovery, candidate scoring, candidate approval workflows,
+  account-manager automation, and Tier-3 direct scraping remain deferred until a
+  later explicit product/backend decision.

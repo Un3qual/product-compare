@@ -14,13 +14,13 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
+| ready | `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md` | Execute the promoted row in `docs/work/index.md` to expose captured CJ merchant feed candidates through GraphQL and a read-only Relay route. | Close the row after focused backend/frontend verification, or promote the next ingestion decision if candidate scoring, approval UX, or scheduled discovery becomes the chosen follow-up. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | Next demo-parity/frontend candidate | The catalog browse pagination lane closes and product/backend priority chooses another specific browser-demo gap. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
+| candidate | Candidate scoring or approval UX | The CJ feed-candidate review route lands and product priority chooses an actionable review workflow beyond read-only inspection. | Create one dated plan and one `ready` queue row. Keep application automation and scheduled polling out unless explicitly selected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
