@@ -4,14 +4,15 @@ import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
 } from "../../../__generated__/MerchantFeedCandidatesRouteQuery.graphql";
-import type { ReviewMerchantFeedCandidateMutation } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
+import reviewMerchantFeedCandidateMutation, {
+  type ReviewMerchantFeedCandidateMutation
+} from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
 import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData
 } from "./loader";
-import reviewMerchantFeedCandidateMutation from "./mutations/ReviewMerchantFeedCandidateMutation";
 import type { FeedCandidatesPagination } from "./pagination";
 
 type FeedCandidatesConnection = NonNullable<
