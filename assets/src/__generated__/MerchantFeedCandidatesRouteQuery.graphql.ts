@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<09783b0fe168c7a46dc92e9c08eefcb4>>
+ * @generated SignedSource<<313417cf8a431de3a59b6b948934ab22>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,6 +9,7 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
+export type MerchantFeedCandidateReviewStatus = "DISMISSED" | "PENDING" | "SHORTLISTED" | "%future added value";
 export type MerchantFeedCandidatesRouteQuery$variables = {
   after?: string | null | undefined;
   first?: number | null | undefined;
@@ -29,6 +30,9 @@ export type MerchantFeedCandidatesRouteQuery$data = {
         readonly provider: string;
         readonly providerFeedId: string;
         readonly providerLastUpdatedAt: any | null | undefined;
+        readonly reviewNote: string | null | undefined;
+        readonly reviewStatus: MerchantFeedCandidateReviewStatus;
+        readonly reviewedAt: any | null | undefined;
         readonly sourceFeedType: string | null | undefined;
       };
     }>;
@@ -173,6 +177,27 @@ v2 = [
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "reviewStatus",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "reviewNote",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "reviewedAt",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "providerLastUpdatedAt",
                 "storageKey": null
               },
@@ -256,16 +281,16 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "9a9ab0b2da96190dba84632e2fb6999a",
+    "cacheID": "ede3a9a58a9f83b31253449f9cb0973f",
     "id": null,
     "metadata": {},
     "name": "MerchantFeedCandidatesRouteQuery",
     "operationKind": "query",
-    "text": "query MerchantFeedCandidatesRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchantFeedCandidates(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        provider\n        providerFeedId\n        advertiserName\n        advertiserCountry\n        sourceFeedType\n        currency\n        language\n        feedName\n        productCount\n        providerLastUpdatedAt\n        lastSeenAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query MerchantFeedCandidatesRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchantFeedCandidates(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        provider\n        providerFeedId\n        advertiserName\n        advertiserCountry\n        sourceFeedType\n        currency\n        language\n        feedName\n        productCount\n        reviewStatus\n        reviewNote\n        reviewedAt\n        providerLastUpdatedAt\n        lastSeenAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "f119fc4d13ffd84b2372253859665921";
+(node as any).hash = "cce1d827097c15f2bb940892885506a4";
 
 export default node;

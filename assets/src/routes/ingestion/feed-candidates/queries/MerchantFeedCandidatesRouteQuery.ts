@@ -16,6 +16,9 @@ export default graphql`
           language
           feedName
           productCount
+          reviewStatus
+          reviewNote
+          reviewedAt
           providerLastUpdatedAt
           lastSeenAt
         }

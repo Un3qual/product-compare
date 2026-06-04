@@ -1,16 +1,22 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../relay/route-preload";
 import { FeedCandidatesRoute } from "../index";
 import type { FeedCandidatesLoaderData } from "../loader";
 
 const {
+  commitReviewMutationMock,
+  graphqlMock,
   useLoaderDataMock,
+  useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
+  commitReviewMutationMock: vi.fn(),
+  graphqlMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
@@ -29,6 +35,8 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    graphql: graphqlMock,
+    useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
 });
@@ -45,6 +53,7 @@ vi.mock("../../../../relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -65,11 +74,14 @@ const FEED_CANDIDATES_QUERY_REF = {
 };
 
 beforeEach(() => {
+  commitReviewMutationMock.mockReset();
   useLoaderDataMock.mockReset();
+  useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   FEED_CANDIDATES_QUERY_REF.dispose.mockReset();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+  mockedUseMutation.mockReturnValue([commitReviewMutationMock, false]);
   mockedUseRoutePreloadedQuery.mockReturnValue(FEED_CANDIDATES_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildFeedCandidatesData());
 });
@@ -86,6 +98,7 @@ test("feed candidates route renders review-safe candidate rows", () => {
   expect(within(candidateList).getByText("US")).toBeInTheDocument();
   expect(within(candidateList).getByText("USD")).toBeInTheDocument();
   expect(within(candidateList).getByText("EN")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Pending")).toBeInTheDocument();
   expect(within(candidateList).queryByText(/tracking|account|token/i)).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
@@ -95,6 +108,81 @@ test("feed candidates route renders review-safe candidate rows", () => {
     expect.anything(),
     FEED_CANDIDATES_QUERY_REF
   );
+});
+
+test("feed candidates route commits review status changes", async () => {
+  renderFeedCandidatesRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-1",
+            status: "SHORTLISTED"
+          }
+        }
+      })
+    );
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss Trail Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reset Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-1",
+            status: "DISMISSED"
+          }
+        }
+      })
+    );
+    expect(commitReviewMutationMock).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-1",
+            status: "PENDING"
+          }
+        }
+      })
+    );
+  });
+});
+
+test("feed candidates route renders mutation payload errors", async () => {
+  commitReviewMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        reviewMerchantFeedCandidate: {
+          candidate: null,
+          errors: [
+            {
+              code: "INVALID_ID",
+              field: "id",
+              message: "invalid candidate id"
+            }
+          ]
+        }
+      },
+      null
+    );
+  });
+
+  renderFeedCandidatesRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toHaveTextContent("invalid candidate id");
+  });
 });
 
 test("feed candidates route renders an empty state", () => {
@@ -184,6 +272,9 @@ function buildFeedCandidatesData({
       language: "EN",
       feedName: "Trail Shopping",
       productCount: 10,
+      reviewStatus: "PENDING",
+      reviewNote: null,
+      reviewedAt: null,
       providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",
       lastSeenAt: "2026-06-04T21:00:00.000000Z"
     }
@@ -204,6 +295,9 @@ function buildFeedCandidatesData({
     language: string | null;
     feedName: string | null;
     productCount: number | null;
+    reviewStatus: "PENDING" | "SHORTLISTED" | "DISMISSED";
+    reviewNote: string | null;
+    reviewedAt: string | null;
     providerLastUpdatedAt: string | null;
     lastSeenAt: string;
   }>;

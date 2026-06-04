@@ -1,21 +1,24 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
 } from "../../../__generated__/MerchantFeedCandidatesRouteQuery.graphql";
+import type { ReviewMerchantFeedCandidateMutation } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
 import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData
 } from "./loader";
+import reviewMerchantFeedCandidateMutation from "./mutations/ReviewMerchantFeedCandidateMutation";
 import type { FeedCandidatesPagination } from "./pagination";
 
 type FeedCandidatesConnection = NonNullable<
   MerchantFeedCandidatesRouteQuery["response"]["merchantFeedCandidates"]
 >;
 type FeedCandidate = FeedCandidatesConnection["edges"][number]["node"];
+type ReviewStatus = "PENDING" | "SHORTLISTED" | "DISMISSED";
 
 export function FeedCandidatesRoute() {
   const loaderData = useLoaderData<typeof feedCandidatesLoader>() as FeedCandidatesLoaderData;
@@ -81,6 +84,41 @@ function FeedCandidatesList({
   pagination: FeedCandidatesPagination;
 }) {
   const candidates = connection.edges.map(({ node }) => node);
+  const [reviewFeedback, setReviewFeedback] = useState("");
+  const [commitReview, isReviewInFlight] =
+    useMutation<ReviewMerchantFeedCandidateMutation>(
+      reviewMerchantFeedCandidateMutation
+    );
+
+  const handleReview = (candidate: FeedCandidate, status: ReviewStatus) => {
+    setReviewFeedback("");
+    commitReview({
+      variables: {
+        input: {
+          id: candidate.id,
+          status
+        }
+      },
+      onCompleted(response) {
+        const payload = response.reviewMerchantFeedCandidate;
+        const errors = payload.errors ?? [];
+
+        if (errors.length > 0) {
+          setReviewFeedback(errors.map((error) => error.message).join(" "));
+          return;
+        }
+
+        setReviewFeedback(
+          `${formatCandidateName(candidate)} marked ${formatReviewStatus(
+            payload.candidate?.reviewStatus ?? status
+          )}.`
+        );
+      },
+      onError() {
+        setReviewFeedback("Feed candidate review status could not be updated.");
+      }
+    });
+  };
 
   if (candidates.length === 0) {
     return <p>No CJ feed candidates captured yet.</p>;
@@ -90,9 +128,15 @@ function FeedCandidatesList({
     <>
       <ul aria-label="CJ feed candidates">
         {candidates.map((candidate) => (
-          <FeedCandidateListItem candidate={candidate} key={candidate.id} />
+          <FeedCandidateListItem
+            candidate={candidate}
+            isReviewInFlight={isReviewInFlight}
+            key={candidate.id}
+            onReview={handleReview}
+          />
         ))}
       </ul>
+      <p role="status">{reviewFeedback}</p>
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
           <Link to="/ingestion/feed-candidates">First candidates</Link>
@@ -109,12 +153,23 @@ function FeedCandidatesList({
   );
 }
 
-function FeedCandidateListItem({ candidate }: { candidate: FeedCandidate }) {
+function FeedCandidateListItem({
+  candidate,
+  isReviewInFlight,
+  onReview
+}: {
+  candidate: FeedCandidate;
+  isReviewInFlight: boolean;
+  onReview: (candidate: FeedCandidate, status: ReviewStatus) => void;
+}) {
+  const candidateName = formatCandidateName(candidate);
+
   return (
     <li>
-      <h2>{candidate.advertiserName ?? candidate.providerFeedId}</h2>
+      <h2>{candidateName}</h2>
       <p>{candidate.feedName ?? "Unnamed feed"}</p>
       <p>{formatProductCount(candidate.productCount)}</p>
+      <p>{formatReviewStatus(candidate.reviewStatus)}</p>
       <dl>
         {candidate.advertiserCountry ? (
           <>
@@ -135,6 +190,32 @@ function FeedCandidateListItem({ candidate }: { candidate: FeedCandidate }) {
           </>
         ) : null}
       </dl>
+      <div>
+        <button
+          aria-label={`Shortlist ${candidateName}`}
+          disabled={isReviewInFlight}
+          onClick={() => onReview(candidate, "SHORTLISTED")}
+          type="button"
+        >
+          Shortlist
+        </button>
+        <button
+          aria-label={`Dismiss ${candidateName}`}
+          disabled={isReviewInFlight}
+          onClick={() => onReview(candidate, "DISMISSED")}
+          type="button"
+        >
+          Dismiss
+        </button>
+        <button
+          aria-label={`Reset ${candidateName}`}
+          disabled={isReviewInFlight}
+          onClick={() => onReview(candidate, "PENDING")}
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
     </li>
   );
 }
@@ -165,4 +246,21 @@ function formatProductCount(productCount: number | null | undefined) {
   }
 
   return productCount === 1 ? "1 product" : `${productCount} products`;
+}
+
+function formatCandidateName(candidate: FeedCandidate) {
+  return candidate.advertiserName ?? candidate.providerFeedId;
+}
+
+function formatReviewStatus(reviewStatus: string | null | undefined) {
+  switch (reviewStatus) {
+    case "DISMISSED":
+      return "Dismissed";
+    case "SHORTLISTED":
+      return "Shortlisted";
+    case "PENDING":
+      return "Pending";
+    default:
+      return "Pending";
+  }
 }

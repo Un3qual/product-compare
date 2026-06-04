@@ -37,6 +37,7 @@ type Mutation {
   upsertAffiliateProgram(input: UpsertAffiliateProgramInput!): UpsertAffiliateProgramPayload
   upsertAffiliateLink(input: UpsertAffiliateLinkInput!): UpsertAffiliateLinkPayload
   createCoupon(input: CreateCouponInput!): CreateCouponPayload
+  reviewMerchantFeedCandidate(input: ReviewMerchantFeedCandidateInput!): ReviewMerchantFeedCandidatePayload!
 }
 
 type AuthSessionPayload {
@@ -140,8 +141,28 @@ type MerchantFeedCandidate {
   language: String
   feedName: String
   productCount: Int
+  reviewStatus: MerchantFeedCandidateReviewStatus!
+  reviewNote: String
+  reviewedAt: DateTime
   providerLastUpdatedAt: DateTime
   lastSeenAt: DateTime!
+}
+
+enum MerchantFeedCandidateReviewStatus {
+  DISMISSED
+  PENDING
+  SHORTLISTED
+}
+
+input ReviewMerchantFeedCandidateInput {
+  id: ID!
+  status: MerchantFeedCandidateReviewStatus!
+  note: String
+}
+
+type ReviewMerchantFeedCandidatePayload {
+  candidate: MerchantFeedCandidate
+  errors: [MutationError!]!
 }
 
 type MerchantFeedCandidateConnection {
