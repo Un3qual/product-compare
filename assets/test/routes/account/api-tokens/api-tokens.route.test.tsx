@@ -278,7 +278,7 @@ test("create token submits label and displays the one-time plain text token", as
 
   const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
   expect(oneTimeRegion).toHaveTextContent("Visible only once");
-  expect(oneTimeRegion).toHaveTextContent("pc_live_123456789");
+  expect(oneTimeRegion).toHaveTextContent("example-one-time-api-token");
 });
 
 test("create token ignores duplicate submits while the request is in flight", async () => {
@@ -375,7 +375,7 @@ test("create token clears the one-time token when the next create starts", async
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
-  expect(await screen.findByText("pc_live_123456789")).toBeInTheDocument();
+  expect(await screen.findByText("example-one-time-api-token")).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "Second token" }
@@ -385,7 +385,7 @@ test("create token clears the one-time token when the next create starts", async
   await waitFor(() => {
     expect(commitCreateMutationMock).toHaveBeenCalledTimes(2);
   });
-  expect(screen.queryByText("pc_live_123456789")).not.toBeInTheDocument();
+  expect(screen.queryByText("example-one-time-api-token")).not.toBeInTheDocument();
 });
 
 test("create token renders mutation payload errors", async () => {
@@ -544,14 +544,14 @@ test("revoke token clears the one-time token when revoke starts", async () => {
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
-  expect(await screen.findByText("pc_live_123456789")).toBeInTheDocument();
+  expect(await screen.findByText("example-one-time-api-token")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
   });
-  expect(screen.queryByText("pc_live_123456789")).not.toBeInTheDocument();
+  expect(screen.queryByText("example-one-time-api-token")).not.toBeInTheDocument();
 });
 
 test("revoke token renders mutation payload errors", async () => {
@@ -688,7 +688,7 @@ test("rotate token commits the selected token id and displays the replacement on
   completeLatestRotateMutation(buildSuccessfulRotateResponse());
 
   const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
-  expect(oneTimeRegion).toHaveTextContent("pc_live_rotated_123456");
+  expect(oneTimeRegion).toHaveTextContent("example-rotated-api-token");
   expect(screen.getByRole("heading", { name: "CLI replacement" })).toBeInTheDocument();
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
 });
@@ -986,7 +986,7 @@ function stubFormDataExpiry(expiresAt: string) {
 function buildSuccessfulCreateResponse() {
   return {
     createApiToken: {
-      plainTextToken: "pc_live_123456789",
+      plainTextToken: "example-one-time-api-token",
       apiToken: {
         id: "QXBpVG9rZW46Y3JlYXRlZC10b2tlbg==",
         label: "CLI automation",
@@ -1004,7 +1004,7 @@ function buildSuccessfulCreateResponse() {
 function buildSuccessfulRotateResponse() {
   return {
     rotateApiToken: {
-      plainTextToken: "pc_live_rotated_123456",
+      plainTextToken: "example-rotated-api-token",
       apiToken: {
         id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
         label: "CLI replacement",
