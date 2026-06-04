@@ -25,13 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Execute CJ Product Search validation: record env-var-only credential handling, product catalog surface and quota behavior, personal-project owner approval, and one redacted account-scoped sample; then cover the sample with parser and persistence tests. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Run the focused commands in `docs/work/product-data-scraping.md`. | If CJ Product Search is sufficient, promote the first manual CJ connector batch; if it is unavailable or insufficient, record the evidence and promote the eBay Browse fallback-planning row. |
+| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Implement the first manual CJ connector batch against `ads.api.cj.com/query`: add an env-var-backed GraphQL client, wire `ProductParser.fetch_batch/2`, and add a one-page manual import Mix task. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`, `lib/product_compare/ingestion/sources/cj/client.ex`, `lib/product_compare/ingestion/sources/cj/product_parser.ex`, `lib/mix/tasks/product_compare.ingestion.cj_import.ex`, `test/product_compare/ingestion/sources/cj/client_test.exs`, `test/product_compare/ingestion/sources/cj/product_parser_test.exs`, `test/product_compare/ingestion/ingestion_test.exs`, `test/mix/tasks/product_compare_ingestion_cj_import_test.exs` | `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`; `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`; `mix typecheck`; `git diff --check` | Promote a live manual import verification row, or record the exact CJ API/client/persistence blocker. |
 
 ## Ready Work
 
-Product data ingestion has one ready blocker-resolution row. Keep the batch
-manual and fixture-backed: no scheduled polling, credential config, or Tier-3
-direct scraping in this row.
+Product data ingestion has one ready manual connector row. Keep the batch
+manual and env-var-backed: no scheduled polling, credential config, account
+automation, or Tier-3 direct scraping in this row.
 
 ## Executor Prompts
 

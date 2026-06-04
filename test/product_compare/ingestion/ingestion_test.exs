@@ -222,6 +222,24 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "persists a redacted CJ validation sample through the ingestion boundary" do
+      source = source_fixture(%{kind: "affiliate_feed", name: "CJ validation", domain: "cj.com"})
+      [record | _] = product_validation_fixture()
+
+      assert {:ok, listing} = ProductCompare.Ingestion.Sources.CJ.ProductParser.normalize(record)
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+
+      assert persisted.source_artifact.source_id == source.id
+      assert persisted.source_artifact.raw_json == record
+      assert persisted.external_product.source_id == source.id
+      assert persisted.external_product.external_id == listing.external_product_id
+      assert persisted.merchant_identity.source_id == source.id
+      assert persisted.merchant_identity.merchant_identifier == listing.merchant_identifier
+      assert persisted.merchant_product.url == listing.listing_url
+      assert persisted.merchant_product.currency == listing.currency
+      assert Decimal.eq?(persisted.price_point.price, listing.amount)
+    end
+
     test "replays the same normalized listing without duplicating persistence rows" do
       source = source_fixture()
       listing = normalized_listing(%{raw_payload: %{"id" => "CJ-12345", "price" => "129.99"}})
@@ -460,5 +478,12 @@ defmodule ProductCompare.IngestionTest do
         attrs
       )
     )
+  end
+
+  defp product_validation_fixture do
+    "test/support/fixtures/cj/product_validation_sample.redacted.json"
+    |> File.read!()
+    |> Jason.decode!()
+    |> Map.fetch!("products")
   end
 end

@@ -6,7 +6,7 @@
 - Priority: P2
 - Source of truth: this file
 - Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-04 after collaborative planning promoted CJ Product Search validation to a ready manual evidence-and-fixture batch
+- Last verified: 2026-06-04 after live CJ GraphQL validation returned one joined shopping product and the redacted fixture passed parser/persistence tests
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -39,7 +39,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Current Recommendation
 
 - Start with a single Tier-1 connector MVP, defaulting to CJ because an approved account already exists and falling back to eBay only if CJ scope is insufficient for the first spike.
-- Validate CJ Product Search first because it gives the fastest account-scoped proof of product scope, quota behavior, and mapping shape. Treat Product Feeds as a fallback or follow-up if Product Search is missing or too limited.
+- The legacy REST Product Search endpoint is deprecated. Use CJ's current Product Feed GraphQL surface at `https://ads.api.cj.com/query`, starting with `shoppingProducts`.
 - Run a weekly CJ-driven merchant discovery loop (candidate export -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
@@ -47,37 +47,41 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Next Batch
 
 - Status: ready
-- Batch: Task 1 in `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`.
-- Next action: run a manual CJ Product Search validation using local runtime environment variables only, capture product surface and quota evidence, commit one redacted account-scoped fixture, and cover that fixture with parser and persistence tests.
+- Batch: `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`.
+- Next action: implement a manual CJ connector using `shoppingProducts` on `https://ads.api.cj.com/query`, local runtime environment variables only, and the existing source-agnostic ingestion persistence boundary.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
-  - Planned variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and `CJ_WEBSITE_ID`, adjusted only if CJ's Product Search auth contract requires different names.
+  - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
   - Read secrets at the manual task/client boundary with `System.get_env/1`.
   - Do not commit tokens, account-sensitive tracking parameters, live credentials, or credential-derived config.
 - Owner approval: Ryan approves CJ account use for this personal project and permits one small redacted account-scoped sample fixture for validation.
 - Scope guardrails:
-  - Product Search is the first validation surface.
-  - Product Feeds are fallback or follow-up if Product Search is unavailable or insufficient.
+  - `shoppingProducts` is the first connector surface.
+  - `shoppingProductFeeds` is available for later feed discovery if joined product search is too narrow.
   - No scheduled polling, Oban jobs, provider credential config, account-manager automation, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
+- `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs`
 - `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`
 - `mix typecheck`
 - `git diff --check`
-- `rg -n "^" docs/work/product-data-scraping.md`
-- `rg -n "^" docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- `rg -n "^" docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
-- `rg -n "^" docs/decisions/2026-03-05-mvp-scope-freeze.md`
-- `rg -n "^" docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
-- `rg -n "scraping|ingestion|Oban|Browse API|PA-API|Awin|Best Buy" docs`
+- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
 
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- Live CJ provider validation, Task 1:
+  - Confirmed the legacy REST Product Search endpoint returns a deprecation response pointing to `ads.api.cj.com`.
+  - Introspected CJ's GraphQL surface and validated `shoppingProducts(companyId, keywords: ["shoe"], partnerStatus: JOINED, limit: 1, offset: 0, currency: "USD", serviceableAreas: "US")`.
+  - Added `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md` with non-secret credential handling, product-scope evidence, owner approval, and Tier-3 scraping deferral.
+  - Added `test/support/fixtures/cj/product_validation_sample.redacted.json` preserving the live GraphQL field shape without credentials or account-sensitive values.
+  - Extended `ProductCompare.Ingestion.Sources.CJ.ProductParser.normalize/1` to handle GraphQL `shoppingProducts` aliases and nested price values.
+  - Verified `mix test test/product_compare/ingestion/sources/cj/product_parser_test.exs` and `mix test test/product_compare/ingestion/ingestion_test.exs`.
 
 - Product Data Ingestion Persistence, Task 2:
   - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to reuse source-scoped merchant identities while persisting normalized listings into source artifacts, external products, generated catalog product shells, merchant products, and price points.

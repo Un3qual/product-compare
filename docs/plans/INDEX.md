@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` | Product ingestion should execute the CJ Product Search validation batch now that owner approval and expected account access are available. | After Task 1 records Product Search scope, quota behavior, env-var-only secret handling, and a representative redacted sample, promote the first manual CJ connector batch or the eBay Browse fallback plan. |
+| ready | `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md` | Product ingestion should implement the first manual CJ connector after live GraphQL validation proved one joined shopping product can be fetched. | After the manual connector and Mix task pass focused tests, promote a live manual import verification row or record the exact CJ API/client/persistence blocker. |
 
 ## Candidate Pool
 
@@ -32,6 +32,8 @@ Recent completed plan groups:
 
 - Frontend catalog browse pagination demo parity:
   `docs/plans/2026-06-04-frontend-catalog-browse-pagination-demo-parity-implementation-plan.md`.
+- Product ingestion: live CJ provider validation and redacted sample fixture:
+  `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`.
 - Frontend demo parity: compare matrix, offer discovery, merchant discovery,
   affiliate setup, revenue reporting, API token management, product comparison,
   product-detail coupons, and product-detail price history.

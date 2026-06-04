@@ -4,42 +4,43 @@ Execution status lives in `docs/work/index.md`. Lane-specific blocker details
 live in `docs/work/product-data-scraping.md`. `docs/plans/NOW.md` is only a
 compatibility pointer back to the live queue.
 
-Status: ready as of 2026-06-04. Execute Task 1 as a manual CJ Product Search
-validation batch. Keep credentials in local runtime environment variables only,
-commit only redacted sample data, and keep scheduled polling and Tier-3 direct
-scraping out of scope.
+Status: Task 1 completed on 2026-06-04. Live validation showed the legacy REST
+Product Search endpoint is deprecated and the current usable surface is CJ's
+Product Feed GraphQL API at `https://ads.api.cj.com/query`, queried through
+`shoppingProducts`. The follow-up manual connector plan is
+`docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`.
 
 ## Goal
 
-Resolve the remaining product-ingestion blocker by validating whether the approved CJ account has usable Product Search catalog scope, preserving one representative redacted sample payload, and recording owner-approved source onboarding evidence for this personal project before the first manual connector batch.
+Resolve the remaining product-ingestion blocker by validating whether the approved CJ account has usable product catalog scope, preserving one representative redacted sample payload, and recording owner-approved source onboarding evidence for this personal project before the first manual connector batch.
 
 ## Architecture
 
 - Keep this as a validation and onboarding slice, not a scheduled ingestion or scraping slice.
 - Do not add recurring jobs, Oban scheduling, account-manager automation, or Tier-3 direct scraping in this plan.
-- Validate CJ Product Search first. Treat Product Feeds as a fallback or follow-up only if Product Search is unavailable or too limited for the first connector.
+- Validate CJ's current GraphQL product catalog surface first. The deprecated REST Product Search endpoint should not be used for the connector.
 - Use the existing source-agnostic ingestion boundary:
   - `ProductCompare.Ingestion.Sources.CJ.ProductParser.normalize/1`
   - `ProductCompare.Ingestion.persist_normalized_listing/2`
   - `ProductCompare.Ingestion.NormalizedListing`
 - Treat live provider payloads as sensitive operational evidence. Commit only redacted samples that remove secrets, account IDs not needed for mapping, tracking parameters that identify the account, and any personally identifying data.
-- Store development secrets outside git in ignored `.env.local` or `.env` files, or export them in the shell before running manual validation. Planned variable names are `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and `CJ_WEBSITE_ID`; adjust only if CJ's Product Search auth contract requires different names.
+- Store development secrets outside git in ignored `.env.local` or `.env` files, or export them in the shell before running manual validation. Variable names are `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
 - Read CJ secrets with `System.get_env/1` only at the manual task/client boundary. Do not add CJ credentials to `config/dev.exs`, committed docs, fixtures, tests, app config, or persisted records.
 - If CJ scope is insufficient, record the failure evidence and create an eBay Browse fallback implementation plan instead of forcing the CJ connector forward.
 
 ## Ready Preconditions
 
-Task 1 is ready because the project owner confirmed expected CJ access and approved the validation approach. Before committing the batch, the executor must record:
+Task 1 completed because the project owner confirmed expected CJ access and approved the validation approach. The executor recorded:
 
 - A non-secret description of where local CJ credentials are stored and who can access them.
-- CJ Product Search catalog access for the approved account, or a Product Search insufficiency note that triggers the Product Feeds/eBay fallback path.
+- CJ GraphQL `shoppingProducts` catalog access for the approved account.
 - Permission confirmation for one small redacted account-scoped product sample fixture.
 - Ryan's owner approval for CJ account use in this personal project.
 - Confirmation that Tier-3 direct scraping remains out of scope for this batch.
 
 ## Task 1: Record CJ Access, Quota, Sample, And Owner Approval Evidence
 
-Status: ready.
+Status: completed.
 
 ### Files
 
@@ -59,21 +60,21 @@ Create `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboard
 # Live CJ Provider Validation And Source Onboarding
 
 Date: 2026-06-04
-Status: draft until CJ Product Search evidence and redacted fixture are recorded
+Status: validated for first manual CJ connector batch
 
 ## CJ Access Path
 
-- Credential storage path: local ignored `.env.local` or shell-exported runtime environment variables
+- Credential storage path: local ignored `.env.local`
 - Credential owner: Ryan
-- Runtime variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, `CJ_WEBSITE_ID`
-- Validated data surface: Product Search
-- Fallback data surface if Product Search is unavailable: Product Feeds
+- Runtime variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, `CJ_PROPERTY_ID`
+- Validated data surface: CJ Product Feed GraphQL `shoppingProducts`
+- Deprecated data surface checked: legacy REST Product Search returned `404` with the message `This API has been deprecated, please use ads.api.cj.com.`
 - Validation timestamp:
 
 ## Product Scope And Quota Evidence
 
-- Product catalog surface validated: Product Search
-- Representative query shape: category plus one known approved merchant
+- Product catalog surface validated: `https://ads.api.cj.com/query`
+- Representative query shape: `shoppingProducts(companyId, keywords: ["shoe"], partnerStatus: JOINED, limit: 1, offset: 0, currency: "USD", serviceableAreas: "US")`
 - Result count observed:
 - Quota or rate-limit behavior observed:
 - Relevant response headers or account-manager quota notes:
@@ -103,7 +104,7 @@ Status: draft until CJ Product Search evidence and redacted fixture are recorded
 - Follow-up implementation plan:
 ```
 
-Expected: the file contains no secrets, records Product Search first, records owner approval for this personal project, and keeps scheduled polling plus Tier-3 scraping deferred.
+Expected: the file contains no secrets, records the current GraphQL product surface, records owner approval for this personal project, and keeps scheduled polling plus Tier-3 scraping deferred.
 
 ### Step 2: Add The Redacted Sample Fixture
 
@@ -274,9 +275,9 @@ If CJ is insufficient:
 - Keep the CJ row blocked or closed in `docs/work/index.md` with the insufficiency named.
 - Create the eBay Browse fallback implementation plan named from the current date.
 
-## Task 2: Prepare The First Live Connector Batch
+## Task 2: Prepare The First Manual Connector Batch
 
-Status: blocked until Task 1 records that CJ is sufficient.
+Status: completed by creating `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`.
 
 ### Files
 
@@ -298,7 +299,7 @@ Status: blocked until Task 1 records that CJ is sufficient.
 
 This blocker-resolution plan is complete only when:
 
-- The decision doc records non-secret CJ access, Product Search quota behavior, product scope, env-var-only secret handling, owner approval, and Tier-3 scraping deferral.
+- The decision doc records non-secret CJ access, GraphQL `shoppingProducts` quota behavior, product scope, env-var-only secret handling, owner approval, and Tier-3 scraping deferral.
 - A redacted representative sample fixture exists and is covered by parser and persistence tests.
 - Focused ingestion tests, adjacent source-artifact/pricing GraphQL tests, `mix typecheck`, and `git diff --check` pass.
 - `docs/work/product-data-scraping.md`, `docs/work/index.md`, and `docs/plans/INDEX.md` agree on the next unblocked implementation batch or the continuing blocker.
