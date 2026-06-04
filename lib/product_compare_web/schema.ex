@@ -12,6 +12,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
+  alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareWeb.Resolvers.SpecsResolver
@@ -111,6 +112,14 @@ defmodule ProductCompareWeb.Schema do
       arg(:after, :string)
 
       resolve(&PricingResolver.merchants/3)
+    end
+
+    @desc "Returns captured merchant feed candidates with review-safe metadata."
+    field :merchant_feed_candidates, :merchant_feed_candidate_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&IngestionResolver.merchant_feed_candidates/3)
     end
 
     @desc "Returns merchant products for a product with optional merchant and active filters."
@@ -696,6 +705,37 @@ defmodule ProductCompareWeb.Schema do
   object :merchant_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:merchant)
+  end
+
+  object :merchant_feed_candidate do
+    field :id, non_null(:id) do
+      resolve(fn candidate, _, _ ->
+        GlobalId.encode_required(:merchant_feed_candidate, candidate.id)
+      end)
+    end
+
+    field :provider, non_null(:string)
+    field :provider_feed_id, non_null(:string)
+    field :advertiser_id, :string
+    field :advertiser_name, :string
+    field :advertiser_country, :string
+    field :source_feed_type, :string
+    field :currency, :string
+    field :language, :string
+    field :feed_name, :string
+    field :product_count, :integer
+    field :provider_last_updated_at, :datetime
+    field :last_seen_at, non_null(:datetime)
+  end
+
+  object :merchant_feed_candidate_connection do
+    field :edges, non_null(list_of(non_null(:merchant_feed_candidate_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :merchant_feed_candidate_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:merchant_feed_candidate)
   end
 
   object :product do

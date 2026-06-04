@@ -95,6 +95,17 @@ defmodule ProductCompare.Ingestion do
     |> Repo.all()
   end
 
+  @spec list_merchant_feed_candidates_query() :: Ecto.Query.t()
+  def list_merchant_feed_candidates_query do
+    MerchantFeedCandidate
+    |> order_by(
+      [candidate],
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.provider_feed_id
+    )
+  end
+
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
   def resolve_merchant_identity(%Source{id: source_id}, %NormalizedListing{} = listing) do
