@@ -11,6 +11,7 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy, as: TaxonomyContext
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -23,6 +24,32 @@ defmodule ProductCompare.Ingestion do
                                     "(source_id, content_hash) WHERE content_hash IS NOT NULL"}
   @price_point_conflict_target {:unsafe_fragment,
                                 "(merchant_product_id, observed_at, artifact_id) WHERE artifact_id IS NOT NULL"}
+
+  @spec start_import_run(map()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
+  def start_import_run(attrs) do
+    attrs =
+      attrs
+      |> Map.new()
+      |> Map.put_new(:status, "running")
+      |> Map.put_new(:started_at, DateTime.utc_now())
+
+    %ImportRun{}
+    |> ImportRun.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec complete_import_run(ImportRun.t(), map()) ::
+          {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
+  def complete_import_run(%ImportRun{} = import_run, attrs) do
+    attrs =
+      attrs
+      |> Map.new()
+      |> Map.put_new(:finished_at, DateTime.utc_now())
+
+    import_run
+    |> ImportRun.changeset(attrs)
+    |> Repo.update()
+  end
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}

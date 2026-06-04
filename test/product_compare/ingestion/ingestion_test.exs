@@ -6,6 +6,7 @@ defmodule ProductCompare.IngestionTest do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -169,6 +170,59 @@ defmodule ProductCompare.IngestionTest do
       assert merchant_id == other_merchant.id
       assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
       assert Repo.aggregate(Merchant, :count, :id) == 2
+    end
+  end
+
+  describe "import run observability" do
+    test "starts and completes a source-scoped import run" do
+      source = source_fixture()
+      started_at = ~U[2026-06-04 19:10:00Z]
+      finished_at = ~U[2026-06-04 19:10:05Z]
+
+      assert {:ok, %ImportRun{} = run} =
+               Ingestion.start_import_run(%{
+                 source_id: source.id,
+                 provider: "cj",
+                 surface: "shoppingProducts",
+                 query: %{"keywords" => ["shoe"], "limit" => 2},
+                 cursor_start: 0,
+                 page_size: 2,
+                 pages_requested: 3,
+                 started_at: started_at
+               })
+
+      assert run.source_id == source.id
+      assert run.provider == "cj"
+      assert run.surface == "shoppingProducts"
+      assert run.status == "running"
+      assert run.query == %{"keywords" => ["shoe"], "limit" => 2}
+      assert run.cursor_start == 0
+      assert run.page_size == 2
+      assert run.pages_requested == 3
+      assert DateTime.compare(run.started_at, started_at) == :eq
+
+      assert {:ok, %ImportRun{} = completed} =
+               Ingestion.complete_import_run(run, %{
+                 status: "succeeded",
+                 cursor_end: 4,
+                 pages_fetched: 2,
+                 records_fetched: 4,
+                 records_normalized: 4,
+                 records_persisted: 3,
+                 records_failed: 1,
+                 finished_at: finished_at
+               })
+
+      assert completed.status == "succeeded"
+      assert completed.cursor_end == 4
+      assert completed.pages_fetched == 2
+      assert completed.records_fetched == 4
+      assert completed.records_normalized == 4
+      assert completed.records_persisted == 3
+      assert completed.records_failed == 1
+      assert DateTime.compare(completed.finished_at, finished_at) == :eq
+
+      assert Repo.get!(ImportRun, completed.id).records_persisted == 3
     end
   end
 

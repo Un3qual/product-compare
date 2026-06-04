@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -45,6 +46,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
       assert %Source{id: source_id, kind: "affiliate_feed", name: "CJ", domain: "cj.com"} =
                Repo.get_by(Source, name: "CJ", domain: "cj.com")
+
+      assert %ImportRun{
+               source_id: ^source_id,
+               provider: "cj",
+               surface: "shoppingProducts",
+               status: "succeeded",
+               query: %{"currency" => "USD", "keywords" => ["shoe"], "serviceableAreas" => ["US"]},
+               cursor_start: 0,
+               cursor_end: nil,
+               page_size: 1,
+               pages_requested: 1,
+               pages_fetched: 1,
+               records_fetched: 1,
+               records_normalized: 1,
+               records_persisted: 1,
+               records_failed: 0
+             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1

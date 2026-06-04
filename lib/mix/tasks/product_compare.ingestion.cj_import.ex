@@ -37,9 +37,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     cursor = Keyword.get(opts, :cursor)
     fetch_opts = fetch_opts(opts)
 
-    with {:ok, records, _next_cursor} <- fetcher.(cursor, fetch_opts),
-         {:ok, source} <- fetch_source() do
-      report = persist_records(source, records)
+    with {:ok, source} <- fetch_source(),
+         {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, opts),
+         {:ok, records, next_cursor} <- fetcher.(cursor, fetch_opts),
+         report <- persist_records(source, records),
+         {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
       print_report(report)
 
       {:ok, report}
@@ -93,8 +95,47 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       currency: Keyword.get(opts, :currency, "USD"),
       keywords: Keyword.get(opts, :keywords, ["shoe"]),
       limit: Keyword.get(opts, :limit, 25),
-      serviceable_areas: Keyword.get(opts, :serviceable_areas, "US")
+      serviceable_areas: Keyword.get(opts, :serviceable_areas, ["US"])
     ]
+  end
+
+  defp start_import_run(source, cursor, fetch_opts, opts) do
+    Ingestion.start_import_run(%{
+      source_id: source.id,
+      provider: "cj",
+      surface: "shoppingProducts",
+      query: %{
+        "currency" => Keyword.fetch!(fetch_opts, :currency),
+        "keywords" => Keyword.fetch!(fetch_opts, :keywords),
+        "serviceableAreas" => serviceable_areas_for_query(fetch_opts)
+      },
+      cursor_start: cursor || 0,
+      page_size: Keyword.fetch!(fetch_opts, :limit),
+      pages_requested: Keyword.get(opts, :pages, 1)
+    })
+  end
+
+  defp complete_import_run(import_run, report, next_cursor) do
+    status = if report.failed == 0, do: "succeeded", else: "failed"
+
+    Ingestion.complete_import_run(import_run, %{
+      status: status,
+      cursor_end: next_cursor,
+      pages_fetched: 1,
+      records_fetched: report.fetched,
+      records_normalized: report.normalized,
+      records_persisted: report.persisted,
+      records_failed: report.failed
+    })
+  end
+
+  defp serviceable_areas_for_query(fetch_opts) do
+    fetch_opts
+    |> Keyword.fetch!(:serviceable_areas)
+    |> case do
+      value when is_binary(value) -> [value]
+      value when is_list(value) -> value
+    end
   end
 
   defp fetch_source do
