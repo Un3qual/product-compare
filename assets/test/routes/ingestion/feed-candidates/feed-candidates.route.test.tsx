@@ -110,6 +110,12 @@ test("feed candidates route renders review-safe candidate rows", () => {
   );
 });
 
+test("feed candidates route omits review feedback before an action completes", () => {
+  renderFeedCandidatesRoute();
+
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
 test("feed candidates route commits review status changes", async () => {
   renderFeedCandidatesRoute();
 

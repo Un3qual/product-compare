@@ -137,7 +137,7 @@ function FeedCandidatesList({
           />
         ))}
       </ul>
-      <p role="status">{reviewFeedback}</p>
+      {reviewFeedback ? <p role="status">{reviewFeedback}</p> : null}
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
           <Link to="/ingestion/feed-candidates">First candidates</Link>

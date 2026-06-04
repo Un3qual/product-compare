@@ -807,7 +807,6 @@ defmodule ProductCompare.Ingestion do
     %{}
     |> put_review_attr(attrs, :review_status)
     |> put_review_attr(attrs, :review_note)
-    |> put_review_attr(attrs, :reviewed_at)
     |> normalize_review_note()
   end
 
