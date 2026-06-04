@@ -8,6 +8,8 @@
 
 **Tech Stack:** Elixir, Ecto migrations, Absinthe GraphQL, Bun, React Router SSR, Relay, Vitest, ExUnit.
 
+**Status:** done. Completion evidence lives in `docs/work/product-data-scraping.md`.
+
 ---
 
 ## Scope
@@ -33,7 +35,7 @@
 - Modify: `test/product_compare/ingestion/ingestion_test.exs`
 - Modify: `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
-- [ ] **Step 1: Add failing context and GraphQL tests**
+- [x] **Step 1: Add failing context and GraphQL tests**
 
 Add context coverage proving:
 
@@ -56,7 +58,7 @@ mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_
 
 Expected: fail because review fields and mutation do not exist.
 
-- [ ] **Step 2: Add migration, schema fields, and context update**
+- [x] **Step 2: Add migration, schema fields, and context update**
 
 Add fields and constraints:
 
@@ -71,7 +73,7 @@ Add `ProductCompare.Ingestion.review_merchant_feed_candidate/2`, accepting `%{re
 
 Do not add review fields to the upsert replacement list, so discovery replay preserves human review state.
 
-- [ ] **Step 3: Add GraphQL mutation contract**
+- [x] **Step 3: Add GraphQL mutation contract**
 
 Add:
 
@@ -82,7 +84,7 @@ Add:
 
 Decode `id` as `:merchant_feed_candidate`, return payload errors for invalid ids/statuses, and expose `review_status`, `review_note`, and `reviewed_at` on `MerchantFeedCandidate`.
 
-- [ ] **Step 4: Verify backend slice**
+- [x] **Step 4: Verify backend slice**
 
 Run:
 
@@ -104,7 +106,7 @@ Expected: all pass.
 - Generate: `assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts`
 - Generate: `assets/src/__generated__/ReviewMerchantFeedCandidateMutation.graphql.ts`
 
-- [ ] **Step 1: Add failing route tests**
+- [x] **Step 1: Add failing route tests**
 
 Add route coverage proving:
 
@@ -120,7 +122,7 @@ cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/fee
 
 Expected: fail because the route has no review controls.
 
-- [ ] **Step 2: Add Relay mutation and route controls**
+- [x] **Step 2: Add Relay mutation and route controls**
 
 Update the query to fetch `reviewStatus`, `reviewNote`, and `reviewedAt`.
 
@@ -128,7 +130,7 @@ Add a Relay mutation for `reviewMerchantFeedCandidate(input:)`.
 
 In each candidate row, render current status and buttons for `shortlisted`, `dismissed`, and `pending`. Use a route-local feedback region for success and payload errors. Do not render raw metadata, credentials, account IDs, tokens, or tracking parameters.
 
-- [ ] **Step 3: Verify frontend slice**
+- [x] **Step 3: Verify frontend slice**
 
 Run:
 
@@ -149,17 +151,17 @@ Expected: all pass.
 - Modify: `ARCHITECTURE.md`
 - Modify: `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
 
-- [ ] **Step 1: Record completion evidence**
+- [x] **Step 1: Record completion evidence**
 
 Update `docs/work/product-data-scraping.md` with changed paths, verification output, and remaining deferred work.
 
-- [ ] **Step 2: Close or promote the next row**
+- [x] **Step 2: Close or promote the next row**
 
 If verification passes, remove the ready row from `docs/work/index.md`.
 
 If no next batch is chosen, leave the queue with no ready rows and note that the next coordinator decision is either candidate scoring, merchant application planning, or scheduled CJ discovery.
 
-- [ ] **Step 3: Final verification**
+- [x] **Step 3: Final verification**
 
 Run:
 

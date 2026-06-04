@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md` | Execute the promoted row in `docs/work/index.md` to add durable CJ feed-candidate review status and route controls. | Close the row after focused backend/frontend verification, or promote the next ingestion decision if scoring, merchant application planning, or scheduled discovery becomes the chosen follow-up. |
+| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
 
 ## Candidate Pool
 
@@ -30,6 +30,8 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion/demo parity: CJ feed candidate durable review status:
+  `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
 - Product ingestion/demo parity: CJ feed candidate review route:
   `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`.
 - Product ingestion: CJ feed candidate capture from manual feed discovery:
