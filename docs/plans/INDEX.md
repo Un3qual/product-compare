@@ -12,15 +12,15 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active implementation plans are queued. Start at `docs/work/index.md` before
-promoting new work.
+| Status | Plan | Use When | Promotion Rule |
+| --- | --- | --- | --- |
+| ready | `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md` | Product ingestion should add import observability, feed discovery, and bounded manual pagination after the one-page manual CJ import MVP completed. | Close the row when focused tests, adjacent regressions, one live feed discovery, and one bounded live import all pass with non-secret counts recorded. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | candidate | Next demo-parity/frontend candidate | The catalog browse pagination lane closes and product/backend priority chooses another specific browser-demo gap. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
-| candidate | CJ ingestion expansion | The product/backend priority chooses to move beyond the verified one-page manual CJ import. | Create one dated plan for exactly one next batch, such as broader feed discovery, merchant growth workflow, scheduled polling, or import observability. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive

@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
 - Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-04 after the live manual CJ import persisted one source-scoped row and replay remained idempotent
+- Last verified: 2026-06-04 after the live manual CJ import persisted one source-scoped row and replay remained idempotent; the next expansion row was promoted by request
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -46,9 +46,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Next Batch
 
-- Status: done
-- Batch: manual CJ connector MVP complete.
-- Next action: none queued. Promote a new dated plan before adding scheduled polling, broader merchant/feed discovery, recurring jobs, or Tier-3 direct scraping.
+- Status: ready
+- Batch: `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
+- Next action: add import run observability, manual `shoppingProductFeeds` discovery, and bounded multi-page manual imports.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
