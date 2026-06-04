@@ -4,7 +4,7 @@
 
 - Filename glossary: Now (NOW) is the legacy current-work pointer file (`docs/plans/NOW.md`); Index (INDEX) is the plan catalog file (`docs/plans/INDEX.md`).
 - Start plan discovery at `docs/work/index.md`.
-- Read `docs/work/operating-model.md` for the dispatch rules, prompt templates, and handoff format.
+- Read `docs/work/operating-model.md` for the dispatch rules, prompt templates, and handoff templates.
 - Treat `docs/work/index.md` as the only live dispatch queue. Execute only rows marked `ready`.
 - Treat `docs/work/*.md` as lane context and lane-local status evidence, not as a second queue.
 - Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links one as the active plan for a `ready` row.

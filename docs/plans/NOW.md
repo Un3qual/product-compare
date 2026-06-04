@@ -4,6 +4,8 @@
 
 This file is kept only for older prompts that still open `docs/plans/NOW.md`.
 Do not treat it as a second status ledger.
+Tools that parsed the old per-lane ledger should read `docs/work/index.md`
+instead.
 
 ## Current State
 
