@@ -7,16 +7,11 @@ Do not treat it as a second status ledger.
 Tools that parsed the old per-lane ledger should read `docs/work/index.md`
 instead.
 
-## Current State
+## Compatibility Pointer
 
-- Current unblocked implementation batch: none.
-- Live queue: `docs/work/index.md`
+- Queue state lives only in `docs/work/index.md`.
 - Operating model and handoff rules: `docs/work/operating-model.md`
-- Product data ingestion remains blocked pending CJ credential access, quota
-  behavior, representative redacted sample evidence, and source onboarding
-  compliance signoff.
-- The next demo-parity/frontend candidate needs a fresh product/backend priority
-  decision before plan creation.
+- This file intentionally contains no queue-status snapshot.
 
 ## What To Do
 
