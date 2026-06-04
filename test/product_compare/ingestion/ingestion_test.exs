@@ -349,6 +349,34 @@ defmodule ProductCompare.IngestionTest do
                Ingestion.list_merchant_feed_candidates(source)
     end
 
+    test "reviewing a candidate preserves note when review_note is omitted" do
+      source = source_fixture()
+
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 last_seen_at: ~U[2026-06-04 20:00:00Z],
+                 provider: "cj",
+                 provider_feed_id: "feed-1"
+               })
+
+      assert {:ok, %MerchantFeedCandidate{} = reviewed_candidate} =
+               Ingestion.review_merchant_feed_candidate(candidate_id, %{
+                 review_status: "shortlisted",
+                 review_note: " Strong candidate "
+               })
+
+      assert reviewed_candidate.review_note == "Strong candidate"
+
+      assert {:ok, %MerchantFeedCandidate{} = updated_candidate} =
+               Ingestion.review_merchant_feed_candidate(candidate_id, %{
+                 review_status: "dismissed"
+               })
+
+      assert updated_candidate.review_status == "dismissed"
+      assert updated_candidate.review_note == "Strong candidate"
+      assert %DateTime{} = updated_candidate.reviewed_at
+    end
+
     test "reviewing a candidate rejects invalid status and missing candidates" do
       source = source_fixture()
 

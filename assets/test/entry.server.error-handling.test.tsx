@@ -224,7 +224,7 @@ test("server render returns redirect responses from the static handler unchanged
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: vi.fn(async () => redirectResponse)
+    query: vi.fn(() => redirectResponse)
   });
 
   const { render } = await import("../src/entry.server");
@@ -249,12 +249,12 @@ test("server render inserts Relay records before a full document body closes", a
 test("server render keeps recoverable SSR errors from failing the response", async () => {
   const htmlStream = createReactReadableStream();
 
-  renderToReadableStreamMock.mockImplementation(async (_children, options) => {
+  renderToReadableStreamMock.mockImplementation((_children, options) => {
     options.onError?.(new Error("recoverable render error"));
-    return htmlStream;
+    return Promise.resolve(htmlStream);
   });
 
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   try {
     const { render } = await import("../src/entry.server");
@@ -276,7 +276,7 @@ test("server render logs and falls back when request URL resolution fails", asyn
 
   mockServerRenderHtml();
 
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   try {
     const { render } = await import("../src/entry.server");

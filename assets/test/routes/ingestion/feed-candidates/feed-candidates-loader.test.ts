@@ -107,6 +107,68 @@ test("feedCandidatesLoader drops invalid page-size params", async () => {
   });
 });
 
+test("feedCandidatesLoader drops malformed page-size params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/ingestion/feed-candidates?after=candidate-cursor&first=10abc"
+  );
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 20,
+    after: "candidate-cursor"
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    feedCandidatesLoader(buildFeedCandidatesLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: "candidate-cursor"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20, after: "candidate-cursor" },
+    { signal: request.signal }
+  );
+});
+
+test("feedCandidatesLoader trims cursor params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/ingestion/feed-candidates?after=%20candidate-cursor%20&first=%2050%20"
+  );
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 50,
+    after: "candidate-cursor"
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    feedCandidatesLoader(buildFeedCandidatesLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 50,
+      after: "candidate-cursor"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 50, after: "candidate-cursor" },
+    { signal: request.signal }
+  );
+});
+
 test("feedCandidatesLoader returns error state when route preloading fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(

@@ -106,7 +106,7 @@ defmodule ProductCompare.Ingestion do
     )
   end
 
-  @spec review_merchant_feed_candidate(pos_integer(), map()) ::
+  @spec review_merchant_feed_candidate(integer(), map()) ::
           {:ok, MerchantFeedCandidate.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def review_merchant_feed_candidate(candidate_id, attrs)
       when is_integer(candidate_id) and is_map(attrs) do
@@ -117,8 +117,7 @@ defmodule ProductCompare.Ingestion do
       %MerchantFeedCandidate{} = candidate ->
         attrs =
           attrs
-          |> Map.new()
-          |> Map.update(:review_note, nil, &blank_to_nil/1)
+          |> normalize_review_attrs()
           |> Map.put(:reviewed_at, DateTime.utc_now())
 
         candidate
@@ -803,6 +802,14 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp blank_to_nil(value), do: value
+
+  defp normalize_review_attrs(attrs) when is_map(attrs) do
+    if Map.has_key?(attrs, :review_note) do
+      Map.update!(attrs, :review_note, &blank_to_nil/1)
+    else
+      attrs
+    end
+  end
 
   defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
     Enum.any?(errors, fn

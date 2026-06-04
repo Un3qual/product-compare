@@ -18,7 +18,13 @@ function normalizeFeedCandidatesPageSize(value: string | null) {
     return FEED_CANDIDATES_DEFAULT_PAGE_SIZE;
   }
 
-  const pageSize = Number.parseInt(value, 10);
+  const trimmedValue = value.trim();
+
+  if (!/^\d+$/.test(trimmedValue)) {
+    return FEED_CANDIDATES_DEFAULT_PAGE_SIZE;
+  }
+
+  const pageSize = Number.parseInt(trimmedValue, 10);
 
   return pageSize >= 1 && pageSize <= FEED_CANDIDATES_MAX_PAGE_SIZE
     ? pageSize
@@ -26,5 +32,7 @@ function normalizeFeedCandidatesPageSize(value: string | null) {
 }
 
 function normalizeFeedCandidatesCursor(value: string | null) {
-  return value && value.trim() !== "" ? value : null;
+  const trimmedValue = value?.trim();
+
+  return trimmedValue ? trimmedValue : null;
 }
