@@ -1,0 +1,43 @@
+{
+  "source": "cj",
+  "validatedAt": "2026-06-04T18:34:49Z",
+  "surface": "shoppingProducts",
+  "query": {
+    "endpoint": "https://ads.api.cj.com/query",
+    "field": "shoppingProducts",
+    "filters": {
+      "companyId": "REDACTED-CJ-COMPANY-ID",
+      "keywords": ["shoe"],
+      "partnerStatus": "JOINED",
+      "limit": 1,
+      "offset": 0,
+      "currency": "USD",
+      "serviceableAreas": "US"
+    }
+  },
+  "metadata": {
+    "count": 1,
+    "totalCount": 1,
+    "limit": 1
+  },
+  "products": [
+    {
+      "adId": "REDACTED-CJ-AD-1",
+      "advertiserId": "REDACTED-MERCHANT-1",
+      "advertiserName": "Redacted Merchant",
+      "title": "Redacted Shopping Product",
+      "brand": "Redacted Brand",
+      "gtin": "00000000000000",
+      "link": "https://merchant.example/products/redacted-shopping-product",
+      "price": {
+        "amount": "129.99",
+        "currency": "USD"
+      },
+      "availability": "IN_STOCK",
+      "lastUpdated": "2026-06-04T18:34:49Z",
+      "targetCountry": "US",
+      "serviceableAreas": "US",
+      "catalogName": "Redacted Catalog"
+    }
+  ]
+}

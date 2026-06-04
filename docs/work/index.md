@@ -25,12 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | blocked | Product data ingestion | `docs/work/product-data-scraping.md` | Record non-secret CJ credential access, product catalog surface and quota behavior, permission for one redacted account-scoped sample, and a named compliance approver. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`, `docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`, `test/support/fixtures/cj/product_validation_sample.redacted.json`, `test/product_compare/ingestion/**`, `lib/product_compare/ingestion/sources/cj/product_parser.ex` only if the sample proves a parser gap. | Before unblock: evidence review only. After unblock: run the focused commands in `docs/work/product-data-scraping.md`. | Promote CJ validation Task 1 to `ready`, or record why CJ is unavailable and promote the fallback-planning row. |
+| - | - | - | - | No ready rows. | - | - | - |
 
-## No Ready Work
+## Ready Work
 
-No ready implementation work remains.
-Product data ingestion is blocked on the external CJ evidence listed above.
+No ready rows remain after the CJ feed candidate capture batch. A coordinator
+should promote exactly one concrete next row from a current lane decision before
+any new worker starts implementation.
 
 ## Executor Prompts
 

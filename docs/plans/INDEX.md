@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| blocked | `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md` | Product ingestion can proceed only after CJ access, quota behavior, a representative redacted sample, and compliance signoff are recorded. | Promote Task 1 to `ready` in `docs/work/index.md` once the unblock prerequisites are available. |
+| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
 
 ## Candidate Pool
 
@@ -30,8 +30,17 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ feed candidate capture from manual feed discovery:
+  `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
+- Product ingestion: CJ import observability, manual feed discovery, and bounded
+  manual product import pagination:
+  `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
 - Frontend catalog browse pagination demo parity:
   `docs/plans/2026-06-04-frontend-catalog-browse-pagination-demo-parity-implementation-plan.md`.
+- Product ingestion: live CJ provider validation and redacted sample fixture:
+  `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`.
+- Product ingestion: manual CJ connector and live one-page import:
+  `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`.
 - Frontend demo parity: compare matrix, offer discovery, merchant discovery,
   affiliate setup, revenue reporting, API token management, product comparison,
   product-detail coupons, and product-detail price history.

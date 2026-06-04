@@ -6,6 +6,8 @@ defmodule ProductCompare.IngestionTest do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -172,6 +174,166 @@ defmodule ProductCompare.IngestionTest do
     end
   end
 
+  describe "import run observability" do
+    test "starts and completes a source-scoped import run" do
+      source = source_fixture()
+      started_at = ~U[2026-06-04 19:10:00Z]
+      finished_at = ~U[2026-06-04 19:10:05Z]
+
+      assert {:ok, %ImportRun{} = run} =
+               Ingestion.start_import_run(%{
+                 source_id: source.id,
+                 provider: "cj",
+                 surface: "shoppingProducts",
+                 query: %{"keywords" => ["shoe"], "limit" => 2},
+                 cursor_start: 0,
+                 page_size: 2,
+                 pages_requested: 3,
+                 started_at: started_at
+               })
+
+      assert run.source_id == source.id
+      assert run.provider == "cj"
+      assert run.surface == "shoppingProducts"
+      assert run.status == "running"
+      assert run.query == %{"keywords" => ["shoe"], "limit" => 2}
+      assert run.cursor_start == 0
+      assert run.page_size == 2
+      assert run.pages_requested == 3
+      assert DateTime.compare(run.started_at, started_at) == :eq
+
+      assert {:ok, %ImportRun{} = completed} =
+               Ingestion.complete_import_run(run, %{
+                 status: "succeeded",
+                 cursor_end: 4,
+                 pages_fetched: 2,
+                 records_fetched: 4,
+                 records_normalized: 4,
+                 records_persisted: 3,
+                 records_failed: 1,
+                 finished_at: finished_at
+               })
+
+      assert completed.status == "succeeded"
+      assert completed.cursor_end == 4
+      assert completed.pages_fetched == 2
+      assert completed.records_fetched == 4
+      assert completed.records_normalized == 4
+      assert completed.records_persisted == 3
+      assert completed.records_failed == 1
+      assert DateTime.compare(completed.finished_at, finished_at) == :eq
+
+      assert Repo.get!(ImportRun, completed.id).records_persisted == 3
+    end
+  end
+
+  describe "merchant feed candidates" do
+    test "persists a source-scoped candidate from CJ feed metadata" do
+      source = source_fixture()
+      provider_last_updated_at = ~U[2026-06-04 18:34:49Z]
+      last_seen_at = ~U[2026-06-04 20:00:00Z]
+
+      assert {:ok, %MerchantFeedCandidate{} = candidate} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping",
+                 language: "EN",
+                 last_seen_at: last_seen_at,
+                 product_count: 10,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: provider_last_updated_at,
+                 raw_metadata: %{"adId" => "feed-1", "feedName" => "US Shopping"},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert candidate.source_id == source.id
+      assert candidate.provider == "cj"
+      assert candidate.provider_feed_id == "feed-1"
+      assert candidate.advertiser_id == "adv-1"
+      assert candidate.advertiser_name == "Trail Merchant"
+      assert candidate.advertiser_country == "US"
+      assert candidate.source_feed_type == "SHOPPING"
+      assert candidate.currency == "USD"
+      assert candidate.language == "EN"
+      assert candidate.feed_name == "US Shopping"
+      assert candidate.product_count == 10
+      assert candidate.raw_metadata == %{"adId" => "feed-1", "feedName" => "US Shopping"}
+      assert DateTime.compare(candidate.provider_last_updated_at, provider_last_updated_at) == :eq
+      assert DateTime.compare(candidate.last_seen_at, last_seen_at) == :eq
+    end
+
+    test "replays candidates idempotently and lists them by source" do
+      source = source_fixture()
+      other_source = source_fixture(%{name: "Other Feed", domain: "other.example"})
+      first_seen_at = ~U[2026-06-04 20:00:00Z]
+      later_seen_at = ~U[2026-06-04 21:00:00Z]
+
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping",
+                 language: "EN",
+                 last_seen_at: first_seen_at,
+                 product_count: 10,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: first_seen_at,
+                 raw_metadata: %{"productCount" => 10},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert {:ok, %MerchantFeedCandidate{id: ^candidate_id} = updated_candidate} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping Updated",
+                 language: "EN",
+                 last_seen_at: later_seen_at,
+                 product_count: 12,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: later_seen_at,
+                 raw_metadata: %{"productCount" => 12},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert {:ok, _other_candidate} =
+               Ingestion.upsert_merchant_feed_candidate(other_source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-2",
+                 advertiser_name: "Other Merchant",
+                 currency: "USD",
+                 feed_name: "Other Shopping",
+                 language: "EN",
+                 last_seen_at: later_seen_at,
+                 product_count: 4,
+                 provider: "cj",
+                 provider_feed_id: "feed-2",
+                 provider_last_updated_at: later_seen_at,
+                 raw_metadata: %{"productCount" => 4},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert updated_candidate.feed_name == "US Shopping Updated"
+      assert updated_candidate.product_count == 12
+      assert DateTime.compare(updated_candidate.last_seen_at, later_seen_at) == :eq
+
+      assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 2
+
+      assert [%MerchantFeedCandidate{id: ^candidate_id, feed_name: "US Shopping Updated"}] =
+               Ingestion.list_merchant_feed_candidates(source)
+    end
+  end
+
   describe "persist_normalized_listing/2" do
     test "persists a normalized listing into artifact, external product, merchant product, and price point rows" do
       source = source_fixture()
@@ -220,6 +382,24 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "persists a redacted CJ validation sample through the ingestion boundary" do
+      source = source_fixture(%{kind: "affiliate_feed", name: "CJ validation", domain: "cj.com"})
+      [record | _] = product_validation_fixture()
+
+      assert {:ok, listing} = ProductCompare.Ingestion.Sources.CJ.ProductParser.normalize(record)
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+
+      assert persisted.source_artifact.source_id == source.id
+      assert persisted.source_artifact.raw_json == record
+      assert persisted.external_product.source_id == source.id
+      assert persisted.external_product.external_id == listing.external_product_id
+      assert persisted.merchant_identity.source_id == source.id
+      assert persisted.merchant_identity.merchant_identifier == listing.merchant_identifier
+      assert persisted.merchant_product.url == listing.listing_url
+      assert persisted.merchant_product.currency == listing.currency
+      assert Decimal.eq?(persisted.price_point.price, listing.amount)
     end
 
     test "replays the same normalized listing without duplicating persistence rows" do
@@ -460,5 +640,12 @@ defmodule ProductCompare.IngestionTest do
         attrs
       )
     )
+  end
+
+  defp product_validation_fixture do
+    "test/support/fixtures/cj/product_validation_sample.redacted.json"
+    |> File.read!()
+    |> Jason.decode!()
+    |> Map.fetch!("products")
   end
 end

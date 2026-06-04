@@ -6,19 +6,21 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
   @behaviour ProductCompare.Ingestion.Sources.Adapter
 
   alias ProductCompare.Ingestion.NormalizedListing
+  alias ProductCompare.Ingestion.Sources.CJ.Client
 
   @impl true
-  def fetch_batch(_cursor, _opts), do: {:error, :not_configured}
+  def fetch_batch(cursor, opts), do: Client.fetch_batch(cursor, opts)
 
   @impl true
   def normalize(record) when is_map(record) do
     with {:ok, external_product_id} <- required_string(record, :external_product_id, ["adId"]),
          {:ok, merchant_identifier} <-
            required_string(record, :merchant_identifier, ["advertiserId"]),
-         {:ok, product_title} <- required_string(record, :product_title, ["name"]),
-         {:ok, listing_url} <- required_string(record, :listing_url, ["buyUrl"]),
-         {:ok, currency} <- required_string(record, :currency, ["currency"]),
-         {:ok, amount} <- decimal(record, :amount, ["price"]),
+         {:ok, product_title} <- required_string(record, :product_title, ["name", "title"]),
+         {:ok, listing_url} <- required_string(record, :listing_url, ["buyUrl", "link"]),
+         {:ok, currency} <-
+           required_string(record, :currency, ["currency"], [["price", "currency"]]),
+         {:ok, amount} <- decimal(record, :amount, ["price"], [["price", "amount"]]),
          {:ok, observed_at} <- datetime(record, :observed_at, ["lastUpdated"]) do
       {:ok,
        %NormalizedListing{
@@ -43,35 +45,33 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
 
   def normalize(_record), do: mapping_error(:invalid_record, nil)
 
-  defp required_string(record, field, keys) do
-    case optional_string(record, keys) do
+  defp required_string(record, field, keys, paths \\ []) do
+    case optional_string(record, keys, paths) do
       nil -> mapping_error(:missing_required_field, field)
       value -> {:ok, value}
     end
   end
 
-  defp optional_string(record, keys) do
-    Enum.find_value(keys, fn key ->
-      case Map.get(record, key) do
-        value when is_binary(value) ->
-          value
-          |> String.trim()
-          |> blank_to_nil()
+  defp optional_string(record, keys, paths \\ []) do
+    Enum.find_value(keys, &string_value(Map.get(record, &1))) ||
+      Enum.find_value(paths, fn path ->
+        record
+        |> get_path(path)
+        |> string_value()
+      end)
+  end
 
-        value when is_integer(value) ->
-          Integer.to_string(value)
-
-        value when is_float(value) ->
-          Float.to_string(value)
-
-        _ ->
-          nil
+  defp get_path(record, path) do
+    Enum.reduce_while(path, record, fn key, current ->
+      case current do
+        value when is_map(value) -> {:cont, Map.get(value, key)}
+        _not_a_map -> {:halt, nil}
       end
     end)
   end
 
-  defp decimal(record, field, keys) do
-    with {:ok, value} <- required_string(record, field, keys),
+  defp decimal(record, field, keys, paths) do
+    with {:ok, value} <- required_string(record, field, keys, paths),
          {decimal, ""} <- Decimal.parse(value) do
       {:ok, decimal}
     else
@@ -115,6 +115,16 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
   defp blank_to_nil(nil), do: nil
   defp blank_to_nil(""), do: nil
   defp blank_to_nil(value), do: value
+
+  defp string_value(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> blank_to_nil()
+  end
+
+  defp string_value(value) when is_integer(value), do: Integer.to_string(value)
+  defp string_value(value) when is_float(value), do: Float.to_string(value)
+  defp string_value(_value), do: nil
 
   defp mapping_error(reason, field), do: {:error, %{reason: reason, field: field}}
 end
