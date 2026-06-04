@@ -8,6 +8,8 @@
 
 **Tech Stack:** Elixir, Absinthe GraphQL, Ecto, Bun, React Router SSR, Relay, Vitest, ExUnit.
 
+**Status:** done. Completion evidence lives in `docs/work/product-data-scraping.md`.
+
 ---
 
 ## Scope
@@ -26,7 +28,7 @@
 - Modify: `lib/product_compare_web/schema.ex`
 - Create: `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
-- [ ] **Step 1: Add failing GraphQL coverage**
+- [x] **Step 1: Add failing GraphQL coverage**
 
 Add a GraphQL test that inserts a CJ `Source`, two `MerchantFeedCandidate` rows through `ProductCompare.Ingestion.upsert_merchant_feed_candidate/2`, then queries:
 
@@ -69,13 +71,13 @@ mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.e
 
 Expected: fail because the GraphQL field and object types do not exist.
 
-- [ ] **Step 2: Add query helper and resolver**
+- [x] **Step 2: Add query helper and resolver**
 
 Add `ProductCompare.Ingestion.list_merchant_feed_candidates_query/0`, ordered by `advertiser_name`, `feed_name`, and `provider_feed_id`.
 
 Create `ProductCompareWeb.Resolvers.IngestionResolver.merchant_feed_candidates/3` that calls `ProductCompareWeb.GraphQL.Connection.from_query_result/3` with `Input.connection_args(args)`.
 
-- [ ] **Step 3: Add schema types and query field**
+- [x] **Step 3: Add schema types and query field**
 
 In `lib/product_compare_web/schema.ex`, add:
 
@@ -87,7 +89,7 @@ In `lib/product_compare_web/schema.ex`, add:
 
 Do not expose `raw_metadata`, and do not add root `node(id:)` lookup for feed candidates in this batch.
 
-- [ ] **Step 4: Verify backend slice**
+- [x] **Step 4: Verify backend slice**
 
 Run:
 
@@ -113,7 +115,7 @@ Expected: all pass.
 - Modify if navigation entry is added: `assets/src/routes/root.tsx`
 - Generate: `assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts`
 
-- [ ] **Step 1: Add failing loader and route tests**
+- [x] **Step 1: Add failing loader and route tests**
 
 Add loader coverage proving `/ingestion/feed-candidates` preloads `{ first: 20 }`, forwards supported `first` and `after` query params, and returns a route-local error state when preloading fails.
 
@@ -135,7 +137,7 @@ cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/fee
 
 Expected: fail because the route does not exist.
 
-- [ ] **Step 2: Add Relay query, loader, and pagination helpers**
+- [x] **Step 2: Add Relay query, loader, and pagination helpers**
 
 Create `MerchantFeedCandidatesRouteQuery` for `merchantFeedCandidates(first:, after:)`.
 
@@ -147,7 +149,7 @@ Follow the existing merchant-directory route pattern:
 - cap `first` at `50`;
 - recover loader failures through `recoverRouteLoaderError`.
 
-- [ ] **Step 3: Add route UI and router entry**
+- [x] **Step 3: Add route UI and router entry**
 
 Create a read-only route at `/ingestion/feed-candidates`.
 
@@ -157,7 +159,7 @@ Wire the route in `assets/src/router.tsx` with `RouteErrorBoundary`.
 
 Add root navigation only if it fits the existing root navigation density; otherwise keep the route directly addressable for this batch.
 
-- [ ] **Step 4: Generate Relay artifacts and verify frontend slice**
+- [x] **Step 4: Generate Relay artifacts and verify frontend slice**
 
 Run:
 
@@ -177,17 +179,17 @@ Expected: all pass.
 - Modify: `docs/plans/INDEX.md`
 - Modify: `ARCHITECTURE.md`
 
-- [ ] **Step 1: Record completion evidence**
+- [x] **Step 1: Record completion evidence**
 
 Update `docs/work/product-data-scraping.md` with the changed paths, verification output, and remaining deferred work.
 
-- [ ] **Step 2: Close or promote the next row**
+- [x] **Step 2: Close or promote the next row**
 
 If verification passes, remove the ready row from `docs/work/index.md`.
 
 If no next batch is chosen, leave the queue with no ready rows and note that the next coordinator decision is either candidate scoring/approval UX or scheduled CJ discovery.
 
-- [ ] **Step 3: Final verification**
+- [x] **Step 3: Final verification**
 
 Run:
 

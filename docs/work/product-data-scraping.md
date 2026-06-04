@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: ready in `docs/work/index.md`
-- Last verified: 2026-06-04 after focused tests, adjacent CJ regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and source-scoped candidate count inspection
+- Live queue row: completed and removed from `docs/work/index.md`
+- Last verified: 2026-06-04 after focused backend/frontend tests, adjacent CJ regressions, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -14,8 +14,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
+  - none
 - Previous implementation plans:
+  - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`
   - `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`
@@ -50,9 +51,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: completed
 - Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`.
-- Next action: expose persisted CJ merchant feed candidates through a non-secret GraphQL read model and a read-only Relay route at `/ingestion/feed-candidates`.
+- Completed action: exposed persisted CJ merchant feed candidates through a non-secret GraphQL read model and a read-only Relay route at `/ingestion/feed-candidates`.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -81,6 +82,14 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- CJ feed candidate review:
+  - Added `ProductCompare.Ingestion.list_merchant_feed_candidates_query/0`.
+  - Added `ProductCompareWeb.Resolvers.IngestionResolver.merchant_feed_candidates/3`.
+  - Added `MerchantFeedCandidate` GraphQL type, connection, query field, and global ID encoding support without adding root `node(id:)` lookup.
+  - Updated `assets/schema.graphql`, added `MerchantFeedCandidatesRouteQuery`, generated `MerchantFeedCandidatesRouteQuery.graphql.ts`, and mounted `/ingestion/feed-candidates`.
+  - Added read-only route loading, pagination, empty/error states, and focused loader/route tests.
+  - Verified `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`, `cd assets && bun run typecheck`, `mix typecheck`, the secret/raw metadata scan, and `git diff --check`.
 
 - CJ feed candidate capture:
   - Added `merchant_feed_candidates` plus `ProductCompareSchemas.Ingestion.MerchantFeedCandidate` for non-secret, source-scoped CJ feed metadata.

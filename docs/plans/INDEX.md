@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md` | Execute the promoted row in `docs/work/index.md` to expose captured CJ merchant feed candidates through GraphQL and a read-only Relay route. | Close the row after focused backend/frontend verification, or promote the next ingestion decision if candidate scoring, approval UX, or scheduled discovery becomes the chosen follow-up. |
+| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
 
 ## Candidate Pool
 
@@ -30,6 +30,8 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion/demo parity: CJ feed candidate review route:
+  `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`.
 - Product ingestion: CJ feed candidate capture from manual feed discovery:
   `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
 - Product ingestion: CJ import observability, manual feed discovery, and bounded

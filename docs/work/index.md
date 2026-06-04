@@ -25,15 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data ingestion / frontend demo parity | `docs/work/product-data-scraping.md` | Expose captured CJ merchant feed candidates through a non-secret GraphQL read model and a read-only Relay route at `/ingestion/feed-candidates`. | `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`, `docs/work/product-data-scraping.md`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/graphql/global_id.ex`, `lib/product_compare_web/resolvers/ingestion_resolver.ex`, `lib/product_compare_web/schema.ex`, `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`, `assets/schema.graphql`, `assets/src/routes/ingestion/feed-candidates/**`, `assets/src/router.tsx`, `assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts` | `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`, `mix test test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`, `cd assets && bun run typecheck`, `mix typecheck`, `git diff --check` | Route lists only non-secret candidate fields with pagination and empty/error states; queue closes or promotes the next ingestion decision after verification. |
+| - | - | - | - | No ready rows. | - | - | - |
 
 ## Ready Work
 
-Ready row 1 promotes the next demo-parity slice from the completed CJ feed
-candidate capture batch. CJ credential access, product-scope validation, quota
-observation, representative redacted sample evidence, and owner approval are
-already recorded for the manual connector path; this row turns the captured
-non-secret candidates into a reviewable browser surface.
+No ready rows remain after the CJ feed candidate review batch. A coordinator
+should promote exactly one concrete next row from a current lane decision before
+any new worker starts implementation.
 
 ## Executor Prompts
 
