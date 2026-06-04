@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
 - Live queue row: `docs/work/index.md`
-- Last verified: 2026-06-04 after the manual CJ connector client, parser delegation, and Mix task passed focused tests
+- Last verified: 2026-06-04 after the live manual CJ import persisted one source-scoped row and replay remained idempotent
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -46,9 +46,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Next Batch
 
-- Status: ready
-- Batch: live manual CJ import verification.
-- Next action: run `mix product_compare.ingestion.cj_import --keywords shoe --limit 1` with local env credentials loaded, then inspect non-secret persisted row counts for source artifacts, external products, merchant identities, merchant products, and price points.
+- Status: done
+- Batch: manual CJ connector MVP complete.
+- Next action: none queued. Promote a new dated plan before adding scheduled polling, broader merchant/feed discovery, recurring jobs, or Tier-3 direct scraping.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -91,6 +91,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Added `mix product_compare.ingestion.cj_import` for one-page manual imports through `ProductCompare.Ingestion.persist_normalized_listing/2`.
   - Added focused client, parser delegation, and Mix task coverage without live network calls.
   - Verified `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs` and `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`.
+
+- Live manual CJ import verification:
+  - Ran `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_import --keywords shoe --limit 1`.
+  - The task reported `fetched=1 normalized=1 persisted=1 failed=0`.
+  - Re-ran the task after suppressing debug-level SQL logging; it again reported `fetched=1 normalized=1 persisted=1 failed=0`.
+  - Source-scoped row counts after replay: `source_artifacts=1`, `external_products=1`, `merchant_source_identities=1`, `merchant_products=1`, `price_points=1`.
 
 - Product Data Ingestion Persistence, Task 2:
   - Added `ProductCompare.Ingestion.persist_normalized_listing/2` to reuse source-scoped merchant identities while persisting normalized listings into source artifacts, external products, generated catalog product shells, merchant products, and price points.

@@ -27,6 +27,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   @spec run_import(keyword()) :: {:ok, map()} | {:error, term()}
   def run_import(opts) do
+    with_quiet_logger(fn ->
+      do_run_import(opts)
+    end)
+  end
+
+  defp do_run_import(opts) do
     fetcher = Keyword.get(opts, :fetcher, &ProductParser.fetch_batch/2)
     cursor = Keyword.get(opts, :cursor)
     fetch_opts = fetch_opts(opts)
@@ -37,6 +43,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       print_report(report)
 
       {:ok, report}
+    end
+  end
+
+  defp with_quiet_logger(fun) do
+    original_level = Logger.level()
+    Logger.configure(level: :warning)
+
+    try do
+      fun.()
+    after
+      Logger.configure(level: original_level)
     end
   end
 

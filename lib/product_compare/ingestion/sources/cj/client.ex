@@ -12,7 +12,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     $limit: Int!,
     $offset: Int!,
     $currency: String,
-    $serviceableAreas: String
+    $serviceableAreas: [String!]
   ) {
     shoppingProducts(
       companyId: $companyId,
@@ -109,7 +109,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
           limit: limit,
           offset: offset,
           currency: Map.get(opts, :currency, "USD"),
-          serviceableAreas: Map.get(opts, :serviceable_areas, "US")
+          serviceableAreas: serviceable_areas(opts)
         }
       })
 
@@ -190,6 +190,22 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   end
 
   defp next_cursor(_offset, _count, _total_count, _limit), do: nil
+
+  defp serviceable_areas(opts) do
+    opts
+    |> Map.get(:serviceable_areas, ["US"])
+    |> case do
+      nil -> ["US"]
+      value when is_binary(value) -> [value]
+      value when is_list(value) -> value
+    end
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> case do
+      [] -> ["US"]
+      areas -> areas
+    end
+  end
 
   defp blank_to_nil(value) when is_binary(value) do
     value

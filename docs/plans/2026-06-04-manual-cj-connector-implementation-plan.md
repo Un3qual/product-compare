@@ -10,7 +10,10 @@
 
 ---
 
-Status: implementation completed on 2026-06-04. Live manual import verification remains the ready dispatch row in `docs/work/index.md`.
+Status: completed on 2026-06-04. The live manual import reported
+`fetched=1 normalized=1 persisted=1 failed=0`, and source-scoped counts after
+replay remained `source_artifacts=1`, `external_products=1`,
+`merchant_source_identities=1`, `merchant_products=1`, and `price_points=1`.
 
 ## Scope
 

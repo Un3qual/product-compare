@@ -87,12 +87,13 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
                  "keywords" => ["shoe"],
                  "limit" => 1,
                  "offset" => 0,
-                 "serviceableAreas" => "US"
+                 "serviceableAreas" => ["US"]
                }
              } = Jason.decode!(body)
 
       assert query =~ "shoppingProducts"
       assert query =~ "partnerStatus: JOINED"
+      assert query =~ "$serviceableAreas: [String!]"
     end
 
     test "returns a missing env error before calling the transport" do
