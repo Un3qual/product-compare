@@ -7,6 +7,7 @@ defmodule ProductCompare.IngestionTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -223,6 +224,113 @@ defmodule ProductCompare.IngestionTest do
       assert DateTime.compare(completed.finished_at, finished_at) == :eq
 
       assert Repo.get!(ImportRun, completed.id).records_persisted == 3
+    end
+  end
+
+  describe "merchant feed candidates" do
+    test "persists a source-scoped candidate from CJ feed metadata" do
+      source = source_fixture()
+      provider_last_updated_at = ~U[2026-06-04 18:34:49Z]
+      last_seen_at = ~U[2026-06-04 20:00:00Z]
+
+      assert {:ok, %MerchantFeedCandidate{} = candidate} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping",
+                 language: "EN",
+                 last_seen_at: last_seen_at,
+                 product_count: 10,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: provider_last_updated_at,
+                 raw_metadata: %{"adId" => "feed-1", "feedName" => "US Shopping"},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert candidate.source_id == source.id
+      assert candidate.provider == "cj"
+      assert candidate.provider_feed_id == "feed-1"
+      assert candidate.advertiser_id == "adv-1"
+      assert candidate.advertiser_name == "Trail Merchant"
+      assert candidate.advertiser_country == "US"
+      assert candidate.source_feed_type == "SHOPPING"
+      assert candidate.currency == "USD"
+      assert candidate.language == "EN"
+      assert candidate.feed_name == "US Shopping"
+      assert candidate.product_count == 10
+      assert candidate.raw_metadata == %{"adId" => "feed-1", "feedName" => "US Shopping"}
+      assert DateTime.compare(candidate.provider_last_updated_at, provider_last_updated_at) == :eq
+      assert DateTime.compare(candidate.last_seen_at, last_seen_at) == :eq
+    end
+
+    test "replays candidates idempotently and lists them by source" do
+      source = source_fixture()
+      other_source = source_fixture(%{name: "Other Feed", domain: "other.example"})
+      first_seen_at = ~U[2026-06-04 20:00:00Z]
+      later_seen_at = ~U[2026-06-04 21:00:00Z]
+
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping",
+                 language: "EN",
+                 last_seen_at: first_seen_at,
+                 product_count: 10,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: first_seen_at,
+                 raw_metadata: %{"productCount" => 10},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert {:ok, %MerchantFeedCandidate{id: ^candidate_id} = updated_candidate} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-1",
+                 advertiser_name: "Trail Merchant",
+                 currency: "USD",
+                 feed_name: "US Shopping Updated",
+                 language: "EN",
+                 last_seen_at: later_seen_at,
+                 product_count: 12,
+                 provider: "cj",
+                 provider_feed_id: "feed-1",
+                 provider_last_updated_at: later_seen_at,
+                 raw_metadata: %{"productCount" => 12},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert {:ok, _other_candidate} =
+               Ingestion.upsert_merchant_feed_candidate(other_source, %{
+                 advertiser_country: "US",
+                 advertiser_id: "adv-2",
+                 advertiser_name: "Other Merchant",
+                 currency: "USD",
+                 feed_name: "Other Shopping",
+                 language: "EN",
+                 last_seen_at: later_seen_at,
+                 product_count: 4,
+                 provider: "cj",
+                 provider_feed_id: "feed-2",
+                 provider_last_updated_at: later_seen_at,
+                 raw_metadata: %{"productCount" => 4},
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert updated_candidate.feed_name == "US Shopping Updated"
+      assert updated_candidate.product_count == 12
+      assert DateTime.compare(updated_candidate.last_seen_at, later_seen_at) == :eq
+
+      assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 2
+
+      assert [%MerchantFeedCandidate{id: ^candidate_id, feed_name: "US Shopping Updated"}] =
+               Ingestion.list_merchant_feed_candidates(source)
     end
   end
 

@@ -12,6 +12,7 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompare.Taxonomy, as: TaxonomyContext
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -24,6 +25,22 @@ defmodule ProductCompare.Ingestion do
                                     "(source_id, content_hash) WHERE content_hash IS NOT NULL"}
   @price_point_conflict_target {:unsafe_fragment,
                                 "(merchant_product_id, observed_at, artifact_id) WHERE artifact_id IS NOT NULL"}
+
+  @merchant_feed_candidate_replace_fields [
+    :provider,
+    :advertiser_id,
+    :advertiser_name,
+    :advertiser_country,
+    :source_feed_type,
+    :currency,
+    :language,
+    :feed_name,
+    :product_count,
+    :provider_last_updated_at,
+    :raw_metadata,
+    :last_seen_at,
+    :updated_at
+  ]
 
   @spec start_import_run(map()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
   def start_import_run(attrs) do
@@ -49,6 +66,33 @@ defmodule ProductCompare.Ingestion do
     import_run
     |> ImportRun.changeset(attrs)
     |> Repo.update()
+  end
+
+  @spec upsert_merchant_feed_candidate(Source.t(), map()) ::
+          {:ok, MerchantFeedCandidate.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_merchant_feed_candidate(%Source{id: source_id}, attrs) do
+    attrs =
+      attrs
+      |> Map.new()
+      |> Map.put(:source_id, source_id)
+      |> Map.put_new(:last_seen_at, DateTime.utc_now())
+      |> Map.put_new(:raw_metadata, %{})
+
+    %MerchantFeedCandidate{}
+    |> MerchantFeedCandidate.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: {:replace, @merchant_feed_candidate_replace_fields},
+      conflict_target: [:source_id, :provider_feed_id],
+      returning: true
+    )
+  end
+
+  @spec list_merchant_feed_candidates(Source.t()) :: [MerchantFeedCandidate.t()]
+  def list_merchant_feed_candidates(%Source{id: source_id}) do
+    MerchantFeedCandidate
+    |> where([candidate], candidate.source_id == ^source_id)
+    |> order_by([candidate], asc: candidate.advertiser_name, asc: candidate.provider_feed_id)
+    |> Repo.all()
   end
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
