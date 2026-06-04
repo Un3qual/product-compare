@@ -599,8 +599,8 @@ test("renders an empty-state message when the Relay query returns no products", 
     products: {
       edges: [],
       pageInfo: {
-        hasNextPage: true,
-        endCursor: "cursor-without-products"
+        hasNextPage: false,
+        endCursor: null
       }
     }
   });
@@ -614,6 +614,73 @@ test("renders an empty-state message when the Relay query returns no products", 
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
+});
+
+test("keeps a next-page recovery link when an empty result has a next cursor", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "cursor-without-products"
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("No products available yet.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?after=cursor-without-products"
+  );
+  expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
+});
+
+test("keeps a first-page recovery link when a cursor page returns no products", () => {
+  const cursorDescriptor = {
+    __relayQuery: {
+      ...browseQueryDescriptor.__relayQuery,
+      variables: { first: 12, after: "stale-cursor" }
+    }
+  };
+  const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "stale-cursor" } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: cursorDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/products?after=stale-cursor"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("No products available yet.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute("href", "/products");
+  expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
 });
 
 test("renders an unavailable-state message when the preload path fails", () => {

@@ -55,9 +55,21 @@ function BrowseProducts({
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
       ? browseProductsNextPagePath(data.products.pageInfo.endCursor)
       : null;
+  const paginationLinks =
+    currentAfter || nextProductsPath ? (
+      <nav aria-label="Browse product pages">
+        {currentAfter ? <Link to="/products">First products</Link> : null}
+        {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
+      </nav>
+    ) : null;
 
   if (products.length === 0) {
-    return <p>No products available yet.</p>;
+    return (
+      <>
+        <p>No products available yet.</p>
+        {paginationLinks}
+      </>
+    );
   }
 
   return (
@@ -83,12 +95,7 @@ function BrowseProducts({
           </li>
         ))}
       </ul>
-      {currentAfter || nextProductsPath ? (
-        <nav aria-label="Browse product pages">
-          {currentAfter ? <Link to="/products">First products</Link> : null}
-          {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
-        </nav>
-      ) : null}
+      {paginationLinks}
     </>
   );
 }
