@@ -65,7 +65,10 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                          "feedName" => "Trail Shopping",
                          "productCount" => 10,
                          "providerLastUpdatedAt" => "2026-06-04T20:00:00.000000Z",
-                         "lastSeenAt" => "2026-06-04T20:00:00.000000Z"
+                         "lastSeenAt" => "2026-06-04T20:00:00.000000Z",
+                         "reviewStatus" => "PENDING",
+                         "reviewNote" => nil,
+                         "reviewedAt" => nil
                        }
                      }
                    ],
@@ -130,6 +133,65 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                  "after" => "bad-cursor"
                })
     end
+
+    test "reviewMerchantFeedCandidate updates candidate review status", %{conn: conn} do
+      source = source_fixture()
+
+      {:ok, candidate} =
+        Ingestion.upsert_merchant_feed_candidate(source, %{
+          advertiser_name: "Trail Merchant",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          provider: "cj",
+          provider_feed_id: "feed-1"
+        })
+
+      assert %{
+               "data" => %{
+                 "reviewMerchantFeedCandidate" => %{
+                   "candidate" => %{
+                     "id" => candidate_id,
+                     "reviewStatus" => "SHORTLISTED",
+                     "reviewNote" => "Good fit",
+                     "reviewedAt" => reviewed_at
+                   },
+                   "errors" => []
+                 }
+               }
+             } =
+               graphql(conn, review_merchant_feed_candidate_mutation(), %{
+                 "input" => %{
+                   "id" => relay_id(:merchant_feed_candidate, candidate.id),
+                   "status" => "SHORTLISTED",
+                   "note" => "Good fit"
+                 }
+               })
+
+      assert candidate_id == relay_id(:merchant_feed_candidate, candidate.id)
+      assert is_binary(reviewed_at)
+    end
+
+    test "reviewMerchantFeedCandidate returns payload errors for invalid ids", %{conn: conn} do
+      assert %{
+               "data" => %{
+                 "reviewMerchantFeedCandidate" => %{
+                   "candidate" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ID",
+                       "field" => "id",
+                       "message" => "invalid candidate id"
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, review_merchant_feed_candidate_mutation(), %{
+                 "input" => %{
+                   "id" => relay_id(:product, 123),
+                   "status" => "DISMISSED"
+                 }
+               })
+    end
   end
 
   defp source_fixture(attrs \\ %{}) do
@@ -168,12 +230,35 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
             productCount
             providerLastUpdatedAt
             lastSeenAt
+            reviewStatus
+            reviewNote
+            reviewedAt
           }
         }
         pageInfo {
           hasNextPage
           hasPreviousPage
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp review_merchant_feed_candidate_mutation do
+    """
+    mutation ReviewMerchantFeedCandidate($input: ReviewMerchantFeedCandidateInput!) {
+      reviewMerchantFeedCandidate(input: $input) {
+        candidate {
+          id
+          reviewStatus
+          reviewNote
+          reviewedAt
+        }
+        errors {
+          code
+          field
+          message
         }
       }
     }

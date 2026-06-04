@@ -106,6 +106,27 @@ defmodule ProductCompare.Ingestion do
     )
   end
 
+  @spec review_merchant_feed_candidate(pos_integer(), map()) ::
+          {:ok, MerchantFeedCandidate.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def review_merchant_feed_candidate(candidate_id, attrs)
+      when is_integer(candidate_id) and is_map(attrs) do
+    case Repo.get(MerchantFeedCandidate, candidate_id) do
+      nil ->
+        {:error, :not_found}
+
+      %MerchantFeedCandidate{} = candidate ->
+        attrs =
+          attrs
+          |> Map.new()
+          |> Map.update(:review_note, nil, &blank_to_nil/1)
+          |> Map.put(:reviewed_at, DateTime.utc_now())
+
+        candidate
+        |> MerchantFeedCandidate.review_changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
   def resolve_merchant_identity(%Source{id: source_id}, %NormalizedListing{} = listing) do
@@ -773,6 +794,15 @@ defmodule ProductCompare.Ingestion do
   end
 
   defp present_string(_value), do: nil
+
+  defp blank_to_nil(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp blank_to_nil(value), do: value
 
   defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
     Enum.any?(errors, fn

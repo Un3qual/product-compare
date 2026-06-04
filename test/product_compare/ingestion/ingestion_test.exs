@@ -262,11 +262,14 @@ defmodule ProductCompare.IngestionTest do
       assert candidate.feed_name == "US Shopping"
       assert candidate.product_count == 10
       assert candidate.raw_metadata == %{"adId" => "feed-1", "feedName" => "US Shopping"}
+      assert candidate.review_status == "pending"
+      assert is_nil(candidate.review_note)
+      assert is_nil(candidate.reviewed_at)
       assert DateTime.compare(candidate.provider_last_updated_at, provider_last_updated_at) == :eq
       assert DateTime.compare(candidate.last_seen_at, last_seen_at) == :eq
     end
 
-    test "replays candidates idempotently and lists them by source" do
+    test "replays candidates idempotently, preserves review state, and lists them by source" do
       source = source_fixture()
       other_source = source_fixture(%{name: "Other Feed", domain: "other.example"})
       first_seen_at = ~U[2026-06-04 20:00:00Z]
@@ -288,6 +291,16 @@ defmodule ProductCompare.IngestionTest do
                  raw_metadata: %{"productCount" => 10},
                  source_feed_type: "SHOPPING"
                })
+
+      assert {:ok, %MerchantFeedCandidate{} = reviewed_candidate} =
+               Ingestion.review_merchant_feed_candidate(candidate_id, %{
+                 review_status: "shortlisted",
+                 review_note: "Good US shopping fit"
+               })
+
+      assert reviewed_candidate.review_status == "shortlisted"
+      assert reviewed_candidate.review_note == "Good US shopping fit"
+      assert %DateTime{} = reviewed_at = reviewed_candidate.reviewed_at
 
       assert {:ok, %MerchantFeedCandidate{id: ^candidate_id} = updated_candidate} =
                Ingestion.upsert_merchant_feed_candidate(source, %{
@@ -325,12 +338,38 @@ defmodule ProductCompare.IngestionTest do
 
       assert updated_candidate.feed_name == "US Shopping Updated"
       assert updated_candidate.product_count == 12
+      assert updated_candidate.review_status == "shortlisted"
+      assert updated_candidate.review_note == "Good US shopping fit"
+      assert DateTime.compare(updated_candidate.reviewed_at, reviewed_at) == :eq
       assert DateTime.compare(updated_candidate.last_seen_at, later_seen_at) == :eq
 
       assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 2
 
       assert [%MerchantFeedCandidate{id: ^candidate_id, feed_name: "US Shopping Updated"}] =
                Ingestion.list_merchant_feed_candidates(source)
+    end
+
+    test "reviewing a candidate rejects invalid status and missing candidates" do
+      source = source_fixture()
+
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 last_seen_at: ~U[2026-06-04 20:00:00Z],
+                 provider: "cj",
+                 provider_feed_id: "feed-1"
+               })
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ingestion.review_merchant_feed_candidate(candidate_id, %{
+                 review_status: "approved"
+               })
+
+      assert {"is invalid", _} = changeset.errors[:review_status]
+
+      assert {:error, :not_found} =
+               Ingestion.review_merchant_feed_candidate(2_147_483_647, %{
+                 review_status: "dismissed"
+               })
     end
   end
 
