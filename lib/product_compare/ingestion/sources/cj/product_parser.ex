@@ -56,9 +56,18 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
     Enum.find_value(keys, &string_value(Map.get(record, &1))) ||
       Enum.find_value(paths, fn path ->
         record
-        |> get_in(path)
+        |> get_path(path)
         |> string_value()
       end)
+  end
+
+  defp get_path(record, path) do
+    Enum.reduce_while(path, record, fn key, current ->
+      case current do
+        value when is_map(value) -> {:cont, Map.get(value, key)}
+        _not_a_map -> {:halt, nil}
+      end
+    end)
   end
 
   defp decimal(record, field, keys, paths) do

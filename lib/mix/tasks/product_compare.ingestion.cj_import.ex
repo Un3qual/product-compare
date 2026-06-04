@@ -7,8 +7,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
-  alias ProductCompare.Repo
-  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
 
   @shortdoc "Imports one manual CJ shopping product page"
 
@@ -45,7 +44,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
             print_report(report)
 
-            {:ok, report}
+            report_result(report)
           end
 
         {:error, reason, report, next_cursor} ->
@@ -166,15 +165,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp fetch_source do
-    case Repo.get_by(Source, name: "CJ", domain: "cj.com") do
-      %Source{} = source ->
-        {:ok, source}
-
-      nil ->
-        %Source{}
-        |> Source.changeset(%{kind: "affiliate_feed", name: "CJ", domain: "cj.com"})
-        |> Repo.insert()
-    end
+    SourceResolver.fetch_source()
   end
 
   defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
@@ -251,4 +242,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       "fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
     )
   end
+
+  defp report_result(%{failed: 0} = report), do: {:ok, report}
+  defp report_result(report), do: {:error, {:row_failures, report}}
 end

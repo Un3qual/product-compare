@@ -143,6 +143,19 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParserTest do
                  "price" => "free"
                })
     end
+
+    test "returns a mapping error when scalar price omits currency" do
+      assert {:error, %{reason: :missing_required_field, field: :currency}} =
+               ProductParser.normalize(%{
+                 "adId" => "CJ-NO-CURRENCY",
+                 "advertiserId" => "924501",
+                 "advertiserName" => "Trail Shop",
+                 "buyUrl" => "https://trail.example/products/no-currency",
+                 "lastUpdated" => "2026-05-23T15:00:00Z",
+                 "name" => "No Currency",
+                 "price" => "129.99"
+               })
+    end
   end
 
   defp product_search_fixture do

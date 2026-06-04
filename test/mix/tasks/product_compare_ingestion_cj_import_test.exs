@@ -134,6 +134,66 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(MerchantProduct, :count, :id) == 2
       assert Repo.aggregate(PricePoint, :count, :id) == 2
     end
+
+    test "reuses an existing CJ source by unique key" do
+      existing_source =
+        %Source{}
+        |> Source.changeset(%{kind: "affiliate_feed", name: "CJ"})
+        |> Repo.insert!()
+
+      fetcher = fn _cursor, _opts ->
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      capture_io(fn ->
+        assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
+                 CjImport.run_import(fetcher: fetcher, keywords: ["shoe"], limit: 1)
+      end)
+
+      assert %{domain: "cj.com"} = Repo.get!(Source, existing_source.id)
+      assert Repo.aggregate(Source, :count, :id) == 1
+
+      assert %ImportRun{source_id: source_id, status: "succeeded"} =
+               Repo.get_by!(ImportRun, surface: "shoppingProducts")
+
+      assert source_id == existing_source.id
+    end
+
+    test "returns an error when fetched rows fail normalization" do
+      fetcher = fn _cursor, _opts ->
+        {:ok,
+         [
+           %{
+             "adId" => "CJ-BAD-PRICE",
+             "advertiserId" => "924501",
+             "advertiserName" => "Trail Shop",
+             "buyUrl" => "https://trail.example/products/bad-price",
+             "currency" => "USD",
+             "lastUpdated" => "2026-05-23T15:00:00Z",
+             "name" => "Bad Price",
+             "price" => "free"
+           }
+         ], nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:error,
+                  {:row_failures,
+                   %{failed: 1, fetched: 1, normalized: 0, pages_fetched: 1, persisted: 0}}} =
+                   CjImport.run_import(fetcher: fetcher, keywords: ["shoe"], limit: 1)
+        end)
+
+      assert output =~ "fetched=1 normalized=0 persisted=0 failed=1 pages_fetched=1"
+
+      assert %ImportRun{
+               status: "failed",
+               records_fetched: 1,
+               records_normalized: 0,
+               records_persisted: 0,
+               records_failed: 1
+             } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
   end
 
   defp product_validation_fixture do

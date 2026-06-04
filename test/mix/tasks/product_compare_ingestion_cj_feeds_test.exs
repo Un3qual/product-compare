@@ -175,5 +175,85 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
                cursor_end: 1
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
     end
+
+    test "reuses an existing CJ source by unique key" do
+      existing_source =
+        %Source{}
+        |> Source.changeset(%{kind: "affiliate_feed", name: "CJ"})
+        |> Repo.insert!()
+
+      fetcher = fn _cursor, _opts ->
+        {:ok,
+         [
+           %{
+             "adId" => "feed-1",
+             "advertiserCountry" => "US",
+             "advertiserId" => "adv-1",
+             "advertiserName" => "Merchant",
+             "currency" => "USD",
+             "feedName" => "US Shopping",
+             "language" => "EN",
+             "lastUpdated" => "2026-06-04T18:34:49Z",
+             "productCount" => 10,
+             "sourceFeedType" => "SHOPPING"
+           }
+         ], nil}
+      end
+
+      capture_io(fn ->
+        assert {:ok, %{candidates_persisted: 1, failed: 0, feeds_fetched: 1, pages_fetched: 1}} =
+                 CjFeeds.run_discovery(advertiser_country: "US", fetcher: fetcher, limit: 1)
+      end)
+
+      assert %{domain: "cj.com"} = Repo.get!(Source, existing_source.id)
+      assert Repo.aggregate(Source, :count, :id) == 1
+
+      assert %ImportRun{source_id: source_id, status: "succeeded"} =
+               Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+
+      assert source_id == existing_source.id
+    end
+
+    test "returns an error when fetched feeds fail candidate persistence" do
+      fetcher = fn _cursor, _opts ->
+        {:ok,
+         [
+           %{
+             "advertiserCountry" => "US",
+             "advertiserId" => "adv-1",
+             "advertiserName" => "Merchant",
+             "currency" => "USD",
+             "feedName" => "Missing ID Feed",
+             "language" => "EN",
+             "lastUpdated" => "2026-06-04T18:34:49Z",
+             "productCount" => 10,
+             "sourceFeedType" => "SHOPPING"
+           }
+         ], nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:error,
+                  {:row_failures,
+                   %{
+                     candidates_persisted: 0,
+                     failed: 1,
+                     feeds_fetched: 1,
+                     pages_fetched: 1
+                   }}} =
+                   CjFeeds.run_discovery(advertiser_country: "US", fetcher: fetcher, limit: 1)
+        end)
+
+      assert output =~ "feeds_fetched=1 candidates_persisted=0 pages_fetched=1 failed=1"
+
+      assert %ImportRun{
+               status: "failed",
+               records_fetched: 1,
+               records_normalized: 0,
+               records_persisted: 0,
+               records_failed: 1
+             } = Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+    end
   end
 end
