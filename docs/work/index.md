@@ -25,13 +25,13 @@ Updated: 2026-06-04
 
 | Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| - | - | - | - | No ready rows. | - | - | - |
+| 1 | ready | Product data ingestion | `docs/work/product-data-scraping.md` | Execute CJ feed candidate capture: persist manual `shoppingProductFeeds` discovery results as source-scoped merchant/feed candidates. | `docs/work/index.md`, `docs/work/product-data-scraping.md`, `docs/plans/INDEX.md`, `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`, `priv/repo/migrations/20260604210000_create_merchant_feed_candidates.exs`, `lib/product_compare_schemas/ingestion/merchant_feed_candidate.ex`, `lib/product_compare/ingestion.ex`, `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`, `test/product_compare/ingestion/ingestion_test.exs`, `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs` | Focused candidate persistence and CJ feed task tests, adjacent CJ client/parser/import task tests, `mix typecheck`, `git diff --check`, and one live feed discovery with non-secret candidate counts. | Close the row if candidate persistence, task wiring, and live feed discovery verify; otherwise record the exact blocker in the lane doc. |
 
 ## Ready Work
 
-No ready rows remain after the CJ ingestion expansion batch. A coordinator should
-promote exactly one concrete next row from a current lane decision before any new
-worker starts implementation.
+Product data ingestion has one ready CJ feed candidate capture row. Keep the
+batch manual and env-var-backed: no scheduled polling, credential config,
+account automation, scoring workflow, or review UI in this row.
 
 ## Executor Prompts
 

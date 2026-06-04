@@ -14,7 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
+| ready | `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md` | Product ingestion should persist manual CJ `shoppingProductFeeds` discovery results as reviewable merchant/feed candidates. | Close the row when focused persistence/task tests, adjacent CJ tests, `mix typecheck`, `git diff --check`, and one live feed discovery with non-secret candidate counts pass. |
 
 ## Candidate Pool
 

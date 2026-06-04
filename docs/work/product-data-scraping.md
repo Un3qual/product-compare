@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed from `docs/work/index.md`
+- Live queue row: `docs/work/index.md`
 - Last verified: 2026-06-04 after focused tests, adjacent regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and a bounded live manual CJ import
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
@@ -14,8 +14,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`
+  - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
 - Previous implementation plans:
+  - `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`
   - `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`
   - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
@@ -46,11 +47,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
-## Current Batch
+## Next Batch
 
-- Status: completed
-- Batch: `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`.
-- Completed action: added import run observability, manual `shoppingProductFeeds` discovery, and bounded multi-page manual imports.
+- Status: ready
+- Batch: `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
+- Next action: persist manual `shoppingProductFeeds` discovery results as source-scoped merchant/feed candidates.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -60,18 +61,17 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Scope guardrails:
   - `shoppingProducts` remains the manual product import surface.
   - `shoppingProductFeeds` is now available through a manual discovery task.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, or Tier-3 direct scraping in this batch.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring workflow, review UI, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
 - `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_feeds --limit 1 --pages 1`
-- `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_import --keywords shoe --limit 1 --pages 2`
-- Inspect persisted CJ row counts without printing raw payloads.
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
-- `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare_web/graphql/pricing_queries_test.exs`
+- Inspect persisted candidate counts without printing raw payloads.
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+- `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - `mix typecheck`
 - `git diff --check`
-- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|shoppingProductFeeds|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
+- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|shoppingProductFeeds|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
 
 ## Deferred Note
 
