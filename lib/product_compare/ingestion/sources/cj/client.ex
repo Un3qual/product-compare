@@ -242,7 +242,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
       records = Map.get(result_set, "resultList", [])
       count = Map.get(result_set, "count", length(records))
       total_count = Map.get(result_set, "totalCount", offset + count)
-      next_cursor = next_cursor(offset, count, total_count, limit)
+      effective_limit = Map.get(result_set, "limit", limit)
+      next_cursor = next_cursor(offset, count, total_count, effective_limit)
 
       {:ok, records, next_cursor}
     else

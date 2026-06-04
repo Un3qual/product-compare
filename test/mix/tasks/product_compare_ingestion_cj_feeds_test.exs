@@ -88,5 +88,92 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
                records_failed: 0
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
     end
+
+    test "records partial run counts when a later page fetch fails" do
+      feed = %{
+        "adId" => "feed-1",
+        "advertiserCountry" => "US",
+        "advertiserId" => "adv-1",
+        "advertiserName" => "Merchant",
+        "currency" => "USD",
+        "feedName" => "US Shopping",
+        "language" => "EN",
+        "lastUpdated" => "2026-06-04T18:34:49Z",
+        "productCount" => 10,
+        "sourceFeedType" => "SHOPPING"
+      }
+
+      fetcher = fn
+        nil, _opts -> {:ok, [feed], 1}
+        1, _opts -> {:error, :test_failure}
+      end
+
+      assert {:error, :test_failure} =
+               CjFeeds.run_discovery(
+                 advertiser_country: "US",
+                 fetcher: fetcher,
+                 limit: 1,
+                 pages: 2
+               )
+
+      assert %Source{id: source_id} = Repo.get_by(Source, name: "CJ", domain: "cj.com")
+
+      assert %MerchantFeedCandidate{} =
+               Repo.get_by!(MerchantFeedCandidate,
+                 source_id: source_id,
+                 provider_feed_id: "feed-1"
+               )
+
+      assert %ImportRun{
+               source_id: ^source_id,
+               provider: "cj",
+               surface: "shoppingProductFeeds",
+               status: "failed",
+               cursor_start: 0,
+               cursor_end: 1,
+               page_size: 1,
+               pages_requested: 2,
+               pages_fetched: 1,
+               records_fetched: 1,
+               records_normalized: 0,
+               records_persisted: 1,
+               records_failed: 0,
+               error_summary: ":test_failure"
+             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
+    end
+
+    test "uses one page when the requested page count is invalid" do
+      parent = self()
+
+      fetcher = fn cursor, _opts ->
+        send(parent, {:fetch, cursor})
+
+        {:ok, [], 1}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{pages_fetched: 1}} =
+                   CjFeeds.run_discovery(
+                     advertiser_country: "US",
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 0
+                   )
+        end)
+
+      assert_receive {:fetch, nil}
+      refute_receive {:fetch, 1}
+      assert output =~ "feeds_fetched=0 candidates_persisted=0 pages_fetched=1 failed=0"
+
+      assert %Source{id: source_id} = Repo.get_by(Source, name: "CJ", domain: "cj.com")
+
+      assert %ImportRun{
+               source_id: ^source_id,
+               pages_requested: 1,
+               pages_fetched: 1,
+               cursor_end: 1
+             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
+    end
   end
 end

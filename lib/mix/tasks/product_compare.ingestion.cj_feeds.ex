@@ -36,7 +36,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
     fetcher = Keyword.get(opts, :fetcher, &Client.fetch_feeds/2)
     cursor = Keyword.get(opts, :cursor)
     fetch_opts = fetch_opts(opts)
-    pages = Keyword.get(opts, :pages, 1)
+    pages = page_count(opts)
 
     with {:ok, source} <- fetch_source(),
          {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
@@ -48,11 +48,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
             {:ok, report}
           end
 
-        {:error, reason} ->
+        {:error, reason, report, next_cursor} ->
           _completed_run =
             Ingestion.complete_import_run(import_run, %{
               error_summary: inspect(reason),
-              status: "failed"
+              status: "failed",
+              cursor_end: next_cursor,
+              pages_fetched: report.pages_fetched,
+              records_fetched: report.feeds_fetched,
+              records_normalized: 0,
+              records_persisted: report.candidates_persisted,
+              records_failed: report.failed
             })
 
           {:error, reason}
@@ -94,6 +100,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
       advertiser_country: Keyword.get(opts, :advertiser_country, "US"),
       limit: Keyword.get(opts, :limit, 25)
     ]
+  end
+
+  defp page_count(opts) do
+    case Keyword.get(opts, :pages, 1) do
+      value when is_integer(value) and value > 0 -> value
+      _invalid -> 1
+    end
   end
 
   defp start_import_run(source, cursor, fetch_opts, pages) do
@@ -143,7 +156,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
           end
 
         {:error, reason} ->
-          {:halt, {:error, reason}}
+          {:halt, {:error, reason, report, current_cursor}}
       end
     end)
   end

@@ -118,6 +118,40 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
       assert {:error, {:graphql_errors, [%{"message" => "forbidden"}]}} =
                Client.fetch_batch(nil, transport: transport)
     end
+
+    test "uses the response limit when the API caps the requested page size" do
+      System.put_env("CJ_API_TOKEN", "test-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+
+      records =
+        Enum.map(1..10, fn index ->
+          %{"adId" => "CJ-#{index}", "title" => "Product #{index}"}
+        end)
+
+      transport = fn _request ->
+        {:ok,
+         %{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "data" => %{
+                 "shoppingProducts" => %{
+                   "count" => 10,
+                   "limit" => 10,
+                   "totalCount" => 50,
+                   "resultList" => records
+                 }
+               }
+             })
+         }}
+      end
+
+      assert {:ok, ^records, 10} =
+               Client.fetch_batch(nil,
+                 limit: 25,
+                 transport: transport
+               )
+    end
   end
 
   describe "fetch_feeds/2" do
