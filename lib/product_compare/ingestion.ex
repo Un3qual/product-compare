@@ -102,7 +102,8 @@ defmodule ProductCompare.Ingestion do
       [candidate],
       asc: candidate.advertiser_name,
       asc: candidate.feed_name,
-      asc: candidate.provider_feed_id
+      asc: candidate.provider_feed_id,
+      asc: candidate.id
     )
   end
 

@@ -349,6 +349,14 @@ defmodule ProductCompare.IngestionTest do
                Ingestion.list_merchant_feed_candidates(source)
     end
 
+    test "merchant feed candidate connection query includes a unique pagination tiebreaker" do
+      {sql, _params} =
+        Ecto.Adapters.SQL.to_sql(:all, Repo, Ingestion.list_merchant_feed_candidates_query())
+
+      assert sql =~
+               ~s/ORDER BY m0."advertiser_name", m0."feed_name", m0."provider_feed_id", m0."id"/
+    end
+
     test "reviewing a candidate preserves note when review_note is omitted" do
       source = source_fixture()
 
