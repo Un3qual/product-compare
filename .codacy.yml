@@ -1,4 +1,5 @@
 ---
 exclude_paths:
   - "assets/src/__generated__/**"
+  - "assets/test/**"
   - "docs/plans/**"
