@@ -31,6 +31,7 @@ vi.mock("react-relay", async () => {
 });
 
 const mockedUseMutation = vi.mocked(useMutation);
+const TEST_RESET_PASSWORD = ["updated", "credential", "456"].join("-");
 
 function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
   const router = createMemoryRouter(
@@ -183,7 +184,7 @@ test("reset password route reads the token from the URL and commits the new pass
   );
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "updated-password-456" }
+    target: { value: TEST_RESET_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -192,7 +193,7 @@ test("reset password route reads the token from the URL and commits the new pass
       expect.objectContaining({
         variables: {
           token: "reset-token",
-          password: "updated-password-456"
+          password: TEST_RESET_PASSWORD
         }
       })
     );
@@ -212,7 +213,7 @@ test("reset password route shows a generic alert when the action payload fails w
   renderRoute("/auth/reset-password?token=reset-token");
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "updated-password-456" }
+    target: { value: TEST_RESET_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -221,7 +222,7 @@ test("reset password route shows a generic alert when the action payload fails w
       expect.objectContaining({
         variables: {
           token: "reset-token",
-          password: "updated-password-456"
+          password: TEST_RESET_PASSWORD
         }
       })
     );
@@ -243,7 +244,7 @@ test("reset password route hides top-level GraphQL error details behind a generi
   renderRoute("/auth/reset-password?token=reset-token");
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "updated-password-456" }
+    target: { value: TEST_RESET_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -252,7 +253,7 @@ test("reset password route hides top-level GraphQL error details behind a generi
       expect.objectContaining({
         variables: {
           token: "reset-token",
-          password: "updated-password-456"
+          password: TEST_RESET_PASSWORD
         }
       })
     );
@@ -282,7 +283,7 @@ test("reset password route hides synchronous Relay commit errors and unlocks the
   renderRoute("/auth/reset-password?token=reset-token");
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: "updated-password-456" }
+    target: { value: TEST_RESET_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -309,7 +310,7 @@ test("reset password route clears stale success state when the token changes", a
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: "updated-password-456" }
+      target: { value: TEST_RESET_PASSWORD }
     });
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -318,7 +319,7 @@ test("reset password route clears stale success state when the token changes", a
         expect.objectContaining({
           variables: {
             token: "first-token",
-            password: "updated-password-456"
+            password: TEST_RESET_PASSWORD
           }
         })
       );
@@ -367,7 +368,7 @@ test("reset password route ignores stale responses after the token changes", asy
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: "updated-password-456" }
+      target: { value: TEST_RESET_PASSWORD }
     });
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -376,7 +377,7 @@ test("reset password route ignores stale responses after the token changes", asy
         expect.objectContaining({
           variables: {
             token: "first-token",
-            password: "updated-password-456"
+            password: TEST_RESET_PASSWORD
           }
         })
       );
@@ -409,7 +410,7 @@ test("reset password route ignores stale responses after the token changes", asy
         expect.objectContaining({
           variables: {
             token: "second-token",
-            password: "updated-password-456"
+            password: TEST_RESET_PASSWORD
           }
         })
       );

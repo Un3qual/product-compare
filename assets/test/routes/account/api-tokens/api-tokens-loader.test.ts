@@ -19,6 +19,8 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 });
 
 const fetchRouteQueryMock = vi.mocked(fetchRouteQuery);
+const ACTIVE_TOKEN_PREFIX = "prefix-active";
+const REVOKED_TOKEN_PREFIX = "prefix-revoked";
 
 interface TestApiTokenNode {
   id: string;
@@ -33,7 +35,7 @@ interface TestApiTokenNode {
 const TOKEN_NODE: TestApiTokenNode = {
   id: "QXBpVG9rZW46MDEyMzQ1NjctODlhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: "CLI",
-  tokenPrefix: "abcdef123456",
+  tokenPrefix: ACTIVE_TOKEN_PREFIX,
   lastUsedAt: null,
   expiresAt: "2026-08-29T12:00:00Z",
   revokedAt: null,
@@ -43,7 +45,7 @@ const TOKEN_NODE: TestApiTokenNode = {
 const REVOKED_TOKEN_NODE: TestApiTokenNode = {
   id: "QXBpVG9rZW46OTg3NjU0MzItMTBhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: null,
-  tokenPrefix: "fedcba654321",
+  tokenPrefix: REVOKED_TOKEN_PREFIX,
   lastUsedAt: "2026-05-30T12:00:00Z",
   expiresAt: null,
   revokedAt: "2026-05-31T13:00:00Z",

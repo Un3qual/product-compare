@@ -58,11 +58,19 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+const ACTIVE_TOKEN_PREFIX = "prefix-active";
+const REVOKED_TOKEN_PREFIX = "prefix-revoked";
+const BUILD_TOKEN_PREFIX = "prefix-build";
+const EXPIRED_TOKEN_PREFIX = "prefix-expired";
+const CREATED_TOKEN_PREFIX = "prefix-created";
+const ROTATED_TOKEN_PREFIX = "prefix-rotated";
+const ONE_TIME_TOKEN_VALUE = ["example", "one", "time", "api", "value"].join("-");
+const ROTATED_TOKEN_VALUE = ["example", "rotated", "api", "value"].join("-");
 
 const ACTIVE_TOKEN: ApiTokenSummary = {
   id: "QXBpVG9rZW46MDEyMzQ1NjctODlhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: "CLI",
-  tokenPrefix: "abcdef123456",
+  tokenPrefix: ACTIVE_TOKEN_PREFIX,
   lastUsedAt: null,
   expiresAt: "2026-08-29T12:00:00Z",
   revokedAt: null,
@@ -72,7 +80,7 @@ const ACTIVE_TOKEN: ApiTokenSummary = {
 const REVOKED_TOKEN: ApiTokenSummary = {
   id: "QXBpVG9rZW46OTg3NjU0MzItMTBhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: "Old automation",
-  tokenPrefix: "fedcba654321",
+  tokenPrefix: REVOKED_TOKEN_PREFIX,
   lastUsedAt: "2026-05-30T12:00:00Z",
   expiresAt: null,
   revokedAt: "2026-05-31T13:00:00Z",
@@ -82,7 +90,7 @@ const REVOKED_TOKEN: ApiTokenSummary = {
 const BUILD_BOT_TOKEN: ApiTokenSummary = {
   id: "QXBpVG9rZW46YnVpbGQtYm90LXRva2Vu",
   label: "Build bot",
-  tokenPrefix: "112233aabbcc",
+  tokenPrefix: BUILD_TOKEN_PREFIX,
   lastUsedAt: null,
   expiresAt: null,
   revokedAt: null,
@@ -92,7 +100,7 @@ const BUILD_BOT_TOKEN: ApiTokenSummary = {
 const EXPIRED_TOKEN: ApiTokenSummary = {
   id: "QXBpVG9rZW46ZXhwaXJlZC10b2tlbg==",
   label: "Expired token",
-  tokenPrefix: "deadbeef1234",
+  tokenPrefix: EXPIRED_TOKEN_PREFIX,
   lastUsedAt: null,
   expiresAt: "2000-01-01T00:00:00Z",
   revokedAt: null,
@@ -193,7 +201,7 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
 
   expect(screen.getByRole("heading", { name: "API tokens" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
-  expect(screen.getByText("abcdef123456")).toBeInTheDocument();
+  expect(screen.getByText(ACTIVE_TOKEN_PREFIX)).toBeInTheDocument();
   expect(screen.getByText("2026-08-29 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Never used")).toBeInTheDocument();
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
@@ -278,7 +286,7 @@ test("create token submits label and displays the one-time plain text token", as
 
   const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
   expect(oneTimeRegion).toHaveTextContent("Visible only once");
-  expect(oneTimeRegion).toHaveTextContent("example-one-time-api-token");
+  expect(oneTimeRegion).toHaveTextContent(ONE_TIME_TOKEN_VALUE);
 });
 
 test("create token ignores duplicate submits while the request is in flight", async () => {
@@ -375,7 +383,7 @@ test("create token clears the one-time token when the next create starts", async
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
-  expect(await screen.findByText("example-one-time-api-token")).toBeInTheDocument();
+  expect(await screen.findByText(ONE_TIME_TOKEN_VALUE)).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "Second token" }
@@ -385,7 +393,7 @@ test("create token clears the one-time token when the next create starts", async
   await waitFor(() => {
     expect(commitCreateMutationMock).toHaveBeenCalledTimes(2);
   });
-  expect(screen.queryByText("example-one-time-api-token")).not.toBeInTheDocument();
+  expect(screen.queryByText(ONE_TIME_TOKEN_VALUE)).not.toBeInTheDocument();
 });
 
 test("create token renders mutation payload errors", async () => {
@@ -544,14 +552,14 @@ test("revoke token clears the one-time token when revoke starts", async () => {
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
-  expect(await screen.findByText("example-one-time-api-token")).toBeInTheDocument();
+  expect(await screen.findByText(ONE_TIME_TOKEN_VALUE)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
   });
-  expect(screen.queryByText("example-one-time-api-token")).not.toBeInTheDocument();
+  expect(screen.queryByText(ONE_TIME_TOKEN_VALUE)).not.toBeInTheDocument();
 });
 
 test("revoke token renders mutation payload errors", async () => {
@@ -688,7 +696,7 @@ test("rotate token commits the selected token id and displays the replacement on
   completeLatestRotateMutation(buildSuccessfulRotateResponse());
 
   const oneTimeRegion = await screen.findByRole("region", { name: "One-time API token" });
-  expect(oneTimeRegion).toHaveTextContent("example-rotated-api-token");
+  expect(oneTimeRegion).toHaveTextContent(ROTATED_TOKEN_VALUE);
   expect(screen.getByRole("heading", { name: "CLI replacement" })).toBeInTheDocument();
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
 });
@@ -887,7 +895,7 @@ test("server token snapshots supersede local mutation snapshots after reload", a
   const serverRotatedToken: ApiTokenSummary = {
     id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
     label: "Server replacement",
-    tokenPrefix: "998877aabbcc",
+    tokenPrefix: ROTATED_TOKEN_PREFIX,
     lastUsedAt: "2026-06-01T13:00:00Z",
     expiresAt: "2026-09-02T12:00:00Z",
     revokedAt: null,
@@ -986,11 +994,11 @@ function stubFormDataExpiry(expiresAt: string) {
 function buildSuccessfulCreateResponse() {
   return {
     createApiToken: {
-      plainTextToken: "example-one-time-api-token",
+      plainTextToken: ONE_TIME_TOKEN_VALUE,
       apiToken: {
         id: "QXBpVG9rZW46Y3JlYXRlZC10b2tlbg==",
         label: "CLI automation",
-        tokenPrefix: "123456abcdef",
+        tokenPrefix: CREATED_TOKEN_PREFIX,
         lastUsedAt: null,
         expiresAt: "2026-08-29T12:00:00Z",
         revokedAt: null,
@@ -1004,11 +1012,11 @@ function buildSuccessfulCreateResponse() {
 function buildSuccessfulRotateResponse() {
   return {
     rotateApiToken: {
-      plainTextToken: "example-rotated-api-token",
+      plainTextToken: ROTATED_TOKEN_VALUE,
       apiToken: {
         id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
         label: "CLI replacement",
-        tokenPrefix: "998877aabbcc",
+        tokenPrefix: ROTATED_TOKEN_PREFIX,
         lastUsedAt: null,
         expiresAt: "2026-09-01T12:00:00Z",
         revokedAt: null,

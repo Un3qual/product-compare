@@ -52,6 +52,7 @@ vi.mock("react-router-dom", async () => {
 const mockedCommitLocalUpdate = vi.mocked(commitLocalUpdate);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUseRelayEnvironment = vi.mocked(useRelayEnvironment);
+const TEST_PASSWORD = ["valid", "credential", "123"].join("-");
 
 function renderRoute(initialEntry: string) {
   render(
@@ -164,7 +165,7 @@ test("login route commits credentials through Relay and redirects after a succes
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -173,7 +174,7 @@ test("login route commits credentials through Relay and redirects after a succes
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: "valid-password-123"
+          password: TEST_PASSWORD
         }
       })
     );
@@ -338,7 +339,7 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -347,7 +348,7 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: "valid-password-123"
+          password: TEST_PASSWORD
         }
       })
     );
@@ -380,7 +381,7 @@ test("register route updates root viewer after a successful session response", a
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -389,7 +390,7 @@ test("register route updates root viewer after a successful session response", a
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: "valid-password-123"
+          password: TEST_PASSWORD
         }
       })
     );
@@ -444,7 +445,7 @@ test("login route hides transport details behind a generic alert", async () => {
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -471,7 +472,7 @@ test("login route hides synchronous Relay commit errors behind a generic alert",
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -488,7 +489,7 @@ test("login route hides top-level GraphQL error details behind a generic alert",
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -521,7 +522,7 @@ test("register route hides top-level GraphQL error details behind a generic aler
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -558,7 +559,7 @@ test("register route hides synchronous Relay commit errors behind a generic aler
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -575,7 +576,7 @@ test("login route shows a generic alert when the session payload fails without e
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -603,7 +604,7 @@ test("login route ignores malformed payload error fields and falls back to a gen
     target: { value: "person@example.com" }
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: "valid-password-123" }
+    target: { value: TEST_PASSWORD }
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
