@@ -21,6 +21,8 @@ import { savedComparisonsLoader } from "./routes/compare/saved-data";
 import { CompareRoute } from "./routes/compare";
 import { SavedComparisonsRoute } from "./routes/compare/saved";
 import { RouteErrorBoundary } from "./routes/compare/error-boundary";
+import { FeedCandidatesRoute } from "./routes/ingestion/feed-candidates";
+import { feedCandidatesLoader } from "./routes/ingestion/feed-candidates/loader";
 import { MerchantDirectoryRoute } from "./routes/merchants";
 import { merchantDirectoryLoader } from "./routes/merchants/loader";
 import { OfferDiscoveryRoute } from "./routes/offers";
@@ -82,6 +84,14 @@ export const routes: RouteObject[] = [
         loader: offerDiscoveryLoader,
         element: <OfferDiscoveryRoute />,
         errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+      },
+      {
+        path: "ingestion/feed-candidates",
+        loader: feedCandidatesLoader,
+        element: <FeedCandidatesRoute />,
+        errorElement: (
+          <RouteErrorBoundary resourceName="feed candidates" title="CJ feed candidates" />
+        )
       },
       {
         path: "compare",

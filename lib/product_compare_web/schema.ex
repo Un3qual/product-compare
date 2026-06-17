@@ -12,6 +12,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
+  alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareWeb.Resolvers.SpecsResolver
@@ -111,6 +112,14 @@ defmodule ProductCompareWeb.Schema do
       arg(:after, :string)
 
       resolve(&PricingResolver.merchants/3)
+    end
+
+    @desc "Returns captured merchant feed candidates with review-safe metadata."
+    field :merchant_feed_candidates, :merchant_feed_candidate_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&IngestionResolver.merchant_feed_candidates/3)
     end
 
     @desc "Returns merchant products for a product with optional merchant and active filters."
@@ -217,6 +226,13 @@ defmodule ProductCompareWeb.Schema do
       resolve(&AffiliateResolver.create_coupon/3)
     end
 
+    @desc "Updates review status for a captured merchant feed candidate."
+    field :review_merchant_feed_candidate, non_null(:review_merchant_feed_candidate_payload) do
+      arg(:input, non_null(:review_merchant_feed_candidate_input))
+
+      resolve(&IngestionResolver.review_merchant_feed_candidate/3)
+    end
+
     @desc "Creates a private saved comparison set for the current authenticated user."
     field :create_saved_comparison_set, non_null(:saved_comparison_set_payload) do
       arg(:input, non_null(:create_saved_comparison_set_input))
@@ -316,6 +332,12 @@ defmodule ProductCompareWeb.Schema do
     field :active_only, :boolean
     field :first, :integer
     field :after, :string
+  end
+
+  input_object :review_merchant_feed_candidate_input do
+    field :id, non_null(:id)
+    field :status, non_null(:merchant_feed_candidate_review_status)
+    field :note, :string
   end
 
   input_object :product_numeric_filter_input do
@@ -559,6 +581,11 @@ defmodule ProductCompareWeb.Schema do
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
+  object :review_merchant_feed_candidate_payload do
+    field :candidate, :merchant_feed_candidate
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
   object :mutation_error do
     field :code, non_null(:string)
     field :message, non_null(:string)
@@ -696,6 +723,46 @@ defmodule ProductCompareWeb.Schema do
   object :merchant_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:merchant)
+  end
+
+  object :merchant_feed_candidate do
+    field :id, non_null(:id) do
+      resolve(fn candidate, _, _ ->
+        GlobalId.encode_required(:merchant_feed_candidate, candidate.id)
+      end)
+    end
+
+    field :provider, non_null(:string)
+    field :provider_feed_id, non_null(:string)
+    field :advertiser_id, :string
+    field :advertiser_name, :string
+    field :advertiser_country, :string
+    field :source_feed_type, :string
+    field :currency, :string
+    field :language, :string
+    field :feed_name, :string
+    field :product_count, :integer
+    field :provider_last_updated_at, :datetime
+    field :last_seen_at, non_null(:datetime)
+    field :review_status, non_null(:merchant_feed_candidate_review_status)
+    field :review_note, :string
+    field :reviewed_at, :datetime
+  end
+
+  object :merchant_feed_candidate_connection do
+    field :edges, non_null(list_of(non_null(:merchant_feed_candidate_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :merchant_feed_candidate_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:merchant_feed_candidate)
+  end
+
+  enum :merchant_feed_candidate_review_status do
+    value(:pending, as: "pending")
+    value(:shortlisted, as: "shortlisted")
+    value(:dismissed, as: "dismissed")
   end
 
   object :product do

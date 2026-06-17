@@ -6,7 +6,7 @@
 - Priority: P2
 - Source of truth: this file
 - Live queue row: completed and removed from `docs/work/index.md`
-- Last verified: 2026-06-04 after focused tests, adjacent CJ regressions, `mix typecheck`, live `shoppingProductFeeds` discovery, and source-scoped candidate count inspection
+- Last verified: 2026-06-04 after focused backend/frontend tests, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -14,8 +14,11 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
+  - None. Next ingestion work needs a coordinator decision.
 - Previous implementation plans:
+  - `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
+  - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
+  - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-ingestion-expansion-implementation-plan.md`
   - `docs/plans/2026-06-04-manual-cj-connector-implementation-plan.md`
   - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
@@ -50,34 +53,50 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Current Batch
 
 - Status: completed
-- Batch: `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
-- Completed action: persisted manual `shoppingProductFeeds` discovery results as source-scoped merchant/feed candidates.
+- Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
+- Completed action: added durable review status to CJ merchant feed candidates and browser controls for pending, shortlisted, and dismissed states.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
   - Read secrets at the manual task/client boundary with `System.get_env/1`.
   - Do not commit tokens, account-sensitive tracking parameters, live credentials, or credential-derived config.
-- Owner approval: Ryan approves CJ account use for this personal project and permits one small redacted account-scoped sample fixture for validation.
+- CJ evidence already recorded for the manual connector path: credential access, product-scope validation, quota observation, representative redacted sample evidence, and owner approval.
 - Scope guardrails:
   - `shoppingProducts` remains the manual product import surface.
   - `shoppingProductFeeds` is now available through a manual discovery task.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring workflow, review UI, or Tier-3 direct scraping in this batch.
+  - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring algorithm, merchant application submission, or Tier-3 direct scraping in this completed batch.
 
 ## Verification Commands
 
-- `set -a; . ./.env.local; set +a; mix product_compare.ingestion.cj_feeds --limit 1 --pages 1`
-- Inspect persisted candidate counts without printing raw payloads.
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
-- `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
 - `mix typecheck`
 - `git diff --check`
-- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|ads.api.cj.com|shoppingProducts|shoppingProductFeeds|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md`
+- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Just Completed
+
+- CJ feed candidate review status:
+  - Added durable `review_status`, `review_note`, and `reviewed_at` fields to `merchant_feed_candidates`, with `pending`, `shortlisted`, and `dismissed` as the allowed review states.
+  - Added `ProductCompare.Ingestion.review_merchant_feed_candidate/2` while preserving review state during feed-discovery replays.
+  - Added GraphQL `reviewMerchantFeedCandidate(input:)` plus review fields on the existing `merchantFeedCandidates` read model.
+  - Updated `/ingestion/feed-candidates` to show current review status and commit Shortlist, Dismiss, and Reset actions through Relay.
+  - Verified `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`, `cd assets && bun run typecheck`, `mix typecheck`, and `git diff --check`.
+
+- CJ feed candidate review:
+  - Added `ProductCompare.Ingestion.list_merchant_feed_candidates_query/0`.
+  - Added `ProductCompareWeb.Resolvers.IngestionResolver.merchant_feed_candidates/3`.
+  - Added `MerchantFeedCandidate` GraphQL type, connection, query field, and global ID encoding support without adding root `node(id:)` lookup.
+  - Updated `assets/schema.graphql`, added `MerchantFeedCandidatesRouteQuery`, generated `MerchantFeedCandidatesRouteQuery.graphql.ts`, and mounted `/ingestion/feed-candidates`.
+  - Added read-only route loading, pagination, empty/error states, and focused loader/route tests.
+  - Verified `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare/ingestion/ingestion_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`, `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`, `cd assets && bun run typecheck`, `mix typecheck`, the secret/raw metadata scan, and `git diff --check`.
 
 - CJ feed candidate capture:
   - Added `merchant_feed_candidates` plus `ProductCompareSchemas.Ingestion.MerchantFeedCandidate` for non-secret, source-scoped CJ feed metadata.

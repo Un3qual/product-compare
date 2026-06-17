@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :affiliate_program
           | :affiliate_link
           | :coupon
+          | :merchant_feed_candidate
           | :merchant
           | :merchant_product
           | :price_point
@@ -27,6 +28,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     affiliate_program: "AffiliateProgram",
     affiliate_link: "AffiliateLink",
     coupon: "Coupon",
+    merchant_feed_candidate: "MerchantFeedCandidate",
     merchant: "Merchant",
     merchant_product: "MerchantProduct",
     price_point: "PricePoint",

@@ -26,7 +26,8 @@
 - `/merchants` now ships a Relay-backed merchant discovery route with cursor pagination, empty/error states, and navigation entry points.
 - `/affiliate/setup` now ships a Relay-backed affiliate setup route with merchant choices, authenticated network/program/link/coupon mutation forms, typed payload errors, and navigation entry points.
 - `/offers` now ships a Relay-backed offer discovery route for the existing top-level `merchantProducts(input:)` contract, with browse-card and root navigation entry points.
-- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, and `/offers` now use Relay query or mutation APIs with SSR store hydration.
+- `/ingestion/feed-candidates` now ships a Relay-backed CJ feed-candidate review route with cursor pagination plus controls for pending, shortlisted, and dismissed review status.
+- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, `/offers`, and `/ingestion/feed-candidates` now use Relay query or mutation APIs with SSR store hydration.
 - Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
 
 ## Current Delivered Backend Baseline
@@ -41,15 +42,18 @@
 
 ## Active Gap
 
-- CJ/Awin source-field mapping remains deferred pending account docs or sample payloads.
-- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, and fixture parser tests.
+- CJ/Awin source-field mapping remains deferred pending additional account docs or sample payloads beyond the validated first CJ manual connector path.
+- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, persisted merchant feed candidates, and durable candidate review status.
 
 ## Next Planned Slice
 
-- There is no unblocked implementation batch; see `docs/work/index.md` for the
-  current queue.
-- Live CJ provider validation remains blocked until credentials, quota behavior,
-  representative sample payloads, and source onboarding compliance signoff are
-  recorded.
-- The next demo-parity/frontend candidate needs a fresh product/backend priority
-  decision before plan creation.
+- No implementation batch is currently ready in `docs/work/index.md`.
+- Captured CJ merchant feed candidates are exposed through a non-secret GraphQL
+  read model, durable review-status mutation, and Relay route at
+  `/ingestion/feed-candidates`.
+- CJ credential access, product-scope validation, quota observation,
+  representative redacted sample evidence, and owner approval are recorded for
+  the manual connector path.
+- Scheduled CJ discovery, candidate scoring, candidate approval workflows,
+  account-manager automation, and Tier-3 direct scraping remain deferred until a
+  later explicit product/backend decision.

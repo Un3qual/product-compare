@@ -23,15 +23,15 @@ For the operating rules, prompt templates, and handoff format, read
 
 Updated: 2026-06-04
 
-| Rank | Status | Lane | Work Doc | Next Action | Target Paths | Verification | Exit Condition |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| - | - | - | - | No ready rows. | - | - | - |
+No ready rows.
 
 ## Ready Work
 
-No ready rows remain after the CJ feed candidate capture batch. A coordinator
-should promote exactly one concrete next row from a current lane decision before
-any new worker starts implementation.
+No ready implementation work remains after the CJ feed candidate review-status
+batch. The next coordinator decision is one concrete follow-up: candidate
+scoring, merchant application planning, or scheduled CJ discovery. Application
+automation, scheduled discovery, scoring algorithms, and Tier-3 scraping remain
+out of scope until one is explicitly promoted.
 
 ## Executor Prompts
 

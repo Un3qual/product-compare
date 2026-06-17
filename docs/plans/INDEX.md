@@ -14,13 +14,13 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| - | - | No active implementation plans. Start at `docs/work/index.md`. | Promote exactly one concrete row before implementation. |
+| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | Next demo-parity/frontend candidate | The catalog browse pagination lane closes and product/backend priority chooses another specific browser-demo gap. | Create one dated plan and one `ready` queue row. Do not create several speculative plans. |
+| candidate | Candidate scoring or merchant application planning | The review-status workflow lands and product priority chooses a next step beyond manual candidate triage. | Create one dated plan and one `ready` queue row. Keep application automation and scheduled polling out unless explicitly selected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
@@ -30,6 +30,10 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion/demo parity: CJ feed candidate durable review status:
+  `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
+- Product ingestion/demo parity: CJ feed candidate review route:
+  `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`.
 - Product ingestion: CJ feed candidate capture from manual feed discovery:
   `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`.
 - Product ingestion: CJ import observability, manual feed discovery, and bounded
