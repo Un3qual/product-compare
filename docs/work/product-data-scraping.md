@@ -112,6 +112,23 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     or explicit deferral.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
+## Deferred Follow-Up Plan Candidates
+
+- Merchant application/account-manager automation:
+  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+  - Read-only cohort reporting for shortlisted candidates. It does not submit
+    applications, contact account managers, create affiliate rows, call CJ, or
+    produce CSV output.
+- Product import scheduling readiness:
+  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+  - Read-only health/status reporting for CJ `shoppingProducts` import runs.
+- Product import scheduling runtime:
+  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
+  - Disabled-by-default runtime scheduling for bounded CJ `shoppingProducts`
+    imports after credential readiness is complete.
+- These plans are deferred candidate work only. The live queue remains the
+  provider credential readiness batch until it completes.
+
 ## Planned Verification Commands
 
 - Provider credential status:

@@ -25,8 +25,9 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| deferred | Merchant application/account-manager automation | The scoring batch produces enough shortlist evidence to justify application workflow planning. | Must not submit applications or contact account managers until explicitly promoted. |
-| deferred | Product import scheduling | Credential readiness and candidate scoring evidence show which merchants/import bounds should run automatically. | Keep disabled-by-default runtime behavior unless a later row promotes scheduling. |
+| deferred | CJ application cohort report: `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md` | The credential-readiness batch closes and the next coordinator decision chooses merchant application/account-manager automation. | Read-only, non-secret, no submissions, no account-manager contact, and no CSV output. |
+| deferred | CJ product import status task: `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md` | The credential-readiness batch closes and the next coordinator decision chooses product import scheduling readiness. | Read-only status for `shoppingProducts` import runs; no live CJ calls. |
+| deferred | Scheduled CJ product import runtime: `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md` | Credential readiness is implemented and the coordinator promotes product import scheduling. | Disabled by default; injected-runner tests only; no credential persistence. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
