@@ -95,10 +95,12 @@ test("feed candidates route renders review-safe candidate rows", () => {
   expect(within(candidateList).getByText("Trail Merchant")).toBeInTheDocument();
   expect(within(candidateList).getByText("Trail Shopping")).toBeInTheDocument();
   expect(within(candidateList).getByText("10 products")).toBeInTheDocument();
-  expect(within(candidateList).getByText("US")).toBeInTheDocument();
-  expect(within(candidateList).getByText("USD")).toBeInTheDocument();
-  expect(within(candidateList).getByText("EN")).toBeInTheDocument();
+  expect(within(candidateList).getAllByText("US")).toHaveLength(3);
+  expect(within(candidateList).getAllByText("USD")).toHaveLength(3);
+  expect(within(candidateList).getAllByText("EN")).toHaveLength(3);
   expect(within(candidateList).getByText("Pending")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Shortlisted")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Dismissed")).toBeInTheDocument();
   expect(within(candidateList).queryByText(/tracking|account|token/i)).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
@@ -110,6 +112,29 @@ test("feed candidates route renders review-safe candidate rows", () => {
   );
 });
 
+test("feed candidates route renders current page review counts", () => {
+  renderFeedCandidatesRoute();
+
+  const reviewSummary = screen.getByLabelText("CJ feed candidate review summary");
+
+  expect(within(reviewSummary).getByText("Pending")).toBeInTheDocument();
+  expect(within(reviewSummary).getByText("Shortlisted")).toBeInTheDocument();
+  expect(within(reviewSummary).getByText("Dismissed")).toBeInTheDocument();
+  expect(within(reviewSummary).getAllByText("1")).toHaveLength(3);
+});
+
+test("feed candidates route renders existing review metadata", () => {
+  renderFeedCandidatesRoute();
+
+  const reviewedAt = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date("2026-06-04T21:15:00.000000Z"));
+
+  expect(screen.getAllByText("Prioritized for launch review.")).toHaveLength(2);
+  expect(screen.getByText(`Reviewed ${reviewedAt}`)).toBeInTheDocument();
+});
+
 test("feed candidates route omits review feedback before an action completes", () => {
   renderFeedCandidatesRoute();
 
@@ -119,14 +144,14 @@ test("feed candidates route omits review feedback before an action completes", (
 test("feed candidates route commits review status changes", async () => {
   renderFeedCandidatesRoute();
 
-  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist City Gear" }));
 
   await waitFor(() => {
     expect(commitReviewMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "SHORTLISTED"
           }
         }
@@ -134,8 +159,8 @@ test("feed candidates route commits review status changes", async () => {
     );
   });
 
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss Trail Merchant" }));
-  fireEvent.click(screen.getByRole("button", { name: "Reset Trail Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss City Gear" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reset City Gear" }));
 
   await waitFor(() => {
     expect(commitReviewMutationMock).toHaveBeenNthCalledWith(
@@ -143,7 +168,7 @@ test("feed candidates route commits review status changes", async () => {
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "DISMISSED"
           }
         }
@@ -154,8 +179,57 @@ test("feed candidates route commits review status changes", async () => {
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "PENDING"
+          }
+        }
+      })
+    );
+  });
+});
+
+test("feed candidates route sends trimmed review notes when present", async () => {
+  renderFeedCandidatesRoute();
+
+  fireEvent.change(screen.getByLabelText("Review note for Trail Merchant"), {
+    target: {
+      value: "  High fit for launch cohort  "
+    }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-1",
+            status: "SHORTLISTED",
+            note: "High fit for launch cohort"
+          }
+        }
+      })
+    );
+  });
+});
+
+test("feed candidates route omits blank review notes", async () => {
+  renderFeedCandidatesRoute();
+
+  fireEvent.change(screen.getByLabelText("Review note for City Gear"), {
+    target: {
+      value: "   "
+    }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss City Gear" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-2",
+            status: "DISMISSED"
           }
         }
       })
@@ -278,7 +352,41 @@ function buildFeedCandidatesData({
       language: "EN",
       feedName: "Trail Shopping",
       productCount: 10,
+      reviewStatus: "SHORTLISTED",
+      reviewNote: "Prioritized for launch review.",
+      reviewedAt: "2026-06-04T21:15:00.000000Z",
+      providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",
+      lastSeenAt: "2026-06-04T21:00:00.000000Z"
+    },
+    {
+      id: "candidate-2",
+      provider: "cj",
+      providerFeedId: "feed-2",
+      advertiserName: "City Gear",
+      advertiserCountry: "US",
+      sourceFeedType: "SHOPPING",
+      currency: "USD",
+      language: "EN",
+      feedName: "City Gear Catalog",
+      productCount: 4,
       reviewStatus: "PENDING",
+      reviewNote: null,
+      reviewedAt: null,
+      providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",
+      lastSeenAt: "2026-06-04T21:00:00.000000Z"
+    },
+    {
+      id: "candidate-3",
+      provider: "cj",
+      providerFeedId: "feed-3",
+      advertiserName: "Outlet Deals",
+      advertiserCountry: "US",
+      sourceFeedType: "SHOPPING",
+      currency: "USD",
+      language: "EN",
+      feedName: "Outlet Deals Feed",
+      productCount: 1,
+      reviewStatus: "DISMISSED",
       reviewNote: null,
       reviewedAt: null,
       providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",

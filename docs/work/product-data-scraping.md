@@ -107,7 +107,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Review Workspace
 
-- Pending worker execution.
+- Added current-page pending/shortlisted/dismissed review counts, existing
+  review note and reviewed timestamp display, per-candidate note capture, and
+  trimmed optional note submission for `reviewMerchantFeedCandidate`.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
 
 ### Shortlist Export
 
