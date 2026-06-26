@@ -111,7 +111,14 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Shortlist Export
 
-- Pending worker execution.
+- Added `mix product_compare.ingestion.cj_candidate_export` for read-only,
+  non-secret CJ feed candidate CSV export with default shortlisted status,
+  explicit pending/shortlisted/dismissed status filtering, direct candidate
+  queries, CSV escaping, and raw metadata exclusion.
+- Verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
 
 ## Just Completed
 
