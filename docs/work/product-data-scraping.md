@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed from `docs/work/index.md`
+- Live queue row: three scheduled CJ discovery rows promoted in `docs/work/index.md`
 - Last verified: 2026-06-26 after focused backend/frontend/export tests, Relay generation, frontend typecheck, `mix typecheck`, final spec review, and diff checks
-- Last plan refresh: 2026-06-26 for parallel candidate ranking, review workspace, and shortlist export rows
+- Last plan refresh: 2026-06-26 for scheduled CJ discovery runtime, status, and review-controls rows
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -15,7 +15,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - None. Next ingestion work needs a coordinator decision.
+  - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
@@ -56,16 +58,18 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: completed
-- Batch: 2026-06-26 parallel CJ candidate planning batch.
+- Status: planned
+- Batch: 2026-06-26 scheduled CJ discovery parallel batch.
 - Plans:
-  - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
-- Completed actions:
-  - Add backend review-status filtering and deterministic candidate ranking args.
-  - Improve the existing `/ingestion/feed-candidates` route with current-page review counts, note capture, and reviewed metadata.
-  - Add a read-only shortlist CSV export for manual merchant application planning.
+  - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
+- Planned actions:
+  - Extract reusable CJ feed discovery from the manual Mix task and add a
+    disabled-by-default bounded runtime scheduler.
+  - Add a read-only latest-run/freshness Mix task for CJ feed discovery.
+  - Add review-status and sort controls to `/ingestion/feed-candidates` using
+    existing backend query args.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -74,27 +78,46 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - CJ evidence already recorded for the manual connector path: credential access, product-scope validation, quota observation, representative redacted sample evidence, and owner approval.
 - Scope guardrails:
   - `shoppingProducts` remains the manual product import surface.
-  - `shoppingProductFeeds` is now available through a manual discovery task.
+  - `shoppingProductFeeds` may be scheduled only for bounded feed-candidate
+    discovery and only when runtime env explicitly enables it.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, merchant application submission, or Tier-3 direct scraping in this completed batch.
-  - The ranking row may add deterministic ordering over existing fields, but must not persist a broad scoring algorithm.
+  - No Oban dependency, provider credential config, account-manager automation,
+    merchant application submission, product import scheduling, broad scoring
+    algorithms, or Tier-3 direct scraping in this batch.
 
 ## Verification Commands
 
-- Ranking contract:
-  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-  - `cd assets && bun run relay`
+- Scheduled discovery runtime:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
   - `mix typecheck`
   - `git diff --check`
-- Review workspace:
-  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Discovery status:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+- Feed candidate controls:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run relay`
   - `cd assets && bun run typecheck`
   - `git diff --check`
-- Shortlist export:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
 - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+
+## Scheduled Discovery Batch Evidence
+
+### Scheduled Discovery Runtime
+
+- Pending execution of
+  `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`.
+
+### Discovery Status
+
+- Pending execution of
+  `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`.
+
+### Feed Candidate Controls
+
+- Pending execution of
+  `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
 
 ## Deferred Note
 

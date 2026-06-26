@@ -14,13 +14,14 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
+| active | `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md` | Add disabled-by-default scheduled CJ `shoppingProductFeeds` discovery. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
+| active | `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md` | Add a read-only latest-run and freshness status task for CJ feed discovery. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
+| active | `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md` | Add frontend review-status and sort controls for captured CJ feed candidates. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | Scheduled CJ discovery | The manual ranking, review-workspace, and shortlist-export rows land and the operator chooses automated refresh as the next ingestion step. | Create one dated plan and one `ready` queue row. Keep provider credential config and broad polling out unless explicitly selected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
