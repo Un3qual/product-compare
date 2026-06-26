@@ -2,14 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: needs_decision
 - Priority: P2
 - Source of truth: this file
-- Live queue row: broader CJ candidate scoring batch in `docs/work/index.md`
-- Last verified: 2026-06-26 after scheduled CJ discovery runtime/status/frontend
-  controls tests, Relay generation, frontend typecheck, `mix typecheck`, focused
-  code reviews, and diff checks
-- Last plan refresh: 2026-06-26 for broader CJ candidate scoring rows
+- Live queue row: follow-up ingestion coordinator decision in `docs/work/index.md`
+- Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
+  score badge tests, Relay generation, frontend typecheck, `mix typecheck`,
+  focused code reviews, CSV export removal, and diff checks
+- Last plan refresh: 2026-06-26 after broader CJ candidate scoring closeout
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -17,9 +17,11 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
+  - None. The scoring batch is complete; the lane now needs one follow-up
+    ingestion decision before more implementation work is promoted.
+- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
@@ -62,12 +64,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: done
 - Batch: 2026-06-26 broader CJ candidate scoring parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
-- Planned actions:
+- Completed actions:
   - Add a deterministic, non-secret backend fit-score sort for captured CJ feed
     candidates and expose it through the existing GraphQL sort enum.
   - Show display-only fit-score cues on `/ingestion/feed-candidates` using
@@ -98,12 +100,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - No Oban dependency, provider credential config, account-manager automation,
     merchant application submission, product import scheduling, live CJ network
     calls, or Tier-3 direct scraping in this batch.
-- Next decision after this batch:
+- Next decision:
   - Choose exactly one follow-up ingestion batch: provider credential config,
     merchant application/account-manager automation, product import scheduling,
     or explicit deferral.
+  - Do not choose CJ candidate CSV score export; that path is rejected.
 
-## Verification Commands
+## Recent Verification Commands
 
 - Fit-score sort:
   - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
@@ -288,8 +291,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 - CSV export scoring was removed after user decision; it is not part of the
   active or deferred CJ scoring plan.
+- Review:
+  - Backend fit-score sort spec review approved with no issues.
+  - Frontend score badge spec and quality reviews approved with no Critical,
+    Important, or Minor issues.
 - Verification:
-  - Pending final coordinator verification after CSV export removal.
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+    - Result: passed, 35 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+    - Result: passed, 1 file, 14 tests.
+  - `cd assets && bun run relay`
+    - Result: first sandboxed run failed because Watchman could not `fchmod`
+      `/Users/admin/.local/state/watchman/admin-state`; rerun with Watchman
+      state access passed and compiled 29 reader, 28 normalization, and 28
+      operation text documents.
+  - `cd assets && bun run typecheck`
+    - Result: `tsc --noEmit` completed with exit 0.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Ranking Contract
 

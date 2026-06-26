@@ -12,10 +12,9 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-| Status | Plan | Use When | Promotion Rule |
-| --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md` | Add backend and GraphQL fit-score ordering for captured CJ feed candidates. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
-| ready | `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Show display-only fit score cues on `/ingestion/feed-candidates` without backend or Relay query changes. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
+No active ready implementation plans. Start at `docs/work/index.md`; the
+current Product data scraping row needs one coordinator decision before more
+implementation work is promoted.
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -36,6 +35,10 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ candidate fit-score sort and frontend score badges:
+  `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
+  and
+  `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`.
 - Product ingestion: scheduled CJ feed discovery runtime, read-only discovery
   status, and feed-candidate filter controls:
   `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`,

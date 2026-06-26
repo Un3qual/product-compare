@@ -25,19 +25,19 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data scraping | Execute the broader CJ candidate scoring batch: backend fit-score sort and frontend fit score badges. Use one worker per linked plan and keep each worker inside that plan's owned paths. | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Fit-score sort plan owned paths; frontend-score-badges plan owned paths; `docs/work/product-data-scraping.md` evidence headings only | Plan-specific focused tests; `cd assets && bun run relay`; `cd assets && bun run typecheck`; `mix typecheck`; `git diff --check` | Both plan exit conditions pass, lane evidence records exact commands, and the coordinator closes the batch or promotes the next decision row. |
+| 1 | needs_decision | Product data scraping | Choose exactly one follow-up ingestion direction: provider credential config, merchant application/account-manager automation, product import scheduling, or explicit deferral. Do not promote CJ candidate CSV score export work. | None | `docs/work/index.md`; `docs/work/product-data-scraping.md`; `docs/plans/INDEX.md` | Docs-only decision; if a ready row is promoted, name its focused verification in that row. | One concrete ready row is promoted, or the lane records explicit deferral/no ready work. |
 
 ## Ready Work
 
-One `ready` batch is available for Product data scraping. Execute only the
-linked backend fit-score sort and frontend score badge plans and their owned
-paths. Do not promote CJ candidate CSV score export work.
+No `ready` rows are available. The highest-ranked work is the Product data
+scraping coordinator decision named above.
 
 ## Deferred Work
 
 Application automation, provider credential config, account-manager automation,
 product import scheduling, and Tier-3 scraping remain out of scope until
-explicitly promoted.
+explicitly promoted. CJ candidate CSV score export is rejected and should not be
+promoted.
 
 ## Executor Prompts
 
