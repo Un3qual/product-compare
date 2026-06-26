@@ -14,7 +14,7 @@
 
 ## Parallel Ownership
 
-This row may run in parallel with the fit-score-sort and score-export rows.
+This row may run in parallel with the fit-score-sort row.
 
 Owned paths:
 

@@ -15,8 +15,10 @@ of active and candidate plans, not the dispatch queue.
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
 | ready | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md` | Add backend and GraphQL fit-score ordering for captured CJ feed candidates. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
-| ready | `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md` | Add non-secret fit-score columns and score sorting to the manual CJ candidate CSV export. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
 | ready | `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Show display-only fit score cues on `/ingestion/feed-candidates` without backend or Relay query changes. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
+
+Rejected: CJ candidate CSV score export was explicitly removed from the scoring
+batch and should not be recreated or promoted.
 
 ## Candidate Pool
 

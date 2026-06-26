@@ -14,7 +14,7 @@
 
 ## Parallel Ownership
 
-This row may run in parallel with the score-export and frontend-score-badges rows.
+This row may run in parallel with the frontend-score-badges row.
 
 Owned paths:
 

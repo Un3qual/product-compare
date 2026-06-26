@@ -18,7 +18,6 @@
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
@@ -57,7 +56,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 - Start with a single Tier-1 connector MVP, defaulting to CJ because an approved account already exists and falling back to eBay only if CJ scope is insufficient for the first spike.
 - The legacy REST Product Search endpoint is deprecated. Use CJ's current Product Feed GraphQL surface at `https://ads.api.cj.com/query`, starting with `shoppingProducts`.
-- Run a weekly CJ-driven merchant discovery loop (candidate export -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
+- Run a weekly CJ-driven merchant discovery loop (candidate review -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
@@ -67,12 +66,10 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Batch: 2026-06-26 broader CJ candidate scoring parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
 - Planned actions:
   - Add a deterministic, non-secret backend fit-score sort for captured CJ feed
     candidates and expose it through the existing GraphQL sort enum.
-  - Add fit-score and fit-reason columns to the manual CJ candidate CSV export.
   - Show display-only fit-score cues on `/ingestion/feed-candidates` using
     fields the route already loads.
 - Fit score contract:
@@ -94,8 +91,10 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProductFeeds` may be scheduled only for bounded feed-candidate
     discovery and only when runtime env explicitly enables it.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - Do not persist the score in this batch; it is derived at query/export/display
-    time from already captured candidate fields.
+  - Do not persist the score in this batch; it is derived at query/display time
+    from already captured candidate fields.
+  - Do not add CJ candidate CSV export scoring; that path has been explicitly
+    rejected and should not be promoted in later queue work.
   - No Oban dependency, provider credential config, account-manager automation,
     merchant application submission, product import scheduling, live CJ network
     calls, or Tier-3 direct scraping in this batch.
@@ -111,23 +110,19 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `cd assets && bun run relay`
   - `mix typecheck`
   - `git diff --check`
-- Score export:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
 - Frontend score badges:
   - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
   - `cd assets && bun run typecheck`
   - `git diff --check`
 - Combined final verification:
-  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
   - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
   - `cd assets && bun run relay`
   - `cd assets && bun run typecheck`
   - `mix typecheck`
   - `git diff --check`
 - Secret/raw-metadata check:
-  - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+  - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
 ### Frontend Score Badges Evidence
 
@@ -289,32 +284,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `mix typecheck` - passed with exit 0.
   - `git diff --check` - passed with exit 0.
 
-### Score Export Evidence
-
-- Red verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-    - Result: failed as expected, 8 tests, 2 failures, because the default CSV
-      header lacked `fit_score` and `fit_reasons`.
-- Green verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-    - Result: passed, 9 tests, 0 failures.
-  - `mix typecheck`
-    - Result: passed with no output.
-  - `git diff --check`
-    - Result: passed with no output.
-
 ### Combined Verification
 
-- Final spec reviewer status: approved, with no missing requirements,
-  over-scope implementation, forbidden-path edits, or docs evidence
-  inconsistencies found.
+- CSV export scoring was removed after user decision; it is not part of the
+  active or deferred CJ scoring plan.
 - Verification:
-  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs` - 39 tests, 0 failures.
-  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - 1 file, 11 tests passed.
-  - `cd assets && bun run relay` - completed.
-  - `cd assets && bun run typecheck` - passed.
-  - `mix typecheck` - passed.
-  - `git diff --check` - passed.
+  - Pending final coordinator verification after CSV export removal.
 
 ### Ranking Contract
 

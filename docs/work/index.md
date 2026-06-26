@@ -25,12 +25,13 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data scraping | Execute the broader CJ candidate scoring batch: backend fit-score sort, scored cohort export, and frontend fit score badges. Use one worker per linked plan and keep each worker inside that plan's owned paths. | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Fit-score sort plan owned paths; score-export plan owned paths; frontend-score-badges plan owned paths; `docs/work/product-data-scraping.md` evidence headings only | Plan-specific focused tests; `cd assets && bun run relay`; `cd assets && bun run typecheck`; `mix typecheck`; `git diff --check` | All three plan exit conditions pass, lane evidence records exact commands, and the coordinator closes the batch or promotes the next decision row. |
+| 1 | ready | Product data scraping | Execute the broader CJ candidate scoring batch: backend fit-score sort and frontend fit score badges. Use one worker per linked plan and keep each worker inside that plan's owned paths. | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Fit-score sort plan owned paths; frontend-score-badges plan owned paths; `docs/work/product-data-scraping.md` evidence headings only | Plan-specific focused tests; `cd assets && bun run relay`; `cd assets && bun run typecheck`; `mix typecheck`; `git diff --check` | Both plan exit conditions pass, lane evidence records exact commands, and the coordinator closes the batch or promotes the next decision row. |
 
 ## Ready Work
 
 One `ready` batch is available for Product data scraping. Execute only the
-linked broader CJ candidate scoring plans and their owned paths.
+linked backend fit-score sort and frontend score badge plans and their owned
+paths. Do not promote CJ candidate CSV score export work.
 
 ## Deferred Work
 
