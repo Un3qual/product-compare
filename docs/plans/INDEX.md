@@ -12,9 +12,11 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active ready implementation plans. Start at `docs/work/index.md`; the
-current Product data scraping row needs one coordinator decision before more
-implementation work is promoted.
+Ready Product data scraping batch: CJ provider credential readiness.
+
+- `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
+- `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
+- `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -23,7 +25,6 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| deferred | Provider credential config | The scoring batch closes and the next coordinator decision chooses credential readiness before more runtime automation. | Keep credentials outside git; do not persist provider secrets without an explicit design. |
 | deferred | Merchant application/account-manager automation | The scoring batch produces enough shortlist evidence to justify application workflow planning. | Must not submit applications or contact account managers until explicitly promoted. |
 | deferred | Product import scheduling | Credential readiness and candidate scoring evidence show which merchants/import bounds should run automatically. | Keep disabled-by-default runtime behavior unless a later row promotes scheduling. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |

@@ -25,19 +25,18 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | needs_decision | Product data scraping | Choose exactly one follow-up ingestion direction: provider credential config, merchant application/account-manager automation, product import scheduling, or explicit deferral. Do not promote CJ candidate CSV score export work. | None | `docs/work/index.md`; `docs/work/product-data-scraping.md`; `docs/plans/INDEX.md` | Docs-only decision; if a ready row is promoted, name its focused verification in that row. | One concrete ready row is promoted, or the lane records explicit deferral/no ready work. |
+| 1 | ready | Product data scraping | Implement the CJ provider credential readiness parallel batch: standalone status task, product-import preflight, and feed-discovery preflight. Do not add credential persistence, live provider calls, UI, scheduling, merchant outreach, or CSV export. | `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md` | `lib/mix/tasks/product_compare.ingestion.cj_credentials.ex`; `test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`; `.env.example`; `lib/mix/tasks/product_compare.ingestion.cj_import.ex`; `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`; `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`; `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `docs/work/product-data-scraping.md` | `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `mix typecheck`; `git diff --check` | All three credential readiness slices pass focused tests, typecheck, and diff check; lane doc records per-slice evidence and either promotes the next ingestion decision or returns to no ready work. |
 
 ## Ready Work
 
-No `ready` rows are available. The highest-ranked work is the Product data
-scraping coordinator decision named above.
+The Product data scraping row is ready. It is a parallel provider credential
+readiness batch with three non-overlapping implementation plans.
 
 ## Deferred Work
 
-Application automation, provider credential config, account-manager automation,
-product import scheduling, and Tier-3 scraping remain out of scope until
-explicitly promoted. CJ candidate CSV score export is rejected and should not be
-promoted.
+Application automation, account-manager automation, product import scheduling,
+and Tier-3 scraping remain out of scope until explicitly promoted. CJ candidate
+CSV score export is rejected and should not be promoted.
 
 ## Executor Prompts
 

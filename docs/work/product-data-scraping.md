@@ -2,14 +2,15 @@
 
 ## Snapshot
 
-- Status: needs_decision
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: follow-up ingestion coordinator decision in `docs/work/index.md`
+- Live queue row: CJ provider credential readiness parallel batch in
+  `docs/work/index.md`
 - Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
   score badge tests, Relay generation, frontend typecheck, `mix typecheck`,
   focused code reviews, CSV export removal, and diff checks
-- Last plan refresh: 2026-06-26 after broader CJ candidate scoring closeout
+- Last plan refresh: 2026-06-26 after promoting provider credential readiness
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -17,8 +18,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - None. The scoring batch is complete; the lane now needs one follow-up
-    ingestion decision before more implementation work is promoted.
+  - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
@@ -64,24 +66,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: done
-- Batch: 2026-06-26 broader CJ candidate scoring parallel batch.
+- Status: ready
+- Batch: 2026-06-26 CJ provider credential readiness parallel batch.
 - Plans:
-  - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
-- Completed actions:
-  - Add a deterministic, non-secret backend fit-score sort for captured CJ feed
-    candidates and expose it through the existing GraphQL sort enum.
-  - Show display-only fit-score cues on `/ingestion/feed-candidates` using
-    fields the route already loads.
-- Fit score contract:
-  - Product count: `>= 10000` gives 50 points, `>= 1000` gives 35 points,
-    `>= 100` gives 20 points, `> 0` gives 10 points, otherwise 0.
-  - `advertiser_country`/`advertiserCountry` equal to `US` gives 20 points
-    after uppercase normalization.
-  - `currency` equal to `USD` gives 15 points after uppercase normalization.
-  - `language` equal to `EN` gives 10 points after uppercase normalization.
-  - Any non-empty source feed type gives 5 points.
+  - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+- Decision:
+  - Choose provider credential readiness before merchant outreach or product
+    import scheduling.
+- Parallel slices:
+  - Add a standalone read-only CJ credential readiness task.
+  - Add a dry credential preflight to manual CJ product import.
+  - Add a dry credential preflight to CJ feed discovery.
+- Credential readiness contract:
+  - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
+  - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
+    be reported only by presence, never by value.
+  - Blank or whitespace-only values count as missing.
+  - Readiness output may include provider name, surface name, readiness boolean,
+    counts, and missing env var names only.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -93,18 +97,33 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProductFeeds` may be scheduled only for bounded feed-candidate
     discovery and only when runtime env explicitly enables it.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - Do not persist the score in this batch; it is derived at query/display time
-    from already captured candidate fields.
-  - Do not add CJ candidate CSV export scoring; that path has been explicitly
-    rejected and should not be promoted in later queue work.
-  - No Oban dependency, provider credential config, account-manager automation,
-    merchant application submission, product import scheduling, live CJ network
-    calls, or Tier-3 direct scraping in this batch.
+  - Do not persist provider credentials or credential-derived config.
+  - Do not call CJ, resolve sources, create import runs, persist candidates, or
+    persist product records during credential preflight paths.
+  - Do not add CJ candidate CSV export scoring or any new CSV export path; that
+    direction has been explicitly rejected and should not be promoted in later
+    queue work.
+  - No Oban dependency, account-manager automation, merchant application
+    submission, product import scheduling, live CJ network calls, GraphQL/UI
+    surfaces, or Tier-3 direct scraping in this batch.
 - Next decision:
-  - Choose exactly one follow-up ingestion batch: provider credential config,
+  - After this batch completes, choose exactly one follow-up ingestion batch:
     merchant application/account-manager automation, product import scheduling,
     or explicit deferral.
   - Do not choose CJ candidate CSV score export; that path is rejected.
+
+## Planned Verification Commands
+
+- Provider credential status:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
+- Product import credential preflight:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- Feed discovery credential preflight:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+- Combined final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
 
 ## Recent Verification Commands
 
@@ -272,6 +291,21 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
 ## Parallel Batch Evidence
+
+### Provider Credential Status Task Evidence
+
+- Pending execution of
+  `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`.
+
+### Product Import Credential Preflight Evidence
+
+- Pending execution of
+  `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`.
+
+### Feed Discovery Credential Preflight Evidence
+
+- Pending execution of
+  `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`.
 
 ### Fit Score Sort Evidence
 
