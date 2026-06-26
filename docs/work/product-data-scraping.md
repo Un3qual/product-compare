@@ -2,19 +2,22 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed from `docs/work/index.md`
+- Live queue row: 2026-06-26 parallel CJ candidate planning batch in `docs/work/index.md`
 - Last verified: 2026-06-04 after focused backend/frontend tests, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
+- Last plan refresh: 2026-06-26 for parallel candidate ranking, review workspace, and shortlist export rows
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Current implementation plan:
-  - None. Next ingestion work needs a coordinator decision.
+- Current implementation plans:
+  - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
@@ -52,9 +55,16 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: completed
-- Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
-- Completed action: added durable review status to CJ merchant feed candidates and browser controls for pending, shortlisted, and dismissed states.
+- Status: ready
+- Batch: 2026-06-26 parallel CJ candidate planning batch.
+- Plans:
+  - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
+- Next actions:
+  - Add backend review-status filtering and deterministic candidate ranking args.
+  - Improve the existing `/ingestion/feed-candidates` route with current-page review counts, note capture, and reviewed metadata.
+  - Add a read-only shortlist CSV export for manual merchant application planning.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -65,21 +75,43 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProducts` remains the manual product import surface.
   - `shoppingProductFeeds` is now available through a manual discovery task.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring algorithm, merchant application submission, or Tier-3 direct scraping in this completed batch.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, merchant application submission, or Tier-3 direct scraping in this ready batch.
+  - The ranking row may add deterministic ordering over existing fields, but must not persist a broad scoring algorithm.
 
 ## Verification Commands
 
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `mix typecheck`
-- `git diff --check`
+- Ranking contract:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+  - `cd assets && bun run relay`
+  - `mix typecheck`
+  - `git diff --check`
+- Review workspace:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Shortlist export:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
 - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
+
+## Parallel Batch Evidence
+
+### Ranking Contract
+
+- Pending worker execution.
+
+### Review Workspace
+
+- Pending worker execution.
+
+### Shortlist Export
+
+- Pending worker execution.
 
 ## Just Completed
 

@@ -14,13 +14,15 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
+| ready | `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md` | Backend worker owns CJ candidate review-status filtering and deterministic ranking args. | Close after focused backend/GraphQL verification and ranking evidence is recorded in `docs/work/product-data-scraping.md`. |
+| ready | `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md` | Frontend worker owns current-page review counts, note capture, and reviewed metadata on `/ingestion/feed-candidates`. | Close after route test, typecheck, and review-workspace evidence are recorded in `docs/work/product-data-scraping.md`. |
+| ready | `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md` | Backend tooling worker owns a read-only CSV export for manual merchant application planning. | Close after export task test, typecheck, and shortlist-export evidence are recorded in `docs/work/product-data-scraping.md`. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | Candidate scoring or merchant application planning | The review-status workflow lands and product priority chooses a next step beyond manual candidate triage. | Create one dated plan and one `ready` queue row. Keep application automation and scheduled polling out unless explicitly selected. |
+| candidate | Scheduled CJ discovery | The manual ranking, review-workspace, and shortlist-export rows land and the operator chooses automated refresh as the next ingestion step. | Create one dated plan and one `ready` queue row. Keep provider credential config and broad polling out unless explicitly selected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive

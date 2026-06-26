@@ -21,17 +21,83 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-04
+Updated: 2026-06-26
 
-No ready rows.
+Parallel CJ candidate planning batch is ready. These rows are intentionally
+split by target paths so workers can run concurrently.
 
 ## Ready Work
 
-No ready implementation work remains after the CJ feed candidate review-status
-batch. The next coordinator decision is one concrete follow-up: candidate
-scoring, merchant application planning, or scheduled CJ discovery. Application
-automation, scheduled discovery, scoring algorithms, and Tier-3 scraping remain
-out of scope until one is explicitly promoted.
+### Row 1: CJ Feed Candidate Ranking Contract
+
+Status: ready
+Lane: Product data ingestion
+Work doc: `docs/work/product-data-scraping.md`
+Plan: `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
+Next action: add backend review-status filtering and deterministic candidate
+ranking args for `merchantFeedCandidates`.
+Owned paths:
+- `lib/product_compare/ingestion.ex`
+- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
+- `lib/product_compare_web/schema.ex`
+- `test/product_compare/ingestion/ingestion_test.exs`
+- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `assets/schema.graphql`
+- `docs/work/product-data-scraping.md` under the ranking-contract evidence
+  heading only
+Verification:
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `cd assets && bun run relay`
+- `mix typecheck`
+- `git diff --check`
+Exit condition: ranking/filtering query behavior is covered and no frontend
+route or export-task files were edited.
+
+### Row 2: CJ Feed Candidate Review Workspace
+
+Status: ready
+Lane: Product data ingestion
+Work doc: `docs/work/product-data-scraping.md`
+Plan: `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
+Next action: improve `/ingestion/feed-candidates` with current-page review
+counts, note capture, and reviewed metadata using the existing GraphQL contract.
+Owned paths:
+- `assets/src/routes/ingestion/feed-candidates/index.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/product-data-scraping.md` under the review-workspace evidence
+  heading only
+Verification:
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: route test and typecheck pass without backend schema, Relay
+schema, or generated-artifact edits.
+
+### Row 3: CJ Shortlist Cohort Export
+
+Status: ready
+Lane: Product data ingestion
+Work doc: `docs/work/product-data-scraping.md`
+Plan: `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
+Next action: add a read-only Mix task that exports reviewed CJ feed candidates
+as non-secret CSV for manual merchant application planning.
+Owned paths:
+- `lib/mix/tasks/product_compare.ingestion.cj_candidate_export.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+- `docs/work/product-data-scraping.md` under the shortlist-export evidence
+  heading only
+Verification:
+- `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+- `mix typecheck`
+- `git diff --check`
+Exit condition: export task emits only safe candidate fields and no browser,
+GraphQL schema, or ingestion-context files were edited.
+
+## Deferred Work
+
+Scheduled CJ discovery, application automation, provider credential config,
+account-manager automation, broad scoring algorithms, and Tier-3 scraping remain
+out of scope until explicitly promoted after this parallel batch.
 
 ## Executor Prompts
 
