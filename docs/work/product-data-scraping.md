@@ -111,8 +111,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Discovery Status
 
-- Pending execution of
-  `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`.
+- Completed `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`.
+- Red verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 6 failures because
+      `Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus.run/1` was undefined.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 1 failure because multiline
+      `latest_error_summary` output split the compact line-oriented report.
+- Green verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures after single-line value formatting.
+- Final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Feed Candidate Controls
 
