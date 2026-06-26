@@ -103,7 +103,16 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Ranking Contract
 
-- Pending worker execution.
+- Added backend `review_status` filtering and deterministic candidate ordering
+  for `name_asc`, `product_count_desc`, and `last_seen_desc`, preserving the
+  zero-arity query helper behavior.
+- Added GraphQL `MerchantFeedCandidateSort` plus `reviewStatus` and `sort`
+  args on `merchantFeedCandidates`; refreshed `assets/schema.graphql` for Relay.
+- Verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - 33 tests, 0 failures.
+  - `cd assets && bun run relay` - completed.
+  - `mix typecheck` - passed.
+  - `git diff --check` - passed.
 
 ### Review Workspace
 

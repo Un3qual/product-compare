@@ -14,7 +14,7 @@ type Query {
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   merchants(first: Int, after: String): MerchantConnection
-  merchantFeedCandidates(first: Int, after: String): MerchantFeedCandidateConnection
+  merchantFeedCandidates(first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort): MerchantFeedCandidateConnection
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
   mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
@@ -152,6 +152,12 @@ enum MerchantFeedCandidateReviewStatus {
   DISMISSED
   PENDING
   SHORTLISTED
+}
+
+enum MerchantFeedCandidateSort {
+  NAME_ASC
+  PRODUCT_COUNT_DESC
+  LAST_SEEN_DESC
 }
 
 input ReviewMerchantFeedCandidateInput {

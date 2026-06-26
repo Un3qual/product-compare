@@ -153,6 +153,77 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                })
     end
 
+    test "merchantFeedCandidates filters review status and ranks product counts", %{conn: conn} do
+      conn = authed_conn(conn)
+      source = source_fixture()
+
+      _shortlisted_large =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Large Merchant",
+          product_count: 40,
+          provider_feed_id: "feed-large",
+          review_status: "shortlisted"
+        })
+
+      _shortlisted_nil =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Unknown Merchant",
+          product_count: nil,
+          provider_feed_id: "feed-unknown",
+          review_status: "shortlisted"
+        })
+
+      _shortlisted_small =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Small Merchant",
+          product_count: 10,
+          provider_feed_id: "feed-small",
+          review_status: "shortlisted"
+        })
+
+      _pending_larger =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Pending Merchant",
+          product_count: 100,
+          provider_feed_id: "feed-pending"
+        })
+
+      assert %{
+               "data" => %{
+                 "merchantFeedCandidates" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Large Merchant",
+                         "productCount" => 40,
+                         "reviewStatus" => "SHORTLISTED"
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Small Merchant",
+                         "productCount" => 10,
+                         "reviewStatus" => "SHORTLISTED"
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Unknown Merchant",
+                         "productCount" => nil,
+                         "reviewStatus" => "SHORTLISTED"
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, merchant_feed_candidates_ranking_query(), %{
+                 "first" => 10,
+                 "reviewStatus" => "SHORTLISTED",
+                 "sort" => "PRODUCT_COUNT_DESC"
+               })
+    end
+
     test "reviewMerchantFeedCandidate updates candidate review status", %{conn: conn} do
       conn = authed_conn(conn)
       source = source_fixture()
@@ -311,6 +382,36 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     |> Repo.insert!()
   end
 
+  defp merchant_feed_candidate_fixture(source, attrs) do
+    suffix = System.unique_integer([:positive])
+
+    attrs =
+      Map.merge(
+        %{
+          advertiser_country: "US",
+          advertiser_id: "adv-#{suffix}",
+          advertiser_name: "Merchant #{suffix}",
+          currency: "USD",
+          feed_name: "Feed #{suffix}",
+          language: "EN",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: 1,
+          provider: "cj",
+          provider_feed_id: "feed-#{suffix}",
+          provider_last_updated_at: ~U[2026-06-04 20:00:00Z],
+          raw_metadata: %{},
+          review_status: "pending",
+          source_feed_type: "SHOPPING"
+        },
+        attrs
+      )
+
+    assert {:ok, %MerchantFeedCandidate{} = candidate} =
+             Ingestion.upsert_merchant_feed_candidate(source, attrs)
+
+    candidate
+  end
+
   defp merchant_feed_candidates_query do
     """
     query MerchantFeedCandidates($first: Int, $after: String) {
@@ -339,6 +440,26 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
           hasNextPage
           hasPreviousPage
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp merchant_feed_candidates_ranking_query do
+    """
+    query MerchantFeedCandidates(
+      $first: Int
+      $reviewStatus: MerchantFeedCandidateReviewStatus
+      $sort: MerchantFeedCandidateSort
+    ) {
+      merchantFeedCandidates(first: $first, reviewStatus: $reviewStatus, sort: $sort) {
+        edges {
+          node {
+            advertiserName
+            productCount
+            reviewStatus
+          }
         }
       }
     }
