@@ -2,14 +2,14 @@
 
 ## Snapshot
 
-- Status: needs_decision
+- Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue row: coordinator decision required in `docs/work/index.md`
+- Live queue row: broader CJ candidate scoring batch in `docs/work/index.md`
 - Last verified: 2026-06-26 after scheduled CJ discovery runtime/status/frontend
   controls tests, Relay generation, frontend typecheck, `mix typecheck`, focused
   code reviews, and diff checks
-- Last plan refresh: 2026-06-26 for scheduled CJ discovery runtime, status, and review-controls rows
+- Last plan refresh: 2026-06-26 for broader CJ candidate scoring rows
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -17,7 +17,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - None. The 2026-06-26 scheduled CJ discovery parallel batch is complete.
+  - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
@@ -61,18 +63,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: completed
-- Batch: 2026-06-26 scheduled CJ discovery parallel batch.
+- Status: ready
+- Batch: 2026-06-26 broader CJ candidate scoring parallel batch.
 - Plans:
-  - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
-- Completed actions:
-  - Extract reusable CJ feed discovery from the manual Mix task and add a
-    disabled-by-default bounded runtime scheduler.
-  - Add a read-only latest-run/freshness Mix task for CJ feed discovery.
-  - Add review-status and sort controls to `/ingestion/feed-candidates` using
-    existing backend query args.
+  - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
+- Planned actions:
+  - Add a deterministic, non-secret backend fit-score sort for captured CJ feed
+    candidates and expose it through the existing GraphQL sort enum.
+  - Add fit-score and fit-reason columns to the manual CJ candidate CSV export.
+  - Show display-only fit-score cues on `/ingestion/feed-candidates` using
+    fields the route already loads.
+- Fit score contract:
+  - Product count: `>= 10000` gives 50 points, `>= 1000` gives 35 points,
+    `>= 100` gives 20 points, `> 0` gives 10 points, otherwise 0.
+  - `advertiser_country`/`advertiserCountry` equal to `US` gives 20 points
+    after uppercase normalization.
+  - `currency` equal to `USD` gives 15 points after uppercase normalization.
+  - `language` equal to `EN` gives 10 points after uppercase normalization.
+  - Any non-empty source feed type gives 5 points.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -84,30 +94,40 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProductFeeds` may be scheduled only for bounded feed-candidate
     discovery and only when runtime env explicitly enables it.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
+  - Do not persist the score in this batch; it is derived at query/export/display
+    time from already captured candidate fields.
   - No Oban dependency, provider credential config, account-manager automation,
-    merchant application submission, product import scheduling, broad scoring
-    algorithms, or Tier-3 direct scraping in this batch.
-- Next decision:
-  - Choose exactly one follow-up ingestion batch before implementation resumes:
-    provider credential config, merchant application/account-manager automation,
-    product import scheduling, broader candidate scoring, or explicit deferral.
+    merchant application submission, product import scheduling, live CJ network
+    calls, or Tier-3 direct scraping in this batch.
+- Next decision after this batch:
+  - Choose exactly one follow-up ingestion batch: provider credential config,
+    merchant application/account-manager automation, product import scheduling,
+    or explicit deferral.
 
 ## Verification Commands
 
-- Scheduled discovery runtime:
-  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
-- Discovery status:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
-- Feed candidate controls:
-  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Fit-score sort:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
   - `cd assets && bun run relay`
+  - `mix typecheck`
+  - `git diff --check`
+- Score export:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+- Frontend score badges:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
   - `cd assets && bun run typecheck`
   - `git diff --check`
-- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- Combined final verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run relay`
+  - `cd assets && bun run typecheck`
+  - `mix typecheck`
+  - `git diff --check`
+- Secret/raw-metadata check:
+  - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
 ## Scheduled Discovery Batch Evidence
 

@@ -25,21 +25,18 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | needs_decision | Product data scraping | Choose the next ingestion batch after scheduled CJ discovery: provider credential config, merchant application/account-manager automation, product import scheduling, broader candidate scoring, or explicit deferral. | None | `docs/work/index.md`; `docs/plans/INDEX.md`; affected lane/plan docs only after one option is selected | Coordinator decision only; no code verification until a concrete `ready` row is promoted. | Exactly one scoped `ready` row is promoted, or the lane remains explicitly deferred/blocked. |
+| 1 | ready | Product data scraping | Execute the broader CJ candidate scoring batch: backend fit-score sort, scored cohort export, and frontend fit score badges. Use one worker per linked plan and keep each worker inside that plan's owned paths. | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md`; `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Fit-score sort plan owned paths; score-export plan owned paths; frontend-score-badges plan owned paths; `docs/work/product-data-scraping.md` evidence headings only | Plan-specific focused tests; `cd assets && bun run relay`; `cd assets && bun run typecheck`; `mix typecheck`; `git diff --check` | All three plan exit conditions pass, lane evidence records exact commands, and the coordinator closes the batch or promotes the next decision row. |
 
 ## Ready Work
 
-No `ready` rows are available. The scheduled CJ discovery parallel batch is
-complete and recorded in `docs/work/product-data-scraping.md`.
-
-The next action is a coordinator decision. Do not scan historical plans or start
-implementation until one concrete follow-up row is promoted.
+One `ready` batch is available for Product data scraping. Execute only the
+linked broader CJ candidate scoring plans and their owned paths.
 
 ## Deferred Work
 
 Application automation, provider credential config, account-manager automation,
-broad scoring algorithms, product import scheduling, and Tier-3 scraping remain
-out of scope until explicitly promoted.
+product import scheduling, and Tier-3 scraping remain out of scope until
+explicitly promoted.
 
 ## Executor Prompts
 

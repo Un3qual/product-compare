@@ -14,12 +14,17 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| none | None | No active implementation plan is promoted. Start at `docs/work/index.md` and process the `needs_decision` row before creating new ready work. | Promote exactly one concrete ready row with owned paths and verification. |
+| ready | `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md` | Add backend and GraphQL fit-score ordering for captured CJ feed candidates. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
+| ready | `docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md` | Add non-secret fit-score columns and score sorting to the manual CJ candidate CSV export. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
+| ready | `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md` | Show display-only fit score cues on `/ingestion/feed-candidates` without backend or Relay query changes. | Execute only from the `docs/work/index.md` ready row and keep the worker inside the plan's owned paths. |
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| deferred | Provider credential config | The scoring batch closes and the next coordinator decision chooses credential readiness before more runtime automation. | Keep credentials outside git; do not persist provider secrets without an explicit design. |
+| deferred | Merchant application/account-manager automation | The scoring batch produces enough shortlist evidence to justify application workflow planning. | Must not submit applications or contact account managers until explicitly promoted. |
+| deferred | Product import scheduling | Credential readiness and candidate scoring evidence show which merchants/import bounds should run automatically. | Keep disabled-by-default runtime behavior unless a later row promotes scheduling. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
