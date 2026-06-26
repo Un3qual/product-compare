@@ -158,6 +158,7 @@ enum MerchantFeedCandidateSort {
   NAME_ASC
   PRODUCT_COUNT_DESC
   LAST_SEEN_DESC
+  FIT_SCORE_DESC
 }
 
 input ReviewMerchantFeedCandidateInput {

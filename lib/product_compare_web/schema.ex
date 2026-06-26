@@ -771,6 +771,7 @@ defmodule ProductCompareWeb.Schema do
     value(:name_asc, as: :name_asc)
     value(:product_count_desc, as: :product_count_desc)
     value(:last_seen_desc, as: :last_seen_desc)
+    value(:fit_score_desc, as: :fit_score_desc)
   end
 
   object :product do

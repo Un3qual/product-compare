@@ -275,6 +275,20 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Parallel Batch Evidence
 
+### Fit Score Sort Evidence
+
+- Red verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs` - failed before implementation: 25 tests, 1 failure because `:fit_score_desc` still fell back to name ordering.
+  - `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - failed before schema update: 10 tests, 1 failure because `FIT_SCORE_DESC` was not a valid `MerchantFeedCandidateSort` value.
+- Green verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs` - passed after context ordering implementation: 25 tests, 0 failures.
+  - `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - passed after GraphQL enum update: 10 tests, 0 failures.
+- Final verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - passed: 35 tests, 0 failures.
+  - `cd assets && bun run relay` - first sandboxed run failed because Watchman could not `fchmod` `/Users/admin/.local/state/watchman/admin-state`; rerun with Watchman state access passed and compiled 29 reader, 28 normalization, and 28 operation text documents.
+  - `mix typecheck` - passed with exit 0.
+  - `git diff --check` - passed with exit 0.
+
 ### Score Export Evidence
 
 - Red verification:

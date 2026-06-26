@@ -224,6 +224,96 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                })
     end
 
+    test "merchantFeedCandidates ranks candidates by fit score", %{conn: conn} do
+      conn = authed_conn(conn)
+      source = source_fixture()
+
+      _trail =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Trail Merchant",
+          currency: "USD",
+          feed_name: "Trail Feed",
+          language: "EN",
+          product_count: 5_000,
+          provider_feed_id: "feed-trail",
+          source_feed_type: "PRODUCT"
+        })
+
+      _global =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_name: "Global Merchant",
+          currency: "CAD",
+          feed_name: "Global Feed",
+          language: "EN",
+          product_count: 20_000,
+          provider_feed_id: "feed-global",
+          source_feed_type: "PRODUCT"
+        })
+
+      _budget =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Budget Merchant",
+          currency: "USD",
+          feed_name: "Budget Feed",
+          language: nil,
+          product_count: 500,
+          provider_feed_id: "feed-budget",
+          source_feed_type: nil
+        })
+
+      _unknown =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Unknown Merchant",
+          currency: "USD",
+          feed_name: "Unknown Feed",
+          language: "EN",
+          product_count: nil,
+          provider_feed_id: "feed-unknown",
+          source_feed_type: nil
+        })
+
+      assert %{
+               "data" => %{
+                 "merchantFeedCandidates" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Trail Merchant",
+                         "productCount" => 5_000
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Global Merchant",
+                         "productCount" => 20_000
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Budget Merchant",
+                         "productCount" => 500
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "advertiserName" => "Unknown Merchant",
+                         "productCount" => nil
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, merchant_feed_candidates_ranking_query(), %{
+                 "first" => 10,
+                 "sort" => "FIT_SCORE_DESC"
+               })
+    end
+
     test "reviewMerchantFeedCandidate updates candidate review status", %{conn: conn} do
       conn = authed_conn(conn)
       source = source_fixture()
