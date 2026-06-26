@@ -134,8 +134,16 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Feed Candidate Controls
 
-- Pending execution of
+- Completed
   `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
+- Red verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts` - failed before implementation: 1 file failed, 8 tests failed because loader data and preload variables lacked `reviewStatus` and `sort`.
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - failed before implementation: 1 file failed, 4 tests failed and 10 passed because filter controls were missing and pagination links omitted selected filters.
+- Final verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - 2 files passed, 22 tests passed.
+  - `cd assets && bun run relay` - completed; compiled 29 reader, 28 normalization, and 28 operation text documents.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Deferred Note
 

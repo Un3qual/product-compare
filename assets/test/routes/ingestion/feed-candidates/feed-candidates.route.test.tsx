@@ -1,7 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
-import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
+import {
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor
+} from "../../../../src/relay/route-preload";
+import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
 import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/index";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
@@ -57,13 +61,17 @@ const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const FEED_CANDIDATES_QUERY_DESCRIPTOR = {
+const FEED_CANDIDATES_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
+  MerchantFeedCandidatesRouteQuery["variables"]
+> = {
   __relayQuery: {
     operationName: "MerchantFeedCandidatesRouteQuery",
-    text: "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String) { merchantFeedCandidates(first: $first, after: $after) { edges { node { id } } } }",
+    text: "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String, $reviewStatus: MerchantFeedCandidateReviewStatus, $sort: MerchantFeedCandidateSort) { merchantFeedCandidates(first: $first, after: $after, reviewStatus: $reviewStatus, sort: $sort) { edges { node { id } } } }",
     variables: {
       first: 20,
-      after: null
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
     }
   }
 };
@@ -121,6 +129,33 @@ test("feed candidates route renders current page review counts", () => {
   expect(within(reviewSummary).getByText("Shortlisted")).toBeInTheDocument();
   expect(within(reviewSummary).getByText("Dismissed")).toBeInTheDocument();
   expect(within(reviewSummary).getAllByText("1")).toHaveLength(3);
+});
+
+test("feed candidates route renders filter controls", () => {
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Review status" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toBeInTheDocument();
+});
+
+test("feed candidates route reflects selected filter controls from loader data", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Review status" })).toHaveValue(
+    "shortlisted"
+  );
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toHaveValue(
+    "product_count_desc"
+  );
 });
 
 test("feed candidates route renders existing review metadata", () => {
@@ -274,11 +309,37 @@ test("feed candidates route renders an empty state", () => {
   expect(screen.getByText("No CJ feed candidates captured yet.")).toBeInTheDocument();
 });
 
-test("feed candidates route renders pagination links", () => {
+test("feed candidates route first-page link preserves filters and drops after", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 30,
-      after: "previous-cursor"
+      after: "previous-cursor",
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildFeedCandidatesData({
+      hasNextPage: false,
+      hasPreviousPage: true
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("link", { name: "First candidates" })).toHaveAttribute(
+    "href",
+    "/ingestion/feed-candidates?first=30&reviewStatus=shortlisted&sort=product_count_desc"
+  );
+});
+
+test("feed candidates route next-page link preserves filters and page size", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 30,
+      after: "previous-cursor",
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
     })
   );
   mockedUsePreloadedQuery.mockReturnValue(
@@ -291,13 +352,9 @@ test("feed candidates route renders pagination links", () => {
 
   renderFeedCandidatesRoute();
 
-  expect(screen.getByRole("link", { name: "First candidates" })).toHaveAttribute(
-    "href",
-    "/ingestion/feed-candidates"
-  );
   expect(screen.getByRole("link", { name: "Next candidates" })).toHaveAttribute(
     "href",
-    "/ingestion/feed-candidates?first=30&after=next-cursor"
+    "/ingestion/feed-candidates?first=30&after=next-cursor&reviewStatus=shortlisted&sort=product_count_desc"
   );
 });
 
@@ -306,7 +363,9 @@ test("feed candidates route renders the loader error state", () => {
     status: "error",
     pagination: {
       first: 20,
-      after: null
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
     }
   } satisfies FeedCandidatesLoaderData);
 
@@ -329,7 +388,9 @@ function renderFeedCandidatesRoute() {
 function buildReadyLoaderData(
   pagination: Extract<FeedCandidatesLoaderData, { status: "ready" }>["pagination"] = {
     first: 20,
-    after: null
+    after: null,
+    reviewStatus: null,
+    sort: "NAME_ASC"
   }
 ) {
   return {

@@ -14,7 +14,11 @@ import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData
 } from "./loader";
-import type { FeedCandidatesPagination } from "./pagination";
+import {
+  feedCandidatesReviewStatusToUrlParam,
+  feedCandidatesSortToUrlParam,
+  type FeedCandidatesPagination
+} from "./pagination";
 
 type FeedCandidatesConnection = NonNullable<
   MerchantFeedCandidatesRouteQuery["response"]["merchantFeedCandidates"]
@@ -30,6 +34,7 @@ export function FeedCandidatesRoute() {
       <header>
         <h1>CJ feed candidates</h1>
       </header>
+      <FeedCandidatesControls pagination={loaderData.pagination} />
 
       {loaderData.status === "error" ? (
         <FeedCandidatesUnavailableFallback />
@@ -47,6 +52,44 @@ export function FeedCandidatesRoute() {
         </ResettableErrorBoundary>
       )}
     </section>
+  );
+}
+
+function FeedCandidatesControls({
+  pagination
+}: {
+  pagination: FeedCandidatesPagination;
+}) {
+  return (
+    <form action="/ingestion/feed-candidates" method="get">
+      <input name="first" type="hidden" value={pagination.first} />
+      <label>
+        Review status
+        <select
+          defaultValue={
+            feedCandidatesReviewStatusToUrlParam(pagination.reviewStatus) ?? ""
+          }
+          name="reviewStatus"
+        >
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+      </label>
+      <label>
+        Sort candidates
+        <select
+          defaultValue={feedCandidatesSortToUrlParam(pagination.sort)}
+          name="sort"
+        >
+          <option value="name_asc">Name</option>
+          <option value="product_count_desc">Product count</option>
+          <option value="last_seen_desc">Last seen</option>
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
   );
 }
 
@@ -176,7 +219,7 @@ function FeedCandidatesList({
       {reviewFeedback ? <p role="status">{reviewFeedback}</p> : null}
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
-          <Link to="/ingestion/feed-candidates">First candidates</Link>
+          <Link to={feedCandidatesFirstPagePath(pagination)}>First candidates</Link>
         </p>
       ) : null}
       {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
@@ -287,8 +330,31 @@ function feedCandidatesNextPagePath(
 
   params.set("first", String(pagination.first));
   params.set("after", endCursor);
+  appendFeedCandidatesFilterParams(params, pagination);
 
   return `/ingestion/feed-candidates?${params.toString()}`;
+}
+
+function feedCandidatesFirstPagePath(pagination: FeedCandidatesPagination) {
+  const params = new URLSearchParams();
+
+  params.set("first", String(pagination.first));
+  appendFeedCandidatesFilterParams(params, pagination);
+
+  return `/ingestion/feed-candidates?${params.toString()}`;
+}
+
+function appendFeedCandidatesFilterParams(
+  params: URLSearchParams,
+  pagination: FeedCandidatesPagination
+) {
+  const reviewStatus = feedCandidatesReviewStatusToUrlParam(pagination.reviewStatus);
+
+  if (reviewStatus) {
+    params.set("reviewStatus", reviewStatus);
+  }
+
+  params.set("sort", feedCandidatesSortToUrlParam(pagination.sort));
 }
 
 function formatProductCount(productCount: number | null | undefined) {

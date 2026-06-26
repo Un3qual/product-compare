@@ -20,7 +20,7 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
 const FEED_CANDIDATES_QUERY_TEXT =
-  "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String) { merchantFeedCandidates(first: $first, after: $after) { edges { node { id } } } }";
+  "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String, $reviewStatus: MerchantFeedCandidateReviewStatus, $sort: MerchantFeedCandidateSort) { merchantFeedCandidates(first: $first, after: $after, reviewStatus: $reviewStatus, sort: $sort) { edges { node { id } } } }";
 
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
@@ -29,7 +29,12 @@ beforeEach(() => {
 test("feedCandidatesLoader preloads the default candidate page", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.test/ingestion/feed-candidates");
-  const descriptor = feedCandidatesQueryDescriptor({ first: 20, after: null });
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 20,
+    after: null,
+    reviewStatus: null,
+    sort: "NAME_ASC"
+  });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
@@ -39,7 +44,9 @@ test("feedCandidatesLoader preloads the default candidate page", async () => {
     status: "ready",
     pagination: {
       first: 20,
-      after: null
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
     },
     query: descriptor
   });
@@ -47,7 +54,7 @@ test("feedCandidatesLoader preloads the default candidate page", async () => {
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { first: 20, after: null },
+    { first: 20, after: null, reviewStatus: null, sort: "NAME_ASC" },
     { signal: request.signal }
   );
 });
@@ -59,7 +66,9 @@ test("feedCandidatesLoader preserves supported cursor and page-size params", asy
   );
   const descriptor = feedCandidatesQueryDescriptor({
     first: 50,
-    after: "candidate-cursor"
+    after: "candidate-cursor",
+    reviewStatus: null,
+    sort: "NAME_ASC"
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -70,7 +79,9 @@ test("feedCandidatesLoader preserves supported cursor and page-size params", asy
     status: "ready",
     pagination: {
       first: 50,
-      after: "candidate-cursor"
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
     },
     query: descriptor
   });
@@ -78,7 +89,87 @@ test("feedCandidatesLoader preserves supported cursor and page-size params", asy
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { first: 50, after: "candidate-cursor" },
+    {
+      first: 50,
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
+    },
+    { signal: request.signal }
+  );
+});
+
+test("feedCandidatesLoader preloads supported review status and sort params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/ingestion/feed-candidates?reviewStatus=shortlisted&sort=product_count_desc"
+  );
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 20,
+    after: null,
+    reviewStatus: "SHORTLISTED",
+    sort: "PRODUCT_COUNT_DESC"
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    feedCandidatesLoader(buildFeedCandidatesLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: null,
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      first: 20,
+      after: null,
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    },
+    { signal: request.signal }
+  );
+});
+
+test("feedCandidatesLoader falls back for unsupported review status and sort params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/ingestion/feed-candidates?reviewStatus=approved&sort=random"
+  );
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 20,
+    after: null,
+    reviewStatus: null,
+    sort: "NAME_ASC"
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    feedCandidatesLoader(buildFeedCandidatesLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20, after: null, reviewStatus: null, sort: "NAME_ASC" },
     { signal: request.signal }
   );
 });
@@ -90,7 +181,9 @@ test("feedCandidatesLoader drops invalid page-size params", async () => {
   );
   const descriptor = feedCandidatesQueryDescriptor({
     first: 20,
-    after: "candidate-cursor"
+    after: "candidate-cursor",
+    reviewStatus: null,
+    sort: "NAME_ASC"
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -101,7 +194,9 @@ test("feedCandidatesLoader drops invalid page-size params", async () => {
     status: "ready",
     pagination: {
       first: 20,
-      after: "candidate-cursor"
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
     },
     query: descriptor
   });
@@ -114,7 +209,9 @@ test("feedCandidatesLoader drops malformed page-size params", async () => {
   );
   const descriptor = feedCandidatesQueryDescriptor({
     first: 20,
-    after: "candidate-cursor"
+    after: "candidate-cursor",
+    reviewStatus: null,
+    sort: "NAME_ASC"
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -125,7 +222,9 @@ test("feedCandidatesLoader drops malformed page-size params", async () => {
     status: "ready",
     pagination: {
       first: 20,
-      after: "candidate-cursor"
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
     },
     query: descriptor
   });
@@ -133,7 +232,12 @@ test("feedCandidatesLoader drops malformed page-size params", async () => {
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { first: 20, after: "candidate-cursor" },
+    {
+      first: 20,
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
+    },
     { signal: request.signal }
   );
 });
@@ -145,7 +249,9 @@ test("feedCandidatesLoader trims cursor params", async () => {
   );
   const descriptor = feedCandidatesQueryDescriptor({
     first: 50,
-    after: "candidate-cursor"
+    after: "candidate-cursor",
+    reviewStatus: null,
+    sort: "NAME_ASC"
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -156,7 +262,9 @@ test("feedCandidatesLoader trims cursor params", async () => {
     status: "ready",
     pagination: {
       first: 50,
-      after: "candidate-cursor"
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
     },
     query: descriptor
   });
@@ -164,7 +272,12 @@ test("feedCandidatesLoader trims cursor params", async () => {
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { first: 50, after: "candidate-cursor" },
+    {
+      first: 50,
+      after: "candidate-cursor",
+      reviewStatus: null,
+      sort: "NAME_ASC"
+    },
     { signal: request.signal }
   );
 });
@@ -186,7 +299,9 @@ test("feedCandidatesLoader returns error state when route preloading fails", asy
       status: "error",
       pagination: {
         first: 30,
-        after: "candidate-cursor"
+        after: "candidate-cursor",
+        reviewStatus: null,
+        sort: "NAME_ASC"
       }
     });
 
@@ -215,7 +330,12 @@ function buildFeedCandidatesLoaderArgs({
   } as LoaderFunctionArgs;
 }
 
-function feedCandidatesQueryDescriptor(variables: { first: number; after: string | null }) {
+function feedCandidatesQueryDescriptor(variables: {
+  first: number;
+  after: string | null;
+  reviewStatus: "PENDING" | "SHORTLISTED" | "DISMISSED" | null;
+  sort: "NAME_ASC" | "PRODUCT_COUNT_DESC" | "LAST_SEEN_DESC";
+}) {
   return {
     __relayQuery: {
       operationName: "MerchantFeedCandidatesRouteQuery",
