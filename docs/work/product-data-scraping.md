@@ -2,11 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: needs_decision
 - Priority: P2
 - Source of truth: this file
-- Live queue row: three scheduled CJ discovery rows promoted in `docs/work/index.md`
-- Last verified: 2026-06-26 after focused backend/frontend/export tests, Relay generation, frontend typecheck, `mix typecheck`, final spec review, and diff checks
+- Live queue row: coordinator decision required in `docs/work/index.md`
+- Last verified: 2026-06-26 after scheduled CJ discovery runtime/status/frontend
+  controls tests, Relay generation, frontend typecheck, `mix typecheck`, focused
+  code reviews, and diff checks
 - Last plan refresh: 2026-06-26 for scheduled CJ discovery runtime, status, and review-controls rows
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
@@ -15,10 +17,11 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
+  - None. The 2026-06-26 scheduled CJ discovery parallel batch is complete.
+- Previous implementation plans:
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
@@ -58,13 +61,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: planned
+- Status: completed
 - Batch: 2026-06-26 scheduled CJ discovery parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
-- Planned actions:
+- Completed actions:
   - Extract reusable CJ feed discovery from the manual Mix task and add a
     disabled-by-default bounded runtime scheduler.
   - Add a read-only latest-run/freshness Mix task for CJ feed discovery.
@@ -84,6 +87,10 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - No Oban dependency, provider credential config, account-manager automation,
     merchant application submission, product import scheduling, broad scoring
     algorithms, or Tier-3 direct scraping in this batch.
+- Next decision:
+  - Choose exactly one follow-up ingestion batch before implementation resumes:
+    provider credential config, merchant application/account-manager automation,
+    product import scheduling, broader candidate scoring, or explicit deferral.
 
 ## Verification Commands
 
@@ -103,6 +110,31 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
 ## Scheduled Discovery Batch Evidence
+
+### Combined Verification
+
+- Focused runtime/status backend verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 21 tests, 0 failures.
+- Focused frontend verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+    - Result: passed, 2 files, 22 tests.
+- Generated artifacts and typechecks:
+  - `cd assets && bun run relay`
+    - Result: completed; compiled 29 reader, 28 normalization, and 28 operation
+      text documents.
+  - `cd assets && bun run typecheck`
+    - Result: `tsc --noEmit` completed with exit 0.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+- Review:
+  - Runtime reviewer approved after the Logger follow-up; no remaining Critical
+    or Important issues.
+  - Status reviewer approved after error-summary sanitization; no remaining
+    Critical or Important issues.
+  - Frontend reviewer approved with no Critical, Important, or Minor issues.
 
 ### Scheduled Discovery Runtime
 

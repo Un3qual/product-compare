@@ -25,27 +25,21 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data scraping | Add disabled-by-default scheduled CJ feed discovery by extracting the manual feed-discovery runner and supervising a bounded runtime scheduler. | `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md` | `lib/product_compare/ingestion/cj_feed_discovery.ex`; `lib/product_compare/ingestion/cj_feed_discovery_scheduler.ex`; `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`; `lib/product_compare/application.ex`; `config/runtime.exs`; `test/product_compare/ingestion/cj_feed_discovery_test.exs`; `test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`; `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `docs/work/product-data-scraping.md` runtime evidence heading only | `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `mix typecheck`; `git diff --check` | Scheduler is opt-in, bounded, secret-free in config/logs, and the manual `cj_feeds` task behavior remains verified. |
-| 2 | ready | Product data scraping | Add a read-only CJ feed discovery status task for latest-run and freshness checks. | `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md` | `lib/mix/tasks/product_compare.ingestion.cj_discovery_status.ex`; `test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`; `docs/work/product-data-scraping.md` discovery-status evidence heading only | `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`; `mix typecheck`; `git diff --check` | Operator can check latest/fresh CJ feed discovery state without network calls, mutations, secrets, or raw metadata output. |
-| 3 | ready | Product data scraping | Add `/ingestion/feed-candidates` review-status and sort controls over the existing backend query args. | `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md` | `assets/src/routes/ingestion/feed-candidates/pagination.ts`; `assets/src/routes/ingestion/feed-candidates/loader.ts`; `assets/src/routes/ingestion/feed-candidates/queries/MerchantFeedCandidatesRouteQuery.ts`; `assets/src/routes/ingestion/feed-candidates/index.tsx`; `assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts`; `assets/test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts`; `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`; `docs/work/product-data-scraping.md` feed-candidate-controls evidence heading only | `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`; `cd assets && bun run relay`; `cd assets && bun run typecheck`; `git diff --check` | Candidate review route filters/sorts refreshed candidates and preserves selected filters across pagination. |
+| 1 | needs_decision | Product data scraping | Choose the next ingestion batch after scheduled CJ discovery: provider credential config, merchant application/account-manager automation, product import scheduling, broader candidate scoring, or explicit deferral. | None | `docs/work/index.md`; `docs/plans/INDEX.md`; affected lane/plan docs only after one option is selected | Coordinator decision only; no code verification until a concrete `ready` row is promoted. | Exactly one scoped `ready` row is promoted, or the lane remains explicitly deferred/blocked. |
 
 ## Ready Work
 
-The scheduled CJ discovery candidate is promoted as a three-row parallel batch:
-runtime scheduling, operator freshness/status, and frontend candidate
-filter/sort controls. The rows may run in parallel because their implementation
-paths do not overlap except for lane-local evidence headings in
-`docs/work/product-data-scraping.md`.
+No `ready` rows are available. The scheduled CJ discovery parallel batch is
+complete and recorded in `docs/work/product-data-scraping.md`.
 
-Application automation, provider credential config, account-manager automation,
-broad scoring algorithms, product import scheduling, and Tier-3 scraping remain
-out of scope until explicitly promoted.
+The next action is a coordinator decision. Do not scan historical plans or start
+implementation until one concrete follow-up row is promoted.
 
 ## Deferred Work
 
 Application automation, provider credential config, account-manager automation,
 broad scoring algorithms, product import scheduling, and Tier-3 scraping remain
-out of scope until explicitly promoted after this scheduled discovery batch.
+out of scope until explicitly promoted.
 
 ## Executor Prompts
 

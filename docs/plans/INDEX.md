@@ -14,9 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| active | `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md` | Add disabled-by-default scheduled CJ `shoppingProductFeeds` discovery. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
-| active | `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md` | Add a read-only latest-run and freshness status task for CJ feed discovery. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
-| active | `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md` | Add frontend review-status and sort controls for captured CJ feed candidates. | Execute only through the ready row in `docs/work/index.md`; close or block the row from the live queue. |
+| none | None | No active implementation plan is promoted. Start at `docs/work/index.md` and process the `needs_decision` row before creating new ready work. | Promote exactly one concrete ready row with owned paths and verification. |
 
 ## Candidate Pool
 
@@ -31,6 +29,11 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: scheduled CJ feed discovery runtime, read-only discovery
+  status, and feed-candidate filter controls:
+  `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`,
+  and `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
 - Product ingestion: parallel CJ candidate ranking, review workspace, and
   shortlist export:
   `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`,
