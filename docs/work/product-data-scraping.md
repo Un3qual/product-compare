@@ -129,6 +129,15 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Secret/raw-metadata check:
   - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-export-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
+### Frontend Score Badges Evidence
+
+- Red verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - failed before route changes: 1 file failed, 1 test failed, 13 tests passed; missing `Fit score 85`.
+- Green verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - passed, 1 file, 14 tests.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
 ## Scheduled Discovery Batch Evidence
 
 ### Combined Verification

@@ -248,12 +248,22 @@ function FeedCandidateListItem({
 }) {
   const candidateName = formatCandidateName(candidate);
   const reviewedAt = formatReviewedAt(candidate.reviewedAt);
+  const fitScore = candidateFitScore(candidate);
+  const fitReasons = candidateFitReasons(candidate);
 
   return (
     <li>
       <h2>{candidateName}</h2>
       <p>{candidate.feedName ?? "Unnamed feed"}</p>
       <p>{formatProductCount(candidate.productCount)}</p>
+      <p>{`Fit score ${fitScore}`}</p>
+      {fitReasons.length > 0 ? (
+        <ul aria-label={`Fit reasons for ${candidateName}`}>
+          {fitReasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+      ) : null}
       <p>{formatReviewStatus(candidate.reviewStatus)}</p>
       <dl>
         {candidate.advertiserCountry ? (
@@ -355,6 +365,106 @@ function appendFeedCandidatesFilterParams(
   }
 
   params.set("sort", feedCandidatesSortToUrlParam(pagination.sort));
+}
+
+function candidateFitScore(candidate: FeedCandidate) {
+  return (
+    productCountFitPoints(candidate.productCount) +
+    exactCandidateFieldPoints(candidate.advertiserCountry, "US", 20) +
+    exactCandidateFieldPoints(candidate.currency, "USD", 15) +
+    exactCandidateFieldPoints(candidate.language, "EN", 10) +
+    sourceFeedTypeFitPoints(candidate.sourceFeedType)
+  );
+}
+
+function candidateFitReasons(candidate: FeedCandidate) {
+  return [
+    productCountFitReason(candidate.productCount),
+    exactCandidateFieldReason(candidate.advertiserCountry, "US", "US market"),
+    exactCandidateFieldReason(candidate.currency, "USD", "USD"),
+    exactCandidateFieldReason(candidate.language, "EN", "English"),
+    sourceFeedTypeFitReason(candidate.sourceFeedType)
+  ].filter((reason): reason is string => typeof reason === "string");
+}
+
+function productCountFitPoints(productCount: number | null | undefined) {
+  if (typeof productCount !== "number") {
+    return 0;
+  }
+
+  if (productCount >= 10000) {
+    return 50;
+  }
+
+  if (productCount >= 1000) {
+    return 35;
+  }
+
+  if (productCount >= 100) {
+    return 20;
+  }
+
+  if (productCount > 0) {
+    return 10;
+  }
+
+  return 0;
+}
+
+function productCountFitReason(productCount: number | null | undefined) {
+  if (typeof productCount !== "number") {
+    return null;
+  }
+
+  if (productCount >= 10000) {
+    return "10000+ products";
+  }
+
+  if (productCount >= 1000) {
+    return "1000+ products";
+  }
+
+  if (productCount >= 100) {
+    return "100+ products";
+  }
+
+  if (productCount > 0) {
+    return "1+ products";
+  }
+
+  return null;
+}
+
+function exactCandidateFieldPoints(
+  value: string | null | undefined,
+  expectedValue: string,
+  points: number
+) {
+  return normalizeCandidateField(value) === expectedValue ? points : 0;
+}
+
+function exactCandidateFieldReason(
+  value: string | null | undefined,
+  expectedValue: string,
+  reason: string
+) {
+  return normalizeCandidateField(value) === expectedValue ? reason : null;
+}
+
+function sourceFeedTypeFitPoints(sourceFeedType: string | null | undefined) {
+  return candidateFieldHasValue(sourceFeedType) ? 5 : 0;
+}
+
+function sourceFeedTypeFitReason(sourceFeedType: string | null | undefined) {
+  return candidateFieldHasValue(sourceFeedType) ? "feed type present" : null;
+}
+
+function normalizeCandidateField(value: string | null | undefined) {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
+}
+
+function candidateFieldHasValue(value: string | null | undefined) {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function formatProductCount(productCount: number | null | undefined) {

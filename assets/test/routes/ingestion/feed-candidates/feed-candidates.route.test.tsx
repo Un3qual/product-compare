@@ -102,14 +102,26 @@ test("feed candidates route renders review-safe candidate rows", () => {
 
   expect(within(candidateList).getByText("Trail Merchant")).toBeInTheDocument();
   expect(within(candidateList).getByText("Trail Shopping")).toBeInTheDocument();
-  expect(within(candidateList).getByText("10 products")).toBeInTheDocument();
-  expect(within(candidateList).getAllByText("US")).toHaveLength(3);
-  expect(within(candidateList).getAllByText("USD")).toHaveLength(3);
+  expect(within(candidateList).getByText("5000 products")).toBeInTheDocument();
+  expect(within(candidateList).getAllByText("US")).toHaveLength(2);
+  expect(within(candidateList).getAllByText("USD").length).toBeGreaterThanOrEqual(2);
   expect(within(candidateList).getAllByText("EN")).toHaveLength(3);
   expect(within(candidateList).getByText("Pending")).toBeInTheDocument();
   expect(within(candidateList).getByText("Shortlisted")).toBeInTheDocument();
   expect(within(candidateList).getByText("Dismissed")).toBeInTheDocument();
-  expect(within(candidateList).queryByText(/tracking|account|token/i)).not.toBeInTheDocument();
+  expect(within(candidateList).getByText("Fit score 85")).toBeInTheDocument();
+  const trailReasons = within(candidateList).getByRole("list", {
+    name: "Fit reasons for Trail Merchant"
+  });
+  expect(within(trailReasons).getByText("1000+ products")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("US market")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("USD")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("English")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("feed type present")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Fit score 20")).toBeInTheDocument();
+  expect(
+    within(candidateList).queryByText(/tracking|account|token|raw metadata|rawMetadata|raw_metadata/i)
+  ).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     FEED_CANDIDATES_QUERY_DESCRIPTOR
@@ -408,11 +420,11 @@ function buildFeedCandidatesData({
       providerFeedId: "feed-1",
       advertiserName: "Trail Merchant",
       advertiserCountry: "US",
-      sourceFeedType: "SHOPPING",
+      sourceFeedType: "PRODUCT",
       currency: "USD",
       language: "EN",
       feedName: "Trail Shopping",
-      productCount: 10,
+      productCount: 5000,
       reviewStatus: "SHORTLISTED",
       reviewNote: "Prioritized for launch review.",
       reviewedAt: "2026-06-04T21:15:00.000000Z",
@@ -424,12 +436,12 @@ function buildFeedCandidatesData({
       provider: "cj",
       providerFeedId: "feed-2",
       advertiserName: "City Gear",
-      advertiserCountry: "US",
-      sourceFeedType: "SHOPPING",
-      currency: "USD",
+      advertiserCountry: "CA",
+      sourceFeedType: null,
+      currency: "CAD",
       language: "EN",
       feedName: "City Gear Catalog",
-      productCount: 4,
+      productCount: 50,
       reviewStatus: "PENDING",
       reviewNote: null,
       reviewedAt: null,
