@@ -106,8 +106,34 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Scheduled Discovery Runtime
 
-- Pending execution of
+- Completed
   `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`.
+- Red verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: failed as expected with 5 failures because
+      `ProductCompare.Ingestion.CJFeedDiscovery.run/1` was undefined.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: failed as expected with 4 failures because
+      `ProductCompare.Ingestion.CJFeedDiscoveryScheduler` did not exist.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: failed as expected with 1 failure because the Mix task did not
+      print the report before raising on `{:row_failures, report}`.
+- Green verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: passed, 5 tests, 0 failures.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 8 tests, 0 failures.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: passed, 4 tests, 0 failures.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 4 tests, 0 failures.
+- Final verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 13 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Discovery Status
 

@@ -4,256 +4,119 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
   import ExUnit.CaptureIO
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjFeeds
-  alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Specs.Source
 
-  describe "run_discovery/1" do
-    test "fetches CJ shopping product feeds and records run counts" do
+  setup do
+    original_runner = Application.get_env(:product_compare, :cj_feed_discovery_runner)
+
+    on_exit(fn ->
+      if is_nil(original_runner) do
+        Application.delete_env(:product_compare, :cj_feed_discovery_runner)
+      else
+        Application.put_env(:product_compare, :cj_feed_discovery_runner, original_runner)
+      end
+    end)
+
+    :ok
+  end
+
+  describe "run/1" do
+    test "parses CLI options, calls the runner, and prints the report" do
       parent = self()
 
-      fetcher = fn cursor, opts ->
-        send(parent, {:fetch, cursor, opts})
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn opts ->
+        send(parent, {:runner_opts, opts})
 
         {:ok,
-         [
-           %{
-             "adId" => "feed-1",
-             "advertiserCountry" => "US",
-             "advertiserId" => "adv-1",
-             "advertiserName" => "Merchant",
-             "currency" => "USD",
-             "feedName" => "US Shopping",
-             "language" => "EN",
-             "lastUpdated" => "2026-06-04T18:34:49Z",
-             "productCount" => 10,
-             "sourceFeedType" => "SHOPPING"
-           }
-         ], nil}
-      end
-
-      output =
-        capture_io(fn ->
-          assert {:ok, %{candidates_persisted: 1, failed: 0, feeds_fetched: 1, pages_fetched: 1}} =
-                   CjFeeds.run_discovery(
-                     advertiser_country: "US",
-                     fetcher: fetcher,
-                     limit: 1,
-                     pages: 1
-                   )
-        end)
-
-      assert_receive {:fetch, nil, opts}
-      assert opts[:advertiser_country] == "US"
-      assert opts[:limit] == 1
-
-      assert output =~ "feeds_fetched=1 candidates_persisted=1 pages_fetched=1 failed=0"
-
-      assert %Source{id: source_id, kind: "affiliate_feed", name: "CJ", domain: "cj.com"} =
-               Repo.get_by(Source, name: "CJ", domain: "cj.com")
-
-      assert %MerchantFeedCandidate{
-               source_id: ^source_id,
-               provider: "cj",
-               provider_feed_id: "feed-1",
-               advertiser_id: "adv-1",
-               advertiser_name: "Merchant",
-               advertiser_country: "US",
-               currency: "USD",
-               feed_name: "US Shopping",
-               language: "EN",
-               product_count: 10,
-               source_feed_type: "SHOPPING"
-             } =
-               Repo.get_by!(MerchantFeedCandidate,
-                 source_id: source_id,
-                 provider_feed_id: "feed-1"
-               )
-
-      assert %ImportRun{
-               source_id: ^source_id,
-               provider: "cj",
-               surface: "shoppingProductFeeds",
-               status: "succeeded",
-               query: %{"advertiserCountry" => "US"},
-               cursor_start: 0,
-               cursor_end: nil,
-               page_size: 1,
-               pages_requested: 1,
-               pages_fetched: 1,
-               records_fetched: 1,
-               records_normalized: 0,
-               records_persisted: 1,
-               records_failed: 0
-             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
-    end
-
-    test "records partial run counts when a later page fetch fails" do
-      feed = %{
-        "adId" => "feed-1",
-        "advertiserCountry" => "US",
-        "advertiserId" => "adv-1",
-        "advertiserName" => "Merchant",
-        "currency" => "USD",
-        "feedName" => "US Shopping",
-        "language" => "EN",
-        "lastUpdated" => "2026-06-04T18:34:49Z",
-        "productCount" => 10,
-        "sourceFeedType" => "SHOPPING"
-      }
-
-      fetcher = fn
-        nil, _opts -> {:ok, [feed], 1}
-        1, _opts -> {:error, :test_failure}
-      end
-
-      assert {:error, :test_failure} =
-               CjFeeds.run_discovery(
-                 advertiser_country: "US",
-                 fetcher: fetcher,
-                 limit: 1,
-                 pages: 2
-               )
-
-      assert %Source{id: source_id} = Repo.get_by(Source, name: "CJ", domain: "cj.com")
-
-      assert %MerchantFeedCandidate{} =
-               Repo.get_by!(MerchantFeedCandidate,
-                 source_id: source_id,
-                 provider_feed_id: "feed-1"
-               )
-
-      assert %ImportRun{
-               source_id: ^source_id,
-               provider: "cj",
-               surface: "shoppingProductFeeds",
-               status: "failed",
-               cursor_start: 0,
-               cursor_end: 1,
-               page_size: 1,
-               pages_requested: 2,
-               pages_fetched: 1,
-               records_fetched: 1,
-               records_normalized: 0,
-               records_persisted: 1,
-               records_failed: 0,
-               error_summary: ":test_failure"
-             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
-    end
-
-    test "uses one page when the requested page count is invalid" do
-      parent = self()
-
-      fetcher = fn cursor, _opts ->
-        send(parent, {:fetch, cursor})
-
-        {:ok, [], 1}
-      end
-
-      output =
-        capture_io(fn ->
-          assert {:ok, %{pages_fetched: 1}} =
-                   CjFeeds.run_discovery(
-                     advertiser_country: "US",
-                     fetcher: fetcher,
-                     limit: 1,
-                     pages: 0
-                   )
-        end)
-
-      assert_receive {:fetch, nil}
-      refute_receive {:fetch, 1}
-      assert output =~ "feeds_fetched=0 candidates_persisted=0 pages_fetched=1 failed=0"
-
-      assert %Source{id: source_id} = Repo.get_by(Source, name: "CJ", domain: "cj.com")
-
-      assert %ImportRun{
-               source_id: ^source_id,
-               pages_requested: 1,
-               pages_fetched: 1,
-               cursor_end: 1
-             } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
-    end
-
-    test "reuses an existing CJ source by unique key" do
-      existing_source =
-        %Source{}
-        |> Source.changeset(%{kind: "affiliate_feed", name: "CJ"})
-        |> Repo.insert!()
-
-      fetcher = fn _cursor, _opts ->
-        {:ok,
-         [
-           %{
-             "adId" => "feed-1",
-             "advertiserCountry" => "US",
-             "advertiserId" => "adv-1",
-             "advertiserName" => "Merchant",
-             "currency" => "USD",
-             "feedName" => "US Shopping",
-             "language" => "EN",
-             "lastUpdated" => "2026-06-04T18:34:49Z",
-             "productCount" => 10,
-             "sourceFeedType" => "SHOPPING"
-           }
-         ], nil}
-      end
-
-      capture_io(fn ->
-        assert {:ok, %{candidates_persisted: 1, failed: 0, feeds_fetched: 1, pages_fetched: 1}} =
-                 CjFeeds.run_discovery(advertiser_country: "US", fetcher: fetcher, limit: 1)
+         %{
+           candidates_persisted: 2,
+           failed: 0,
+           feeds_fetched: 3,
+           pages_fetched: 2
+         }}
       end)
 
-      assert %{domain: "cj.com"} = Repo.get!(Source, existing_source.id)
-      assert Repo.aggregate(Source, :count, :id) == 1
+      output =
+        capture_io(fn ->
+          assert :ok =
+                   CjFeeds.run([
+                     "--advertiser-country",
+                     "CA",
+                     "--limit",
+                     "10",
+                     "--offset",
+                     "20",
+                     "--pages",
+                     "3"
+                   ])
+        end)
 
-      assert %ImportRun{source_id: source_id, status: "succeeded"} =
-               Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+      assert_receive {:runner_opts, opts}
+      assert opts[:advertiser_country] == "CA"
+      assert opts[:limit] == 10
+      assert opts[:cursor] == 20
+      assert opts[:pages] == 3
 
-      assert source_id == existing_source.id
+      assert output =~ "feeds_fetched=3 candidates_persisted=2 pages_fetched=2 failed=0"
     end
 
-    test "returns an error when fetched feeds fail candidate persistence" do
-      fetcher = fn _cursor, _opts ->
+    test "uses manual discovery defaults when CLI options are omitted" do
+      parent = self()
+
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn opts ->
+        send(parent, {:runner_opts, opts})
+
         {:ok,
-         [
-           %{
-             "advertiserCountry" => "US",
-             "advertiserId" => "adv-1",
-             "advertiserName" => "Merchant",
-             "currency" => "USD",
-             "feedName" => "Missing ID Feed",
-             "language" => "EN",
-             "lastUpdated" => "2026-06-04T18:34:49Z",
-             "productCount" => 10,
-             "sourceFeedType" => "SHOPPING"
-           }
-         ], nil}
-      end
+         %{
+           candidates_persisted: 0,
+           failed: 0,
+           feeds_fetched: 0,
+           pages_fetched: 0
+         }}
+      end)
+
+      capture_io(fn -> assert :ok = CjFeeds.run([]) end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:advertiser_country] == "US"
+      assert opts[:limit] == 25
+      assert opts[:cursor] == nil
+      assert opts[:pages] == 1
+    end
+
+    test "raises with existing failure wording when the runner fails" do
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn _opts ->
+        {:error, {:missing_env, "CJ_API_TOKEN"}}
+      end)
+
+      assert_raise Mix.Error,
+                   "CJ feed discovery failed: {:missing_env, \"CJ_API_TOKEN\"}",
+                   fn ->
+                     capture_io(fn ->
+                       CjFeeds.run(["--advertiser-country", "US"])
+                     end)
+                   end
+    end
+
+    test "prints the report before raising on row failures" do
+      report = %{
+        candidates_persisted: 0,
+        failed: 1,
+        feeds_fetched: 1,
+        pages_fetched: 1
+      }
+
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn _opts ->
+        {:error, {:row_failures, report}}
+      end)
 
       output =
         capture_io(fn ->
-          assert {:error,
-                  {:row_failures,
-                   %{
-                     candidates_persisted: 0,
-                     failed: 1,
-                     feeds_fetched: 1,
-                     pages_fetched: 1
-                   }}} =
-                   CjFeeds.run_discovery(advertiser_country: "US", fetcher: fetcher, limit: 1)
+          error = assert_raise Mix.Error, fn -> CjFeeds.run([]) end
+
+          assert error.message =~ "CJ feed discovery failed: {:row_failures,"
         end)
 
       assert output =~ "feeds_fetched=1 candidates_persisted=0 pages_fetched=1 failed=1"
-
-      assert %ImportRun{
-               status: "failed",
-               records_fetched: 1,
-               records_normalized: 0,
-               records_persisted: 0,
-               records_failed: 1
-             } = Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
     end
   end
 end
