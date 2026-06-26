@@ -45,7 +45,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatusTest do
       assert output =~ "latest_status=failed"
       assert output =~ "latest_pages_fetched=1"
       assert output =~ "latest_records_failed=1"
-      assert output =~ "latest_error_summary=provider timeout"
+      assert output =~ "latest_error_summary=redacted"
+      refute output =~ "provider timeout"
       refute output =~ "provider\ntimeout"
       assert output =~ "latest_success_status=succeeded"
     end
@@ -89,6 +90,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatusTest do
       assert output =~ "latest_records_fetched=30"
       assert output =~ "latest_records_persisted=29"
       assert output =~ "latest_records_failed=1"
+      assert output =~ "latest_error_summary=\n"
       assert output =~ "latest_success_status=succeeded"
       assert output =~ "fresh=true"
       assert output =~ "candidate_count=2"
@@ -137,6 +139,31 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatusTest do
       refute output =~ "raw_metadata"
       refute output =~ "secret_marker"
       refute output =~ "do-not-print"
+    end
+
+    test "does not print raw provider error summaries" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        status: "failed",
+        started_at: hours_ago(1),
+        finished_at: hours_ago(1),
+        error_summary:
+          "HTTP 500 GraphQL body={\"accountId\":\"123456\",\"tracking\":\"aff_sub\"," <>
+            "\"errors\":[{\"message\":\"CJ_API_TOKEN=secret\"}]}"
+      })
+
+      output = capture_io(fn -> CjDiscoveryStatus.run([]) end)
+
+      assert output =~ "latest_error_summary="
+      refute output =~ "CJ_API_TOKEN"
+      refute output =~ "secret"
+      refute output =~ "accountId"
+      refute output =~ "123456"
+      refute output =~ "tracking"
+      refute output =~ "aff_sub"
+      refute output =~ "GraphQL body"
+      refute output =~ "\"errors\""
     end
   end
 

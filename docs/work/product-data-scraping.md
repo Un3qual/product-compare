@@ -131,6 +131,25 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     - Result: passed with no output.
   - `git diff --check`
     - Result: passed with no output.
+- Follow-up review fix:
+  - Sanitized persisted `latest_error_summary` output so the status task never
+    echoes raw provider/client error text, live payloads, account IDs, tokens, or
+    tracking parameters.
+- Follow-up red verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 1 failure because
+      `latest_error_summary` included `CJ_API_TOKEN=secret` and raw GraphQL/HTTP
+      body text.
+- Follow-up green verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+- Follow-up final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Feed Candidate Controls
 

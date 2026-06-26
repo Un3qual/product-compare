@@ -115,7 +115,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus do
       {:latest_records_fetched, field(latest_run, :records_fetched)},
       {:latest_records_persisted, field(latest_run, :records_persisted)},
       {:latest_records_failed, field(latest_run, :records_failed)},
-      {:latest_error_summary, field(latest_run, :error_summary)},
+      {:latest_error_summary, sanitized_error_summary(latest_run)},
       {:latest_success_status, field(latest_success, :status)},
       {:latest_success_finished_at, field(latest_success, :finished_at)},
       {:fresh, fresh},
@@ -128,6 +128,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus do
 
   defp field(nil, _field), do: nil
   defp field(struct, field), do: Map.fetch!(struct, field)
+
+  defp sanitized_error_summary(nil), do: nil
+
+  defp sanitized_error_summary(%ImportRun{error_summary: error_summary})
+       when is_binary(error_summary) do
+    if String.trim(error_summary) == "", do: nil, else: "redacted"
+  end
+
+  defp sanitized_error_summary(%ImportRun{}), do: nil
 
   defp format_value(nil), do: ""
   defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
