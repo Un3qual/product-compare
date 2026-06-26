@@ -275,6 +275,20 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Parallel Batch Evidence
 
+### Score Export Evidence
+
+- Red verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+    - Result: failed as expected, 8 tests, 2 failures, because the default CSV
+      header lacked `fit_score` and `fit_reasons`.
+- Green verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+    - Result: passed, 9 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
 ### Combined Verification
 
 - Final spec reviewer status: approved, with no missing requirements,

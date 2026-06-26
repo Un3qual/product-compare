@@ -8,7 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateExportTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Specs.Source
 
-  @csv_header "provider,provider_feed_id,advertiser_id,advertiser_name,advertiser_country,currency,language,feed_name,product_count,review_note,last_seen_at"
+  @csv_header "provider,provider_feed_id,advertiser_id,advertiser_name,advertiser_country,currency,language,feed_name,product_count,fit_score,fit_reasons,review_note,last_seen_at"
 
   describe "run/1" do
     test "defaults to exporting only shortlisted CJ candidates" do
@@ -31,11 +31,120 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateExportTest do
 
       output = capture_io(fn -> CjCandidateExport.run([]) end)
 
-      assert output =~ @csv_header
+      assert first_csv_line(output) == @csv_header
       assert output =~ "feed-shortlisted"
       assert output =~ "Application fit"
       refute output =~ pending.provider_feed_id
       refute output =~ dismissed.provider_feed_id
+    end
+
+    test "exports fit score columns and sorts shortlisted candidates by score by default" do
+      source = source_fixture()
+
+      high_fit =
+        candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Zeta Outfitters",
+          currency: "USD",
+          feed_name: "Primary Product Feed",
+          language: "EN",
+          product_count: 5000,
+          provider_feed_id: "feed-high-fit",
+          source_feed_type: "PRODUCT"
+        })
+
+      low_fit =
+        candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_name: "Alpha Imports",
+          currency: "CAD",
+          feed_name: "Regional Feed",
+          language: "FR",
+          product_count: 12,
+          provider_feed_id: "feed-low-fit",
+          raw_metadata: %{
+            "secret_marker" => "do-not-print",
+            "tracking" => "do-not-print"
+          },
+          source_feed_type: nil
+        })
+
+      assert {:ok, _candidate} =
+               Ingestion.review_merchant_feed_candidate(high_fit.id, %{
+                 review_status: "shortlisted",
+                 review_note: "Strong fit"
+               })
+
+      assert {:ok, _candidate} =
+               Ingestion.review_merchant_feed_candidate(low_fit.id, %{
+                 review_status: "shortlisted",
+                 review_note: "Weak fit"
+               })
+
+      output = capture_io(fn -> CjCandidateExport.run([]) end)
+      lines = csv_lines(output)
+
+      assert Enum.at(lines, 0) == @csv_header
+      assert Enum.at(lines, 1) =~ "feed-high-fit"
+      assert Enum.at(lines, 1) =~ ",85,1000+ products;US market;USD;English;feed type present,"
+      assert Enum.at(lines, 2) =~ "feed-low-fit"
+      assert Enum.at(lines, 2) =~ ",10,any products,"
+      refute output =~ "secret_marker"
+      refute output =~ "do-not-print"
+    end
+
+    test "--sort name preserves name feed and feed id ordering" do
+      source = source_fixture()
+
+      high_fit =
+        candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Zeta Outfitters",
+          currency: "USD",
+          feed_name: "Primary Product Feed",
+          language: "EN",
+          product_count: 5000,
+          provider_feed_id: "feed-high-fit",
+          source_feed_type: "PRODUCT"
+        })
+
+      low_fit =
+        candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_name: "Alpha Imports",
+          currency: "CAD",
+          feed_name: "Regional Feed",
+          language: "FR",
+          product_count: 12,
+          provider_feed_id: "feed-low-fit",
+          source_feed_type: nil
+        })
+
+      same_name_later_feed =
+        candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_name: "Alpha Imports",
+          currency: "CAD",
+          feed_name: "Z Regional Feed",
+          language: "FR",
+          product_count: 12,
+          provider_feed_id: "feed-low-fit-z",
+          source_feed_type: nil
+        })
+
+      for candidate <- [high_fit, low_fit, same_name_later_feed] do
+        assert {:ok, _candidate} =
+                 Ingestion.review_merchant_feed_candidate(candidate.id, %{
+                   review_status: "shortlisted"
+                 })
+      end
+
+      output = capture_io(fn -> CjCandidateExport.run(["--sort", "name"]) end)
+      lines = csv_lines(output)
+
+      assert Enum.at(lines, 1) =~ "feed-low-fit"
+      assert Enum.at(lines, 2) =~ "feed-low-fit-z"
+      assert Enum.at(lines, 3) =~ "feed-high-fit"
     end
 
     test "exports pending candidates when requested" do
@@ -123,6 +232,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateExportTest do
         capture_io(fn -> CjCandidateExport.run(["--status", "approved"]) end)
       end
     end
+
+    test "rejects invalid sort values" do
+      assert_raise Mix.Error, "invalid sort: newest", fn ->
+        capture_io(fn -> CjCandidateExport.run(["--sort", "newest"]) end)
+      end
+    end
   end
 
   defp candidate_fixture(source, attrs \\ %{}) do
@@ -166,5 +281,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateExportTest do
       )
     )
     |> Repo.insert!()
+  end
+
+  defp csv_lines(output) do
+    output
+    |> String.trim_trailing("\n")
+    |> String.split("\n")
+  end
+
+  defp first_csv_line(output) do
+    output
+    |> csv_lines()
+    |> List.first()
   end
 end
