@@ -14,9 +14,7 @@ of active and candidate plans, not the dispatch queue.
 
 | Status | Plan | Use When | Promotion Rule |
 | --- | --- | --- | --- |
-| ready | `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md` | Backend worker owns CJ candidate review-status filtering and deterministic ranking args. | Close after focused backend/GraphQL verification and ranking evidence is recorded in `docs/work/product-data-scraping.md`. |
-| ready | `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md` | Frontend worker owns current-page review counts, note capture, and reviewed metadata on `/ingestion/feed-candidates`. | Close after route test, typecheck, and review-workspace evidence are recorded in `docs/work/product-data-scraping.md`. |
-| ready | `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md` | Backend tooling worker owns a read-only CSV export for manual merchant application planning. | Close after export task test, typecheck, and shortlist-export evidence are recorded in `docs/work/product-data-scraping.md`. |
+| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
 
 ## Candidate Pool
 
@@ -32,6 +30,11 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: parallel CJ candidate ranking, review workspace, and
+  shortlist export:
+  `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`,
+  and `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`.
 - Product ingestion/demo parity: CJ feed candidate durable review status:
   `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
 - Product ingestion/demo parity: CJ feed candidate review route:

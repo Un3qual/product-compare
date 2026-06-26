@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: 2026-06-26 parallel CJ candidate planning batch in `docs/work/index.md`
-- Last verified: 2026-06-04 after focused backend/frontend tests, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
+- Live queue row: completed and removed from `docs/work/index.md`
+- Last verified: 2026-06-26 after focused backend/frontend/export tests, Relay generation, frontend typecheck, `mix typecheck`, final spec review, and diff checks
 - Last plan refresh: 2026-06-26 for parallel candidate ranking, review workspace, and shortlist export rows
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
@@ -14,11 +14,12 @@
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Current implementation plans:
+- Current implementation plan:
+  - None. Next ingestion work needs a coordinator decision.
+- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
@@ -55,13 +56,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: completed
 - Batch: 2026-06-26 parallel CJ candidate planning batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
-- Next actions:
+- Completed actions:
   - Add backend review-status filtering and deterministic candidate ranking args.
   - Improve the existing `/ingestion/feed-candidates` route with current-page review counts, note capture, and reviewed metadata.
   - Add a read-only shortlist CSV export for manual merchant application planning.
@@ -75,7 +76,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `shoppingProducts` remains the manual product import surface.
   - `shoppingProductFeeds` is now available through a manual discovery task.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, merchant application submission, or Tier-3 direct scraping in this ready batch.
+  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, merchant application submission, or Tier-3 direct scraping in this completed batch.
   - The ranking row may add deterministic ordering over existing fields, but must not persist a broad scoring algorithm.
 
 ## Verification Commands
@@ -101,6 +102,19 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Parallel Batch Evidence
 
+### Combined Verification
+
+- Final spec reviewer status: approved, with no missing requirements,
+  over-scope implementation, forbidden-path edits, or docs evidence
+  inconsistencies found.
+- Verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs` - 39 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - 1 file, 11 tests passed.
+  - `cd assets && bun run relay` - completed.
+  - `cd assets && bun run typecheck` - passed.
+  - `mix typecheck` - passed.
+  - `git diff --check` - passed.
+
 ### Ranking Contract
 
 - Added backend `review_status` filtering and deterministic candidate ordering
@@ -121,8 +135,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   trimmed optional note submission for `reviewMerchantFeedCandidate`.
 - Verification:
   - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
+    - 1 file, 11 tests passed.
+  - `cd assets && bun run typecheck` - passed.
+  - `git diff --check` - passed.
 
 ### Shortlist Export
 
@@ -132,10 +147,21 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   queries, CSV escaping, and raw metadata exclusion.
 - Verification:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
+    - 6 tests, 0 failures.
+  - `mix typecheck` - passed.
+  - `git diff --check` - passed.
 
 ## Just Completed
+
+- Parallel CJ candidate planning batch:
+  - Added backend ranking/filtering for CJ feed candidates through context and
+    GraphQL query args.
+  - Added current-page review counts, note capture, reviewed metadata, and
+    optional note submission to `/ingestion/feed-candidates`.
+  - Added `mix product_compare.ingestion.cj_candidate_export` for non-secret
+    reviewed candidate CSV export.
+  - Verified the combined backend/export/frontend gates plus Relay generation,
+    typechecks, final spec review, and `git diff --check`.
 
 - CJ feed candidate review status:
   - Added durable `review_status`, `review_note`, and `reviewed_at` fields to `merchant_feed_candidates`, with `pending`, `shortlisted`, and `dismissed` as the allowed review states.
