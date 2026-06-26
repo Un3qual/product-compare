@@ -13,31 +13,35 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
   def run(argv) do
     Mix.Task.run("app.start")
 
-    argv
-    |> parse_argv()
-    |> runner().()
-    |> case do
-      {:ok, report} ->
-        print_report(report)
-        :ok
+    with_quiet_logger(fn ->
+      argv
+      |> parse_argv()
+      |> runner().()
+      |> case do
+        {:ok, report} ->
+          print_report(report)
+          :ok
 
-      {:error, {:row_failures, report} = reason} ->
-        print_report(report)
-        Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+        {:error, {:row_failures, report} = reason} ->
+          print_report(report)
+          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
 
-      {:error, reason} ->
-        Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
-    end
+        {:error, reason} ->
+          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+      end
+    end)
   end
 
   @spec run_discovery(keyword()) :: {:ok, map()} | {:error, term()}
   def run_discovery(opts) do
-    opts
-    |> CJFeedDiscovery.run()
-    |> tap(fn
-      {:ok, report} -> print_report(report)
-      {:error, {:row_failures, report}} -> print_report(report)
-      {:error, _reason} -> :ok
+    with_quiet_logger(fn ->
+      opts
+      |> CJFeedDiscovery.run()
+      |> tap(fn
+        {:ok, report} -> print_report(report)
+        {:error, {:row_failures, report}} -> print_report(report)
+        {:error, _reason} -> :ok
+      end)
     end)
   end
 
@@ -67,5 +71,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
 
   defp runner do
     Application.get_env(:product_compare, :cj_feed_discovery_runner, &CJFeedDiscovery.run/1)
+  end
+
+  defp with_quiet_logger(fun) do
+    original_level = Logger.level()
+    Logger.configure(level: :warning)
+
+    try do
+      fun.()
+    after
+      Logger.configure(level: original_level)
+    end
   end
 end

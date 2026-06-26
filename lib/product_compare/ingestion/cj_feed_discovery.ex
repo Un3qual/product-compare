@@ -9,9 +9,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
 
   @spec run(keyword()) :: {:ok, map()} | {:error, term()}
   def run(opts) do
-    with_quiet_logger(fn ->
-      do_run(opts)
-    end)
+    do_run(opts)
   end
 
   defp do_run(opts) do
@@ -43,17 +41,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
 
           {:error, reason}
       end
-    end
-  end
-
-  defp with_quiet_logger(fun) do
-    original_level = Logger.level()
-    Logger.configure(level: :warning)
-
-    try do
-      fun.()
-    after
-      Logger.configure(level: original_level)
     end
   end
 

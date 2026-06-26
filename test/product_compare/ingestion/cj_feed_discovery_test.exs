@@ -1,6 +1,7 @@
 defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
   use ProductCompare.DataCase, async: false
 
+  import ExUnit.CaptureLog
   import ExUnit.CaptureIO
 
   alias ProductCompare.Ingestion.CJFeedDiscovery
@@ -10,6 +11,30 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
   alias ProductCompareSchemas.Specs.Source
 
   describe "run/1" do
+    test "does not change the current Logger level while fetching feeds" do
+      original_level = Logger.level()
+      Logger.configure(level: :debug)
+
+      on_exit(fn ->
+        Logger.configure(level: original_level)
+      end)
+
+      parent = self()
+
+      fetcher = fn _cursor, _opts ->
+        send(parent, {:logger_level, Logger.level()})
+
+        {:ok, [], nil}
+      end
+
+      capture_log(fn ->
+        assert {:ok, %{candidates_persisted: 0, failed: 0, feeds_fetched: 0, pages_fetched: 1}} =
+                 CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
+      end)
+
+      assert_receive {:logger_level, :debug}
+    end
+
     test "fetches CJ shopping product feeds and records run counts" do
       parent = self()
 

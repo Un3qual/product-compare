@@ -134,6 +134,24 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     - Result: passed with no output.
   - `git diff --check`
     - Result: passed with no output.
+- Follow-up review fix:
+  - Removed global `Logger.configure/1` quieting from
+    `ProductCompare.Ingestion.CJFeedDiscovery.run/1`; manual Mix task quieting
+    remains local to `mix product_compare.ingestion.cj_feeds`.
+- Follow-up red verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: failed as expected with 1 failure because the injected fetcher
+      observed Logger level `:warning` instead of the caller's `:debug`.
+- Follow-up green verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+- Follow-up final verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 14 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Discovery Status
 
