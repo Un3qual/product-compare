@@ -21,6 +21,9 @@
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
@@ -67,18 +70,24 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Current Batch
 
 - Status: ready
-- Batch: 2026-06-26 CJ provider credential readiness parallel batch.
+- Batch: 2026-06-26 six-plan CJ ingestion readiness parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
 - Decision:
-  - Choose provider credential readiness before merchant outreach or product
-    import scheduling.
+  - Execute all six planned CJ ingestion readiness slices in parallel per user
+    request.
 - Parallel slices:
   - Add a standalone read-only CJ credential readiness task.
   - Add a dry credential preflight to manual CJ product import.
   - Add a dry credential preflight to CJ feed discovery.
+  - Add a read-only CJ application cohort report.
+  - Add a read-only CJ product import status task.
+  - Add disabled-by-default CJ product import scheduling runtime.
 - Credential readiness contract:
   - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
   - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
@@ -104,30 +113,17 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     direction has been explicitly rejected and should not be promoted in later
     queue work.
   - No Oban dependency, account-manager automation, merchant application
-    submission, product import scheduling, live CJ network calls, GraphQL/UI
-    surfaces, or Tier-3 direct scraping in this batch.
+    contact, merchant application submission, live CJ network calls in tests,
+    GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
+    this batch.
 - Next decision:
-  - After this batch completes, choose exactly one follow-up ingestion batch:
-    merchant application/account-manager automation, product import scheduling,
-    or explicit deferral.
+  - After this batch completes, choose exactly one follow-up ingestion batch or
+    explicit deferral.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
 ## Deferred Follow-Up Plan Candidates
 
-- Merchant application/account-manager automation:
-  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
-  - Read-only cohort reporting for shortlisted candidates. It does not submit
-    applications, contact account managers, create affiliate rows, call CJ, or
-    produce CSV output.
-- Product import scheduling readiness:
-  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
-  - Read-only health/status reporting for CJ `shoppingProducts` import runs.
-- Product import scheduling runtime:
-  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
-  - Disabled-by-default runtime scheduling for bounded CJ `shoppingProducts`
-    imports after credential readiness is complete.
-- These plans are deferred candidate work only. The live queue remains the
-  provider credential readiness batch until it completes.
+- None currently promoted outside the active six-plan batch.
 
 ## Planned Verification Commands
 
@@ -137,8 +133,15 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - Feed discovery credential preflight:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+- Application cohort report:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
+- Product import status:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+- Scheduled product import runtime:
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
 - Combined final verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
   - `mix typecheck`
   - `git diff --check`
 

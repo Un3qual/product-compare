@@ -25,18 +25,18 @@ Updated: 2026-06-26
 
 | Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Product data scraping | Implement the CJ provider credential readiness parallel batch: standalone status task, product-import preflight, and feed-discovery preflight. Do not add credential persistence, live provider calls, UI, scheduling, merchant outreach, or CSV export. | `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md` | `lib/mix/tasks/product_compare.ingestion.cj_credentials.ex`; `test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`; `.env.example`; `lib/mix/tasks/product_compare.ingestion.cj_import.ex`; `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`; `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`; `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `docs/work/product-data-scraping.md` | `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `mix typecheck`; `git diff --check` | All three credential readiness slices pass focused tests, typecheck, and diff check; lane doc records per-slice evidence and either promotes the next ingestion decision or returns to no ready work. |
+| 1 | ready | Product data scraping | Implement the six-plan CJ ingestion readiness batch: credential status, import credential preflight, feed-discovery credential preflight, application cohort report, product import status, and disabled-by-default product import scheduler. Do not add credential persistence, live provider calls in tests, UI, merchant outreach, application submission, or CSV export. | `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`<br>`docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`<br>`docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md` | `lib/mix/tasks/product_compare.ingestion.cj_credentials.ex`; `test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`; `.env.example`; `lib/mix/tasks/product_compare.ingestion.cj_import.ex`; `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`; `lib/mix/tasks/product_compare.ingestion.cj_feeds.ex`; `test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`; `lib/mix/tasks/product_compare.ingestion.cj_application_cohort.ex`; `test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`; `lib/mix/tasks/product_compare.ingestion.cj_import_status.ex`; `test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`; `lib/product_compare/ingestion/cj_product_import_scheduler.ex`; `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`; `lib/product_compare/application.ex`; `config/runtime.exs`; `docs/work/product-data-scraping.md` | `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`; `mix typecheck`; `git diff --check` | All six slices pass focused tests, adjacent scheduler tests, typecheck, and diff check; lane doc records per-slice evidence and the lane returns to a coordinator decision or no ready work. |
 
 ## Ready Work
 
-The Product data scraping row is ready. It is a parallel provider credential
-readiness batch with three non-overlapping implementation plans.
+The Product data scraping row is ready. It is a six-plan parallel CJ ingestion
+readiness batch with mostly non-overlapping implementation plans.
 
 ## Deferred Work
 
-Application automation, account-manager automation, product import scheduling,
-and Tier-3 scraping remain out of scope until explicitly promoted. CJ candidate
-CSV score export is rejected and should not be promoted.
+Application submission, account-manager contact, Tier-3 scraping, credential
+persistence, and CSV export remain out of scope. CJ candidate CSV score export
+is rejected and should not be promoted.
 
 ## Executor Prompts
 

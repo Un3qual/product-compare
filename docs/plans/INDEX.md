@@ -12,11 +12,14 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-Ready Product data scraping batch: CJ provider credential readiness.
+Ready Product data scraping batch: six-plan CJ ingestion readiness.
 
 - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
 - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
 - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+- `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+- `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+- `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -25,9 +28,6 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| deferred | CJ application cohort report: `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md` | The credential-readiness batch closes and the next coordinator decision chooses merchant application/account-manager automation. | Read-only, non-secret, no submissions, no account-manager contact, and no CSV output. |
-| deferred | CJ product import status task: `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md` | The credential-readiness batch closes and the next coordinator decision chooses product import scheduling readiness. | Read-only status for `shoppingProducts` import runs; no live CJ calls. |
-| deferred | Scheduled CJ product import runtime: `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md` | Credential readiness is implemented and the coordinator promotes product import scheduling. | Disabled by default; injected-runner tests only; no credential persistence. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
