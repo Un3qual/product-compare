@@ -64,9 +64,11 @@ defmodule ProductCompare.MixProject do
   #
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
+    ecto_setup = ["ecto.create", "ecto.migrate"] ++ seed_tasks()
+
     [
-      setup: ["deps.get", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      setup: ["deps.get"] ++ ecto_setup,
+      "ecto.setup": ecto_setup,
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       typecheck: ["compile --warnings-as-errors --all-warnings"],
@@ -78,5 +80,13 @@ defmodule ProductCompare.MixProject do
       ],
       deps_prune: ["deps.unlock --unused"]
     ]
+  end
+
+  defp seed_tasks do
+    if Mix.env() == :test do
+      []
+    else
+      ["run priv/repo/seeds.exs"]
+    end
   end
 end

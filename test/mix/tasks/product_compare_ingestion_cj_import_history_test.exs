@@ -8,6 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportHistoryTest do
   alias ProductCompare.Ingestion.CJFeedDiscoveryScheduler
   alias ProductCompare.Ingestion.CJProductImportScheduler
   alias ProductCompare.Repo
+  alias ProductCompare.TestSupport.CJIngestionCleanup
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Specs.Source
 
@@ -112,8 +113,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportHistoryTest do
       on_exit(fn ->
         restore_env(:cj_feed_discovery_scheduler, original_discovery_config)
         restore_env(:cj_product_import_scheduler, original_import_config)
+        CJIngestionCleanup.cleanup!()
         stop_repo_if_started()
         {:ok, _started} = Application.ensure_all_started(:product_compare)
+        Ecto.Adapters.SQL.Sandbox.mode(Repo, :manual)
       end)
 
       :ok = Application.stop(:product_compare)
