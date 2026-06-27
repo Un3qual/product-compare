@@ -130,6 +130,32 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
 
       assert %{recent_failed_run_count: 2} = Map.fetch!(rows_by_source_id, source.id)
     end
+
+    test "surfaces a running import run as the latest status" do
+      source = source_fixture()
+
+      insert_run(source,
+        status: "succeeded",
+        started_at: hours_ago(3),
+        finished_at: hours_ago(2)
+      )
+
+      insert_run(source,
+        status: "running",
+        started_at: hours_ago(1),
+        finished_at: nil
+      )
+
+      rows_by_source_id =
+        []
+        |> SourceHealth.summary(@now)
+        |> Map.new(&{&1.source_id, &1})
+
+      assert %{
+               latest_import_run_status: "running",
+               latest_import_run_finished_at: nil
+             } = Map.fetch!(rows_by_source_id, source.id)
+    end
   end
 
   defp source_fixture(attrs \\ %{}) do

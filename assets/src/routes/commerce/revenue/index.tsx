@@ -228,7 +228,7 @@ export function buildRevenueDatePresetLinks(
   const baseDate = toLocalDateOnly(currentDate);
   const toDate = formatDate(baseDate);
   const fromDateMinusDays = (days: number) => formatDate(shiftDate(baseDate, -days));
-  const monthStartDate = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1));
+  const monthStartDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
 
   const presets = [
     {
@@ -297,24 +297,28 @@ function buildRevenueDatePresetSearchPath(
   return query ? `/commerce/revenue?${query}` : "/commerce/revenue";
 }
 
-function toDateFormat(value: Date) {
-  return value.toISOString().slice(0, 10);
-}
-
 function toDateIsBefore(from: string, to: string) {
   return from > to;
 }
 
 function toLocalDateOnly(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function formatDate(date: Date) {
-  return toDateFormat(toLocalDateOnly(date));
+  const localDate = toLocalDateOnly(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, "0");
+  const day = String(localDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function shiftDate(baseDate: Date, days: number) {
-  return new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+  const date = new Date(baseDate);
+  date.setDate(date.getDate() + days);
+
+  return toLocalDateOnly(date);
 }
 
 function buildRevenueSummaryMetrics(

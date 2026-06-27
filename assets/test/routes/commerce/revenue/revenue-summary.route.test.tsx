@@ -229,34 +229,78 @@ test("revenue route renders date preset links that preserve network and currency
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 
-  const expectedPresetLinks = buildRevenueDatePresetLinks(
-    {
-      network: "impact",
-      currency: "USD"
-    },
-    new Date("2026-06-27T12:00:00.000Z")
-  );
-
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("link", { name: "Last 7 days" })).toHaveAttribute(
     "href",
-    expectedPresetLinks[0]!.to
+    "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27"
   );
   expect(screen.getByRole("link", { name: "Last 30 days" })).toHaveAttribute(
     "href",
-    expectedPresetLinks[1]!.to
+    "/commerce/revenue?network=impact&currency=USD&from=2026-05-29&to=2026-06-27"
   );
   expect(screen.getByRole("link", { name: "Month to date" })).toHaveAttribute(
     "href",
-    expectedPresetLinks[2]!.to
+    "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27"
   );
   expect(screen.getByRole("link", { name: "Clear dates" })).toHaveAttribute(
     "href",
-    expectedPresetLinks[3]!.to
+    "/commerce/revenue?network=impact&currency=USD"
   );
 
   vi.useRealTimers();
+});
+
+test("revenue date presets use the browser's local calendar day behind UTC", () => {
+  const originalTimeZone = process.env.TZ;
+  process.env.TZ = "America/Los_Angeles";
+
+  try {
+    const links = buildRevenueDatePresetLinks(
+      {
+        network: "impact",
+        currency: "USD"
+      },
+      new Date("2026-06-28T06:30:00.000Z")
+    );
+
+    expect(links).toContainEqual({
+      label: "Last 7 days",
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27"
+    });
+    expect(links).toContainEqual({
+      label: "Month to date",
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27"
+    });
+  } finally {
+    process.env.TZ = originalTimeZone;
+  }
+});
+
+test("revenue date presets use the browser's local calendar day ahead of UTC", () => {
+  const originalTimeZone = process.env.TZ;
+  process.env.TZ = "Asia/Tokyo";
+
+  try {
+    const links = buildRevenueDatePresetLinks(
+      {
+        network: "impact",
+        currency: "USD"
+      },
+      new Date("2026-06-27T16:30:00.000Z")
+    );
+
+    expect(links).toContainEqual({
+      label: "Last 7 days",
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-22&to=2026-06-28"
+    });
+    expect(links).toContainEqual({
+      label: "Month to date",
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-28"
+    });
+  } finally {
+    process.env.TZ = originalTimeZone;
+  }
 });
 
 test("buildRevenueDatePresetLinks is deterministic for a fixed date and preserves filters", () => {

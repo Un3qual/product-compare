@@ -90,11 +90,10 @@ defmodule ProductCompare.Ingestion.SourceHealth do
   defp latest_runs do
     "ingestion_runs"
     |> from(as: :run)
-    |> where([run: run], not is_nil(field(run, :finished_at)))
     |> distinct([run: run], field(run, :source_id))
     |> order_by([run: run],
       asc: field(run, :source_id),
-      desc: field(run, :finished_at),
+      desc: field(run, :started_at),
       desc: field(run, :id)
     )
     |> select([run: run], %{
