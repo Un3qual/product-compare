@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus do
 
   import Ecto.Query
 
+  alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -16,7 +17,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus do
 
   @impl Mix.Task
   def run(argv) do
-    Mix.Task.run("app.start")
+    RepoOnlyStartup.start!()
 
     argv
     |> parse_argv()

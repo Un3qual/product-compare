@@ -112,9 +112,12 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
     Logger.warning("CJ product import failed " <> query_bounds(opts) <> " failure=runner_error")
   end
 
-  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}}) do
+  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}})
+       when is_integer(next_cursor) and next_cursor >= 0 do
     %{state | cursor: next_cursor}
   end
+
+  defp advance_cursor(state, {:ok, %{next_cursor: nil}}), do: %{state | cursor: nil}
 
   defp advance_cursor(state, _result), do: state
 

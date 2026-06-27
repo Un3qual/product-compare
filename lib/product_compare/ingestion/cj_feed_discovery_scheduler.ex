@@ -100,6 +100,14 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
     )
   end
 
+  defp log_result(_unexpected, opts) do
+    Logger.warning(
+      "CJ feed discovery returned unexpected result " <>
+        "advertiser_country=#{opts[:advertiser_country]} limit=#{opts[:limit]} " <>
+        "pages=#{opts[:pages]} cursor=#{inspect(opts[:cursor])}"
+    )
+  end
+
   defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}}) do
     %{state | cursor: next_cursor}
   end

@@ -143,6 +143,39 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
     GenServer.stop(pid)
   end
 
+  test "schedules the next run after an unexpected discovery runner result" do
+    parent = self()
+
+    runner = fn opts ->
+      send(parent, {:run, opts})
+      :unexpected_result
+    end
+
+    pid =
+      start_supervised!(
+        Supervisor.child_spec(
+          {CJFeedDiscoveryScheduler,
+           [
+             initial_delay_ms: 0,
+             interval_ms: 20,
+             runner: runner
+           ]},
+          restart: :temporary
+        )
+      )
+
+    log =
+      capture_log(fn ->
+        assert_receive {:run, _opts}
+        assert_receive {:run, _opts}, 250
+      end)
+
+    assert Process.alive?(pid)
+    assert log =~ "CJ feed discovery returned unexpected result"
+
+    GenServer.stop(pid)
+  end
+
   test "invalid interval normalizes to the default recurring interval" do
     parent = self()
 
