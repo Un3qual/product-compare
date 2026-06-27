@@ -79,6 +79,16 @@ config :product_compare, :cj_feed_discovery_scheduler,
   limit: positive_integer_env.("CJ_FEED_DISCOVERY_LIMIT", 25),
   pages: positive_integer_env.("CJ_FEED_DISCOVERY_PAGES", 1)
 
+config :product_compare, :cj_product_import_scheduler,
+  enabled: truthy_env?.("CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED"),
+  interval_minutes: positive_integer_env.("CJ_PRODUCT_IMPORT_INTERVAL_MINUTES", 1440),
+  initial_delay_ms: non_negative_integer_env.("CJ_PRODUCT_IMPORT_INITIAL_DELAY_MS", 60_000),
+  keywords: string_env.("CJ_PRODUCT_IMPORT_KEYWORDS", "shoe"),
+  currency: string_env.("CJ_PRODUCT_IMPORT_CURRENCY", "USD"),
+  serviceable_areas: string_env.("CJ_PRODUCT_IMPORT_SERVICEABLE_AREAS", "US"),
+  limit: positive_integer_env.("CJ_PRODUCT_IMPORT_LIMIT", 25),
+  pages: positive_integer_env.("CJ_PRODUCT_IMPORT_PAGES", 1)
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

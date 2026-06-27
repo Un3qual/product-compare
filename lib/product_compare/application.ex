@@ -19,6 +19,7 @@ defmodule ProductCompare.Application do
         ProductCompareWeb.Endpoint
       ]
       |> maybe_append_cj_feed_discovery_scheduler()
+      |> maybe_append_cj_product_import_scheduler()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -50,6 +51,29 @@ defmodule ProductCompare.Application do
       ]
 
       children ++ [{ProductCompare.Ingestion.CJFeedDiscoveryScheduler, scheduler_opts}]
+    else
+      children
+    end
+  end
+
+  defp maybe_append_cj_product_import_scheduler(children) do
+    config = Application.get_env(:product_compare, :cj_product_import_scheduler, [])
+
+    if Keyword.get(config, :enabled, false) do
+      interval_ms = Keyword.get(config, :interval_minutes, 1440) * 60_000
+
+      scheduler_opts = [
+        currency: Keyword.get(config, :currency, "USD"),
+        initial_delay_ms: Keyword.get(config, :initial_delay_ms, 60_000),
+        interval_ms: interval_ms,
+        keywords: Keyword.get(config, :keywords, "shoe"),
+        limit: Keyword.get(config, :limit, 25),
+        name: ProductCompare.Ingestion.CJProductImportScheduler,
+        pages: Keyword.get(config, :pages, 1),
+        serviceable_areas: Keyword.get(config, :serviceable_areas, "US")
+      ]
+
+      children ++ [{ProductCompare.Ingestion.CJProductImportScheduler, scheduler_opts}]
     else
       children
     end
