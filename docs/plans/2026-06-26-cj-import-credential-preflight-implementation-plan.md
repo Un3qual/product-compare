@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Mix tasks, ExUnit, Ecto sandbox tests already used by the CJ import task.
 
-**Status:** ready. This plan is part of the 2026-06-26 CJ provider credential readiness parallel batch.
+**Status:** completed. This plan was executed in the 2026-06-26 six-plan CJ ingestion readiness parallel batch.
 
 ---
 

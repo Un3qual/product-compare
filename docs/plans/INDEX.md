@@ -12,14 +12,9 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-Ready Product data scraping batch: six-plan CJ ingestion readiness.
-
-- `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
-- `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
-- `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
-- `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
-- `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
-- `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
+No active ready implementation plans. `docs/work/index.md` currently holds a
+Product data scraping coordinator decision row for the next ingestion batch or
+explicit deferral.
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -28,6 +23,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| needs_decision | Product data scraping follow-up | The coordinator chooses exactly one post-readiness ingestion path or records explicit deferral. | Do not promote CJ candidate CSV score export; that direction is rejected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
@@ -37,6 +33,16 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ provider credential status, product-import credential
+  preflight, feed-discovery credential preflight, application cohort reporting,
+  product import status, and disabled-by-default product import scheduling:
+  `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`.
 - Product ingestion: CJ candidate fit-score sort and frontend score badges:
   `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   and

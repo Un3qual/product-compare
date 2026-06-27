@@ -2,16 +2,17 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: needs_decision
 - Priority: P2
 - Source of truth: this file
-- Live queue row: CJ provider credential readiness parallel batch in
+- Live queue row: Product data scraping follow-up decision in
   `docs/work/index.md`
 - Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
   score badge tests, Relay generation, frontend typecheck, six-plan CJ ingestion
   readiness combined verification, `mix typecheck`, focused code reviews, CSV
   export removal, and diff checks
-- Last plan refresh: 2026-06-26 after promoting provider credential readiness
+- Last plan refresh: 2026-06-26 after executing the six-plan CJ ingestion
+  readiness batch
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -19,13 +20,15 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
+  - None; the lane is waiting on a coordinator decision before promoting the
+    next executable row.
+- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
   - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
@@ -70,7 +73,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: implemented; final quality review pending
+- Status: completed; follow-up decision needed
 - Batch: 2026-06-26 six-plan CJ ingestion readiness parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
@@ -124,7 +127,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Deferred Follow-Up Plan Candidates
 
-- None currently promoted outside the active six-plan batch.
+- None currently promoted. The coordinator must choose one follow-up ingestion
+  batch, record a blocker, or record explicit deferral before new
+  implementation starts.
 
 ## Planned Verification Commands
 
@@ -340,7 +345,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   var names when credentials are missing.
 - Focused verification:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-    - Result: passed, 8 tests, 0 failures.
+    - Result: passed, 8 tests, 0 failures before the background output
+      follow-up; passed as part of the final combined gate with one added
+      regression covering `print_report: false`.
   - `mix typecheck`
     - Result: passed with no output.
   - `git diff --check`
@@ -409,7 +416,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   logging raw provider errors or credential values.
 - Focused verification:
   - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
-    - Result: passed, 5 tests, 0 failures.
+    - Result: passed, 5 tests, 0 failures before the background output
+      follow-up; passed, 5 tests, 0 failures after suppressing manual import
+      stdout for the scheduler default runner.
   - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
     - Result: passed, 9 tests, 0 failures.
   - `mix typecheck`
@@ -420,7 +429,8 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ### Six-Plan Combined Verification
 
 - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
-  - Result: passed, 44 tests, 0 failures.
+  - Result: passed, 45 tests, 0 failures after the scheduler background-output
+    follow-up.
 - `mix typecheck`
   - Result: passed with no output.
 - `git diff --check`
@@ -429,6 +439,14 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Required only plan/evidence corrections after implementation verification:
     the credential task output key is `missing_required`, and the application
     cohort task does not need an unused `Ecto.Query` import.
+- Quality review:
+  - No Critical issues.
+  - Fixed the Important queue/documentation issue by returning the lane to a
+    `needs_decision` dispatch row instead of leaving the completed batch as
+    ready work.
+  - Fixed the Minor scheduler output issue by adding a non-printing
+    programmatic import path for the scheduler default runner while preserving
+    manual CLI output.
 
 ### Fit Score Sort Evidence
 

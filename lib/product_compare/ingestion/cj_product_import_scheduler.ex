@@ -39,7 +39,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       keywords: keywords_option(opts),
       limit: positive_integer_option(opts, :limit, @default_limit),
       pages: positive_integer_option(opts, :pages, @default_pages),
-      runner: Keyword.get(opts, :runner, &CjImport.run_import/1),
+      runner: Keyword.get(opts, :runner, &run_default_import/1),
       serviceable_areas: serviceable_areas_option(opts)
     }
 
@@ -82,6 +82,12 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
     _exception -> {:error, :runner_exception}
   catch
     _kind, _reason -> {:error, :runner_exception}
+  end
+
+  defp run_default_import(opts) do
+    opts
+    |> Keyword.put(:print_report, false)
+    |> CjImport.run_import()
   end
 
   defp log_result({:ok, report}, opts) do

@@ -205,6 +205,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 2
     end
 
+    test "can suppress report output for background callers" do
+      fetcher = fn _cursor, _opts ->
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert output == ""
+    end
+
     test "reuses an existing CJ source by unique key" do
       existing_source =
         %Source{}

@@ -66,7 +66,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
           with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
-            print_report(report)
+            maybe_print_report(report, opts)
 
             report_result(report)
           end
@@ -306,6 +306,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     IO.puts(
       "fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
     )
+  end
+
+  defp maybe_print_report(report, opts) do
+    if Keyword.get(opts, :print_report, true) do
+      print_report(report)
+    end
   end
 
   defp print_credential_report(report) do

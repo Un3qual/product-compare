@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, Mix tasks, ExUnit.
 
-**Status:** deferred. Do not promote until the current CJ provider credential readiness row is complete and the coordinator chooses merchant application/account-manager automation.
+**Status:** completed. This plan was executed in the 2026-06-26 six-plan CJ ingestion readiness parallel batch without merchant application submission or account-manager automation.
 
 ---
 
