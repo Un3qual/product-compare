@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportHistory do
 
   import Ecto.Query
 
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -28,12 +29,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportHistory do
   end
 
   defp parse_limit(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          limit: :integer
-        ]
-      )
+    opts = CliOptions.parse!(argv, limit: :integer)
 
     normalize_limit(Keyword.get(opts, :limit))
   end

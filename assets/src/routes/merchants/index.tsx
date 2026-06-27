@@ -57,7 +57,7 @@ function MerchantDirectoryControls({
     <form action="/merchants" method="get">
       <label>
         Page size
-        <select name="first" defaultValue={String(pagination.first)}>
+        <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
           <option value="20">20</option>
           <option value="35">35</option>
           <option value="50">50</option>

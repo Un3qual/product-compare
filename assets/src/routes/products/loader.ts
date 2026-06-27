@@ -128,13 +128,5 @@ async function preloadProductOffers(
 }
 
 function offersAfterFromUrl(url: URL): string | null {
-  const offersAfter = url.searchParams.get("offersAfter");
-
-  if (offersAfter === null) {
-    return null;
-  }
-
-  const trimmedOffersAfter = offersAfter.trim();
-
-  return trimmedOffersAfter === "" ? null : trimmedOffersAfter;
+  return url.searchParams.get("offersAfter");
 }

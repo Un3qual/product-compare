@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFailedRuns do
 
   import Ecto.Query
 
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -23,25 +24,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFailedRuns do
     RepoOnlyStartup.start!()
 
     filters = parse_argv(argv)
-    runs = query_runs(filters)
+    {runs, failed_count} = query_runs(filters)
 
     runs
-    |> render_report(filters.surface)
+    |> render_report(filters.surface, failed_count)
     |> IO.write()
 
-    if filters.require_clean and length(runs) > 0 do
+    if filters.require_clean and failed_count > 0 do
       Mix.raise("failed CJ ingestion runs found")
     end
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          surface: :string,
-          limit: :integer,
-          require_clean: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        surface: :string,
+        limit: :integer,
+        require_clean: :boolean
       )
 
     %{
@@ -59,38 +58,51 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFailedRuns do
 
   defp normalize_surface(@default_surface), do: @default_surface
 
-  defp normalize_surface(_), do: @default_surface
+  defp normalize_surface(surface), do: Mix.raise("invalid surface: #{surface}")
 
   defp normalize_limit(limit) when is_integer(limit) and limit > 0 do
     min(limit, @max_limit)
   end
 
-  defp normalize_limit(_invalid), do: @default_limit
+  defp normalize_limit(nil), do: @default_limit
+  defp normalize_limit(_invalid), do: Mix.raise("invalid --limit: expected a positive integer")
 
   defp query_runs(%{surface: @default_surface, limit: limit}) do
-    ImportRun
-    |> where([run], run.provider == @provider)
-    |> where([run], run.status == "failed")
-    |> order_by([run], desc: run.started_at, desc: run.id)
-    |> limit(^limit)
-    |> Repo.all()
+    query =
+      ImportRun
+      |> where([run], run.provider == @provider)
+      |> where([run], run.status == "failed")
+
+    runs =
+      query
+      |> order_by([run], desc: run.started_at, desc: run.id)
+      |> limit(^limit)
+      |> Repo.all()
+
+    {runs, Repo.aggregate(query, :count, :id)}
   end
 
   defp query_runs(%{surface: surface, limit: limit}) do
-    ImportRun
-    |> where([run], run.provider == @provider)
-    |> where([run], run.status == "failed")
-    |> where([run], run.surface == ^surface)
-    |> order_by([run], desc: run.started_at, desc: run.id)
-    |> limit(^limit)
-    |> Repo.all()
+    query =
+      ImportRun
+      |> where([run], run.provider == @provider)
+      |> where([run], run.status == "failed")
+      |> where([run], run.surface == ^surface)
+
+    runs =
+      query
+      |> order_by([run], desc: run.started_at, desc: run.id)
+      |> limit(^limit)
+      |> Repo.all()
+
+    {runs, Repo.aggregate(query, :count, :id)}
   end
 
-  defp render_report(runs, surface) do
+  defp render_report(runs, surface, failed_count) do
     run_lines = Enum.map(runs, &render_run/1)
 
     [
-      "provider=#{@provider} failed_count=#{length(runs)} surface=#{surface}"
+      "provider=#{@provider} failed_count=#{failed_count} surface=#{surface}"
       | run_lines
     ]
     |> Enum.join("\n")

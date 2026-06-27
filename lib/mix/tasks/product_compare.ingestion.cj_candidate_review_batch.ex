@@ -8,6 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
   import Ecto.Query
 
   alias ProductCompare.Ingestion
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -32,15 +33,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        strict: [
-          status: :string,
-          id: :keep,
-          provider_feed_id: :keep,
-          note: :string,
-          apply: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        status: :string,
+        id: :keep,
+        provider_feed_id: :keep,
+        note: :string,
+        apply: :boolean
       )
 
     relay_ids = Keyword.get_values(opts, :id)
@@ -59,6 +58,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
       decoded_ids: Enum.uniq(decoded_ids),
       invalid_ids: invalid_ids,
       note: note,
+      note_provided: Keyword.has_key?(opts, :note),
       note_present: not is_nil(note),
       provider_feed_ids: Enum.uniq(provider_feed_ids),
       requested_count: requested_count,
@@ -137,19 +137,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
 
   defp review_candidates(candidates, %{apply: false}), do: {candidates, 0}
 
-  defp review_candidates(candidates, %{apply: true, status: status, note: note}) do
-    Enum.map_reduce(candidates, 0, fn candidate, updated_count ->
-      attrs = %{review_status: status, review_note: note}
+  defp review_candidates(candidates, %{apply: true} = opts) do
+    attrs = review_attrs(opts)
 
-      case Ingestion.review_merchant_feed_candidate(candidate.id, attrs) do
-        {:ok, reviewed_candidate} ->
-          {reviewed_candidate, updated_count + 1}
+    case Repo.transaction(fn ->
+           Enum.map_reduce(candidates, 0, fn candidate, updated_count ->
+             case Ingestion.review_merchant_feed_candidate(candidate.id, attrs) do
+               {:ok, reviewed_candidate} ->
+                 {reviewed_candidate, updated_count + 1}
 
-        {:error, reason} ->
-          Mix.raise("failed to review candidate #{candidate.id}: #{format_review_error(reason)}")
-      end
-    end)
+               {:error, reason} ->
+                 Repo.rollback({:review_failed, candidate.id, reason})
+             end
+           end)
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {:review_failed, candidate_id, reason}} ->
+        Mix.raise("failed to review candidate #{candidate_id}: #{format_review_error(reason)}")
+    end
   end
+
+  defp review_attrs(%{status: status, note_provided: true, note: note}) do
+    %{review_status: status, review_note: note}
+  end
+
+  defp review_attrs(%{status: status}), do: %{review_status: status}
 
   defp render_report(candidates, opts, updated_count) do
     [

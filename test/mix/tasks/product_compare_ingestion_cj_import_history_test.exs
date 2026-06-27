@@ -59,11 +59,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportHistoryTest do
 
       output_too_low = capture_io(fn -> CjImportHistory.run(["--limit", "0"]) end)
       output_too_high = capture_io(fn -> CjImportHistory.run(["--limit", "99"]) end)
-      output_invalid = capture_io(fn -> CjImportHistory.run(["--limit", "not-a-number"]) end)
 
       assert length(output_lines(output_too_low)) == 1
       assert length(output_lines(output_too_high)) == 50
-      assert length(output_lines(output_invalid)) == 10
+    end
+
+    test "rejects malformed CLI input" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjImportHistory.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn -> CjImportHistory.run(["extra"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --limit: not-a-number", fn ->
+        capture_io(fn -> CjImportHistory.run(["--limit", "not-a-number"]) end)
+      end
     end
 
     test "redacts stored error summary instead of printing raw body" do

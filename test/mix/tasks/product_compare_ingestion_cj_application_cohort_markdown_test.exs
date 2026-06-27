@@ -261,8 +261,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdownTest do
 
       candidate_fixture(source, %{
         advertiser_id: "adv-pipes",
-        advertiser_name: "Pipe|Merchant",
-        feed_name: "Pipe|Feed",
+        advertiser_name: "Pipe|Merchant\nNorth",
+        feed_name: "Pipe|Feed\r\nWest",
         currency: nil,
         language: nil,
         source_feed_type: nil,
@@ -273,10 +273,38 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdownTest do
 
       output = capture_io(fn -> CjApplicationCohortMarkdown.run(["--limit", "1"]) end)
 
-      assert output =~ "Pipe\\|Merchant"
-      assert output =~ "Pipe\\|Feed"
-      assert output =~ "US |  |  | Pipe\\|Feed"
+      assert output =~ "Pipe\\|Merchant North"
+      assert output =~ "Pipe\\|Feed West"
+      assert output =~ "US |  |  | Pipe\\|Feed West"
       assert output =~ "| blank |"
+      refute output =~ "Pipe|Merchant\nNorth"
+      refute output =~ "Pipe|Feed\r\nWest"
+    end
+
+    test "rejects malformed CLI input" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjApplicationCohortMarkdown.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn -> CjApplicationCohortMarkdown.run(["extra"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --limit: many", fn ->
+        capture_io(fn -> CjApplicationCohortMarkdown.run(["--limit", "many"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjApplicationCohortMarkdown.run(["--limit", "0"]) end)
+      end
+
+      assert_raise Mix.Error,
+                   "invalid --min-product-count: expected a non-negative integer",
+                   fn ->
+                     capture_io(fn ->
+                       CjApplicationCohortMarkdown.run(["--min-product-count", "-1"])
+                     end)
+                   end
     end
   end
 

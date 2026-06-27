@@ -6,6 +6,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportResume do
   import Ecto.Query
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -45,18 +46,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportResume do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          limit: :integer,
-          pages: :integer,
-          require_cursor: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        limit: :integer,
+        pages: :integer,
+        require_cursor: :boolean
       )
 
     [
-      limit: positive_integer_or_nil(Keyword.get(opts, :limit)),
-      pages: positive_integer(Keyword.get(opts, :pages), @default_pages),
+      limit: CliOptions.optional_positive_integer!(Keyword.get(opts, :limit), "--limit"),
+      pages: CliOptions.positive_integer!(Keyword.get(opts, :pages), @default_pages, "--pages"),
       require_cursor: Keyword.get(opts, :require_cursor, false)
     ]
   end
@@ -121,7 +120,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportResume do
       keywords: query_keywords(query),
       currency: query_currency(query),
       serviceable_areas: query_serviceable_areas(query),
-      limit: Keyword.fetch!(opts, :limit) || latest_run.page_size || @default_limit,
+      limit:
+        Keyword.fetch!(opts, :limit) ||
+          CliOptions.positive_integer_or_default(latest_run.page_size, @default_limit),
       pages: Keyword.fetch!(opts, :pages),
       print_report: false
     ]

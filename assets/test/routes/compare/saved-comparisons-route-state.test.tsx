@@ -1,15 +1,24 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
+import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 
-const { commitMutationMock, useLoaderDataMock, useMutationMock } = vi.hoisted(() => ({
+const {
+  commitMutationMock,
+  useLoaderDataMock,
+  useMutationMock,
+  usePreloadedQueryMock,
+  useRoutePreloadedQueryMock
+} = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
-  useMutationMock: vi.fn()
+  useMutationMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn()
 }));
 
 vi.mock("react-relay", async () => {
@@ -17,7 +26,19 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    useMutation: useMutationMock
+    useMutation: useMutationMock,
+    usePreloadedQuery: usePreloadedQueryMock
+  };
+});
+
+vi.mock("../../../src/relay/route-preload", async () => {
+  const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
+    "../../../src/relay/route-preload"
+  );
+
+  return {
+    ...actual,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock
   };
 });
 
@@ -32,12 +53,34 @@ vi.mock("react-router-dom", async () => {
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+
+const SAVED_SET_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "SavedComparisonsRouteQuery",
+    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    variables: {
+      first: 20
+    }
+  }
+};
+
+const SAVED_SET_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: SAVED_SET_QUERY_DESCRIPTOR.__relayQuery.variables
+};
 
 beforeEach(() => {
   commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
+  mockedUsePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReset();
+  SAVED_SET_QUERY_REF.dispose.mockReset();
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUseRoutePreloadedQuery.mockReturnValue(SAVED_SET_QUERY_REF as never);
+  mockedUsePreloadedQuery.mockReturnValue(buildSavedComparisonSetsPageData([buildSavedSet()]));
 });
 
 const buildSavedSet = () => {
@@ -356,6 +399,53 @@ test("saved comparisons route filters loaded sets by product slug", () => {
   expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
 });
 
+test("saved comparisons route filters Relay-backed saved set pages", () => {
+  const savedSets = [
+    {
+      id: "saved-set-1",
+      name: "Desk setup",
+      slugs: ["chair", "desk"]
+    },
+    {
+      id: "saved-set-2",
+      name: "Office setup",
+      slugs: ["lamp", "table"]
+    },
+    {
+      id: "saved-set-3",
+      name: "Outdoor gear",
+      slugs: ["tent", "rucksack"]
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
+    savedSets
+  });
+  mockedUsePreloadedQuery.mockReturnValue(buildSavedComparisonSetsPageData(savedSets));
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
+
+  fireEvent.change(filterInput, { target: { value: "dEsK" } });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
+  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
+
+  fireEvent.change(filterInput, { target: { value: "TaBlE" } });
+
+  expect(screen.getByText("Office setup")).toBeInTheDocument();
+  expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
+});
+
 test("saved comparisons route shows a no-match message when the filter excludes all saved sets", async () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -582,3 +672,28 @@ test("saved comparison query keys are stable across variable property order", ()
 
   expect(secondKey).toBe(firstKey);
 });
+
+function buildSavedComparisonSetsPageData(
+  savedSets: Array<{ id: string; name: string; slugs: string[] }>
+) {
+  return {
+    mySavedComparisonSets: {
+      edges: savedSets.map((savedSet) => ({
+        node: {
+          id: savedSet.id,
+          name: savedSet.name,
+          items: savedSet.slugs.map((slug, index) => ({
+            position: index,
+            product: {
+              slug
+            }
+          }))
+        }
+      })),
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  };
+}

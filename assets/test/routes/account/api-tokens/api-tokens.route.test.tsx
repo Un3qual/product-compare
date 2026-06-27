@@ -339,6 +339,41 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
   }
 );
 
+test("create token uses manual expiry after selecting an expiry preset", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    tokenQueries: [],
+    tokens: [],
+    tokenStatus: "all"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  const createForm = screen.getByRole("form", { name: "Create API token" });
+  const expiresAtInput = within(createForm).getByLabelText("Expires at");
+
+  fireEvent.click(within(createForm).getByRole("button", { name: "30 days" }));
+  expect(expiresAtInput).toHaveValue(
+    buildApiTokenExpiresAtInputValue("30 days", new Date(ROUTE_NOW))
+  );
+
+  fireEvent.change(expiresAtInput, {
+    target: { value: "2026-07-15T09:45" }
+  });
+  fireEvent.click(within(createForm).getByRole("button", { name: "Create API token" }));
+
+  await waitFor(() => {
+    expect(commitCreateMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          label: null,
+          expiresAt: new Date("2026-07-15T09:45").toISOString()
+        }
+      })
+    );
+  });
+});
+
 test("create token ignores duplicate submits while the request is in flight", async () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",

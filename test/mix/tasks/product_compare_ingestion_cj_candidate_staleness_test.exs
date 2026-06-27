@@ -194,6 +194,28 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStalenessTest do
         capture_io(fn -> CjCandidateStaleness.run(["--status", "archived"]) end)
       end
     end
+
+    test "rejects malformed CLI input" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjCandidateStaleness.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn -> CjCandidateStaleness.run(["extra"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --limit: many", fn ->
+        capture_io(fn -> CjCandidateStaleness.run(["--limit", "many"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjCandidateStaleness.run(["--limit", "0"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --max-age-hours: expected a positive integer", fn ->
+        capture_io(fn -> CjCandidateStaleness.run(["--max-age-hours", "0"]) end)
+      end
+    end
   end
 
   defp source_fixture(attrs \\ %{}) do
@@ -248,7 +270,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStalenessTest do
 
   defp hours_ago(hours) do
     DateTime.utc_now()
-    |> DateTime.add(-hours, :hour)
+    |> DateTime.add(-hours * 60 * 60, :second)
     |> DateTime.truncate(:second)
   end
 end

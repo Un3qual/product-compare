@@ -68,6 +68,20 @@ export function CompareRoute() {
     isSaveInFlightRef.current = false;
   }
 
+  useEffect(() => {
+    setSaveFeedback((currentSaveFeedback) =>
+      currentSaveFeedback.selectionKey === null ||
+      currentSaveFeedback.selectionKey === selectionKey
+        ? currentSaveFeedback
+        : {
+            error: null,
+            inFlightSelectionKey: null,
+            message: null,
+            selectionKey: null
+          }
+    );
+  }, [selectionKey]);
+
   function handleSave() {
     if (loaderData.status !== "ready") {
       return;

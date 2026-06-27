@@ -6,11 +6,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResume do
   import Ecto.Query
 
   alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
 
   @shortdoc "Resumes the latest CJ feed discovery cursor"
+  @default_limit 25
   @provider "cj"
   @surface "shoppingProductFeeds"
 
@@ -40,16 +42,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResume do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          limit: :integer,
-          pages: :integer,
-          require_cursor: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        limit: :integer,
+        pages: :integer,
+        require_cursor: :boolean
       )
 
-    opts
+    [
+      limit: CliOptions.optional_positive_integer!(Keyword.get(opts, :limit), "--limit"),
+      pages: CliOptions.positive_integer!(Keyword.get(opts, :pages), 1, "--pages"),
+      require_cursor: Keyword.get(opts, :require_cursor, false)
+    ]
   end
 
   defp normalize_opts(opts) do
@@ -89,7 +93,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResume do
     [
       cursor: latest_run.cursor_end,
       advertiser_country: advertiser_country(latest_run),
-      limit: Keyword.get(opts, :limit) || latest_run.page_size || 25,
+      limit:
+        Keyword.get(opts, :limit) ||
+          CliOptions.positive_integer_or_default(latest_run.page_size, @default_limit),
       pages: Keyword.fetch!(opts, :pages)
     ]
   end
@@ -120,7 +126,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResume do
       {:surface, @surface},
       {:cursor_start, latest_run.cursor_end},
       {:pages_requested, Keyword.fetch!(opts, :pages)},
-      {:limit, Keyword.get(opts, :limit) || latest_run.page_size || 25},
+      {:limit,
+       Keyword.get(opts, :limit) ||
+         CliOptions.positive_integer_or_default(latest_run.page_size, @default_limit)},
       {:feeds_fetched, Map.get(report, :feeds_fetched, 0)},
       {:candidates_persisted, Map.get(report, :candidates_persisted, 0)},
       {:failed, Map.get(report, :failed, 0)},

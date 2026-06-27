@@ -7,6 +7,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStaleness do
 
   import Ecto.Query
 
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -33,14 +34,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStaleness do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          max_age_hours: :integer,
-          require_fresh: :boolean,
-          limit: :integer,
-          status: :string
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        max_age_hours: :integer,
+        require_fresh: :boolean,
+        limit: :integer,
+        status: :string
       )
 
     %{
@@ -55,13 +54,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStaleness do
     value
   end
 
-  defp normalize_max_age_hours(_value), do: @default_max_age_hours
+  defp normalize_max_age_hours(nil), do: @default_max_age_hours
+
+  defp normalize_max_age_hours(_value),
+    do: Mix.raise("invalid --max-age-hours: expected a positive integer")
 
   defp normalize_limit(value) when is_integer(value) and value > 0 do
     min(value, @max_limit)
   end
 
-  defp normalize_limit(_value), do: @default_limit
+  defp normalize_limit(nil), do: @default_limit
+  defp normalize_limit(_value), do: Mix.raise("invalid --limit: expected a positive integer")
 
   defp normalize_status(status) when is_binary(status) do
     status = status |> String.trim() |> String.downcase()
@@ -78,7 +81,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateStaleness do
   defp load_candidates(%{max_age_hours: max_age_hours, status: status, limit: limit}) do
     cutoff =
       DateTime.utc_now()
-      |> DateTime.add(-max_age_hours, :hour)
+      |> DateTime.add(-max_age_hours * 60 * 60, :second)
 
     MerchantFeedCandidate
     |> where([candidate], candidate.provider == @provider)

@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
   import Ecto.Query
 
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -39,38 +40,43 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          max_discovery_age_hours: :integer,
-          max_import_age_hours: :integer,
-          min_candidates: :integer,
-          min_shortlisted: :integer,
-          require_ready: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        max_discovery_age_hours: :integer,
+        max_import_age_hours: :integer,
+        min_candidates: :integer,
+        min_shortlisted: :integer,
+        require_ready: :boolean
       )
 
     %{
       max_discovery_age_hours:
-        positive_integer(
+        CliOptions.positive_integer!(
           Keyword.get(opts, :max_discovery_age_hours),
-          @default_max_discovery_age_hours
+          @default_max_discovery_age_hours,
+          "--max-discovery-age-hours"
         ),
       max_import_age_hours:
-        positive_integer(Keyword.get(opts, :max_import_age_hours), @default_max_import_age_hours),
+        CliOptions.positive_integer!(
+          Keyword.get(opts, :max_import_age_hours),
+          @default_max_import_age_hours,
+          "--max-import-age-hours"
+        ),
       min_candidates:
-        positive_integer(Keyword.get(opts, :min_candidates), @default_min_candidates),
+        CliOptions.positive_integer!(
+          Keyword.get(opts, :min_candidates),
+          @default_min_candidates,
+          "--min-candidates"
+        ),
       min_shortlisted:
-        non_negative_integer(Keyword.get(opts, :min_shortlisted), @default_min_shortlisted),
+        CliOptions.non_negative_integer!(
+          Keyword.get(opts, :min_shortlisted),
+          @default_min_shortlisted,
+          "--min-shortlisted"
+        ),
       require_ready: Keyword.get(opts, :require_ready, false)
     }
   end
-
-  defp positive_integer(value, _default) when is_integer(value) and value > 0, do: value
-  defp positive_integer(_value, default), do: default
-
-  defp non_negative_integer(value, _default) when is_integer(value) and value >= 0, do: value
-  defp non_negative_integer(_value, default), do: default
 
   defp build_report(opts) do
     missing_required = missing_required_env_vars()

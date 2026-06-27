@@ -154,6 +154,35 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatchTest do
       assert Repo.reload!(feed_2).review_status == "pending"
     end
 
+    test "preserves an existing review note when note is omitted", %{feed_1: feed_1} do
+      feed_1
+      |> MerchantFeedCandidate.review_changeset(%{
+        review_status: "pending",
+        review_note: "Keep existing note",
+        reviewed_at: ~U[2026-06-26 12:30:00Z]
+      })
+      |> Repo.update!()
+
+      output =
+        capture_io(fn ->
+          CjCandidateReviewBatch.run([
+            "--apply",
+            "--status",
+            "shortlisted",
+            "--provider-feed-id",
+            feed_1.provider_feed_id
+          ])
+        end)
+
+      assert output =~ "note_present=false"
+
+      assert %{
+               review_status: "shortlisted",
+               review_note: "Keep existing note",
+               reviewed_at: %DateTime{}
+             } = Repo.reload!(feed_1)
+    end
+
     test "ignores non-CJ candidates with matching provider feed id", %{
       feed_1: feed_1,
       non_cj_feed_1: non_cj_feed_1
@@ -179,6 +208,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatchTest do
     end
 
     test "trims blank notes to nil", %{feed_1: feed_1} do
+      feed_1
+      |> MerchantFeedCandidate.review_changeset(%{
+        review_status: "pending",
+        review_note: "Clear this note",
+        reviewed_at: ~U[2026-06-26 12:30:00Z]
+      })
+      |> Repo.update!()
+
       output =
         capture_io(fn ->
           CjCandidateReviewBatch.run([
@@ -194,6 +231,32 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatchTest do
 
       assert output =~ "note_present=false"
       assert Repo.reload!(feed_1).review_note == nil
+    end
+
+    test "rejects malformed CLI input", %{feed_1: feed_1} do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn ->
+          CjCandidateReviewBatch.run([
+            "--bogus",
+            "--status",
+            "shortlisted",
+            "--provider-feed-id",
+            feed_1.provider_feed_id
+          ])
+        end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn ->
+          CjCandidateReviewBatch.run([
+            "--status",
+            "shortlisted",
+            "--provider-feed-id",
+            feed_1.provider_feed_id,
+            "extra"
+          ])
+        end)
+      end
     end
 
     test "counts invalid relay ids without matching them", %{feed_1: feed_1} do

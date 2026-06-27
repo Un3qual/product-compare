@@ -219,6 +219,42 @@ test("product detail loader forwards offersAfter to offers query pagination", as
   );
 });
 
+test("product detail loader preserves opaque offersAfter cursor characters", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products/detail-product?offersAfter=%2Babc%2Ftoken%20"
+  );
+  const opaqueCursor = "+abc/token ";
+  const offersDescriptorWithOpaqueCursor = makeOffersQueryDescriptor(opaqueCursor);
+
+  mockedFetchRouteQuery.mockResolvedValue({
+    data: {
+      product: DETAIL_PRODUCT
+    },
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
+  });
+  mockedPreloadRouteQuery.mockResolvedValue(offersDescriptorWithOpaqueCursor);
+
+  await expect(
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: offersDescriptorWithOpaqueCursor
+    }
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 6, after: opaqueCursor },
+    { signal: request.signal }
+  );
+});
+
 test("product detail loader marks null products as not found", async () => {
   const environment = createRelayEnvironment();
   const disposeProductRouteQuery = vi.fn();
@@ -1141,10 +1177,7 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
       return productQueryRef;
     }
 
-    if (
-      descriptor === offersDescriptor ||
-      descriptor?.__relayQuery?.operationName === "ProductOffersRouteQuery"
-    ) {
+    if (descriptor === offersDescriptor) {
       return offersQueryRef;
     }
 

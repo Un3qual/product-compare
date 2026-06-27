@@ -1288,6 +1288,16 @@ test("compare route clears stale save feedback when selected products change", a
   );
 
   expect(screen.getByRole("status")).toHaveTextContent("");
+
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  rerender(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("status")).toHaveTextContent("");
 });
 
 test("compare route reports a fallback error when the save commit throws synchronously", async () => {

@@ -162,6 +162,24 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       assert output =~ "provider=cj ready=false"
     end
 
+    test "rejects malformed CLI input" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjReadinessGate.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn -> CjReadinessGate.run(["extra"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --max-import-age-hours: many", fn ->
+        capture_io(fn -> CjReadinessGate.run(["--max-import-age-hours", "many"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --min-shortlisted: expected a non-negative integer", fn ->
+        capture_io(fn -> CjReadinessGate.run(["--min-shortlisted", "-1"]) end)
+      end
+    end
+
     test "does not start ProductCompare.Supervisor or CJ schedulers" do
       original_discovery_config =
         Application.get_env(:product_compare, :cj_feed_discovery_scheduler)
@@ -283,7 +301,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
   defp hours_ago(hours) do
     DateTime.utc_now()
-    |> DateTime.add(-hours, :hour)
+    |> DateTime.add(-hours * 60 * 60, :second)
     |> DateTime.truncate(:microsecond)
   end
 

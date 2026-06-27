@@ -59,10 +59,6 @@ function nextGraphQLMockResponse(
     return response;
   }
 
-  if (response.length <= 1) {
-    return response[0];
-  }
-
   return response.shift();
 }
 

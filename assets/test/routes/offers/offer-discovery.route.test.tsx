@@ -126,6 +126,34 @@ test("offer discovery renders filter controls with existing filter values", () =
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
 });
 
+test("offer discovery refreshes uncontrolled filter controls when filters change", () => {
+  const { rerender } = renderOfferDiscoveryRoute();
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      activeOnly: false,
+      first: 24,
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      productId: "UHJvZHVjdDo5OTk="
+    })
+  );
+
+  rerender(
+    <MemoryRouter>
+      <OfferDiscoveryRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue(
+    "UHJvZHVjdDo5OTk="
+  );
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue(
+    "TWVyY2hhbnQ6NDU2"
+  );
+  expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
+  expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+});
+
 test("offer discovery renders ready offer rows", () => {
   renderOfferDiscoveryRoute();
 
@@ -333,7 +361,7 @@ test("offer discovery renders the query unavailable state", () => {
 });
 
 function renderOfferDiscoveryRoute() {
-  render(
+  return render(
     <MemoryRouter>
       <OfferDiscoveryRoute />
     </MemoryRouter>

@@ -10,7 +10,7 @@ import {
 import { recoverRouteLoaderError } from "../loader-errors";
 
 const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
-const BROWSE_PRODUCTS_MAX_PAGE_SIZE = 48;
+const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
 
 export type BrowseProductsLoaderData =
   | {
@@ -70,7 +70,9 @@ function browseProductsPageSizeFromUrl(url: URL) {
 
   const parsedValue = Number.parseInt(value, 10);
 
-  return parsedValue >= 1 && parsedValue <= BROWSE_PRODUCTS_MAX_PAGE_SIZE
+  return BROWSE_PRODUCTS_PAGE_SIZES.includes(
+    parsedValue as (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number]
+  )
     ? parsedValue
     : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
 }

@@ -136,6 +136,42 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResumeTest do
       assert output =~ "limit=10"
     end
 
+    test "uses default limit when the latest successful page size is invalid" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        status: "succeeded",
+        cursor_end: 120,
+        page_size: 25,
+        query: %{}
+      })
+
+      Repo.update_all(ImportRun, set: [page_size: 0])
+
+      parent = self()
+
+      runner = fn opts ->
+        send(parent, {:runner_opts, opts})
+
+        {:ok,
+         %{
+           feeds_fetched: 1,
+           candidates_persisted: 1,
+           failed: 0,
+           next_cursor: 121
+         }}
+      end
+
+      output =
+        capture_io(fn ->
+          assert :ok = CjFeedsResume.run_resume(runner: runner)
+        end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:limit] == 25
+      assert output =~ "limit=25"
+    end
+
     test "raises when require_cursor is true and the latest success has no cursor" do
       source = source_fixture()
 
@@ -220,6 +256,22 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsResumeTest do
       refute error.message =~ "1234567"
       refute error.message =~ "aff_sub"
       refute error.message =~ "missing_env"
+    end
+  end
+
+  describe "run/1" do
+    test "rejects malformed CLI input before resuming" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjFeedsResume.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --pages: expected a positive integer", fn ->
+        capture_io(fn -> CjFeedsResume.run(["--pages", "0"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjFeedsResume.run(["--limit", "-1"]) end)
+      end
     end
   end
 

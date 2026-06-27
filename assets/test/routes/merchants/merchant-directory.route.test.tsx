@@ -170,6 +170,27 @@ test("merchant directory renders a reload-safe page-size selector", () => {
   expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
 });
 
+test("merchant directory refreshes the page-size selector when pagination changes", () => {
+  const { rerender } = renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("20");
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 50,
+      after: null
+    })
+  );
+
+  rerender(
+    <MemoryRouter>
+      <MerchantDirectoryRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("50");
+});
+
 test("merchant directory renders the loader error state", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "error",
@@ -188,7 +209,7 @@ test("merchant directory renders the loader error state", () => {
 });
 
 function renderMerchantDirectoryRoute() {
-  render(
+  return render(
     <MemoryRouter>
       <MerchantDirectoryRoute />
     </MemoryRouter>

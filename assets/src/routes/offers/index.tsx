@@ -60,7 +60,12 @@ export function OfferDiscoveryRoute() {
 
 function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
   return (
-    <form action="/offers" aria-label="Offer discovery filters" method="get">
+    <form
+      action="/offers"
+      aria-label="Offer discovery filters"
+      key={offerDiscoveryFilterFormKey(filters)}
+      method="get"
+    >
       <label>
         Product ID
         <input
@@ -101,6 +106,15 @@ function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters 
       <button type="submit">Apply filters</button>
     </form>
   );
+}
+
+function offerDiscoveryFilterFormKey(filters: OfferDiscoveryFilters) {
+  return JSON.stringify([
+    filters.productId,
+    filters.merchantId,
+    filters.activeOnly,
+    filters.first
+  ]);
 }
 
 function OfferDiscoveryPanel({

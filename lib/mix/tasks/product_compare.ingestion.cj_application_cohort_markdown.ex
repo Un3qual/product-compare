@@ -4,6 +4,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
   use Mix.Task
 
   alias ProductCompare.Ingestion
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -29,16 +30,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          country: :string,
-          currency: :string,
-          language: :string,
-          min_product_count: :integer,
-          limit: :integer,
-          require_candidates: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        country: :string,
+        currency: :string,
+        language: :string,
+        min_product_count: :integer,
+        limit: :integer,
+        require_candidates: :boolean
       )
 
     %{
@@ -67,10 +66,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
     min(limit, @max_limit)
   end
 
-  defp normalize_limit(_limit), do: @default_limit
+  defp normalize_limit(nil), do: @default_limit
+  defp normalize_limit(_limit), do: Mix.raise("invalid --limit: expected a positive integer")
 
   defp normalize_min_product_count(count) when is_integer(count) and count >= 0, do: count
-  defp normalize_min_product_count(_count), do: nil
+  defp normalize_min_product_count(nil), do: nil
+
+  defp normalize_min_product_count(_count),
+    do: Mix.raise("invalid --min-product-count: expected a non-negative integer")
 
   defp load_candidates(opts) do
     Ingestion.list_merchant_feed_candidates_query(
@@ -171,6 +174,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
 
   defp format_markdown_cell(nil), do: ""
   defp format_markdown_cell(value) when is_integer(value), do: Integer.to_string(value)
-  defp format_markdown_cell(value) when is_binary(value), do: String.replace(value, "|", "\\|")
+
+  defp format_markdown_cell(value) when is_binary(value) do
+    value
+    |> String.replace(~r/[\r\n]+/, " ")
+    |> String.replace("|", "\\|")
+  end
+
   defp format_markdown_cell(value), do: to_string(value)
 end

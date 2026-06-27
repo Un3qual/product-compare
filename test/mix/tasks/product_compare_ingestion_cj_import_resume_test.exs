@@ -140,6 +140,36 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportResumeTest do
       assert output =~ "pages_requested=1"
     end
 
+    test "uses default limit when the latest successful page size is invalid" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        query: %{},
+        cursor_end: 200,
+        page_size: 25,
+        started_at: minutes_ago(2),
+        finished_at: minutes_ago(1)
+      })
+
+      Repo.update_all(ImportRun, set: [page_size: 0])
+
+      parent = self()
+
+      runner = fn opts ->
+        send(parent, {:runner_opts, opts})
+        {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1, next_cursor: 205}}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{next_cursor: 205}} = CjImportResume.run_resume(runner: runner)
+        end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:limit] == 25
+      assert output =~ "limit=25"
+    end
+
     test "prints non-resumable output without calling the runner when cursor is absent" do
       source = source_fixture()
 
@@ -225,6 +255,22 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportResumeTest do
 
       assert_raise Mix.Error, "CJ product import resume failed", fn ->
         capture_io(fn -> CjImportResume.run_resume(runner: runner) end)
+      end
+    end
+  end
+
+  describe "run/1" do
+    test "rejects malformed CLI input before resuming" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjImportResume.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --pages: expected a positive integer", fn ->
+        capture_io(fn -> CjImportResume.run(["--pages", "0"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --limit: many", fn ->
+        capture_io(fn -> CjImportResume.run(["--limit", "many"]) end)
       end
     end
   end

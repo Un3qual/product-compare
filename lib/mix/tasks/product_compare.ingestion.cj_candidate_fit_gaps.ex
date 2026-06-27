@@ -8,6 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateFitGaps do
   import Ecto.Query
 
   alias ProductCompare.Ingestion
+  alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -33,12 +34,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateFitGaps do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          status: :string,
-          limit: :integer
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        status: :string,
+        limit: :integer
       )
 
     %{
@@ -63,7 +62,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateFitGaps do
     min(value, @max_limit)
   end
 
-  defp normalize_limit(_value), do: @default_limit
+  defp normalize_limit(nil), do: @default_limit
+  defp normalize_limit(_value), do: Mix.raise("invalid --limit: expected a positive integer")
 
   defp load_candidates(%{status: "all", limit: limit}) do
     Ingestion.list_merchant_feed_candidates_query(sort: :fit_score_desc)

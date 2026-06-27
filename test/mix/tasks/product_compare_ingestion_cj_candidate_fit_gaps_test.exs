@@ -196,6 +196,24 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateFitGapsTest do
       refute output =~ "provider-payload-marker"
       refute output =~ "do-not-print-marker"
     end
+
+    test "rejects malformed CLI input" do
+      assert_raise Mix.Error, "unsupported option: --bogus", fn ->
+        capture_io(fn -> CjCandidateFitGaps.run(["--bogus"]) end)
+      end
+
+      assert_raise Mix.Error, "unexpected argument: extra", fn ->
+        capture_io(fn -> CjCandidateFitGaps.run(["extra"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid value for --limit: many", fn ->
+        capture_io(fn -> CjCandidateFitGaps.run(["--limit", "many"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjCandidateFitGaps.run(["--limit", "0"]) end)
+      end
+    end
   end
 
   defp source_fixture(attrs \\ %{}) do

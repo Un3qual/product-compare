@@ -115,8 +115,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFailedRunsTest do
       lines = output_lines(output)
 
       assert length(lines) == 2
-      assert Enum.at(lines, 0) =~ "provider=cj failed_count=1 surface=shoppingProducts"
+      assert Enum.at(lines, 0) =~ "provider=cj failed_count=2 surface=shoppingProducts"
       assert Enum.at(lines, 1) =~ "run_id="
+    end
+
+    test "rejects unsupported surface values" do
+      assert_raise Mix.Error, "invalid surface: unknownSurface", fn ->
+        capture_io(fn -> CjFailedRuns.run(["--surface", "unknownSurface"]) end)
+      end
+    end
+
+    test "rejects invalid limit values" do
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjFailedRuns.run(["--limit", "0"]) end)
+      end
     end
 
     test "supports --require-clean" do

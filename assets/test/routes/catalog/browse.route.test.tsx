@@ -228,6 +228,27 @@ test("browse loader drops oversized first values above 48", async () => {
   );
 });
 
+test("browse loader drops first values that are not page-size options", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?first=35");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+});
+
 test("browse loader drops malformed first values", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=12abc");
