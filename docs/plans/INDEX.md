@@ -12,8 +12,22 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active implementation plans are promoted. Start at `docs/work/index.md` for
-the current Product data scraping follow-up decision.
+The Product data scraping lane has one explicitly requested parallel batch of
+ten ready work-item plans. Start at `docs/work/index.md` for dispatch order and
+target paths.
+
+| Status | Plan | Notes |
+| --- | --- | --- |
+| ready | `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md` | Read-only CJ candidate cohort read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md` | Read-only CJ candidate market coverage read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md` | Read-only CJ candidate freshness read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md` | Read-only CJ run health read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md` | Read-only CJ run throughput read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md` | Read-only CJ import artifact quality read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md` | Read-only CJ import price quality read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md` | Read-only CJ merchant identity quality read model; no Mix task. |
+| ready | `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md` | Read-only CJ application readiness read model; no Mix task or application action. |
+| ready | `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md` | Docs-only weekly operator runbook using existing commands. |
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
