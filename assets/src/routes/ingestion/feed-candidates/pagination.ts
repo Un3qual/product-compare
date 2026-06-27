@@ -8,7 +8,8 @@ export type FeedCandidatesReviewStatus =
 export type FeedCandidatesSort =
   | "NAME_ASC"
   | "PRODUCT_COUNT_DESC"
-  | "LAST_SEEN_DESC";
+  | "LAST_SEEN_DESC"
+  | "FIT_SCORE_DESC";
 
 export interface FeedCandidatesPagination {
   first: number;
@@ -45,6 +46,8 @@ export function feedCandidatesReviewStatusToUrlParam(
 
 export function feedCandidatesSortToUrlParam(sort: FeedCandidatesSort) {
   switch (sort) {
+    case "FIT_SCORE_DESC":
+      return "fit_score_desc";
     case "LAST_SEEN_DESC":
       return "last_seen_desc";
     case "PRODUCT_COUNT_DESC":
@@ -96,6 +99,8 @@ function normalizeFeedCandidatesReviewStatus(
 
 function normalizeFeedCandidatesSort(value: string | null): FeedCandidatesSort {
   switch (value?.trim().toLowerCase()) {
+    case "fit_score_desc":
+      return "FIT_SCORE_DESC";
     case "last_seen_desc":
       return "LAST_SEEN_DESC";
     case "product_count_desc":

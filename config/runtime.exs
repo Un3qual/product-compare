@@ -43,6 +43,7 @@ config :product_compare, ProductCompareWeb.Endpoint,
 truthy_env? = fn name ->
   name
   |> System.get_env("")
+  |> String.trim()
   |> String.downcase()
   |> then(&(&1 in ["1", "true", "yes", "on"]))
 end

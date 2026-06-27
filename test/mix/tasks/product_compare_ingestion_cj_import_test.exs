@@ -107,7 +107,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert_receive {:fetch, nil, opts}
-      assert_receive {:logger_level, :warning}
+      assert_receive {:logger_level, :debug}
       assert opts[:keywords] == ["shoe"]
       assert opts[:limit] == 1
       assert Logger.level() == :debug

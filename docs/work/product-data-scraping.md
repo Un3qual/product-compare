@@ -513,13 +513,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Shortlist Export
 
-- Added `mix product_compare.ingestion.cj_candidate_export` for read-only,
-  non-secret CJ feed candidate CSV export with default shortlisted status,
-  explicit pending/shortlisted/dismissed status filtering, direct candidate
-  queries, CSV escaping, and raw metadata exclusion.
+- Rejected CJ candidate CSV export. The old
+  `mix product_compare.ingestion.cj_candidate_export` command now fails fast
+  instead of rendering candidate data.
 - Verification:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-    - 6 tests, 0 failures.
+    - rejection contract tests pass.
   - `mix typecheck` - passed.
   - `git diff --check` - passed.
 
@@ -530,9 +529,8 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     GraphQL query args.
   - Added current-page review counts, note capture, reviewed metadata, and
     optional note submission to `/ingestion/feed-candidates`.
-  - Added `mix product_compare.ingestion.cj_candidate_export` for non-secret
-    reviewed candidate CSV export.
-  - Verified the combined backend/export/frontend gates plus Relay generation,
+  - Kept CJ candidate CSV export rejected; the old command fails fast.
+  - Verified the combined backend/frontend gates plus Relay generation,
     typechecks, final spec review, and `git diff --check`.
 
 - CJ feed candidate review status:

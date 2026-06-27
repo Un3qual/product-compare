@@ -53,7 +53,7 @@ Recent completed plan groups:
   `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`,
   and `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
 - Product ingestion: parallel CJ candidate ranking, review workspace, and
-  shortlist export:
+  rejected shortlist export record:
   `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`,
   `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`,
   and `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`.

@@ -3,6 +3,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohort do
 
   use Mix.Task
 
+  import Ecto.Query
+
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -58,7 +60,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohort do
     if status in @allowed_statuses do
       status
     else
-      "shortlisted"
+      Mix.raise("invalid review status: #{status}")
     end
   end
 
@@ -86,35 +88,29 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohort do
 
   defp load_candidates(%{status: status} = opts) do
     Ingestion.list_merchant_feed_candidates_query(review_status: status, sort: :fit_score_desc)
-    |> Repo.all()
-    |> Enum.filter(&cj_candidate?/1)
+    |> where([candidate], candidate.provider == @provider)
     |> maybe_filter_string(:advertiser_country, opts.country)
     |> maybe_filter_string(:currency, opts.currency)
     |> maybe_filter_string(:language, opts.language)
     |> maybe_filter_min_product_count(opts.min_product_count)
-    |> Enum.take(opts.limit)
+    |> limit(^opts.limit)
+    |> Repo.all()
   end
 
-  defp cj_candidate?(%MerchantFeedCandidate{provider: @provider}), do: true
-  defp cj_candidate?(%MerchantFeedCandidate{}), do: false
+  defp maybe_filter_string(query, _field, nil), do: query
 
-  defp maybe_filter_string(candidates, _field, nil), do: candidates
-
-  defp maybe_filter_string(candidates, field, expected) do
-    Enum.filter(candidates, fn candidate ->
-      candidate
-      |> Map.get(field)
-      |> normalize_upper() == expected
-    end)
+  defp maybe_filter_string(query, field, expected) do
+    where(query, [candidate], field(candidate, ^field) == ^expected)
   end
 
-  defp maybe_filter_min_product_count(candidates, nil), do: candidates
+  defp maybe_filter_min_product_count(query, nil), do: query
 
-  defp maybe_filter_min_product_count(candidates, min_product_count) do
-    Enum.filter(candidates, fn candidate ->
-      product_count = candidate.product_count || 0
-      product_count >= min_product_count
-    end)
+  defp maybe_filter_min_product_count(query, min_product_count) do
+    where(
+      query,
+      [candidate],
+      fragment("coalesce(?, 0)", candidate.product_count) >= ^min_product_count
+    )
   end
 
   defp enforce_required_candidates([], %{require_candidates: true}) do

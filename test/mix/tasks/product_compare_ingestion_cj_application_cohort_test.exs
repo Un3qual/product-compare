@@ -133,6 +133,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortTest do
       end
     end
 
+    test "rejects unsupported review statuses" do
+      assert_raise Mix.Error, "invalid review status: approved", fn ->
+        capture_io(fn ->
+          CjApplicationCohort.run(["--status", "approved"])
+        end)
+      end
+    end
+
     test "prints note presence without notes or raw provider details" do
       output = capture_io(fn -> CjApplicationCohort.run([]) end)
 

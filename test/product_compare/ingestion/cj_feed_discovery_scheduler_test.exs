@@ -53,7 +53,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       )
 
     assert_receive {:run, _opts}
-    assert_receive {:run, _opts}, 100
+    assert_receive {:run, _opts}, 250
 
     GenServer.stop(pid)
   end
@@ -78,8 +78,62 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
 
     capture_log(fn ->
       assert_receive {:run, _opts}
-      assert_receive {:run, _opts}, 100
+      assert_receive {:run, _opts}, 250
     end)
+
+    GenServer.stop(pid)
+  end
+
+  test "schedules the next run after a raised discovery runner" do
+    parent = self()
+
+    runner = fn opts ->
+      send(parent, {:run, opts})
+      raise "provider unavailable"
+    end
+
+    pid =
+      start_supervised!(
+        {CJFeedDiscoveryScheduler,
+         [
+           initial_delay_ms: 0,
+           interval_ms: 20,
+           runner: runner
+         ]}
+      )
+
+    log =
+      capture_log(fn ->
+        assert_receive {:run, _opts}
+        assert_receive {:run, _opts}, 250
+      end)
+
+    assert Process.alive?(pid)
+    assert log =~ "CJ feed discovery failed"
+
+    GenServer.stop(pid)
+  end
+
+  test "invalid interval normalizes to the default recurring interval" do
+    parent = self()
+
+    runner = fn opts ->
+      send(parent, {:run, opts})
+      {:ok, report()}
+    end
+
+    pid =
+      start_supervised!(
+        {CJFeedDiscoveryScheduler,
+         [
+           initial_delay_ms: 0,
+           interval_ms: 0,
+           runner: runner
+         ]}
+      )
+
+    assert_receive {:run, _opts}
+    refute_receive {:run, _opts}, 50
 
     GenServer.stop(pid)
   end

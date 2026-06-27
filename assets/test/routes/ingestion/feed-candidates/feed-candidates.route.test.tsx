@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import {
   useRoutePreloadedQuery,
@@ -12,16 +12,20 @@ import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/
 const {
   commitReviewMutationMock,
   graphqlMock,
+  revalidateMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
+  useRevalidatorMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   commitReviewMutationMock: vi.fn(),
   graphqlMock: vi.fn(),
+  revalidateMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
+  useRevalidatorMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
 
@@ -30,7 +34,8 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
+    useRevalidator: useRevalidatorMock
   };
 });
 
@@ -59,6 +64,7 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRevalidator = vi.mocked(useRevalidator);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const FEED_CANDIDATES_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
@@ -86,10 +92,13 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
+  revalidateMock.mockReset();
+  useRevalidatorMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   FEED_CANDIDATES_QUERY_REF.dispose.mockReset();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockedUseMutation.mockReturnValue([commitReviewMutationMock, false]);
+  mockedUseRevalidator.mockReturnValue({ revalidate: revalidateMock, state: "idle" });
   mockedUseRoutePreloadedQuery.mockReturnValue(FEED_CANDIDATES_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildFeedCandidatesData());
 });
@@ -148,6 +157,9 @@ test("feed candidates route renders filter controls", () => {
 
   expect(screen.getByRole("combobox", { name: "Review status" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Sort candidates" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Fit score" })).toHaveValue(
+    "fit_score_desc"
+  );
 });
 
 test("feed candidates route reflects selected filter controls from loader data", () => {
@@ -167,6 +179,23 @@ test("feed candidates route reflects selected filter controls from loader data",
   );
   expect(screen.getByRole("combobox", { name: "Sort candidates" })).toHaveValue(
     "product_count_desc"
+  );
+});
+
+test("feed candidates route reflects selected fit-score sort from loader data", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      reviewStatus: null,
+      sort: "FIT_SCORE_DESC"
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toHaveValue(
+    "fit_score_desc"
   );
 });
 
@@ -260,7 +289,7 @@ test("feed candidates route sends trimmed review notes when present", async () =
   });
 });
 
-test("feed candidates route omits blank review notes", async () => {
+test("feed candidates route sends blank review notes when clearing a draft", async () => {
   renderFeedCandidatesRoute();
 
   fireEvent.change(screen.getByLabelText("Review note for City Gear"), {
@@ -276,10 +305,48 @@ test("feed candidates route omits blank review notes", async () => {
         variables: {
           input: {
             id: "candidate-2",
-            status: "DISMISSED"
+            status: "DISMISSED",
+            note: ""
           }
         }
       })
+    );
+  });
+});
+
+test("feed candidates route clears draft notes and revalidates after successful reviews", async () => {
+  commitReviewMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        reviewMerchantFeedCandidate: {
+          candidate: {
+            reviewStatus: "SHORTLISTED"
+          },
+          errors: []
+        }
+      },
+      null
+    );
+  });
+
+  renderFeedCandidatesRoute();
+
+  const reviewNote = screen.getByLabelText("Review note for Trail Merchant");
+
+  fireEvent.change(reviewNote, {
+    target: {
+      value: "  High fit for launch cohort  "
+    }
+  });
+  expect(reviewNote).toHaveValue("  High fit for launch cohort  ");
+
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(reviewNote).toHaveValue("Prioritized for launch review.");
+    expect(revalidateMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Trail Merchant marked Shortlisted."
     );
   });
 });

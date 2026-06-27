@@ -33,7 +33,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
       cursor: Keyword.get(opts, :cursor),
       initial_delay_ms:
         non_negative_integer_option(opts, :initial_delay_ms, @default_initial_delay_ms),
-      interval_ms: non_negative_integer_option(opts, :interval_ms, @default_interval_ms),
+      interval_ms: positive_integer_option(opts, :interval_ms, @default_interval_ms),
       limit: positive_integer_option(opts, :limit, @default_limit),
       pages: positive_integer_option(opts, :pages, @default_pages),
       runner: Keyword.get(opts, :runner, &CJFeedDiscovery.run/1)
@@ -48,8 +48,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def handle_info(:run_discovery, state) do
     opts = discovery_opts(state)
 
-    opts
-    |> state.runner.()
+    state.runner
+    |> run_discovery(opts)
     |> log_result(opts)
 
     schedule_run(state.interval_ms)
@@ -68,6 +68,14 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
   defp schedule_run(delay_ms) do
     Process.send_after(self(), :run_discovery, delay_ms)
+  end
+
+  defp run_discovery(runner, opts) do
+    runner.(opts)
+  rescue
+    _exception -> {:error, :runner_exception}
+  catch
+    _kind, _reason -> {:error, :runner_exception}
   end
 
   defp log_result({:ok, report}, opts) do

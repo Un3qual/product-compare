@@ -15,7 +15,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @default_keywords ["shoe"]
   @default_limit 25
   @default_pages 1
-  @default_serviceable_areas "US"
+  @default_serviceable_areas ["US"]
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
@@ -150,7 +150,11 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
     |> Keyword.get(:serviceable_areas, @default_serviceable_areas)
     |> case do
       value when is_binary(value) ->
-        uppercase_string(value, @default_serviceable_areas)
+        value
+        |> String.split(",", trim: true)
+        |> normalize_string_list()
+        |> Enum.map(&String.upcase/1)
+        |> default_empty_list(@default_serviceable_areas)
 
       value when is_list(value) ->
         value

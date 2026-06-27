@@ -42,9 +42,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   @spec run_import(keyword()) :: {:ok, map()} | {:error, term()}
   def run_import(opts) do
-    with_quiet_logger(fn ->
-      do_run_import(opts)
-    end)
+    do_run_import(opts)
   end
 
   defp do_run_import(opts) do
@@ -86,17 +84,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
           {:error, reason}
       end
-    end
-  end
-
-  defp with_quiet_logger(fun) do
-    original_level = Logger.level()
-    Logger.configure(level: :warning)
-
-    try do
-      fun.()
-    after
-      Logger.configure(level: original_level)
     end
   end
 
@@ -296,7 +283,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> String.trim()
     |> case do
       "" -> nil
-      value -> value
+      trimmed -> trimmed
     end
   end
 
@@ -324,6 +311,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     if Keyword.get(opts, :require_ready, false) do
       Mix.raise("missing CJ credentials: #{Enum.join(missing_required, ",")}")
     end
+
+    :ok
   end
 
   defp maybe_require_ready!(_opts, _report), do: :ok

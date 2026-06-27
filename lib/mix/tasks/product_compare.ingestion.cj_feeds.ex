@@ -14,54 +14,48 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
     opts = parse_argv(argv)
 
     if Keyword.get(opts, :check_credentials, false) do
-      with_quiet_logger(fn ->
-        {:ok, report} = credential_preflight(opts)
+      {:ok, report} = credential_preflight(opts)
 
-        print_preflight_report(report)
+      print_preflight_report(report)
 
-        if Keyword.get(opts, :require_ready, false) and not report.ready do
-          Mix.raise("missing CJ credentials: #{Enum.join(report.missing_required, ",")}")
-        end
+      if Keyword.get(opts, :require_ready, false) and not report.ready do
+        Mix.raise("missing CJ credentials: #{Enum.join(report.missing_required, ",")}")
+      end
 
-        :ok
-      end)
+      :ok
     else
       Mix.Task.run("app.start")
 
-      with_quiet_logger(fn ->
-        opts
-        |> runner().()
-        |> case do
-          {:ok, report} ->
-            print_report(report)
-            :ok
+      opts
+      |> runner().()
+      |> case do
+        {:ok, report} ->
+          print_report(report)
+          :ok
 
-          {:error, {:row_failures, report} = reason} ->
-            print_report(report)
-            Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+        {:error, {:row_failures, report} = reason} ->
+          print_report(report)
+          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
 
-          {:error, reason} ->
-            Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
-        end
-      end)
+        {:error, reason} ->
+          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+      end
     end
   end
 
   @spec run_discovery(keyword()) :: {:ok, map()} | {:error, term()}
   def run_discovery(opts) do
-    with_quiet_logger(fn ->
-      if Keyword.get(opts, :check_credentials, false) do
-        credential_preflight(opts)
-      else
-        opts
-        |> CJFeedDiscovery.run()
-        |> tap(fn
-          {:ok, report} -> print_report(report)
-          {:error, {:row_failures, report}} -> print_report(report)
-          {:error, _reason} -> :ok
-        end)
-      end
-    end)
+    if Keyword.get(opts, :check_credentials, false) do
+      credential_preflight(opts)
+    else
+      opts
+      |> CJFeedDiscovery.run()
+      |> tap(fn
+        {:ok, report} -> print_report(report)
+        {:error, {:row_failures, report}} -> print_report(report)
+        {:error, _reason} -> :ok
+      end)
+    end
   end
 
   defp parse_argv(argv) do
@@ -129,16 +123,5 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
 
   defp runner do
     Application.get_env(:product_compare, :cj_feed_discovery_runner, &CJFeedDiscovery.run/1)
-  end
-
-  defp with_quiet_logger(fun) do
-    original_level = Logger.level()
-    Logger.configure(level: :warning)
-
-    try do
-      fun.()
-    after
-      Logger.configure(level: original_level)
-    end
   end
 end

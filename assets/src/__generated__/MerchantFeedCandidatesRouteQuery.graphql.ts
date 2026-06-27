@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cf712c9be1dc92e92a0c4102967104ef>>
+ * @generated SignedSource<<6fece9543855d8d9b9548b59b7532d61>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type MerchantFeedCandidateReviewStatus = "DISMISSED" | "PENDING" | "SHORTLISTED" | "%future added value";
-export type MerchantFeedCandidateSort = "LAST_SEEN_DESC" | "NAME_ASC" | "PRODUCT_COUNT_DESC" | "%future added value";
+export type MerchantFeedCandidateSort = "FIT_SCORE_DESC" | "LAST_SEEN_DESC" | "NAME_ASC" | "PRODUCT_COUNT_DESC" | "%future added value";
 export type MerchantFeedCandidatesRouteQuery$variables = {
   after?: string | null | undefined;
   first?: number | null | undefined;

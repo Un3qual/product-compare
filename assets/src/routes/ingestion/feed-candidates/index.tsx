@@ -1,5 +1,5 @@
-import { Suspense, useState } from "react";
-import { Link, useLoaderData } from "react-router-dom";
+import { Suspense, useEffect, useState } from "react";
+import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
@@ -60,16 +60,29 @@ function FeedCandidatesControls({
 }: {
   pagination: FeedCandidatesPagination;
 }) {
+  const reviewStatusParam =
+    feedCandidatesReviewStatusToUrlParam(pagination.reviewStatus) ?? "";
+  const sortParam = feedCandidatesSortToUrlParam(pagination.sort);
+  const [reviewStatusValue, setReviewStatusValue] = useState(reviewStatusParam);
+  const [sortValue, setSortValue] = useState(sortParam);
+
+  useEffect(() => {
+    setReviewStatusValue(reviewStatusParam);
+  }, [reviewStatusParam]);
+
+  useEffect(() => {
+    setSortValue(sortParam);
+  }, [sortParam]);
+
   return (
     <form action="/ingestion/feed-candidates" method="get">
       <input name="first" type="hidden" value={pagination.first} />
       <label>
         Review status
         <select
-          defaultValue={
-            feedCandidatesReviewStatusToUrlParam(pagination.reviewStatus) ?? ""
-          }
           name="reviewStatus"
+          onChange={(event) => setReviewStatusValue(event.currentTarget.value)}
+          value={reviewStatusValue}
         >
           <option value="">All</option>
           <option value="pending">Pending</option>
@@ -80,10 +93,12 @@ function FeedCandidatesControls({
       <label>
         Sort candidates
         <select
-          defaultValue={feedCandidatesSortToUrlParam(pagination.sort)}
           name="sort"
+          onChange={(event) => setSortValue(event.currentTarget.value)}
+          value={sortValue}
         >
           <option value="name_asc">Name</option>
+          <option value="fit_score_desc">Fit score</option>
           <option value="product_count_desc">Product count</option>
           <option value="last_seen_desc">Last seen</option>
         </select>
@@ -130,6 +145,7 @@ function FeedCandidatesList({
 }) {
   const candidates = connection.edges.map(({ node }) => node);
   const reviewCounts = countByReviewStatus(candidates);
+  const revalidator = useRevalidator();
   const [reviewFeedback, setReviewFeedback] = useState("");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [commitReview, isReviewInFlight] =
@@ -145,9 +161,10 @@ function FeedCandidatesList({
   };
 
   const handleReview = (candidate: FeedCandidate, status: ReviewStatus) => {
-    const note = (reviewNotes[candidate.id] ?? candidate.reviewNote ?? "").trim();
+    const hasDraftNote = hasReviewNoteDraft(reviewNotes, candidate.id);
+    const note = (hasDraftNote ? reviewNotes[candidate.id] : candidate.reviewNote ?? "").trim();
     const input: ReviewMerchantFeedCandidateInput =
-      note.length > 0
+      hasDraftNote || note.length > 0
         ? {
             id: candidate.id,
             status,
@@ -172,6 +189,12 @@ function FeedCandidatesList({
           return;
         }
 
+        setReviewNotes((currentReviewNotes) => {
+          const nextReviewNotes = { ...currentReviewNotes };
+          delete nextReviewNotes[candidate.id];
+          return nextReviewNotes;
+        });
+        revalidator.revalidate();
         setReviewFeedback(
           `${formatCandidateName(candidate)} marked ${formatReviewStatus(
             payload.candidate?.reviewStatus ?? status
@@ -511,6 +534,10 @@ function countByReviewStatus(candidates: ReadonlyArray<FeedCandidate>) {
     },
     { dismissed: 0, pending: 0, shortlisted: 0 }
   );
+}
+
+function hasReviewNoteDraft(reviewNotes: Record<string, string>, candidateId: string) {
+  return Object.prototype.hasOwnProperty.call(reviewNotes, candidateId);
 }
 
 function formatReviewedAt(value: string | null | undefined) {

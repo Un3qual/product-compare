@@ -5,6 +5,7 @@ import {
   preloadRouteQuery
 } from "../../../../src/relay/route-preload";
 import { feedCandidatesLoader } from "../../../../src/routes/ingestion/feed-candidates/loader";
+import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -135,6 +136,41 @@ test("feedCandidatesLoader preloads supported review status and sort params", as
       reviewStatus: "SHORTLISTED",
       sort: "PRODUCT_COUNT_DESC"
     },
+    { signal: request.signal }
+  );
+});
+
+test("feedCandidatesLoader preserves fit-score sort params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/ingestion/feed-candidates?sort=fit_score_desc"
+  );
+  const descriptor = feedCandidatesQueryDescriptor({
+    first: 20,
+    after: null,
+    reviewStatus: null,
+    sort: "FIT_SCORE_DESC"
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    feedCandidatesLoader(buildFeedCandidatesLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: null,
+      reviewStatus: null,
+      sort: "FIT_SCORE_DESC"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20, after: null, reviewStatus: null, sort: "FIT_SCORE_DESC" },
     { signal: request.signal }
   );
 });
@@ -330,12 +366,9 @@ function buildFeedCandidatesLoaderArgs({
   } as LoaderFunctionArgs;
 }
 
-function feedCandidatesQueryDescriptor(variables: {
-  first: number;
-  after: string | null;
-  reviewStatus: "PENDING" | "SHORTLISTED" | "DISMISSED" | null;
-  sort: "NAME_ASC" | "PRODUCT_COUNT_DESC" | "LAST_SEEN_DESC";
-}) {
+function feedCandidatesQueryDescriptor(
+  variables: MerchantFeedCandidatesRouteQuery["variables"]
+) {
   return {
     __relayQuery: {
       operationName: "MerchantFeedCandidatesRouteQuery",

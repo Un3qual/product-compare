@@ -66,11 +66,11 @@ defmodule ProductCompare.Application do
         currency: Keyword.get(config, :currency, "USD"),
         initial_delay_ms: Keyword.get(config, :initial_delay_ms, 60_000),
         interval_ms: interval_ms,
-        keywords: Keyword.get(config, :keywords, "shoe"),
+        keywords: comma_separated_strings(Keyword.get(config, :keywords, "shoe")),
         limit: Keyword.get(config, :limit, 25),
         name: ProductCompare.Ingestion.CJProductImportScheduler,
         pages: Keyword.get(config, :pages, 1),
-        serviceable_areas: Keyword.get(config, :serviceable_areas, "US")
+        serviceable_areas: comma_separated_strings(Keyword.get(config, :serviceable_areas, "US"))
       ]
 
       children ++ [{ProductCompare.Ingestion.CJProductImportScheduler, scheduler_opts}]
@@ -78,4 +78,14 @@ defmodule ProductCompare.Application do
       children
     end
   end
+
+  defp comma_separated_strings(value) when is_binary(value) do
+    value
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp comma_separated_strings(value) when is_list(value), do: value
+  defp comma_separated_strings(_value), do: []
 end
