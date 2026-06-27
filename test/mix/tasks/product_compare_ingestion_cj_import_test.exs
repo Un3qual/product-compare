@@ -310,6 +310,30 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
                Repo.get_by!(ImportRun, surface: "shoppingProducts")
     end
+
+    test "marks the import run failed when the page fetch raises after the run starts" do
+      fetcher = fn _cursor, _opts ->
+        raise "provider secret should not be persisted"
+      end
+
+      assert {:error, :runner_exception} =
+               CjImport.run_import(
+                 fetcher: fetcher,
+                 keywords: ["shoe"],
+                 limit: 1,
+                 print_report: false
+               )
+
+      assert %ImportRun{
+               status: "failed",
+               error_summary: "fetch_failed",
+               pages_fetched: 0,
+               records_fetched: 0,
+               records_normalized: 0,
+               records_persisted: 0,
+               records_failed: 0
+             } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
   end
 
   describe "run/1 credential preflight" do

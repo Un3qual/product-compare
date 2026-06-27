@@ -48,9 +48,11 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def handle_info(:run_discovery, state) do
     opts = discovery_opts(state)
 
-    state.runner
-    |> run_discovery(opts)
-    |> log_result(opts)
+    result = run_discovery(state.runner, opts)
+
+    log_result(result, opts)
+
+    state = advance_cursor(state, result)
 
     schedule_run(state.interval_ms)
 
@@ -97,6 +99,12 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
         "pages=#{opts[:pages]} cursor=#{inspect(opts[:cursor])}"
     )
   end
+
+  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}}) do
+    %{state | cursor: next_cursor}
+  end
+
+  defp advance_cursor(state, _result), do: state
 
   defp string_option(opts, key, default) do
     opts

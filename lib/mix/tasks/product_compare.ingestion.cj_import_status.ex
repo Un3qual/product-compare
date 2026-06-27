@@ -15,7 +15,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportStatus do
 
   @impl Mix.Task
   def run(argv) do
-    Mix.Task.run("app.start")
+    start_repo()
 
     argv
     |> parse_argv()
@@ -42,6 +42,39 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportStatus do
 
   defp max_age_hours(value) when is_integer(value) and value > 0, do: value
   defp max_age_hours(_invalid), do: @default_max_age_hours
+
+  defp start_repo do
+    Mix.Task.run("app.config")
+
+    ensure_started!(:postgrex)
+    ensure_started!(:ecto_sql)
+
+    case Process.whereis(Repo) do
+      nil ->
+        {:ok, _pid} = Repo.start_link()
+        maybe_enable_sandbox_auto()
+        :ok
+
+      _pid ->
+        :ok
+    end
+  end
+
+  defp ensure_started!(application) do
+    case Application.ensure_all_started(application) do
+      {:ok, _started} ->
+        :ok
+
+      {:error, {_application, reason}} ->
+        Mix.raise("failed to start #{application}: #{inspect(reason)}")
+    end
+  end
+
+  defp maybe_enable_sandbox_auto do
+    if Mix.env() == :test do
+      Ecto.Adapters.SQL.Sandbox.mode(Repo, :auto)
+    end
+  end
 
   defp build_report(%{max_age_hours: max_age_hours} = opts) do
     latest_run = latest_run()

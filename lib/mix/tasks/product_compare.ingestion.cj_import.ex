@@ -73,19 +73,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           end
 
         {:error, reason, report, next_cursor} ->
-          _completed_run =
-            Ingestion.complete_import_run(import_run, %{
-              error_summary: @fetch_failure_summary,
-              status: "failed",
-              cursor_end: next_cursor,
-              pages_fetched: report.pages_fetched,
-              records_failed: report.failed,
-              records_fetched: report.fetched,
-              records_normalized: report.normalized,
-              records_persisted: report.persisted
-            })
-
-          {:error, reason}
+          case fail_import_run(import_run, report, next_cursor) do
+            {:ok, _completed_run} -> {:error, reason}
+            {:error, finalization_reason} -> {:error, finalization_reason}
+          end
       end
     end
   end
@@ -173,6 +164,19 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     })
   end
 
+  defp fail_import_run(import_run, report, next_cursor) do
+    Ingestion.complete_import_run(import_run, %{
+      error_summary: @fetch_failure_summary,
+      status: "failed",
+      cursor_end: next_cursor,
+      pages_fetched: report.pages_fetched,
+      records_failed: report.failed,
+      records_fetched: report.fetched,
+      records_normalized: report.normalized,
+      records_persisted: report.persisted
+    })
+  end
+
   defp serviceable_areas_for_query(fetch_opts) do
     fetch_opts
     |> Keyword.fetch!(:serviceable_areas)
@@ -190,10 +194,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     Enum.reduce_while(1..pages, {:ok, initial_aggregate_report(), cursor}, fn _page,
                                                                               {:ok, report,
                                                                                current_cursor} ->
-      case fetcher.(current_cursor, fetch_opts) do
-        {:ok, records, next_cursor} ->
-          page_report = persist_records(source, records)
-
+      case fetch_page(source, fetcher, current_cursor, fetch_opts) do
+        {:ok, page_report, next_cursor} ->
           report =
             report
             |> merge_report(page_report)
@@ -209,6 +211,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           {:halt, {:error, reason, report, current_cursor}}
       end
     end)
+  end
+
+  defp fetch_page(source, fetcher, current_cursor, fetch_opts) do
+    case fetcher.(current_cursor, fetch_opts) do
+      {:ok, records, next_cursor} ->
+        {:ok, persist_records(source, records), next_cursor}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  rescue
+    _exception -> {:error, :runner_exception}
+  catch
+    _kind, _reason -> {:error, :runner_exception}
   end
 
   defp initial_aggregate_report do

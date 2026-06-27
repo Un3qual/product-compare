@@ -25,6 +25,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
           with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
+            report = Map.put(report, :next_cursor, next_cursor)
+
             report_result(report)
           end
 

@@ -113,6 +113,30 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
     end
 
+    test "returns the next cursor recorded on a successful discovery run" do
+      fetcher = fn _cursor, _opts ->
+        {:ok, [], 5}
+      end
+
+      assert {:ok,
+              %{
+                candidates_persisted: 0,
+                failed: 0,
+                feeds_fetched: 0,
+                pages_fetched: 1,
+                next_cursor: 5
+              }} =
+               CJFeedDiscovery.run(
+                 advertiser_country: "US",
+                 fetcher: fetcher,
+                 limit: 1,
+                 pages: 1
+               )
+
+      assert %ImportRun{status: "succeeded", cursor_start: 0, cursor_end: 5} =
+               Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+    end
+
     test "records partial run counts when a later page fetch fails" do
       feed = %{
         "adId" => "feed-1",

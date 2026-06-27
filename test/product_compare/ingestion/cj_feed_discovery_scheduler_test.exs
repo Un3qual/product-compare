@@ -58,6 +58,35 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
     GenServer.stop(pid)
   end
 
+  test "advances the cursor after a successful discovery" do
+    parent = self()
+
+    runner = fn opts ->
+      send(parent, {:run, opts})
+
+      {:ok, Map.put(report(), :next_cursor, 80)}
+    end
+
+    pid =
+      start_supervised!(
+        {CJFeedDiscoveryScheduler,
+         [
+           cursor: 40,
+           initial_delay_ms: 0,
+           interval_ms: 20,
+           runner: runner
+         ]}
+      )
+
+    assert_receive {:run, first_opts}
+    assert first_opts[:cursor] == 40
+
+    assert_receive {:run, second_opts}, 250
+    assert second_opts[:cursor] == 80
+
+    GenServer.stop(pid)
+  end
+
   test "schedules the next run after a failed discovery" do
     parent = self()
 
