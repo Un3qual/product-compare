@@ -12,19 +12,8 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-The Product data scraping lane has a ten-plan CJ operator loop batch ready for
-parallel execution:
-
-- `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-feed-discovery-history-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-feed-candidate-staleness-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-feed-candidate-batch-review-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-application-cohort-markdown-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-ingestion-readiness-gate-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-failed-run-report-task-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-feed-candidate-fit-gap-report-task-implementation-plan.md`
+No active implementation plans are promoted. Start at `docs/work/index.md` for
+the current Product data scraping follow-up decision.
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -42,6 +31,18 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: ten-plan CJ operator loop batch:
+  `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-feed-discovery-history-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-feed-candidate-staleness-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-feed-candidate-batch-review-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-application-cohort-markdown-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-ingestion-readiness-gate-task-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-failed-run-report-task-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-27-cj-feed-candidate-fit-gap-report-task-implementation-plan.md`.
 - Product ingestion: CJ provider credential status, product-import credential
   preflight, feed-discovery credential preflight, application cohort reporting,
   product import status, and disabled-by-default product import scheduling:

@@ -2,15 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: needs_decision
 - Priority: P2
 - Source of truth: this file
-- Live queue rows: ten ready Product data scraping CJ operator-loop rows in
+- Live queue rows: one Product data scraping `needs_decision` row in
   `docs/work/index.md`
-- Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
-  score badge tests, Relay generation, frontend typecheck, six-plan CJ ingestion
-  readiness combined verification, `mix typecheck`, focused code reviews, CSV
-  export removal, and diff checks
+- Last verified: 2026-06-27 after ten-plan CJ operator loop focused tests,
+  `mix typecheck`, `git diff --check`, format check, and 5.5 xhigh review
 - Last plan refresh: 2026-06-27 after promoting the ten-plan CJ operator loop
   parallel batch
 - Historical context:
@@ -20,6 +18,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plans:
+  - None. Next ingestion work needs the coordinator decision named in
+    `docs/work/index.md`.
+- Previous implementation plans:
   - `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`
@@ -30,7 +31,6 @@
   - `docs/plans/2026-06-27-cj-ingestion-readiness-gate-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-failed-run-report-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-feed-candidate-fit-gap-report-task-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
@@ -81,7 +81,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: done
 - Batch: 2026-06-27 ten-plan CJ operator loop parallel batch.
 - Plans:
   - `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
@@ -108,6 +108,23 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Add a read-only CJ ingestion readiness gate.
   - Add a read-only CJ failed-run report.
   - Add a read-only CJ feed candidate fit-gap report.
+- Completion evidence:
+  - Product import resume and feed discovery resume now read the latest
+    successful persisted CJ cursors, reuse only non-secret stored run metadata,
+    support bounded `--pages`, `--limit`, and `--require-cursor`, and sanitize
+    runner failures.
+  - Product import history, feed discovery history, failed-run reporting,
+    staleness reporting, Markdown cohort reporting, readiness gating, and
+    fit-gap reporting are read-only operator commands with repo-only startup and
+    secret-safe output.
+  - Candidate batch review is dry-run by default, requires explicit relay ids or
+    provider feed ids plus a review status, caps invocations at 50 identifiers,
+    ignores non-CJ candidates, and mutates only with `--apply` through
+    `ProductCompare.Ingestion.review_merchant_feed_candidate/2`.
+  - 5.5 xhigh review found no critical issues. Follow-up fixes corrected the
+    staleness task to the plan's hour-based `--max-age-hours` contract, clamped
+    feed discovery history low limits to the documented minimum, and recorded
+    lane completion evidence.
 - Credential readiness contract:
   - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
   - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
@@ -138,7 +155,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - After this batch completes, choose exactly one follow-up ingestion batch or
+  - Choose exactly one follow-up ingestion batch or
     explicit deferral.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
@@ -148,7 +165,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   approved CJ account lacks usable product catalog scope.
 - CJ candidate CSV score export is rejected and should not be promoted.
 
-## Planned Verification Commands
+## Batch Verification Commands
 
 - Product import resume:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_import_resume_test.exs`
@@ -194,6 +211,19 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Recent Verification Commands
 
+- CJ operator loop batch:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_import_history_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_history_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_staleness_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_review_batch_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_markdown_test.exs test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs test/mix/tasks/product_compare_ingestion_cj_failed_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_fit_gaps_test.exs`
+    - Result: passed, 67 tests, 0 failures.
+  - `mix typecheck`
+    - Result: completed with exit 0.
+  - `git diff --check`
+    - Result: completed with exit 0.
+  - `mix format --check-formatted` for the ten new Mix tasks and focused test
+    files
+    - Result: completed with exit 0.
+  - 5.5 xhigh review:
+    - Result: no critical issues; important staleness contract and lane evidence
+      findings fixed, minor discovery-history limit clamp fixed.
 - Fit-score sort:
   - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
   - `cd assets && bun run relay`
