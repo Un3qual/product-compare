@@ -7,6 +7,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
   alias ProductCompare.Ingestion.Sources.CJ.Client
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
 
+  @fetch_failure_summary "fetch_failed"
+
   @spec run(keyword()) :: {:ok, map()} | {:error, term()}
   def run(opts) do
     do_run(opts)
@@ -27,19 +29,10 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
           end
 
         {:error, reason, report, next_cursor} ->
-          _completed_run =
-            Ingestion.complete_import_run(import_run, %{
-              error_summary: inspect(reason),
-              status: "failed",
-              cursor_end: next_cursor,
-              pages_fetched: report.pages_fetched,
-              records_fetched: report.feeds_fetched,
-              records_normalized: 0,
-              records_persisted: report.candidates_persisted,
-              records_failed: report.failed
-            })
-
-          {:error, reason}
+          case fail_import_run(import_run, report, next_cursor) do
+            {:ok, _completed_run} -> {:error, reason}
+            {:error, finalization_reason} -> {:error, finalization_reason}
+          end
       end
     end
   end
@@ -75,6 +68,19 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
 
     Ingestion.complete_import_run(import_run, %{
       status: status,
+      cursor_end: next_cursor,
+      pages_fetched: report.pages_fetched,
+      records_fetched: report.feeds_fetched,
+      records_normalized: 0,
+      records_persisted: report.candidates_persisted,
+      records_failed: report.failed
+    })
+  end
+
+  defp fail_import_run(import_run, report, next_cursor) do
+    Ingestion.complete_import_run(import_run, %{
+      error_summary: @fetch_failure_summary,
+      status: "failed",
       cursor_end: next_cursor,
       pages_fetched: report.pages_fetched,
       records_fetched: report.feeds_fetched,

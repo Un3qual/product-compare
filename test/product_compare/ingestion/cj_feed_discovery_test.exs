@@ -162,8 +162,47 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                records_normalized: 0,
                records_persisted: 1,
                records_failed: 0,
-               error_summary: ":test_failure"
+               error_summary: "fetch_failed"
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProductFeeds")
+    end
+
+    test "does not persist raw provider payloads for fetch failures" do
+      fetcher = fn _cursor, _opts ->
+        {:error,
+         {:provider_error,
+          %{
+            body: "raw-provider-payload",
+            headers: [{"authorization", "Bearer provider-secret"}]
+          }}}
+      end
+
+      assert {:error,
+              {:provider_error,
+               %{
+                 body: "raw-provider-payload",
+                 headers: [{"authorization", "Bearer provider-secret"}]
+               }}} =
+               CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
+
+      assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
+               Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+    end
+
+    test "returns finalization failures from the fetch-error path" do
+      fetcher = fn
+        nil, _opts -> {:ok, [], "invalid-cursor"}
+        "invalid-cursor", _opts -> {:error, :fetch_failed}
+      end
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               CJFeedDiscovery.run(
+                 advertiser_country: "US",
+                 fetcher: fetcher,
+                 limit: 1,
+                 pages: 2
+               )
+
+      assert {"is invalid", _meta} = changeset.errors[:cursor_end]
     end
 
     test "uses one page when the requested page count is invalid" do
