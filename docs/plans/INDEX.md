@@ -12,9 +12,19 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active ready implementation plans. `docs/work/index.md` currently holds a
-Product data scraping coordinator decision row for the next ingestion batch or
-explicit deferral.
+The Product data scraping lane has a ten-plan CJ operator loop batch ready for
+parallel execution:
+
+- `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-feed-discovery-history-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-feed-candidate-staleness-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-feed-candidate-batch-review-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-application-cohort-markdown-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-ingestion-readiness-gate-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-failed-run-report-task-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-feed-candidate-fit-gap-report-task-implementation-plan.md`
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -23,7 +33,6 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| needs_decision | Product data scraping follow-up | The coordinator chooses exactly one post-readiness ingestion path or records explicit deferral. | Do not promote CJ candidate CSV score export; that direction is rejected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
