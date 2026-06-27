@@ -283,6 +283,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_failed: 1
              } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
     end
+
+    test "does not persist raw provider payloads for fetch failures" do
+      fetcher = fn _cursor, _opts ->
+        {:error,
+         {:provider_error,
+          %{
+            body: "raw-provider-payload",
+            headers: [{"authorization", "Bearer provider-secret"}]
+          }}}
+      end
+
+      assert {:error,
+              {:provider_error,
+               %{
+                 body: "raw-provider-payload",
+                 headers: [{"authorization", "Bearer provider-secret"}]
+               }}} =
+               CjImport.run_import(
+                 fetcher: fetcher,
+                 keywords: ["shoe"],
+                 limit: 1,
+                 print_report: false
+               )
+
+      assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
+               Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
   end
 
   describe "run/1 credential preflight" do

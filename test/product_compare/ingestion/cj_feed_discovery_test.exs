@@ -188,6 +188,24 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
     end
 
+    test "marks the import run failed when the fetcher raises after run start" do
+      fetcher = fn _cursor, _opts ->
+        raise "raw-provider-payload"
+      end
+
+      assert {:error, :runner_exception} =
+               CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
+
+      assert %ImportRun{
+               status: "failed",
+               error_summary: "fetch_failed",
+               pages_fetched: 0,
+               records_fetched: 0,
+               records_persisted: 0,
+               records_failed: 0
+             } = Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
+    end
+
     test "returns finalization failures from the fetch-error path" do
       fetcher = fn
         nil, _opts -> {:ok, [], "invalid-cursor"}

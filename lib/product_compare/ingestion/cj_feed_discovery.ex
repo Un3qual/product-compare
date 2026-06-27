@@ -93,10 +93,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
   defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
     Enum.reduce_while(1..pages, {:ok, initial_report(), cursor}, fn _page,
                                                                     {:ok, report, current_cursor} ->
-      case fetcher.(current_cursor, fetch_opts) do
-        {:ok, feeds, next_cursor} ->
-          candidate_report = persist_candidates(source, feeds)
-
+      case fetch_page(source, fetcher, current_cursor, fetch_opts) do
+        {:ok, feeds, candidate_report, next_cursor} ->
           report =
             report
             |> Map.update!(:feeds_fetched, &(&1 + length(feeds)))
@@ -114,6 +112,20 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
           {:halt, {:error, reason, report, current_cursor}}
       end
     end)
+  end
+
+  defp fetch_page(source, fetcher, current_cursor, fetch_opts) do
+    case fetcher.(current_cursor, fetch_opts) do
+      {:ok, feeds, next_cursor} ->
+        {:ok, feeds, persist_candidates(source, feeds), next_cursor}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  rescue
+    _exception -> {:error, :runner_exception}
+  catch
+    _kind, _reason -> {:error, :runner_exception}
   end
 
   defp initial_report do

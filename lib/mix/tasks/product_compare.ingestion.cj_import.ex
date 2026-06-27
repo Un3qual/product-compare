@@ -14,6 +14,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     {"CJ_API_TOKEN", :api_token},
     {"CJ_ACCOUNT_ID", :company_id}
   ]
+  @fetch_failure_summary "fetch_failed"
 
   @impl Mix.Task
   def run(argv) do
@@ -74,7 +75,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
         {:error, reason, report, next_cursor} ->
           _completed_run =
             Ingestion.complete_import_run(import_run, %{
-              error_summary: inspect(reason),
+              error_summary: @fetch_failure_summary,
               status: "failed",
               cursor_end: next_cursor,
               pages_fetched: report.pages_fetched,
