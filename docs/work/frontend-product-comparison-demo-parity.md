@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-05-31 after full comparison demo parity verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+- Current implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
 ## Batch Status
@@ -57,14 +58,25 @@
 - Ran the broader frontend check for the `assets` workspace.
 - Closed the product-comparison demo parity lane with no remaining unblocked batch in this lane.
 
-## Next Batch
+## Current Cross-Project Batch
 
-- Status: none queued.
-- Batch: none.
-- Follow-up candidates:
-  - Build an aligned comparison matrix for attributes shared across selected products.
-  - Add a persistent compare tray across browse/detail pages.
-  - Add demo parity for API token management, affiliate/admin setup, revenue reporting, and merchant discovery.
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare` users can remove selected products while preserving the remaining slug order.
+
+## Follow-Up Candidates
+
+- Build an aligned comparison matrix for attributes shared across selected products.
+- Add a persistent compare tray across browse/detail pages.
+- Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
 ## Verification
 

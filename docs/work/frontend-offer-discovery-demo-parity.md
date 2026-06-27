@@ -2,14 +2,31 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-01 during Task 4 final verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+- Current implementation plan:
+  - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Current Cross-Project Batch
+
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `assets/test/routes/offers/offer-discovery-loader.test.ts`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` exposes existing product, merchant, active-only, and page-size filters in the UI.
 
 ## Verified Current State
 
@@ -18,14 +35,14 @@
 - Product browse cards already have product global IDs through `BrowseProductsRouteQuery`, which can link to an offer-discovery route with a valid `productId` query param.
 - `/offers` now preloads and renders offer rows through the top-level `merchantProducts(input:)` query.
 
-## Next Batch
+## Previous Steady State
 
-- Status: completed
-- Batch: none queued.
+- Status: completed.
+- Batch: initial offer-discovery route registration and demo parity.
 - Scope:
-  - No unblocked offer-discovery batch remains.
-  - Product data ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
-  - The next demo-parity frontend candidate requires a fresh product/backend priority decision.
+  - The 2026-06-01 offer-discovery route batch is complete.
+  - The current cross-project follow-up is listed above and dispatched from
+    `docs/work/index.md`.
 
 ## Verification Commands
 

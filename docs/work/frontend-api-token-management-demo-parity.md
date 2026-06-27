@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-01 after Task 6 navigation, frontend, and backend contract verification.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+- Current implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -25,11 +26,19 @@
   - Kept the route entry point at `/account/api-tokens`.
   - Verified the route remains backed by the existing GraphQL API-token contract without adding browser REST endpoints.
 
-## Next Batch
+## Current Cross-Project Batch
 
-- Status: none queued.
-- Batch: none.
-- Follow-up: frontend merchant discovery demo parity is the next unblocked non-ingestion demo-parity lane in `docs/work/frontend-merchant-discovery-demo-parity.md`.
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/account/api-tokens/index.tsx`
+  - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `docs/work/frontend-api-token-management-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/account/api-tokens` offers create and rotate expiration presets without changing mutation contracts.
 
 ## Verification
 

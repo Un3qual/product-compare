@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-01, Task 3 route registration, navigation, and lane closure verification
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+- Current implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -15,21 +16,19 @@
 - [x] Task 2: render the revenue reporting route.
 - [x] Task 3: wire navigation and close the lane.
 
-## Current Batch
+## Current Cross-Project Batch
 
-- Task: none.
-- Status: completed.
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/commerce/revenue/**`
-  - `assets/src/router.tsx`
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `assets/src/__tests__/router.test.tsx`
+  - `assets/src/routes/commerce/revenue/index.tsx`
+  - `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
   - `docs/work/frontend-revenue-reporting-demo-parity.md`
-  - `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
-  - `docs/work/index.md`
-  - `docs/plans/NOW.md`
-- Immediate prerequisite: all planned revenue reporting demo parity tasks are complete. `/commerce/revenue` is registered with `revenueSummaryLoader`, exposed from primary navigation and home actions, and verified against the existing backend revenue summary contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/commerce/revenue` has deterministic date presets that preserve network and currency filters.
 
 ## Verification
 

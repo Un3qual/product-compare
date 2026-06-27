@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-05-30 after saved-comparisons Relay migration handoff
@@ -14,11 +14,28 @@
   - `docs/work/frontend-relay-route-data.md`
   - `docs/work/frontend-compare-saved-hardening.md`
   - `docs/work/saved-comparisons-backend.md`
+- Current implementation plan:
+  - `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.
   - The frontend exposes a saved-comparisons route for authenticated users.
   - Saved sets can be reopened into `/compare` using repeated `slug` query params and deleted from the UI.
   - Focused frontend tests cover save, list, reopen, and delete states without reopening unrelated route work.
+
+## Current Cross-Project Batch
+
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/saved.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `assets/test/routes/compare/saved-comparisons-test-helpers.ts`
+  - `docs/work/frontend-saved-comparisons-ui.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare/saved` can filter loaded saved sets by name or product slug without backend changes.
 
 ## Verified Current State
 
@@ -31,7 +48,7 @@
 - `assets/src/router.tsx` mounts both `/compare` and `/compare/saved` with compare-scoped route error boundaries.
 - `assets/src/routes/root.tsx` links to `Saved comparisons` from both the primary navigation and home actions.
 
-## Next Batch
+## Previous Batch
 
 - Status: completed
 - Batch: Task 2 from `docs/plans/2026-03-18-frontend-saved-comparisons-ui-implementation-plan.md`

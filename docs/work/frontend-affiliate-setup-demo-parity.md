@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-01, Task 4 navigation and lane closure
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+- Current implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -16,25 +17,19 @@
 - [x] Task 3: add affiliate link and coupon setup.
 - [x] Task 4: wire navigation, verify the backend contract, and close the lane.
 
-## Current Batch
+## Current Cross-Project Batch
 
-- Task: none queued.
-- Status: completed.
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/router.tsx`
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `assets/src/__tests__/router.test.tsx`
-  - `assets/src/routes/affiliate/setup/**`
-  - `assets/schema.graphql`
-  - `assets/src/__generated__/**`
+  - `assets/src/routes/affiliate/setup/index.tsx`
+  - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
   - `docs/work/frontend-affiliate-setup-demo-parity.md`
-  - `docs/work/index.md`
-  - `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
-  - `docs/plans/NOW.md`
-  - `docs/plans/INDEX.md`
-  - `ARCHITECTURE.md`
-- Next step: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live CJ credentials, representative payloads, quota behavior, and compliance signoff.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/affiliate/setup` keeps selected merchant context visible across program, link, and coupon forms.
 
 ## Verification
 

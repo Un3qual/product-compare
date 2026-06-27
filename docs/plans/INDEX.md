@@ -12,22 +12,22 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-The Product data scraping lane has one explicitly requested parallel batch of
-ten ready work-item plans. Start at `docs/work/index.md` for dispatch order and
-target paths.
+The current queue has one explicitly requested parallel batch of ten ready
+work-item plans across the project. Start at `docs/work/index.md` for dispatch
+order and target paths.
 
 | Status | Plan | Notes |
 | --- | --- | --- |
-| ready | `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md` | Read-only CJ candidate cohort read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md` | Read-only CJ candidate market coverage read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md` | Read-only CJ candidate freshness read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md` | Read-only CJ run health read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md` | Read-only CJ run throughput read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md` | Read-only CJ import artifact quality read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md` | Read-only CJ import price quality read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md` | Read-only CJ merchant identity quality read model; no Mix task. |
-| ready | `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md` | Read-only CJ application readiness read model; no Mix task or application action. |
-| ready | `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md` | Docs-only weekly operator runbook using existing commands. |
+| ready | `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md` | `/products` page-size controls; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md` | `/products/:slug` active-offer pagination; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md` | `/offers` filter controls for existing URL params; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md` | `/merchants` page-size controls; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md` | `/commerce/revenue` date preset links; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md` | `/compare/saved` client-side filtering; no backend change. |
+| ready | `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md` | `/compare` selection remove controls; URL-driven only. |
+| ready | `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md` | `/account/api-tokens` expiration presets; mutation contracts unchanged. |
+| ready | `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md` | `/affiliate/setup` selected merchant context; frontend route only. |
+| ready | `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md` | Provider-neutral ingestion source health read model; no Mix task or UI. |
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -36,6 +36,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| candidate | CJ read-model and weekly operator runbook batch | Product data scraping becomes the selected lane again and the coordinator explicitly chooses CJ-only read-model follow-up. | The ten CJ plans created on 2026-06-27 are kept but no longer active after the cross-project queue correction. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive

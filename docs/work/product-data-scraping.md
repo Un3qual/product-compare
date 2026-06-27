@@ -5,12 +5,12 @@
 - Status: ready
 - Priority: P2
 - Source of truth: this file
-- Live queue rows: ten Product data scraping `ready` rows in
-  `docs/work/index.md`
+- Live queue row: rank 10 Product data scraping `ready` row in
+  `docs/work/index.md` as part of a cross-project parallel batch
 - Last verified: 2026-06-27 after ten-plan CJ operator loop focused tests,
   `mix typecheck`, `git diff --check`, format check, and 5.5 xhigh review
-- Last plan refresh: 2026-06-27 after promoting the ten-plan CJ read-model and
-  weekly operator runbook work-item batch
+- Last plan refresh: 2026-06-27 after replacing the CJ-only batch with a
+  cross-project queue correction
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -18,6 +18,8 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plans:
+  - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
+- Previous implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
@@ -28,7 +30,6 @@
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
-- Previous implementation plans:
   - `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`
@@ -90,43 +91,26 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 ## Current Batch
 
 - Status: ready
-- Batch: 2026-06-27 ten-plan CJ read-model and weekly operator runbook
-  work-item batch.
-- Plans:
-  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+- Batch: provider-neutral source health read model in the 2026-06-27
+  cross-project parallel work-item batch.
+- Plan:
+  - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
 - Decision:
-  - Promote one explicitly requested parallel batch of ten work items after the
-    previous operator-loop batch completed. These plans are implementation work
-    items, not Mix task plans.
-- Parallel slices:
-  - Add a CJ candidate cohort read model.
-  - Add a CJ candidate market coverage read model.
-  - Add a CJ candidate freshness read model.
-  - Add a CJ run health read model.
-  - Add a CJ run throughput read model.
-  - Add a CJ import artifact quality read model.
-  - Add a CJ import price quality read model.
-  - Add a CJ merchant identity quality read model.
-  - Add a CJ application readiness read model.
-  - Add a CJ weekly operator runbook that documents existing commands.
+  - Promote only one Product data scraping row so the active ten-row queue spans
+    the whole project instead of remaining CJ-only.
+- Parallel slice:
+  - Add a provider-neutral source health read model over existing source,
+    source-artifact, and ingestion-run data.
 - Work-item guardrails:
-  - The nine code rows add standalone read-model modules and focused tests. They
-    do not add Mix tasks, scheduler behavior, GraphQL fields, browser routes,
-    network calls, or mutations.
-  - The runbook row is docs-only and must reference only existing commands.
-  - Parallel workers may edit only the row's target paths and this lane doc
-    under the row-specific evidence heading.
-  - The previous Mix-task operator-loop implementation remains kept as completed
-    historical work.
+  - The row adds one standalone read-model module and focused tests.
+  - It must not add Mix tasks, scheduler behavior, GraphQL fields, browser
+    routes, network calls, or mutations.
+  - It must not expose raw source-artifact payloads, artifact URLs, import
+    queries, credentials, account ids, tracking params, or provider error
+    payloads.
+  - Parallel workers may edit only the row's target paths and this lane doc.
+  - The previous CJ-only read-model/runbook plans remain kept as candidate or
+    historical plans, but they are not active queue rows after this correction.
 - Credential readiness contract:
   - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
   - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
@@ -157,9 +141,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - After the ten work-item rows complete, choose whether to expose the read
-    models through a dashboard contract, continue application-readiness
-    research, or explicitly defer further ingestion work.
+  - After the source-health row completes, choose whether to expose source
+    health through a dashboard contract, return to CJ-specific read models, or
+    explicitly defer further ingestion work.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
 ## Deferred Follow-Up Plan Candidates
@@ -170,27 +154,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch Verification Commands
 
-- Candidate cohort read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
-- Candidate market coverage read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
-- Candidate freshness read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- Run health read model:
-  - `mix test test/product_compare/ingestion/cj_run_health_test.exs`
-- Run throughput read model:
-  - `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
-- Import artifact quality read model:
-  - `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- Import price quality read model:
-  - `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- Merchant identity quality read model:
-  - `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- Application readiness read model:
-  - `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
-- Weekly operator runbook:
-  - `! rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_API_TOKEN=[^[:space:]]+|CJ_ACCOUNT_ID=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md`
-- Ten-work-item final gate:
+- Source health read model:
+  - `mix test test/product_compare/ingestion/source_health_test.exs`
+- Final gate:
   - `mix typecheck`
   - `git diff --check`
 - Previous readiness batch verification commands:

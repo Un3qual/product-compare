@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-03-18 at `ca3197b` + working tree
@@ -10,11 +10,28 @@
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
   - `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
+- Current implementation plan:
+  - `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes an SSR-safe `/products/:slug` route.
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Current Cross-Project Batch
+
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/loader.ts`
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products/:slug` paginates active offers with URL-driven next and first links.
 
 ## Verified Current State
 
@@ -33,10 +50,11 @@
 - Completed Task 2 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md` by adding the `/products/:slug` loader, route shell, browse links, and focused route coverage.
 - Completed Task 3 from `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md` by adding missing-product and unavailable detail states plus slice verification.
 
-## Next Batch
+## Previous Steady State
 
-1. No further batch lives in this doc.
-2. Return to `docs/work/index.md` for the next active frontend slice.
+1. The 2026-03-17 product-detail baseline batch is complete.
+2. The current cross-project follow-up is listed above and dispatched from
+   `docs/work/index.md`.
 
 ## Verification Commands
 

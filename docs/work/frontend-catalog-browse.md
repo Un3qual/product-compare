@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-03-17 at `fec8e92` + working tree
@@ -10,11 +10,28 @@
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
   - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
+- Current implementation plan:
+  - `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes a `/products` route with SSR-safe rendering.
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Current Cross-Project Batch
+
+- Status: ready.
+- Plan: `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/loader.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` accepts bounded `first` values and preserves page size through pagination.
 
 ## Verified Current State
 
@@ -35,10 +52,11 @@
 - Completed Task 2 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md` by wiring the typed browse loader, route rendering, and SSR hydration path for `/products`.
 - Completed Task 3 from `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md` by adding empty/unavailable state handling, focused route regressions, and slice verification.
 
-## Next Batch
+## Previous Steady State
 
-1. No further batch lives in this doc.
-2. Return to `docs/work/index.md` for the next active frontend slice.
+1. The 2026-03-17 catalog browse baseline batch is complete.
+2. The current cross-project follow-up is listed above and dispatched from
+   `docs/work/index.md`.
 
 ## Verification Commands
 
