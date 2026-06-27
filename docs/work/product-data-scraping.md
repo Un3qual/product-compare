@@ -8,8 +8,9 @@
 - Live queue row: CJ provider credential readiness parallel batch in
   `docs/work/index.md`
 - Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
-  score badge tests, Relay generation, frontend typecheck, `mix typecheck`,
-  focused code reviews, CSV export removal, and diff checks
+  score badge tests, Relay generation, frontend typecheck, six-plan CJ ingestion
+  readiness combined verification, `mix typecheck`, focused code reviews, CSV
+  export removal, and diff checks
 - Last plan refresh: 2026-06-26 after promoting provider credential readiness
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
@@ -69,7 +70,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: implemented; final quality review pending
 - Batch: 2026-06-26 six-plan CJ ingestion readiness parallel batch.
 - Plans:
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
@@ -314,18 +315,120 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ### Provider Credential Status Task Evidence
 
-- Pending execution of
+- Completed
   `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_credentials` for redacted CJ
+  credential readiness across `shoppingProducts` and `shoppingProductFeeds`.
+- The task reports only provider/surface names, readiness booleans, counts, and
+  missing env var names; it does not print token, account, or property values.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Product Import Credential Preflight Evidence
 
-- Pending execution of
+- Completed
   `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`.
+- Added `--check-credentials` and `--require-ready` to
+  `mix product_compare.ingestion.cj_import`.
+- The preflight returns before source resolution, CJ fetcher calls,
+  `ImportRun` creation, or product persistence and prints only the required env
+  var names when credentials are missing.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+    - Result: passed, 8 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
 
 ### Feed Discovery Credential Preflight Evidence
 
-- Pending execution of
+- Completed
   `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`.
+- Added `--check-credentials` and `--require-ready` to
+  `mix product_compare.ingestion.cj_feeds`.
+- The preflight returns before the configured discovery runner, source
+  resolution, CJ transport, candidate persistence, or `ImportRun` persistence
+  and prints only non-secret readiness fields.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 8 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Application Cohort Report Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_application_cohort` for read-only,
+  non-secret review of CJ feed candidates by status, country, currency,
+  language, product count, and limit.
+- The report uses existing candidate rows only; it does not create merchants,
+  applications, emails, provider calls, scheduled work, or CSV files.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Product Import Status Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_import_status` for read-only status
+  reporting over CJ `shoppingProducts` import runs.
+- The task reports aggregate run and freshness fields only, ignores
+  `shoppingProductFeeds` discovery runs, and redacts non-empty error summaries
+  instead of printing raw provider or credential-bearing text.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Scheduled Product Import Runtime Evidence
+
+- Completed
+  `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`.
+- Added disabled-by-default CJ `shoppingProducts` scheduling through
+  `ProductCompare.Ingestion.CJProductImportScheduler`, runtime env config, and
+  conditional supervision.
+- Scheduler tests use an injected runner, pass only non-secret query bounds to
+  the import runner, and verify success and failure paths reschedule without
+  logging raw provider errors or credential values.
+- Focused verification:
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+    - Result: passed, 5 tests, 0 failures.
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: passed, 9 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Six-Plan Combined Verification
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+  - Result: passed, 44 tests, 0 failures.
+- `mix typecheck`
+  - Result: passed with no output.
+- `git diff --check`
+  - Result: passed with no output.
+- Spec review:
+  - Required only plan/evidence corrections after implementation verification:
+    the credential task output key is `missing_required`, and the application
+    cohort task does not need an unused `Ecto.Query` import.
 
 ### Fit Score Sort Evidence
 

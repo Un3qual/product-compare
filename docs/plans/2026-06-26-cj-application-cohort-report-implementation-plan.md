@@ -85,8 +85,9 @@ Expected: fail because the Mix task does not exist yet.
 Create `Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohort` with:
 
 - `use Mix.Task`;
-- `import Ecto.Query`;
-- aliases for `ProductCompare.Ingestion`, `ProductCompare.Repo`, and `ProductCompareWeb.GraphQL.GlobalId`;
+- aliases for `ProductCompare.Ingestion`, `ProductCompare.Repo`,
+  `ProductCompareWeb.GraphQL.GlobalId`, and
+  `ProductCompareSchemas.Ingestion.MerchantFeedCandidate`;
 - `@shortdoc "Reports shortlisted CJ application cohort candidates"`.
 
 - [ ] **Step 2: Parse options**

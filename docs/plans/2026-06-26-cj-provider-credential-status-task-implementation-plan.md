@@ -101,11 +101,11 @@ provider=cj
 surfaces=shoppingProducts,shoppingProductFeeds
 ready=false
 required_present=0
-required_missing=CJ_API_TOKEN,CJ_ACCOUNT_ID
+missing_required=CJ_API_TOKEN,CJ_ACCOUNT_ID
 optional_present=
 ```
 
-When all required values are present, print `ready=true`, `required_present=2`, and an empty `required_missing=`.
+When all required values are present, print `ready=true`, `required_present=2`, and an empty `missing_required=`.
 
 Only env var names may appear in output.
 
