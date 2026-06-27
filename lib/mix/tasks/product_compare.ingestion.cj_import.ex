@@ -64,6 +64,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
           with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
+            report = Map.put(report, :next_cursor, next_cursor)
+
             maybe_print_report(report, opts)
 
             report_result(report)

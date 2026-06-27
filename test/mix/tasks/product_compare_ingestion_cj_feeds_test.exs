@@ -72,6 +72,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
                  runner: flunking_runner
                )
     end
+
+    test "uses the configured discovery runner for non-preflight calls" do
+      parent = self()
+
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn opts ->
+        send(parent, {:runner_opts, opts})
+
+        {:ok,
+         %{
+           candidates_persisted: 1,
+           failed: 0,
+           feeds_fetched: 1,
+           pages_fetched: 1
+         }}
+      end)
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{feeds_fetched: 1}} =
+                   CjFeeds.run_discovery(advertiser_country: "CA", limit: 10)
+        end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:advertiser_country] == "CA"
+      assert opts[:limit] == 10
+      assert output =~ "feeds_fetched=1 candidates_persisted=1 pages_fetched=1 failed=0"
+    end
   end
 
   describe "run/1" do

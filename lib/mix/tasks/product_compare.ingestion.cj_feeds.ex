@@ -49,7 +49,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
       credential_preflight(opts)
     else
       opts
-      |> CJFeedDiscovery.run()
+      |> runner().()
       |> tap(fn
         {:ok, report} -> print_report(report)
         {:error, {:row_failures, report}} -> print_report(report)

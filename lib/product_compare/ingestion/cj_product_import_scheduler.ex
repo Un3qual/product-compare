@@ -52,9 +52,11 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   def handle_info(:run_import, state) do
     opts = import_opts(state)
 
-    state.runner
-    |> run_import(opts)
-    |> log_result(opts)
+    result = run_import(state.runner, opts)
+
+    log_result(result, opts)
+
+    state = advance_cursor(state, result)
 
     schedule_run(state.interval_ms)
 
@@ -109,6 +111,12 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   defp log_result(_unexpected, opts) do
     Logger.warning("CJ product import failed " <> query_bounds(opts) <> " failure=runner_error")
   end
+
+  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}}) do
+    %{state | cursor: next_cursor}
+  end
+
+  defp advance_cursor(state, _result), do: state
 
   defp query_bounds(opts) do
     "keywords=#{length(opts[:keywords])} " <>

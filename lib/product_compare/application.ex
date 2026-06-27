@@ -82,10 +82,16 @@ defmodule ProductCompare.Application do
   defp comma_separated_strings(value) when is_binary(value) do
     value
     |> String.split(",", trim: true)
+    |> normalize_string_list()
+  end
+
+  defp comma_separated_strings(value) when is_list(value), do: normalize_string_list(value)
+  defp comma_separated_strings(_value), do: []
+
+  defp normalize_string_list(values) do
+    values
+    |> Enum.filter(&is_binary/1)
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
   end
-
-  defp comma_separated_strings(value) when is_list(value), do: value
-  defp comma_separated_strings(_value), do: []
 end
