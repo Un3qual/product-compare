@@ -189,11 +189,9 @@ function FeedCandidatesList({
           return;
         }
 
-        setReviewNotes((currentReviewNotes) => {
-          const nextReviewNotes = { ...currentReviewNotes };
-          delete nextReviewNotes[candidate.id];
-          return nextReviewNotes;
-        });
+        setReviewNotes((currentReviewNotes) =>
+          omitReviewNoteDraft(currentReviewNotes, candidate.id)
+        );
         revalidator.revalidate();
         setReviewFeedback(
           `${formatCandidateName(candidate)} marked ${formatReviewStatus(
@@ -538,6 +536,12 @@ function countByReviewStatus(candidates: ReadonlyArray<FeedCandidate>) {
 
 function hasReviewNoteDraft(reviewNotes: Record<string, string>, candidateId: string) {
   return Object.prototype.hasOwnProperty.call(reviewNotes, candidateId);
+}
+
+function omitReviewNoteDraft(reviewNotes: Record<string, string>, candidateId: string) {
+  return Object.fromEntries(
+    Object.entries(reviewNotes).filter(([id]) => id !== candidateId)
+  );
 }
 
 function formatReviewedAt(value: string | null | undefined) {
