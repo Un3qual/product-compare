@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useRef, useState } from "react";
+import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createApiTokenMutation, {
@@ -65,7 +65,7 @@ export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
   const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
   const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenSummary>>(
-    new Map()
+    () => new Map()
   );
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -75,13 +75,17 @@ export function ApiTokensRoute() {
   const createExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
   const [revokeErrorsByTokenId, setRevokeErrorsByTokenId] = useState<
     ReadonlyMap<string, string>
-  >(new Map());
-  const [pendingRevokeIds, setPendingRevokeIds] = useState<ReadonlySet<string>>(new Set());
+  >(() => new Map());
+  const [pendingRevokeIds, setPendingRevokeIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
   const inFlightRevokeIdsRef = useRef<Set<string>>(new Set());
   const [rotateErrorsByTokenId, setRotateErrorsByTokenId] = useState<
     ReadonlyMap<string, string>
-  >(new Map());
-  const [pendingRotateIds, setPendingRotateIds] = useState<ReadonlySet<string>>(new Set());
+  >(() => new Map());
+  const [pendingRotateIds, setPendingRotateIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
   const inFlightRotateIdsRef = useRef<Set<string>>(new Set());
   const [commitCreateApiToken, createMutationPending] = useMutation<CreateApiTokenMutation>(
     createApiTokenMutation
@@ -89,7 +93,10 @@ export function ApiTokensRoute() {
   const [commitRevokeApiToken] = useMutation<RevokeApiTokenMutation>(revokeApiTokenMutation);
   const [commitRotateApiToken] = useMutation<RotateApiTokenMutation>(rotateApiTokenMutation);
   const tokenQueries = loaderData.status === "unauthorized" ? [] : loaderData.tokenQueries;
-  const viewState = buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates);
+  const viewState = useMemo(
+    () => buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates),
+    [apiTokenUpdates, createdTokens, loaderData]
+  );
   const createSubmitting = createPending || createMutationPending;
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {

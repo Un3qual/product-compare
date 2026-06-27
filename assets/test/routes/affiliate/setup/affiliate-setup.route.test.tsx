@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
@@ -701,19 +701,27 @@ test("affiliate setup route renders coupon payload errors", async () => {
 });
 
 function completeLatestNetworkMutation(response: unknown) {
-  commitNetworkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitNetworkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestProgramMutation(response: unknown) {
-  commitProgramMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitProgramMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestLinkMutation(response: unknown) {
-  commitLinkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitLinkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestCouponMutation(response: unknown) {
-  commitCouponMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitCouponMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function renderAffiliateSetupRoute() {

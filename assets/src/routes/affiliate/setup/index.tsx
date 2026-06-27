@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useRef, useState } from "react";
+import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createCouponMutation, {
@@ -120,16 +120,19 @@ function AffiliateSetupPanel({
   );
   const [commitCreateCoupon] = useMutation<CreateCouponMutation>(createCouponMutation);
 
-  const merchantChoices = data.merchants ? buildMerchantChoices(data.merchants) : [];
+  const merchantChoices = useMemo(
+    () => buildMerchantChoices(data.merchants),
+    [data.merchants]
+  );
+  const selectedMerchant = useMemo(
+    () => getMerchantChoiceById(merchantChoices, selectedMerchantId) ?? merchantChoices[0],
+    [merchantChoices, selectedMerchantId]
+  );
 
   if (!data.merchants) {
     return <AffiliateSetupUnavailableFallback />;
   }
 
-  const selectedMerchant = getMerchantChoiceById(
-    merchantChoices,
-    selectedMerchantId
-  ) ?? merchantChoices[0];
   const selectedMerchantSummary = getMerchantSummary(selectedMerchant);
   const selectedMerchantValue = selectedMerchant?.id ?? "";
 
@@ -490,7 +493,9 @@ function AffiliateSetupUnavailableFallback() {
   );
 }
 
-function buildMerchantChoices(merchants: AffiliateSetupMerchantConnection | null): MerchantChoice[] {
+function buildMerchantChoices(
+  merchants: AffiliateSetupMerchantConnection | null | undefined
+): MerchantChoice[] {
   if (!merchants) {
     return [];
   }

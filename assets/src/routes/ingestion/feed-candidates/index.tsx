@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
@@ -25,6 +25,11 @@ type FeedCandidatesConnection = NonNullable<
 >;
 type FeedCandidate = FeedCandidatesConnection["edges"][number]["node"];
 type ReviewStatus = "PENDING" | "SHORTLISTED" | "DISMISSED";
+
+const reviewedAtFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short"
+});
 
 export function FeedCandidatesRoute() {
   const loaderData = useLoaderData<typeof feedCandidatesLoader>() as FeedCandidatesLoaderData;
@@ -63,26 +68,19 @@ function FeedCandidatesControls({
   const reviewStatusParam =
     feedCandidatesReviewStatusToUrlParam(pagination.reviewStatus) ?? "";
   const sortParam = feedCandidatesSortToUrlParam(pagination.sort);
-  const [reviewStatusValue, setReviewStatusValue] = useState(reviewStatusParam);
-  const [sortValue, setSortValue] = useState(sortParam);
-
-  useEffect(() => {
-    setReviewStatusValue(reviewStatusParam);
-  }, [reviewStatusParam]);
-
-  useEffect(() => {
-    setSortValue(sortParam);
-  }, [sortParam]);
 
   return (
-    <form action="/ingestion/feed-candidates" method="get">
+    <form
+      action="/ingestion/feed-candidates"
+      key={`${pagination.first}:${reviewStatusParam}:${sortParam}`}
+      method="get"
+    >
       <input name="first" type="hidden" value={pagination.first} />
       <label>
         Review status
         <select
+          defaultValue={reviewStatusParam}
           name="reviewStatus"
-          onChange={(event) => setReviewStatusValue(event.currentTarget.value)}
-          value={reviewStatusValue}
         >
           <option value="">All</option>
           <option value="pending">Pending</option>
@@ -93,9 +91,8 @@ function FeedCandidatesControls({
       <label>
         Sort candidates
         <select
+          defaultValue={sortParam}
           name="sort"
-          onChange={(event) => setSortValue(event.currentTarget.value)}
-          value={sortValue}
         >
           <option value="name_asc">Name</option>
           <option value="fit_score_desc">Fit score</option>
@@ -555,8 +552,5 @@ function formatReviewedAt(value: string | null | undefined) {
     return "";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
+  return reviewedAtFormatter.format(date);
 }

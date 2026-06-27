@@ -31,31 +31,42 @@ const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 type ComparePickerProduct =
   CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
+type SaveFeedbackState = {
+  error: string | null;
+  inFlightSelectionKey: string | null;
+  message: string | null;
+  selectionKey: string | null;
+};
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveInFlightSelectionKey, setSaveInFlightSelectionKey] = useState<string | null>(null);
+  const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
+  const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
+    error: null,
+    inFlightSelectionKey: null,
+    message: null,
+    selectionKey: null
+  });
   const isSaveInFlightRef = useRef(false);
   const activeSelectionKeyRef = useRef<string | null>(null);
   const activeSaveRequestRef = useRef<{ id: number; selectionKey: string } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
     useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
-  const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
+  const activeSaveFeedback =
+    saveFeedback.selectionKey === selectionKey
+      ? saveFeedback
+      : {
+          error: null,
+          inFlightSelectionKey: null,
+          message: null
+        };
 
   if (activeSelectionKeyRef.current !== selectionKey) {
     activeSelectionKeyRef.current = selectionKey;
     activeSaveRequestRef.current = null;
     isSaveInFlightRef.current = false;
   }
-
-  useEffect(() => {
-    setSaveMessage(null);
-    setSaveError(null);
-    setSaveInFlightSelectionKey(null);
-  }, [selectionKey]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -67,15 +78,18 @@ export function CompareRoute() {
     }
 
     isSaveInFlightRef.current = true;
-    setSaveInFlightSelectionKey(selectionKey);
     const saveRequest = {
       id: nextSaveRequestIdRef.current + 1,
       selectionKey
     };
     nextSaveRequestIdRef.current = saveRequest.id;
     activeSaveRequestRef.current = saveRequest;
-    setSaveMessage(null);
-    setSaveError(null);
+    setSaveFeedback({
+      error: null,
+      inFlightSelectionKey: selectionKey,
+      message: null,
+      selectionKey
+    });
 
     commitRouteMutation(
       commitCreateSavedComparisonSet,
@@ -97,25 +111,37 @@ export function CompareRoute() {
             payload?.savedComparisonSet?.id &&
             !hasRouteGraphQLErrors(graphQLErrors)
           ) {
-            setSaveMessage("Comparison saved.");
-            setSaveError(null);
+            setSaveFeedback({
+              error: null,
+              inFlightSelectionKey: null,
+              message: "Comparison saved.",
+              selectionKey
+            });
           } else {
-            setSaveError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+            setSaveFeedback({
+              error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+              inFlightSelectionKey: null,
+              message: null,
+              selectionKey
+            });
           }
 
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
-          setSaveInFlightSelectionKey(null);
         },
         onError: () => {
           if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
             return;
           }
 
-          setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setSaveFeedback({
+            error: DEFAULT_ROUTE_ERROR_MESSAGE,
+            inFlightSelectionKey: null,
+            message: null,
+            selectionKey
+          });
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
-          setSaveInFlightSelectionKey(null);
         }
       },
       () => {
@@ -123,16 +149,20 @@ export function CompareRoute() {
           return;
         }
 
-        setSaveError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setSaveFeedback({
+          error: DEFAULT_ROUTE_ERROR_MESSAGE,
+          inFlightSelectionKey: null,
+          message: null,
+          selectionKey
+        });
         activeSaveRequestRef.current = null;
         isSaveInFlightRef.current = false;
-        setSaveInFlightSelectionKey(null);
       }
     );
   }
 
   if (loaderData.status === "ready") {
-    const saveInFlight = saveInFlightSelectionKey === selectionKey;
+    const saveInFlight = activeSaveFeedback.inFlightSelectionKey === selectionKey;
 
     return (
       <CompareShell
@@ -144,9 +174,9 @@ export function CompareRoute() {
         title="Compare products"
       >
         <p aria-live="polite" role="status">
-          {saveMessage ?? ""}
+          {activeSaveFeedback.message ?? ""}
         </p>
-        {saveError ? <p role="alert">{saveError}</p> : null}
+        {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}
         <ResettableErrorBoundary
           resetToken={loaderData.productQueries}
           fallback={

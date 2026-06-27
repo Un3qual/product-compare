@@ -194,8 +194,11 @@ function RelaySavedComparisonSetPage({
     queryRef
   );
   const page = summarizeSavedComparisonSetsPage(data);
-  const filteredSavedSets = filterSavedComparisonSets(page.savedSets, filterText);
-  const savedSets = filteredSavedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
+  const { savedSets } = visibleSavedComparisonSets(
+    page.savedSets,
+    deletedSavedSetIds,
+    filterText
+  );
 
   return (
     <>
@@ -332,39 +335,67 @@ const buildSavedComparisonsViewState = (
   deletedSavedSetIds: ReadonlySet<string>,
   filterText: string
 ) => {
-  const hasLocalDeletion = loaderData.savedSets.some((savedSet) =>
-    deletedSavedSetIds.has(savedSet.id)
+  const {
+    hasDeletedSavedSet,
+    hasFilter,
+    hasLoadedSavedSets,
+    savedSets
+  } = visibleSavedComparisonSets(
+    loaderData.savedSets,
+    deletedSavedSetIds,
+    filterText
   );
-  const filteredSavedSets = filterSavedComparisonSets(loaderData.savedSets, filterText);
-  const savedSets = filteredSavedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
 
   return {
     savedSets,
     statusMessage: buildSavedComparisonsStatus(
       loaderData,
       savedSets,
-      hasLocalDeletion,
-      filterText.trim() !== "",
-      loaderData.savedSets.length > 0
+      hasDeletedSavedSet,
+      hasFilter,
+      hasLoadedSavedSets
     )
   };
 };
 
-function filterSavedComparisonSets(
+function visibleSavedComparisonSets(
   savedSets: readonly SavedComparisonSetSummary[],
+  deletedSavedSetIds: ReadonlySet<string>,
   filterText: string
-): SavedComparisonSetSummary[] {
+) {
   const normalizedFilter = filterText.trim().toLowerCase();
+  const visibleSavedSets: SavedComparisonSetSummary[] = [];
+  let hasDeletedSavedSet = false;
 
-  if (!normalizedFilter) {
-    return [...savedSets];
-  }
-
-  return savedSets.filter((savedSet) => {
-    if (savedSet.name.toLowerCase().includes(normalizedFilter)) {
-      return true;
+  for (const savedSet of savedSets) {
+    if (deletedSavedSetIds.has(savedSet.id)) {
+      hasDeletedSavedSet = true;
+      continue;
     }
 
-    return savedSet.slugs.some((slug) => slug.toLowerCase().includes(normalizedFilter));
-  });
+    if (
+      normalizedFilter === "" ||
+      savedComparisonSetMatchesFilter(savedSet, normalizedFilter)
+    ) {
+      visibleSavedSets.push(savedSet);
+    }
+  }
+
+  return {
+    hasDeletedSavedSet,
+    hasFilter: normalizedFilter !== "",
+    hasLoadedSavedSets: savedSets.length > 0,
+    savedSets: visibleSavedSets
+  };
+}
+
+function savedComparisonSetMatchesFilter(
+  savedSet: SavedComparisonSetSummary,
+  normalizedFilter: string
+) {
+  if (savedSet.name.toLowerCase().includes(normalizedFilter)) {
+    return true;
+  }
+
+  return savedSet.slugs.some((slug) => slug.toLowerCase().includes(normalizedFilter));
 }

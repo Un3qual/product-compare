@@ -1,6 +1,6 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { Separator } from "../../primitives";
+import { Separator } from "../../primitives/separator";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = stylex.create({

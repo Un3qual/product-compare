@@ -3,11 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 type GraphQLMockResponse = {
   data: Record<string, unknown>;
 };
+type GraphQLMockResponses = Record<string, GraphQLMockResponse | GraphQLMockResponse[]>;
 
-async function mockGraphQL(
-  page: Page,
-  responses: Record<string, GraphQLMockResponse>
-) {
+async function mockGraphQL(page: Page, responses: GraphQLMockResponses) {
   const requests: Array<{
     operationName: string;
     variables: Record<string, unknown>;
@@ -31,7 +29,7 @@ async function mockGraphQL(
 
     requests.push({ operationName, variables });
 
-    const response = responses[operationName];
+    const response = nextGraphQLMockResponse(responses, operationName);
 
     if (!response) {
       await route.fulfill({
@@ -51,6 +49,23 @@ async function mockGraphQL(
   return requests;
 }
 
+function nextGraphQLMockResponse(
+  responses: GraphQLMockResponses,
+  operationName: string
+) {
+  const response = responses[operationName];
+
+  if (!Array.isArray(response)) {
+    return response;
+  }
+
+  if (response.length <= 1) {
+    return response[0];
+  }
+
+  return response.shift();
+}
+
 function extractOperationName(query: string) {
   const match = query.match(/\b(?:mutation|query)\s+([A-Za-z0-9_]+)/);
   return match?.[1] ?? "UnknownOperation";
@@ -68,7 +83,10 @@ test("login redirects to the home route after a successful session mutation", as
   page
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootViewerRouteQuery: [
+      rootViewerResponse(),
+      rootViewerResponse({ id: "1", email: "person@example.com" })
+    ],
     LoginMutation: {
       data: {
         login: {
@@ -86,6 +104,11 @@ test("login redirects to the home route after a successful session mutation", as
 
   await expect(page).toHaveURL("/");
   await expect(page.getByRole("heading", { name: "Product Compare" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
+      name: "Sign out"
+    })
+  ).toBeVisible();
   expect(requests).toContainEqual({
     operationName: "LoginMutation",
     variables: {
@@ -127,7 +150,10 @@ test("register redirects to the home route after a successful session mutation",
   page
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootViewerRouteQuery: [
+      rootViewerResponse(),
+      rootViewerResponse({ id: "2", email: "new@example.com" })
+    ],
     RegisterMutation: {
       data: {
         register: {
@@ -144,6 +170,11 @@ test("register redirects to the home route after a successful session mutation",
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect(page).toHaveURL("/");
+  await expect(
+    page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
+      name: "Sign out"
+    })
+  ).toBeVisible();
   expect(requests).toContainEqual({
     operationName: "RegisterMutation",
     variables: {
@@ -265,7 +296,10 @@ test("logout clears the browser session through GraphQL and returns to sign in",
   page
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse({ id: "viewer-1", email: "person@example.com" }),
+    RootViewerRouteQuery: [
+      rootViewerResponse({ id: "viewer-1", email: "person@example.com" }),
+      rootViewerResponse()
+    ],
     LogoutMutation: {
       data: {
         logout: {

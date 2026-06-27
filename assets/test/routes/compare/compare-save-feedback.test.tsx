@@ -319,6 +319,7 @@ test("compare route clears save feedback when the selected comparison changes", 
   mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
   rerender(compareRouteElement());
 
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
   await waitFor(() => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });

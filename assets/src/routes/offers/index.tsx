@@ -21,6 +21,10 @@ type PriceHistoryConnection = NonNullable<OfferNode["priceHistory"]>;
 type CouponEdge = ActiveCouponsConnection["edges"][number];
 type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
 type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
+type RenderableOffer = {
+  href: string;
+  offer: OfferNode;
+};
 
 export function OfferDiscoveryRoute() {
   const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
@@ -129,7 +133,7 @@ function OfferDiscoveryList({
   connection: OfferConnection;
   filters: OfferDiscoveryFilters;
 }) {
-  const offers = connection.edges.map(({ node }) => node).filter(isRenderableOffer);
+  const offers = renderableOffers(connection);
 
   return (
     <>
@@ -138,8 +142,8 @@ function OfferDiscoveryList({
         <p>No offers match these filters.</p>
       ) : (
         <ul aria-label="Offers">
-          {offers.map((offer) => (
-            <OfferListItem key={offer.id} offer={offer} />
+          {offers.map(({ href, offer }) => (
+            <OfferListItem key={offer.id} offer={offer} offerHref={href} />
           ))}
         </ul>
       )}
@@ -148,11 +152,16 @@ function OfferDiscoveryList({
   );
 }
 
-function OfferListItem({ offer }: { offer: OfferNode }) {
+function OfferListItem({
+  offer,
+  offerHref
+}: {
+  offer: OfferNode;
+  offerHref: string;
+}) {
   const latestPriceLabel = priceLabel(offer.latestPrice?.price, offer.currency);
   const priceHistory = offer.priceHistory ?? emptyPriceHistoryConnection();
   const activeCoupons = offer.activeCoupons ?? emptyCouponConnection();
-  const offerHref = safeHttpUrl(offer.url);
   const historyRows = priceHistory.edges
     .map(({ node }) => priceHistoryRow(node, offer.currency))
     .filter((row): row is PriceHistoryRow => row !== null);
@@ -316,8 +325,18 @@ function offerDiscoveryPath(filters: OfferDiscoveryFilters, after: string | null
   return `/offers?${params.toString()}`;
 }
 
-function isRenderableOffer(offer: OfferNode) {
-  return safeHttpUrl(offer.url) !== null;
+function renderableOffers(connection: OfferConnection) {
+  const offers: RenderableOffer[] = [];
+
+  for (const { node: offer } of connection.edges) {
+    const href = safeHttpUrl(offer.url);
+
+    if (href) {
+      offers.push({ href, offer });
+    }
+  }
+
+  return offers;
 }
 
 function safeHttpUrl(url: string) {
