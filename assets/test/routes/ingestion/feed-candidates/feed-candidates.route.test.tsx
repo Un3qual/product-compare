@@ -1,23 +1,31 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
-import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
+import {
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor
+} from "../../../../src/relay/route-preload";
+import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
 import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/index";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
 const {
   commitReviewMutationMock,
   graphqlMock,
+  revalidateMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
+  useRevalidatorMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   commitReviewMutationMock: vi.fn(),
   graphqlMock: vi.fn(),
+  revalidateMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
+  useRevalidatorMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
 
@@ -26,7 +34,8 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
+    useRevalidator: useRevalidatorMock
   };
 });
 
@@ -55,15 +64,20 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRevalidator = vi.mocked(useRevalidator);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const FEED_CANDIDATES_QUERY_DESCRIPTOR = {
+const FEED_CANDIDATES_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
+  MerchantFeedCandidatesRouteQuery["variables"]
+> = {
   __relayQuery: {
     operationName: "MerchantFeedCandidatesRouteQuery",
-    text: "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String) { merchantFeedCandidates(first: $first, after: $after) { edges { node { id } } } }",
+    text: "query MerchantFeedCandidatesRouteQuery($first: Int, $after: String, $reviewStatus: MerchantFeedCandidateReviewStatus, $sort: MerchantFeedCandidateSort) { merchantFeedCandidates(first: $first, after: $after, reviewStatus: $reviewStatus, sort: $sort) { edges { node { id } } } }",
     variables: {
       first: 20,
-      after: null
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
     }
   }
 };
@@ -78,10 +92,13 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
+  revalidateMock.mockReset();
+  useRevalidatorMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   FEED_CANDIDATES_QUERY_REF.dispose.mockReset();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockedUseMutation.mockReturnValue([commitReviewMutationMock, false]);
+  mockedUseRevalidator.mockReturnValue({ revalidate: revalidateMock, state: "idle" });
   mockedUseRoutePreloadedQuery.mockReturnValue(FEED_CANDIDATES_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildFeedCandidatesData());
 });
@@ -94,12 +111,26 @@ test("feed candidates route renders review-safe candidate rows", () => {
 
   expect(within(candidateList).getByText("Trail Merchant")).toBeInTheDocument();
   expect(within(candidateList).getByText("Trail Shopping")).toBeInTheDocument();
-  expect(within(candidateList).getByText("10 products")).toBeInTheDocument();
-  expect(within(candidateList).getByText("US")).toBeInTheDocument();
-  expect(within(candidateList).getByText("USD")).toBeInTheDocument();
-  expect(within(candidateList).getByText("EN")).toBeInTheDocument();
+  expect(within(candidateList).getByText("5000 products")).toBeInTheDocument();
+  expect(within(candidateList).getAllByText("US")).toHaveLength(2);
+  expect(within(candidateList).getAllByText("USD").length).toBeGreaterThanOrEqual(2);
+  expect(within(candidateList).getAllByText("EN")).toHaveLength(3);
   expect(within(candidateList).getByText("Pending")).toBeInTheDocument();
-  expect(within(candidateList).queryByText(/tracking|account|token/i)).not.toBeInTheDocument();
+  expect(within(candidateList).getByText("Shortlisted")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Dismissed")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Fit score 85")).toBeInTheDocument();
+  const trailReasons = within(candidateList).getByRole("list", {
+    name: "Fit reasons for Trail Merchant"
+  });
+  expect(within(trailReasons).getByText("1000+ products")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("US market")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("USD")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("English")).toBeInTheDocument();
+  expect(within(trailReasons).getByText("feed type present")).toBeInTheDocument();
+  expect(within(candidateList).getByText("Fit score 20")).toBeInTheDocument();
+  expect(
+    within(candidateList).queryByText(/tracking|account|token|raw metadata|rawMetadata|raw_metadata/i)
+  ).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     FEED_CANDIDATES_QUERY_DESCRIPTOR
@@ -108,6 +139,76 @@ test("feed candidates route renders review-safe candidate rows", () => {
     expect.anything(),
     FEED_CANDIDATES_QUERY_REF
   );
+});
+
+test("feed candidates route renders current page review counts", () => {
+  renderFeedCandidatesRoute();
+
+  const reviewSummary = screen.getByLabelText("CJ feed candidate review summary");
+
+  expect(within(reviewSummary).getByText("Pending")).toBeInTheDocument();
+  expect(within(reviewSummary).getByText("Shortlisted")).toBeInTheDocument();
+  expect(within(reviewSummary).getByText("Dismissed")).toBeInTheDocument();
+  expect(within(reviewSummary).getAllByText("1")).toHaveLength(3);
+});
+
+test("feed candidates route renders filter controls", () => {
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Review status" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Fit score" })).toHaveValue(
+    "fit_score_desc"
+  );
+});
+
+test("feed candidates route reflects selected filter controls from loader data", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Review status" })).toHaveValue(
+    "shortlisted"
+  );
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toHaveValue(
+    "product_count_desc"
+  );
+});
+
+test("feed candidates route reflects selected fit-score sort from loader data", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      reviewStatus: null,
+      sort: "FIT_SCORE_DESC"
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("combobox", { name: "Sort candidates" })).toHaveValue(
+    "fit_score_desc"
+  );
+});
+
+test("feed candidates route renders existing review metadata", () => {
+  renderFeedCandidatesRoute();
+
+  const reviewedAt = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date("2026-06-04T21:15:00.000000Z"));
+
+  expect(screen.getAllByText("Prioritized for launch review.")).toHaveLength(2);
+  expect(screen.getByText(`Reviewed ${reviewedAt}`)).toBeInTheDocument();
 });
 
 test("feed candidates route omits review feedback before an action completes", () => {
@@ -119,14 +220,14 @@ test("feed candidates route omits review feedback before an action completes", (
 test("feed candidates route commits review status changes", async () => {
   renderFeedCandidatesRoute();
 
-  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist City Gear" }));
 
   await waitFor(() => {
     expect(commitReviewMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "SHORTLISTED"
           }
         }
@@ -134,8 +235,8 @@ test("feed candidates route commits review status changes", async () => {
     );
   });
 
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss Trail Merchant" }));
-  fireEvent.click(screen.getByRole("button", { name: "Reset Trail Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss City Gear" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reset City Gear" }));
 
   await waitFor(() => {
     expect(commitReviewMutationMock).toHaveBeenNthCalledWith(
@@ -143,7 +244,7 @@ test("feed candidates route commits review status changes", async () => {
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "DISMISSED"
           }
         }
@@ -154,11 +255,98 @@ test("feed candidates route commits review status changes", async () => {
       expect.objectContaining({
         variables: {
           input: {
-            id: "candidate-1",
+            id: "candidate-2",
             status: "PENDING"
           }
         }
       })
+    );
+  });
+});
+
+test("feed candidates route sends trimmed review notes when present", async () => {
+  renderFeedCandidatesRoute();
+
+  fireEvent.change(screen.getByLabelText("Review note for Trail Merchant"), {
+    target: {
+      value: "  High fit for launch cohort  "
+    }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-1",
+            status: "SHORTLISTED",
+            note: "High fit for launch cohort"
+          }
+        }
+      })
+    );
+  });
+});
+
+test("feed candidates route sends blank review notes when clearing a draft", async () => {
+  renderFeedCandidatesRoute();
+
+  fireEvent.change(screen.getByLabelText("Review note for City Gear"), {
+    target: {
+      value: "   "
+    }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss City Gear" }));
+
+  await waitFor(() => {
+    expect(commitReviewMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: "candidate-2",
+            status: "DISMISSED",
+            note: ""
+          }
+        }
+      })
+    );
+  });
+});
+
+test("feed candidates route clears draft notes and revalidates after successful reviews", async () => {
+  commitReviewMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        reviewMerchantFeedCandidate: {
+          candidate: {
+            reviewStatus: "SHORTLISTED"
+          },
+          errors: []
+        }
+      },
+      null
+    );
+  });
+
+  renderFeedCandidatesRoute();
+
+  const reviewNote = screen.getByLabelText("Review note for Trail Merchant");
+
+  fireEvent.change(reviewNote, {
+    target: {
+      value: "  High fit for launch cohort  "
+    }
+  });
+  expect(reviewNote).toHaveValue("  High fit for launch cohort  ");
+
+  fireEvent.click(screen.getByRole("button", { name: "Shortlist Trail Merchant" }));
+
+  await waitFor(() => {
+    expect(reviewNote).toHaveValue("Prioritized for launch review.");
+    expect(revalidateMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Trail Merchant marked Shortlisted."
     );
   });
 });
@@ -200,11 +388,37 @@ test("feed candidates route renders an empty state", () => {
   expect(screen.getByText("No CJ feed candidates captured yet.")).toBeInTheDocument();
 });
 
-test("feed candidates route renders pagination links", () => {
+test("feed candidates route first-page link preserves filters and drops after", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 30,
-      after: "previous-cursor"
+      after: "previous-cursor",
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildFeedCandidatesData({
+      hasNextPage: false,
+      hasPreviousPage: true
+    })
+  );
+
+  renderFeedCandidatesRoute();
+
+  expect(screen.getByRole("link", { name: "First candidates" })).toHaveAttribute(
+    "href",
+    "/ingestion/feed-candidates?first=30&reviewStatus=shortlisted&sort=product_count_desc"
+  );
+});
+
+test("feed candidates route next-page link preserves filters and page size", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 30,
+      after: "previous-cursor",
+      reviewStatus: "SHORTLISTED",
+      sort: "PRODUCT_COUNT_DESC"
     })
   );
   mockedUsePreloadedQuery.mockReturnValue(
@@ -217,13 +431,9 @@ test("feed candidates route renders pagination links", () => {
 
   renderFeedCandidatesRoute();
 
-  expect(screen.getByRole("link", { name: "First candidates" })).toHaveAttribute(
-    "href",
-    "/ingestion/feed-candidates"
-  );
   expect(screen.getByRole("link", { name: "Next candidates" })).toHaveAttribute(
     "href",
-    "/ingestion/feed-candidates?first=30&after=next-cursor"
+    "/ingestion/feed-candidates?first=30&after=next-cursor&reviewStatus=shortlisted&sort=product_count_desc"
   );
 });
 
@@ -232,7 +442,9 @@ test("feed candidates route renders the loader error state", () => {
     status: "error",
     pagination: {
       first: 20,
-      after: null
+      after: null,
+      reviewStatus: null,
+      sort: "NAME_ASC"
     }
   } satisfies FeedCandidatesLoaderData);
 
@@ -255,7 +467,9 @@ function renderFeedCandidatesRoute() {
 function buildReadyLoaderData(
   pagination: Extract<FeedCandidatesLoaderData, { status: "ready" }>["pagination"] = {
     first: 20,
-    after: null
+    after: null,
+    reviewStatus: null,
+    sort: "NAME_ASC"
   }
 ) {
   return {
@@ -273,12 +487,46 @@ function buildFeedCandidatesData({
       providerFeedId: "feed-1",
       advertiserName: "Trail Merchant",
       advertiserCountry: "US",
-      sourceFeedType: "SHOPPING",
+      sourceFeedType: "PRODUCT",
       currency: "USD",
       language: "EN",
       feedName: "Trail Shopping",
-      productCount: 10,
+      productCount: 5000,
+      reviewStatus: "SHORTLISTED",
+      reviewNote: "Prioritized for launch review.",
+      reviewedAt: "2026-06-04T21:15:00.000000Z",
+      providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",
+      lastSeenAt: "2026-06-04T21:00:00.000000Z"
+    },
+    {
+      id: "candidate-2",
+      provider: "cj",
+      providerFeedId: "feed-2",
+      advertiserName: "City Gear",
+      advertiserCountry: "CA",
+      sourceFeedType: null,
+      currency: "CAD",
+      language: "EN",
+      feedName: "City Gear Catalog",
+      productCount: 50,
       reviewStatus: "PENDING",
+      reviewNote: null,
+      reviewedAt: null,
+      providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",
+      lastSeenAt: "2026-06-04T21:00:00.000000Z"
+    },
+    {
+      id: "candidate-3",
+      provider: "cj",
+      providerFeedId: "feed-3",
+      advertiserName: "Outlet Deals",
+      advertiserCountry: "US",
+      sourceFeedType: "SHOPPING",
+      currency: "USD",
+      language: "EN",
+      feedName: "Outlet Deals Feed",
+      productCount: 1,
+      reviewStatus: "DISMISSED",
       reviewNote: null,
       reviewedAt: null,
       providerLastUpdatedAt: "2026-06-04T20:00:00.000000Z",

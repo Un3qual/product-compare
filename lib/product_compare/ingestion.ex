@@ -97,9 +97,81 @@ defmodule ProductCompare.Ingestion do
 
   @spec list_merchant_feed_candidates_query() :: Ecto.Query.t()
   def list_merchant_feed_candidates_query do
+    list_merchant_feed_candidates_query([])
+  end
+
+  @spec list_merchant_feed_candidates_query(keyword() | map()) :: Ecto.Query.t()
+  def list_merchant_feed_candidates_query(opts) do
+    opts = Map.new(opts)
+
     MerchantFeedCandidate
-    |> order_by(
-      [candidate],
+    |> maybe_filter_candidate_review_status(Map.get(opts, :review_status))
+    |> order_merchant_feed_candidates(Map.get(opts, :sort, :name_asc))
+  end
+
+  defp maybe_filter_candidate_review_status(query, status)
+       when status in ["pending", "shortlisted", "dismissed"] do
+    where(query, [candidate], candidate.review_status == ^status)
+  end
+
+  defp maybe_filter_candidate_review_status(query, _status), do: query
+
+  defp order_merchant_feed_candidates(query, :product_count_desc) do
+    order_by(query, [candidate],
+      desc_nulls_last: candidate.product_count,
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.provider_feed_id,
+      asc: candidate.id
+    )
+  end
+
+  defp order_merchant_feed_candidates(query, :last_seen_desc) do
+    order_by(query, [candidate],
+      desc: candidate.last_seen_at,
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.provider_feed_id,
+      asc: candidate.id
+    )
+  end
+
+  defp order_merchant_feed_candidates(query, :fit_score_desc) do
+    order_by(query, [candidate],
+      desc:
+        fragment(
+          """
+          (CASE
+            WHEN ? >= 10000 THEN 50
+            WHEN ? >= 1000 THEN 35
+            WHEN ? >= 100 THEN 20
+            WHEN ? > 0 THEN 10
+            ELSE 0
+          END) +
+          (CASE WHEN upper(coalesce(?, '')) = 'US' THEN 20 ELSE 0 END) +
+          (CASE WHEN upper(coalesce(?, '')) = 'USD' THEN 15 ELSE 0 END) +
+          (CASE WHEN upper(coalesce(?, '')) = 'EN' THEN 10 ELSE 0 END) +
+          (CASE WHEN coalesce(?, '') != '' THEN 5 ELSE 0 END)
+          """,
+          candidate.product_count,
+          candidate.product_count,
+          candidate.product_count,
+          candidate.product_count,
+          candidate.advertiser_country,
+          candidate.currency,
+          candidate.language,
+          candidate.source_feed_type
+        ),
+      desc: candidate.last_seen_at,
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.provider_feed_id,
+      asc: candidate.id
+    )
+  end
+
+  defp order_merchant_feed_candidates(query, _sort) do
+    order_by(query, [candidate],
       asc: candidate.advertiser_name,
       asc: candidate.feed_name,
       asc: candidate.provider_feed_id,

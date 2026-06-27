@@ -13,7 +13,77 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
+  setup do
+    original_api_token = System.get_env("CJ_API_TOKEN")
+    original_account_id = System.get_env("CJ_ACCOUNT_ID")
+
+    on_exit(fn ->
+      restore_env("CJ_API_TOKEN", original_api_token)
+      restore_env("CJ_ACCOUNT_ID", original_account_id)
+    end)
+
+    System.delete_env("CJ_API_TOKEN")
+    System.delete_env("CJ_ACCOUNT_ID")
+
+    :ok
+  end
+
   describe "run_import/1" do
+    test "reports missing credentials without fetching or persisting rows" do
+      System.put_env("CJ_API_TOKEN", " ")
+      System.put_env("CJ_ACCOUNT_ID", "\t")
+
+      flunking_fetcher = fn _cursor, _opts ->
+        flunk("credential preflight must not call the product fetcher")
+      end
+
+      assert {:ok,
+              %{
+                provider: "cj",
+                surface: "shoppingProducts",
+                ready: false,
+                missing_required: ["CJ_API_TOKEN", "CJ_ACCOUNT_ID"]
+              }} =
+               CjImport.run_import(
+                 check_credentials: true,
+                 api_token: "",
+                 company_id: " ",
+                 fetcher: flunking_fetcher
+               )
+
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+      assert Repo.aggregate(SourceArtifact, :count, :id) == 0
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 0
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 0
+      assert Repo.aggregate(PricePoint, :count, :id) == 0
+    end
+
+    test "reports ready when credentials are injected without printing secret values" do
+      flunking_fetcher = fn _cursor, _opts ->
+        flunk("credential preflight must not call the product fetcher")
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok,
+                  %{
+                    provider: "cj",
+                    surface: "shoppingProducts",
+                    ready: true,
+                    missing_required: []
+                  }} =
+                   CjImport.run_import(
+                     check_credentials: true,
+                     api_token: "secret-token",
+                     company_id: "1234567",
+                     fetcher: flunking_fetcher
+                   )
+        end)
+
+      refute output =~ "secret-token"
+      refute output =~ "1234567"
+    end
+
     test "fetches, normalizes, and persists one redacted CJ product record" do
       original_level = Logger.level()
       Logger.configure(level: :debug)
@@ -37,7 +107,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert_receive {:fetch, nil, opts}
-      assert_receive {:logger_level, :warning}
+      assert_receive {:logger_level, :debug}
       assert opts[:keywords] == ["shoe"]
       assert opts[:limit] == 1
       assert Logger.level() == :debug
@@ -135,6 +205,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 2
     end
 
+    test "can suppress report output for background callers" do
+      fetcher = fn _cursor, _opts ->
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert output == ""
+    end
+
     test "reuses an existing CJ source by unique key" do
       existing_source =
         %Source{}
@@ -194,6 +283,78 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_failed: 1
              } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
     end
+
+    test "does not persist raw provider payloads for fetch failures" do
+      fetcher = fn _cursor, _opts ->
+        {:error,
+         {:provider_error,
+          %{
+            body: "raw-provider-payload",
+            headers: [{"authorization", "Bearer provider-secret"}]
+          }}}
+      end
+
+      assert {:error,
+              {:provider_error,
+               %{
+                 body: "raw-provider-payload",
+                 headers: [{"authorization", "Bearer provider-secret"}]
+               }}} =
+               CjImport.run_import(
+                 fetcher: fetcher,
+                 keywords: ["shoe"],
+                 limit: 1,
+                 print_report: false
+               )
+
+      assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
+               Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
+
+    test "marks the import run failed when the page fetch raises after the run starts" do
+      fetcher = fn _cursor, _opts ->
+        raise "provider secret should not be persisted"
+      end
+
+      assert {:error, :runner_exception} =
+               CjImport.run_import(
+                 fetcher: fetcher,
+                 keywords: ["shoe"],
+                 limit: 1,
+                 print_report: false
+               )
+
+      assert %ImportRun{
+               status: "failed",
+               error_summary: "fetch_failed",
+               pages_fetched: 0,
+               records_fetched: 0,
+               records_normalized: 0,
+               records_persisted: 0,
+               records_failed: 0
+             } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
+  end
+
+  describe "run/1 credential preflight" do
+    test "prints the product import credential surface" do
+      output = capture_io(fn -> assert :ok = CjImport.run(["--check-credentials"]) end)
+
+      assert output =~ "provider=cj"
+      assert output =~ "surface=shoppingProducts"
+      assert output =~ "ready=false"
+      assert output =~ "missing_required=CJ_API_TOKEN,CJ_ACCOUNT_ID"
+    end
+
+    test "raises with only missing env var names when readiness is required" do
+      assert_raise Mix.Error,
+                   "missing CJ credentials: CJ_API_TOKEN,CJ_ACCOUNT_ID",
+                   fn ->
+                     capture_io(fn ->
+                       CjImport.run(["--check-credentials", "--require-ready"])
+                     end)
+                   end
+    end
   end
 
   defp product_validation_fixture do
@@ -215,4 +376,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
     })
     |> List.wrap()
   end
+
+  defp restore_env(name, nil), do: System.delete_env(name)
+  defp restore_env(name, value), do: System.put_env(name, value)
 end

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<313417cf8a431de3a59b6b948934ab22>>
+ * @generated SignedSource<<6fece9543855d8d9b9548b59b7532d61>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,9 +10,12 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type MerchantFeedCandidateReviewStatus = "DISMISSED" | "PENDING" | "SHORTLISTED" | "%future added value";
+export type MerchantFeedCandidateSort = "FIT_SCORE_DESC" | "LAST_SEEN_DESC" | "NAME_ASC" | "PRODUCT_COUNT_DESC" | "%future added value";
 export type MerchantFeedCandidatesRouteQuery$variables = {
   after?: string | null | undefined;
   first?: number | null | undefined;
+  reviewStatus?: MerchantFeedCandidateReviewStatus | null | undefined;
+  sort?: MerchantFeedCandidateSort | null | undefined;
 };
 export type MerchantFeedCandidatesRouteQuery$data = {
   readonly merchantFeedCandidates: {
@@ -60,7 +63,17 @@ v1 = {
   "kind": "LocalArgument",
   "name": "first"
 },
-v2 = [
+v2 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "reviewStatus"
+},
+v3 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "sort"
+},
+v4 = [
   {
     "alias": null,
     "args": [
@@ -73,6 +86,16 @@ v2 = [
         "kind": "Variable",
         "name": "first",
         "variableName": "first"
+      },
+      {
+        "kind": "Variable",
+        "name": "reviewStatus",
+        "variableName": "reviewStatus"
+      },
+      {
+        "kind": "Variable",
+        "name": "sort",
+        "variableName": "sort"
       }
     ],
     "concreteType": "MerchantFeedCandidateConnection",
@@ -261,12 +284,14 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*: any*/),
-      (v1/*: any*/)
+      (v1/*: any*/),
+      (v2/*: any*/),
+      (v3/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "MerchantFeedCandidatesRouteQuery",
-    "selections": (v2/*: any*/),
+    "selections": (v4/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -274,23 +299,25 @@ return {
   "operation": {
     "argumentDefinitions": [
       (v1/*: any*/),
-      (v0/*: any*/)
+      (v0/*: any*/),
+      (v2/*: any*/),
+      (v3/*: any*/)
     ],
     "kind": "Operation",
     "name": "MerchantFeedCandidatesRouteQuery",
-    "selections": (v2/*: any*/)
+    "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "ede3a9a58a9f83b31253449f9cb0973f",
+    "cacheID": "3122e2895b83abbc6aef6df7688fe192",
     "id": null,
     "metadata": {},
     "name": "MerchantFeedCandidatesRouteQuery",
     "operationKind": "query",
-    "text": "query MerchantFeedCandidatesRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchantFeedCandidates(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        provider\n        providerFeedId\n        advertiserName\n        advertiserCountry\n        sourceFeedType\n        currency\n        language\n        feedName\n        productCount\n        reviewStatus\n        reviewNote\n        reviewedAt\n        providerLastUpdatedAt\n        lastSeenAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query MerchantFeedCandidatesRouteQuery(\n  $first: Int\n  $after: String\n  $reviewStatus: MerchantFeedCandidateReviewStatus\n  $sort: MerchantFeedCandidateSort\n) {\n  merchantFeedCandidates(first: $first, after: $after, reviewStatus: $reviewStatus, sort: $sort) {\n    edges {\n      cursor\n      node {\n        id\n        provider\n        providerFeedId\n        advertiserName\n        advertiserCountry\n        sourceFeedType\n        currency\n        language\n        feedName\n        productCount\n        reviewStatus\n        reviewNote\n        reviewedAt\n        providerLastUpdatedAt\n        lastSeenAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "cce1d827097c15f2bb940892885506a4";
+(node as any).hash = "6ff5865f5af106667a1dd295f390e6cb";
 
 export default node;

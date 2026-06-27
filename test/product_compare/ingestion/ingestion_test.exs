@@ -357,6 +357,266 @@ defmodule ProductCompare.IngestionTest do
                ~s/ORDER BY m0."advertiser_name", m0."feed_name", m0."provider_feed_id", m0."id"/
     end
 
+    test "merchant feed candidate connection query keeps name/feed/provider/id ordering by default" do
+      source = source_fixture()
+      other_source = source_fixture(%{name: "CJ other", domain: "other-cj.example"})
+
+      beta =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Beta Merchant",
+          feed_name: "A Feed",
+          provider_feed_id: "feed-beta"
+        })
+
+      alpha_feed =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "Camping Feed",
+          provider_feed_id: "feed-9"
+        })
+
+      alpha_provider =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "Outdoor Feed",
+          provider_feed_id: "feed-0"
+        })
+
+      alpha_tie_first =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "Outdoor Feed",
+          provider_feed_id: "feed-1"
+        })
+
+      alpha_tie_second =
+        merchant_feed_candidate_fixture(other_source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "Outdoor Feed",
+          provider_feed_id: "feed-1"
+        })
+
+      assert Repo.all(Ingestion.list_merchant_feed_candidates_query()) |> Enum.map(& &1.id) == [
+               alpha_feed.id,
+               alpha_provider.id,
+               alpha_tie_first.id,
+               alpha_tie_second.id,
+               beta.id
+             ]
+    end
+
+    test "merchant feed candidate query filters by review status and ranks product counts with nils last" do
+      source = source_fixture()
+
+      shortlisted_large =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Large Merchant",
+          product_count: 40,
+          provider_feed_id: "feed-large",
+          review_status: "shortlisted"
+        })
+
+      shortlisted_nil =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Unknown Merchant",
+          product_count: nil,
+          provider_feed_id: "feed-unknown",
+          review_status: "shortlisted"
+        })
+
+      shortlisted_small =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Small Merchant",
+          product_count: 10,
+          provider_feed_id: "feed-small",
+          review_status: "shortlisted"
+        })
+
+      _pending_larger =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Pending Merchant",
+          product_count: 100,
+          provider_feed_id: "feed-pending"
+        })
+
+      assert Repo.all(
+               Ingestion.list_merchant_feed_candidates_query(
+                 review_status: "shortlisted",
+                 sort: :product_count_desc
+               )
+             )
+             |> Enum.map(& &1.id) == [
+               shortlisted_large.id,
+               shortlisted_small.id,
+               shortlisted_nil.id
+             ]
+    end
+
+    test "merchant feed candidate query ranks deterministic fit scores with stable tiebreakers" do
+      source = source_fixture()
+
+      trail =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Trail Merchant",
+          currency: "USD",
+          feed_name: "Trail Feed",
+          language: "EN",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: 5_000,
+          provider_feed_id: "feed-trail",
+          source_feed_type: "PRODUCT"
+        })
+
+      global =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_name: "Global Merchant",
+          currency: "CAD",
+          feed_name: "Global Feed",
+          language: "EN",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: 20_000,
+          provider_feed_id: "feed-global",
+          source_feed_type: "PRODUCT"
+        })
+
+      budget =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Budget Merchant",
+          currency: "USD",
+          feed_name: "Budget Feed",
+          language: nil,
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: 500,
+          provider_feed_id: "feed-budget",
+          source_feed_type: nil
+        })
+
+      unknown =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Unknown Merchant",
+          currency: "USD",
+          feed_name: "Unknown Feed",
+          language: "EN",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: nil,
+          provider_feed_id: "feed-unknown",
+          source_feed_type: nil
+        })
+
+      older_tie =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Aardvark Tie Merchant",
+          currency: nil,
+          feed_name: "A Tie Feed",
+          language: nil,
+          last_seen_at: ~U[2026-06-04 19:00:00Z],
+          product_count: nil,
+          provider_feed_id: "feed-a-tie",
+          source_feed_type: "PRODUCT"
+        })
+
+      newer_tie =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_name: "Zebra Tie Merchant",
+          currency: nil,
+          feed_name: "Z Tie Feed",
+          language: nil,
+          last_seen_at: ~U[2026-06-04 21:00:00Z],
+          product_count: nil,
+          provider_feed_id: "feed-z-tie",
+          source_feed_type: "PRODUCT"
+        })
+
+      assert Repo.all(Ingestion.list_merchant_feed_candidates_query(sort: :fit_score_desc))
+             |> Enum.map(& &1.id) == [
+               trail.id,
+               global.id,
+               budget.id,
+               unknown.id,
+               newer_tie.id,
+               older_tie.id
+             ]
+    end
+
+    test "merchant feed candidate query ranks last seen timestamps with stable tiebreakers" do
+      source = source_fixture()
+      other_source = source_fixture(%{name: "CJ second", domain: "second-cj.example"})
+      newest_seen_at = ~U[2026-06-04 22:00:00Z]
+
+      older =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Aardvark Merchant",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          provider_feed_id: "feed-old"
+        })
+
+      newer_feed_b =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "B Feed",
+          last_seen_at: newest_seen_at,
+          provider_feed_id: "feed-3"
+        })
+
+      newer_provider =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "A Feed",
+          last_seen_at: newest_seen_at,
+          provider_feed_id: "feed-2"
+        })
+
+      newer_tie_first =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "A Feed",
+          last_seen_at: newest_seen_at,
+          provider_feed_id: "feed-1"
+        })
+
+      newer_tie_second =
+        merchant_feed_candidate_fixture(other_source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "A Feed",
+          last_seen_at: newest_seen_at,
+          provider_feed_id: "feed-1"
+        })
+
+      assert Repo.all(Ingestion.list_merchant_feed_candidates_query(sort: :last_seen_desc))
+             |> Enum.map(& &1.id) == [
+               newer_tie_first.id,
+               newer_tie_second.id,
+               newer_provider.id,
+               newer_feed_b.id,
+               older.id
+             ]
+    end
+
+    test "merchant feed candidate query falls back to name ordering for unknown sorts" do
+      source = source_fixture()
+
+      beta =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Beta Merchant",
+          provider_feed_id: "feed-beta"
+        })
+
+      alpha =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          provider_feed_id: "feed-alpha"
+        })
+
+      assert Repo.all(Ingestion.list_merchant_feed_candidates_query(sort: :unsupported))
+             |> Enum.map(& &1.id) == [alpha.id, beta.id]
+    end
+
     test "reviewing a candidate preserves note when review_note is omitted" do
       source = source_fixture()
 
@@ -711,6 +971,36 @@ defmodule ProductCompare.IngestionTest do
       )
     )
     |> Repo.insert!()
+  end
+
+  defp merchant_feed_candidate_fixture(source, attrs) do
+    suffix = System.unique_integer([:positive])
+
+    attrs =
+      Map.merge(
+        %{
+          advertiser_country: "US",
+          advertiser_id: "adv-#{suffix}",
+          advertiser_name: "Merchant #{suffix}",
+          currency: "USD",
+          feed_name: "Feed #{suffix}",
+          language: "EN",
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: 1,
+          provider: "cj",
+          provider_feed_id: "feed-#{suffix}",
+          provider_last_updated_at: ~U[2026-06-04 20:00:00Z],
+          raw_metadata: %{},
+          review_status: "pending",
+          source_feed_type: "SHOPPING"
+        },
+        attrs
+      )
+
+    assert {:ok, %MerchantFeedCandidate{} = candidate} =
+             Ingestion.upsert_merchant_feed_candidate(source, attrs)
+
+    candidate
   end
 
   defp normalized_listing(attrs) do

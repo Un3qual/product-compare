@@ -11,7 +11,12 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   @spec merchant_feed_candidates(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def merchant_feed_candidates(_parent, args, %{context: %{current_user: _current_user}}) do
-    Ingestion.list_merchant_feed_candidates_query()
+    query_opts = [
+      review_status: normalize_review_status(Input.fetch_value(args, :review_status)),
+      sort: Input.fetch_value(args, :sort, :name_asc)
+    ]
+
+    Ingestion.list_merchant_feed_candidates_query(query_opts)
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 

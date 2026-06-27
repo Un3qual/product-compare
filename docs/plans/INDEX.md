@@ -12,15 +12,18 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-| Status | Plan | Use When | Promotion Rule |
-| --- | --- | --- | --- |
-| none | None | No active implementation plan is currently promoted in `docs/work/index.md`. | Pick one concrete candidate from the pool before creating the next ready row. |
+No active ready implementation plans. `docs/work/index.md` currently holds a
+Product data scraping coordinator decision row for the next ingestion batch or
+explicit deferral.
+
+Rejected: CJ candidate CSV score export was explicitly removed from the scoring
+batch and should not be recreated or promoted.
 
 ## Candidate Pool
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | Candidate scoring or merchant application planning | The review-status workflow lands and product priority chooses a next step beyond manual candidate triage. | Create one dated plan and one `ready` queue row. Keep application automation and scheduled polling out unless explicitly selected. |
+| needs_decision | Product data scraping follow-up | The coordinator chooses exactly one post-readiness ingestion path or records explicit deferral. | Do not promote CJ candidate CSV score export; that direction is rejected. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
@@ -30,6 +33,30 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Product ingestion: CJ provider credential status, product-import credential
+  preflight, feed-discovery credential preflight, application cohort reporting,
+  product import status, and disabled-by-default product import scheduling:
+  `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`.
+- Product ingestion: CJ candidate fit-score sort and frontend score badges:
+  `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
+  and
+  `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`.
+- Product ingestion: scheduled CJ feed discovery runtime, read-only discovery
+  status, and feed-candidate filter controls:
+  `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`,
+  and `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
+- Product ingestion: parallel CJ candidate ranking, review workspace, and
+  rejected shortlist export record:
+  `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`,
+  `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`,
+  and `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`.
 - Product ingestion/demo parity: CJ feed candidate durable review status:
   `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
 - Product ingestion/demo parity: CJ feed candidate review route:

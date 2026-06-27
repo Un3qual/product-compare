@@ -1,8 +1,18 @@
 import { graphql } from "react-relay";
 
 export default graphql`
-  query MerchantFeedCandidatesRouteQuery($first: Int, $after: String) {
-    merchantFeedCandidates(first: $first, after: $after) {
+  query MerchantFeedCandidatesRouteQuery(
+    $first: Int
+    $after: String
+    $reviewStatus: MerchantFeedCandidateReviewStatus
+    $sort: MerchantFeedCandidateSort
+  ) {
+    merchantFeedCandidates(
+      first: $first
+      after: $after
+      reviewStatus: $reviewStatus
+      sort: $sort
+    ) {
       edges {
         cursor
         node {

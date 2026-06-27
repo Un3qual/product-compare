@@ -2,11 +2,17 @@
 
 ## Snapshot
 
-- Status: done
+- Status: needs_decision
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed from `docs/work/index.md`
-- Last verified: 2026-06-04 after focused backend/frontend tests, Relay generation, frontend typecheck, `mix typecheck`, and diff checks
+- Live queue row: Product data scraping follow-up decision in
+  `docs/work/index.md`
+- Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
+  score badge tests, Relay generation, frontend typecheck, six-plan CJ ingestion
+  readiness combined verification, `mix typecheck`, focused code reviews, CSV
+  export removal, and diff checks
+- Last plan refresh: 2026-06-26 after executing the six-plan CJ ingestion
+  readiness batch
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -14,8 +20,23 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Current implementation plan:
-  - None. Next ingestion work needs a coordinator decision.
+  - None; the lane is waiting on a coordinator decision before promoting the
+    next executable row.
 - Previous implementation plans:
+  - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md`
+  - `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-ranking-contract-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-candidate-review-workspace-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-shortlist-cohort-export-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md`
   - `docs/plans/2026-06-04-cj-feed-candidate-capture-implementation-plan.md`
@@ -46,15 +67,38 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 - Start with a single Tier-1 connector MVP, defaulting to CJ because an approved account already exists and falling back to eBay only if CJ scope is insufficient for the first spike.
 - The legacy REST Product Search endpoint is deprecated. Use CJ's current Product Feed GraphQL surface at `https://ads.api.cj.com/query`, starting with `shoppingProducts`.
-- Run a weekly CJ-driven merchant discovery loop (candidate export -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
+- Run a weekly CJ-driven merchant discovery loop (candidate review -> scoring -> application cohort -> data viability check) so merchant growth and ingestion quality evolve together.
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
 ## Current Batch
 
-- Status: completed
-- Batch: `docs/plans/2026-06-04-cj-feed-candidate-review-status-implementation-plan.md`.
-- Completed action: added durable review status to CJ merchant feed candidates and browser controls for pending, shortlisted, and dismissed states.
+- Status: completed; follow-up decision needed
+- Batch: 2026-06-26 six-plan CJ ingestion readiness parallel batch.
+- Plans:
+  - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
+  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
+  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
+- Decision:
+  - Execute all six planned CJ ingestion readiness slices in parallel per user
+    request.
+- Parallel slices:
+  - Add a standalone read-only CJ credential readiness task.
+  - Add a dry credential preflight to manual CJ product import.
+  - Add a dry credential preflight to CJ feed discovery.
+  - Add a read-only CJ application cohort report.
+  - Add a read-only CJ product import status task.
+  - Add disabled-by-default CJ product import scheduling runtime.
+- Credential readiness contract:
+  - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
+  - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
+    be reported only by presence, never by value.
+  - Blank or whitespace-only values count as missing.
+  - Readiness output may include provider name, surface name, readiness boolean,
+    counts, and missing env var names only.
 - Secret handling:
   - Store local CJ credentials outside git in ignored `.env.local` or `.env` files, or export them in the shell before running a manual validation task.
   - Variable names: `CJ_API_TOKEN`, `CJ_ACCOUNT_ID`, and optional `CJ_PROPERTY_ID` for the older Website/Property PID.
@@ -63,25 +107,431 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - CJ evidence already recorded for the manual connector path: credential access, product-scope validation, quota observation, representative redacted sample evidence, and owner approval.
 - Scope guardrails:
   - `shoppingProducts` remains the manual product import surface.
-  - `shoppingProductFeeds` is now available through a manual discovery task.
+  - `shoppingProductFeeds` may be scheduled only for bounded feed-candidate
+    discovery and only when runtime env explicitly enables it.
   - Expose only non-secret candidate fields; do not expose raw provider metadata, credentials, account IDs, tokens, or tracking parameters.
-  - No scheduled polling, Oban jobs, provider credential config, account-manager automation, scoring algorithm, merchant application submission, or Tier-3 direct scraping in this completed batch.
+  - Do not persist provider credentials or credential-derived config.
+  - Do not call CJ, resolve sources, create import runs, persist candidates, or
+    persist product records during credential preflight paths.
+  - Do not add CJ candidate CSV export scoring or any new CSV export path; that
+    direction has been explicitly rejected and should not be promoted in later
+    queue work.
+  - No Oban dependency, account-manager automation, merchant application
+    contact, merchant application submission, live CJ network calls in tests,
+    GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
+    this batch.
+- Next decision:
+  - After this batch completes, choose exactly one follow-up ingestion batch or
+    explicit deferral.
+  - Do not choose CJ candidate CSV score export; that path is rejected.
 
-## Verification Commands
+## Deferred Follow-Up Plan Candidates
 
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run src/routes/ingestion/feed-candidates/__tests__/feed-candidates-loader.test.ts src/routes/ingestion/feed-candidates/__tests__/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `mix typecheck`
-- `git diff --check`
-- `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-04-cj-feed-candidate-review-implementation-plan.md docs/decisions/2026-06-01-live-cj-provider-validation-and-source-onboarding.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- None currently promoted. The coordinator must choose one follow-up ingestion
+  batch, record a blocker, or record explicit deferral before new
+  implementation starts.
+
+## Planned Verification Commands
+
+- Provider credential status:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
+- Product import credential preflight:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- Feed discovery credential preflight:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+- Application cohort report:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
+- Product import status:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+- Scheduled product import runtime:
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- Combined final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+
+## Recent Verification Commands
+
+- Fit-score sort:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+  - `cd assets && bun run relay`
+  - `mix typecheck`
+  - `git diff --check`
+- Frontend score badges:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Combined final verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+  - `cd assets && bun run relay`
+  - `cd assets && bun run typecheck`
+  - `mix typecheck`
+  - `git diff --check`
+- Secret/raw-metadata check:
+  - `rg -n "CJ_API_TOKEN|CJ_ACCOUNT_ID|CJ_PROPERTY_ID|rawMetadata|raw_metadata|tracking|Tier-3" docs/work/product-data-scraping.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-06-26-cj-feed-candidate-fit-score-sort-implementation-plan.md docs/plans/2026-06-26-cj-feed-candidate-score-badges-implementation-plan.md assets/src/routes/ingestion/feed-candidates lib/product_compare_web/schema.ex test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+
+### Frontend Score Badges Evidence
+
+- Red verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - failed before route changes: 1 file failed, 1 test failed, 13 tests passed; missing `Fit score 85`.
+- Green verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - passed, 1 file, 14 tests.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
+## Scheduled Discovery Batch Evidence
+
+### Combined Verification
+
+- Focused runtime/status backend verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 21 tests, 0 failures.
+- Focused frontend verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+    - Result: passed, 2 files, 22 tests.
+- Generated artifacts and typechecks:
+  - `cd assets && bun run relay`
+    - Result: completed; compiled 29 reader, 28 normalization, and 28 operation
+      text documents.
+  - `cd assets && bun run typecheck`
+    - Result: `tsc --noEmit` completed with exit 0.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+- Review:
+  - Runtime reviewer approved after the Logger follow-up; no remaining Critical
+    or Important issues.
+  - Status reviewer approved after error-summary sanitization; no remaining
+    Critical or Important issues.
+  - Frontend reviewer approved with no Critical, Important, or Minor issues.
+
+### Scheduled Discovery Runtime
+
+- Completed
+  `docs/plans/2026-06-26-scheduled-cj-feed-discovery-runtime-implementation-plan.md`.
+- Red verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: failed as expected with 5 failures because
+      `ProductCompare.Ingestion.CJFeedDiscovery.run/1` was undefined.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: failed as expected with 4 failures because
+      `ProductCompare.Ingestion.CJFeedDiscoveryScheduler` did not exist.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: failed as expected with 1 failure because the Mix task did not
+      print the report before raising on `{:row_failures, report}`.
+- Green verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: passed, 5 tests, 0 failures.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 8 tests, 0 failures.
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: passed, 4 tests, 0 failures.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 4 tests, 0 failures.
+- Final verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 13 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+- Follow-up review fix:
+  - Removed global `Logger.configure/1` quieting from
+    `ProductCompare.Ingestion.CJFeedDiscovery.run/1`; manual Mix task quieting
+    remains local to `mix product_compare.ingestion.cj_feeds`.
+- Follow-up red verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: failed as expected with 1 failure because the injected fetcher
+      observed Logger level `:warning` instead of the caller's `:debug`.
+- Follow-up green verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+- Follow-up final verification:
+  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 14 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Discovery Status
+
+- Completed `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`.
+- Red verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 6 failures because
+      `Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus.run/1` was undefined.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 1 failure because multiline
+      `latest_error_summary` output split the compact line-oriented report.
+- Green verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures after single-line value formatting.
+- Final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+- Follow-up review fix:
+  - Sanitized persisted `latest_error_summary` output so the status task never
+    echoes raw provider/client error text, live payloads, account IDs, tokens, or
+    tracking parameters.
+- Follow-up red verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: failed as expected with 1 failure because
+      `latest_error_summary` included `CJ_API_TOKEN=secret` and raw GraphQL/HTTP
+      body text.
+- Follow-up green verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+- Follow-up final verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Feed Candidate Controls
+
+- Completed
+  `docs/plans/2026-06-26-cj-feed-candidate-filter-controls-implementation-plan.md`.
+- Red verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts` - failed before implementation: 1 file failed, 8 tests failed because loader data and preload variables lacked `reviewStatus` and `sort`.
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - failed before implementation: 1 file failed, 4 tests failed and 10 passed because filter controls were missing and pagination links omitted selected filters.
+- Final verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` - 2 files passed, 22 tests passed.
+  - `cd assets && bun run relay` - completed; compiled 29 reader, 28 normalization, and 28 operation text documents.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Deferred Note
 
 - Data governance and privacy hardening tasks are intentionally deferred until further notice to prioritize a functioning first implementation.
 
+## Parallel Batch Evidence
+
+### Provider Credential Status Task Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_credentials` for redacted CJ
+  credential readiness across `shoppingProducts` and `shoppingProductFeeds`.
+- The task reports only provider/surface names, readiness booleans, counts, and
+  missing env var names; it does not print token, account, or property values.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
+    - Result: passed, 7 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Product Import Credential Preflight Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`.
+- Added `--check-credentials` and `--require-ready` to
+  `mix product_compare.ingestion.cj_import`.
+- The preflight returns before source resolution, CJ fetcher calls,
+  `ImportRun` creation, or product persistence and prints only the required env
+  var names when credentials are missing.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+    - Result: passed, 8 tests, 0 failures before the background output
+      follow-up; passed as part of the final combined gate with one added
+      regression covering `print_report: false`.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Feed Discovery Credential Preflight Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`.
+- Added `--check-credentials` and `--require-ready` to
+  `mix product_compare.ingestion.cj_feeds`.
+- The preflight returns before the configured discovery runner, source
+  resolution, CJ transport, candidate persistence, or `ImportRun` persistence
+  and prints only non-secret readiness fields.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+    - Result: passed, 8 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Application Cohort Report Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_application_cohort` for read-only,
+  non-secret review of CJ feed candidates by status, country, currency,
+  language, product count, and limit.
+- The report uses existing candidate rows only; it does not create merchants,
+  applications, emails, provider calls, scheduled work, or CSV files.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Product Import Status Evidence
+
+- Completed
+  `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`.
+- Added `mix product_compare.ingestion.cj_import_status` for read-only status
+  reporting over CJ `shoppingProducts` import runs.
+- The task reports aggregate run and freshness fields only, ignores
+  `shoppingProductFeeds` discovery runs, and redacts non-empty error summaries
+  instead of printing raw provider or credential-bearing text.
+- Focused verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+    - Result: passed, 6 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Scheduled Product Import Runtime Evidence
+
+- Completed
+  `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`.
+- Added disabled-by-default CJ `shoppingProducts` scheduling through
+  `ProductCompare.Ingestion.CJProductImportScheduler`, runtime env config, and
+  conditional supervision.
+- Scheduler tests use an injected runner, pass only non-secret query bounds to
+  the import runner, and verify success and failure paths reschedule without
+  logging raw provider errors or credential values.
+- Focused verification:
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+    - Result: passed, 5 tests, 0 failures before the background output
+      follow-up; passed, 5 tests, 0 failures after suppressing manual import
+      stdout for the scheduler default runner.
+  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - Result: passed, 9 tests, 0 failures.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Six-Plan Combined Verification
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+  - Result: passed, 45 tests, 0 failures after the scheduler background-output
+    follow-up.
+- `mix typecheck`
+  - Result: passed with no output.
+- `git diff --check`
+  - Result: passed with no output.
+- Spec review:
+  - Required only plan/evidence corrections after implementation verification:
+    the credential task output key is `missing_required`, and the application
+    cohort task does not need an unused `Ecto.Query` import.
+- Quality review:
+  - No Critical issues.
+  - Fixed the Important queue/documentation issue by returning the lane to a
+    `needs_decision` dispatch row instead of leaving the completed batch as
+    ready work.
+  - Fixed the Minor scheduler output issue by adding a non-printing
+    programmatic import path for the scheduler default runner while preserving
+    manual CLI output.
+
+### Fit Score Sort Evidence
+
+- Red verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs` - failed before implementation: 25 tests, 1 failure because `:fit_score_desc` still fell back to name ordering.
+  - `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - failed before schema update: 10 tests, 1 failure because `FIT_SCORE_DESC` was not a valid `MerchantFeedCandidateSort` value.
+- Green verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs` - passed after context ordering implementation: 25 tests, 0 failures.
+  - `mix test test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - passed after GraphQL enum update: 10 tests, 0 failures.
+- Final verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - passed: 35 tests, 0 failures.
+  - `cd assets && bun run relay` - first sandboxed run failed because Watchman could not `fchmod` `/Users/admin/.local/state/watchman/admin-state`; rerun with Watchman state access passed and compiled 29 reader, 28 normalization, and 28 operation text documents.
+  - `mix typecheck` - passed with exit 0.
+  - `git diff --check` - passed with exit 0.
+
+### Combined Verification
+
+- CSV export scoring was removed after user decision; it is not part of the
+  active or deferred CJ scoring plan.
+- Review:
+  - Backend fit-score sort spec review approved with no issues.
+  - Frontend score badge spec and quality reviews approved with no Critical,
+    Important, or Minor issues.
+- Verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+    - Result: passed, 35 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+    - Result: passed, 1 file, 14 tests.
+  - `cd assets && bun run relay`
+    - Result: first sandboxed run failed because Watchman could not `fchmod`
+      `/Users/admin/.local/state/watchman/admin-state`; rerun with Watchman
+      state access passed and compiled 29 reader, 28 normalization, and 28
+      operation text documents.
+  - `cd assets && bun run typecheck`
+    - Result: `tsc --noEmit` completed with exit 0.
+  - `mix typecheck`
+    - Result: passed with no output.
+  - `git diff --check`
+    - Result: passed with no output.
+
+### Ranking Contract
+
+- Added backend `review_status` filtering and deterministic candidate ordering
+  for `name_asc`, `product_count_desc`, and `last_seen_desc`, preserving the
+  zero-arity query helper behavior.
+- Added GraphQL `MerchantFeedCandidateSort` plus `reviewStatus` and `sort`
+  args on `merchantFeedCandidates`; refreshed `assets/schema.graphql` for Relay.
+- Verification:
+  - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` - 33 tests, 0 failures.
+  - `cd assets && bun run relay` - completed.
+  - `mix typecheck` - passed.
+  - `git diff --check` - passed.
+
+### Review Workspace
+
+- Added current-page pending/shortlisted/dismissed review counts, existing
+  review note and reviewed timestamp display, per-candidate note capture, and
+  trimmed optional note submission for `reviewMerchantFeedCandidate`.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+    - 1 file, 11 tests passed.
+  - `cd assets && bun run typecheck` - passed.
+  - `git diff --check` - passed.
+
+### Shortlist Export
+
+- Rejected CJ candidate CSV export. The old
+  `mix product_compare.ingestion.cj_candidate_export` command now fails fast
+  instead of rendering candidate data.
+- Verification:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
+    - rejection contract tests pass.
+  - `mix typecheck` - passed.
+  - `git diff --check` - passed.
+
 ## Just Completed
+
+- Parallel CJ candidate planning batch:
+  - Added backend ranking/filtering for CJ feed candidates through context and
+    GraphQL query args.
+  - Added current-page review counts, note capture, reviewed metadata, and
+    optional note submission to `/ingestion/feed-candidates`.
+  - Kept CJ candidate CSV export rejected; the old command fails fast.
+  - Verified the combined backend/frontend gates plus Relay generation,
+    typechecks, final spec review, and `git diff --check`.
 
 - CJ feed candidate review status:
   - Added durable `review_status`, `review_note`, and `reviewed_at` fields to `merchant_feed_candidates`, with `pending`, `shortlisted`, and `dismissed` as the allowed review states.

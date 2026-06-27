@@ -40,6 +40,56 @@ config :product_compare, ProductCompareWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))],
   trusted_origins: trusted_origins
 
+truthy_env? = fn name ->
+  name
+  |> System.get_env("")
+  |> String.trim()
+  |> String.downcase()
+  |> then(&(&1 in ["1", "true", "yes", "on"]))
+end
+
+positive_integer_env = fn name, default ->
+  case Integer.parse(System.get_env(name, "")) do
+    {value, ""} when value > 0 -> value
+    _invalid -> default
+  end
+end
+
+non_negative_integer_env = fn name, default ->
+  case Integer.parse(System.get_env(name, "")) do
+    {value, ""} when value >= 0 -> value
+    _invalid -> default
+  end
+end
+
+string_env = fn name, default ->
+  name
+  |> System.get_env("")
+  |> String.trim()
+  |> case do
+    "" -> default
+    value -> value
+  end
+end
+
+config :product_compare, :cj_feed_discovery_scheduler,
+  enabled: truthy_env?.("CJ_FEED_DISCOVERY_SCHEDULE_ENABLED"),
+  interval_minutes: positive_integer_env.("CJ_FEED_DISCOVERY_INTERVAL_MINUTES", 1440),
+  initial_delay_ms: non_negative_integer_env.("CJ_FEED_DISCOVERY_INITIAL_DELAY_MS", 60_000),
+  advertiser_country: string_env.("CJ_FEED_DISCOVERY_ADVERTISER_COUNTRY", "US"),
+  limit: positive_integer_env.("CJ_FEED_DISCOVERY_LIMIT", 25),
+  pages: positive_integer_env.("CJ_FEED_DISCOVERY_PAGES", 1)
+
+config :product_compare, :cj_product_import_scheduler,
+  enabled: truthy_env?.("CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED"),
+  interval_minutes: positive_integer_env.("CJ_PRODUCT_IMPORT_INTERVAL_MINUTES", 1440),
+  initial_delay_ms: non_negative_integer_env.("CJ_PRODUCT_IMPORT_INITIAL_DELAY_MS", 60_000),
+  keywords: string_env.("CJ_PRODUCT_IMPORT_KEYWORDS", "shoe"),
+  currency: string_env.("CJ_PRODUCT_IMPORT_CURRENCY", "USD"),
+  serviceable_areas: string_env.("CJ_PRODUCT_IMPORT_SERVICEABLE_AREAS", "US"),
+  limit: positive_integer_env.("CJ_PRODUCT_IMPORT_LIMIT", 25),
+  pages: positive_integer_env.("CJ_PRODUCT_IMPORT_PAGES", 1)
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

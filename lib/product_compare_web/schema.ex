@@ -118,6 +118,8 @@ defmodule ProductCompareWeb.Schema do
     field :merchant_feed_candidates, :merchant_feed_candidate_connection do
       arg(:first, :integer)
       arg(:after, :string)
+      arg(:review_status, :merchant_feed_candidate_review_status)
+      arg(:sort, :merchant_feed_candidate_sort)
 
       resolve(&IngestionResolver.merchant_feed_candidates/3)
     end
@@ -763,6 +765,13 @@ defmodule ProductCompareWeb.Schema do
     value(:pending, as: "pending")
     value(:shortlisted, as: "shortlisted")
     value(:dismissed, as: "dismissed")
+  end
+
+  enum :merchant_feed_candidate_sort do
+    value(:name_asc, as: :name_asc)
+    value(:product_count_desc, as: :product_count_desc)
+    value(:last_seen_desc, as: :last_seen_desc)
+    value(:fit_score_desc, as: :fit_score_desc)
   end
 
   object :product do

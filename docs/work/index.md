@@ -21,17 +21,22 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-04
+Updated: 2026-06-26
 
-No ready rows.
+| Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | needs_decision | Product data scraping | Choose exactly one follow-up ingestion batch or record explicit deferral after the completed six-plan CJ ingestion readiness batch. Do not choose CJ candidate CSV score export; that path is rejected. | None | `docs/work/index.md`; `docs/work/product-data-scraping.md`; `docs/plans/INDEX.md` | `git diff --check` | Promote one concrete ready row with owned paths and verification, record a named blocker with evidence needed, or record explicit no-ready-work deferral. |
 
 ## Ready Work
 
-No ready implementation work remains after the CJ feed candidate review-status
-batch. The next coordinator decision is one concrete follow-up: candidate
-scoring, merchant application planning, or scheduled CJ discovery. Application
-automation, scheduled discovery, scoring algorithms, and Tier-3 scraping remain
-out of scope until one is explicitly promoted.
+No rows are currently ready. The Product data scraping lane needs a coordinator
+decision before more implementation is promoted.
+
+## Deferred Work
+
+Application submission, account-manager contact, Tier-3 scraping, credential
+persistence, and CSV export remain out of scope. CJ candidate CSV score export
+is rejected and should not be promoted.
 
 ## Executor Prompts
 
