@@ -30,6 +30,37 @@ const STATUS_FILTERS = [
   { label: "Revoked", status: "revoked" }
 ] as const;
 
+const API_TOKEN_EXPIRES_AT_PRESETS = [
+  { label: "30 days" },
+  { label: "90 days" },
+  { label: "1 year" },
+  { label: "No expiration" }
+] as const;
+
+export type ApiTokenExpiresAtPreset = (typeof API_TOKEN_EXPIRES_AT_PRESETS)[number]["label"];
+
+export function buildApiTokenExpiresAtInputValue(
+  preset: ApiTokenExpiresAtPreset,
+  currentDate: Date
+) {
+  if (preset === "No expiration") {
+    return "";
+  }
+
+  const expiryDate = new Date(currentDate);
+
+  if (preset === "1 year") {
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+  } else {
+    const dayOffset = preset === "30 days" ? 30 : 90;
+    expiryDate.setDate(expiryDate.getDate() + dayOffset);
+  }
+
+  return `${expiryDate.getFullYear()}-${padUtcPart(expiryDate.getMonth() + 1)}-${padUtcPart(
+    expiryDate.getDate()
+  )}T${padUtcPart(expiryDate.getHours())}:${padUtcPart(expiryDate.getMinutes())}`;
+}
+
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
   const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
@@ -40,6 +71,8 @@ export function ApiTokensRoute() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createPending, setCreatePending] = useState(false);
   const createInFlightRef = useRef(false);
+  const createExpiresAtInputRef = useRef<HTMLInputElement>(null);
+  const createExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
   const [revokeErrorsByTokenId, setRevokeErrorsByTokenId] = useState<
     ReadonlyMap<string, string>
   >(new Map());
@@ -286,8 +319,39 @@ export function ApiTokensRoute() {
             </label>
             <label>
               Expires at
-              <input name="expiresAt" type="datetime-local" />
+              <input
+                name="expiresAt"
+                onChange={() => {
+                  if (createExpiresAtPresetInputRef.current) {
+                    createExpiresAtPresetInputRef.current.value = "";
+                  }
+                }}
+                ref={createExpiresAtInputRef}
+                type="datetime-local"
+              />
             </label>
+            <input name="expiresAtPreset" ref={createExpiresAtPresetInputRef} type="hidden" />
+            <div>
+              {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => {
+                    if (createExpiresAtInputRef.current) {
+                      createExpiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
+                        preset.label,
+                        new Date(Date.now())
+                      );
+                    }
+                    if (createExpiresAtPresetInputRef.current) {
+                      createExpiresAtPresetInputRef.current.value = preset.label;
+                    }
+                  }}
+                  type="button"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
             <button disabled={createSubmitting} type="submit">
               {createSubmitting ? "Creating API token..." : "Create API token"}
             </button>
@@ -591,6 +655,9 @@ function ApiTokenActions({
   rotatePending: boolean;
   token: ApiTokenSummary;
 }) {
+  const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
+  const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
+
   if (token.revokedAt) {
     return null;
   }
@@ -608,8 +675,39 @@ function ApiTokenActions({
           </label>
           <label>
             {`Replacement expiry for ${displayLabel}`}
-            <input name="expiresAt" type="datetime-local" />
+            <input
+              name="expiresAt"
+              onChange={() => {
+                if (rotateExpiresAtPresetInputRef.current) {
+                  rotateExpiresAtPresetInputRef.current.value = "";
+                }
+              }}
+              ref={rotateExpiresAtInputRef}
+              type="datetime-local"
+            />
           </label>
+          <input name="expiresAtPreset" ref={rotateExpiresAtPresetInputRef} type="hidden" />
+          <div>
+            {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
+              <button
+                key={`${token.id}-${preset.label}`}
+                onClick={() => {
+                  if (rotateExpiresAtInputRef.current) {
+                    rotateExpiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
+                      preset.label,
+                      new Date(Date.now())
+                    );
+                  }
+                  if (rotateExpiresAtPresetInputRef.current) {
+                    rotateExpiresAtPresetInputRef.current.value = preset.label;
+                  }
+                }}
+                type="button"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <button disabled={lifecyclePending} type="submit">
             {rotatePending ? "Rotating token..." : "Rotate token"}
           </button>
@@ -696,7 +794,7 @@ function buildApiTokensViewState(
 }
 
 function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenMutation["variables"] {
-  const expiresAt = normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
+  const expiresAt = normalizeExpiresAtFormValue(formData);
   const variables: CreateApiTokenMutation["variables"] = {
     label: optionalFormText(formData.get("label"))
   };
@@ -712,7 +810,7 @@ function buildRotateApiTokenVariables(
   token: ApiTokenSummary,
   formData: FormData
 ): RotateApiTokenMutation["variables"] {
-  const expiresAt = normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
+  const expiresAt = normalizeExpiresAtFormValue(formData);
   const variables: RotateApiTokenMutation["variables"] = {
     tokenId: token.id,
     label: optionalFormText(formData.get("label")) ?? token.label
@@ -723,6 +821,16 @@ function buildRotateApiTokenVariables(
   }
 
   return variables;
+}
+
+function normalizeExpiresAtFormValue(formData: FormData) {
+  const preset = optionalFormText(formData.get("expiresAtPreset"));
+
+  if (preset === "No expiration") {
+    return null;
+  }
+
+  return normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
 }
 
 function optionalFormText(value: FormDataEntryValue | null) {

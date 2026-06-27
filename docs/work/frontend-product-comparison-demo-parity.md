@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-05-31 after full comparison demo parity verification
+- Last verified: 2026-06-27 after compare selection removal verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
-- Current implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
+- Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
 ## Batch Status
@@ -18,6 +18,7 @@
 - [x] Task 4: add a product picker to `/compare`.
 - [x] Task 5: render product attributes on compare cards.
 - [x] Task 6: run full demo-slice verification and close queue docs.
+- [x] Task 7: add compare selection remove controls.
 
 ## Completed Scope
 
@@ -52,6 +53,13 @@
 - Added focused compare route coverage for ready-state cards rendering current product attributes.
 - Updated compare route ready-state fixtures to match the expanded `ProductDetailRouteQuery` product shape.
 
+### Task 7: Compare Selection Removal
+
+- Added remove links for each selected compare card in `/compare`.
+- Added URL-safe compare-removal helpers that remove one selected slug by index and preserve remaining order.
+- Ensured removing the last selected product routes back to `/compare` with no query string.
+- Added focused compare route coverage for removing first, middle, last, and only selected products.
+
 ### Task 6: Full Demo Slice Verification
 
 - Ran the focused backend/frontend demo-slice verification after Tasks 1-5.
@@ -60,7 +68,7 @@
 
 ## Current Cross-Project Batch
 
-- Status: ready.
+- Status: done.
 - Plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`.
 - Owned paths:
   - `assets/src/routes/compare/index.tsx`
@@ -71,6 +79,10 @@
   - `cd assets && bun run typecheck`
   - `git diff --check`
 - Exit condition: `/compare` users can remove selected products while preserving the remaining slug order.
+- Completed verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 60 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Follow-Up Candidates
 

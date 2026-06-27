@@ -141,6 +141,96 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
   );
 });
 
+test("offerDiscoveryLoader preserves inactive-only filter and page-size", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    `https://app.example.test/offers?productId=${encodeURIComponent(
+      PRODUCT_ID
+    )}&activeOnly=false&first=12`
+  );
+  const descriptor = offerDiscoveryQueryDescriptor({
+    input: {
+      activeOnly: false,
+      first: 12,
+      productId: PRODUCT_ID
+    }
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      activeOnly: false,
+      after: null,
+      first: 12,
+      merchantId: null,
+      productId: PRODUCT_ID
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      input: {
+        activeOnly: false,
+        first: 12,
+        productId: PRODUCT_ID
+      }
+    },
+    { signal: request.signal }
+  );
+});
+
+test("offerDiscoveryLoader normalizes blank cursor values", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    `https://app.example.test/offers?productId=${encodeURIComponent(
+      PRODUCT_ID
+    )}&after=%20&first=12`
+  );
+  const descriptor = offerDiscoveryQueryDescriptor({
+    input: {
+      activeOnly: true,
+      first: 12,
+      productId: PRODUCT_ID
+    }
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      activeOnly: true,
+      after: null,
+      first: 12,
+      merchantId: null,
+      productId: PRODUCT_ID
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      input: {
+        activeOnly: true,
+        first: 12,
+        productId: PRODUCT_ID
+      }
+    },
+    { signal: request.signal }
+  );
+});
+
 test("offerDiscoveryLoader drops invalid page-size and active-only params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(

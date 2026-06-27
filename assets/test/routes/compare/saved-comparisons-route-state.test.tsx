@@ -280,6 +280,227 @@ test("saved comparisons route keeps the set visible when the Relay mutation retu
   expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
 });
 
+test("saved comparisons route filters loaded sets by saved-set name", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: ["lamp", "table"]
+      },
+      {
+        id: "saved-set-3",
+        name: "Outdoor gear",
+        slugs: ["tent", "rucksack"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
+
+  fireEvent.change(filterInput, { target: { value: "dEsK" } });
+
+  expect(screen.getByText("Desk setup")).toBeInTheDocument();
+  expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
+  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
+});
+
+test("saved comparisons route filters loaded sets by product slug", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: ["lamp", "table"]
+      },
+      {
+        id: "saved-set-3",
+        name: "Outdoor gear",
+        slugs: ["tent", "rucksack"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
+
+  fireEvent.change(filterInput, { target: { value: "TaBlE" } });
+
+  expect(screen.getByText("Office setup")).toBeInTheDocument();
+  expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
+});
+
+test("saved comparisons route shows a no-match message when the filter excludes all saved sets", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: ["lamp", "table"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
+    target: {
+      value: "non-matching-value"
+    }
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No saved comparisons match your filter."
+    );
+  });
+});
+
+test("saved comparisons route preserves pending delete state when the filter changes", async () => {
+  const commits: Array<{
+    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
+  }> = [];
+
+  commitMutationMock.mockImplementation((config) => {
+    commits.push(config);
+  });
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Desk setup alt",
+        slugs: ["lamp"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
+
+  fireEvent.change(filterInput, { target: { value: "desk" } });
+  const [savedSetDeleteButton] = screen.getAllByRole("button", { name: "Delete comparison" });
+  fireEvent.click(savedSetDeleteButton);
+
+  await waitFor(() => {
+    expect(commits).toHaveLength(1);
+  });
+
+  fireEvent.change(filterInput, { target: { value: "desk setup" } });
+
+  expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
+
+  act(() => {
+    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
+  });
+
+  await waitFor(() => {
+    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
+    expect(screen.getByText("Desk setup alt")).toBeInTheDocument();
+  });
+});
+
+test("saved comparisons route keeps delete errors visible when the filter changes", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Desk setup alt",
+        slugs: ["lamp"]
+      }
+    ]
+  });
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null,
+        errors: [
+          {
+            code: "BAD_USER_INPUT",
+            field: "savedComparisonSetId",
+            message: "Could not delete this comparison set."
+          }
+        ]
+      }
+    });
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
+  const [deleteButton] = screen.getAllByRole("button", { name: "Delete comparison" });
+
+  fireEvent.change(filterInput, { target: { value: "desk setup" } });
+  fireEvent.click(deleteButton);
+
+  await waitFor(() => {
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
+  });
+
+  fireEvent.change(filterInput, { target: { value: "desk setup alt" } });
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
+});
+
 test("saved comparisons route keeps the set visible when delete completes with top-level GraphQL errors", async () => {
   commitMutationMock.mockImplementation(({ onCompleted }) => {
     onCompleted(buildSuccessfulDeleteResponse("saved-set-1"), [

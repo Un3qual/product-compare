@@ -9,7 +9,8 @@ import {
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
 
-const BROWSE_PRODUCTS_PAGE_SIZE = 12;
+const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
+const BROWSE_PRODUCTS_MAX_PAGE_SIZE = 48;
 
 export type BrowseProductsLoaderData =
   | {
@@ -25,15 +26,15 @@ export async function browseLoader({
   request
 }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const after = new URL(request.url).searchParams.get("after");
-  const variables: BrowseProductsRouteQuery["variables"] = after
-    ? {
-        first: BROWSE_PRODUCTS_PAGE_SIZE,
-        after
-      }
-    : {
-        first: BROWSE_PRODUCTS_PAGE_SIZE
-      };
+  const requestUrl = new URL(request.url);
+  const variables: BrowseProductsRouteQuery["variables"] = {
+    first: browseProductsPageSizeFromUrl(requestUrl)
+  };
+  const after = nonBlankParam(requestUrl, "after");
+
+  if (after) {
+    variables.after = after;
+  }
 
   try {
     return {
@@ -54,4 +55,28 @@ export async function browseLoader({
       }
     );
   }
+}
+
+function browseProductsPageSizeFromUrl(url: URL) {
+  const value = nonBlankParam(url, "first");
+
+  if (!value) {
+    return BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    return BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  return parsedValue >= 1 && parsedValue <= BROWSE_PRODUCTS_MAX_PAGE_SIZE
+    ? parsedValue
+    : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+}
+
+function nonBlankParam(url: URL, name: string) {
+  const value = url.searchParams.get(name)?.trim();
+
+  return value === "" ? null : value ?? null;
 }

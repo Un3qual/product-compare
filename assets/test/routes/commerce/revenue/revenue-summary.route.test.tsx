@@ -2,7 +2,10 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/index";
+import {
+  RevenueSummaryRoute,
+  buildRevenueDatePresetLinks
+} from "../../../../src/routes/commerce/revenue/index";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
 
 const {
@@ -95,6 +98,10 @@ beforeEach(() => {
   REVENUE_QUERY_REF.dispose.mockReset();
   mockedUseRoutePreloadedQuery.mockReturnValue(REVENUE_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(UNSUPPRESSED_REVENUE_SUMMARY as never);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 test("revenue route renders suppressed metrics with threshold copy", () => {
@@ -210,6 +217,91 @@ test("revenue route renders active filters from the loader", () => {
   expect(within(activeFilters).getByText("impact")).toBeInTheDocument();
   expect(within(activeFilters).getByText("Date range")).toBeInTheDocument();
   expect(within(activeFilters).getByText("2026-05-01 to 2026-05-31")).toBeInTheDocument();
+});
+
+test("revenue route renders date preset links that preserve network and currency", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      currency: "USD",
+      network: "impact"
+    })
+  );
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
+
+  const expectedPresetLinks = buildRevenueDatePresetLinks(
+    {
+      network: "impact",
+      currency: "USD"
+    },
+    new Date("2026-06-27T12:00:00.000Z")
+  );
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("link", { name: "Last 7 days" })).toHaveAttribute(
+    "href",
+    expectedPresetLinks[0]!.to
+  );
+  expect(screen.getByRole("link", { name: "Last 30 days" })).toHaveAttribute(
+    "href",
+    expectedPresetLinks[1]!.to
+  );
+  expect(screen.getByRole("link", { name: "Month to date" })).toHaveAttribute(
+    "href",
+    expectedPresetLinks[2]!.to
+  );
+  expect(screen.getByRole("link", { name: "Clear dates" })).toHaveAttribute(
+    "href",
+    expectedPresetLinks[3]!.to
+  );
+
+  vi.useRealTimers();
+});
+
+test("buildRevenueDatePresetLinks is deterministic for a fixed date and preserves filters", () => {
+  const currentDate = new Date("2026-06-27T12:00:00.000Z");
+  const presetLinks = buildRevenueDatePresetLinks(
+    {
+      currency: "EUR",
+      network: "impact"
+    },
+    currentDate
+  );
+
+  expect(presetLinks).toEqual([
+    {
+      label: "Last 7 days",
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-21&to=2026-06-27"
+    },
+    {
+      label: "Last 30 days",
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-05-29&to=2026-06-27"
+    },
+    {
+      label: "Month to date",
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-01&to=2026-06-27"
+    },
+    {
+      label: "Clear dates",
+      to: "/commerce/revenue?network=impact&currency=EUR"
+    }
+  ]);
+});
+
+test("buildRevenueDatePresetLinks skips invalid ranges", () => {
+  const currentDate = new Date("2026-06-27T12:00:00.000Z");
+  const presetLinks = buildRevenueDatePresetLinks({}, currentDate);
+
+  expect(presetLinks.length).toBe(4);
+  expect(
+    presetLinks.every((link) => {
+      const url = new URL(link.to, "https://example.com");
+      const from = url.searchParams.get("from");
+      const to = url.searchParams.get("to");
+      return from === null || to === null || from <= to;
+    })
+  ).toBe(true);
 });
 
 test("revenue route updates filter field values when loader filters change", () => {

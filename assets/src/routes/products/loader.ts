@@ -41,6 +41,7 @@ export async function productDetailLoader({
   request
 }: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
   const slug = params.slug?.trim() ?? "";
+  const offersAfter = offersAfterFromUrl(new URL(request.url));
 
   if (slug === "") {
     return {
@@ -71,7 +72,12 @@ export async function productDetailLoader({
       return {
         status: "ready",
         productQuery: productRouteQuery.descriptor,
-        offers: await preloadProductOffers(environment, product.id, request.signal)
+        offers: await preloadProductOffers(
+          environment,
+          product.id,
+          offersAfter,
+          request.signal
+        )
       };
     } catch (error) {
       productRouteQuery.dispose();
@@ -91,18 +97,22 @@ export async function productDetailLoader({
 async function preloadProductOffers(
   environment: Environment,
   productId: string,
+  offersAfter: string | null,
   signal: AbortSignal
 ): Promise<ProductOffersLoaderData> {
+  const variables: ProductOffersRouteQuery["variables"] = {
+    productId,
+    first: PRODUCT_OFFERS_PAGE_SIZE,
+    ...(offersAfter ? { after: offersAfter } : {})
+  };
+
   try {
     return {
       status: "ready",
       query: await preloadRouteQuery<ProductOffersRouteQuery>(
         environment,
         productOffersRouteQuery,
-        {
-          productId,
-          first: PRODUCT_OFFERS_PAGE_SIZE
-        },
+        variables,
         { signal }
       )
     };
@@ -115,4 +125,16 @@ async function preloadProductOffers(
       }
     );
   }
+}
+
+function offersAfterFromUrl(url: URL): string | null {
+  const offersAfter = url.searchParams.get("offersAfter");
+
+  if (offersAfter === null) {
+    return null;
+  }
+
+  const trimmedOffersAfter = offersAfter.trim();
+
+  return trimmedOffersAfter === "" ? null : trimmedOffersAfter;
 }

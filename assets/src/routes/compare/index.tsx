@@ -275,6 +275,8 @@ function CompareProductList({
             key={loaderData.slugs[index] ?? productQuery.__relayQuery.operationName}
             productQuery={productQuery}
             summary={loaderData.products[index]}
+            selectedSlugs={loaderData.slugs}
+            selectedIndex={index}
           />
         ))}
       </ul>
@@ -391,9 +393,13 @@ function CompareProductSummaryList({ products }: { products: CompareProductSumma
 
 function CompareProductCard({
   productQuery,
+  selectedSlugs,
+  selectedIndex,
   summary
 }: {
   productQuery: Extract<CompareRouteLoaderData, { status: "ready" }>["productQueries"][number];
+  selectedSlugs: readonly string[];
+  selectedIndex: number;
   summary: CompareProductSummary | undefined;
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
@@ -402,6 +408,7 @@ function CompareProductCard({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const product = data.product;
+  const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex);
 
   if (!product) {
     return null;
@@ -418,23 +425,40 @@ function CompareProductCard({
           attributes={product.currentAttributes}
           emptyMessage="No product attributes available yet."
         />
+        <Link to={removePath}>Remove {product.name}</Link>
       </article>
     </li>
   );
 }
 
-function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
+export function buildComparePathAfterRemovingSlugIndex(
+  selectedSlugs: readonly string[],
+  removeIndex: number
+) {
+  const nextSelectedSlugs = selectedSlugs.filter((_, index) => index !== removeIndex);
+
+  return buildComparePathFromSlugs(nextSelectedSlugs);
+}
+
+function buildComparePathFromSlugs(selectedSlugs: readonly string[]) {
   const params = new URLSearchParams();
+
+  for (const slug of selectedSlugs) {
+    params.append("slug", slug);
+  }
+
+  const nextQueryString = params.toString();
+
+  return nextQueryString.length > 0 ? `/compare?${nextQueryString}` : "/compare";
+}
+
+function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
   const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(
     0,
     MAX_COMPARE_PRODUCTS
   );
 
-  for (const slug of nextSlugs) {
-    params.append("slug", slug);
-  }
-
-  return `/compare?${params.toString()}`;
+  return buildComparePathFromSlugs(nextSlugs);
 }
 
 function appendUniqueProducts(

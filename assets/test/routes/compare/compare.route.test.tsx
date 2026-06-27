@@ -129,6 +129,17 @@ const SECOND_PRODUCT = {
   },
   currentAttributes: []
 } satisfies CompareTestProduct;
+const THIRD_PRODUCT = {
+  id: "UHJvZHVjdDoz",
+  name: "Third Product",
+  slug: "third-product",
+  description: "A third product for selection editing coverage.",
+  brand: {
+    id: "brand-3",
+    name: "Charlie"
+  },
+  currentAttributes: []
+} satisfies CompareTestProduct;
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -146,6 +157,14 @@ const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   }
 };
 
+const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "ProductDetailRouteQuery",
+    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
+    variables: { slug: THIRD_PRODUCT.slug }
+  }
+};
+
 const DETAIL_PRODUCT_QUERY_REF = {
   dispose: vi.fn(),
   variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
@@ -154,6 +173,11 @@ const DETAIL_PRODUCT_QUERY_REF = {
 const SECOND_PRODUCT_QUERY_REF = {
   dispose: vi.fn(),
   variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
+const THIRD_PRODUCT_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
 };
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
@@ -168,7 +192,10 @@ const SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR = savedComparisonsQueryDescriptor(
 
 const buildFetchedProductQuery = (
   product: CompareTestProduct | null,
-  descriptor: typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
+  descriptor:
+    | typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR
+    | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
+    | typeof THIRD_PRODUCT_QUERY_DESCRIPTOR
 ) => ({
   data: {
     product
@@ -1060,6 +1087,94 @@ test("ready compare page lets users append a product without editing the URL", (
   );
 });
 
+test("ready compare cards include a remove link for the first selected product", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+    productQueries: [
+      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+      SECOND_PRODUCT_QUERY_DESCRIPTOR,
+      THIRD_PRODUCT_QUERY_DESCRIPTOR
+    ],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT),
+      buildProductSummary(THIRD_PRODUCT)
+    ]
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=second-product&slug=third-product"
+  );
+});
+
+test("ready compare cards include a remove link for a middle selected product", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+    productQueries: [
+      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+      SECOND_PRODUCT_QUERY_DESCRIPTOR,
+      THIRD_PRODUCT_QUERY_DESCRIPTOR
+    ],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT),
+      buildProductSummary(THIRD_PRODUCT)
+    ]
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=third-product"
+  );
+});
+
+test("ready compare cards include a remove link for the last selected product", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+    productQueries: [
+      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+      SECOND_PRODUCT_QUERY_DESCRIPTOR,
+      THIRD_PRODUCT_QUERY_DESCRIPTOR
+    ],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT),
+      buildProductSummary(THIRD_PRODUCT)
+    ]
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product"
+  );
+});
+
+test("ready compare card remove link clears all selected slugs when only one is selected", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug],
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
+    products: [buildProductSummary(DETAIL_PRODUCT)]
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
+    "href",
+    "/compare"
+  );
+});
+
 test("compare route renders the compare error boundary when the loader throws", () => {
   mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
@@ -1132,6 +1247,47 @@ test("compare route saves the current ready-state selection", async () => {
   });
 
   expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
+});
+
+test("compare route clears stale save feedback when selected products change", async () => {
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted({
+      createSavedComparisonSet: {
+        savedComparisonSet: {
+          id: "saved-set-1"
+        },
+        errors: []
+      }
+    });
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
+  });
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug],
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
+    products: [buildProductSummary(DETAIL_PRODUCT)]
+  });
+
+  rerender(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("status")).toHaveTextContent("");
 });
 
 test("compare route reports a fallback error when the save commit throws synchronously", async () => {
@@ -1955,6 +2111,10 @@ function mockCompareRouteQueries() {
       return SECOND_PRODUCT_QUERY_REF;
     }
 
+    if (descriptor === THIRD_PRODUCT_QUERY_DESCRIPTOR) {
+      return THIRD_PRODUCT_QUERY_REF;
+    }
+
     throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
   });
 
@@ -1968,6 +2128,12 @@ function mockCompareRouteQueries() {
     if (queryRef === SECOND_PRODUCT_QUERY_REF) {
       return {
         product: SECOND_PRODUCT
+      };
+    }
+
+    if (queryRef === THIRD_PRODUCT_QUERY_REF) {
+      return {
+        product: THIRD_PRODUCT
       };
     }
 

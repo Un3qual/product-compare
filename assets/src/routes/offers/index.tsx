@@ -31,6 +31,8 @@ export function OfferDiscoveryRoute() {
         <h1>Offers</h1>
       </header>
 
+      <OfferDiscoveryFilterForm filters={loaderData.filters} />
+
       {loaderData.status === "missingProduct" ? (
         <MissingProductState />
       ) : loaderData.status === "error" ? (
@@ -49,6 +51,51 @@ export function OfferDiscoveryRoute() {
         </ResettableErrorBoundary>
       )}
     </section>
+  );
+}
+
+function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
+  return (
+    <form action="/offers" aria-label="Offer discovery filters" method="get">
+      <label>
+        Product ID
+        <input
+          autoComplete="off"
+          defaultValue={filters.productId ?? ""}
+          name="productId"
+          type="text"
+        />
+      </label>
+      <label>
+        Merchant ID
+        <input
+          autoComplete="off"
+          defaultValue={filters.merchantId ?? ""}
+          name="merchantId"
+          type="text"
+        />
+      </label>
+      <label>
+        <input
+          defaultChecked={!filters.activeOnly}
+          name="activeOnly"
+          type="checkbox"
+          value="false"
+        />
+        Include inactive offers
+      </label>
+      <label>
+        Page size
+        <input
+          autoComplete="off"
+          defaultValue={String(filters.first)}
+          min={1}
+          name="first"
+          type="number"
+        />
+      </label>
+      <button type="submit">Apply filters</button>
+    </form>
   );
 }
 

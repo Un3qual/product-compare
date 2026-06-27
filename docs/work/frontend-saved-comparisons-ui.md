@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-30 after saved-comparisons Relay migration handoff
+- Last verified: 2026-06-27 after client-side saved-comparison filter verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -14,7 +14,7 @@
   - `docs/work/frontend-relay-route-data.md`
   - `docs/work/frontend-compare-saved-hardening.md`
   - `docs/work/saved-comparisons-backend.md`
-- Current implementation plan:
+- Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.
@@ -24,7 +24,7 @@
 
 ## Current Cross-Project Batch
 
-- Status: ready.
+- Status: done.
 - Plan: `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`.
 - Owned paths:
   - `assets/src/routes/compare/saved.tsx`
@@ -36,6 +36,10 @@
   - `cd assets && bun run typecheck`
   - `git diff --check`
 - Exit condition: `/compare/saved` can filter loaded saved sets by name or product slug without backend changes.
+- Completed verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx` - 15 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verified Current State
 
@@ -44,7 +48,9 @@
 - `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts` and `assets/src/routes/compare/mutations/DeleteSavedComparisonSetMutation.ts` define the saved-list query and delete mutation Relay sources.
 - `assets/src/routes/compare/index.tsx` renders a ready-state `Save comparison` action that submits the current product relay IDs with a derived saved-set name and reports local success/error feedback.
 - `assets/src/routes/compare/saved.tsx` renders `/compare/saved`, reads saved-set rows from Relay preloaded query data with loader summaries as fallback, reopens sets back into `/compare`, deletes owned sets through `useMutation(DeleteSavedComparisonSetMutation)`, and prompts unauthenticated users to sign in.
+- `assets/src/routes/compare/saved.tsx` now filters loaded saved sets client-side by saved-set name or product slug and renders a distinct no-match state.
 - `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the compare save action plus saved-set loader, reopen, delete, unauthorized, and error-boundary states.
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx` covers saved-set name filtering, slug filtering, no-match state, and delete behavior after filtering.
 - `assets/src/router.tsx` mounts both `/compare` and `/compare/saved` with compare-scoped route error boundaries.
 - `assets/src/routes/root.tsx` links to `Saved comparisons` from both the primary navigation and home actions.
 
@@ -62,6 +68,7 @@
 - Follow-on route hardening moved to `docs/work/frontend-compare-saved-hardening.md`.
 - Relay route-data adoption completed its queued transport-helper cleanup in `docs/work/frontend-relay-route-data.md`.
 - The saved-route Relay migration completed in `docs/work/frontend-saved-comparisons-relay-migration.md`; no additional saved-comparisons UI follow-up is queued from this completed work item.
+- The 2026-06-27 saved-comparison client filter follow-up is complete.
 
 ## Verification Commands
 

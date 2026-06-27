@@ -71,13 +71,23 @@ const PRODUCT_QUERY_DESCRIPTOR = {
   }
 };
 
-const OFFERS_QUERY_DESCRIPTOR = {
-  __relayQuery: {
-    operationName: "ProductOffersRouteQuery",
-    text: "query ProductOffersRouteQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }",
-    variables: { productId: "UHJvZHVjdDox", first: 6 }
-  }
-};
+const OFFERS_QUERY_TEXT =
+  "query ProductOffersRouteQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }";
+function makeOffersQueryDescriptor(offersAfter?: string | null) {
+  return {
+    __relayQuery: {
+      operationName: "ProductOffersRouteQuery",
+      text: OFFERS_QUERY_TEXT,
+      variables: {
+        productId: "UHJvZHVjdDox",
+        first: 6,
+        ...(offersAfter ? { after: offersAfter } : {})
+      }
+    }
+  };
+}
+
+const OFFERS_QUERY_DESCRIPTOR = makeOffersQueryDescriptor();
 
 type DetailProduct = {
   id: string;
@@ -170,6 +180,41 @@ test("product detail loader preloads product detail and active offers through Re
     environment,
     expect.anything(),
     { productId: DETAIL_PRODUCT.id, first: 6 },
+    { signal: request.signal }
+  );
+});
+
+test("product detail loader forwards offersAfter to offers query pagination", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products/detail-product?offersAfter=cursor%2Bnext%2Ftoken"
+  );
+  const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor+next/token");
+
+  mockedFetchRouteQuery.mockResolvedValue({
+    data: {
+      product: DETAIL_PRODUCT
+    },
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
+  });
+  mockedPreloadRouteQuery.mockResolvedValue(offersDescriptorWithAfter);
+
+  await expect(
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: offersDescriptorWithAfter
+    }
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 6, after: "cursor+next/token" },
     { signal: request.signal }
   );
 });
@@ -363,6 +408,84 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
+});
+
+test("renders next and first offer page links from URL-driven offersAfter state", () => {
+  const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor/next+token");
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: offersDescriptorWithAfter
+    }
+  });
+  mockRouteQueryRefs(offersDescriptorWithAfter);
+  mockProductAndOffersQueries(
+    buildOffersData(
+      [
+        {
+          id: "merchant-product-1",
+          url: "https://merchant.example.com/detail-product",
+          currency: "USD",
+          merchant: {
+            id: "merchant-1",
+            name: "Acme"
+          },
+          latestPrice: {
+            id: "price-1",
+            price: "199.99"
+          }
+        }
+      ],
+      {
+        hasNextPage: true,
+        endCursor: "next cursor&token"
+      }
+    ),
+    {
+      ...DETAIL_PRODUCT,
+      slug: "detail/product?value"
+    }
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
+    "href",
+    "/products/detail%2Fproduct%3Fvalue"
+  );
+  expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
+    "href",
+    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26token"
+  );
+});
+
+test("does not render offer pagination links when no additional offers page exists", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.queryByRole("link", { name: "First offers" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
 });
 
 test("renders active coupon details for product offers", () => {
@@ -1012,13 +1135,16 @@ test("renders an unavailable message when the product detail request fails", () 
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
-function mockRouteQueryRefs() {
+function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === PRODUCT_QUERY_DESCRIPTOR) {
       return productQueryRef;
     }
 
-    if (descriptor === OFFERS_QUERY_DESCRIPTOR) {
+    if (
+      descriptor === offersDescriptor ||
+      descriptor?.__relayQuery?.operationName === "ProductOffersRouteQuery"
+    ) {
       return offersQueryRef;
     }
 
@@ -1097,10 +1223,18 @@ function buildOffersData(
         hasNextPage: boolean;
       };
     };
-  }>
+  }>,
+  connection: {
+    hasNextPage?: boolean;
+    endCursor?: string | null;
+  } = {}
 ) {
   return {
     merchantProducts: {
+      pageInfo: {
+        hasNextPage: connection.hasNextPage ?? false,
+        endCursor: connection.endCursor ?? null
+      },
       edges: nodes.map((node) => ({
         node: {
           ...node,

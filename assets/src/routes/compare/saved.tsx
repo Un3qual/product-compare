@@ -28,6 +28,7 @@ export function SavedComparisonsRoute() {
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingDeleteIds, setPendingDeleteIds] = useState<ReadonlySet<string>>(new Set());
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [filterText, setFilterText] = useState("");
   const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
   const [commitDeleteSavedComparisonSet] = useMutation<DeleteSavedComparisonSetMutation>(
     deleteSavedComparisonSetMutation
@@ -84,7 +85,7 @@ export function SavedComparisonsRoute() {
     );
   }
 
-  const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds);
+  const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds, filterText);
   const savedSetQueries =
     loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
 
@@ -96,7 +97,19 @@ export function SavedComparisonsRoute() {
       {deleteError ? <p role="alert">{deleteError}</p> : null}
       {loaderData.status === "unauthorized" ? (
         <Link to="/auth/login">Sign in to view saved comparisons</Link>
-      ) : null}
+      ) : (
+        <label htmlFor="saved-comparisons-filter">
+          Filter saved comparisons
+          <input
+            id="saved-comparisons-filter"
+            onChange={(event) => {
+              setFilterText(event.target.value);
+            }}
+            type="text"
+            value={filterText}
+          />
+        </label>
+      )}
       {viewState.savedSets.length > 0 && savedSetQueries.length > 0 ? (
         <ResettableErrorBoundary
           fallback={
@@ -110,6 +123,7 @@ export function SavedComparisonsRoute() {
         >
           <Suspense fallback={<p role="status">Loading saved comparisons...</p>}>
             <RelaySavedComparisonSetList
+              filterText={filterText}
               deletedSavedSetIds={deletedSavedSetIds}
               onDelete={handleDelete}
               pendingDeleteIds={pendingDeleteIds}
@@ -130,11 +144,13 @@ export function SavedComparisonsRoute() {
 }
 
 function RelaySavedComparisonSetList({
+  filterText,
   deletedSavedSetIds,
   onDelete,
   pendingDeleteIds,
   savedSetQueries
 }: {
+  filterText: string;
   deletedSavedSetIds: ReadonlySet<string>;
   onDelete: (savedComparisonSetId: string) => void;
   pendingDeleteIds: ReadonlySet<string>;
@@ -144,6 +160,7 @@ function RelaySavedComparisonSetList({
     <ul aria-label="Saved comparison sets">
       {savedSetQueries.map((savedSetQuery) => (
         <RelaySavedComparisonSetPage
+          filterText={filterText}
           deletedSavedSetIds={deletedSavedSetIds}
           key={savedComparisonSetQueryKey(savedSetQuery)}
           onDelete={onDelete}
@@ -156,11 +173,13 @@ function RelaySavedComparisonSetList({
 }
 
 function RelaySavedComparisonSetPage({
+  filterText,
   deletedSavedSetIds,
   onDelete,
   pendingDeleteIds,
   savedSetQuery
 }: {
+  filterText: string;
   deletedSavedSetIds: ReadonlySet<string>;
   onDelete: (savedComparisonSetId: string) => void;
   pendingDeleteIds: ReadonlySet<string>;
@@ -175,7 +194,8 @@ function RelaySavedComparisonSetPage({
     queryRef
   );
   const page = summarizeSavedComparisonSetsPage(data);
-  const savedSets = page.savedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
+  const filteredSavedSets = filterSavedComparisonSets(page.savedSets, filterText);
+  const savedSets = filteredSavedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
 
   return (
     <>
@@ -284,7 +304,9 @@ function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): Read
 const buildSavedComparisonsStatus = (
   loaderData: SavedComparisonsRouteLoaderData,
   visibleSavedSets: SavedComparisonSetSummary[],
-  hasLocalDeletion: boolean
+  hasLocalDeletion: boolean,
+  hasFilter: boolean,
+  hasLoadedSavedSets: boolean
 ) => {
   if (loaderData.status === "unauthorized") {
     return "Sign in to view saved comparisons.";
@@ -292,6 +314,10 @@ const buildSavedComparisonsStatus = (
 
   if (hasLocalDeletion) {
     return "Comparison deleted.";
+  }
+
+  if (hasFilter && hasLoadedSavedSets && visibleSavedSets.length === 0) {
+    return "No saved comparisons match your filter.";
   }
 
   if (visibleSavedSets.length === 0) {
@@ -303,15 +329,42 @@ const buildSavedComparisonsStatus = (
 
 const buildSavedComparisonsViewState = (
   loaderData: SavedComparisonsRouteLoaderData,
-  deletedSavedSetIds: ReadonlySet<string>
+  deletedSavedSetIds: ReadonlySet<string>,
+  filterText: string
 ) => {
   const hasLocalDeletion = loaderData.savedSets.some((savedSet) =>
     deletedSavedSetIds.has(savedSet.id)
   );
-  const savedSets = loaderData.savedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
+  const filteredSavedSets = filterSavedComparisonSets(loaderData.savedSets, filterText);
+  const savedSets = filteredSavedSets.filter((savedSet) => !deletedSavedSetIds.has(savedSet.id));
 
   return {
     savedSets,
-    statusMessage: buildSavedComparisonsStatus(loaderData, savedSets, hasLocalDeletion)
+    statusMessage: buildSavedComparisonsStatus(
+      loaderData,
+      savedSets,
+      hasLocalDeletion,
+      filterText.trim() !== "",
+      loaderData.savedSets.length > 0
+    )
   };
 };
+
+function filterSavedComparisonSets(
+  savedSets: readonly SavedComparisonSetSummary[],
+  filterText: string
+): SavedComparisonSetSummary[] {
+  const normalizedFilter = filterText.trim().toLowerCase();
+
+  if (!normalizedFilter) {
+    return [...savedSets];
+  }
+
+  return savedSets.filter((savedSet) => {
+    if (savedSet.name.toLowerCase().includes(normalizedFilter)) {
+      return true;
+    }
+
+    return savedSet.slugs.some((slug) => slug.toLowerCase().includes(normalizedFilter));
+  });
+}

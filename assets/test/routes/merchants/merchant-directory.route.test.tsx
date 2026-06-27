@@ -106,7 +106,7 @@ test("merchant directory renders an empty state", () => {
 test("merchant directory renders next-page navigation when available", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
-      first: 30,
+      first: 35,
       after: "previous-cursor"
     })
   );
@@ -121,14 +121,14 @@ test("merchant directory renders next-page navigation when available", () => {
 
   expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
     "href",
-    "/merchants?first=30&after=next-cursor"
+    "/merchants?first=35&after=next-cursor"
   );
 });
 
 test("merchant directory renders first-page navigation when cursor-paged", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
-      first: 30,
+      first: 35,
       after: "cursor-1"
     })
   );
@@ -145,8 +145,29 @@ test("merchant directory renders first-page navigation when cursor-paged", () =>
 
   expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
     "href",
-    "/merchants"
+    "/merchants?first=35"
   );
+});
+
+test("merchant directory renders a reload-safe page-size selector", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 50,
+      after: null
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
+  const pageSizeForm = pageSizeSelect.closest("form");
+
+  expect(pageSizeForm).toHaveAttribute("action", "/merchants");
+  expect(pageSizeForm).toHaveAttribute("method", "get");
+  expect(pageSizeSelect).toHaveValue("50");
+  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
+  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
+  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
 });
 
 test("merchant directory renders the loader error state", () => {

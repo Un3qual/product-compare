@@ -12,22 +12,11 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-The current queue has one explicitly requested parallel batch of ten ready
-work-item plans across the project. Start at `docs/work/index.md` for dispatch
-order and target paths.
+No active work-item plans are currently promoted. Start at
+`docs/work/index.md` for the live dispatch queue before selecting new work.
 
-| Status | Plan | Notes |
-| --- | --- | --- |
-| ready | `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md` | `/products` page-size controls; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md` | `/products/:slug` active-offer pagination; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md` | `/offers` filter controls for existing URL params; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md` | `/merchants` page-size controls; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md` | `/commerce/revenue` date preset links; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md` | `/compare/saved` client-side filtering; no backend change. |
-| ready | `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md` | `/compare` selection remove controls; URL-driven only. |
-| ready | `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md` | `/account/api-tokens` expiration presets; mutation contracts unchanged. |
-| ready | `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md` | `/affiliate/setup` selected merchant context; frontend route only. |
-| ready | `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md` | Provider-neutral ingestion source health read model; no Mix task or UI. |
+The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
+the completed plan archive below.
 
 Rejected: CJ candidate CSV score export was explicitly removed from the scoring
 batch and should not be recreated or promoted.
@@ -46,6 +35,18 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Cross-project frontend and ingestion follow-up batch:
+  `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`,
+  `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`.
 - Product ingestion: ten-plan CJ operator loop batch:
   `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`,
   `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`,

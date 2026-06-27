@@ -6,6 +6,21 @@ export interface MerchantPagination {
   first: number;
 }
 
+export function merchantDirectoryPagePath(
+  pagination: MerchantPagination,
+  after?: string | null
+) {
+  const params = new URLSearchParams();
+
+  params.set("first", String(pagination.first));
+
+  if (after) {
+    params.set("after", after);
+  }
+
+  return `/merchants?${params.toString()}`;
+}
+
 export function merchantPaginationFromUrl(url: URL): MerchantPagination {
   return {
     first: normalizeMerchantPageSize(url.searchParams.get("first")),

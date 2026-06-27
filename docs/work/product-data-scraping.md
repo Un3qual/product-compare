@@ -2,13 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: rank 10 Product data scraping `ready` row in
-  `docs/work/index.md` as part of a cross-project parallel batch
-- Last verified: 2026-06-27 after ten-plan CJ operator loop focused tests,
-  `mix typecheck`, `git diff --check`, format check, and 5.5 xhigh review
+- Live queue row: completed in the 2026-06-27 cross-project parallel batch
+- Last verified: 2026-06-27 after source-health focused tests, `mix typecheck`,
+  and `git diff --check`
 - Last plan refresh: 2026-06-27 after replacing the CJ-only batch with a
   cross-project queue correction
 - Historical context:
@@ -17,7 +16,8 @@
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Current implementation plans:
+- Current implementation plans: none
+- Recently completed implementation plans:
   - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
@@ -90,7 +90,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: done
 - Batch: provider-neutral source health read model in the 2026-06-27
   cross-project parallel work-item batch.
 - Plan:
@@ -111,6 +111,18 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Parallel workers may edit only the row's target paths and this lane doc.
   - The previous CJ-only read-model/runbook plans remain kept as candidate or
     historical plans, but they are not active queue rows after this correction.
+- Worker 10 implementation evidence:
+  - Added `ProductCompare.Ingestion.SourceHealth` as a provider-neutral,
+    read-only aggregate over sources, source artifacts, and ingestion runs.
+  - Added focused tests covering active sources, no-activity sources, successful
+    latest runs, failed runs inside and outside the recent window, failure-window
+    clamping, and safe returned keys.
+  - Red verification: `mix test test/product_compare/ingestion/source_health_test.exs`
+    failed with undefined `ProductCompare.Ingestion.SourceHealth.summary/2`.
+  - Green verification: `mix test test/product_compare/ingestion/source_health_test.exs`
+    passed with 2 tests, 0 failures.
+  - Typecheck: `mix typecheck` completed with exit 0.
+  - Whitespace: `git diff --check` completed with exit 0.
 - Credential readiness contract:
   - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
   - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should

@@ -1,9 +1,12 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
-import { ApiTokensRoute } from "../../../../src/routes/account/api-tokens/index";
+import {
+  ApiTokensRoute,
+  buildApiTokenExpiresAtInputValue
+} from "../../../../src/routes/account/api-tokens/index";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
 const {
@@ -288,6 +291,53 @@ test("create token submits label and displays the one-time plain text token", as
   expect(oneTimeRegion).toHaveTextContent("Visible only once");
   expect(oneTimeRegion).toHaveTextContent(ONE_TIME_TOKEN_VALUE);
 });
+
+test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
+  "create token applies the %s preset",
+  async (preset) => {
+    mockedUseLoaderData.mockReturnValue({
+      status: "empty",
+      tokenQueries: [],
+      tokens: [],
+      tokenStatus: "all"
+    } satisfies ApiTokensRouteLoaderData);
+
+    renderApiTokensRoute();
+
+    const createForm = screen.getByRole("form", { name: "Create API token" });
+    const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
+
+    fireEvent.click(within(createForm).getByRole("button", { name: preset }));
+    expect(
+      within(createForm).getByLabelText("Expires at")
+    ).toHaveValue(expectedExpiresAtInput);
+    fireEvent.click(within(createForm).getByRole("button", { name: "Create API token" }));
+
+    await waitFor(() => {
+      expect(commitCreateMutationMock).toHaveBeenCalled();
+    });
+
+    if (preset === "No expiration") {
+      expect(commitCreateMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: {
+            label: null,
+            expiresAt: null
+          }
+        })
+      );
+    } else {
+      expect(commitCreateMutationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: {
+            label: null,
+            expiresAt: new Date(expectedExpiresAtInput).toISOString()
+          }
+        })
+      );
+    }
+  }
+);
 
 test("create token ignores duplicate submits while the request is in flight", async () => {
   mockedUseLoaderData.mockReturnValue({
@@ -700,6 +750,49 @@ test("rotate token commits the selected token id and displays the replacement on
   expect(screen.getByRole("heading", { name: "CLI replacement" })).toBeInTheDocument();
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
 });
+
+test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
+  "rotate token applies the %s preset",
+  async (preset) => {
+    mockedUseLoaderData.mockReturnValue({
+      status: "ready",
+      tokenQueries: [],
+      tokens: [ACTIVE_TOKEN],
+      tokenStatus: "all"
+    } satisfies ApiTokensRouteLoaderData);
+
+    renderApiTokensRoute();
+
+    const rotateForm = screen.getByRole("form", { name: "Rotate CLI API token" });
+    const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
+
+    fireEvent.click(within(rotateForm).getByRole("button", { name: preset }));
+    expect(within(rotateForm).getByLabelText("Replacement expiry for CLI")).toHaveValue(
+      expectedExpiresAtInput
+    );
+    fireEvent.submit(rotateForm);
+
+    await waitFor(() => {
+      expect(commitRotateMutationMock).toHaveBeenCalled();
+    });
+
+    const rotationVariables = commitRotateMutationMock.mock.calls.at(-1)?.[0]?.variables;
+    expect(rotationVariables).toMatchObject({
+      tokenId: ACTIVE_TOKEN.id,
+      label: "CLI"
+    });
+
+    if (preset === "No expiration") {
+      expect(rotationVariables).toMatchObject({
+        expiresAt: null
+      });
+    } else {
+      expect(rotationVariables).toMatchObject({
+        expiresAt: new Date(expectedExpiresAtInput).toISOString()
+      });
+    }
+  }
+);
 
 test("rotate token uses the selected row label when no replacement label is entered", async () => {
   mockedUseLoaderData.mockReturnValue({

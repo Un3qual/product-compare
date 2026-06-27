@@ -73,7 +73,11 @@ function ProductDetail({
             fallback={<OffersUnavailableFallback />}
           >
             <Suspense fallback={<p role="status">Loading offers...</p>}>
-              <ProductOffers query={offers.query} />
+              <ProductOffers
+                query={offers.query}
+                productSlug={product.slug}
+                offersAfter={offers.query.__relayQuery.variables.after ?? null}
+              />
             </Suspense>
           </ResettableErrorBoundary>
         )}
@@ -127,12 +131,16 @@ function OffersUnavailableFallback() {
 }
 
 function ProductOffers({
-  query
+  query,
+  productSlug,
+  offersAfter
 }: {
   query: Extract<
     Extract<ProductDetailLoaderData, { status: "ready" }>["offers"],
     { status: "ready" }
   >["query"];
+  productSlug: string;
+  offersAfter: string | null;
 }) {
   const queryRef = useRoutePreloadedQuery<ProductOffersRouteQuery>(
     productOffersRouteQuery,
@@ -160,33 +168,69 @@ function ProductOffers({
       }
     ];
   });
+  const paginationLinks =
+    offersAfter || (data.merchantProducts.pageInfo.hasNextPage && data.merchantProducts.pageInfo.endCursor) ? (
+      <nav aria-label="Active offer pages">
+        {offersAfter ? <Link to={productOffersPath(productSlug)}>First offers</Link> : null}
+        {data.merchantProducts.pageInfo.hasNextPage &&
+        data.merchantProducts.pageInfo.endCursor ? (
+          <Link
+            to={productOffersPath(productSlug, data.merchantProducts.pageInfo.endCursor)}
+          >
+            Next offers
+          </Link>
+        ) : null}
+      </nav>
+    ) : null;
 
   if (offers.length === 0) {
-    return <p>No active offers yet.</p>;
+    return (
+      <>
+        <p>No active offers yet.</p>
+        {paginationLinks}
+      </>
+    );
   }
 
   return (
-    <ul>
-      {offers.map((offer) => (
-        <li key={offer.id}>
-          <a href={offer.url} target="_blank" rel="noopener noreferrer">
-            {offer.merchantName}
-          </a>
-          {offer.priceText ? <p>{offer.priceText}</p> : null}
-          <OfferPriceHistory
-            merchantName={offer.merchantName}
-            historyRows={offer.priceHistory}
-            hasMore={offer.priceHistoryHasMore}
-          />
-          <OfferCoupons
-            merchantName={offer.merchantName}
-            coupons={offer.coupons}
-            hasMore={offer.couponsHasMore}
-          />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul>
+        {offers.map((offer) => (
+          <li key={offer.id}>
+            <a href={offer.url} target="_blank" rel="noopener noreferrer">
+              {offer.merchantName}
+            </a>
+            {offer.priceText ? <p>{offer.priceText}</p> : null}
+            <OfferPriceHistory
+              merchantName={offer.merchantName}
+              historyRows={offer.priceHistory}
+              hasMore={offer.priceHistoryHasMore}
+            />
+            <OfferCoupons
+              merchantName={offer.merchantName}
+              coupons={offer.coupons}
+              hasMore={offer.couponsHasMore}
+            />
+          </li>
+        ))}
+      </ul>
+      {paginationLinks}
+    </>
   );
+}
+
+function productOffersPath(productSlug: string, offersAfter?: string | null) {
+  const params = new URLSearchParams();
+
+  if (offersAfter) {
+    params.set("offersAfter", offersAfter);
+  }
+
+  const query = params.toString();
+
+  return query.length > 0
+    ? `/products/${encodeURIComponent(productSlug)}?${query}`
+    : `/products/${encodeURIComponent(productSlug)}`;
 }
 
 function OfferPriceHistory({
