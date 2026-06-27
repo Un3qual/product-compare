@@ -10,17 +10,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
 
   @shortdoc "Imports one manual CJ shopping product page"
+  @credential_requirements [
+    {"CJ_API_TOKEN", :api_token},
+    {"CJ_ACCOUNT_ID", :company_id}
+  ]
 
   @impl Mix.Task
   def run(argv) do
-    Mix.Task.run("app.start")
+    opts = parse_argv(argv)
+    check_credentials? = Keyword.get(opts, :check_credentials, false)
 
-    argv
-    |> parse_argv()
+    unless check_credentials? do
+      Mix.Task.run("app.start")
+    end
+
+    opts
     |> run_import()
     |> case do
-      {:ok, _report} -> :ok
-      {:error, reason} -> Mix.raise("CJ import failed: #{inspect(reason)}")
+      {:ok, report} when check_credentials? ->
+        print_credential_report(report)
+        maybe_require_ready!(opts, report)
+        :ok
+
+      {:ok, _report} ->
+        :ok
+
+      {:error, reason} ->
+        Mix.raise("CJ import failed: #{inspect(reason)}")
     end
   end
 
@@ -32,6 +48,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp do_run_import(opts) do
+    if Keyword.get(opts, :check_credentials, false) do
+      {:ok, credential_report(opts)}
+    else
+      do_import(opts)
+    end
+  end
+
+  defp do_import(opts) do
     fetcher = Keyword.get(opts, :fetcher, &ProductParser.fetch_batch/2)
     cursor = Keyword.get(opts, :cursor)
     fetch_opts = fetch_opts(opts)
@@ -85,7 +109,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           limit: :integer,
           offset: :integer,
           pages: :integer,
-          serviceable_area: :string
+          serviceable_area: :string,
+          check_credentials: :boolean,
+          require_ready: :boolean
         ]
       )
 
@@ -95,6 +121,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
     |> Keyword.put_new(:currency, "USD")
     |> Keyword.put_new(:pages, 1)
+    |> Keyword.put_new(:check_credentials, false)
+    |> Keyword.put_new(:require_ready, false)
     |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
   end
 
@@ -237,11 +265,62 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     }
   end
 
+  defp credential_report(opts) do
+    missing_required =
+      @credential_requirements
+      |> Enum.reject(fn {env_var, opt_key} -> credential_present?(opts, env_var, opt_key) end)
+      |> Enum.map(fn {env_var, _opt_key} -> env_var end)
+
+    %{
+      provider: "cj",
+      surface: "shoppingProducts",
+      ready: missing_required == [],
+      missing_required: missing_required
+    }
+  end
+
+  defp credential_present?(opts, env_var, opt_key) do
+    opts
+    |> Keyword.get(opt_key)
+    |> blank_to_nil()
+    |> case do
+      nil -> env_var |> System.get_env() |> blank_to_nil()
+      value -> value
+    end
+    |> is_nil()
+    |> Kernel.not()
+  end
+
+  defp blank_to_nil(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp blank_to_nil(value), do: value
+
   defp print_report(report) do
     IO.puts(
       "fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
     )
   end
+
+  defp print_credential_report(report) do
+    IO.puts(
+      "provider=#{report.provider} surface=#{report.surface} ready=#{report.ready} missing_required=#{Enum.join(report.missing_required, ",")}"
+    )
+  end
+
+  defp maybe_require_ready!(opts, %{ready: false, missing_required: missing_required}) do
+    if Keyword.get(opts, :require_ready, false) do
+      Mix.raise("missing CJ credentials: #{Enum.join(missing_required, ",")}")
+    end
+  end
+
+  defp maybe_require_ready!(_opts, _report), do: :ok
 
   defp report_result(%{failed: 0} = report), do: {:ok, report}
   defp report_result(report), do: {:error, {:row_failures, report}}
