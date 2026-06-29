@@ -33,13 +33,13 @@ Do not edit `assets/src/routes/offers/loader.ts`, `assets/src/routes/catalog/bro
 
 ## Tasks
 
-- [ ] Add failing route coverage for active-filter summaries and clear/reset links.
-- [ ] Add failing route coverage for the missing-product guidance link back to `/products`.
-- [ ] Preserve existing loader normalization tests; add loader coverage only if URL helper behavior changes.
-- [ ] Update `OfferDiscoveryRoute` markup/helpers without changing Relay variables or backend input shape.
-- [ ] Update `docs/work/frontend-offer-discovery-demo-parity.md` with implementation evidence and verification output.
-- [ ] Run `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`.
-- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [x] Add failing route coverage for active-filter summaries and clear/reset links.
+- [x] Add failing route coverage for the missing-product guidance link back to `/products`.
+- [x] Preserve existing loader normalization tests; add loader coverage only if URL helper behavior changes.
+- [x] Update `OfferDiscoveryRoute` markup/helpers without changing Relay variables or backend input shape.
+- [x] Update `docs/work/frontend-offer-discovery-demo-parity.md` with implementation evidence and verification output.
+- [x] Run `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`.
+- [x] Run `cd assets && bun run typecheck` and `git diff --check`.
 
 ## Exit Condition
 

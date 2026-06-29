@@ -31,12 +31,12 @@ Do not edit `assets/src/routes/catalog/loader.ts`, `assets/src/router.tsx`, `ass
 
 ## Tasks
 
-- [ ] Add failing route coverage for product cards that expose the three decision actions with stable destinations.
-- [ ] Add failing route coverage that confirms page-size and pagination controls still render after the card action changes.
-- [ ] Update `BrowseRoute` product-card markup and link labels without changing loader data requirements.
-- [ ] Update `docs/work/frontend-catalog-browse.md` with implementation evidence and verification output.
-- [ ] Run `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`.
-- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [x] Add failing route coverage for product cards that expose the three decision actions with stable destinations.
+- [x] Add failing route coverage that confirms page-size and pagination controls still render after the card action changes.
+- [x] Update `BrowseRoute` product-card markup and link labels without changing loader data requirements.
+- [x] Update `docs/work/frontend-catalog-browse.md` with implementation evidence and verification output.
+- [x] Run `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`.
+- [x] Run `cd assets && bun run typecheck` and `git diff --check`.
 
 ## Exit Condition
 

@@ -32,12 +32,12 @@ Do not edit `assets/src/routes/compare/saved.tsx`, `assets/src/router.tsx`, `ass
 
 ## Tasks
 
-- [ ] Add failing route coverage for the selected-product tray and each selected product's remove link.
-- [ ] Add or preserve route coverage for add-another-product links and save-comparison behavior.
-- [ ] Update `CompareRoute` markup/helpers without changing Relay variables or generated artifacts.
-- [ ] Update `docs/work/frontend-product-comparison-demo-parity.md` with implementation evidence and verification output.
-- [ ] Run `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`.
-- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [x] Add failing route coverage for the selected-product tray and each selected product's remove link.
+- [x] Add or preserve route coverage for add-another-product links and save-comparison behavior.
+- [x] Update `CompareRoute` markup/helpers without changing Relay variables or generated artifacts.
+- [x] Update `docs/work/frontend-product-comparison-demo-parity.md` with implementation evidence and verification output.
+- [x] Run `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`.
+- [x] Run `cd assets && bun run typecheck` and `git diff --check`.
 
 ## Exit Condition
 

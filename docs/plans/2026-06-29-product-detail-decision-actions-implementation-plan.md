@@ -31,12 +31,12 @@ Do not edit `assets/src/routes/products/loader.ts`, `assets/src/router.tsx`, `as
 
 ## Tasks
 
-- [ ] Add failing route coverage for the decision block and its compare, offer, and browse destinations.
-- [ ] Add or preserve route coverage for active-offer pagination links after the layout change.
-- [ ] Update `ProductDetailRoute` markup to make next actions prominent while preserving existing data requirements.
-- [ ] Update `docs/work/frontend-product-detail.md` with implementation evidence and verification output.
-- [ ] Run `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`.
-- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [x] Add failing route coverage for the decision block and its compare, offer, and browse destinations.
+- [x] Add or preserve route coverage for active-offer pagination links after the layout change.
+- [x] Update `ProductDetailRoute` markup to make next actions prominent while preserving existing data requirements.
+- [x] Update `docs/work/frontend-product-detail.md` with implementation evidence and verification output.
+- [x] Run `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`.
+- [x] Run `cd assets && bun run typecheck` and `git diff --check`.
 
 ## Exit Condition
 

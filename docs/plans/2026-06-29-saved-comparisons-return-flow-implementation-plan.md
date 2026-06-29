@@ -31,12 +31,12 @@ Do not edit `assets/src/routes/compare/index.tsx`, `assets/src/routes/compare/sa
 
 ## Tasks
 
-- [ ] Add failing route coverage for saved-set card summaries and clear reopen/delete actions.
-- [ ] Add failing route coverage for empty and no-match return actions.
-- [ ] Update `SavedComparisonsRoute` markup/helpers without changing Relay query or mutation inputs.
-- [ ] Update `docs/work/frontend-saved-comparisons-ui.md` with implementation evidence and verification output.
-- [ ] Run `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`.
-- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [x] Add failing route coverage for saved-set card summaries and clear reopen/delete actions.
+- [x] Add failing route coverage for empty and no-match return actions.
+- [x] Update `SavedComparisonsRoute` markup/helpers without changing Relay query or mutation inputs.
+- [x] Update `docs/work/frontend-saved-comparisons-ui.md` with implementation evidence and verification output.
+- [x] Run `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`.
+- [x] Run `cd assets && bun run typecheck` and `git diff --check`.
 
 ## Exit Condition
 
