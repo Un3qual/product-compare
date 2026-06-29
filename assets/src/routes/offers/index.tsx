@@ -36,6 +36,7 @@ export function OfferDiscoveryRoute() {
       </header>
 
       <OfferDiscoveryFilterForm filters={loaderData.filters} />
+      <OfferDiscoveryFilterSummary filters={loaderData.filters} />
 
       {loaderData.status === "missingProduct" ? (
         <MissingProductState />
@@ -115,6 +116,58 @@ function offerDiscoveryFilterFormKey(filters: OfferDiscoveryFilters) {
     filters.activeOnly,
     filters.first
   ]);
+}
+
+function OfferDiscoveryFilterSummary({ filters }: { filters: OfferDiscoveryFilters }) {
+  return (
+    <section aria-label="Active offer filters">
+      <dl>
+        {offerDiscoveryFilterSummaryItems(filters).map(({ label, value }) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p>
+        <Link to="/offers">Reset filters</Link>
+      </p>
+      {filters.merchantId ? (
+        <p>
+          <Link to={clearMerchantFilterPath(filters)}>Clear merchant filter</Link>
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function offerDiscoveryFilterSummaryItems(filters: OfferDiscoveryFilters) {
+  return [
+    {
+      label: "Product ID",
+      value: filters.productId ?? "Not selected"
+    },
+    ...(filters.merchantId
+      ? [
+          {
+            label: "Merchant ID",
+            value: filters.merchantId
+          }
+        ]
+      : []),
+    {
+      label: "Offer status",
+      value: filters.activeOnly ? "Active offers only" : "All offers included"
+    },
+    {
+      label: "Page size",
+      value: String(filters.first)
+    }
+  ];
+}
+
+function clearMerchantFilterPath(filters: OfferDiscoveryFilters) {
+  return offerDiscoveryPath({ ...filters, merchantId: null }, null);
 }
 
 function OfferDiscoveryPanel({
@@ -378,6 +431,7 @@ function MissingProductState() {
   return (
     <section>
       <p>Start from browse products to choose a product.</p>
+      <p>Choose a product to review its current merchant offers.</p>
       <p>
         <Link to="/products">Browse products</Link>
       </p>

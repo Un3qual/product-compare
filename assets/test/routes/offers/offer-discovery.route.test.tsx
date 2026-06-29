@@ -93,6 +93,7 @@ test("offer discovery asks users to start from browse products when productId is
 
   expect(screen.getByRole("heading", { name: "Offers" })).toBeInTheDocument();
   expect(screen.getByText("Start from browse products to choose a product.")).toBeVisible();
+  expect(screen.getByText("Choose a product to review its current merchant offers.")).toBeVisible();
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
     "/products"
@@ -124,6 +125,51 @@ test("offer discovery renders filter controls with existing filter values", () =
   );
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+});
+
+test("offer discovery summarizes active filters", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 12,
+      activeOnly: false,
+      merchantId: "TWVyY2hhbnQ6NDU2"
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(within(filterSummary).getByText("Merchant ID")).toBeVisible();
+  expect(within(filterSummary).getByText("TWVyY2hhbnQ6NDU2")).toBeVisible();
+  expect(within(filterSummary).getByText("Offer status")).toBeVisible();
+  expect(within(filterSummary).getByText("All offers included")).toBeVisible();
+  expect(within(filterSummary).getByText("Page size")).toBeVisible();
+  expect(within(filterSummary).getByText("12")).toBeVisible();
+});
+
+test("offer discovery provides route-local filter reset links", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      after: "cursor-1",
+      first: 12,
+      activeOnly: false,
+      merchantId: "TWVyY2hhbnQ6NDU2"
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
+    "href",
+    "/offers"
+  );
+  expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
+    "href",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12"
+  );
 });
 
 test("offer discovery refreshes uncontrolled filter controls when filters change", () => {
@@ -340,6 +386,14 @@ test("offer discovery renders the loader error state", () => {
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(within(filterSummary).getByText("Offer status")).toBeVisible();
+  expect(within(filterSummary).getByText("Active offers only")).toBeVisible();
+  expect(within(filterSummary).getByText("Page size")).toBeVisible();
+  expect(within(filterSummary).getByText("6")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
