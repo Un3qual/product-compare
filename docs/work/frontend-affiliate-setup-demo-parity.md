@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01, Task 4 navigation and lane closure
+- Last verified: 2026-06-27, selected merchant context verification
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
+- Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -16,25 +17,23 @@
 - [x] Task 3: add affiliate link and coupon setup.
 - [x] Task 4: wire navigation, verify the backend contract, and close the lane.
 
-## Current Batch
+## Current Cross-Project Batch
 
-- Task: none queued.
-- Status: completed.
+- Status: done.
+- Plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/router.tsx`
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `assets/src/__tests__/router.test.tsx`
-  - `assets/src/routes/affiliate/setup/**`
-  - `assets/schema.graphql`
-  - `assets/src/__generated__/**`
+  - `assets/src/routes/affiliate/setup/index.tsx`
+  - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
   - `docs/work/frontend-affiliate-setup-demo-parity.md`
-  - `docs/work/index.md`
-  - `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
-  - `docs/plans/NOW.md`
-  - `docs/plans/INDEX.md`
-  - `ARCHITECTURE.md`
-- Next step: no unblocked affiliate setup demo parity batch remains in this lane; product ingestion remains blocked pending live CJ credentials, representative payloads, quota behavior, and compliance signoff.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/affiliate/setup` keeps selected merchant context visible across program, link, and coupon forms.
+- Completed verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx` - 18 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 
@@ -55,6 +54,7 @@
 - Task 4 focused frontend verification passed with `cd assets && bun run relay`, `cd assets && bun x vitest run src/routes/affiliate/setup/__tests__/affiliate-setup-loader.test.ts src/routes/affiliate/setup/__tests__/affiliate-setup.route.test.tsx src/routes/__tests__/root.route.test.tsx src/__tests__/router.test.tsx`, and `cd assets && bun run typecheck`.
 - Task 4 backend contract verification passed with `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs`.
 - Task 4 final verification passed with `cd assets && bun run check` and `git diff --check`.
+- Task 5 added selected merchant summaries beside the program, link, and coupon forms without changing mutation variables. Focused route coverage verifies initial summaries and context updates after merchant selection changes.
 
 ## Blockers
 

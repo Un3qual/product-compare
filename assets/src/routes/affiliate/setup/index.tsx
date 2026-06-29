@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useRef, useState } from "react";
+import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createCouponMutation, {
@@ -108,6 +108,7 @@ function AffiliateSetupPanel({
   const [couponPending, setCouponPending] = useState(false);
   const couponInFlightRef = useRef(false);
   const [affiliateNetworkId, setAffiliateNetworkId] = useState("");
+  const [selectedMerchantId, setSelectedMerchantId] = useState("");
   const [commitUpsertAffiliateNetwork] = useMutation<UpsertAffiliateNetworkMutation>(
     upsertAffiliateNetworkMutation
   );
@@ -119,11 +120,21 @@ function AffiliateSetupPanel({
   );
   const [commitCreateCoupon] = useMutation<CreateCouponMutation>(createCouponMutation);
 
+  const merchantChoices = useMemo(
+    () => buildMerchantChoices(data.merchants),
+    [data.merchants]
+  );
+  const selectedMerchant = useMemo(
+    () => getMerchantChoiceById(merchantChoices, selectedMerchantId) ?? merchantChoices[0],
+    [merchantChoices, selectedMerchantId]
+  );
+
   if (!data.merchants) {
     return <AffiliateSetupUnavailableFallback />;
   }
 
-  const merchantChoices = buildMerchantChoices(data.merchants);
+  const selectedMerchantSummary = getMerchantSummary(selectedMerchant);
+  const selectedMerchantValue = selectedMerchant?.id ?? "";
 
   async function handleNetworkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -287,6 +298,9 @@ function AffiliateSetupPanel({
       ) : (
         <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit}>
           <h2>Program</h2>
+          {selectedMerchantSummary ? (
+            <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
+          ) : null}
           <label>
             Affiliate network ID
             <input
@@ -299,7 +313,11 @@ function AffiliateSetupPanel({
           </label>
           <label>
             Merchant
-            <select defaultValue={merchantChoices[0]?.id ?? ""} name="merchantId">
+            <select
+              name="merchantId"
+              onChange={(event) => setSelectedMerchantId(event.currentTarget.value)}
+              value={selectedMerchantValue}
+            >
               {merchantChoices.map((merchant) => (
                 <option key={merchant.id} value={merchant.id}>
                   {merchant.name}
@@ -331,6 +349,9 @@ function AffiliateSetupPanel({
 
       <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit}>
         <h2>Link</h2>
+        {selectedMerchantSummary ? (
+          <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
+        ) : null}
         <label>
           Merchant product ID
           <input autoComplete="off" name="merchantProductId" type="text" />
@@ -366,9 +387,16 @@ function AffiliateSetupPanel({
       {merchantChoices.length === 0 ? null : (
         <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit}>
           <h2>Coupon</h2>
+          {selectedMerchantSummary ? (
+            <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
+          ) : null}
           <label>
             Coupon merchant
-            <select defaultValue={merchantChoices[0]?.id ?? ""} name="couponMerchantId">
+            <select
+              name="couponMerchantId"
+              onChange={(event) => setSelectedMerchantId(event.currentTarget.value)}
+              value={selectedMerchantValue}
+            >
               {merchantChoices.map((merchant) => (
                 <option key={merchant.id} value={merchant.id}>
                   {merchant.name}
@@ -465,7 +493,13 @@ function AffiliateSetupUnavailableFallback() {
   );
 }
 
-function buildMerchantChoices(merchants: AffiliateSetupMerchantConnection): MerchantChoice[] {
+function buildMerchantChoices(
+  merchants: AffiliateSetupMerchantConnection | null | undefined
+): MerchantChoice[] {
+  if (!merchants) {
+    return [];
+  }
+
   return merchants.edges.flatMap(({ node }) => {
     if (!node?.id || !node.name || !node.domain) {
       return [];
@@ -479,6 +513,18 @@ function buildMerchantChoices(merchants: AffiliateSetupMerchantConnection): Merc
       }
     ];
   });
+}
+
+function getMerchantChoiceById(merchantChoices: MerchantChoice[], merchantId: string) {
+  return merchantChoices.find((merchant) => merchant.id === merchantId);
+}
+
+function getMerchantSummary(merchantChoice: MerchantChoice | undefined) {
+  if (!merchantChoice) {
+    return null;
+  }
+
+  return `${merchantChoice.name} (${merchantChoice.domain})`;
 }
 
 function buildNetworkVariables(

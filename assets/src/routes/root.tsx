@@ -6,7 +6,7 @@ import rootViewerRouteQuery, {
 } from "../__generated__/RootViewerRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../relay/route-preload";
 import { AppShell } from "../ui/components/layout/app-shell";
-import { Button } from "../ui/primitives";
+import { Button } from "../ui/primitives/button";
 import { AppProviders } from "../ui/providers/app-providers";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 

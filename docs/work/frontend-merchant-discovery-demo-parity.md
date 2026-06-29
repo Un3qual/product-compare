@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01, Task 3 navigation and lane closure
+- Last verified: 2026-06-27, merchant page-size control parity
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
+- Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -15,23 +16,29 @@
 - [x] Task 2: render the merchant discovery route.
 - [x] Task 3: wire navigation and close the lane.
 
-## Current Batch
+## Current Cross-Project Batch
 
-- Task: none queued.
-- Status: completed.
+- Status: done.
+- Plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/router.tsx`
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `assets/src/__tests__/router.test.tsx`
-  - `assets/src/routes/merchants/**`
+  - `assets/src/routes/merchants/index.tsx`
+  - `assets/src/routes/merchants/pagination.ts`
+  - `assets/test/routes/merchants/merchant-directory-loader.test.ts`
+  - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
   - `docs/work/frontend-merchant-discovery-demo-parity.md`
-  - `docs/work/index.md`
-  - `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
-  - `docs/plans/NOW.md`
-  - `docs/plans/INDEX.md`
-  - `ARCHITECTURE.md`
-- Next step: no unblocked merchant discovery demo parity batch remains in this lane; coordinator follow-up can choose the next demo-parity candidate from `docs/plans/INDEX.md` if priorities continue toward affiliate/admin setup.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/merchants/merchant-directory-loader.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/merchants` lets users choose bounded page sizes while preserving cursor pagination.
+- Merchant page-size parity task updates:
+  - [x] Added loader tests for supported, blank, malformed, and oversized `first` values.
+  - [x] Added route test coverage for page-size selector and pagination links preserving `first`.
+  - [x] Added page-size selector form and preserved `first` in Next/First merchant links.
+- Verification (this batch):
+  - `cd assets && bun x vitest run test/routes/merchants/merchant-directory-loader.test.ts test/routes/merchants/merchant-directory.route.test.tsx` - 12 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 

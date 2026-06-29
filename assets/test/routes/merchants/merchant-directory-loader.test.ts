@@ -104,6 +104,58 @@ test("merchantDirectoryLoader drops invalid page-size params instead of broadeni
   );
 });
 
+test("merchantDirectoryLoader drops blank page-size params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/merchants?after=cursor-4&first=");
+  const descriptor = merchantDirectoryQueryDescriptor({ first: 20, after: "cursor-4" });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: "cursor-4"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20, after: "cursor-4" },
+    { signal: request.signal }
+  );
+});
+
+test("merchantDirectoryLoader drops malformed page-size params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/merchants?after=cursor-5&first=abc");
+  const descriptor = merchantDirectoryQueryDescriptor({ first: 20, after: "cursor-5" });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    pagination: {
+      first: 20,
+      after: "cursor-5"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 20, after: "cursor-5" },
+    { signal: request.signal }
+  );
+});
+
 test("merchantDirectoryLoader returns error state when route preloading fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.test/merchants?after=cursor-3&first=30");

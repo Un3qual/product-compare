@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 after Task 6 navigation, frontend, and backend contract verification.
+- Last verified: 2026-06-27 after Task 7 expiry preset verification.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
+- Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -17,6 +18,7 @@
 - [x] Task 4: add the revoke-token flow.
 - [x] Task 5: add the rotate-token flow.
 - [x] Task 6: wire navigation and close the lane.
+- [x] Task 7: add expiry preset controls for create and rotate token forms.
 
 ## Completed Scope
 
@@ -25,11 +27,24 @@
   - Kept the route entry point at `/account/api-tokens`.
   - Verified the route remains backed by the existing GraphQL API-token contract without adding browser REST endpoints.
 
-## Next Batch
+## Current Cross-Project Batch
 
-- Status: none queued.
-- Batch: none.
-- Follow-up: frontend merchant discovery demo parity is the next unblocked non-ingestion demo-parity lane in `docs/work/frontend-merchant-discovery-demo-parity.md`.
+- Status: done.
+- Plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/account/api-tokens/index.tsx`
+  - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `docs/work/frontend-api-token-management-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/account/api-tokens` offers create and rotate expiration presets without changing mutation contracts.
+- Task 7 RED: `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx` failed while preset controls were not present.
+- Task 7 GREEN:
+  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx` - 33 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 

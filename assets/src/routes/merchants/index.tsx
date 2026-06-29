@@ -11,6 +11,7 @@ import {
   type MerchantDirectoryLoaderData,
   type MerchantDirectoryPagination
 } from "./loader";
+import { merchantDirectoryPagePath } from "./pagination";
 
 type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
@@ -28,19 +29,42 @@ export function MerchantDirectoryRoute() {
       {loaderData.status === "error" ? (
         <MerchantDirectoryUnavailableFallback />
       ) : (
-        <ResettableErrorBoundary
-          fallback={<MerchantDirectoryUnavailableFallback />}
-          resetToken={loaderData.query}
-        >
-          <Suspense fallback={<p role="status">Loading merchants...</p>}>
-            <MerchantDirectoryPanel
-              pagination={loaderData.pagination}
-              query={loaderData.query}
-            />
-          </Suspense>
-        </ResettableErrorBoundary>
+        <>
+          <MerchantDirectoryControls pagination={loaderData.pagination} />
+          <ResettableErrorBoundary
+            fallback={<MerchantDirectoryUnavailableFallback />}
+            resetToken={loaderData.query}
+          >
+            <Suspense fallback={<p role="status">Loading merchants...</p>}>
+              <MerchantDirectoryPanel
+                pagination={loaderData.pagination}
+                query={loaderData.query}
+              />
+            </Suspense>
+          </ResettableErrorBoundary>
+        </>
       )}
     </section>
+  );
+}
+
+function MerchantDirectoryControls({
+  pagination
+}: {
+  pagination: MerchantDirectoryPagination;
+}) {
+  return (
+    <form action="/merchants" method="get">
+      <label>
+        Page size
+        <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
+          <option value="20">20</option>
+          <option value="35">35</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
   );
 }
 
@@ -92,12 +116,12 @@ function MerchantDirectoryList({
       </ul>
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
-          <Link to="/merchants">First merchants</Link>
+          <Link to={merchantDirectoryPagePath(pagination)}>First merchants</Link>
         </p>
       ) : null}
       {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
         <p>
-          <Link to={merchantDirectoryNextPagePath(pagination, connection.pageInfo.endCursor)}>
+          <Link to={merchantDirectoryPagePath(pagination, connection.pageInfo.endCursor)}>
             Next merchants
           </Link>
         </p>
@@ -112,16 +136,4 @@ function MerchantDirectoryUnavailableFallback() {
       <p>Merchant directory unavailable.</p>
     </section>
   );
-}
-
-function merchantDirectoryNextPagePath(
-  pagination: MerchantDirectoryPagination,
-  endCursor: string
-) {
-  const params = new URLSearchParams();
-
-  params.set("first", String(pagination.first));
-  params.set("after", endCursor);
-
-  return `/merchants?${params.toString()}`;
 }

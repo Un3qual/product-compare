@@ -1,8 +1,10 @@
-import type { PropsWithChildren } from "react";
+import { useMemo, type PropsWithChildren } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
-import { Button, Label, Slot } from "../../ui/primitives";
+import { Button } from "../../ui/primitives/button";
+import { Label } from "../../ui/primitives/label";
+import { Slot } from "../../ui/primitives/slot";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = stylex.create({
@@ -98,10 +100,19 @@ const styles = stylex.create({
   }
 });
 
+const EMPTY_ERRORS: MutationError[] = [];
+const EMPTY_FIELD_NAMES: string[] = [];
+const EMPTY_FOOTER_LINKS: FooterLink[] = [];
+
+interface FooterLink {
+  label: string;
+  to: string;
+}
+
 interface AuthFormShellProps extends PropsWithChildren {
   description: string;
   errors?: MutationError[];
-  footerLinks?: Array<{ label: string; to: string }>;
+  footerLinks?: FooterLink[];
   fieldNames?: string[];
   successMessage?: string | null;
   title: string;
@@ -110,13 +121,18 @@ interface AuthFormShellProps extends PropsWithChildren {
 export function AuthFormShell({
   children,
   description,
-  errors = [],
-  footerLinks = [],
-  fieldNames = [],
+  errors = EMPTY_ERRORS,
+  footerLinks = EMPTY_FOOTER_LINKS,
+  fieldNames = EMPTY_FIELD_NAMES,
   successMessage,
   title
 }: AuthFormShellProps) {
-  const visibleErrors = errors.filter((error) => !error.field || !fieldNames.includes(error.field));
+  const fieldNameSet = useMemo(() => new Set(fieldNames), [fieldNames]);
+  const visibleErrors = errors.filter((error: MutationError) => {
+    const field = error.field;
+
+    return field === undefined || field === null || field === "" || !fieldNameSet.has(field);
+  });
 
   return (
     <section {...stylex.props(styles.section)}>

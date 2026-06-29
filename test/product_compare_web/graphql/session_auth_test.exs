@@ -344,7 +344,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
                  ]
                }
              }
-    } = json_response(logout_conn, 200)
+           } = json_response(logout_conn, 200)
 
     refute logout_conn.private[:plug_session_info] == :drop
 

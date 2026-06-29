@@ -2,27 +2,44 @@
 
 ## Snapshot
 
-- Status: needs_decision
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Live queue row: Product data scraping follow-up decision in
-  `docs/work/index.md`
-- Last verified: 2026-06-26 after CJ candidate fit-score sort tests, frontend
-  score badge tests, Relay generation, frontend typecheck, six-plan CJ ingestion
-  readiness combined verification, `mix typecheck`, focused code reviews, CSV
-  export removal, and diff checks
-- Last plan refresh: 2026-06-26 after executing the six-plan CJ ingestion
-  readiness batch
+- Live queue row: completed in the 2026-06-27 cross-project parallel batch
+- Last verified: 2026-06-27 after source-health focused tests, `mix typecheck`,
+  and `git diff --check`
+- Last plan refresh: 2026-06-27 after replacing the CJ-only batch with a
+  cross-project queue correction
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Current implementation plan:
-  - None; the lane is waiting on a coordinator decision before promoting the
-    next executable row.
+- Current implementation plans: none
+- Recently completed implementation plans:
+  - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
 - Previous implementation plans:
+  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-feed-discovery-resume-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-product-import-history-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-feed-discovery-history-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-feed-candidate-staleness-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-feed-candidate-batch-review-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-application-cohort-markdown-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-ingestion-readiness-gate-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-failed-run-report-task-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-feed-candidate-fit-gap-report-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
   - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
@@ -73,25 +90,39 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: completed; follow-up decision needed
-- Batch: 2026-06-26 six-plan CJ ingestion readiness parallel batch.
-- Plans:
-  - `docs/plans/2026-06-26-cj-provider-credential-status-task-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-import-credential-preflight-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-feed-discovery-credential-preflight-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`
-  - `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`
-  - `docs/plans/2026-06-26-scheduled-cj-product-import-runtime-implementation-plan.md`
+- Status: done
+- Batch: provider-neutral source health read model in the 2026-06-27
+  cross-project parallel work-item batch.
+- Plan:
+  - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
 - Decision:
-  - Execute all six planned CJ ingestion readiness slices in parallel per user
-    request.
-- Parallel slices:
-  - Add a standalone read-only CJ credential readiness task.
-  - Add a dry credential preflight to manual CJ product import.
-  - Add a dry credential preflight to CJ feed discovery.
-  - Add a read-only CJ application cohort report.
-  - Add a read-only CJ product import status task.
-  - Add disabled-by-default CJ product import scheduling runtime.
+  - Promote only one Product data scraping row so the active ten-row queue spans
+    the whole project instead of remaining CJ-only.
+- Parallel slice:
+  - Add a provider-neutral source health read model over existing source,
+    source-artifact, and ingestion-run data.
+- Work-item guardrails:
+  - The row adds one standalone read-model module and focused tests.
+  - It must not add Mix tasks, scheduler behavior, GraphQL fields, browser
+    routes, network calls, or mutations.
+  - It must not expose raw source-artifact payloads, artifact URLs, import
+    queries, credentials, account ids, tracking params, or provider error
+    payloads.
+  - Parallel workers may edit only the row's target paths and this lane doc.
+  - The previous CJ-only read-model/runbook plans remain kept as candidate or
+    historical plans, but they are not active queue rows after this correction.
+- Worker 10 implementation evidence:
+  - Added `ProductCompare.Ingestion.SourceHealth` as a provider-neutral,
+    read-only aggregate over sources, source artifacts, and ingestion runs.
+  - Added focused tests covering active sources, no-activity sources, successful
+    latest runs, failed runs inside and outside the recent window, failure-window
+    clamping, and safe returned keys.
+  - Red verification: `mix test test/product_compare/ingestion/source_health_test.exs`
+    failed with undefined `ProductCompare.Ingestion.SourceHealth.summary/2`.
+  - Green verification: `mix test test/product_compare/ingestion/source_health_test.exs`
+    passed with 2 tests, 0 failures.
+  - Typecheck: `mix typecheck` completed with exit 0.
+  - Whitespace: `git diff --check` completed with exit 0.
 - Credential readiness contract:
   - `CJ_API_TOKEN` and `CJ_ACCOUNT_ID` are required for CJ API use.
   - `CJ_PROPERTY_ID` is optional legacy Website/Property PID context and should
@@ -115,44 +146,65 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     persist product records during credential preflight paths.
   - Do not add CJ candidate CSV export scoring or any new CSV export path; that
     direction has been explicitly rejected and should not be promoted in later
-    queue work.
+    queue work. Markdown or line-oriented stdout reports are allowed only when
+    they are read-only, non-secret, and do not write files.
   - No Oban dependency, account-manager automation, merchant application
     contact, merchant application submission, live CJ network calls in tests,
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - After this batch completes, choose exactly one follow-up ingestion batch or
-    explicit deferral.
+  - After the source-health row completes, choose whether to expose source
+    health through a dashboard contract, return to CJ-specific read models, or
+    explicitly defer further ingestion work.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
 ## Deferred Follow-Up Plan Candidates
 
-- None currently promoted. The coordinator must choose one follow-up ingestion
-  batch, record a blocker, or record explicit deferral before new
-  implementation starts.
+- eBay Browse fallback connector remains blocked until CJ evidence shows the
+  approved CJ account lacks usable product catalog scope.
+- CJ candidate CSV score export is rejected and should not be promoted.
 
-## Planned Verification Commands
+## Current Batch Verification Commands
 
-- Provider credential status:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
-- Product import credential preflight:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-- Feed discovery credential preflight:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
-- Application cohort report:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
-- Product import status:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
-- Scheduled product import runtime:
-  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
-  - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
-- Combined final verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- Source health read model:
+  - `mix test test/product_compare/ingestion/source_health_test.exs`
+- Final gate:
   - `mix typecheck`
   - `git diff --check`
+- Previous readiness batch verification commands:
+  - Provider credential status:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
+  - Product import credential preflight:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+  - Feed discovery credential preflight:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
+  - Application cohort report:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
+  - Product import status:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+  - Scheduled product import runtime:
+    - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+    - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+  - Combined final verification:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - `mix typecheck`
+    - `git diff --check`
 
 ## Recent Verification Commands
 
+- CJ operator loop batch:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_import_history_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_history_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_staleness_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_review_batch_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_markdown_test.exs test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs test/mix/tasks/product_compare_ingestion_cj_failed_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_fit_gaps_test.exs`
+    - Result: passed, 67 tests, 0 failures.
+  - `mix typecheck`
+    - Result: completed with exit 0.
+  - `git diff --check`
+    - Result: completed with exit 0.
+  - `mix format --check-formatted` for the ten new Mix tasks and focused test
+    files
+    - Result: completed with exit 0.
+  - 5.5 xhigh review:
+    - Result: no critical issues; important staleness contract and lane evidence
+      findings fixed, minor discovery-history limit clamp fixed.
 - Fit-score sort:
   - `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
   - `cd assets && bun run relay`

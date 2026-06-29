@@ -101,6 +101,59 @@ test("offer discovery asks users to start from browse products when productId is
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
+test("offer discovery renders filter controls with existing filter values", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 12,
+      activeOnly: false,
+      merchantId: "TWVyY2hhbnQ6NDU2"
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterForm = screen.getByRole("form", { name: "Offer discovery filters" });
+
+  expect(filterForm).toHaveAttribute("action", "/offers");
+  expect(filterForm).toHaveAttribute("method", "get");
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue(
+    "UHJvZHVjdDoxMjM="
+  );
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue(
+    "TWVyY2hhbnQ6NDU2"
+  );
+  expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
+  expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+});
+
+test("offer discovery refreshes uncontrolled filter controls when filters change", () => {
+  const { rerender } = renderOfferDiscoveryRoute();
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      activeOnly: false,
+      first: 24,
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      productId: "UHJvZHVjdDo5OTk="
+    })
+  );
+
+  rerender(
+    <MemoryRouter>
+      <OfferDiscoveryRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue(
+    "UHJvZHVjdDo5OTk="
+  );
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue(
+    "TWVyY2hhbnQ6NDU2"
+  );
+  expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
+  expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+});
+
 test("offer discovery renders ready offer rows", () => {
   renderOfferDiscoveryRoute();
 
@@ -204,6 +257,36 @@ test("offer discovery renders inactive filter state", () => {
   expect(screen.getByText("All offers")).toBeVisible();
   expect(screen.getByText("Inactive")).toBeVisible();
   expect(screen.getByText("No latest price.")).toBeVisible();
+  expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+});
+
+test("offer discovery pagination preserves active-only and page-size filters", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      after: "previous-cursor",
+      first: 12,
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      activeOnly: false
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      endCursor: "next-cursor",
+      hasNextPage: true,
+      hasPreviousPage: true
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
+    "href",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12"
+  );
+  expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
+    "href",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&after=next-cursor"
+  );
 });
 
 test("offer discovery renders an empty state", () => {
@@ -278,7 +361,7 @@ test("offer discovery renders the query unavailable state", () => {
 });
 
 function renderOfferDiscoveryRoute() {
-  render(
+  return render(
     <MemoryRouter>
       <OfferDiscoveryRoute />
     </MemoryRouter>

@@ -7,6 +7,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatusStartupTest do
   alias ProductCompare.Ingestion.CJFeedDiscoveryScheduler
   alias ProductCompare.Ingestion.CJProductImportScheduler
   alias ProductCompare.Repo
+  alias ProductCompare.TestSupport.CJIngestionCleanup
 
   test "read-only discovery status checks do not start CJ scheduler children" do
     original_discovery_config =
@@ -17,8 +18,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatusStartupTest do
     on_exit(fn ->
       restore_env(:cj_feed_discovery_scheduler, original_discovery_config)
       restore_env(:cj_product_import_scheduler, original_import_config)
+      CJIngestionCleanup.cleanup!()
       stop_repo_if_started()
       {:ok, _started} = Application.ensure_all_started(:product_compare)
+      Ecto.Adapters.SQL.Sandbox.mode(Repo, :manual)
     end)
 
     :ok = Application.stop(:product_compare)

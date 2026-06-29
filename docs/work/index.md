@@ -10,8 +10,9 @@ For the operating rules, prompt templates, and handoff format, read
 - A worker should execute only rows with `Status: ready`.
 - If no `ready` row exists, do not scan historical plans looking for work.
 - `needs_decision` rows are coordinator work: make one decision, then promote exactly
-  one concrete `ready` row, remove the decision row so the selected `blocked` row
-  becomes highest-ranked, or leave the missing decision named.
+  one concrete `ready` row or one explicitly requested parallel batch of independent
+  ready rows, remove the decision row so the selected `blocked` row becomes
+  highest-ranked, or leave the missing decision named.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
 - `active` rows are already owned by a named worker or branch. Do not start a
@@ -21,22 +22,38 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-26
+Updated: 2026-06-27
 
-| Rank | Status | Lane | Next Action | Active Plan | Target Paths | Verification | Exit Condition |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | needs_decision | Product data scraping | Choose exactly one follow-up ingestion batch or record explicit deferral after the completed six-plan CJ ingestion readiness batch. Do not choose CJ candidate CSV score export; that path is rejected. | None | `docs/work/index.md`; `docs/work/product-data-scraping.md`; `docs/plans/INDEX.md` | `git diff --check` | Promote one concrete ready row with owned paths and verification, record a named blocker with evidence needed, or record explicit no-ready-work deferral. |
+No `ready`, `needs_decision`, or `blocked` rows remain after completing the
+2026-06-27 cross-project parallel work-item batch. Add or promote a new row only
+after coordinator selection.
 
 ## Ready Work
 
-No rows are currently ready. The Product data scraping lane needs a coordinator
-decision before more implementation is promoted.
+No ready work is currently queued.
+
+## Just Completed
+
+The 2026-06-27 cross-project parallel batch completed these ten work items:
+
+- Frontend catalog browse: `/products` page-size controls.
+- Frontend product detail: `/products/:slug` active-offer pagination.
+- Frontend offer discovery: visible `/offers` filters.
+- Frontend merchant discovery: `/merchants` page-size controls.
+- Frontend revenue reporting: deterministic date preset links.
+- Frontend saved comparisons: client-side saved-set filtering.
+- Frontend product comparison: compare-selection remove controls.
+- Frontend API token management: create/rotate expiration presets.
+- Frontend affiliate setup: selected merchant context summaries.
+- Product data scraping: provider-neutral source-health read model.
 
 ## Deferred Work
 
 Application submission, account-manager contact, Tier-3 scraping, credential
 persistence, and CSV export remain out of scope. CJ candidate CSV score export
-is rejected and should not be promoted.
+is rejected and should not be promoted. The prior CJ read-model plans remain in
+the plan archive/candidate pool but are not the active queue after the
+cross-project correction.
 
 ## Executor Prompts
 

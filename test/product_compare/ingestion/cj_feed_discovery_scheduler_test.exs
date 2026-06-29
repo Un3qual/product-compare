@@ -121,26 +121,26 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       raise "provider unavailable"
     end
 
-    pid =
-      start_supervised!(
-        {CJFeedDiscoveryScheduler,
-         [
-           initial_delay_ms: 0,
-           interval_ms: 20,
-           runner: runner
-         ]}
-      )
-
     log =
       capture_log(fn ->
+        pid =
+          start_supervised!(
+            {CJFeedDiscoveryScheduler,
+             [
+               initial_delay_ms: 0,
+               interval_ms: 20,
+               runner: runner
+             ]}
+          )
+
         assert_receive {:run, _opts}
         assert_receive {:run, _opts}, 250
+
+        assert Process.alive?(pid)
+        GenServer.stop(pid)
       end)
 
-    assert Process.alive?(pid)
     assert log =~ "CJ feed discovery failed"
-
-    GenServer.stop(pid)
   end
 
   test "schedules the next run after an unexpected discovery runner result" do
@@ -151,29 +151,29 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       :unexpected_result
     end
 
-    pid =
-      start_supervised!(
-        Supervisor.child_spec(
-          {CJFeedDiscoveryScheduler,
-           [
-             initial_delay_ms: 0,
-             interval_ms: 20,
-             runner: runner
-           ]},
-          restart: :temporary
-        )
-      )
-
     log =
       capture_log(fn ->
+        pid =
+          start_supervised!(
+            Supervisor.child_spec(
+              {CJFeedDiscoveryScheduler,
+               [
+                 initial_delay_ms: 0,
+                 interval_ms: 20,
+                 runner: runner
+               ]},
+              restart: :temporary
+            )
+          )
+
         assert_receive {:run, _opts}
         assert_receive {:run, _opts}, 250
+
+        assert Process.alive?(pid)
+        GenServer.stop(pid)
       end)
 
-    assert Process.alive?(pid)
     assert log =~ "CJ feed discovery returned unexpected result"
-
-    GenServer.stop(pid)
   end
 
   test "invalid interval normalizes to the default recurring interval" do

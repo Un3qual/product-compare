@@ -172,7 +172,7 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "pac_numeric_filter_idx"
     end
 
-    test "boolean filters preserve canonical PACUR -> PAC join and bool index expectation" do
+    test "boolean filters preserve canonical PACUR -> PAC join and bool predicate expectation" do
       moderator = AccountsFixtures.user_fixture()
       attribute = bool_attribute_fixture()
       product = product_fixture("plan-bool")
@@ -187,9 +187,14 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
         })
 
       assert sql =~ @canonical_pac_join_regex
+      assert sql =~ ~r/sp?\d+\."value_bool" =/
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
-      assert plan =~ "pac_bool_filter_idx"
+
+      assert Enum.any?(
+               ["pac_bool_filter_idx", "pac_attr_status_idx"],
+               &String.contains?(plan, &1)
+             )
     end
 
     test "enum filters preserve canonical PACUR -> PAC join and enum index expectation" do

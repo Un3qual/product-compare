@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
@@ -138,6 +138,50 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
     expect.anything(),
     AFFILIATE_SETUP_QUERY_REF
   );
+});
+
+test("affiliate setup route renders selected merchant summaries for program, link, and coupon forms", () => {
+  renderAffiliateSetupRoute();
+
+  const programForm = screen.getByRole("form", { name: "Save affiliate program" });
+  const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
+  const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
+
+  expect(within(programForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
+  expect(within(linkForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
+  expect(within(couponForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
+});
+
+test("affiliate setup route updates selected merchant context when the program merchant changes", () => {
+  renderAffiliateSetupRoute();
+
+  const programForm = screen.getByRole("form", { name: "Save affiliate program" });
+  const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
+  const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
+
+  fireEvent.change(screen.getByLabelText("Merchant"), {
+    target: { value: SECOND_MERCHANT_ID }
+  });
+
+  expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+});
+
+test("affiliate setup route updates selected merchant context when the coupon merchant changes", () => {
+  renderAffiliateSetupRoute();
+
+  const programForm = screen.getByRole("form", { name: "Save affiliate program" });
+  const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
+  const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
+
+  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
+    target: { value: SECOND_MERCHANT_ID }
+  });
+
+  expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
 });
 
 test("affiliate setup route renders loader error fallback", () => {
@@ -657,19 +701,27 @@ test("affiliate setup route renders coupon payload errors", async () => {
 });
 
 function completeLatestNetworkMutation(response: unknown) {
-  commitNetworkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitNetworkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestProgramMutation(response: unknown) {
-  commitProgramMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitProgramMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestLinkMutation(response: unknown) {
-  commitLinkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitLinkMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function completeLatestCouponMutation(response: unknown) {
-  commitCouponMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  act(() => {
+    commitCouponMutationMock.mock.calls.at(-1)?.[0]?.onCompleted?.(response, null);
+  });
 }
 
 function renderAffiliateSetupRoute() {

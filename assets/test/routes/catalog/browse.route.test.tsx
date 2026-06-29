@@ -58,13 +58,7 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const browseQueryDescriptor = {
-  __relayQuery: {
-    operationName: "BrowseProductsRouteQuery",
-    text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
-    variables: { first: 12 }
-  }
-};
+const browseQueryDescriptor = browseQueryDescriptorFromVariables();
 
 const buildBrowseLoaderArgs = ({
   environment = createRelayEnvironment(),
@@ -78,6 +72,18 @@ const buildBrowseLoaderArgs = ({
   context: createRelayRouterContext(environment),
   unstable_pattern: "/products"
 });
+
+function browseQueryDescriptorFromVariables(
+  variables: BrowseProductsRouteQuery["variables"] = { first: 12 }
+) {
+  return {
+    __relayQuery: {
+      operationName: "BrowseProductsRouteQuery",
+      text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
+      variables
+    }
+  };
+}
 
 function getBrowseProductsRouteQueryArtifact() {
   return browseProductsRouteQueryArtifact as {
@@ -137,6 +143,115 @@ beforeEach(() => {
 test("browse loader preloads and returns the Relay browse route query", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader defaults to a page size of 12 when first is omitted", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader preserves supported first values from the URL", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?after=cursor-next-page&first=24");
+  const queryDescriptorWithCursorAndFirst = browseQueryDescriptorFromVariables({
+    first: 24,
+    after: "cursor-next-page"
+  });
+
+  mockedPreloadRouteQuery.mockResolvedValue(queryDescriptorWithCursorAndFirst);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: queryDescriptorWithCursorAndFirst
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 24, after: "cursor-next-page" },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader drops oversized first values above 48", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?first=100");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader drops first values that are not page-size options", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?first=35");
+
+  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader drops malformed first values", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?first=12abc");
 
   mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
 
@@ -338,6 +453,7 @@ test("renders browse products from the Relay route query", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("12");
   expect(screen.getByRole("link", { name: "Catalog First" })).toHaveAttribute(
     "href",
     "/products/catalog-first"
@@ -363,6 +479,59 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
+});
+
+test("renders selected page size and preserves first in pagination links", () => {
+  const cursorDescriptor = {
+    __relayQuery: {
+      ...browseQueryDescriptor.__relayQuery,
+      variables: { first: 24, after: "cursor-current-page" }
+    }
+  };
+  const queryRef = { dispose: vi.fn(), variables: { first: 24, after: "cursor-current-page" } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: cursorDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-page-2",
+            name: "Page Two Product",
+            slug: "page-two-product",
+            brand: {
+              id: "brand-page-2",
+              name: "Page Two Brand"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "cursor-next-page"
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/products?after=cursor-current-page&first=24"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("24");
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&after=cursor-next-page"
+  );
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute(
+    "href",
+    "/products?first=24"
+  );
 });
 
 test("renders next and first-page pagination links from the browse query", () => {
@@ -413,9 +582,12 @@ test("renders next and first-page pagination links from the browse query", () =>
   );
   expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
     "href",
-    "/products?after=cursor-next-page"
+    "/products?first=12&after=cursor-next-page"
   );
-  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute("href", "/products");
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute(
+    "href",
+    "/products?first=12"
+  );
 });
 
 test("omits browse pagination links on the first page when there is no next page", () => {
@@ -643,7 +815,7 @@ test("keeps a next-page recovery link when an empty result has a next cursor", (
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
     "href",
-    "/products?after=cursor-without-products"
+    "/products?first=12&after=cursor-without-products"
   );
   expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
 });
@@ -679,7 +851,10 @@ test("keeps a first-page recovery link when a cursor page returns no products", 
   );
 
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute("href", "/products");
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute(
+    "href",
+    "/products?first=12"
+  );
   expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
 });
 

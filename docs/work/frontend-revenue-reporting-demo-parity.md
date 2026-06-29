@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01, Task 3 route registration, navigation, and lane closure verification
+- Last verified: 2026-06-27, Task 4 date preset verification
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
+- Recently completed implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Batch Status
@@ -14,22 +15,25 @@
 - [x] Task 1: add the Relay route query and loader for `/commerce/revenue`.
 - [x] Task 2: render the revenue reporting route.
 - [x] Task 3: wire navigation and close the lane.
+- [x] Task 4: add deterministic revenue date preset links (last 7 days, last 30 days, month to date, clear dates) that preserve `network` and `currency`.
 
-## Current Batch
+## Current Cross-Project Batch
 
-- Task: none.
-- Status: completed.
+- Status: done.
+- Plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/commerce/revenue/**`
-  - `assets/src/router.tsx`
-  - `assets/src/routes/root.tsx`
-  - `assets/src/routes/__tests__/root.route.test.tsx`
-  - `assets/src/__tests__/router.test.tsx`
+  - `assets/src/routes/commerce/revenue/index.tsx`
+  - `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
   - `docs/work/frontend-revenue-reporting-demo-parity.md`
-  - `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
-  - `docs/work/index.md`
-  - `docs/plans/NOW.md`
-- Immediate prerequisite: all planned revenue reporting demo parity tasks are complete. `/commerce/revenue` is registered with `revenueSummaryLoader`, exposed from primary navigation and home actions, and verified against the existing backend revenue summary contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/commerce/revenue` has deterministic date presets that preserve network and currency filters.
+- Completed verification:
+  - `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx` - 12 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 

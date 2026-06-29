@@ -27,6 +27,7 @@ export function RevenueSummaryRoute() {
         key={revenueSummaryFilterKey(loaderData.filters)}
         filters={loaderData.filters}
       />
+      <RevenueDatePresetLinks filters={loaderData.filters} />
       <ActiveRevenueFilters filters={loaderData.filters} />
 
       {loaderData.status === "error" ? (
@@ -86,6 +87,30 @@ function RevenueSummaryFilterForm({
       <button type="submit">Apply filters</button>
       <Link to="/commerce/revenue">Clear filters</Link>
     </form>
+  );
+}
+
+function RevenueDatePresetLinks({
+  filters,
+  currentDate = new Date()
+}: {
+  filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">;
+  currentDate?: Date;
+}) {
+  const datePresets = buildRevenueDatePresetLinks(filters, currentDate);
+
+  if (datePresets.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul aria-label="Revenue date presets">
+      {datePresets.map((preset) => (
+        <li key={preset.label}>
+          <Link to={preset.to}>{preset.label}</Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -189,6 +214,110 @@ function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {
         }
       : null
   ].filter((filter): filter is { label: string; value: string } => filter !== null);
+}
+
+type RevenueDatePresetLink = {
+  label: string;
+  to: string;
+};
+
+export function buildRevenueDatePresetLinks(
+  filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">,
+  currentDate = new Date()
+): RevenueDatePresetLink[] {
+  const baseDate = toLocalDateOnly(currentDate);
+  const toDate = formatDate(baseDate);
+  const monthStartDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+
+  const presets = [
+    {
+      label: "Last 7 days",
+      from: formatDate(shiftDate(baseDate, -6)),
+      to: toDate
+    },
+    {
+      label: "Last 30 days",
+      from: formatDate(shiftDate(baseDate, -29)),
+      to: toDate
+    },
+    {
+      label: "Month to date",
+      from: formatDate(monthStartDate),
+      to: toDate
+    },
+    {
+      label: "Clear dates",
+      from: null,
+      to: null
+    }
+  ] as const;
+
+  const links: RevenueDatePresetLink[] = [];
+
+  for (const { label, from, to } of presets) {
+    if (from && to && toDateIsBefore(from, to)) {
+      continue;
+    }
+
+    links.push({
+      label,
+      to: buildRevenueDatePresetSearchPath(filters, from, to)
+    });
+  }
+
+  return links;
+}
+
+function buildRevenueDatePresetSearchPath(
+  filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">,
+  from: string | null,
+  to: string | null
+) {
+  const search = new URLSearchParams();
+
+  if (filters.network) {
+    search.set("network", filters.network);
+  }
+
+  if (filters.currency) {
+    search.set("currency", filters.currency);
+  }
+
+  if (from) {
+    search.set("from", from);
+  }
+
+  if (to) {
+    search.set("to", to);
+  }
+
+  const query = search.toString();
+
+  return query ? `/commerce/revenue?${query}` : "/commerce/revenue";
+}
+
+function toDateIsBefore(from: string, to: string) {
+  return from > to;
+}
+
+function toLocalDateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function formatDate(date: Date) {
+  const localDate = toLocalDateOnly(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, "0");
+  const day = String(localDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function shiftDate(baseDate: Date, days: number) {
+  const date = new Date(baseDate);
+  date.setDate(date.getDate() + days);
+
+  return toLocalDateOnly(date);
 }
 
 function buildRevenueSummaryMetrics(

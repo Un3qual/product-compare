@@ -8,6 +8,8 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 
+const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
+
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
 
@@ -51,29 +53,32 @@ function BrowseProducts({
   const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
   const products = data.products.edges.map(({ node }) => node);
   const currentAfter = query.__relayQuery.variables.after;
+  const currentPageSize = query.__relayQuery.variables.first;
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
-      ? browseProductsNextPagePath(data.products.pageInfo.endCursor)
+      ? browseProductsNextPagePath(currentPageSize, data.products.pageInfo.endCursor)
       : null;
   const paginationLinks =
     currentAfter || nextProductsPath ? (
       <nav aria-label="Browse product pages">
-        {currentAfter ? <Link to="/products">First products</Link> : null}
+        {currentAfter ? <Link to={browseProductsFirstPagePath(currentPageSize)}>First products</Link> : null}
         {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
       </nav>
     ) : null;
 
   if (products.length === 0) {
     return (
-      <>
+      <section>
+        <BrowseProductsPageSizeForm pageSize={currentPageSize} />
         <p>No products available yet.</p>
         {paginationLinks}
-      </>
+      </section>
     );
   }
 
   return (
     <>
+      <BrowseProductsPageSizeForm pageSize={currentPageSize} />
       <ul>
         {products.map((product) => (
           <li key={product.id}>
@@ -100,10 +105,37 @@ function BrowseProducts({
   );
 }
 
-function browseProductsNextPagePath(endCursor: string) {
+function BrowseProductsPageSizeForm({ pageSize }: { pageSize: number }) {
+  return (
+    <form method="get" action="/products">
+      <label>
+        Products per page
+        <select key={pageSize} name="first" defaultValue={String(pageSize)}>
+          {BROWSE_PRODUCTS_PAGE_SIZES.map((size) => (
+            <option key={size} value={String(size)}>
+              {size}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+  );
+}
+
+function browseProductsNextPagePath(first: number, endCursor: string) {
   const params = new URLSearchParams();
 
+  params.set("first", String(first));
   params.set("after", endCursor);
+
+  return `/products?${params.toString()}`;
+}
+
+function browseProductsFirstPagePath(first: number) {
+  const params = new URLSearchParams();
+
+  params.set("first", String(first));
 
   return `/products?${params.toString()}`;
 }
