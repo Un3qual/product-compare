@@ -168,10 +168,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdownTest do
       source = source_fixture()
 
       first =
-        candidate_fixture(source, %{advertiser_id: "adv-first", review_status: "shortlisted"})
+        candidate_fixture(source, %{
+          advertiser_id: "adv-first",
+          advertiser_name: "A First Merchant",
+          review_status: "shortlisted"
+        })
 
       _second =
-        candidate_fixture(source, %{advertiser_id: "adv-second", review_status: "shortlisted"})
+        candidate_fixture(source, %{
+          advertiser_id: "adv-second",
+          advertiser_name: "Z Second Merchant",
+          review_status: "shortlisted"
+        })
 
       output = capture_io(fn -> CjApplicationCohortMarkdown.run(["--limit", "1"]) end)
 
@@ -186,6 +194,39 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdownTest do
       assert Enum.count(rows) == 1
       assert output =~ "#{GlobalId.encode(:merchant_feed_candidate, first.id)}"
       refute output =~ "#{GlobalId.encode(:merchant_feed_candidate, _second.id)}"
+    end
+
+    test "applies provider filtering and row limit in the database query" do
+      source = source_fixture()
+
+      candidate_fixture(source, %{
+        advertiser_id: "adv-first",
+        review_status: "shortlisted"
+      })
+
+      candidate_fixture(source, %{
+        advertiser_id: "adv-second",
+        review_status: "shortlisted"
+      })
+
+      candidate_fixture(source, %{
+        provider: "shopify",
+        advertiser_id: "adv-shopify",
+        provider_feed_id: "shopify-feed",
+        review_status: "shortlisted"
+      })
+
+      {_output, queries} =
+        capture_select_queries(fn ->
+          capture_io(fn -> CjApplicationCohortMarkdown.run(["--limit", "1"]) end)
+        end)
+
+      candidate_query =
+        Enum.find(queries, &String.contains?(&1, ~s("merchant_feed_candidates")))
+
+      assert candidate_query
+      assert candidate_query =~ ~s("provider")
+      assert candidate_query =~ "LIMIT"
     end
 
     test "raises when no candidates are found and requirement is enabled" do
@@ -352,4 +393,40 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdownTest do
     )
     |> Repo.insert!()
   end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query), do: String.starts_with?(query, "SELECT")
+  defp select_query?(_query), do: false
 end

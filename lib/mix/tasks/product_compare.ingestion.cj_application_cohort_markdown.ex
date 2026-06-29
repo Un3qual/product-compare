@@ -3,6 +3,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
 
   use Mix.Task
 
+  import Ecto.Query
+
   alias ProductCompare.Ingestion
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
@@ -80,36 +82,38 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
       review_status: @default_review_status,
       sort: :fit_score_desc
     )
-    |> Repo.all()
-    |> filter_provider()
+    |> where([candidate], candidate.provider == @provider)
     |> maybe_filter_country(opts.country)
     |> maybe_filter_currency(opts.currency)
     |> maybe_filter_language(opts.language)
     |> maybe_filter_min_product_count(opts.min_product_count)
-    |> Enum.take(opts.limit)
+    |> limit(^opts.limit)
+    |> Repo.all()
   end
 
-  defp filter_provider(candidates), do: Enum.filter(candidates, &(&1.provider == @provider))
+  defp maybe_filter_country(query, nil), do: query
 
-  defp maybe_filter_country(candidates, nil), do: candidates
+  defp maybe_filter_country(query, expected_country),
+    do: where(query, [candidate], candidate.advertiser_country == ^expected_country)
 
-  defp maybe_filter_country(candidates, expected_country),
-    do: Enum.filter(candidates, &(&1.advertiser_country == expected_country))
+  defp maybe_filter_currency(query, nil), do: query
 
-  defp maybe_filter_currency(candidates, nil), do: candidates
+  defp maybe_filter_currency(query, expected_currency),
+    do: where(query, [candidate], candidate.currency == ^expected_currency)
 
-  defp maybe_filter_currency(candidates, expected_currency),
-    do: Enum.filter(candidates, &(&1.currency == expected_currency))
+  defp maybe_filter_language(query, nil), do: query
 
-  defp maybe_filter_language(candidates, nil), do: candidates
+  defp maybe_filter_language(query, expected_language),
+    do: where(query, [candidate], candidate.language == ^expected_language)
 
-  defp maybe_filter_language(candidates, expected_language),
-    do: Enum.filter(candidates, &(&1.language == expected_language))
+  defp maybe_filter_min_product_count(query, nil), do: query
 
-  defp maybe_filter_min_product_count(candidates, nil), do: candidates
-
-  defp maybe_filter_min_product_count(candidates, min_product_count) do
-    Enum.filter(candidates, &(product_count(&1.product_count) >= min_product_count))
+  defp maybe_filter_min_product_count(query, min_product_count) do
+    where(
+      query,
+      [candidate],
+      fragment("coalesce(?, 0) >= ?", candidate.product_count, ^min_product_count)
+    )
   end
 
   defp enforce_required_candidates(candidates, require_candidates?) do
@@ -167,10 +171,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjApplicationCohortMarkdown do
 
   defp review_note_present?(note) when is_binary(note), do: String.trim(note) != ""
   defp review_note_present?(_note), do: false
-
-  defp product_count(nil), do: 0
-  defp product_count(value) when is_integer(value), do: value
-  defp product_count(_value), do: 0
 
   defp format_markdown_cell(nil), do: ""
   defp format_markdown_cell(value) when is_integer(value), do: Integer.to_string(value)
