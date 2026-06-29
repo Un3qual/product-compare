@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-06-27 after client-side saved-comparison filter verification
+- Last verified: 2026-06-29 after saved-comparisons return-flow verification
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -26,7 +26,7 @@
 
 ## Current Usable Product Batch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`.
 - Owned paths:
@@ -39,9 +39,24 @@
   - `git diff --check`
 - Exit condition: `/compare/saved` makes reopen, delete, browse, and compare
   return paths clear while preserving existing auth and delete behavior.
-- Pending evidence:
-  - Worker should record route-test, typecheck, and whitespace verification
-    output here when the row is implemented.
+- Completed implementation:
+  - Saved-set cards now show singular/plural product counts derived from the
+    saved slug list.
+  - Reopen and delete controls remain on each card, with scoped action grouping
+    while preserving the existing reopen URL and delete mutation behavior.
+  - Empty and filtered no-match states now link back to product browsing and a
+    fresh comparison start.
+- Completed verification:
+  - RED:
+    `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+    - 20 tests, 4 expected failures, 16 passed. The failures showed missing
+    product-count summaries, scoped reopen/delete actions, and empty/no-match
+    return links.
+  - GREEN:
+    `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+    - 20 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 
@@ -70,6 +85,9 @@
 - `assets/src/routes/compare/index.tsx` renders a ready-state `Save comparison` action that submits the current product relay IDs with a derived saved-set name and reports local success/error feedback.
 - `assets/src/routes/compare/saved.tsx` renders `/compare/saved`, reads saved-set rows from Relay preloaded query data with loader summaries as fallback, reopens sets back into `/compare`, deletes owned sets through `useMutation(DeleteSavedComparisonSetMutation)`, and prompts unauthenticated users to sign in.
 - `assets/src/routes/compare/saved.tsx` now filters loaded saved sets client-side by saved-set name or product slug and renders a distinct no-match state.
+- `assets/src/routes/compare/saved.tsx` now summarizes saved-set product counts,
+  scopes reopen/delete actions per card, and gives empty or filtered no-match
+  states direct return links to `/products` and `/compare`.
 - `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the compare save action plus saved-set loader, reopen, delete, unauthorized, and error-boundary states.
 - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx` covers saved-set name filtering, slug filtering, no-match state, and delete behavior after filtering.
 - `assets/src/router.tsx` mounts both `/compare` and `/compare/saved` with compare-scoped route error boundaries.
