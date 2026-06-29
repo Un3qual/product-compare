@@ -2,21 +2,21 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: retained follow-up
 - Priority: P2
 - Source of truth: this file
-- Live queue row: ten CJ read-model/operator rows promoted on 2026-06-29
+- Live queue row: retained behind the 2026-06-29 usable-product queue
 - Last verified: 2026-06-27 after source-health focused tests, `mix typecheck`,
   and `git diff --check`
-- Last plan refresh: 2026-06-29 after promoting the deferred CJ read-model and
-  weekly operator runbook candidate pool
+- Last plan refresh: 2026-06-29 after retaining the CJ read-model and weekly
+  operator runbook candidate pool behind product-facing work
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Current implementation plans:
+- Retained implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
@@ -90,7 +90,7 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: ready
+- Status: retained follow-up
 - Batch: CJ read-model and weekly operator runbook ten-batch slice.
 - Plans:
   - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
@@ -104,9 +104,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 - Decision:
-  - Promote the deferred CJ-only read-model/runbook candidate pool after the
-    2026-06-27 cross-project batch completed and the coordinator selected the
-    next ten Product data scraping rows.
+  - Keep the CJ-only read-model/runbook candidate pool planned, but move it
+    behind the 2026-06-29 usable-product queue so the live dispatch makes
+    product-facing progress first.
 - Parallel slices:
   - Candidate cohort, market coverage, freshness, run health, run throughput,
     import artifact quality, import price quality, merchant identity quality,
@@ -122,11 +122,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     queries, raw metadata, credentials, account ids, tracking params, provider
     error payloads, or secret values.
   - Parallel workers may edit only their row's target paths and the named
-    evidence heading in this lane doc.
+    evidence heading in this lane doc if this retained batch is promoted again.
 
-## Current Batch Evidence Headings
+## Retained Batch Evidence Headings
 
-Parallel workers must add completion evidence only under their assigned heading.
+If this retained batch is promoted again, parallel workers must add completion
+evidence only under their assigned heading.
 
 ### Candidate Cohort Evidence
 

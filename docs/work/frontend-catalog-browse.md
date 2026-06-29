@@ -2,10 +2,12 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-27 (working tree)
+- Active implementation plan:
+  - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -17,6 +19,25 @@
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Current Usable Product Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` cards expose clear detail, compare, and offer
+  actions without backend or Relay schema changes.
+- Pending evidence:
+  - Worker should record route-test, typecheck, and whitespace verification
+    output here when the row is implemented.
 
 ## Current Cross-Project Batch
 

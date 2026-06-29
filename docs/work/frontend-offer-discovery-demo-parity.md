@@ -2,16 +2,38 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-27 during visible filter control verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+- Active implementation plan:
+  - `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Current Usable Product Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery-loader.test.ts`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` shows active filter context, reset actions, and a
+  path back to product selection without backend query changes.
+- Pending evidence:
+  - Worker should record route-test, typecheck, and whitespace verification
+    output here when the row is implemented.
 
 ## Current Cross-Project Batch
 

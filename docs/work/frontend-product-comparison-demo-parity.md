@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-27 after compare selection removal verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+- Active implementation plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
@@ -19,6 +20,24 @@
 - [x] Task 5: render product attributes on compare cards.
 - [x] Task 6: run full demo-slice verification and close queue docs.
 - [x] Task 7: add compare selection remove controls.
+
+## Current Usable Product Batch
+
+- Status: ready.
+- Plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare` shows the active selected-product set, preserves
+  URL-driven remove behavior, and keeps add/save flows intact.
+- Pending evidence:
+  - Worker should record route-test, typecheck, and whitespace verification
+    output here when the row is implemented.
 
 ## Completed Scope
 

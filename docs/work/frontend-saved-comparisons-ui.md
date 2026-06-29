@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-06-27 after client-side saved-comparison filter verification
@@ -16,11 +16,32 @@
   - `docs/work/saved-comparisons-backend.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`
+- Active implementation plan:
+  - `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.
   - The frontend exposes a saved-comparisons route for authenticated users.
   - Saved sets can be reopened into `/compare` using repeated `slug` query params and deleted from the UI.
   - Focused frontend tests cover save, list, reopen, and delete states without reopening unrelated route work.
+
+## Current Usable Product Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/saved.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `docs/work/frontend-saved-comparisons-ui.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare/saved` makes reopen, delete, browse, and compare
+  return paths clear while preserving existing auth and delete behavior.
+- Pending evidence:
+  - Worker should record route-test, typecheck, and whitespace verification
+    output here when the row is implemented.
 
 ## Current Cross-Project Batch
 

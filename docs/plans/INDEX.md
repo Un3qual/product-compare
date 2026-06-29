@@ -13,21 +13,17 @@ of active and candidate plans, not the dispatch queue.
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership. The
-coordinator selected the CJ read-model and weekly operator runbook candidate pool
-as the next ten-batch Product data scraping slice on 2026-06-29.
+coordinator selected a usable-product batch on 2026-06-29 so the next work moves
+the shopper-facing product loop forward before returning to retained CJ operator
+read-model work.
 
 Active implementation plans:
 
-- `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+- `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
+- `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
+- `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
+- `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
+- `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -39,7 +35,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| active | CJ read-model and weekly operator runbook batch | Selected by coordinator on 2026-06-29. | The ten CJ plans created on 2026-06-27 are promoted as the next live queue batch after the cross-project queue correction. |
+| retained | CJ read-model and weekly operator runbook batch | Promote after the 2026-06-29 usable-product queue has moved or when ingestion operator readiness becomes the highest product need again. | The ten CJ plans created on 2026-06-27 remain planned follow-up work and are tracked in `docs/work/product-data-scraping.md`; they are not currently live queue rows. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
