@@ -8,7 +8,7 @@
 
 **Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
 
-**Status:** ready. This plan is part of the 2026-06-29 usable-product queue.
+**Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 
 ---
 

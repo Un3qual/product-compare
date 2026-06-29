@@ -13,17 +13,12 @@ of active and candidate plans, not the dispatch queue.
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership. The
-coordinator selected a usable-product batch on 2026-06-29 so the next work moves
-the shopper-facing product loop forward before returning to retained CJ operator
-read-model work.
+2026-06-29 usable-product batch completed. No implementation plan is currently
+active in the live queue.
 
 Active implementation plans:
 
-- `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
-- `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
-- `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
-- `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
-- `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`
+- None.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -45,6 +40,13 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Usable-product frontend batch:
+  `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`,
+  `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`,
+  `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`,
+  `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`.
 - Cross-project frontend and ingestion follow-up batch:
   `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`,
   `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`,

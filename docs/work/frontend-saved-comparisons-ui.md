@@ -16,7 +16,7 @@
   - `docs/work/saved-comparisons-backend.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-saved-comparisons-client-filter-implementation-plan.md`
-- Active implementation plan:
+- Recently completed usable-product plan:
   - `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`
 - Definition of done:
   - The compare route can save a ready-state selection through the GraphQL saved-comparison mutation.

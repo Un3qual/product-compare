@@ -47,10 +47,9 @@
 
 ## Next Planned Slice
 
-- `docs/work/index.md` currently promotes a usable-product batch focused on the
-  shopper decision loop: browse product cards, product-detail next actions,
-  compare selection clarity, offer filter context, and saved-comparison return
-  paths.
+- The 2026-06-29 usable-product batch completed the shopper decision loop
+  improvements across browse product cards, product-detail next actions, compare
+  selection clarity, offer filter context, and saved-comparison return paths.
 - The retained CJ read-model and weekly operator-runbook plans remain tracked in
   `docs/work/product-data-scraping.md` and `docs/plans/INDEX.md` for the next
   ingestion-operator follow-up after product-facing progress.

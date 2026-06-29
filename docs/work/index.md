@@ -24,27 +24,32 @@ For the operating rules, prompt templates, and handoff format, read
 
 Updated: 2026-06-29
 
-The coordinator selected a usable-product batch focused on the shopper decision
-loop: browse products, inspect detail pages, compare selections, review offers,
-and return to saved comparisons. These rows are small product-facing
-improvements over existing GraphQL and Relay contracts.
+The 2026-06-29 usable-product batch is complete. It moved the shopper decision
+loop forward across product browse cards, product detail actions, compare
+selection, offer filter context, and saved-comparison return paths.
 
-The CJ read-model and weekly operator-runbook plans remain retained follow-up
-work in `docs/work/product-data-scraping.md` and `docs/plans/INDEX.md`; they are
-not dropped or deferred out of the roadmap, but they are no longer the highest
-ranked live rows.
+No `ready` row is currently selected. The next coordinator pass should either
+promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md` and
+`docs/work/product-data-scraping.md`, or choose another product-facing row.
 
 ## Ready Work
 
-| Rank | Status | Lane | Next action | Plan | Target Paths | Verification | Exit condition |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ready | Frontend catalog browse | Make `/products` cards a clearer product-decision entry point. | `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md` | `assets/src/routes/catalog/browse.tsx`; `assets/test/routes/catalog/browse.route.test.tsx`; `docs/work/frontend-catalog-browse.md` | `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`; `cd assets && bun run typecheck`; `git diff --check` | Product cards expose clear detail, compare, and offer actions without backend or Relay schema changes. |
-| 2 | ready | Frontend product detail | Promote product-detail compare and offer actions into a decision block. | `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md` | `assets/src/routes/products/detail.tsx`; `assets/test/routes/products/detail.route.test.tsx`; `docs/work/frontend-product-detail.md` | `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`; `cd assets && bun run typecheck`; `git diff --check` | `/products/:slug` makes next actions obvious while preserving active-offer pagination and existing data contracts. |
-| 3 | ready | Frontend product comparison | Add a selected-product tray and clearer add/remove flow on `/compare`. | `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md` | `assets/src/routes/compare/index.tsx`; `assets/test/routes/compare/compare.route.test.tsx`; `docs/work/frontend-product-comparison-demo-parity.md` | `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`; `cd assets && bun run typecheck`; `git diff --check` | Compare users can see the active selection, remove products, and add another product without losing URL-driven state. |
-| 4 | ready | Frontend offer discovery | Add product-context and filter-summary affordances to `/offers`. | `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md` | `assets/src/routes/offers/index.tsx`; `assets/test/routes/offers/offer-discovery-loader.test.ts`; `assets/test/routes/offers/offer-discovery.route.test.tsx`; `docs/work/frontend-offer-discovery-demo-parity.md` | `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`; `cd assets && bun run typecheck`; `git diff --check` | `/offers` shows the active product/filter context, clear/reset actions, and product-selection guidance without changing backend queries. |
-| 5 | ready | Frontend saved comparisons | Improve saved-comparison return flow and empty-state actions. | `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md` | `assets/src/routes/compare/saved.tsx`; `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`; `docs/work/frontend-saved-comparisons-ui.md` | `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`; `cd assets && bun run typecheck`; `git diff --check` | `/compare/saved` makes reopen/delete/continue-shopping paths clear for saved sets, filtered results, and empty states. |
+No ready rows are currently selected.
 
 ## Just Completed
+
+The 2026-06-29 usable-product batch completed these five work items:
+
+- Frontend catalog browse: `/products` product decision cards with stable
+  detail, compare, and offer actions.
+- Frontend product detail: `/products/:slug` next-action block for compare,
+  offer review, and browse return.
+- Frontend product comparison: `/compare` selected-product tray and add-another
+  affordance.
+- Frontend offer discovery: `/offers` active filter context, reset actions, and
+  product-selection guidance.
+- Frontend saved comparisons: `/compare/saved` card summaries, scoped actions,
+  and empty/no-match return links.
 
 The 2026-06-27 cross-project parallel batch completed these ten work items:
 

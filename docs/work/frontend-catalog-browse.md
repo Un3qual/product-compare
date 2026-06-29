@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-29 (working tree)
-- Active implementation plan:
+- Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
