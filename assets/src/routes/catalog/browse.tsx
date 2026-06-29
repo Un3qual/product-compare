@@ -80,25 +80,36 @@ function BrowseProducts({
     <>
       <BrowseProductsPageSizeForm pageSize={currentPageSize} />
       <ul>
-        {products.map((product) => (
-          <li key={product.id}>
-            <h2>
-              <Link to={`/products/${product.slug}`}>{product.name}</Link>
-            </h2>
-            <p>{product.slug}</p>
-            <p>{product.brand.name}</p>
-            <p>
-              <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
-                Compare {product.name}
-              </Link>
-            </p>
-            <p>
-              <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
-                Offers for {product.name}
-              </Link>
-            </p>
-          </li>
-        ))}
+        {products.map((product) => {
+          const headingId = `browse-product-${product.slug}`;
+
+          return (
+            <li key={product.id}>
+              <article aria-labelledby={headingId}>
+                <h2 id={headingId}>{product.name}</h2>
+                <p>{product.slug}</p>
+                <p>{product.brand.name}</p>
+                <ul aria-label={`Decision actions for ${product.name}`}>
+                  <li>
+                    <Link to={`/products/${product.slug}`}>
+                      View details for {product.name}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
+                      Compare {product.name}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
+                      View offers for {product.name}
+                    </Link>
+                  </li>
+                </ul>
+              </article>
+            </li>
+          );
+        })}
       </ul>
       {paginationLinks}
     </>

@@ -5,7 +5,7 @@
 - Status: ready
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27 (working tree)
+- Last verified: 2026-06-29 (working tree)
 - Active implementation plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -22,7 +22,7 @@
 
 ## Current Usable Product Batch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`.
 - Owned paths:
@@ -35,9 +35,22 @@
   - `git diff --check`
 - Exit condition: `/products` cards expose clear detail, compare, and offer
   actions without backend or Relay schema changes.
-- Pending evidence:
-  - Worker should record route-test, typecheck, and whitespace verification
-    output here when the row is implemented.
+- Implemented:
+  - `/products` product cards now render as named article regions with product
+    name headings, slug, brand, and a labelled decision-action list.
+  - Each card exposes stable `View details`, `Compare`, and `View offers` links
+    using the existing slug/product-id URL contracts and current Relay browse
+    data.
+  - Route coverage asserts card action destinations and confirms page-size plus
+    pagination controls remain present with the card action markup.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 2 expected failures because the previous markup had no named
+    product `article` card or decision-action list.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 24 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 
@@ -68,7 +81,13 @@
 - `assets/src/entry.server.tsx` now uses React Router's static handler/static router path so `/products` can SSR its loader data and hydrate on the client.
 - `assets/src/routes/catalog/loader.ts` now parses `first` from `/products` URL params with default `12`, max `48`, and malformed/oversized fallback behavior.
 - `assets/src/routes/catalog/browse.tsx` now renders a compact `Products per page` control (`12`, `24`, `48`) and preserves `first` in `Next products` and `First products` links.
+- `assets/src/routes/catalog/browse.tsx` now renders each populated product row
+  as a named decision card with explicit details, compare, and offers actions
+  without changing the browse loader or Relay query shape.
 - `assets/test/routes/catalog/browse.route.test.tsx` now covers page-size normalization, selected page-size rendering, and pagination link preservation.
+- `assets/test/routes/catalog/browse.route.test.tsx` now covers the decision-card
+  action labels/destinations while keeping page-size and pagination regressions
+  covered.
 - The frontend already has Bun SSR, route-level tests, and a shared GraphQL transport helper in `assets/src/relay/fetch-graphql.ts`.
 - The backend already exposes the paginated `products` query in `lib/product_compare_web/schema.ex` with coverage in `test/product_compare_web/graphql/catalog_queries_test.exs`.
 

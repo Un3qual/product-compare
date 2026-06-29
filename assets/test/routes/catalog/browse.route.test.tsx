@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -454,7 +454,7 @@ test("renders browse products from the Relay route query", () => {
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("12");
-  expect(screen.getByRole("link", { name: "Catalog First" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "View details for Catalog First" })).toHaveAttribute(
     "href",
     "/products/catalog-first"
   );
@@ -462,7 +462,7 @@ test("renders browse products from the Relay route query", () => {
     "href",
     "/compare?slug=catalog-first"
   );
-  expect(screen.getByRole("link", { name: "Offers for Catalog First" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "View offers for Catalog First" })).toHaveAttribute(
     "href",
     "/offers?productId=product-1"
   );
@@ -470,7 +470,7 @@ test("renders browse products from the Relay route query", () => {
     "href",
     "/compare?slug=catalog-second"
   );
-  expect(screen.getByRole("link", { name: "Offers for Catalog Second" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "View offers for Catalog Second" })).toHaveAttribute(
     "href",
     "/offers?productId=product-2"
   );
@@ -479,6 +479,84 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
+});
+
+test("renders decision actions for each browse product card", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-1",
+            name: "Catalog First",
+            slug: "catalog-first",
+            brand: {
+              id: "brand-1",
+              name: "Acme"
+            }
+          }
+        },
+        {
+          node: {
+            id: "product-2",
+            name: "Catalog Second",
+            slug: "catalog-second",
+            brand: {
+              id: "brand-2",
+              name: "Globex"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  const firstProductCard = screen.getByRole("article", { name: "Catalog First" });
+  const firstProductActions = within(firstProductCard).getByRole("list", {
+    name: "Decision actions for Catalog First"
+  });
+
+  expect(
+    within(firstProductActions).getByRole("link", { name: "View details for Catalog First" })
+  ).toHaveAttribute("href", "/products/catalog-first");
+  expect(
+    within(firstProductActions).getByRole("link", { name: "Compare Catalog First" })
+  ).toHaveAttribute("href", "/compare?slug=catalog-first");
+  expect(
+    within(firstProductActions).getByRole("link", { name: "View offers for Catalog First" })
+  ).toHaveAttribute("href", "/offers?productId=product-1");
+
+  const secondProductCard = screen.getByRole("article", { name: "Catalog Second" });
+  const secondProductActions = within(secondProductCard).getByRole("list", {
+    name: "Decision actions for Catalog Second"
+  });
+
+  expect(
+    within(secondProductActions).getByRole("link", { name: "View details for Catalog Second" })
+  ).toHaveAttribute("href", "/products/catalog-second");
+  expect(
+    within(secondProductActions).getByRole("link", { name: "Compare Catalog Second" })
+  ).toHaveAttribute("href", "/compare?slug=catalog-second");
+  expect(
+    within(secondProductActions).getByRole("link", { name: "View offers for Catalog Second" })
+  ).toHaveAttribute("href", "/offers?productId=product-2");
 });
 
 test("renders selected page size and preserves first in pagination links", () => {
@@ -524,6 +602,11 @@ test("renders selected page size and preserves first in pagination links", () =>
   );
 
   expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("24");
+  expect(
+    within(screen.getByRole("article", { name: "Page Two Product" })).getByRole("list", {
+      name: "Decision actions for Page Two Product"
+    })
+  ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
     "href",
     "/products?first=24&after=cursor-next-page"
@@ -576,7 +659,7 @@ test("renders next and first-page pagination links from the browse query", () =>
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("link", { name: "Page Two Product" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "View details for Page Two Product" })).toHaveAttribute(
     "href",
     "/products/page-two-product"
   );
@@ -626,7 +709,7 @@ test("omits browse pagination links on the first page when there is no next page
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("link", { name: "Final Page Product" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "View details for Final Page Product" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
 });
@@ -742,7 +825,7 @@ test("resets the local unavailable state when fresh loader data arrives", async 
     );
 
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
-    expect(screen.getByRole("link", { name: "Recovered Product" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "View details for Recovered Product" })).toHaveAttribute(
       "href",
       "/products/recovered-product"
     );
@@ -750,7 +833,7 @@ test("resets the local unavailable state when fresh loader data arrives", async 
       "href",
       "/compare?slug=recovered-product"
     );
-    expect(screen.getByRole("link", { name: "Offers for Recovered Product" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "View offers for Recovered Product" })).toHaveAttribute(
       "href",
       "/offers?productId=product-recovered"
     );
