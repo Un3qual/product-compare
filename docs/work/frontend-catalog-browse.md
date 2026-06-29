@@ -41,6 +41,8 @@
   - Each card exposes stable `View details`, `Compare`, and `View offers` links
     using the existing slug/product-id URL contracts and current Relay browse
     data.
+  - Product detail action paths encode slugs as URL path segments so reserved
+    slug characters cannot split the `/products/:slug` route.
   - Route coverage asserts card action destinations and confirms page-size plus
     pagination controls remain present with the card action markup.
 - Completed verification:
@@ -49,6 +51,12 @@
     product `article` card or decision-action list.
   - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
     - 24 tests, 0 failures.
+  - Review-fix RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 1 expected failure because a reserved-character slug rendered
+    as `/products/reserved/product?variant=1` instead of an encoded path
+    segment.
+  - Review-fix GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 25 tests, 0 failures.
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 

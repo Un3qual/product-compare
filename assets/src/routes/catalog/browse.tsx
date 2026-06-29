@@ -91,7 +91,7 @@ function BrowseProducts({
                 <p>{product.brand.name}</p>
                 <ul aria-label={`Decision actions for ${product.name}`}>
                   <li>
-                    <Link to={`/products/${product.slug}`}>
+                    <Link to={browseProductDetailPath(product.slug)}>
                       View details for {product.name}
                     </Link>
                   </li>
@@ -132,6 +132,10 @@ function BrowseProductsPageSizeForm({ pageSize }: { pageSize: number }) {
       <button type="submit">Apply</button>
     </form>
   );
+}
+
+function browseProductDetailPath(slug: string) {
+  return `/products/${encodeURIComponent(slug)}`;
 }
 
 function browseProductsNextPagePath(first: number, endCursor: string) {

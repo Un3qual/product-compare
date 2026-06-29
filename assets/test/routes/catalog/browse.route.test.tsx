@@ -559,6 +559,60 @@ test("renders decision actions for each browse product card", () => {
   ).toHaveAttribute("href", "/offers?productId=product-2");
 });
 
+test("encodes reserved characters in browse product decision links", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product/reserved?id=1",
+            name: "Reserved Product",
+            slug: "reserved/product?variant=1",
+            brand: {
+              id: "brand-reserved",
+              name: "Reserved Brand"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  const productActions = within(screen.getByRole("article", { name: "Reserved Product" })).getByRole(
+    "list",
+    {
+      name: "Decision actions for Reserved Product"
+    }
+  );
+
+  expect(
+    within(productActions).getByRole("link", { name: "View details for Reserved Product" })
+  ).toHaveAttribute("href", "/products/reserved%2Fproduct%3Fvariant%3D1");
+  expect(
+    within(productActions).getByRole("link", { name: "Compare Reserved Product" })
+  ).toHaveAttribute("href", "/compare?slug=reserved%2Fproduct%3Fvariant%3D1");
+  expect(
+    within(productActions).getByRole("link", { name: "View offers for Reserved Product" })
+  ).toHaveAttribute("href", "/offers?productId=product%2Freserved%3Fid%3D1");
+});
+
 test("renders selected page size and preserves first in pagination links", () => {
   const cursorDescriptor = {
     __relayQuery: {
