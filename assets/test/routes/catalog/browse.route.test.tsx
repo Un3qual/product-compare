@@ -613,6 +613,58 @@ test("encodes reserved characters in browse product decision links", () => {
   ).toHaveAttribute("href", "/offers?productId=product%2Freserved%3Fid%3D1");
 });
 
+test("keeps browse product cards named when slugs contain spaces", () => {
+  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: browseQueryDescriptor
+  });
+  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
+  mockedUsePreloadedQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "product-spaced",
+            name: "Spaced Product",
+            slug: "spaced product",
+            brand: {
+              id: "brand-spaced",
+              name: "Spaced Brand"
+            }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  render(
+    <MemoryRouter>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  const productCard = screen.getByRole("article", { name: "Spaced Product" });
+  const productActions = within(productCard).getByRole("list", {
+    name: "Decision actions for Spaced Product"
+  });
+
+  expect(
+    within(productActions).getByRole("link", { name: "View details for Spaced Product" })
+  ).toHaveAttribute("href", "/products/spaced%20product");
+  expect(
+    within(productActions).getByRole("link", { name: "Compare Spaced Product" })
+  ).toHaveAttribute("href", "/compare?slug=spaced%20product");
+  expect(
+    within(productActions).getByRole("link", { name: "View offers for Spaced Product" })
+  ).toHaveAttribute("href", "/offers?productId=product-spaced");
+});
+
 test("renders selected page size and preserves first in pagination links", () => {
   const cursorDescriptor = {
     __relayQuery: {

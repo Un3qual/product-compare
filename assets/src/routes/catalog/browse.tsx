@@ -80,36 +80,32 @@ function BrowseProducts({
     <>
       <BrowseProductsPageSizeForm pageSize={currentPageSize} />
       <ul>
-        {products.map((product) => {
-          const headingId = `browse-product-${product.slug}`;
-
-          return (
-            <li key={product.id}>
-              <article aria-labelledby={headingId}>
-                <h2 id={headingId}>{product.name}</h2>
-                <p>{product.slug}</p>
-                <p>{product.brand.name}</p>
-                <ul aria-label={`Decision actions for ${product.name}`}>
-                  <li>
-                    <Link to={browseProductDetailPath(product.slug)}>
-                      View details for {product.name}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
-                      Compare {product.name}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
-                      View offers for {product.name}
-                    </Link>
-                  </li>
-                </ul>
-              </article>
-            </li>
-          );
-        })}
+        {products.map((product) => (
+          <li key={product.id}>
+            <article aria-label={product.name}>
+              <h2>{product.name}</h2>
+              <p>{product.slug}</p>
+              <p>{product.brand.name}</p>
+              <ul aria-label={`Decision actions for ${product.name}`}>
+                <li>
+                  <Link to={browseProductDetailPath(product.slug)}>
+                    View details for {product.name}
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
+                    Compare {product.name}
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
+                    View offers for {product.name}
+                  </Link>
+                </li>
+              </ul>
+            </article>
+          </li>
+        ))}
       </ul>
       {paginationLinks}
     </>
