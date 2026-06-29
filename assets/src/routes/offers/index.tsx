@@ -173,43 +173,118 @@ function OfferListItem({
   offer: OfferNode;
   offerHref: string;
 }) {
-  const latestPriceLabel = priceLabel(offer.latestPrice?.price, offer.currency);
-  const priceHistory = offer.priceHistory ?? emptyPriceHistoryConnection();
-  const activeCoupons = offer.activeCoupons ?? emptyCouponConnection();
-  const historyRows = priceHistory.edges
-    .map(({ node }) => priceHistoryRow(node, offer.currency))
-    .filter((row): row is PriceHistoryRow => row !== null);
+  const priceHistory = priceHistoryConnection(offer.priceHistory);
+  const activeCoupons = couponConnection(offer.activeCoupons);
+  const merchantName = offerMerchantName(offer.merchant);
 
   return (
     <li>
       <article>
-        <header>
-          <h2>{offer.product?.name ?? "Unknown product"}</h2>
-          <p>{offer.isActive ? "Active" : "Inactive"}</p>
-        </header>
+        <OfferListItemHeader
+          isActive={offer.isActive}
+          productName={offerProductName(offer.product)}
+        />
+        <OfferMerchantLink href={offerHref} merchantName={merchantName} />
+        <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
-        {offerHref ? (
-          <p>
-            <a href={offerHref}>{offer.merchant?.name ?? "Visit offer"}</a>
-          </p>
-        ) : null}
-        {offer.merchant?.domain ? <p>{offer.merchant.domain}</p> : null}
-
-        <p>{latestPriceLabel ?? "No latest price."}</p>
+        <p>{offerLatestPriceLabel(offer)}</p>
 
         <PriceHistorySummary
           hasMore={priceHistory.pageInfo.hasNextPage}
-          merchantName={offer.merchant?.name ?? "Offer"}
-          rows={historyRows}
+          merchantName={offerSummaryMerchantName(offer.merchant)}
+          rows={offerPriceHistoryRows(priceHistory, offer.currency)}
         />
         <CouponSummary
           couponEdges={activeCoupons.edges}
           hasMore={activeCoupons.pageInfo.hasNextPage}
-          merchantName={offer.merchant?.name ?? "Offer"}
+          merchantName={offerSummaryMerchantName(offer.merchant)}
         />
       </article>
     </li>
   );
+}
+
+function OfferListItemHeader({
+  isActive,
+  productName
+}: {
+  isActive: boolean;
+  productName: string;
+}) {
+  return (
+    <header>
+      <h2>{productName}</h2>
+      <p>{offerStatusLabel(isActive)}</p>
+    </header>
+  );
+}
+
+function OfferMerchantLink({
+  href,
+  merchantName
+}: {
+  href: string;
+  merchantName: string;
+}) {
+  if (!href) {
+    return null;
+  }
+
+  return (
+    <p>
+      <a href={href}>{merchantName}</a>
+    </p>
+  );
+}
+
+function OfferMerchantDomain({ domain }: { domain: string | null }) {
+  if (!domain) {
+    return null;
+  }
+
+  return <p>{domain}</p>;
+}
+
+function offerProductName(product: OfferNode["product"]) {
+  return product?.name ?? "Unknown product";
+}
+
+function offerStatusLabel(isActive: boolean) {
+  return isActive ? "Active" : "Inactive";
+}
+
+function offerMerchantName(merchant: OfferNode["merchant"]) {
+  return merchant?.name ?? "Visit offer";
+}
+
+function offerSummaryMerchantName(merchant: OfferNode["merchant"]) {
+  return merchant?.name ?? "Offer";
+}
+
+function offerMerchantDomain(merchant: OfferNode["merchant"]) {
+  return merchant?.domain ?? null;
+}
+
+function offerLatestPriceLabel(offer: OfferNode) {
+  return priceLabel(offer.latestPrice?.price, offer.currency) ?? "No latest price.";
+}
+
+function offerPriceHistoryRows(priceHistory: PriceHistoryConnection, currency: string) {
+  return priceHistory.edges
+    .map(({ node }) => priceHistoryRow(node, currency))
+    .filter((row): row is PriceHistoryRow => row !== null);
+}
+
+function priceHistoryConnection(
+  priceHistory: PriceHistoryConnection | null | undefined
+): PriceHistoryConnection {
+  return priceHistory ?? emptyPriceHistoryConnection();
+}
+
+function couponConnection(
+  activeCoupons: ActiveCouponsConnection | null | undefined
+): ActiveCouponsConnection {
+  return activeCoupons ?? emptyCouponConnection();
 }
 
 function PriceHistorySummary({

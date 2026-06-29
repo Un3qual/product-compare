@@ -98,10 +98,9 @@ export function SavedComparisonsRoute() {
       {loaderData.status === "unauthorized" ? (
         <Link to="/auth/login">Sign in to view saved comparisons</Link>
       ) : (
-        <label htmlFor="saved-comparisons-filter">
+        <label>
           Filter saved comparisons
           <input
-            id="saved-comparisons-filter"
             onChange={(event) => {
               setFilterText(event.target.value);
             }}
