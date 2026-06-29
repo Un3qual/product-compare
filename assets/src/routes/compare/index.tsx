@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import compareProductPickerQuery, {
@@ -191,6 +191,10 @@ export function CompareRoute() {
           {activeSaveFeedback.message ?? ""}
         </p>
         {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}
+        <CompareSelectionTray
+          products={loaderData.products}
+          selectedSlugs={loaderData.slugs}
+        />
         <ResettableErrorBoundary
           resetToken={loaderData.productQueries}
           fallback={
@@ -205,7 +209,10 @@ export function CompareRoute() {
           </Suspense>
         </ResettableErrorBoundary>
         {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
-          <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+          <CompareProductPickerBoundary
+            heading="Add another product"
+            selectedSlugs={loaderData.slugs}
+          />
         ) : null}
       </CompareShell>
     );
@@ -226,7 +233,13 @@ export function CompareRoute() {
   );
 }
 
-function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+function CompareProductPickerBoundary({
+  heading = "Choose products",
+  selectedSlugs
+}: {
+  heading?: string;
+  selectedSlugs: readonly string[];
+}) {
   const resetToken = selectedSlugs.join("|");
 
   return (
@@ -235,13 +248,23 @@ function CompareProductPickerBoundary({ selectedSlugs }: { selectedSlugs: readon
       fallback={<p role="alert">Product picker unavailable.</p>}
     >
       <Suspense fallback={<p role="status">Loading products...</p>}>
-        <CompareProductPicker key={resetToken} selectedSlugs={selectedSlugs} />
+        <CompareProductPicker
+          heading={heading}
+          key={resetToken}
+          selectedSlugs={selectedSlugs}
+        />
       </Suspense>
     </ResettableErrorBoundary>
   );
 }
 
-function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+function CompareProductPicker({
+  heading,
+  selectedSlugs
+}: {
+  heading: string;
+  selectedSlugs: readonly string[];
+}) {
   const [after, setAfter] = useState<string | null>(null);
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
 
@@ -275,7 +298,7 @@ function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly strin
 
   return (
     <section>
-      <h2>Choose products</h2>
+      <h2>{heading}</h2>
       {availableProducts.length > 0 ? (
         <ul>
           {availableProducts.map((product) => (
@@ -301,6 +324,35 @@ function CompareProductPicker({ selectedSlugs }: { selectedSlugs: readonly strin
           Show more products
         </button>
       ) : null}
+    </section>
+  );
+}
+
+function CompareSelectionTray({
+  products,
+  selectedSlugs
+}: {
+  products: CompareProductSummary[];
+  selectedSlugs: readonly string[];
+}) {
+  const titleId = useId();
+
+  return (
+    <section aria-labelledby={titleId}>
+      <h2 id={titleId}>Selected products</h2>
+      <p>
+        {products.length} of {MAX_COMPARE_PRODUCTS} products selected.
+      </p>
+      <ul>
+        {products.map((product, index) => (
+          <li key={`${product.id}-${selectedSlugs[index] ?? index}`}>
+            <span>{product.name}</span>{" "}
+            <Link to={buildComparePathAfterRemovingSlugIndex(selectedSlugs, index)}>
+              Remove {product.name} from selection
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

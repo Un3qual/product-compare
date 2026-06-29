@@ -1087,6 +1087,74 @@ test("ready compare page lets users append a product without editing the URL", (
   );
 });
 
+test("ready compare page renders a selected-product tray with ordered remove links", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+    productQueries: [
+      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+      SECOND_PRODUCT_QUERY_DESCRIPTOR,
+      THIRD_PRODUCT_QUERY_DESCRIPTOR
+    ],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT),
+      buildProductSummary(THIRD_PRODUCT)
+    ]
+  });
+
+  renderCompareRoute();
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectedProducts = within(selectionTray).getAllByRole("listitem");
+
+  expect(selectedProducts).toHaveLength(3);
+  expect(selectedProducts[0]).toHaveTextContent("Detail Product");
+  expect(selectedProducts[1]).toHaveTextContent("Second Product");
+  expect(selectedProducts[2]).toHaveTextContent("Third Product");
+  expect(
+    within(selectedProducts[0]).getByRole("link", {
+      name: "Remove Detail Product from selection"
+    })
+  ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product");
+  expect(
+    within(selectedProducts[1]).getByRole("link", {
+      name: "Remove Second Product from selection"
+    })
+  ).toHaveAttribute("href", "/compare?slug=detail-product&slug=third-product");
+  expect(
+    within(selectedProducts[2]).getByRole("link", {
+      name: "Remove Third Product from selection"
+    })
+  ).toHaveAttribute("href", "/compare?slug=detail-product&slug=second-product");
+});
+
+test("ready compare page labels the picker as an add-another-product path", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:monitor-c",
+            name: "Monitor C",
+            slug: "monitor-c",
+            brand: { id: "Brand:panelco", name: "PanelCo" }
+          }
+        }
+      ]
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("heading", { name: "Add another product" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c"
+  );
+});
+
 test("ready compare cards include a remove link for the first selected product", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

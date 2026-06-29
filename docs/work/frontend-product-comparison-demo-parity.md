@@ -5,7 +5,7 @@
 - Status: ready
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27 after compare selection removal verification
+- Last verified: 2026-06-29 after compare selection tray verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
@@ -20,10 +20,11 @@
 - [x] Task 5: render product attributes on compare cards.
 - [x] Task 6: run full demo-slice verification and close queue docs.
 - [x] Task 7: add compare selection remove controls.
+- [x] Task 8: add a ready-state selected-product tray and add-another heading.
 
 ## Current Usable Product Batch
 
-- Status: ready.
+- Status: done.
 - Plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`.
 - Owned paths:
   - `assets/src/routes/compare/index.tsx`
@@ -35,9 +36,12 @@
   - `git diff --check`
 - Exit condition: `/compare` shows the active selected-product set, preserves
   URL-driven remove behavior, and keeps add/save flows intact.
-- Pending evidence:
-  - Worker should record route-test, typecheck, and whitespace verification
-    output here when the row is implemented.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "selected-product tray|add-another-product"` - failed as expected with 2 failing tests and 60 skipped because the selected tray region and ready-state add-another heading were not rendered.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "selected-product tray|add-another-product"` - 2 tests passed, 60 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 62 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Completed Scope
 
@@ -78,6 +82,17 @@
 - Added URL-safe compare-removal helpers that remove one selected slug by index and preserve remaining order.
 - Ensured removing the last selected product routes back to `/compare` with no query string.
 - Added focused compare route coverage for removing first, middle, last, and only selected products.
+
+### Task 8: Compare Selection Tray
+
+- Added a ready-state selected-product tray that lists the active products in
+  URL order.
+- Added tray-level remove links that reuse the URL-driven removal helper and
+  preserve the remaining selected slug order.
+- Labeled the ready-state picker as `Add another product` while preserving the
+  existing empty-state product picker and save-comparison behavior.
+- Added focused route coverage for the selected tray, tray remove links,
+  add-another heading, and existing append/save behavior.
 
 ### Task 6: Full Demo Slice Verification
 
