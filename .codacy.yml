@@ -1,7 +1,11 @@
 ---
-languages:
-  typescript:
-    enabled: false
+engines:
+  eslint-8:
+    exclude_paths:
+      - "assets/**"
+  eslint-9:
+    exclude_paths:
+      - "assets/**"
 exclude_paths:
   - ".codex/skills/**"
   - "assets/src/__generated__/**"
