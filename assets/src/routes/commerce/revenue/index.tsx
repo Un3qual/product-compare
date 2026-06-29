@@ -227,18 +227,17 @@ export function buildRevenueDatePresetLinks(
 ): RevenueDatePresetLink[] {
   const baseDate = toLocalDateOnly(currentDate);
   const toDate = formatDate(baseDate);
-  const fromDateMinusDays = (days: number) => formatDate(shiftDate(baseDate, -days));
   const monthStartDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
 
   const presets = [
     {
       label: "Last 7 days",
-      from: fromDateMinusDays(6),
+      from: formatDate(shiftDate(baseDate, -6)),
       to: toDate
     },
     {
       label: "Last 30 days",
-      from: fromDateMinusDays(29),
+      from: formatDate(shiftDate(baseDate, -29)),
       to: toDate
     },
     {

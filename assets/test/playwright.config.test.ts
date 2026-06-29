@@ -29,7 +29,7 @@ test.each(["0", "-1", "3.14", "65536", "not-a-port"])(
   }
 );
 
-async function loadPlaywrightConfig(port: string) {
+function loadPlaywrightConfig(port: string) {
   vi.resetModules();
   process.env.PLAYWRIGHT_PORT = port;
 

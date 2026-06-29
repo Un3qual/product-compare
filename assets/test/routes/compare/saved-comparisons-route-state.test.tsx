@@ -71,6 +71,14 @@ const SAVED_SET_QUERY_REF = {
   variables: SAVED_SET_QUERY_DESCRIPTOR.__relayQuery.variables
 };
 
+function buildSavedSet() {
+  return {
+    id: "saved-set-1",
+    name: "Desk setup",
+    slugs: ["chair", "desk"]
+  };
+}
+
 beforeEach(() => {
   commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
@@ -82,14 +90,6 @@ beforeEach(() => {
   mockedUseRoutePreloadedQuery.mockReturnValue(SAVED_SET_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildSavedComparisonSetsPageData([buildSavedSet()]));
 });
-
-const buildSavedSet = () => {
-  return {
-    id: "saved-set-1",
-    name: "Desk setup",
-    slugs: ["chair", "desk"]
-  };
-};
 
 const buildReadyLoaderData = () => {
   return {

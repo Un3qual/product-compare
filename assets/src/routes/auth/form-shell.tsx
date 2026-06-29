@@ -102,12 +102,17 @@ const styles = stylex.create({
 
 const EMPTY_ERRORS: MutationError[] = [];
 const EMPTY_FIELD_NAMES: string[] = [];
-const EMPTY_FOOTER_LINKS: Array<{ label: string; to: string }> = [];
+const EMPTY_FOOTER_LINKS: FooterLink[] = [];
+
+interface FooterLink {
+  label: string;
+  to: string;
+}
 
 interface AuthFormShellProps extends PropsWithChildren {
   description: string;
   errors?: MutationError[];
-  footerLinks?: Array<{ label: string; to: string }>;
+  footerLinks?: FooterLink[];
   fieldNames?: string[];
   successMessage?: string | null;
   title: string;
@@ -123,7 +128,11 @@ export function AuthFormShell({
   title
 }: AuthFormShellProps) {
   const fieldNameSet = useMemo(() => new Set(fieldNames), [fieldNames]);
-  const visibleErrors = errors.filter((error) => !error.field || !fieldNameSet.has(error.field));
+  const visibleErrors = errors.filter((error: MutationError) => {
+    const field = error.field;
+
+    return field === undefined || field === null || field === "" || !fieldNameSet.has(field);
+  });
 
   return (
     <section {...stylex.props(styles.section)}>

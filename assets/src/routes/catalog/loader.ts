@@ -11,6 +11,7 @@ import { recoverRouteLoaderError } from "../loader-errors";
 
 const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
+type BrowseProductsPageSize = (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number];
 
 export type BrowseProductsLoaderData =
   | {
@@ -60,7 +61,7 @@ export async function browseLoader({
 function browseProductsPageSizeFromUrl(url: URL) {
   const value = nonBlankParam(url, "first");
 
-  if (!value) {
+  if (value === null) {
     return BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
   }
 
@@ -70,15 +71,23 @@ function browseProductsPageSizeFromUrl(url: URL) {
 
   const parsedValue = Number.parseInt(value, 10);
 
-  return BROWSE_PRODUCTS_PAGE_SIZES.includes(
-    parsedValue as (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number]
-  )
+  return isBrowseProductsPageSize(parsedValue)
     ? parsedValue
     : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
 }
 
-function nonBlankParam(url: URL, name: string) {
-  const value = url.searchParams.get(name)?.trim();
+function isBrowseProductsPageSize(value: number): value is BrowseProductsPageSize {
+  return BROWSE_PRODUCTS_PAGE_SIZES.includes(value as BrowseProductsPageSize);
+}
 
-  return value === "" ? null : value ?? null;
+function nonBlankParam(url: URL, name: string) {
+  const rawValue = url.searchParams.get(name);
+
+  if (rawValue === null) {
+    return null;
+  }
+
+  const value = rawValue.trim();
+
+  return value === "" ? null : value;
 }

@@ -21,6 +21,10 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../../route-errors";
+import {
+  API_TOKEN_EXPIRES_AT_PRESETS,
+  buildApiTokenExpiresAtInputValue
+} from "./date-presets";
 import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import { apiTokensLoader, summarizeApiTokensPage } from "./loader";
 
@@ -29,37 +33,6 @@ const STATUS_FILTERS = [
   { label: "Active", status: "active" },
   { label: "Revoked", status: "revoked" }
 ] as const;
-
-const API_TOKEN_EXPIRES_AT_PRESETS = [
-  { label: "30 days" },
-  { label: "90 days" },
-  { label: "1 year" },
-  { label: "No expiration" }
-] as const;
-
-export type ApiTokenExpiresAtPreset = (typeof API_TOKEN_EXPIRES_AT_PRESETS)[number]["label"];
-
-export function buildApiTokenExpiresAtInputValue(
-  preset: ApiTokenExpiresAtPreset,
-  currentDate: Date
-) {
-  if (preset === "No expiration") {
-    return "";
-  }
-
-  const expiryDate = new Date(currentDate);
-
-  if (preset === "1 year") {
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-  } else {
-    const dayOffset = preset === "30 days" ? 30 : 90;
-    expiryDate.setDate(expiryDate.getDate() + dayOffset);
-  }
-
-  return `${expiryDate.getFullYear()}-${padUtcPart(expiryDate.getMonth() + 1)}-${padUtcPart(
-    expiryDate.getDate()
-  )}T${padUtcPart(expiryDate.getHours())}:${padUtcPart(expiryDate.getMinutes())}`;
-}
 
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
@@ -733,7 +706,7 @@ function ApiTokenActions({
   );
 }
 
-export function apiTokenQueryKey(tokenQuery: ApiTokenQueryDescriptor) {
+function apiTokenQueryKey(tokenQuery: ApiTokenQueryDescriptor) {
   return `${tokenQuery.__relayQuery.operationName}:${JSON.stringify(
     stableJsonValue(tokenQuery.__relayQuery.variables)
   )}`;

@@ -3,10 +3,8 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
-import {
-  ApiTokensRoute,
-  buildApiTokenExpiresAtInputValue
-} from "../../../../src/routes/account/api-tokens/index";
+import { ApiTokensRoute } from "../../../../src/routes/account/api-tokens/index";
+import { buildApiTokenExpiresAtInputValue } from "../../../../src/routes/account/api-tokens/date-presets";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
 const {

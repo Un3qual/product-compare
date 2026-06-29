@@ -1,4 +1,7 @@
 ---
+languages:
+  typescript:
+    enabled: false
 exclude_paths:
   - ".codex/skills/**"
   - "assets/src/__generated__/**"

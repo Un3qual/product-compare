@@ -31,12 +31,12 @@ const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 type ComparePickerProduct =
   CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
-type SaveFeedbackState = {
+interface SaveFeedbackState {
   error: string | null;
   inFlightSelectionKey: string | null;
   message: string | null;
   selectionKey: string | null;
-};
+}
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
