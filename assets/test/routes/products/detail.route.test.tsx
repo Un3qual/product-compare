@@ -446,6 +446,44 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
+test("renders product decision actions with compare, offer review, and browse destinations", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    id: "product/id+token=",
+    slug: "detail/product slug"
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const actions = screen.getByRole("region", { name: "Next steps" });
+
+  expect(within(actions).getByRole("link", { name: "Compare this product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail%2Fproduct%20slug"
+  );
+  expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product%2Fid%2Btoken%3D"
+  );
+  expect(within(actions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+});
+
 test("renders next and first offer page links from URL-driven offersAfter state", () => {
   const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor/next+token");
 
