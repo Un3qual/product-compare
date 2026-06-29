@@ -12,8 +12,22 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active work-item plans are currently promoted. Start at
-`docs/work/index.md` for the live dispatch queue before selecting new work.
+Start at `docs/work/index.md` for live dispatch status and ownership. The
+coordinator selected the CJ read-model and weekly operator runbook candidate pool
+as the next ten-batch Product data scraping slice on 2026-06-29.
+
+Active implementation plans:
+
+- `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -25,7 +39,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | CJ read-model and weekly operator runbook batch | Product data scraping becomes the selected lane again and the coordinator explicitly chooses CJ-only read-model follow-up. | The ten CJ plans created on 2026-06-27 are kept but no longer active after the cross-project queue correction. |
+| active | CJ read-model and weekly operator runbook batch | Selected by coordinator on 2026-06-29. | The ten CJ plans created on 2026-06-27 are promoted as the next live queue batch after the cross-project queue correction. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive

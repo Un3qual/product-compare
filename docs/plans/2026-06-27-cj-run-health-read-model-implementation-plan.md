@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** ready. This plan is selected for the 2026-06-29 next ten-batch CJ read-model/operator queue.
 
 ---
 
@@ -18,7 +18,7 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_run_health.ex`
 - `test/product_compare/ingestion/cj_run_health_test.exs`
-- `docs/work/product-data-scraping.md` under the run-health evidence heading only
+- `docs/work/product-data-scraping.md` under `### Run Health Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
@@ -26,7 +26,7 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 
 - Return latest run per CJ surface: `shoppingProducts` and `shoppingProductFeeds`.
 - Include status, started/finished timestamps, cursor bounds, page and record counts, and a boolean `successful`.
-- Include safe `error_summary` only; do not return raw provider error bodies or query maps.
+- Include only a boolean `has_error_summary` or a redacted/truncated error category; do not return raw stored `error_summary`, provider error bodies, or query maps.
 - Include `missing` when a surface has no recorded run.
 
 ## Tasks
@@ -36,7 +36,7 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 - [ ] Implement one query per surface or a grouped query that never returns raw `query` payloads.
 - [ ] Add tests proving an empty database returns missing health entries instead of raising.
 - [ ] Run `mix test test/product_compare/ingestion/cj_run_health_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

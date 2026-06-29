@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** ready. This plan is selected for the 2026-06-29 next ten-batch CJ read-model/operator queue.
 
 ---
 
@@ -18,7 +18,7 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_run_throughput.ex`
 - `test/product_compare/ingestion/cj_run_throughput_test.exs`
-- `docs/work/product-data-scraping.md` under the run-throughput evidence heading only
+- `docs/work/product-data-scraping.md` under `### Run Throughput Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
@@ -33,11 +33,11 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 ## Tasks
 
 - [ ] Add failing tests that seed runs across two dates and both CJ surfaces, plus non-CJ runs that must be ignored.
-- [ ] Create `ProductCompare.Ingestion.CJRunThroughput` with `daily_summary/1` and injectable `now` for deterministic date windows.
+- [ ] Create `ProductCompare.Ingestion.CJRunThroughput` with `daily_summary/1` plus `daily_summary/2` where the second argument injects `now` for deterministic date windows.
 - [ ] Implement date-window filtering against `started_at`.
 - [ ] Return buckets ordered by date descending, then surface ascending.
 - [ ] Run `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

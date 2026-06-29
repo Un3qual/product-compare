@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** ready. This plan is selected for the 2026-06-29 next ten-batch CJ read-model/operator queue.
 
 ---
 
@@ -18,7 +18,7 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_candidate_market_coverage.ex`
 - `test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
-- `docs/work/product-data-scraping.md` under the candidate-market-coverage evidence heading only
+- `docs/work/product-data-scraping.md` under `### Candidate Market Coverage Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
@@ -37,7 +37,7 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 - [ ] Normalize blank strings to `"unknown"` and uppercase non-blank market codes in returned bucket keys.
 - [ ] Reject unsupported review-status filters by ignoring them rather than raising.
 - [ ] Run `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

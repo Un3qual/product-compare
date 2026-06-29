@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** ready. This plan is selected for the 2026-06-29 next ten-batch CJ read-model/operator queue.
 
 ---
 
@@ -18,7 +18,7 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_candidate_cohort.ex`
 - `test/product_compare/ingestion/cj_candidate_cohort_test.exs`
-- `docs/work/product-data-scraping.md` under the candidate-cohort evidence heading only
+- `docs/work/product-data-scraping.md` under `### Candidate Cohort Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
@@ -34,10 +34,10 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 
 - [ ] Add failing tests that seed CJ and non-CJ candidates, assert only `provider: "cj"` rows are included, assert review-status counts, assert top shortlisted candidate order by fit score, and assert returned maps do not include `raw_metadata`.
 - [ ] Create `ProductCompare.Ingestion.CJCandidateCohort` with `summary/1`, default `limit: 10`, and a bounded positive integer limit clamp of `1..50`.
-- [ ] Implement a private fit-score expression matching the existing thresholds: product count up to 50 points, US 20, USD 15, EN 10, feed type present 5.
+- [ ] Implement a private fit-score expression matching the existing `ProductCompare.Ingestion.list_merchant_feed_candidates_query(sort: :fit_score_desc)` thresholds: product count `>= 10000` gives 50 points, `>= 1000` gives 35, `>= 100` gives 20, `> 0` gives 10, US gives 20, USD gives 15, EN gives 10, and present feed type gives 5.
 - [ ] Keep return data as plain maps with atom keys suitable for later resolver or UI work.
 - [ ] Run `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

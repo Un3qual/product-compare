@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** ready. This plan is selected for the 2026-06-29 next ten-batch CJ read-model/operator queue.
 
 ---
 
@@ -18,27 +18,27 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_import_price_quality.ex`
 - `test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- `docs/work/product-data-scraping.md` under the import-price-quality evidence heading only
+- `docs/work/product-data-scraping.md` under `### Import Price Quality Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
 ## Scope
 
-- Count CJ-linked merchant products.
+- Count distinct CJ-linked merchant products so multiple CJ identities for one merchant cannot overcount joined rows.
 - Count merchant products with at least one price point and without any price point.
 - Count active and inactive merchant products.
-- Count currencies across CJ-linked merchant products, using `unknown` for nil or blank currency.
+- Count currencies across CJ-linked merchant products. Normal rows have required ISO currency; handle blank raw-row values defensively as `unknown` without adding a nil-currency fixture expectation.
 - Support a freshness threshold for latest prices, default `stale_price_hours: 168`.
 - Do not expose URLs, raw artifacts, tracking parameters, or provider payloads.
 
 ## Tasks
 
-- [ ] Add failing tests that seed CJ merchant identities, merchant products, price points, stale prices, and unrelated non-CJ merchant products.
+- [ ] Add failing tests that seed CJ merchant identities, duplicate CJ identities for one merchant, merchant products, price points, stale prices, and unrelated non-CJ merchant products.
 - [ ] Create `ProductCompare.Ingestion.CJImportPriceQuality` with `summary/1` and injectable `now` for deterministic stale-price tests.
-- [ ] Use source-scoped merchant identities to select CJ-linked merchant products.
+- [ ] Use source-scoped merchant identities to select CJ-linked merchant products and count merchant product ids distinctly.
 - [ ] Return aggregate counts only.
 - [ ] Run `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 
