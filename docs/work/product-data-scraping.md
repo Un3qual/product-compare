@@ -262,7 +262,7 @@ evidence only under their assigned heading.
 - CJ application readiness read model:
   - `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
 - CJ weekly operator runbook:
-  - `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_API_TOKEN=[^[:space:]]+|CJ_ACCOUNT_ID=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md`
+  - `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md`
     must exit 1 with no matches.
 - Final gates:
   - `mix format --check-formatted` for Elixir read-model rows
@@ -437,7 +437,7 @@ evidence only under their assigned heading.
 - Follow-up red verification:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
     - Result: failed as expected with 1 failure because
-      `latest_error_summary` included `CJ_API_TOKEN=secret` and raw GraphQL/HTTP
+      `latest_error_summary` included a CJ API token assignment and raw GraphQL/HTTP
       body text.
 - Follow-up green verification:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
