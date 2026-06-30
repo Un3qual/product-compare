@@ -6,7 +6,7 @@
 
 **Architecture:** Keep this frontend-only and reuse the existing product-detail Relay data, active-offer pagination, compare link, and offer-discovery link. Reorganize the rendered detail route into a decision-action block without changing GraphQL fields, loaders, or generated Relay artifacts.
 
-**Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
+**Tech Stack:** React Router, React, Relay-generated types, Testing Library, Vitest, Bun.
 
 **Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 

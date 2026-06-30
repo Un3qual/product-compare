@@ -6,7 +6,7 @@
 
 **Architecture:** Keep `/compare` URL-driven with repeated `slug` params and reuse the existing Relay route query, picker data, save action, and remove-link helpers. Add a compact selection tray and clearer add/remove affordances without introducing persistence outside the saved-comparison flow.
 
-**Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
+**Tech Stack:** React Router, React, Relay-generated types, Testing Library, Vitest, Bun.
 
 **Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 

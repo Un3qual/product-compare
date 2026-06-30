@@ -102,6 +102,33 @@ test("offer discovery asks users to start from browse products when productId is
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
+test("offer discovery summarizes missing product filters without reset actions", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "missingProduct",
+    filters: {
+      activeOnly: true,
+      after: null,
+      first: 6,
+      merchantId: null,
+      productId: null
+    }
+  } satisfies OfferDiscoveryLoaderData);
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("Not selected")).toBeVisible();
+  expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
+  expect(
+    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
+  ).not.toBeInTheDocument();
+  expect(
+    within(filterSummary).queryByRole("link", { name: "Reset filters" })
+  ).not.toBeInTheDocument();
+});
+
 test("offer discovery renders filter controls with existing filter values", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -148,6 +175,25 @@ test("offer discovery summarizes active filters", () => {
   expect(within(filterSummary).getByText("All offers included")).toBeVisible();
   expect(within(filterSummary).getByText("Page size")).toBeVisible();
   expect(within(filterSummary).getByText("12")).toBeVisible();
+});
+
+test("offer discovery omits merchant summary actions when no merchant filter is active", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
+  expect(within(filterSummary).getByRole("link", { name: "Reset filters" })).toHaveAttribute(
+    "href",
+    "/offers"
+  );
+  expect(
+    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
+  ).not.toBeInTheDocument();
 });
 
 test("offer discovery provides route-local filter reset links", () => {

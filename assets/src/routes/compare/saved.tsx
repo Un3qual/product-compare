@@ -280,22 +280,41 @@ function SavedComparisonSetItem({
         <h2>{savedSet.name}</h2>
         <p>{savedProductCount} in this saved comparison</p>
         <p>{savedSet.slugs.join(", ")}</p>
-        <div aria-label={`Actions for ${savedSet.name}`} role="group">
-          <p>
-            <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
-          </p>
-          <button
-            disabled={deletePending}
-            onClick={() => {
-              onDelete(savedSet.id);
-            }}
-            type="button"
-          >
-            {deletePending ? "Deleting comparison..." : "Delete comparison"}
-          </button>
-        </div>
+        <SavedComparisonSetActions
+          deletePending={deletePending}
+          onDelete={onDelete}
+          savedSet={savedSet}
+        />
       </article>
     </li>
+  );
+}
+
+function SavedComparisonSetActions({
+  deletePending,
+  onDelete,
+  savedSet
+}: {
+  deletePending: boolean;
+  onDelete: (savedComparisonSetId: string) => void;
+  savedSet: SavedComparisonSetSummary;
+}) {
+  return (
+    <fieldset>
+      <legend>Actions for {savedSet.name}</legend>
+      <p>
+        <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
+      </p>
+      <button
+        disabled={deletePending}
+        onClick={() => {
+          onDelete(savedSet.id);
+        }}
+        type="button"
+      >
+        {deletePending ? "Deleting comparison..." : "Delete comparison"}
+      </button>
+    </fieldset>
   );
 }
 

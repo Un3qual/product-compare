@@ -6,7 +6,7 @@
 
 **Architecture:** Keep this frontend-only and reuse the existing Relay browse query, route loader, page-size controls, and URL-driven pagination. Improve the product-card action hierarchy and accessibility without adding product filters, search, backend fields, or generated Relay artifacts.
 
-**Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
+**Tech Stack:** React Router, React, Relay-generated types, Testing Library, Vitest, Bun.
 
 **Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 

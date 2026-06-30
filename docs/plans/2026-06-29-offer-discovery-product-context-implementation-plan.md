@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing `merchantProducts(input:)` Relay route query and URL filter model. Add route-local filter summaries, clear/reset links, and product-selection guidance without resolving slugs, adding backend fields, or changing the GraphQL contract.
 
-**Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
+**Tech Stack:** React Router, React, Relay-generated types, Testing Library, Vitest, Bun.
 
 **Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 

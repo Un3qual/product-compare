@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import offerDiscoveryRouteQuery, {
@@ -8,6 +8,7 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import {
   offerDiscoveryLoader,
+  DEFAULT_OFFERS_PAGE_SIZE,
   type OfferDiscoveryFilters,
   type OfferDiscoveryLoaderData
 } from "./loader";
@@ -123,15 +124,17 @@ function OfferDiscoveryFilterSummary({ filters }: { filters: OfferDiscoveryFilte
     <section aria-label="Active offer filters">
       <dl>
         {offerDiscoveryFilterSummaryItems(filters).map(({ label, value }) => (
-          <div key={label}>
+          <Fragment key={label}>
             <dt>{label}</dt>
             <dd>{value}</dd>
-          </div>
+          </Fragment>
         ))}
       </dl>
-      <p>
-        <Link to="/offers">Reset filters</Link>
-      </p>
+      {hasNonDefaultOfferFilters(filters) ? (
+        <p>
+          <Link to="/offers">Reset filters</Link>
+        </p>
+      ) : null}
       {filters.merchantId ? (
         <p>
           <Link to={clearMerchantFilterPath(filters)}>Clear merchant filter</Link>
@@ -164,6 +167,16 @@ function offerDiscoveryFilterSummaryItems(filters: OfferDiscoveryFilters) {
       value: String(filters.first)
     }
   ];
+}
+
+function hasNonDefaultOfferFilters(filters: OfferDiscoveryFilters) {
+  return Boolean(
+    filters.productId ||
+      filters.merchantId ||
+      filters.after ||
+      !filters.activeOnly ||
+      filters.first !== DEFAULT_OFFERS_PAGE_SIZE
+  );
 }
 
 function clearMerchantFilterPath(filters: OfferDiscoveryFilters) {

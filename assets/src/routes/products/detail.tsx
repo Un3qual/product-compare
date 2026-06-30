@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useId } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
@@ -91,9 +91,11 @@ function ProductDecisionActions({
   productId: string;
   productSlug: string;
 }) {
+  const titleId = useId();
+
   return (
-    <section aria-labelledby="product-detail-next-steps">
-      <h2 id="product-detail-next-steps">Next steps</h2>
+    <section aria-labelledby={titleId}>
+      <h2 id={titleId}>Next steps</h2>
       <ul>
         <li>
           <Link to={`/compare?slug=${encodeURIComponent(productSlug)}`}>Compare this product</Link>

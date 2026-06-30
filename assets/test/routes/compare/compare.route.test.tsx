@@ -1108,6 +1108,7 @@ test("ready compare page renders a selected-product tray with ordered remove lin
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
   const selectedProducts = within(selectionTray).getAllByRole("listitem");
 
+  expect(within(selectionTray).getByText("3 of 3 products selected.")).toBeVisible();
   expect(selectedProducts).toHaveLength(3);
   expect(selectedProducts[0]).toHaveTextContent("Detail Product");
   expect(selectedProducts[1]).toHaveTextContent("Second Product");
@@ -1127,6 +1128,25 @@ test("ready compare page renders a selected-product tray with ordered remove lin
       name: "Remove Third Product from selection"
     })
   ).toHaveAttribute("href", "/compare?slug=detail-product&slug=second-product");
+});
+
+test("ready compare page handles an empty selected-product tray defensively", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    slugs: [],
+    productQueries: [],
+    products: []
+  });
+
+  renderCompareRoute();
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+
+  expect(within(selectionTray).getByText("0 of 3 products selected.")).toBeVisible();
+  expect(within(selectionTray).queryAllByRole("listitem")).toHaveLength(0);
+  expect(
+    within(selectionTray).queryByRole("link", { name: /Remove .+ from selection/ })
+  ).not.toBeInTheDocument();
 });
 
 test("ready compare page labels the picker as an add-another-product path", () => {

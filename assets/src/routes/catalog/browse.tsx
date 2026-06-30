@@ -9,6 +9,7 @@ import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
+type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
 
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
@@ -82,33 +83,39 @@ function BrowseProducts({
       <ul>
         {products.map((product) => (
           <li key={product.id}>
-            <article aria-label={product.name}>
-              <h2>{product.name}</h2>
-              <p>{product.slug}</p>
-              <p>{product.brand.name}</p>
-              <ul aria-label={`Decision actions for ${product.name}`}>
-                <li>
-                  <Link to={browseProductDetailPath(product.slug)}>
-                    View details for {product.name}
-                  </Link>
-                </li>
-                <li>
-                  <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
-                    Compare {product.name}
-                  </Link>
-                </li>
-                <li>
-                  <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
-                    View offers for {product.name}
-                  </Link>
-                </li>
-              </ul>
-            </article>
+            <BrowseProductCard product={product} />
           </li>
         ))}
       </ul>
       {paginationLinks}
     </>
+  );
+}
+
+function BrowseProductCard({ product }: { product: BrowseProductNode }) {
+  return (
+    <article aria-label={product.name}>
+      <h2>{product.name}</h2>
+      <p>{product.slug}</p>
+      <p>{product.brand.name}</p>
+      <ul aria-label={`Decision actions for ${product.name}`}>
+        <li>
+          <Link to={browseProductDetailPath(product.slug)}>
+            View details for {product.name}
+          </Link>
+        </li>
+        <li>
+          <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
+            Compare {product.name}
+          </Link>
+        </li>
+        <li>
+          <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
+            View offers for {product.name}
+          </Link>
+        </li>
+      </ul>
+    </article>
   );
 }
 

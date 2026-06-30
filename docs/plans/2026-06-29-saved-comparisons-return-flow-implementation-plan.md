@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing saved-comparison Relay route query, client-side filter, reopen links, and delete mutation. Improve card summaries, empty states, filtered no-match states, and return links without changing backend pagination, auth, or mutation contracts.
 
-**Tech Stack:** React Router, React, Relay generated types, Testing Library, Vitest, Bun.
+**Tech Stack:** React Router, React, Relay-generated types, Testing Library, Vitest, Bun.
 
 **Status:** done. This plan completed in the 2026-06-29 usable-product queue.
 
