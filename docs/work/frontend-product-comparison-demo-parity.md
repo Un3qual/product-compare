@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-29 after compare selection tray verification
@@ -129,6 +129,27 @@
 - Add offer and price decision-helper rows to `/compare` using bounded active-offer context.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
+
+## Active Dispatch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/src/routes/compare/product-picker.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare` supports URL-backed shared, differences-only, and
+  all-spec matrix modes while preserving save, add, remove, and selected-tray
+  behavior.
 
 ## Verification
 

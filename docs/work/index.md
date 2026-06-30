@@ -22,21 +22,76 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-29
+Updated: 2026-06-30
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
 selection, offer filter context, and saved-comparison return paths.
 
-No `ready` row is currently selected. The next coordinator pass should either
-promote the new product filtering and in-depth comparison plan set from
-`docs/plans/INDEX.md`, promote the retained CJ read-model/operator batch from
-`docs/plans/INDEX.md` and `docs/work/product-data-scraping.md`, or choose
-another product-facing row.
+The coordinator promoted the first explicitly requested parallel batch from the
+product filtering and in-depth comparison plan set. The selected rows have
+disjoint write scopes: backend filter metadata/facets and frontend compare
+matrix modes. The catalog faceted-filtering UI remains dependent on the backend
+metadata contract, and the deeper compare metadata/offer-helper rows remain
+sequenced behind matrix modes because they share compare route files.
 
 ## Ready Work
 
-No ready rows are currently selected.
+### Product Filter Metadata and Facets
+
+- Status: ready
+- Lane: Frontend catalog browse
+- Work doc: `docs/work/frontend-catalog-browse.md`
+- Active plan:
+  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
+- Next action: add the backend and GraphQL `productFilterMetadata(filters:)`
+  metadata/facet contract while preserving existing `products(filters:)`
+  behavior.
+- Owned paths:
+  - `lib/product_compare/catalog/filter_metadata.ex`
+  - `test/product_compare/catalog/filter_metadata_test.exs`
+  - `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `lib/product_compare/catalog.ex`
+  - `lib/product_compare/catalog/filtering.ex`
+  - `lib/product_compare/specs.ex`
+  - `lib/product_compare/taxonomy.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `mix test test/product_compare/catalog/filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+- Exit condition: a browser client can ask GraphQL for display-safe filter
+  metadata and facet counts using the same filter input shape that
+  `products(filters:)` already accepts.
+
+### Compare Matrix Modes
+
+- Status: ready
+- Lane: Frontend product comparison demo parity
+- Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
+- Active plan:
+  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`
+- Next action: add URL-backed `specs=shared|differences|all` comparison matrix
+  modes using existing `Product.currentAttributes` display values.
+- Owned paths:
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/src/routes/compare/product-picker.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare` can show shared specs, all specs, and only
+  meaningful differences through stable URL state.
 
 ## Just Completed
 

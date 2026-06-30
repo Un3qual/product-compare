@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-29 (working tree)
@@ -136,6 +136,32 @@
     show filtered empty states.
   - This UI row depends on the metadata/facet contract and should not hardcode
     environment-specific IDs.
+
+## Active Dispatch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`.
+- Owned paths:
+  - `lib/product_compare/catalog/filter_metadata.ex`
+  - `test/product_compare/catalog/filter_metadata_test.exs`
+  - `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `lib/product_compare/catalog.ex`
+  - `lib/product_compare/catalog/filtering.ex`
+  - `lib/product_compare/specs.ex`
+  - `lib/product_compare/taxonomy.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `mix test test/product_compare/catalog/filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+- Exit condition: GraphQL exposes display-safe filter metadata/facet counts for
+  the same filter input accepted by `products(filters:)`.
 
 ## Verification Commands
 
