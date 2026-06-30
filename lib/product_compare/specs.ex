@@ -395,7 +395,7 @@ defmodule ProductCompare.Specs do
             ],
             select: {
               unit.dimension_id,
-              fragment("NULLIF(COALESCE(?, ?), '')", unit.symbol, unit.code)
+              fragment("COALESCE(NULLIF(?, ''), NULLIF(?, ''))", unit.symbol, unit.code)
             }
         )
         |> Enum.reduce(%{}, fn {dimension_id, symbol}, acc ->

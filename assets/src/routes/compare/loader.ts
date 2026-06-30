@@ -16,6 +16,7 @@ import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 20;
+export const COMPARE_OFFER_CONTEXT_MAX_PAGES = 50;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 
@@ -151,11 +152,18 @@ export async function compareLoader({
     };
   }
   const presentProducts = products.filter(isPresentProduct);
-  const offerContexts = await fetchOfferContextsByProductId(
-    environment,
-    presentProducts,
-    request.signal
-  );
+  let offerContexts: CompareOfferContextsByProductId;
+
+  try {
+    offerContexts = await fetchOfferContextsByProductId(
+      environment,
+      presentProducts,
+      request.signal
+    );
+  } catch (error) {
+    disposeFetchedProductQueries(fetchedProductQueries);
+    throw error;
+  }
 
   return {
     status: "ready",
@@ -228,7 +236,15 @@ async function fetchOfferContextsByProductId(
   const offerContextResults = await Promise.allSettled(
     products.map((product) => fetchOfferContextPages(environment, product.id, signal))
   );
+  const abortedResult = offerContextResults.find(
+    (result) => result.status === "rejected" && isRouteAbortRejection(result.reason, signal)
+  );
   const offerContexts: CompareOfferContextsByProductId = {};
+
+  if (abortedResult?.status === "rejected") {
+    disposeFulfilledOfferContextQueries(offerContextResults);
+    throw abortedResult.reason;
+  }
 
   products.forEach((product, index) => {
     const result = offerContextResults[index];
@@ -278,6 +294,11 @@ async function fetchOfferContextPages(
       pages.push(page);
 
       if (!hasNextPage || !endCursor || seenEndCursors.has(endCursor)) {
+        after = null;
+        continue;
+      }
+
+      if (pages.length >= COMPARE_OFFER_CONTEXT_MAX_PAGES) {
         after = null;
         continue;
       }
@@ -334,14 +355,49 @@ function disposeFetchedOfferContextQueries(queries: FetchedCompareOfferContextQu
   }
 }
 
+function disposeFulfilledOfferContextQueries(
+  results: Array<PromiseSettledResult<FetchedCompareOfferContextQuery[]>>
+) {
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      disposeFetchedOfferContextQueries(result.value);
+    }
+  }
+}
+
+function isRouteAbortRejection(reason: unknown, signal: AbortSignal) {
+  return signal.aborted || isAbortError(reason);
+}
+
+function isAbortError(reason: unknown) {
+  return (
+    typeof reason === "object" &&
+    reason !== null &&
+    "name" in reason &&
+    (reason as { name?: unknown }).name === "AbortError"
+  );
+}
+
 function lowestCurrentPrice(
   offerNodes: CompareOfferContextNode[]
 ): CompareBestCurrentPriceSummary | null {
-  const bestPrice = offerNodes.reduce(selectLowerCurrentPrice, null);
+  const candidates = offerNodes.flatMap((offer) => {
+    const candidate = currentPriceCandidate(offer);
 
-  if (!bestPrice) {
+    return candidate ? [candidate] : [];
+  });
+
+  if (candidates.length === 0) {
     return null;
   }
+
+  if (new Set(candidates.map((candidate) => candidate.currency)).size > 1) {
+    return null;
+  }
+
+  const bestPrice = candidates.reduce((bestCandidate, candidate) =>
+    candidate.numericPrice < bestCandidate.numericPrice ? candidate : bestCandidate
+  );
 
   return {
     currency: bestPrice.currency,
@@ -353,19 +409,6 @@ function lowestCurrentPrice(
 type CompareBestCurrentPriceCandidate = CompareBestCurrentPriceSummary & {
   numericPrice: number;
 };
-
-function selectLowerCurrentPrice(
-  bestPrice: CompareBestCurrentPriceCandidate | null,
-  offer: CompareOfferContextNode
-) {
-  const candidate = currentPriceCandidate(offer);
-
-  if (!candidate) {
-    return bestPrice;
-  }
-
-  return !bestPrice || candidate.numericPrice < bestPrice.numericPrice ? candidate : bestPrice;
-}
 
 function currentPriceCandidate(offer: CompareOfferContextNode) {
   const latestPrice = offer.latestPrice;

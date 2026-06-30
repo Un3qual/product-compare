@@ -1089,6 +1089,67 @@ test("renders product specifications grouped by compare group label", () => {
   expect(specSection.getByText("2026")).toBeVisible();
 });
 
+test("renders product specification group labels case-insensitively", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    currentAttributes: [
+      {
+        code: "refresh-rate",
+        displayName: "Refresh rate",
+        dataType: "numeric",
+        valueText: "144 Hz",
+        groupLabel: "Performance"
+      },
+      {
+        code: "response-time",
+        displayName: "Response time",
+        dataType: "numeric",
+        valueText: "1 ms",
+        groupLabel: "performance"
+      },
+      {
+        code: "release-year",
+        displayName: "Release year",
+        dataType: "int",
+        valueText: "2026",
+        groupLabel: " "
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const specifications = screen
+    .getByRole("heading", { name: "Specifications" })
+    .closest("section");
+
+  expect(specifications).not.toBeNull();
+  const specSection = within(specifications as HTMLElement);
+  const performanceGroup = specSection
+    .getByRole("heading", { name: "Performance" })
+    .closest("section");
+
+  expect(performanceGroup).not.toBeNull();
+  expect(within(performanceGroup as HTMLElement).getByText("Refresh rate")).toBeVisible();
+  expect(within(performanceGroup as HTMLElement).getByText("Response time")).toBeVisible();
+  expect(specSection.queryByRole("heading", { name: "performance" })).not.toBeInTheDocument();
+  expect(specSection.getByText("Release year")).toBeVisible();
+  expect(specSection.getByText("2026")).toBeVisible();
+});
+
 test("links from product detail to compare with the current product selected", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

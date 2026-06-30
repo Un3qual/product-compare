@@ -5,6 +5,7 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
+  alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
 
@@ -312,6 +313,45 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
                option_by_id(metadata.type_options, monitor_taxon.id)
     end
 
+    test "treats multiple selected enum options for one attribute as alternatives" do
+      moderator = AccountsFixtures.user_fixture()
+
+      {panel_attribute, oled_option, ips_option, _tn_option} =
+        enum_attribute_with_options_fixture()
+
+      oled_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-enum-or-oled")})
+
+      ips_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-enum-or-ips")})
+
+      oled_product
+      |> accept_claim!(panel_attribute, %{enum_option_id: oled_option.id}, moderator)
+      |> select_current_claim!(oled_product, panel_attribute, moderator)
+
+      ips_product
+      |> accept_claim!(panel_attribute, %{enum_option_id: ips_option.id}, moderator)
+      |> select_current_claim!(ips_product, panel_attribute, moderator)
+
+      metadata =
+        Catalog.product_filter_metadata(%{
+          enums: [
+            %{attribute_id: panel_attribute.id, enum_option_id: oled_option.id},
+            %{attribute_id: panel_attribute.id, enum_option_id: ips_option.id}
+          ]
+        })
+
+      enum_filter = Enum.find(metadata.enum_filters, &(&1.attribute_id == panel_attribute.id))
+
+      assert metadata.result_count == 2
+
+      assert %{count: 1, selected: true, disabled: false} =
+               option_by_id(enum_filter.options, oled_option.id)
+
+      assert %{count: 1, selected: true, disabled: false} =
+               option_by_id(enum_filter.options, ips_option.id)
+    end
+
     test "labels numeric base ranges with the base unit symbol" do
       moderator = AccountsFixtures.user_fixture()
       dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("filter-meta-length-dim")})
@@ -357,6 +397,68 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
                %{
                  attribute_id: attribute_id,
                  unit_symbol: "mm",
+                 min: min,
+                 max: max
+               }
+             ] = Enum.filter(metadata.numeric_filters, &(&1.attribute_id == attribute.id))
+
+      assert attribute_id == attribute.id
+      assert Decimal.equal?(min, Decimal.new("685.8"))
+      assert Decimal.equal?(max, Decimal.new("685.8"))
+    end
+
+    test "labels numeric base ranges with the base unit code when symbol is empty" do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("filter-meta-code-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("filter-meta-code-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      base_unit_code = unique_code("filter-meta-code-mm")
+
+      base_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: base_unit_code,
+          symbol: "mm",
+          multiplier_to_base: Decimal.new("1"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      base_unit
+      |> Ecto.Changeset.change(symbol: "")
+      |> Repo.update!()
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("filter-meta-code-size"),
+          display_name: "Size",
+          data_type: :numeric,
+          dimension_id: dimension.id,
+          is_filterable: true
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-code-product")})
+
+      product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, attribute, moderator)
+
+      metadata = Catalog.product_filter_metadata(%{})
+
+      assert [
+               %{
+                 attribute_id: attribute_id,
+                 unit_symbol: ^base_unit_code,
                  min: min,
                  max: max
                }

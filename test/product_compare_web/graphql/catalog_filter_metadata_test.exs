@@ -232,6 +232,71 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
              } in enum_options
     end
 
+    test "treats multiple selected enum options for one attribute as alternatives", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      {panel_attribute, oled_option, ips_option} = enum_attribute_with_options_fixture()
+
+      oled_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("gql-filter-meta-enum-or-oled")})
+
+      ips_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("gql-filter-meta-enum-or-ips")})
+
+      oled_product
+      |> accept_claim!(panel_attribute, %{enum_option_id: oled_option.id}, moderator)
+      |> select_current_claim!(oled_product, panel_attribute, moderator)
+
+      ips_product
+      |> accept_claim!(panel_attribute, %{enum_option_id: ips_option.id}, moderator)
+      |> select_current_claim!(ips_product, panel_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "productFilterMetadata" => %{
+                   "resultCount" => 2,
+                   "enumFilters" => [
+                     %{
+                       "attributeId" => panel_attribute_id,
+                       "options" => enum_options
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, product_filter_metadata_query(), %{
+                 "filters" => %{
+                   "enums" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, panel_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, oled_option.id)
+                     },
+                     %{
+                       "attributeId" => relay_id(:attribute, panel_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, ips_option.id)
+                     }
+                   ]
+                 }
+               })
+
+      assert panel_attribute_id == relay_id(:attribute, panel_attribute.id)
+
+      assert %{
+               "id" => relay_id(:enum_option, oled_option.id),
+               "label" => "OLED",
+               "count" => 1,
+               "selected" => true,
+               "disabled" => false
+             } in enum_options
+
+      assert %{
+               "id" => relay_id(:enum_option, ips_option.id),
+               "label" => "IPS",
+               "count" => 1,
+               "selected" => true,
+               "disabled" => false
+             } in enum_options
+    end
+
     test "rejects invalid filter metadata filters without leaking internals", %{conn: conn} do
       {numeric_attribute, _unit} = numeric_attribute_with_unit_fixture()
 

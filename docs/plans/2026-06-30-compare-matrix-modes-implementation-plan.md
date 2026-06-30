@@ -8,7 +8,7 @@
 
 **Tech Stack:** React Router, React, Relay-generated types, TypeScript, Vitest, Testing Library, Bun.
 
-**Status:** planned product-facing follow-up.
+**Status:** completed historical work. Implementation and verification are recorded in `docs/work/frontend-product-comparison-demo-parity.md`.
 
 ---
 
@@ -45,14 +45,14 @@ offer queries in this row.
 
 ## Tasks
 
-- [ ] Add failing tests for parsing `specs=all`, `specs=differences`, default mode, and invalid-mode fallback in `compareLoader`.
-- [ ] Add `CompareSpecMode` and `compareSpecModeFromUrl` to `assets/src/routes/compare/loader.ts`; include `specMode` in ready, empty, too-many, and not-found loader states.
-- [ ] Update `buildComparePathFromSlugs` and `buildComparePathAfterRemovingSlugIndex` to accept `{specMode}` and preserve it when it is not `shared`.
-- [ ] Add a small `CompareSpecModeControls` component in `index.tsx` with links for Shared, Differences, and All.
-- [ ] Update product picker append links to preserve `specs`.
-- [ ] Replace `SharedAttributeMatrix` with a mode-aware `CompareSpecificationMatrix`.
-- [ ] Add tests for all-spec union rows, missing cells, differences-only rows, no-differences empty state, and preserved mode in remove/add links.
-- [ ] Update lane evidence in `docs/work/frontend-product-comparison-demo-parity.md`.
+- [x] Add failing tests for parsing `specs=all`, `specs=differences`, default mode, and invalid-mode fallback in `compareLoader`.
+- [x] Add `CompareSpecMode` and `compareSpecModeFromUrl` to `assets/src/routes/compare/loader.ts`; include `specMode` in ready, empty, too-many, and not-found loader states.
+- [x] Update `buildComparePathFromSlugs` and `buildComparePathAfterRemovingSlugIndex` to accept `{specMode}` and preserve it when it is not `shared`.
+- [x] Add a small `CompareSpecModeControls` component in `index.tsx` with links for Shared, Differences, and All.
+- [x] Update product picker append links to preserve `specs`.
+- [x] Replace `SharedAttributeMatrix` with a mode-aware `CompareSpecificationMatrix`.
+- [x] Add tests for all-spec union rows, missing cells, differences-only rows, no-differences empty state, and preserved mode in remove/add links.
+- [x] Update lane evidence in `docs/work/frontend-product-comparison-demo-parity.md`.
 
 ## Verification
 

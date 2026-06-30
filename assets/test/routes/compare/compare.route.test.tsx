@@ -859,6 +859,128 @@ test("compare loader summarizes paginated offer context for each selected produc
   );
 });
 
+test("compare loader truncates offer-context pagination at a hard page limit", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+  const expectedPageLimit = 50;
+  let offerPageCount = 0;
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockImplementation((_environment, _query, variables) => {
+      offerPageCount += 1;
+
+      if (offerPageCount > expectedPageLimit) {
+        throw new Error("offer context page cap was not enforced");
+      }
+
+      const expectedAfter =
+        offerPageCount === 1 ? null : `offer-context-page-${offerPageCount - 1}`;
+      const { after } = variables as { after: string | null };
+      const connection = buildOfferContextConnection({
+        hasNextPage: true,
+        offers: [
+          {
+            id: `merchant-product-${offerPageCount}`,
+            currency: "USD",
+            merchant: {
+              id: `merchant-${offerPageCount}`,
+              name: `Merchant ${offerPageCount}`
+            },
+            latestPrice: null
+          }
+        ]
+      });
+
+      expect(after).toBe(expectedAfter);
+
+      return Promise.resolve(
+        buildFetchedOfferContextQuery(
+          DETAIL_PRODUCT.id,
+          {
+            ...connection,
+            pageInfo: {
+              ...connection.pageInfo,
+              endCursor: `offer-context-page-${offerPageCount}`
+            }
+          },
+          after
+        )
+      );
+    });
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        status: "available",
+        activeOfferCount: expectedPageLimit,
+        hasMoreActiveOffers: true
+      }
+    }
+  });
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(expectedPageLimit + 1);
+});
+
+test("compare loader does not choose a best current price across mixed currencies", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(
+        DETAIL_PRODUCT.id,
+        buildOfferContextConnection({
+          offers: [
+            {
+              id: "merchant-product-usd",
+              currency: "USD",
+              merchant: {
+                id: "merchant-usd",
+                name: "US Shop"
+              },
+              latestPrice: {
+                id: "price-usd",
+                price: "199.99",
+                observedAt: "2026-06-29T12:00:00Z"
+              }
+            },
+            {
+              id: "merchant-product-eur",
+              currency: "EUR",
+              merchant: {
+                id: "merchant-eur",
+                name: "EU Shop"
+              },
+              latestPrice: {
+                id: "price-eur",
+                price: "149.99",
+                observedAt: "2026-06-29T13:00:00Z"
+              }
+            }
+          ]
+        })
+      )
+    );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        status: "available",
+        activeOfferCount: 2,
+        bestCurrentPrice: null,
+        latestPriceObservedAt: "2026-06-29T13:00:00Z"
+      }
+    }
+  });
+});
+
 test("compare loader keeps product specs when one offer-context query fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
@@ -910,6 +1032,48 @@ test("compare loader keeps product specs when one offer-context query fails", as
       [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id)
     }
   });
+});
+
+test("compare loader rethrows aborted offer-context fetches", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+  const abortError = new DOMException("The operation was aborted.", "AbortError");
+  const fetchedDetailOffers = buildFetchedOfferContextQuery(
+    DETAIL_PRODUCT.id,
+    buildOfferContextConnection({ offers: [] })
+  );
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(fetchedDetailOffers)
+    .mockRejectedValueOnce(abortError);
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).rejects.toBe(abortError);
+  expect(fetchedDetailOffers.dispose).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader rethrows offer-context failures when the route signal is aborted", async () => {
+  const controller = new AbortController();
+  const environment = createRelayEnvironment();
+  const request = buildAbortableRequest(
+    "https://app.example.com/compare?slug=detail-product",
+    controller.signal
+  );
+  const abortedFetchError = new Error("route request was aborted");
+
+  controller.abort();
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockRejectedValueOnce(abortedFetchError);
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).rejects.toBe(abortedFetchError);
 });
 
 test("compare loader forwards the route abort signal to each Relay preload", async () => {
@@ -2130,6 +2294,51 @@ test("ready compare differences compare typed numeric and boolean values before 
   expect(within(matrix).getByText("Panel type")).toBeVisible();
   expect(within(matrix).getByText("IPS")).toBeVisible();
   expect(within(matrix).getByText("OLED")).toBeVisible();
+});
+
+test("ready compare differences include numeric rows when units differ", () => {
+  const detailProductAttributes = [
+    {
+      code: "depth",
+      displayName: "Depth",
+      valueText: "1 in",
+      numericValue: "1.0",
+      unitSymbol: "in"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "depth",
+      displayName: "Depth",
+      valueText: "1 cm",
+      numericValue: "1",
+      unitSymbol: "cm"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Different specifications" });
+
+  expect(within(matrix).getByText("Depth")).toBeVisible();
+  expect(within(matrix).getByText("1 in")).toBeVisible();
+  expect(within(matrix).getByText("1 cm")).toBeVisible();
 });
 
 test("ready compare page renders an empty differences state when specifications match", () => {

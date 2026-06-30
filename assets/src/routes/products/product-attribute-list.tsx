@@ -62,7 +62,13 @@ function AttributeDefinitionList({
 }
 
 function splitAttributesByGroupLabel(attributes: ReadonlyArray<ProductAttributeListItem>) {
-  const groups = new Map<string, ProductAttributeListItem[]>();
+  const groups = new Map<
+    string,
+    {
+      label: string;
+      attributes: ProductAttributeListItem[];
+    }
+  >();
   const ungroupedAttributes: ProductAttributeListItem[] = [];
 
   for (const attribute of attributes) {
@@ -73,16 +79,21 @@ function splitAttributesByGroupLabel(attributes: ReadonlyArray<ProductAttributeL
       continue;
     }
 
-    const groupAttributes = groups.get(label) ?? [];
-    groupAttributes.push(attribute);
-    groups.set(label, groupAttributes);
+    const groupKey = normalizedGroupLabelKey(label);
+    const group = groups.get(groupKey);
+
+    if (group) {
+      group.attributes.push(attribute);
+    } else {
+      groups.set(groupKey, {
+        label,
+        attributes: [attribute]
+      });
+    }
   }
 
   return {
-    groupedAttributes: Array.from(groups, ([label, groupAttributes]) => ({
-      label,
-      attributes: groupAttributes
-    })),
+    groupedAttributes: Array.from(groups.values()),
     ungroupedAttributes
   };
 }
@@ -91,4 +102,8 @@ function normalizedGroupLabel(groupLabel: string | null | undefined) {
   const trimmedLabel = groupLabel?.trim();
 
   return trimmedLabel ? trimmedLabel : null;
+}
+
+function normalizedGroupLabelKey(groupLabel: string) {
+  return groupLabel.toLowerCase();
 }

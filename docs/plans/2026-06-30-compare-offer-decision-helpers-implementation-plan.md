@@ -8,7 +8,7 @@
 
 **Tech Stack:** React Router, React, Relay, TypeScript, Vitest, Testing Library, Bun, existing GraphQL pricing contract.
 
-**Status:** planned product-facing follow-up. Can run after matrix modes; does not require backend schema changes unless pricing query tests reveal a missing field.
+**Status:** completed historical work. Implementation and verification are recorded in `docs/work/frontend-product-comparison-demo-parity.md`.
 
 ---
 
@@ -103,14 +103,14 @@ that product and continue rendering specs for every selected product.
 
 ## Tasks
 
-- [ ] Add failing tests for successful decision rows, cheapest price selection, coupon availability, more-offers signal, price recency, and per-product offer-link destinations.
-- [ ] Add failing tests for one rejected offer-context query while product specs still render.
-- [ ] Create `CompareOfferContextQuery.ts` and run Relay generation.
-- [ ] Update `compareLoader` to fetch offer context after product IDs are known. Use `Promise.allSettled` and do not throw the whole route when an offer-context query fails.
-- [ ] Add a typed `CompareOfferContextSummary` loader field keyed by product ID.
-- [ ] Render `DecisionSummary` above `CompareSpecificationMatrix`.
-- [ ] Keep save, add, remove, and spec-mode behavior unchanged.
-- [ ] Update lane evidence in `docs/work/frontend-product-comparison-demo-parity.md`.
+- [x] Add failing tests for successful decision rows, cheapest price selection, coupon availability, more-offers signal, price recency, and per-product offer-link destinations.
+- [x] Add failing tests for one rejected offer-context query while product specs still render.
+- [x] Create `CompareOfferContextQuery.ts` and run Relay generation.
+- [x] Update `compareLoader` to fetch offer context after product IDs are known. Use `Promise.allSettled` and do not throw the whole route when an offer-context query fails.
+- [x] Add a typed `CompareOfferContextSummary` loader field keyed by product ID.
+- [x] Render `DecisionSummary` above `CompareSpecificationMatrix`.
+- [x] Keep save, add, remove, and spec-mode behavior unchanged.
+- [x] Update lane evidence in `docs/work/frontend-product-comparison-demo-parity.md`.
 
 ## Verification
 

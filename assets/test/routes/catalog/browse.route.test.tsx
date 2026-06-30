@@ -788,6 +788,7 @@ test("renders metadata-backed catalog filter controls", () => {
 
   expect(within(filterForm).getByRole("combobox", { name: "Product type" })).toHaveValue("");
   expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).not.toBeChecked();
+  expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).toBeDisabled();
   expect(within(filterForm).getByRole("checkbox", { name: "Gaming (4)" })).not.toBeChecked();
   expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
   expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");
@@ -887,6 +888,9 @@ test("renders selected catalog filters with an active summary and clear link", (
     "type-laptops"
   );
   expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).toBeChecked();
+  expect(
+    within(filterForm).getByRole("checkbox", { name: "Include subcategories" })
+  ).not.toBeDisabled();
   expect(within(filterForm).getByRole("checkbox", { name: "Gaming (4)" })).toBeChecked();
   expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("120");
   expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("240");
@@ -904,6 +908,41 @@ test("renders selected catalog filters with an active summary and clear link", (
     "href",
     "/products?first=24"
   );
+});
+
+test("clears the descendant filter from submitted data when the product type is cleared", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        typeTaxonId: "type-laptops",
+        includeTypeDescendants: true,
+        useCaseTaxonIds: [],
+        numeric: [],
+        booleans: [],
+        enums: []
+      }
+    }),
+    metadataData: buildProductFilterMetadataResponse({ selected: true })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const productTypeSelect = within(filterForm).getByRole("combobox", {
+    name: "Product type"
+  });
+  const includeDescendantsCheckbox = within(filterForm).getByRole("checkbox", {
+    name: "Include subcategories"
+  });
+
+  expect(productTypeSelect).toHaveValue("type-laptops");
+  expect(includeDescendantsCheckbox).toBeChecked();
+  expect(includeDescendantsCheckbox).not.toBeDisabled();
+
+  fireEvent.change(productTypeSelect, { target: { value: "" } });
+
+  expect(productTypeSelect).toHaveValue("");
+  expect(includeDescendantsCheckbox).not.toBeChecked();
+  expect(includeDescendantsCheckbox).toBeDisabled();
+  expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
 });
 
 test("refreshes filter controls when loader filters clear on the same browse route", () => {
@@ -1035,6 +1074,9 @@ test("refreshes filter controls when loader filters clear on the same browse rou
   expect(
     within(clearedFilterForm).getByRole("checkbox", { name: "Include subcategories" })
   ).not.toBeChecked();
+  expect(
+    within(clearedFilterForm).getByRole("checkbox", { name: "Include subcategories" })
+  ).toBeDisabled();
   expect(
     within(clearedFilterForm).getByRole("checkbox", { name: "Gaming (4)" })
   ).not.toBeChecked();
@@ -1716,6 +1758,48 @@ test("renders a filtered empty-state message when active filters have no matches
   expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
     "href",
     "/products?first=12"
+  );
+});
+
+test("renders the recoverable empty-state message when a cursor page is empty but filters still match products", () => {
+  const activeFilters = {
+    typeTaxonId: "type-laptops",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: [],
+    numeric: [],
+    booleans: [],
+    enums: []
+  };
+  const productFiltersInput = {
+    primaryTypeTaxonId: "type-laptops",
+    includeTypeDescendants: true
+  };
+
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?typeTaxonId=type-laptops&includeTypeDescendants=1&after=stale-cursor"],
+    loaderData: readyBrowseLoaderData({
+      filters: activeFilters,
+      query: browseQueryDescriptorFromVariables({
+        first: 12,
+        after: "stale-cursor",
+        filters: productFiltersInput
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: productFiltersInput
+      })
+    }),
+    metadataData: buildProductFilterMetadataResponse({
+      resultCount: 3,
+      selected: true
+    }),
+    productData: buildBrowseProductsResponse()
+  });
+
+  expect(screen.getByText("No products available yet.")).toBeInTheDocument();
+  expect(screen.queryByText("No products match these filters.")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute(
+    "href",
+    "/products?first=12&typeTaxonId=type-laptops&includeTypeDescendants=1"
   );
 });
 

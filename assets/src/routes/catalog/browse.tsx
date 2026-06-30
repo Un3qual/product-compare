@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
@@ -107,6 +107,7 @@ function BrowseProducts({
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
+  const hasFilteredEmptyState = hasActiveFilters && filterMetadata.resultCount === 0;
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
@@ -141,7 +142,11 @@ function BrowseProducts({
     return (
       <section>
         {filterControls}
-        <p>{hasActiveFilters ? "No products match these filters." : "No products available yet."}</p>
+        <p>
+          {hasFilteredEmptyState
+            ? "No products match these filters."
+            : "No products available yet."}
+        </p>
         {paginationLinks}
       </section>
     );
@@ -198,11 +203,32 @@ function CatalogFilterForm({
   metadata: ProductFilterMetadata;
   pageSize: number;
 }) {
+  const [selectedTypeTaxonId, setSelectedTypeTaxonId] = useState(filters.typeTaxonId ?? "");
+  const [includeTypeDescendants, setIncludeTypeDescendants] = useState(
+    Boolean(filters.typeTaxonId && filters.includeTypeDescendants)
+  );
+
+  function handleTypeTaxonIdChange(typeTaxonId: string) {
+    setSelectedTypeTaxonId(typeTaxonId);
+
+    if (typeTaxonId === "") {
+      setIncludeTypeDescendants(false);
+    }
+  }
+
   return (
     <form method="get" action="/products" aria-label="Filter products">
       <PageSizeField pageSize={pageSize} />
-      <ProductTypeField filters={filters} metadata={metadata} />
-      <IncludeDescendantsCheckbox filters={filters} />
+      <ProductTypeField
+        metadata={metadata}
+        selectedTypeTaxonId={selectedTypeTaxonId}
+        onTypeTaxonIdChange={handleTypeTaxonIdChange}
+      />
+      <IncludeDescendantsCheckbox
+        includeTypeDescendants={includeTypeDescendants}
+        selectedTypeTaxonId={selectedTypeTaxonId}
+        onIncludeTypeDescendantsChange={setIncludeTypeDescendants}
+      />
       <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
       <NumericFiltersFieldset filters={filters} metadata={metadata} />
       <BooleanFiltersFieldset filters={filters} metadata={metadata} />
@@ -228,16 +254,22 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
 }
 
 function ProductTypeField({
-  filters,
-  metadata
+  metadata,
+  selectedTypeTaxonId,
+  onTypeTaxonIdChange
 }: {
-  filters: CatalogFilters;
   metadata: ProductFilterMetadata;
+  selectedTypeTaxonId: string;
+  onTypeTaxonIdChange: (typeTaxonId: string) => void;
 }) {
   return (
     <label>
       Product type
-      <select name="typeTaxonId" defaultValue={filters.typeTaxonId ?? ""}>
+      <select
+        name="typeTaxonId"
+        value={selectedTypeTaxonId}
+        onChange={(event) => onTypeTaxonIdChange(event.currentTarget.value)}
+      >
         <option value="">All product types</option>
         {metadata.typeOptions.map((option) => (
           <option key={option.id} value={option.id} disabled={option.disabled && !option.selected}>
@@ -249,14 +281,26 @@ function ProductTypeField({
   );
 }
 
-function IncludeDescendantsCheckbox({ filters }: { filters: CatalogFilters }) {
+function IncludeDescendantsCheckbox({
+  includeTypeDescendants,
+  selectedTypeTaxonId,
+  onIncludeTypeDescendantsChange
+}: {
+  includeTypeDescendants: boolean;
+  selectedTypeTaxonId: string;
+  onIncludeTypeDescendantsChange: (includeTypeDescendants: boolean) => void;
+}) {
+  const hasSelectedType = selectedTypeTaxonId !== "";
+
   return (
     <label>
       <input
         type="checkbox"
         name="includeTypeDescendants"
         value="1"
-        defaultChecked={filters.includeTypeDescendants === true}
+        checked={hasSelectedType && includeTypeDescendants}
+        disabled={!hasSelectedType}
+        onChange={(event) => onIncludeTypeDescendantsChange(event.currentTarget.checked)}
       />
       Include subcategories
     </label>

@@ -42,12 +42,12 @@
 
 ## Active Gap
 
-- Product filtering has backend `products(filters:)` support for typed
-  attribute and taxon filters, but `/products` does not yet expose faceted
-  controls or filter metadata.
-- Product comparison has URL-driven selection, saved sets, and a shared current
-  attribute matrix, but not differences/all-spec modes, typed compare metadata,
-  grouped attributes, or offer/price decision-helper rows.
+- Product filtering now has backend `products(filters:)` support, display-safe
+  GraphQL filter metadata/facet counts, and `/products` faceted controls.
+- Product comparison now has URL-driven selection, saved sets, shared,
+  differences, and all-spec matrices, typed/grouped attribute metadata, and
+  bounded offer/price decision-helper rows. Persistent compare tray work remains
+  a later product-facing candidate.
 - CJ/Awin source-field mapping remains deferred pending additional account docs or sample payloads beyond the validated first CJ manual connector path.
 - Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, persisted merchant feed candidates, and durable candidate review status.
 
@@ -56,10 +56,12 @@
 - The 2026-06-29 usable-product batch completed the shopper decision loop
   improvements across browse product cards, product-detail next actions, compare
   selection clarity, offer filter context, and saved-comparison return paths.
-- The 2026-06-30 product filtering and in-depth comparison plan set defines the
-  next product-facing candidate path: filter metadata/facets, catalog faceted
-  filtering UI, compare matrix modes, compare attribute metadata, and compare
-  offer decision helpers.
+- The 2026-06-30 product filtering and in-depth comparison plan set is complete:
+  filter metadata/facets, catalog faceted filtering UI, compare matrix modes,
+  compare attribute metadata, and compare offer decision helpers.
+- The next coordinator pass should promote the retained CJ read-model/operator
+  batch, persistent compare tray work, or another product-facing row from
+  `docs/work/index.md`.
 - The retained CJ read-model and weekly operator-runbook plans remain tracked in
   `docs/work/product-data-scraping.md` and `docs/plans/INDEX.md` for the next
   ingestion-operator follow-up after product-facing progress.

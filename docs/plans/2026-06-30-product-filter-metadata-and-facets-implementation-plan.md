@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Phoenix, Absinthe GraphQL, Ecto, Postgres, ExUnit.
 
-**Status:** planned product-facing follow-up. Not currently a live `ready` row.
+**Status:** completed historical work. Implementation and verification are recorded in `docs/work/frontend-catalog-browse.md`.
 
 ---
 
@@ -108,16 +108,16 @@ can show available choices without hiding the current group's alternatives.
 
 ## Tasks
 
-- [ ] Add focused catalog metadata tests for result count, type/use-case options, filterable attribute discovery, numeric min/max, boolean counts, enum option counts, selected state, and disabled zero-count options.
-- [ ] Add `ProductCompare.Catalog.FilterMetadata` with pure query builders for base result queries and per-facet aggregates.
-- [ ] Add helper functions in `ProductCompare.Specs` and `ProductCompare.Taxonomy` only where the metadata module needs stable, reusable read models.
-- [ ] Refactor `ProductCompare.Catalog.Filtering` only enough to support counting with one filter group omitted. Preserve the current `product_attribute_current -> product_attribute_claims` query shape for active product filters.
-- [ ] Add `Catalog.product_filter_metadata/1` as the public context function returning maps ready for GraphQL formatting.
-- [ ] Add GraphQL object types and `CatalogResolver.product_filter_metadata/3`.
-- [ ] Extend GraphQL tests for the new query and for invalid filter validation.
-- [ ] Harden validation so numeric filters require filterable numeric attributes, boolean filters require filterable boolean attributes, enum filters require matching filterable enum attributes and enum options, and numeric min cannot exceed max.
-- [ ] Preserve current `products(filters:)` behavior for valid existing inputs.
-- [ ] Update `docs/work/frontend-catalog-browse.md` with implementation evidence when this row is executed.
+- [x] Add focused catalog metadata tests for result count, type/use-case options, filterable attribute discovery, numeric min/max, boolean counts, enum option counts, selected state, and disabled zero-count options.
+- [x] Add `ProductCompare.Catalog.FilterMetadata` with pure query builders for base result queries and per-facet aggregates.
+- [x] Add helper functions in `ProductCompare.Specs` and `ProductCompare.Taxonomy` only where the metadata module needs stable, reusable read models.
+- [x] Refactor `ProductCompare.Catalog.Filtering` only enough to support counting with one filter group omitted. Preserve the current `product_attribute_current -> product_attribute_claims` query shape for active product filters.
+- [x] Add `Catalog.product_filter_metadata/1` as the public context function returning maps ready for GraphQL formatting.
+- [x] Add GraphQL object types and `CatalogResolver.product_filter_metadata/3`.
+- [x] Extend GraphQL tests for the new query and for invalid filter validation.
+- [x] Harden validation so numeric filters require filterable numeric attributes, boolean filters require filterable boolean attributes, enum filters require matching filterable enum attributes and enum options, and numeric min cannot exceed max.
+- [x] Preserve current `products(filters:)` behavior for valid existing inputs.
+- [x] Update `docs/work/frontend-catalog-browse.md` with implementation evidence when this row is executed.
 
 ## Verification
 

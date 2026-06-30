@@ -258,7 +258,10 @@ function buildAttributeComparisonValue(
   }
 
   if (typeof attribute.numericValue === "string" && attribute.numericValue.trim() !== "") {
-    return `numeric:${normalizeDecimalComparisonValue(attribute.numericValue)}`;
+    const normalizedNumericValue = normalizeDecimalComparisonValue(attribute.numericValue);
+    const normalizedUnitSymbol = normalizeUnitComparisonValue(attribute.unitSymbol);
+
+    return `numeric:${normalizedNumericValue}:${normalizedUnitSymbol}`;
   }
 
   if (typeof attribute.booleanValue === "boolean") {
@@ -284,6 +287,10 @@ function normalizeDecimalComparisonValue(value: string) {
   return normalizedFractionPart
     ? `${sign}${normalizedIntegerPart}.${normalizedFractionPart}`
     : `${sign}${normalizedIntegerPart}`;
+}
+
+function normalizeUnitComparisonValue(unitSymbol: string | null | undefined) {
+  return unitSymbol?.trim() ?? "";
 }
 
 function specificationMatrixTitle(specMode: CompareSpecMode) {

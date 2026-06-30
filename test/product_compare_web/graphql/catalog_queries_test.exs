@@ -581,6 +581,54 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert only_id == relay_id(:product, matching_product.id)
     end
 
+    test "products treats multiple enum options for one attribute as alternatives", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      {enum_attribute, option_a, option_b} = enum_attribute_with_options_fixture()
+
+      option_a_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-filter-enum-or-a"})
+
+      option_b_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-filter-enum-or-b"})
+
+      option_a_product
+      |> accept_claim!(enum_attribute, %{enum_option_id: option_a.id}, moderator)
+      |> select_current_claim!(option_a_product, enum_attribute, moderator)
+
+      option_b_product
+      |> accept_claim!(enum_attribute, %{enum_option_id: option_b.id}, moderator)
+      |> select_current_claim!(option_b_product, enum_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "enums" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, option_a.id)
+                     },
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, option_b.id)
+                     }
+                   ]
+                 }
+               })
+
+      product_ids = Enum.map(edges, &get_in(&1, ["node", "id"]))
+
+      assert product_ids == [
+               relay_id(:product, option_a_product.id),
+               relay_id(:product, option_b_product.id)
+             ]
+    end
+
     test "products supports use-case taxon filters", %{conn: conn} do
       moderator = AccountsFixtures.user_fixture()
       use_case_taxonomy = TaxonomyFixtures.taxonomy_fixture("use_case", "Use Case")

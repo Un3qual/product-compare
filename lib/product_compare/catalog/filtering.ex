@@ -143,21 +143,34 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_enum_filters(Ecto.Query.t(), [enum_filter()]) :: Ecto.Query.t()
   defp apply_enum_filters(query, enum_filters) do
-    Enum.reduce(enum_filters, query, fn filter, acc ->
+    enum_filters
+    |> Enum.reduce(%{}, fn filter, acc ->
       with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
            {:ok, enum_option_id} <- normalize_integer_id(fetch_value(filter, :enum_option_id)) do
-        exists_query =
-          from pacur in ProductAttributeCurrent,
-            join: pac in ProductAttributeClaim,
-            on: pac.id == pacur.claim_id,
-            where: pacur.product_id == parent_as(:product).id,
-            where: pac.attribute_id == ^attribute_id,
-            where: pac.enum_option_id == ^enum_option_id
-
-        where(acc, [product: _p], exists(exists_query))
+        Map.update(
+          acc,
+          attribute_id,
+          MapSet.new([enum_option_id]),
+          &MapSet.put(&1, enum_option_id)
+        )
       else
         _ -> acc
       end
+    end)
+    |> Enum.map(fn {attribute_id, enum_option_ids} ->
+      {attribute_id, enum_option_ids |> MapSet.to_list() |> Enum.sort()}
+    end)
+    |> Enum.sort_by(fn {attribute_id, _enum_option_ids} -> attribute_id end)
+    |> Enum.reduce(query, fn {attribute_id, enum_option_ids}, acc ->
+      exists_query =
+        from pacur in ProductAttributeCurrent,
+          join: pac in ProductAttributeClaim,
+          on: pac.id == pacur.claim_id,
+          where: pacur.product_id == parent_as(:product).id,
+          where: pac.attribute_id == ^attribute_id,
+          where: pac.enum_option_id in ^enum_option_ids
+
+      where(acc, [product: _p], exists(exists_query))
     end)
   end
 
