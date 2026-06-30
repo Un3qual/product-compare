@@ -2,12 +2,20 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
+import productFilterMetadataQuery, {
+  type ProductFilterMetadataQuery
+} from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
+import {
+  catalogFiltersFromUrl,
+  catalogFiltersToProductFiltersInput,
+  type CatalogFilters
+} from "./filters";
 
 const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
@@ -16,7 +24,10 @@ type BrowseProductsPageSize = (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number];
 export type BrowseProductsLoaderData =
   | {
       status: "ready";
+      filters: CatalogFilters;
+      pageSize: BrowseProductsPageSize;
       query: RelayRouteQueryDescriptor<BrowseProductsRouteQuery["variables"]>;
+      metadataQuery: RelayRouteQueryDescriptor<ProductFilterMetadataQuery["variables"]>;
     }
   | {
       status: "error";
@@ -28,24 +39,46 @@ export async function browseLoader({
 }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const requestUrl = new URL(request.url);
+  const filters = catalogFiltersFromUrl(requestUrl);
+  const productFiltersInput = catalogFiltersToProductFiltersInput(filters);
+  const pageSize = browseProductsPageSizeFromUrl(requestUrl);
   const variables: BrowseProductsRouteQuery["variables"] = {
-    first: browseProductsPageSizeFromUrl(requestUrl)
+    first: pageSize
   };
+  const metadataVariables: ProductFilterMetadataQuery["variables"] = {};
   const after = nonBlankParam(requestUrl, "after");
 
   if (after) {
     variables.after = after;
   }
 
+  if (productFiltersInput) {
+    variables.filters = productFiltersInput;
+    metadataVariables.filters = productFiltersInput;
+  }
+
   try {
-    return {
-      status: "ready",
-      query: await preloadRouteQuery<BrowseProductsRouteQuery>(
+    const [query, metadataQuery] = await Promise.all([
+      preloadRouteQuery<BrowseProductsRouteQuery>(
         environment,
         browseProductsRouteQuery,
         variables,
         { signal: request.signal }
+      ),
+      preloadRouteQuery<ProductFilterMetadataQuery>(
+        environment,
+        productFilterMetadataQuery,
+        metadataVariables,
+        { signal: request.signal }
       )
+    ]);
+
+    return {
+      status: "ready",
+      filters,
+      pageSize,
+      query,
+      metadataQuery
     };
   } catch (error) {
     return recoverRouteLoaderError<BrowseProductsLoaderData>(

@@ -13,6 +13,7 @@ type Query {
   sourceArtifact(id: ID!): SourceArtifact
   product(slug: String!): Product
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
+  productFilterMetadata(filters: ProductFiltersInput): ProductFilterMetadata!
   merchants(first: Int, after: String): MerchantConnection
   merchantFeedCandidates(first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort): MerchantFeedCandidateConnection
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
@@ -313,6 +314,50 @@ type ProductConnection {
 type ProductEdge {
   node: Product!
   cursor: String!
+}
+
+type ProductFilterMetadata {
+  resultCount: Int!
+  typeOptions: [ProductFilterOption!]!
+  useCaseOptions: [ProductFilterOption!]!
+  numericFilters: [ProductNumericFilterMetadata!]!
+  booleanFilters: [ProductBooleanFilterMetadata!]!
+  enumFilters: [ProductEnumFilterMetadata!]!
+}
+
+type ProductFilterOption {
+  id: ID!
+  label: String!
+  count: Int!
+  selected: Boolean!
+  disabled: Boolean!
+}
+
+type ProductNumericFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  unitSymbol: String
+  min: Decimal
+  max: Decimal
+  selectedMin: Decimal
+  selectedMax: Decimal
+}
+
+type ProductBooleanFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  trueCount: Int!
+  falseCount: Int!
+  selectedValue: Boolean
+}
+
+type ProductEnumFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  options: [ProductFilterOption!]!
 }
 
 type SavedComparisonSetConnection {

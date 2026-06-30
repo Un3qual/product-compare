@@ -4,12 +4,41 @@ import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
+import productFilterMetadataQuery, {
+  type ProductFilterMetadataQuery
+} from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import {
+  catalogFilterSummaryItems,
+  hasActiveCatalogFilters,
+  type CatalogBooleanFilter,
+  type CatalogFilterMetadata,
+  type CatalogFilters,
+  type CatalogNumericFilter
+} from "./filters";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
+import { catalogBrowseFirstPagePath, catalogBrowseNextPagePath } from "./paths";
 
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
 type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
+type ProductFilterMetadata = ProductFilterMetadataQuery["response"]["productFilterMetadata"];
+
+const EMPTY_CATALOG_FILTERS: CatalogFilters = {
+  useCaseTaxonIds: [],
+  numeric: [],
+  booleans: [],
+  enums: []
+};
+
+const EMPTY_FILTER_METADATA: ProductFilterMetadata = {
+  resultCount: 0,
+  typeOptions: [],
+  useCaseOptions: [],
+  numericFilters: [],
+  booleanFilters: [],
+  enumFilters: []
+};
 
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
@@ -25,7 +54,12 @@ export function BrowseRoute() {
           resetToken={loaderData.query}
         >
           <Suspense fallback={<p role="status">Loading catalog...</p>}>
-            <BrowseProducts query={loaderData.query} />
+            <BrowseProducts
+              filters={loaderData.filters}
+              metadataQuery={loaderData.metadataQuery}
+              pageSize={loaderData.pageSize}
+              query={loaderData.query}
+            />
           </Suspense>
         </ResettableErrorBoundary>
       )}
@@ -43,35 +77,68 @@ function BrowseProductsErrorFallback() {
 }
 
 function BrowseProducts({
+  filters,
+  metadataQuery,
+  pageSize,
   query
 }: {
+  filters: Extract<BrowseProductsLoaderData, { status: "ready" }>["filters"];
+  metadataQuery: Extract<BrowseProductsLoaderData, { status: "ready" }>["metadataQuery"];
+  pageSize: Extract<BrowseProductsLoaderData, { status: "ready" }>["pageSize"];
   query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<BrowseProductsRouteQuery>(
     browseProductsRouteQuery,
     query
   );
+  const metadataQueryRef = useRoutePreloadedQuery<ProductFilterMetadataQuery>(
+    productFilterMetadataQuery,
+    metadataQuery
+  );
   const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
+  const metadataData = usePreloadedQuery<ProductFilterMetadataQuery>(
+    productFilterMetadataQuery,
+    metadataQueryRef
+  );
+  const filterMetadata = metadataData.productFilterMetadata ?? EMPTY_FILTER_METADATA;
+  const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = data.products.edges.map(({ node }) => node);
   const currentAfter = query.__relayQuery.variables.after;
-  const currentPageSize = query.__relayQuery.variables.first;
+  const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
+  const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
-      ? browseProductsNextPagePath(currentPageSize, data.products.pageInfo.endCursor)
+      ? catalogBrowseNextPagePath(activeFilters, currentPageSize, data.products.pageInfo.endCursor)
       : null;
   const paginationLinks =
     currentAfter || nextProductsPath ? (
       <nav aria-label="Browse product pages">
-        {currentAfter ? <Link to={browseProductsFirstPagePath(currentPageSize)}>First products</Link> : null}
+        {currentAfter ? (
+          <Link to={catalogBrowseFirstPagePath(activeFilters, currentPageSize)}>First products</Link>
+        ) : null}
         {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
       </nav>
     ) : null;
+  const filterControls = (
+    <>
+      <CatalogFilterForm
+        filters={activeFilters}
+        metadata={filterMetadata}
+        pageSize={currentPageSize}
+      />
+      <CatalogActiveFilterSummary
+        filters={activeFilters}
+        metadata={filterMetadata}
+        pageSize={currentPageSize}
+      />
+    </>
+  );
 
   if (products.length === 0) {
     return (
       <section>
-        <BrowseProductsPageSizeForm pageSize={currentPageSize} />
-        <p>No products available yet.</p>
+        {filterControls}
+        <p>{hasActiveFilters ? "No products match these filters." : "No products available yet."}</p>
         {paginationLinks}
       </section>
     );
@@ -79,7 +146,7 @@ function BrowseProducts({
 
   return (
     <>
-      <BrowseProductsPageSizeForm pageSize={currentPageSize} />
+      {filterControls}
       <ul>
         {products.map((product) => (
           <li key={product.id}>
@@ -119,9 +186,17 @@ function BrowseProductCard({ product }: { product: BrowseProductNode }) {
   );
 }
 
-function BrowseProductsPageSizeForm({ pageSize }: { pageSize: number }) {
+function CatalogFilterForm({
+  filters,
+  metadata,
+  pageSize
+}: {
+  filters: CatalogFilters;
+  metadata: ProductFilterMetadata;
+  pageSize: number;
+}) {
   return (
-    <form method="get" action="/products">
+    <form method="get" action="/products" aria-label="Filter products">
       <label>
         Products per page
         <select key={pageSize} name="first" defaultValue={String(pageSize)}>
@@ -132,28 +207,165 @@ function BrowseProductsPageSizeForm({ pageSize }: { pageSize: number }) {
           ))}
         </select>
       </label>
-      <button type="submit">Apply</button>
+      <label>
+        Product type
+        <select name="typeTaxonId" defaultValue={filters.typeTaxonId ?? ""}>
+          <option value="">All product types</option>
+          {metadata.typeOptions.map((option) => (
+            <option key={option.id} value={option.id} disabled={option.disabled && !option.selected}>
+              {option.label} ({option.count})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          name="includeTypeDescendants"
+          value="1"
+          defaultChecked={filters.includeTypeDescendants === true}
+        />
+        Include subcategories
+      </label>
+      {metadata.useCaseOptions.length > 0 ? (
+        <fieldset>
+          <legend>Use cases</legend>
+          {metadata.useCaseOptions.map((option) => (
+            <label key={option.id}>
+              <input
+                type="checkbox"
+                name="useCaseTaxonId"
+                value={option.id}
+                defaultChecked={filters.useCaseTaxonIds.includes(option.id) || option.selected}
+                disabled={option.disabled && !option.selected}
+              />
+              {option.label} ({option.count})
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+      {metadata.numericFilters.length > 0 ? (
+        <fieldset>
+          <legend>Numeric filters</legend>
+          {metadata.numericFilters.map((filter) => {
+            const selectedFilter = selectedNumericFilter(filters.numeric, filter.attributeId);
+
+            return (
+              <div key={filter.attributeId}>
+                <label>
+                  {filter.displayName} minimum
+                  <input
+                    inputMode="decimal"
+                    name={`numeric.${filter.attributeId}.min`}
+                    defaultValue={selectedFilter?.min ?? filter.selectedMin ?? ""}
+                  />
+                </label>
+                <label>
+                  {filter.displayName} maximum
+                  <input
+                    inputMode="decimal"
+                    name={`numeric.${filter.attributeId}.max`}
+                    defaultValue={selectedFilter?.max ?? filter.selectedMax ?? ""}
+                  />
+                </label>
+              </div>
+            );
+          })}
+        </fieldset>
+      ) : null}
+      {metadata.booleanFilters.length > 0 ? (
+        <fieldset>
+          <legend>Boolean filters</legend>
+          {metadata.booleanFilters.map((filter) => {
+            const selectedFilter = selectedBooleanFilter(filters.booleans, filter.attributeId);
+            const selectedValue = selectedFilter?.value ?? filter.selectedValue;
+
+            return (
+              <label key={filter.attributeId}>
+                {filter.displayName}
+                <select
+                  name={`boolean.${filter.attributeId}`}
+                  defaultValue={typeof selectedValue === "boolean" ? String(selectedValue) : ""}
+                >
+                  <option value="">Any</option>
+                  <option value="true">Yes ({filter.trueCount})</option>
+                  <option value="false">No ({filter.falseCount})</option>
+                </select>
+              </label>
+            );
+          })}
+        </fieldset>
+      ) : null}
+      {metadata.enumFilters.length > 0 ? (
+        <fieldset>
+          <legend>Enum filters</legend>
+          {metadata.enumFilters.map((filter) => (
+            <fieldset key={filter.attributeId}>
+              <legend>{filter.displayName}</legend>
+              {filter.options.map((option) => (
+                <label key={option.id}>
+                  <input
+                    type="checkbox"
+                    name={`enum.${filter.attributeId}`}
+                    value={option.id}
+                    defaultChecked={
+                      filters.enums.some(
+                        (selectedFilter) =>
+                          selectedFilter.attributeId === filter.attributeId &&
+                          selectedFilter.enumOptionId === option.id
+                      ) || option.selected
+                    }
+                    disabled={option.disabled && !option.selected}
+                  />
+                  {option.label} ({option.count})
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </fieldset>
+      ) : null}
+      <button type="submit">Apply filters</button>
     </form>
   );
 }
 
+function CatalogActiveFilterSummary({
+  filters,
+  metadata,
+  pageSize
+}: {
+  filters: CatalogFilters;
+  metadata: CatalogFilterMetadata;
+  pageSize: number;
+}) {
+  if (!hasActiveCatalogFilters(filters)) {
+    return null;
+  }
+
+  const summaryItems = catalogFilterSummaryItems(metadata, filters);
+
+  return (
+    <section aria-label="Applied product filters">
+      {summaryItems.length > 0 ? (
+        <ul aria-label="Active filters">
+          {summaryItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+      <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize)}>Clear filters</Link>
+    </section>
+  );
+}
+
+function selectedNumericFilter(filters: readonly CatalogNumericFilter[], attributeId: string) {
+  return filters.find((filter) => filter.attributeId === attributeId);
+}
+
+function selectedBooleanFilter(filters: readonly CatalogBooleanFilter[], attributeId: string) {
+  return filters.find((filter) => filter.attributeId === attributeId);
+}
+
 function browseProductDetailPath(slug: string) {
   return `/products/${encodeURIComponent(slug)}`;
-}
-
-function browseProductsNextPagePath(first: number, endCursor: string) {
-  const params = new URLSearchParams();
-
-  params.set("first", String(first));
-  params.set("after", endCursor);
-
-  return `/products?${params.toString()}`;
-}
-
-function browseProductsFirstPagePath(first: number) {
-  const params = new URLSearchParams();
-
-  params.set("first", String(first));
-
-  return `/products?${params.toString()}`;
 }

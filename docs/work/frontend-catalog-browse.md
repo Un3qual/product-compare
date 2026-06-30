@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done (catalog faceted filtering UI)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 (working tree)
+- Last verified: 2026-06-30 (working tree)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -139,7 +139,7 @@
 
 ## Active Dispatch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`.
 - Owned paths:
@@ -161,6 +161,36 @@
   - `git diff --check`
 - Exit condition: `/products` exposes metadata-backed filters, preserves active
   filter URLs through pagination, and clears back to the unfiltered browse page.
+- Implemented:
+  - Added route-local catalog filter URL parsing and path serialization for
+    type, descendant, use-case, numeric, boolean, and enum filters.
+  - `/products` now passes the parsed `ProductFiltersInput` to both
+    `products(filters:)` and `productFilterMetadata(filters:)` through Relay.
+  - Added a metadata-backed GET filter form that preserves page size, omits
+    stale `after` cursors, and renders type, use-case, numeric, boolean, and
+    enum controls from GraphQL metadata.
+  - Added active filter summary rows, a `Clear filters` link, filtered empty
+    copy, and filter-preserving first/next pagination links.
+  - Refreshed `assets/schema.graphql` and generated Relay artifacts for
+    `BrowseProductsRouteQuery` and `ProductFilterMetadataQuery`.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 2 expected loader failures because URL filter params were not
+    passed as `filters` variables.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 28 tests, 0 failures after adding filter parsing and metadata preload.
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 4 expected UI failures because the filter form, active summary,
+    filter-preserving pagination links, and filtered empty copy were missing.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 32 tests, 0 failures after rendering metadata-backed controls.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 32 tests, 0 failures.
+  - Final: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 23 tests, 0 failures.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Completed Filter Metadata Dispatch
 

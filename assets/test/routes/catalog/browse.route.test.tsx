@@ -7,6 +7,7 @@ import { createRelayEnvironment } from "../../../src/relay/environment";
 import browseProductsRouteQueryArtifact, {
   type BrowseProductsRouteQuery
 } from "../../../src/__generated__/BrowseProductsRouteQuery.graphql";
+import type { ProductFilterMetadataQuery } from "../../../src/__generated__/ProductFilterMetadataQuery.graphql";
 import {
   createRelayRouterContext,
   preloadRouteQuery,
@@ -59,6 +60,13 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const browseQueryDescriptor = browseQueryDescriptorFromVariables();
+const filterMetadataQueryDescriptor = filterMetadataQueryDescriptorFromVariables();
+const emptyCatalogFilters = {
+  useCaseTaxonIds: [],
+  numeric: [],
+  booleans: [],
+  enums: []
+};
 
 const buildBrowseLoaderArgs = ({
   environment = createRelayEnvironment(),
@@ -82,6 +90,50 @@ function browseQueryDescriptorFromVariables(
       text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
       variables
     }
+  };
+}
+
+function filterMetadataQueryDescriptorFromVariables(
+  variables: ProductFilterMetadataQuery["variables"] = {}
+) {
+  return {
+    __relayQuery: {
+      operationName: "ProductFilterMetadataQuery",
+      text: "query ProductFilterMetadataQuery($filters: ProductFiltersInput) { productFilterMetadata(filters: $filters) { resultCount } }",
+      variables
+    }
+  };
+}
+
+function mockSuccessfulBrowseLoaderPreloads({
+  productDescriptor = browseQueryDescriptor,
+  metadataDescriptor = filterMetadataQueryDescriptor
+}: {
+  productDescriptor?: ReturnType<typeof browseQueryDescriptorFromVariables>;
+  metadataDescriptor?: ReturnType<typeof filterMetadataQueryDescriptorFromVariables>;
+} = {}) {
+  mockedPreloadRouteQuery
+    .mockResolvedValueOnce(productDescriptor)
+    .mockResolvedValueOnce(metadataDescriptor);
+}
+
+function readyBrowseLoaderData({
+  filters = emptyCatalogFilters,
+  metadataQuery = filterMetadataQueryDescriptor,
+  pageSize = 12,
+  query = browseQueryDescriptor
+}: {
+  filters?: typeof emptyCatalogFilters | Record<string, unknown>;
+  metadataQuery?: ReturnType<typeof filterMetadataQueryDescriptorFromVariables>;
+  pageSize?: number;
+  query?: ReturnType<typeof browseQueryDescriptorFromVariables>;
+} = {}) {
+  return {
+    status: "ready",
+    filters,
+    pageSize,
+    query,
+    metadataQuery
   };
 }
 
@@ -133,6 +185,157 @@ function buildBrowseProductsConnection({
   };
 }
 
+function buildBrowseProductsResponse({
+  endCursor = null,
+  hasNextPage = false,
+  products = []
+}: {
+  endCursor?: string | null;
+  hasNextPage?: boolean;
+  products?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
+} = {}) {
+  return {
+    products: buildBrowseProductsConnection({
+      endCursor,
+      hasNextPage,
+      products
+    })
+  };
+}
+
+function buildProductFilterMetadataResponse({
+  resultCount = 1,
+  selected = false
+}: {
+  resultCount?: number;
+  selected?: boolean;
+} = {}) {
+  return {
+    productFilterMetadata: {
+      resultCount,
+      typeOptions: [
+        {
+          id: "type-laptops",
+          label: "Laptops",
+          count: 6,
+          selected,
+          disabled: false
+        },
+        {
+          id: "type-tablets",
+          label: "Tablets",
+          count: 0,
+          selected: false,
+          disabled: true
+        }
+      ],
+      useCaseOptions: [
+        {
+          id: "use-gaming",
+          label: "Gaming",
+          count: 4,
+          selected,
+          disabled: false
+        },
+        {
+          id: "use-office",
+          label: "Office",
+          count: 3,
+          selected: false,
+          disabled: false
+        }
+      ],
+      numericFilters: [
+        {
+          attributeId: "attr-refresh",
+          code: "refresh_rate",
+          displayName: "Refresh Rate",
+          unitSymbol: "Hz",
+          min: "60",
+          max: "360",
+          selectedMin: selected ? "120" : null,
+          selectedMax: selected ? "240" : null
+        }
+      ],
+      booleanFilters: [
+        {
+          attributeId: "attr-wireless",
+          code: "wireless",
+          displayName: "Wireless",
+          trueCount: 5,
+          falseCount: 2,
+          selectedValue: selected ? true : null
+        }
+      ],
+      enumFilters: [
+        {
+          attributeId: "attr-color",
+          code: "color",
+          displayName: "Color",
+          options: [
+            {
+              id: "enum-red",
+              label: "Red",
+              count: 2,
+              selected,
+              disabled: false
+            },
+            {
+              id: "enum-blue",
+              label: "Blue",
+              count: 1,
+              selected: false,
+              disabled: false
+            }
+          ]
+        }
+      ]
+    }
+  };
+}
+
+function renderBrowseRouteWithRelayData({
+  initialEntries = ["/products"],
+  loaderData = readyBrowseLoaderData(),
+  metadataData = buildProductFilterMetadataResponse(),
+  productData = buildBrowseProductsResponse({
+    products: [
+      {
+        id: "product-1",
+        name: "Catalog First",
+        slug: "catalog-first"
+      }
+    ]
+  })
+}: {
+  initialEntries?: string[];
+  loaderData?: ReturnType<typeof readyBrowseLoaderData>;
+  metadataData?: ReturnType<typeof buildProductFilterMetadataResponse>;
+  productData?: ReturnType<typeof buildBrowseProductsResponse>;
+} = {}) {
+  const productQueryRef = { dispose: vi.fn(), variables: loaderData.query.__relayQuery.variables };
+  const metadataQueryRef = {
+    dispose: vi.fn(),
+    variables: loaderData.metadataQuery.__relayQuery.variables
+  };
+
+  mockedUseLoaderData.mockReturnValue(loaderData);
+  mockedUseRoutePreloadedQuery
+    .mockReturnValueOnce(productQueryRef)
+    .mockReturnValueOnce(metadataQueryRef);
+  mockedUsePreloadedQuery.mockReturnValueOnce(productData).mockReturnValueOnce(metadataData);
+
+  return render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+}
+
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -144,14 +347,11 @@ test("browse loader preloads and returns the Relay browse route query", async ()
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -165,14 +365,11 @@ test("browse loader defaults to a page size of 12 when first is omitted", async 
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -190,14 +387,18 @@ test("browse loader preserves supported first values from the URL", async () => 
     after: "cursor-next-page"
   });
 
-  mockedPreloadRouteQuery.mockResolvedValue(queryDescriptorWithCursorAndFirst);
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: queryDescriptorWithCursorAndFirst
+  });
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: queryDescriptorWithCursorAndFirst
-  });
+  ).resolves.toEqual(
+    readyBrowseLoaderData({
+      pageSize: 24,
+      query: queryDescriptorWithCursorAndFirst
+    })
+  );
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -211,14 +412,11 @@ test("browse loader drops oversized first values above 48", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=100");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -232,14 +430,11 @@ test("browse loader drops first values that are not page-size options", async ()
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=35");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -253,14 +448,11 @@ test("browse loader drops malformed first values", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=12abc");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
@@ -274,19 +466,130 @@ test("browse loader forwards the requested pagination cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?after=cursor-next-page");
 
-  mockedPreloadRouteQuery.mockResolvedValue(browseQueryDescriptor);
+  mockSuccessfulBrowseLoaderPreloads();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
+  ).resolves.toEqual(readyBrowseLoaderData());
 
   expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12, after: "cursor-next-page" },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader passes URL filters to the product and metadata queries", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products?typeTaxonId=relay-type-taxons%2Fdisplay&includeTypeDescendants=1&useCaseTaxonId=relay-use-case-gaming&useCaseTaxonId=relay-use-case-office&numeric.relay-attribute-price.min=10.50&numeric.relay-attribute-price.max=99.99&numeric.relay-attribute-weight.max=4.5&boolean.relay-attribute-wireless=true&enum.relay-attribute-color=relay-enum-red&enum.relay-attribute-color=relay-enum-blue"
+  );
+  const expectedFilters = {
+    primaryTypeTaxonId: "relay-type-taxons/display",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: ["relay-use-case-gaming", "relay-use-case-office"],
+    numeric: [
+      {
+        attributeId: "relay-attribute-price",
+        min: "10.50",
+        max: "99.99"
+      },
+      {
+        attributeId: "relay-attribute-weight",
+        max: "4.5"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "relay-attribute-wireless",
+        value: true
+      }
+    ],
+    enums: [
+      {
+        attributeId: "relay-attribute-color",
+        enumOptionId: "relay-enum-red"
+      },
+      {
+        attributeId: "relay-attribute-color",
+        enumOptionId: "relay-enum-blue"
+      }
+    ]
+  };
+
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader drops blank numeric bounds and malformed boolean filter values", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products?typeTaxonId=&useCaseTaxonId=&numeric.relay-attribute-empty.min=&numeric.relay-attribute-empty.max=%20&numeric.relay-attribute-refresh.min=&numeric.relay-attribute-refresh.max=240&boolean.relay-attribute-touchscreen=yes&boolean.relay-attribute-backlit=false&enum.relay-attribute-panel="
+  );
+  const expectedFilters = {
+    numeric: [
+      {
+        attributeId: "relay-attribute-refresh",
+        max: "240"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "relay-attribute-backlit",
+        value: false
+      }
+    ]
+  };
+
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
     { signal: request.signal }
   );
 });
@@ -479,6 +782,224 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
+});
+
+test("renders metadata-backed catalog filter controls", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" });
+
+  expect(within(filterForm).getByRole("combobox", { name: "Product type" })).toHaveValue("");
+  expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).not.toBeChecked();
+  expect(within(filterForm).getByRole("checkbox", { name: "Gaming (4)" })).not.toBeChecked();
+  expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
+  expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");
+  expect(within(filterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("");
+  expect(within(filterForm).getByRole("checkbox", { name: "Red (2)" })).not.toBeChecked();
+  expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
+});
+
+test("renders selected catalog filters with an active summary and clear link", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        typeTaxonId: "type-laptops",
+        includeTypeDescendants: true,
+        useCaseTaxonIds: ["use-gaming"],
+        numeric: [
+          {
+            attributeId: "attr-refresh",
+            min: "120",
+            max: "240"
+          }
+        ],
+        booleans: [
+          {
+            attributeId: "attr-wireless",
+            value: true
+          }
+        ],
+        enums: [
+          {
+            attributeId: "attr-color",
+            enumOptionId: "enum-red"
+          }
+        ]
+      },
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24,
+        filters: {
+          primaryTypeTaxonId: "type-laptops",
+          includeTypeDescendants: true,
+          useCaseTaxonIds: ["use-gaming"],
+          numeric: [
+            {
+              attributeId: "attr-refresh",
+              min: "120",
+              max: "240"
+            }
+          ],
+          booleans: [
+            {
+              attributeId: "attr-wireless",
+              value: true
+            }
+          ],
+          enums: [
+            {
+              attributeId: "attr-color",
+              enumOptionId: "enum-red"
+            }
+          ]
+        }
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: {
+          primaryTypeTaxonId: "type-laptops",
+          includeTypeDescendants: true,
+          useCaseTaxonIds: ["use-gaming"],
+          numeric: [
+            {
+              attributeId: "attr-refresh",
+              min: "120",
+              max: "240"
+            }
+          ],
+          booleans: [
+            {
+              attributeId: "attr-wireless",
+              value: true
+            }
+          ],
+          enums: [
+            {
+              attributeId: "attr-color",
+              enumOptionId: "enum-red"
+            }
+          ]
+        }
+      })
+    }),
+    metadataData: buildProductFilterMetadataResponse({ selected: true })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" });
+
+  expect(within(filterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
+    "type-laptops"
+  );
+  expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).toBeChecked();
+  expect(within(filterForm).getByRole("checkbox", { name: "Gaming (4)" })).toBeChecked();
+  expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("120");
+  expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("240");
+  expect(within(filterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("true");
+  expect(within(filterForm).getByRole("checkbox", { name: "Red (2)" })).toBeChecked();
+
+  const summary = screen.getByRole("list", { name: "Active filters" });
+
+  expect(within(summary).getByText("Type: Laptops and descendants")).toBeInTheDocument();
+  expect(within(summary).getByText("Use case: Gaming")).toBeInTheDocument();
+  expect(within(summary).getByText("Refresh Rate: 120 Hz to 240 Hz")).toBeInTheDocument();
+  expect(within(summary).getByText("Wireless: Yes")).toBeInTheDocument();
+  expect(within(summary).getByText("Color: Red")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
+    "href",
+    "/products?first=24"
+  );
+});
+
+test("preserves active filters in pagination links and omits stale cursors from the filter form", () => {
+  const activeFilters = {
+    typeTaxonId: "type-laptops",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: ["use-gaming"],
+    numeric: [
+      {
+        attributeId: "attr-refresh",
+        min: "120",
+        max: "240"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "attr-wireless",
+        value: true
+      }
+    ],
+    enums: [
+      {
+        attributeId: "attr-color",
+        enumOptionId: "enum-red"
+      }
+    ]
+  };
+  const productFiltersInput = {
+    primaryTypeTaxonId: "type-laptops",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: ["use-gaming"],
+    numeric: [
+      {
+        attributeId: "attr-refresh",
+        min: "120",
+        max: "240"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "attr-wireless",
+        value: true
+      }
+    ],
+    enums: [
+      {
+        attributeId: "attr-color",
+        enumOptionId: "enum-red"
+      }
+    ]
+  };
+
+  renderBrowseRouteWithRelayData({
+    initialEntries: [
+      "/products?first=24&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=cursor-current-page"
+    ],
+    loaderData: readyBrowseLoaderData({
+      filters: activeFilters,
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24,
+        after: "cursor-current-page",
+        filters: productFiltersInput
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: productFiltersInput
+      })
+    }),
+    metadataData: buildProductFilterMetadataResponse({ selected: true }),
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-page-2",
+          name: "Page Two Product",
+          slug: "page-two-product"
+        }
+      ]
+    })
+  });
+
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=cursor-next-page"
+  );
+  expect(screen.getByRole("link", { name: "First products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red"
+  );
+  expect(
+    screen.getByRole("form", { name: "Filter products" }).querySelector('[name="after"]')
+  ).not.toBeInTheDocument();
 });
 
 test("renders decision actions for each browse product card", () => {
@@ -975,6 +1496,46 @@ test("renders an empty-state message when the Relay query returns no products", 
   expect(screen.getByText("No products available yet.")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "First products" })).not.toBeInTheDocument();
+});
+
+test("renders a filtered empty-state message when active filters have no matches", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        typeTaxonId: "type-laptops",
+        includeTypeDescendants: true,
+        useCaseTaxonIds: [],
+        numeric: [],
+        booleans: [],
+        enums: []
+      },
+      query: browseQueryDescriptorFromVariables({
+        first: 12,
+        filters: {
+          primaryTypeTaxonId: "type-laptops",
+          includeTypeDescendants: true
+        }
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: {
+          primaryTypeTaxonId: "type-laptops",
+          includeTypeDescendants: true
+        }
+      })
+    }),
+    metadataData: buildProductFilterMetadataResponse({
+      resultCount: 0,
+      selected: true
+    }),
+    productData: buildBrowseProductsResponse()
+  });
+
+  expect(screen.getByText("No products match these filters.")).toBeInTheDocument();
+  expect(screen.queryByText("No products available yet.")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
+    "href",
+    "/products?first=12"
+  );
 });
 
 test("keeps a next-page recovery link when an empty result has a next cursor", () => {
