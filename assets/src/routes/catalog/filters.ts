@@ -64,64 +64,21 @@ const ENUM_FILTER_PARAM_PATTERN = /^enum\.(.+)$/;
 export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   const numericFilters = new Map<string, CatalogNumericFilter>();
   const booleanFilters = new Map<string, CatalogBooleanFilter>();
-  const enumFilters: CatalogEnumFilter[] = [];
+  const enumFilters = new Map<string, CatalogEnumFilter>();
   const typeTaxonId = nonBlankParam(url, "typeTaxonId");
   const includeTypeDescendants = url.searchParams.get("includeTypeDescendants") === "1";
   const useCaseTaxonIds = nonBlankParams(url, "useCaseTaxonId");
 
   for (const [name, rawValue] of url.searchParams.entries()) {
-    const numericMatch = NUMERIC_FILTER_PARAM_PATTERN.exec(name);
-
-    if (numericMatch) {
-      const value = rawValue.trim();
-
-      if (value === "") {
-        continue;
-      }
-
-      const [, attributeId, bound] = numericMatch;
-      const filter = numericFilters.get(attributeId) ?? { attributeId };
-
-      if (bound === "min") {
-        filter.min = value;
-      } else {
-        filter.max = value;
-      }
-
-      numericFilters.set(attributeId, filter);
+    if (storeNumericFilter(numericFilters, name, rawValue)) {
       continue;
     }
 
-    const booleanMatch = BOOLEAN_FILTER_PARAM_PATTERN.exec(name);
-
-    if (booleanMatch) {
-      const value = booleanFilterValue(rawValue);
-
-      if (value === null) {
-        continue;
-      }
-
-      booleanFilters.set(booleanMatch[1], {
-        attributeId: booleanMatch[1],
-        value
-      });
+    if (storeBooleanFilter(booleanFilters, name, rawValue)) {
       continue;
     }
 
-    const enumMatch = ENUM_FILTER_PARAM_PATTERN.exec(name);
-
-    if (enumMatch) {
-      const enumOptionId = rawValue.trim();
-
-      if (enumOptionId === "") {
-        continue;
-      }
-
-      enumFilters.push({
-        attributeId: enumMatch[1],
-        enumOptionId
-      });
-    }
+    storeEnumFilter(enumFilters, name, rawValue);
   }
 
   return {
@@ -132,8 +89,68 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
       (filter) => filter.min !== undefined || filter.max !== undefined
     ),
     booleans: Array.from(booleanFilters.values()),
-    enums: enumFilters
+    enums: Array.from(enumFilters.values())
   };
+}
+
+function storeNumericFilter(
+  numericFilters: Map<string, CatalogNumericFilter>,
+  name: string,
+  rawValue: string
+) {
+  const numericMatch = NUMERIC_FILTER_PARAM_PATTERN.exec(name);
+  const value = rawValue.trim();
+
+  if (!numericMatch || value === "") {
+    return false;
+  }
+
+  const [, attributeId, bound] = numericMatch;
+  const filter = numericFilters.get(attributeId) ?? { attributeId };
+
+  numericFilters.set(attributeId, { ...filter, [bound]: value });
+
+  return true;
+}
+
+function storeBooleanFilter(
+  booleanFilters: Map<string, CatalogBooleanFilter>,
+  name: string,
+  rawValue: string
+) {
+  const booleanMatch = BOOLEAN_FILTER_PARAM_PATTERN.exec(name);
+  const value = booleanFilterValue(rawValue);
+
+  if (!booleanMatch || value === null) {
+    return false;
+  }
+
+  booleanFilters.set(booleanMatch[1], {
+    attributeId: booleanMatch[1],
+    value
+  });
+
+  return true;
+}
+
+function storeEnumFilter(
+  enumFilters: Map<string, CatalogEnumFilter>,
+  name: string,
+  rawValue: string
+) {
+  const enumMatch = ENUM_FILTER_PARAM_PATTERN.exec(name);
+  const enumOptionId = rawValue.trim();
+
+  if (!enumMatch || enumOptionId === "") {
+    return false;
+  }
+
+  enumFilters.set(enumMatch[1], {
+    attributeId: enumMatch[1],
+    enumOptionId
+  });
+
+  return true;
 }
 
 export function catalogFiltersToProductFiltersInput(
@@ -143,6 +160,8 @@ export function catalogFiltersToProductFiltersInput(
     return undefined;
   }
 
+  const enumFilters = uniqueCatalogEnumFilters(filters.enums);
+
   return {
     ...(filters.typeTaxonId ? { primaryTypeTaxonId: filters.typeTaxonId } : {}),
     ...(filters.typeTaxonId && filters.includeTypeDescendants
@@ -151,8 +170,18 @@ export function catalogFiltersToProductFiltersInput(
     ...(filters.useCaseTaxonIds.length > 0 ? { useCaseTaxonIds: filters.useCaseTaxonIds } : {}),
     ...(filters.numeric.length > 0 ? { numeric: filters.numeric } : {}),
     ...(filters.booleans.length > 0 ? { booleans: filters.booleans } : {}),
-    ...(filters.enums.length > 0 ? { enums: filters.enums } : {})
+    ...(enumFilters.length > 0 ? { enums: enumFilters } : {})
   };
+}
+
+export function uniqueCatalogEnumFilters(filters: readonly CatalogEnumFilter[]) {
+  const filtersByAttribute = new Map<string, CatalogEnumFilter>();
+
+  for (const filter of filters) {
+    filtersByAttribute.set(filter.attributeId, filter);
+  }
+
+  return Array.from(filtersByAttribute.values());
 }
 
 export function hasActiveCatalogFilters(filters: CatalogFilters) {
@@ -169,46 +198,59 @@ export function catalogFilterSummaryItems(
   metadata: CatalogFilterMetadata,
   filters: CatalogFilters
 ) {
-  if (!hasActiveCatalogFilters(filters)) {
+  return hasActiveCatalogFilters(filters)
+    ? [
+        ...typeFilterSummaryItems(metadata, filters),
+        ...selectedUseCaseSummaryItems(metadata),
+        ...numericFilterSummaryItems(metadata),
+        ...booleanFilterSummaryItems(metadata),
+        ...enumFilterSummaryItems(metadata)
+      ]
+    : [];
+}
+
+function typeFilterSummaryItems(metadata: CatalogFilterMetadata, filters: CatalogFilters) {
+  const selectedType = metadata.typeOptions.find((option) => option.selected);
+
+  if (!selectedType) {
     return [];
   }
 
-  const summaryItems: string[] = [];
-  const selectedType = metadata.typeOptions.find((option) => option.selected);
+  return [
+    filters.includeTypeDescendants
+      ? `Type: ${selectedType.label} and descendants`
+      : `Type: ${selectedType.label}`
+  ];
+}
 
-  if (selectedType) {
-    summaryItems.push(
-      filters.includeTypeDescendants
-        ? `Type: ${selectedType.label} and descendants`
-        : `Type: ${selectedType.label}`
-    );
-  }
+function selectedUseCaseSummaryItems(metadata: CatalogFilterMetadata) {
+  return metadata.useCaseOptions
+    .filter((option) => option.selected)
+    .map((option) => `Use case: ${option.label}`);
+}
 
-  for (const selectedUseCase of metadata.useCaseOptions.filter((option) => option.selected)) {
-    summaryItems.push(`Use case: ${selectedUseCase.label}`);
-  }
+function numericFilterSummaryItems(metadata: CatalogFilterMetadata) {
+  return metadata.numericFilters.flatMap((filter) => {
+    const rangeSummary = numericFilterSummary(filter);
 
-  for (const numericFilter of metadata.numericFilters) {
-    const rangeSummary = numericFilterSummary(numericFilter);
+    return rangeSummary ? [`${filter.displayName}: ${rangeSummary}`] : [];
+  });
+}
 
-    if (rangeSummary) {
-      summaryItems.push(`${numericFilter.displayName}: ${rangeSummary}`);
-    }
-  }
+function booleanFilterSummaryItems(metadata: CatalogFilterMetadata) {
+  return metadata.booleanFilters.flatMap((filter) =>
+    typeof filter.selectedValue === "boolean"
+      ? [`${filter.displayName}: ${filter.selectedValue ? "Yes" : "No"}`]
+      : []
+  );
+}
 
-  for (const booleanFilter of metadata.booleanFilters) {
-    if (typeof booleanFilter.selectedValue === "boolean") {
-      summaryItems.push(`${booleanFilter.displayName}: ${booleanFilter.selectedValue ? "Yes" : "No"}`);
-    }
-  }
-
-  for (const enumFilter of metadata.enumFilters) {
-    for (const selectedOption of enumFilter.options.filter((option) => option.selected)) {
-      summaryItems.push(`${enumFilter.displayName}: ${selectedOption.label}`);
-    }
-  }
-
-  return summaryItems;
+function enumFilterSummaryItems(metadata: CatalogFilterMetadata) {
+  return metadata.enumFilters.flatMap((filter) =>
+    filter.options
+      .filter((option) => option.selected)
+      .map((option) => `${filter.displayName}: ${option.label}`)
+  );
 }
 
 function numericFilterSummary(filter: CatalogFilterMetadata["numericFilters"][number]) {

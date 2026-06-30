@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -15,6 +15,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { browseLoader } from "../../../src/routes/catalog/loader";
 import { BrowseRoute } from "../../../src/routes/catalog/browse";
+import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
 
 const { preloadRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
   vi.hoisted(() => ({
@@ -509,10 +510,6 @@ test("browse loader passes URL filters to the product and metadata queries", asy
     enums: [
       {
         attributeId: "relay-attribute-color",
-        enumOptionId: "relay-enum-red"
-      },
-      {
-        attributeId: "relay-attribute-color",
         enumOptionId: "relay-enum-blue"
       }
     ]
@@ -795,7 +792,7 @@ test("renders metadata-backed catalog filter controls", () => {
   expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
   expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");
   expect(within(filterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("");
-  expect(within(filterForm).getByRole("checkbox", { name: "Red (2)" })).not.toBeChecked();
+  expect(within(filterForm).getByRole("radio", { name: "Red (2)" })).not.toBeChecked();
   expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
 });
 
@@ -894,7 +891,7 @@ test("renders selected catalog filters with an active summary and clear link", (
   expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("120");
   expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("240");
   expect(within(filterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("true");
-  expect(within(filterForm).getByRole("checkbox", { name: "Red (2)" })).toBeChecked();
+  expect(within(filterForm).getByRole("radio", { name: "Red (2)" })).toBeChecked();
 
   const summary = screen.getByRole("list", { name: "Active filters" });
 
@@ -906,6 +903,190 @@ test("renders selected catalog filters with an active summary and clear link", (
   expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
     "href",
     "/products?first=24"
+  );
+});
+
+test("refreshes filter controls when loader filters clear on the same browse route", () => {
+  const activeFilters = {
+    typeTaxonId: "type-laptops",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: ["use-gaming"],
+    numeric: [
+      {
+        attributeId: "attr-refresh",
+        min: "120",
+        max: "240"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "attr-wireless",
+        value: true
+      }
+    ],
+    enums: [
+      {
+        attributeId: "attr-color",
+        enumOptionId: "enum-red"
+      }
+    ]
+  };
+  const productFiltersInput = {
+    primaryTypeTaxonId: "type-laptops",
+    includeTypeDescendants: true,
+    useCaseTaxonIds: ["use-gaming"],
+    numeric: [
+      {
+        attributeId: "attr-refresh",
+        min: "120",
+        max: "240"
+      }
+    ],
+    booleans: [
+      {
+        attributeId: "attr-wireless",
+        value: true
+      }
+    ],
+    enums: [
+      {
+        attributeId: "attr-color",
+        enumOptionId: "enum-red"
+      }
+    ]
+  };
+  const activeLoaderData = readyBrowseLoaderData({
+    filters: activeFilters,
+    pageSize: 24,
+    query: browseQueryDescriptorFromVariables({
+      first: 24,
+      filters: productFiltersInput
+    }),
+    metadataQuery: filterMetadataQueryDescriptorFromVariables({
+      filters: productFiltersInput
+    })
+  });
+  const clearedLoaderData = readyBrowseLoaderData({
+    filters: emptyCatalogFilters,
+    pageSize: 24,
+    query: browseQueryDescriptorFromVariables({
+      first: 24
+    }),
+    metadataQuery: filterMetadataQueryDescriptorFromVariables()
+  });
+
+  mockedUseLoaderData
+    .mockReturnValueOnce(activeLoaderData)
+    .mockReturnValueOnce(clearedLoaderData);
+  mockedUseRoutePreloadedQuery
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: activeLoaderData.query.__relayQuery.variables
+    })
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: activeLoaderData.metadataQuery.__relayQuery.variables
+    })
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: clearedLoaderData.query.__relayQuery.variables
+    })
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: clearedLoaderData.metadataQuery.__relayQuery.variables
+    });
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(buildBrowseProductsResponse())
+    .mockReturnValueOnce(buildProductFilterMetadataResponse({ selected: true }))
+    .mockReturnValueOnce(buildBrowseProductsResponse())
+    .mockReturnValueOnce(buildProductFilterMetadataResponse());
+
+  const view = render(
+    <MemoryRouter initialEntries={["/products?first=24&typeTaxonId=type-laptops"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  const activeFilterForm = screen.getByRole("form", { name: "Filter products" });
+
+  expect(within(activeFilterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
+    "type-laptops"
+  );
+  expect(
+    within(activeFilterForm).getByRole("checkbox", { name: "Include subcategories" })
+  ).toBeChecked();
+  expect(within(activeFilterForm).getByRole("checkbox", { name: "Gaming (4)" })).toBeChecked();
+  expect(within(activeFilterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("120");
+  expect(within(activeFilterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("240");
+  expect(within(activeFilterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("true");
+  expect(within(activeFilterForm).getByRole("radio", { name: "Red (2)" })).toBeChecked();
+
+  view.rerender(
+    <MemoryRouter initialEntries={["/products?first=24"]}>
+      <BrowseRoute />
+    </MemoryRouter>
+  );
+
+  const clearedFilterForm = screen.getByRole("form", { name: "Filter products" });
+
+  expect(within(clearedFilterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
+    ""
+  );
+  expect(
+    within(clearedFilterForm).getByRole("checkbox", { name: "Include subcategories" })
+  ).not.toBeChecked();
+  expect(
+    within(clearedFilterForm).getByRole("checkbox", { name: "Gaming (4)" })
+  ).not.toBeChecked();
+  expect(within(clearedFilterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
+  expect(within(clearedFilterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");
+  expect(within(clearedFilterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("");
+  expect(within(clearedFilterForm).getByRole("radio", { name: "Red (2)" })).not.toBeChecked();
+});
+
+test("submits only one selected enum option per enum facet", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const colorGroup = within(filterForm).getByRole("group", { name: "Color" });
+  const redOption = within(colorGroup).getByRole("radio", { name: "Red (2)" });
+  const blueOption = within(colorGroup).getByRole("radio", { name: "Blue (1)" });
+
+  fireEvent.click(redOption);
+  fireEvent.click(blueOption);
+
+  expect(redOption).not.toBeChecked();
+  expect(blueOption).toBeChecked();
+  expect(new FormData(filterForm).getAll("enum.attr-color")).toEqual(["enum-blue"]);
+});
+
+test("serializes only one enum option per enum attribute in browse paths", () => {
+  expect(
+    catalogBrowseNextPagePath(
+      {
+        useCaseTaxonIds: [],
+        numeric: [],
+        booleans: [],
+        enums: [
+          {
+            attributeId: "attr-color",
+            enumOptionId: "enum-red"
+          },
+          {
+            attributeId: "attr-size",
+            enumOptionId: "enum-large"
+          },
+          {
+            attributeId: "attr-color",
+            enumOptionId: "enum-blue"
+          }
+        ]
+      },
+      24,
+      "cursor-next-page"
+    )
+  ).toBe(
+    "/products?first=24&enum.attr-color=enum-blue&enum.attr-size=enum-large&after=cursor-next-page"
   );
 });
 

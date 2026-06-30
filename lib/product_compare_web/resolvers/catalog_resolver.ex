@@ -14,6 +14,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.TaxonAttribute
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, _resolution) do
@@ -46,11 +47,14 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       when is_integer(product_id) do
     loader
     |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+    |> load_taxon_attributes(product.primary_type_taxon_id)
     |> on_load(fn loader ->
       attributes =
         loader
         |> Dataloader.get(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
-        |> Specs.with_current_attribute_metadata(product.primary_type_taxon_id)
+        |> Specs.with_current_attribute_metadata_from_taxon_attributes(
+          loaded_taxon_attributes(loader, product.primary_type_taxon_id)
+        )
         |> Enum.map(&format_current_attribute/1)
 
       {:ok, attributes}
@@ -297,17 +301,28 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp normalize_enum_filters(_filters), do: {:error, "invalid enum filter"}
 
   defp validate_filter_semantics(numeric_filters, boolean_filters, enum_filters) do
-    with :ok <- validate_numeric_filter_semantics(numeric_filters),
-         :ok <- validate_boolean_filter_semantics(boolean_filters),
-         :ok <- validate_enum_filter_semantics(enum_filters) do
+    attribute_types =
+      [numeric_filters, boolean_filters, enum_filters]
+      |> Enum.flat_map(&Enum.map(&1, fn filter -> filter.attribute_id end))
+      |> Specs.filterable_attribute_types()
+
+    enum_option_pairs =
+      Specs.filterable_enum_option_pairs(
+        Enum.map(enum_filters, & &1.attribute_id),
+        Enum.map(enum_filters, & &1.enum_option_id)
+      )
+
+    with :ok <- validate_numeric_filter_semantics(numeric_filters, attribute_types),
+         :ok <- validate_boolean_filter_semantics(boolean_filters, attribute_types),
+         :ok <- validate_enum_filter_semantics(enum_filters, enum_option_pairs) do
       :ok
     end
   end
 
-  defp validate_numeric_filter_semantics(filters) do
+  defp validate_numeric_filter_semantics(filters, attribute_types) do
     Enum.reduce_while(filters, :ok, fn filter, :ok ->
       cond do
-        is_nil(Specs.get_filterable_attribute(filter.attribute_id, :numeric)) ->
+        Map.get(attribute_types, filter.attribute_id) != :numeric ->
           {:halt, {:error, "invalid numeric filter"}}
 
         numeric_min_greater_than_max?(filter) ->
@@ -319,9 +334,9 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     end)
   end
 
-  defp validate_boolean_filter_semantics(filters) do
+  defp validate_boolean_filter_semantics(filters, attribute_types) do
     Enum.reduce_while(filters, :ok, fn filter, :ok ->
-      if Specs.get_filterable_attribute(filter.attribute_id, :bool) do
+      if Map.get(attribute_types, filter.attribute_id) == :bool do
         {:cont, :ok}
       else
         {:halt, {:error, "invalid boolean filter"}}
@@ -329,9 +344,9 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     end)
   end
 
-  defp validate_enum_filter_semantics(filters) do
+  defp validate_enum_filter_semantics(filters, enum_option_pairs) do
     Enum.reduce_while(filters, :ok, fn filter, :ok ->
-      if Specs.enum_option_belongs_to_attribute?(filter.attribute_id, filter.enum_option_id) do
+      if MapSet.member?(enum_option_pairs, {filter.attribute_id, filter.enum_option_id}) do
         {:cont, :ok}
       else
         {:halt, {:error, "invalid enum filter"}}
@@ -349,6 +364,18 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp to_decimal(%Decimal{} = value), do: value
   defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
   defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+
+  defp load_taxon_attributes(loader, taxon_id) when is_integer(taxon_id) do
+    Dataloader.load(loader, Catalog, {:many, TaxonAttribute}, taxon_id: taxon_id)
+  end
+
+  defp load_taxon_attributes(loader, _taxon_id), do: loader
+
+  defp loaded_taxon_attributes(loader, taxon_id) when is_integer(taxon_id) do
+    Dataloader.get(loader, Catalog, {:many, TaxonAttribute}, taxon_id: taxon_id)
+  end
+
+  defp loaded_taxon_attributes(_loader, _taxon_id), do: []
 
   @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
           {:ok, list()} | {:error, String.t()}

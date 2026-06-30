@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7b1845de551ff679843ad9caa67a2b8a>>
+ * @generated SignedSource<<7e542a5799bc6149be7e00770a1bfe12>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,6 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CouponDiscountType = "AMOUNT" | "FREE_SHIPPING" | "OTHER" | "PERCENT" | "%future added value";
 export type CompareOfferContextQuery$variables = {
+  after?: string | null | undefined;
   first: number;
   productId: string;
 };
@@ -59,6 +60,7 @@ export type CompareOfferContextQuery$data = {
       };
     }>;
     readonly pageInfo: {
+      readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
     };
   };
@@ -72,29 +74,34 @@ const node: ConcreteRequest = (function(){
 var v0 = {
   "defaultValue": null,
   "kind": "LocalArgument",
-  "name": "first"
+  "name": "after"
 },
 v1 = {
   "defaultValue": null,
   "kind": "LocalArgument",
-  "name": "productId"
+  "name": "first"
 },
 v2 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "productId"
+},
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v3 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "currency",
   "storageKey": null
 },
-v4 = [
-  (v2/*: any*/),
+v5 = [
+  (v3/*: any*/),
   {
     "alias": null,
     "args": null,
@@ -110,7 +117,14 @@ v4 = [
     "storageKey": null
   }
 ],
-v5 = {
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "hasNextPage",
+  "storageKey": null
+},
+v7 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -118,17 +132,11 @@ v5 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "hasNextPage",
-      "storageKey": null
-    }
+    (v6/*: any*/)
   ],
   "storageKey": null
 },
-v6 = [
+v8 = [
   {
     "alias": null,
     "args": [
@@ -138,6 +146,11 @@ v6 = [
             "kind": "Literal",
             "name": "activeOnly",
             "value": true
+          },
+          {
+            "kind": "Variable",
+            "name": "after",
+            "variableName": "after"
           },
           {
             "kind": "Variable",
@@ -175,8 +188,8 @@ v6 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v2/*: any*/),
               (v3/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -185,7 +198,7 @@ v6 = [
                 "name": "merchant",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
+                  (v3/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -210,7 +223,7 @@ v6 = [
                 "kind": "LinkedField",
                 "name": "latestPrice",
                 "plural": false,
-                "selections": (v4/*: any*/),
+                "selections": (v5/*: any*/),
                 "storageKey": null
               },
               {
@@ -264,7 +277,7 @@ v6 = [
                             "name": "discountValue",
                             "storageKey": null
                           },
-                          (v3/*: any*/),
+                          (v4/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -278,7 +291,7 @@ v6 = [
                     ],
                     "storageKey": null
                   },
-                  (v5/*: any*/)
+                  (v7/*: any*/)
                 ],
                 "storageKey": "activeCoupons(first:2)"
               },
@@ -311,13 +324,13 @@ v6 = [
                         "kind": "LinkedField",
                         "name": "node",
                         "plural": false,
-                        "selections": (v4/*: any*/),
+                        "selections": (v5/*: any*/),
                         "storageKey": null
                       }
                     ],
                     "storageKey": null
                   },
-                  (v5/*: any*/)
+                  (v7/*: any*/)
                 ],
                 "storageKey": "priceHistory(first:3)"
               }
@@ -327,7 +340,25 @@ v6 = [
         ],
         "storageKey": null
       },
-      (v5/*: any*/)
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "PageInfo",
+        "kind": "LinkedField",
+        "name": "pageInfo",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "endCursor",
+            "storageKey": null
+          },
+          (v6/*: any*/)
+        ],
+        "storageKey": null
+      }
     ],
     "storageKey": null
   }
@@ -336,36 +367,38 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*: any*/),
-      (v1/*: any*/)
+      (v1/*: any*/),
+      (v2/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "CompareOfferContextQuery",
-    "selections": (v6/*: any*/),
+    "selections": (v8/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
+      (v2/*: any*/),
       (v1/*: any*/),
       (v0/*: any*/)
     ],
     "kind": "Operation",
     "name": "CompareOfferContextQuery",
-    "selections": (v6/*: any*/)
+    "selections": (v8/*: any*/)
   },
   "params": {
-    "cacheID": "4b2d1b1a6adfd7849422173a9e512874",
+    "cacheID": "4d65c8045f7b2299629d48e2620975ad",
     "id": null,
     "metadata": {},
     "name": "CompareOfferContextQuery",
     "operationKind": "query",
-    "text": "query CompareOfferContextQuery(\n  $productId: ID!\n  $first: Int!\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first}) {\n    edges {\n      node {\n        id\n        currency\n        merchant {\n          id\n          name\n          domain\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            node {\n              code\n              discountType\n              discountValue\n              currency\n              validTo\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query CompareOfferContextQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      node {\n        id\n        currency\n        merchant {\n          id\n          name\n          domain\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            node {\n              code\n              discountType\n              discountValue\n              currency\n              validTo\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "1f4bc6f5c7248b2a0b8677183fa240bd";
+(node as any).hash = "846d39ec590a38037f4b740dd14e13a4";
 
 export default node;

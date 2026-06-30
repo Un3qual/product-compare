@@ -276,6 +276,185 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
       assert %{id: ^tn_option_id, label: "TN", count: 0, selected: false, disabled: true} =
                option_by_id(enum_options, tn_option.id)
     end
+
+    test "counts child products for parent type facets" do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      display_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("filter-meta-display"),
+          name: "Display"
+        })
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          parent_id: display_taxon.id,
+          code: unique_code("filter-meta-display-monitor"),
+          name: "Monitor"
+        })
+
+      SpecsFixtures.product_fixture(%{
+        slug: unique_code("filter-meta-display-product"),
+        primary_type_taxon: monitor_taxon
+      })
+
+      metadata = Catalog.product_filter_metadata(%{})
+
+      display_taxon_id = display_taxon.id
+      monitor_taxon_id = monitor_taxon.id
+
+      assert %{id: ^display_taxon_id, count: 1, selected: false, disabled: false} =
+               option_by_id(metadata.type_options, display_taxon.id)
+
+      assert %{id: ^monitor_taxon_id, count: 1, selected: false, disabled: false} =
+               option_by_id(metadata.type_options, monitor_taxon.id)
+    end
+
+    test "labels numeric base ranges with the base unit symbol" do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("filter-meta-length-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("filter-meta-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: unique_code("filter-meta-mm"),
+        symbol: "mm",
+        multiplier_to_base: Decimal.new("1"),
+        offset_to_base: Decimal.new("0")
+      })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("filter-meta-size"),
+          display_name: "Size",
+          data_type: :numeric,
+          dimension_id: dimension.id,
+          is_filterable: true
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-inch-product")})
+
+      product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, attribute, moderator)
+
+      metadata = Catalog.product_filter_metadata(%{})
+
+      assert [
+               %{
+                 attribute_id: attribute_id,
+                 unit_symbol: "mm",
+                 min: min,
+                 max: max
+               }
+             ] = Enum.filter(metadata.numeric_filters, &(&1.attribute_id == attribute.id))
+
+      assert attribute_id == attribute.id
+      assert Decimal.equal?(min, Decimal.new("685.8"))
+      assert Decimal.equal?(max, Decimal.new("685.8"))
+    end
+
+    test "omits only the current numeric attribute when calculating selected ranges" do
+      moderator = AccountsFixtures.user_fixture()
+      {refresh_rate_attribute, hz_unit} = numeric_attribute_with_unit_fixture()
+
+      size_attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("filter-meta-size-selected"),
+          display_name: "Size",
+          data_type: :numeric,
+          dimension_id: hz_unit.dimension_id,
+          is_filterable: true
+        })
+
+      first_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-selected-a")})
+
+      second_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-selected-b")})
+
+      third_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-selected-c")})
+
+      first_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(first_product, refresh_rate_attribute, moderator)
+
+      first_product
+      |> accept_claim!(
+        size_attribute,
+        %{value_num: Decimal.new("27"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(first_product, size_attribute, moderator)
+
+      second_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("60"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(second_product, refresh_rate_attribute, moderator)
+
+      second_product
+      |> accept_claim!(
+        size_attribute,
+        %{value_num: Decimal.new("24"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(second_product, size_attribute, moderator)
+
+      third_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("165"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(third_product, refresh_rate_attribute, moderator)
+
+      third_product
+      |> accept_claim!(
+        size_attribute,
+        %{value_num: Decimal.new("32"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(third_product, size_attribute, moderator)
+
+      metadata =
+        Catalog.product_filter_metadata(%{
+          numeric: [
+            %{attribute_id: refresh_rate_attribute.id, min: Decimal.new("100")},
+            %{attribute_id: size_attribute.id, max: Decimal.new("30")}
+          ]
+        })
+
+      refresh_range =
+        Enum.find(metadata.numeric_filters, &(&1.attribute_id == refresh_rate_attribute.id))
+
+      size_range = Enum.find(metadata.numeric_filters, &(&1.attribute_id == size_attribute.id))
+
+      assert Decimal.equal?(refresh_range.min, Decimal.new("60"))
+      assert Decimal.equal?(refresh_range.max, Decimal.new("144"))
+      assert Decimal.equal?(size_range.min, Decimal.new("27"))
+      assert Decimal.equal?(size_range.max, Decimal.new("32"))
+    end
   end
 
   defp option_by_id(options, id) do

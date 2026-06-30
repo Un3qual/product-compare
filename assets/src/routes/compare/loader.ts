@@ -15,7 +15,7 @@ import {
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
-export const COMPARE_OFFER_CONTEXT_FIRST = 3;
+export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 20;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 
@@ -92,6 +92,8 @@ export type CompareRouteLoaderData =
 
 type FetchedCompareProductQuery = FetchedRelayRouteQuery<ProductDetailRouteQuery>;
 type FetchedCompareOfferContextQuery = FetchedRelayRouteQuery<CompareOfferContextQuery>;
+type CompareOfferContextNode =
+  CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"];
 
 export async function compareLoader({
   context,
@@ -224,14 +226,7 @@ async function fetchOfferContextsByProductId(
   signal: AbortSignal
 ): Promise<CompareOfferContextsByProductId> {
   const offerContextResults = await Promise.allSettled(
-    products.map((product) =>
-      fetchRouteQuery<CompareOfferContextQuery>(
-        environment,
-        compareOfferContextQuery,
-        { productId: product.id, first: COMPARE_OFFER_CONTEXT_FIRST },
-        { signal }
-      )
-    )
+    products.map((product) => fetchOfferContextPages(environment, product.id, signal))
   );
   const offerContexts: CompareOfferContextsByProductId = {};
 
@@ -244,24 +239,71 @@ async function fetchOfferContextsByProductId(
     }
 
     try {
-      offerContexts[product.id] = summarizeOfferContextQuery(product.id, result.value);
+      offerContexts[product.id] = summarizeOfferContextQueries(product.id, result.value);
     } catch {
       offerContexts[product.id] = summarizeUnavailableOfferContext(product.id);
     } finally {
-      result.value.dispose();
+      disposeFetchedOfferContextQueries(result.value);
     }
   });
 
   return offerContexts;
 }
 
-function summarizeOfferContextQuery(
+async function fetchOfferContextPages(
+  environment: Environment,
   productId: string,
-  query: FetchedCompareOfferContextQuery
+  signal: AbortSignal
+): Promise<FetchedCompareOfferContextQuery[]> {
+  const pages: FetchedCompareOfferContextQuery[] = [];
+  const seenEndCursors = new Set<string>();
+  let after: string | null = null;
+
+  try {
+    do {
+      const page: FetchedCompareOfferContextQuery = await fetchRouteQuery<CompareOfferContextQuery>(
+        environment,
+        compareOfferContextQuery,
+        {
+          after,
+          first: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
+          productId
+        },
+        { signal }
+      );
+      const pageInfo = page.data.merchantProducts.pageInfo;
+      const endCursor: string | null = pageInfo.endCursor ?? null;
+      const hasNextPage = pageInfo.hasNextPage;
+
+      pages.push(page);
+
+      if (!hasNextPage || !endCursor || seenEndCursors.has(endCursor)) {
+        after = null;
+        continue;
+      }
+
+      seenEndCursors.add(endCursor);
+      after = endCursor;
+    } while (after);
+  } catch (error) {
+    disposeFetchedOfferContextQueries(pages);
+    throw error;
+  }
+
+  return pages;
+}
+
+function summarizeOfferContextQueries(
+  productId: string,
+  queries: FetchedCompareOfferContextQuery[]
 ): CompareAvailableOfferContextSummary {
-  const offerNodes = query.data.merchantProducts.edges.map(({ node }) => node);
+  const offerNodes = queries.flatMap((query) =>
+    query.data.merchantProducts.edges.map(({ node }) => node)
+  );
   const bestCurrentPrice = lowestCurrentPrice(offerNodes);
   const latestPriceObservedAt = mostRecentObservedAt(offerNodes);
+  const lastQuery = queries[queries.length - 1];
+  const lastPageInfo = lastQuery?.data.merchantProducts.pageInfo;
 
   return {
     status: "available",
@@ -271,7 +313,7 @@ function summarizeOfferContextQuery(
     hasLoadedCoupons: offerNodes.some(
       (offer) => (offer.activeCoupons?.edges.length ?? 0) > 0
     ),
-    hasMoreActiveOffers: query.data.merchantProducts.pageInfo.hasNextPage,
+    hasMoreActiveOffers: lastPageInfo?.hasNextPage ?? false,
     hasMoreCoupons: offerNodes.some(
       (offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false
     ),
@@ -286,32 +328,16 @@ function summarizeUnavailableOfferContext(productId: string): CompareUnavailable
   };
 }
 
-function lowestCurrentPrice(
-  offerNodes: CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"][]
-): CompareBestCurrentPriceSummary | null {
-  let bestPrice:
-    | (CompareBestCurrentPriceSummary & {
-        numericPrice: number;
-      })
-    | null = null;
-
-  for (const offer of offerNodes) {
-    const latestPrice = offer.latestPrice;
-    const numericPrice = decimalStringToNumber(latestPrice?.price);
-
-    if (!latestPrice || numericPrice === null) {
-      continue;
-    }
-
-    if (bestPrice === null || numericPrice < bestPrice.numericPrice) {
-      bestPrice = {
-        currency: offer.currency,
-        merchantName: offer.merchant?.name ?? null,
-        numericPrice,
-        price: latestPrice.price
-      };
-    }
+function disposeFetchedOfferContextQueries(queries: FetchedCompareOfferContextQuery[]) {
+  for (const query of queries) {
+    query.dispose();
   }
+}
+
+function lowestCurrentPrice(
+  offerNodes: CompareOfferContextNode[]
+): CompareBestCurrentPriceSummary | null {
+  const bestPrice = offerNodes.reduce(selectLowerCurrentPrice, null);
 
   if (!bestPrice) {
     return null;
@@ -324,8 +350,41 @@ function lowestCurrentPrice(
   };
 }
 
+type CompareBestCurrentPriceCandidate = CompareBestCurrentPriceSummary & {
+  numericPrice: number;
+};
+
+function selectLowerCurrentPrice(
+  bestPrice: CompareBestCurrentPriceCandidate | null,
+  offer: CompareOfferContextNode
+) {
+  const candidate = currentPriceCandidate(offer);
+
+  if (!candidate) {
+    return bestPrice;
+  }
+
+  return !bestPrice || candidate.numericPrice < bestPrice.numericPrice ? candidate : bestPrice;
+}
+
+function currentPriceCandidate(offer: CompareOfferContextNode) {
+  const latestPrice = offer.latestPrice;
+  const numericPrice = decimalStringToNumber(latestPrice?.price);
+
+  if (!latestPrice || numericPrice === null) {
+    return null;
+  }
+
+  return {
+    currency: offer.currency,
+    merchantName: offer.merchant?.name ?? null,
+    numericPrice,
+    price: latestPrice.price
+  };
+}
+
 function mostRecentObservedAt(
-  offerNodes: CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"][]
+  offerNodes: CompareOfferContextNode[]
 ) {
   const observedAtValues = offerNodes.flatMap((offer) => [
     offer.latestPrice?.observedAt,

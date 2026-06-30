@@ -339,6 +339,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              end)
 
       assert count_queries_targeting_table(queries, :product_attribute_current) == 1
+      assert count_queries_targeting_table(queries, :taxon_attributes) == 1
     end
 
     test "products returns a paginated connection with stable ordering", %{conn: conn} do

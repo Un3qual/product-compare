@@ -28,6 +28,16 @@ import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
 } from "./paths";
+
+const COMPARE_SPEC_MODE_OPTIONS: Array<{
+  label: string;
+  mode: CompareSpecMode;
+}> = [
+  { label: "Shared specs", mode: "shared" },
+  { label: "Differences", mode: "differences" },
+  { label: "All specs", mode: "all" }
+];
+
 interface SaveFeedbackState {
   error: string | null;
   inFlightSelectionKey: string | null;
@@ -300,15 +310,6 @@ function CompareSpecModeControls({
     </nav>
   );
 }
-
-const COMPARE_SPEC_MODE_OPTIONS: Array<{
-  label: string;
-  mode: CompareSpecMode;
-}> = [
-  { label: "Shared specs", mode: "shared" },
-  { label: "Differences", mode: "differences" },
-  { label: "All specs", mode: "all" }
-];
 
 function isActiveSaveRequest(
   activeSaveRequest: { id: number; selectionKey: string } | null,

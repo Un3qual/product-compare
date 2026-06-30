@@ -253,11 +253,13 @@ const buildFetchedProductQuery = (
   dispose: vi.fn()
 });
 
-const buildOfferContextDescriptor = (productId: string) => ({
+const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 20;
+
+const buildOfferContextDescriptor = (productId: string, after: string | null = null) => ({
   __relayQuery: {
     operationName: "CompareOfferContextQuery",
-    text: "query CompareOfferContextQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }",
-    variables: { productId, first: 3 }
+    text: "query CompareOfferContextQuery($productId: ID!, $first: Int!, $after: String) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first, after: $after }) { edges { node { id } } } }",
+    variables: { productId, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after }
   }
 });
 
@@ -287,18 +289,20 @@ const buildOfferContextConnection = ({
     }
   })),
   pageInfo: {
+    endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
     hasNextPage
   }
 });
 
 const buildFetchedOfferContextQuery = (
   productId: string,
-  merchantProducts: ReturnType<typeof buildOfferContextConnection>
+  merchantProducts: ReturnType<typeof buildOfferContextConnection>,
+  after: string | null = null
 ) => ({
   data: {
     merchantProducts
   },
-  descriptor: buildOfferContextDescriptor(productId),
+  descriptor: buildOfferContextDescriptor(productId, after),
   dispose: vi.fn()
 });
 
@@ -542,14 +546,14 @@ test("compare loader requests selected product details and preserves URL order",
     3,
     environment,
     expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     4,
     environment,
     expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: 3 },
+    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
 });
@@ -615,7 +619,7 @@ test("compare loader preserves typed attribute metadata for compare rows", async
   });
 });
 
-test("compare loader summarizes bounded offer context for each selected product", async () => {
+test("compare loader summarizes paginated offer context for each selected product", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
@@ -723,6 +727,36 @@ test("compare loader summarizes bounded offer context for each selected product"
       }
     ]
   });
+  const detailNextOffers = buildOfferContextConnection({
+    offers: [
+      {
+        id: "merchant-product-5",
+        currency: "USD",
+        merchant: {
+          id: "merchant-5",
+          name: "Clearance Shop",
+          domain: "clearance.example"
+        },
+        latestPrice: {
+          id: "price-5",
+          price: "179.99",
+          observedAt: "2026-06-25T09:00:00Z"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        },
+        priceHistory: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ]
+  });
   const secondOffers = buildOfferContextConnection({
     offers: [
       {
@@ -758,7 +792,10 @@ test("compare loader summarizes bounded offer context for each selected product"
     .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
     .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
     .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
-    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers));
+    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers))
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailNextOffers, "offer-cursor-3")
+    );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -768,14 +805,14 @@ test("compare loader summarizes bounded offer context for each selected product"
       [DETAIL_PRODUCT.id]: {
         status: "available",
         productId: DETAIL_PRODUCT.id,
-        activeOfferCount: 3,
+        activeOfferCount: 4,
         bestCurrentPrice: {
           currency: "USD",
-          merchantName: "Value Mart",
-          price: "199.99"
+          merchantName: "Clearance Shop",
+          price: "179.99"
         },
         hasLoadedCoupons: true,
-        hasMoreActiveOffers: true,
+        hasMoreActiveOffers: false,
         hasMoreCoupons: true,
         latestPriceObservedAt: "2026-06-29T12:00:00Z"
       },
@@ -799,14 +836,25 @@ test("compare loader summarizes bounded offer context for each selected product"
     3,
     environment,
     expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     4,
     environment,
     expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: 3 },
+    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    5,
+    environment,
+    expect.anything(),
+    {
+      productId: DETAIL_PRODUCT.id,
+      first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
+      after: "offer-cursor-3"
+    },
     { signal: request.signal }
   );
 });
@@ -905,14 +953,14 @@ test("compare loader forwards the route abort signal to each Relay preload", asy
     3,
     environment,
     expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     4,
     environment,
     expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: 3 },
+    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
 });

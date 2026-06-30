@@ -1,8 +1,8 @@
 import { graphql } from "react-relay";
 
 export const compareOfferContextQuery = graphql`
-  query CompareOfferContextQuery($productId: ID!, $first: Int!) {
-    merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) {
+  query CompareOfferContextQuery($productId: ID!, $first: Int!, $after: String) {
+    merchantProducts(input: { productId: $productId, activeOnly: true, first: $first, after: $after }) {
       edges {
         node {
           id
@@ -46,6 +46,7 @@ export const compareOfferContextQuery = graphql`
         }
       }
       pageInfo {
+        endCursor
         hasNextPage
       }
     }

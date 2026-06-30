@@ -247,17 +247,9 @@ defmodule ProductCompare.Specs do
       current_attributes
       |> Enum.map(& &1.attribute_id)
       |> taxon_attribute_metadata_by_attribute_id(taxon_id)
+      |> Map.values()
 
-    current_attributes
-    |> Enum.map(fn current_attribute ->
-      %{
-        current: current_attribute,
-        attribute: current_attribute.attribute,
-        claim: current_attribute.claim,
-        taxon_attribute: Map.get(taxon_attributes, current_attribute.attribute_id)
-      }
-    end)
-    |> Enum.sort_by(&current_attribute_sort_key/1)
+    with_current_attribute_metadata_from_taxon_attributes(current_attributes, taxon_attributes)
   end
 
   @spec list_filterable_attributes([atom()]) :: [Attribute.t()]
@@ -270,6 +262,25 @@ defmodule ProductCompare.Specs do
     )
   end
 
+  @spec filterable_attribute_types([pos_integer()]) :: %{pos_integer() => atom()}
+  def filterable_attribute_types(attribute_ids) when is_list(attribute_ids) do
+    attribute_ids
+    |> normalize_ids()
+    |> case do
+      [] ->
+        %{}
+
+      ids ->
+        Repo.all(
+          from attribute in Attribute,
+            where: attribute.id in ^ids,
+            where: attribute.is_filterable == true,
+            select: {attribute.id, attribute.data_type}
+        )
+        |> Map.new()
+    end
+  end
+
   @spec get_filterable_attribute(pos_integer(), atom()) :: Attribute.t() | nil
   def get_filterable_attribute(attribute_id, data_type)
       when is_integer(attribute_id) and is_atom(data_type) do
@@ -279,6 +290,29 @@ defmodule ProductCompare.Specs do
         where: attribute.data_type == ^data_type,
         where: attribute.is_filterable == true
     )
+  end
+
+  @spec filterable_enum_option_pairs([pos_integer()], [pos_integer()]) :: MapSet.t()
+  def filterable_enum_option_pairs(attribute_ids, enum_option_ids)
+      when is_list(attribute_ids) and is_list(enum_option_ids) do
+    attribute_ids = normalize_ids(attribute_ids)
+    enum_option_ids = normalize_ids(enum_option_ids)
+
+    if attribute_ids == [] or enum_option_ids == [] do
+      MapSet.new()
+    else
+      Repo.all(
+        from attribute in Attribute,
+          join: enum_option in EnumOption,
+          on: enum_option.enum_set_id == attribute.enum_set_id,
+          where: attribute.id in ^attribute_ids,
+          where: attribute.data_type == :enum,
+          where: attribute.is_filterable == true,
+          where: enum_option.id in ^enum_option_ids,
+          select: {attribute.id, enum_option.id}
+      )
+      |> MapSet.new()
+    end
   end
 
   @spec enum_option_belongs_to_attribute?(pos_integer(), pos_integer()) :: boolean()
@@ -304,17 +338,96 @@ defmodule ProductCompare.Specs do
     )
   end
 
+  @spec list_enum_options_for_sets([pos_integer()]) :: %{pos_integer() => [EnumOption.t()]}
+  def list_enum_options_for_sets(enum_set_ids) when is_list(enum_set_ids) do
+    enum_set_ids
+    |> normalize_ids()
+    |> case do
+      [] ->
+        %{}
+
+      ids ->
+        Repo.all(
+          from enum_option in EnumOption,
+            where: enum_option.enum_set_id in ^ids,
+            order_by: [
+              asc: enum_option.enum_set_id,
+              asc: enum_option.sort_order,
+              asc: enum_option.label,
+              asc: enum_option.id
+            ]
+        )
+        |> Enum.group_by(& &1.enum_set_id)
+    end
+  end
+
   @spec unit_symbol_for_dimension(pos_integer() | nil) :: String.t() | nil
   def unit_symbol_for_dimension(nil), do: nil
 
   def unit_symbol_for_dimension(dimension_id) when is_integer(dimension_id) do
-    Repo.one(
-      from unit in Unit,
-        where: unit.dimension_id == ^dimension_id,
-        order_by: [asc: unit.id],
-        limit: 1,
-        select: fragment("NULLIF(COALESCE(?, ?), '')", unit.symbol, unit.code)
-    )
+    dimension_id
+    |> List.wrap()
+    |> unit_symbols_for_dimensions()
+    |> Map.get(dimension_id)
+  end
+
+  @spec unit_symbols_for_dimensions([pos_integer() | nil]) :: %{pos_integer() => String.t()}
+  def unit_symbols_for_dimensions(dimension_ids) when is_list(dimension_ids) do
+    dimension_ids
+    |> normalize_ids()
+    |> case do
+      [] ->
+        %{}
+
+      ids ->
+        Repo.all(
+          from unit in Unit,
+            where: unit.dimension_id in ^ids,
+            order_by: [
+              asc: unit.dimension_id,
+              asc:
+                fragment(
+                  "CASE WHEN ? = 1 AND ? = 0 THEN 0 ELSE 1 END",
+                  unit.multiplier_to_base,
+                  unit.offset_to_base
+                ),
+              asc: unit.id
+            ],
+            select: {
+              unit.dimension_id,
+              fragment("NULLIF(COALESCE(?, ?), '')", unit.symbol, unit.code)
+            }
+        )
+        |> Enum.reduce(%{}, fn {dimension_id, symbol}, acc ->
+          Map.put_new(acc, dimension_id, symbol)
+        end)
+    end
+  end
+
+  @spec with_current_attribute_metadata_from_taxon_attributes(
+          [ProductAttributeCurrent.t()],
+          [TaxonAttribute.t()] | nil
+        ) :: [map()]
+  def with_current_attribute_metadata_from_taxon_attributes(current_attributes, taxon_attributes)
+      when is_list(current_attributes) do
+    attribute_ids = MapSet.new(current_attributes, & &1.attribute_id)
+
+    taxon_attributes =
+      taxon_attributes
+      |> List.wrap()
+      |> Enum.filter(&MapSet.member?(attribute_ids, &1.attribute_id))
+      |> Map.new(&{&1.attribute_id, &1})
+
+    current_attributes
+    |> Enum.map(fn current_attribute ->
+      %{
+        current: current_attribute,
+        attribute: current_attribute.attribute,
+        claim: current_attribute.claim,
+        taxon_attribute: Map.get(taxon_attributes, current_attribute.attribute_id)
+      }
+    end)
+    |> Enum.sort_by(&current_attribute_sort_key/1)
   end
 
   defp fetch_attribute(attribute_id) do
@@ -343,6 +456,12 @@ defmodule ProductCompare.Specs do
     |> where([taxon_attribute], taxon_attribute.attribute_id in ^attribute_ids)
     |> Repo.all()
     |> Map.new(&{&1.attribute_id, &1})
+  end
+
+  defp normalize_ids(ids) do
+    ids
+    |> Enum.filter(&is_integer/1)
+    |> Enum.uniq()
   end
 
   defp current_attribute_sort_key(%{attribute: attribute, taxon_attribute: taxon_attribute}) do

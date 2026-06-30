@@ -6,14 +6,24 @@ import productDetailRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ProductAttributeList } from "../products/product-attribute-list";
 import type {
-  CompareOfferContextSummary,
   CompareProductSummary,
   CompareRouteLoaderData,
   CompareSpecMode
 } from "./loader";
+import { DecisionSummary } from "./decision-summary";
 import { buildComparePathAfterRemovingSlugIndex } from "./paths";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
+const SPECIFICATION_MATRIX_TITLES: Record<CompareSpecMode, string> = {
+  all: "All specifications",
+  differences: "Different specifications",
+  shared: "Shared specifications"
+};
+const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
+  all: "No specifications are available for these products yet.",
+  differences: "No specification differences across these products yet.",
+  shared: "No shared specifications across these products yet."
+};
 
 export function CompareProductList({
   loaderData
@@ -44,141 +54,6 @@ export function CompareProductList({
       </ul>
     </>
   );
-}
-
-function DecisionSummary({
-  offerContexts,
-  products
-}: {
-  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
-  products: CompareProductSummary[];
-}) {
-  if (products.length === 0) {
-    return null;
-  }
-
-  return (
-    <section>
-      <h2>Decision summary</h2>
-      <table aria-label="Decision summary">
-        <thead>
-          <tr>
-            <th scope="col">Decision</th>
-            {products.map((product) => (
-              <th key={product.id} scope="col">
-                {product.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">Best current price</th>
-            {products.map((product) => (
-              <td key={`${product.id}-best-price`}>
-                {bestCurrentPriceLabel(offerContextForProduct(offerContexts, product.id))}
-              </td>
-            ))}
-          </tr>
-          <tr>
-            <th scope="row">Active offer count</th>
-            {products.map((product) => (
-              <td key={`${product.id}-offer-count`}>
-                {activeOfferCountLabel(offerContextForProduct(offerContexts, product.id))}
-              </td>
-            ))}
-          </tr>
-          <tr>
-            <th scope="row">Coupon signal</th>
-            {products.map((product) => (
-              <td key={`${product.id}-coupon-signal`}>
-                {couponSignalLabel(offerContextForProduct(offerContexts, product.id))}
-              </td>
-            ))}
-          </tr>
-          <tr>
-            <th scope="row">Price recency</th>
-            {products.map((product) => (
-              <td key={`${product.id}-price-recency`}>
-                {priceRecencyLabel(offerContextForProduct(offerContexts, product.id))}
-              </td>
-            ))}
-          </tr>
-          <tr>
-            <th scope="row">Review offers link</th>
-            {products.map((product) => (
-              <td key={`${product.id}-review-offers`}>
-                <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
-                  Review {product.name} offers
-                </Link>
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
-function offerContextForProduct(
-  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"] | undefined,
-  productId: string
-): CompareOfferContextSummary {
-  return offerContexts?.[productId] ?? { status: "unavailable", productId };
-}
-
-function bestCurrentPriceLabel(context: CompareOfferContextSummary) {
-  if (context.status === "unavailable") {
-    return "Offer context unavailable";
-  }
-
-  if (!context.bestCurrentPrice) {
-    return "No current price loaded";
-  }
-
-  return `${context.bestCurrentPrice.price} ${context.bestCurrentPrice.currency} at ${
-    context.bestCurrentPrice.merchantName ?? "Unknown merchant"
-  }`;
-}
-
-function activeOfferCountLabel(context: CompareOfferContextSummary) {
-  if (context.status === "unavailable") {
-    return "Unavailable";
-  }
-
-  return context.hasMoreActiveOffers
-    ? `${context.activeOfferCount} loaded; More available`
-    : `${context.activeOfferCount} loaded`;
-}
-
-function couponSignalLabel(context: CompareOfferContextSummary) {
-  if (context.status === "unavailable") {
-    return "Unavailable";
-  }
-
-  if (context.hasMoreCoupons) {
-    return "More coupons available";
-  }
-
-  return context.hasLoadedCoupons ? "Coupons available" : "No coupons loaded";
-}
-
-function priceRecencyLabel(context: CompareOfferContextSummary) {
-  if (context.status === "unavailable") {
-    return "Unavailable";
-  }
-
-  return dateLabel(context.latestPriceObservedAt) ?? "No price observations loaded";
-}
-
-function dateLabel(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  return Number.isNaN(date.getTime()) ? null : value.slice(0, 10);
 }
 
 function CompareSpecificationMatrix({
@@ -412,25 +287,13 @@ function normalizeDecimalComparisonValue(value: string) {
 }
 
 function specificationMatrixTitle(specMode: CompareSpecMode) {
-  switch (specMode) {
-    case "all":
-      return "All specifications";
-    case "differences":
-      return "Different specifications";
-    case "shared":
-      return "Shared specifications";
-  }
+  return SPECIFICATION_MATRIX_TITLES[specMode] ?? SPECIFICATION_MATRIX_TITLES.shared;
 }
 
 function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
-  switch (specMode) {
-    case "all":
-      return "No specifications are available for these products yet.";
-    case "differences":
-      return "No specification differences across these products yet.";
-    case "shared":
-      return "No shared specifications across these products yet.";
-  }
+  return (
+    EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode] ?? EMPTY_SPECIFICATION_MATRIX_MESSAGES.shared
+  );
 }
 
 function buildFirstAttributeByCode(
