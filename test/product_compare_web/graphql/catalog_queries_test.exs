@@ -265,6 +265,65 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert oled_option_id == relay_id(:enum_option, oled_option.id)
     end
 
+    test "product exposes numeric current attribute metadata in base units", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("metadata-length-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("metadata-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: unique_code("metadata-mm"),
+        symbol: "mm",
+        multiplier_to_base: Decimal.new("1"),
+        offset_to_base: Decimal.new("0")
+      })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("metadata-size"),
+          display_name: "Screen size",
+          data_type: :numeric,
+          dimension_id: dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("metadata-inch-product")})
+
+      product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => attributes
+                 }
+               }
+             } = graphql(conn, product_attribute_metadata_query(), %{"slug" => product.slug})
+
+      attribute_code = attribute.code
+
+      assert [
+               %{
+                 "code" => ^attribute_code,
+                 "dataType" => "numeric",
+                 "valueText" => "27 in",
+                 "numericValue" => "685.8",
+                 "unitSymbol" => "mm"
+               }
+             ] = attributes
+    end
+
     test "product returns an empty currentAttributes list when no current claims exist", %{
       conn: conn
     } do

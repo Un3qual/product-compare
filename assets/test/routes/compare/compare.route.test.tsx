@@ -253,7 +253,7 @@ const buildFetchedProductQuery = (
   dispose: vi.fn()
 });
 
-const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 20;
+const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
 
 const buildOfferContextDescriptor = (productId: string, after: string | null = null) => ({
   __relayQuery: {
@@ -619,7 +619,7 @@ test("compare loader preserves typed attribute metadata for compare rows", async
   });
 });
 
-test("compare loader summarizes paginated offer context for each selected product", async () => {
+test("compare loader summarizes the first offer-context page for each selected product", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
@@ -727,36 +727,6 @@ test("compare loader summarizes paginated offer context for each selected produc
       }
     ]
   });
-  const detailNextOffers = buildOfferContextConnection({
-    offers: [
-      {
-        id: "merchant-product-5",
-        currency: "USD",
-        merchant: {
-          id: "merchant-5",
-          name: "Clearance Shop",
-          domain: "clearance.example"
-        },
-        latestPrice: {
-          id: "price-5",
-          price: "179.99",
-          observedAt: "2026-06-25T09:00:00Z"
-        },
-        activeCoupons: {
-          edges: [],
-          pageInfo: {
-            hasNextPage: false
-          }
-        },
-        priceHistory: {
-          edges: [],
-          pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ]
-  });
   const secondOffers = buildOfferContextConnection({
     offers: [
       {
@@ -792,10 +762,7 @@ test("compare loader summarizes paginated offer context for each selected produc
     .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
     .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
     .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
-    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers))
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailNextOffers, "offer-cursor-3")
-    );
+    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers));
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -805,14 +772,14 @@ test("compare loader summarizes paginated offer context for each selected produc
       [DETAIL_PRODUCT.id]: {
         status: "available",
         productId: DETAIL_PRODUCT.id,
-        activeOfferCount: 4,
+        activeOfferCount: 3,
         bestCurrentPrice: {
           currency: "USD",
-          merchantName: "Clearance Shop",
-          price: "179.99"
+          merchantName: "Value Mart",
+          price: "199.99"
         },
         hasLoadedCoupons: true,
-        hasMoreActiveOffers: false,
+        hasMoreActiveOffers: true,
         hasMoreCoupons: true,
         latestPriceObservedAt: "2026-06-29T12:00:00Z"
       },
@@ -846,23 +813,12 @@ test("compare loader summarizes paginated offer context for each selected produc
     { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    5,
-    environment,
-    expect.anything(),
-    {
-      productId: DETAIL_PRODUCT.id,
-      first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
-      after: "offer-cursor-3"
-    },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(4);
 });
 
-test("compare loader truncates offer-context pagination at a hard page limit", async () => {
+test("compare loader does not paginate offer context past the first page", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare?slug=detail-product");
-  const expectedPageLimit = 50;
   let offerPageCount = 0;
 
   mockedFetchRouteQuery
@@ -870,12 +826,10 @@ test("compare loader truncates offer-context pagination at a hard page limit", a
     .mockImplementation((_environment, _query, variables) => {
       offerPageCount += 1;
 
-      if (offerPageCount > expectedPageLimit) {
-        throw new Error("offer context page cap was not enforced");
+      if (offerPageCount > 1) {
+        throw new Error("offer context should not request additional pages");
       }
 
-      const expectedAfter =
-        offerPageCount === 1 ? null : `offer-context-page-${offerPageCount - 1}`;
       const { after } = variables as { after: string | null };
       const connection = buildOfferContextConnection({
         hasNextPage: true,
@@ -892,7 +846,7 @@ test("compare loader truncates offer-context pagination at a hard page limit", a
         ]
       });
 
-      expect(after).toBe(expectedAfter);
+      expect(after).toBeNull();
 
       return Promise.resolve(
         buildFetchedOfferContextQuery(
@@ -916,12 +870,12 @@ test("compare loader truncates offer-context pagination at a hard page limit", a
     offerContexts: {
       [DETAIL_PRODUCT.id]: {
         status: "available",
-        activeOfferCount: expectedPageLimit,
+        activeOfferCount: 1,
         hasMoreActiveOffers: true
       }
     }
   });
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(expectedPageLimit + 1);
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(2);
 });
 
 test("compare loader does not choose a best current price across mixed currencies", async () => {

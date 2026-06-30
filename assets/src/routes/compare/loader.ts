@@ -15,8 +15,7 @@ import {
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
-export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 20;
-export const COMPARE_OFFER_CONTEXT_MAX_PAGES = 50;
+export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 
@@ -95,8 +94,6 @@ type FetchedCompareProductQuery = FetchedRelayRouteQuery<ProductDetailRouteQuery
 type FetchedCompareOfferContextQuery = FetchedRelayRouteQuery<CompareOfferContextQuery>;
 type CompareOfferContextNode =
   CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"];
-type CompareOfferContextPageInfo =
-  CompareOfferContextQuery["response"]["merchantProducts"]["pageInfo"];
 
 export async function compareLoader({
   context,
@@ -274,59 +271,25 @@ async function fetchOfferContextPages(
   signal: AbortSignal
 ): Promise<FetchedCompareOfferContextQuery[]> {
   const pages: FetchedCompareOfferContextQuery[] = [];
-  const seenEndCursors = new Set<string>();
-  let after: string | null = null;
 
   try {
-    do {
-      const page: FetchedCompareOfferContextQuery = await fetchRouteQuery<CompareOfferContextQuery>(
-        environment,
-        compareOfferContextQuery,
-        {
-          after,
-          first: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-          productId
-        },
-        { signal }
-      );
-      pages.push(page);
-
-      const nextAfter = nextOfferContextCursor(
-        page.data.merchantProducts.pageInfo,
-        seenEndCursors,
-        pages.length
-      );
-
-      if (nextAfter) {
-        seenEndCursors.add(nextAfter);
-      }
-
-      after = nextAfter;
-    } while (after);
+    const page: FetchedCompareOfferContextQuery = await fetchRouteQuery<CompareOfferContextQuery>(
+      environment,
+      compareOfferContextQuery,
+      {
+        after: null,
+        first: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
+        productId
+      },
+      { signal }
+    );
+    pages.push(page);
   } catch (error) {
     disposeFetchedOfferContextQueries(pages);
     throw error;
   }
 
   return pages;
-}
-
-function nextOfferContextCursor(
-  pageInfo: CompareOfferContextPageInfo,
-  seenEndCursors: Set<string>,
-  loadedPageCount: number
-) {
-  const endCursor: string | null = pageInfo.endCursor ?? null;
-
-  if (!pageInfo.hasNextPage || !endCursor) {
-    return null;
-  }
-
-  if (seenEndCursors.has(endCursor) || loadedPageCount >= COMPARE_OFFER_CONTEXT_MAX_PAGES) {
-    return null;
-  }
-
-  return endCursor;
 }
 
 function summarizeOfferContextQueries(

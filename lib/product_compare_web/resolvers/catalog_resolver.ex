@@ -55,7 +55,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
         |> Specs.with_current_attribute_metadata_from_taxon_attributes(
           loaded_taxon_attributes(loader, product.primary_type_taxon_id)
         )
-        |> Enum.map(&format_current_attribute/1)
+        |> format_current_attributes()
 
       {:ok, attributes}
     end)
@@ -65,7 +65,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     attributes =
       product_id
       |> Specs.list_current_attributes_for_product()
-      |> Enum.map(&format_current_attribute/1)
+      |> format_current_attributes()
 
     {:ok, attributes}
   end
@@ -382,7 +382,29 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
 
-  defp format_current_attribute(%{attribute: attribute, claim: claim} = current_attribute) do
+  defp format_current_attributes(current_attributes) do
+    base_unit_symbols_by_dimension =
+      current_attributes
+      |> Enum.flat_map(&non_base_numeric_dimension_id/1)
+      |> Specs.unit_symbols_for_dimensions()
+
+    Enum.map(current_attributes, &format_current_attribute(&1, base_unit_symbols_by_dimension))
+  end
+
+  defp non_base_numeric_dimension_id(%{
+         attribute: %{data_type: :numeric, dimension_id: dimension_id},
+         claim: %{value_num_base: %Decimal{}, unit: unit}
+       })
+       when is_integer(dimension_id) do
+    if base_unit?(unit), do: [], else: [dimension_id]
+  end
+
+  defp non_base_numeric_dimension_id(_current_attribute), do: []
+
+  defp format_current_attribute(
+         %{attribute: attribute, claim: claim} = current_attribute,
+         base_unit_symbols_by_dimension
+       ) do
     taxon_attribute = Map.get(current_attribute, :taxon_attribute)
 
     %{
@@ -397,7 +419,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       numeric_value: numeric_claim_value(claim),
       boolean_value: boolean_claim_value(claim),
       enum_option_id: GlobalId.encode_optional_value(:enum_option, claim.enum_option_id),
-      unit_symbol: unit_symbol(claim.unit)
+      unit_symbol: attribute_unit_symbol(attribute, claim, base_unit_symbols_by_dimension)
     }
   end
 
@@ -435,6 +457,33 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     do: "#{value} #{code}"
 
   defp append_unit(value, _unit), do: value
+
+  defp attribute_unit_symbol(
+         %{data_type: :numeric, dimension_id: dimension_id},
+         %{value_num_base: %Decimal{}, unit: unit},
+         base_unit_symbols_by_dimension
+       )
+       when is_integer(dimension_id) do
+    if base_unit?(unit) do
+      unit_symbol(unit)
+    else
+      Map.get(base_unit_symbols_by_dimension, dimension_id)
+    end
+  end
+
+  defp attribute_unit_symbol(%{data_type: :numeric}, %{value_num_base: %Decimal{}}, _symbols),
+    do: nil
+
+  defp attribute_unit_symbol(_attribute, claim, _symbols), do: unit_symbol(claim.unit)
+
+  defp base_unit?(%{
+         multiplier_to_base: %Decimal{} = multiplier,
+         offset_to_base: %Decimal{} = offset
+       }) do
+    Decimal.equal?(multiplier, Decimal.new("1")) and Decimal.equal?(offset, Decimal.new("0"))
+  end
+
+  defp base_unit?(_unit), do: false
 
   defp unit_symbol(%{symbol: symbol}) when is_binary(symbol) and symbol != "", do: symbol
   defp unit_symbol(%{code: code}) when is_binary(code) and code != "", do: code
