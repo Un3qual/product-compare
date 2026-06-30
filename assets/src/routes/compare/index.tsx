@@ -20,10 +20,10 @@ import {
 } from "./loader";
 import {
   CompareProductList,
-  CompareProductSummaryList,
-  buildComparePathAfterRemovingSlugIndex
+  CompareProductSummaryList
 } from "./product-list";
 import { CompareProductPickerBoundary } from "./product-picker";
+import { buildComparePathAfterRemovingSlugIndex } from "./paths";
 interface SaveFeedbackState {
   error: string | null;
   inFlightSelectionKey: string | null;

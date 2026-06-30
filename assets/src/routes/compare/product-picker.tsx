@@ -6,6 +6,7 @@ import compareProductPickerQuery, {
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { MAX_COMPARE_PRODUCTS } from "./loader";
+import { buildComparePathFromSlugs } from "./paths";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
@@ -114,18 +115,6 @@ function buildComparePath(selectedSlugs: readonly string[], productSlug: string)
   );
 
   return buildComparePathFromSlugs(nextSlugs);
-}
-
-function buildComparePathFromSlugs(selectedSlugs: readonly string[]) {
-  const params = new URLSearchParams();
-
-  for (const slug of selectedSlugs) {
-    params.append("slug", slug);
-  }
-
-  const nextQueryString = params.toString();
-
-  return nextQueryString.length > 0 ? `/compare?${nextQueryString}` : "/compare";
 }
 
 function appendUniqueProducts(
