@@ -115,6 +115,47 @@ type CompareTestProduct = {
   }>;
 };
 
+type CompareOfferTestNode = {
+  id: string;
+  currency: string;
+  merchant: {
+    id: string;
+    name: string;
+    domain?: string | null;
+  } | null;
+  latestPrice: {
+    id: string;
+    price: string;
+    observedAt: string;
+  } | null;
+  activeCoupons?: {
+    edges: Array<{
+      node: {
+        code: string;
+        discountType: string;
+        discountValue: string | null;
+        currency: string | null;
+        validTo: string | null;
+      };
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+    };
+  } | null;
+  priceHistory?: {
+    edges: Array<{
+      node: {
+        id: string;
+        price: string;
+        observedAt: string;
+      };
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+    };
+  } | null;
+};
+
 const DETAIL_PRODUCT = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
@@ -212,6 +253,92 @@ const buildFetchedProductQuery = (
   dispose: vi.fn()
 });
 
+const buildOfferContextDescriptor = (productId: string) => ({
+  __relayQuery: {
+    operationName: "CompareOfferContextQuery",
+    text: "query CompareOfferContextQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }",
+    variables: { productId, first: 3 }
+  }
+});
+
+const buildOfferContextConnection = ({
+  hasNextPage = false,
+  offers
+}: {
+  hasNextPage?: boolean;
+  offers: CompareOfferTestNode[];
+}) => ({
+  edges: offers.map((node, index) => ({
+    cursor: `offer-cursor-${index + 1}`,
+    node: {
+      activeCoupons: {
+        edges: node.activeCoupons?.edges ?? [],
+        pageInfo: {
+          hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
+        }
+      },
+      priceHistory: {
+        edges: node.priceHistory?.edges ?? [],
+        pageInfo: {
+          hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
+        }
+      },
+      ...node
+    }
+  })),
+  pageInfo: {
+    hasNextPage
+  }
+});
+
+const buildFetchedOfferContextQuery = (
+  productId: string,
+  merchantProducts: ReturnType<typeof buildOfferContextConnection>
+) => ({
+  data: {
+    merchantProducts
+  },
+  descriptor: buildOfferContextDescriptor(productId),
+  dispose: vi.fn()
+});
+
+const buildAvailableOfferContextSummary = (
+  productId: string,
+  overrides: Partial<{
+    activeOfferCount: number;
+    bestCurrentPrice: {
+      currency: string;
+      merchantName: string | null;
+      price: string;
+    } | null;
+    hasLoadedCoupons: boolean;
+    hasMoreActiveOffers: boolean;
+    hasMoreCoupons: boolean;
+    latestPriceObservedAt: string | null;
+  }> = {}
+) => ({
+  status: "available" as const,
+  productId,
+  activeOfferCount: 0,
+  bestCurrentPrice: null,
+  hasLoadedCoupons: false,
+  hasMoreActiveOffers: false,
+  hasMoreCoupons: false,
+  latestPriceObservedAt: null,
+  ...overrides
+});
+
+const buildUnavailableOfferContextSummary = (productId: string) => ({
+  status: "unavailable" as const,
+  productId
+});
+
+const buildDefaultOfferContexts = () => ({
+  [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
+  [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id),
+  [THIRD_PRODUCT.id]: buildAvailableOfferContextSummary(THIRD_PRODUCT.id)
+});
+
 const buildProductSummary = (product: CompareTestProduct) => ({
   id: product.id,
   name: product.name,
@@ -282,6 +409,7 @@ const buildReadyCompareLoaderData = (
   specMode: "shared" as const,
   slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
   productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+  offerContexts: buildDefaultOfferContexts(),
   products: [
     buildProductSummary(DETAIL_PRODUCT),
     buildProductSummary(SECOND_PRODUCT)
@@ -365,7 +493,19 @@ test("compare loader requests selected product details and preserves URL order",
 
   mockedFetchRouteQuery
     .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(
+        DETAIL_PRODUCT.id,
+        buildOfferContextConnection({ offers: [] })
+      )
+    )
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(
+        SECOND_PRODUCT.id,
+        buildOfferContextConnection({ offers: [] })
+      )
+    );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -374,6 +514,10 @@ test("compare loader requests selected product details and preserves URL order",
     specMode: "shared",
     slugs: ["detail-product", "second-product"],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
+      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
+    },
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT)
@@ -392,6 +536,20 @@ test("compare loader requests selected product details and preserves URL order",
     environment,
     expect.anything(),
     { slug: "second-product" },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    3,
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    4,
+    environment,
+    expect.anything(),
+    { productId: SECOND_PRODUCT.id, first: 3 },
     { signal: request.signal }
   );
 });
@@ -421,6 +579,11 @@ test("compare loader preserves typed attribute metadata for compare rows", async
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
     buildFetchedProductQuery(productWithMetadata, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+  ).mockResolvedValueOnce(
+    buildFetchedOfferContextQuery(
+      productWithMetadata.id,
+      buildOfferContextConnection({ offers: [] })
+    )
   );
 
   await expect(
@@ -445,7 +608,259 @@ test("compare loader preserves typed attribute metadata for compare rows", async
           }
         ]
       }
+    ],
+    offerContexts: {
+      [productWithMetadata.id]: buildAvailableOfferContextSummary(productWithMetadata.id)
+    }
+  });
+});
+
+test("compare loader summarizes bounded offer context for each selected product", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+  const detailOffers = buildOfferContextConnection({
+    hasNextPage: true,
+    offers: [
+      {
+        id: "merchant-product-1",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Full Price Shop",
+          domain: "full.example"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "249.99",
+          observedAt: "2026-06-27T08:00:00Z"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        },
+        priceHistory: {
+          edges: [
+            {
+              node: {
+                id: "history-1",
+                price: "259.99",
+                observedAt: "2026-06-26T08:00:00Z"
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      },
+      {
+        id: "merchant-product-2",
+        currency: "USD",
+        merchant: {
+          id: "merchant-2",
+          name: "Value Mart",
+          domain: "value.example"
+        },
+        latestPrice: {
+          id: "price-2",
+          price: "199.99",
+          observedAt: "2026-06-29T12:00:00Z"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              node: {
+                code: "SAVE20",
+                discountType: "PERCENT",
+                discountValue: "20",
+                currency: null,
+                validTo: "2026-07-15T00:00:00Z"
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true
+          }
+        },
+        priceHistory: {
+          edges: [
+            {
+              node: {
+                id: "history-2",
+                price: "199.99",
+                observedAt: "2026-06-29T12:00:00Z"
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: true
+          }
+        }
+      },
+      {
+        id: "merchant-product-3",
+        currency: "USD",
+        merchant: {
+          id: "merchant-3",
+          name: "Budget Depot",
+          domain: "budget.example"
+        },
+        latestPrice: {
+          id: "price-3",
+          price: "219.99",
+          observedAt: "2026-06-28T09:00:00Z"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
     ]
+  });
+  const secondOffers = buildOfferContextConnection({
+    offers: [
+      {
+        id: "merchant-product-4",
+        currency: "USD",
+        merchant: {
+          id: "merchant-4",
+          name: "Shop Two",
+          domain: "two.example"
+        },
+        latestPrice: {
+          id: "price-4",
+          price: "299.50",
+          observedAt: "2026-06-24T10:00:00Z"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        },
+        priceHistory: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ]
+  });
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
+    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers));
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        status: "available",
+        productId: DETAIL_PRODUCT.id,
+        activeOfferCount: 3,
+        bestCurrentPrice: {
+          currency: "USD",
+          merchantName: "Value Mart",
+          price: "199.99"
+        },
+        hasLoadedCoupons: true,
+        hasMoreActiveOffers: true,
+        hasMoreCoupons: true,
+        latestPriceObservedAt: "2026-06-29T12:00:00Z"
+      },
+      [SECOND_PRODUCT.id]: {
+        status: "available",
+        productId: SECOND_PRODUCT.id,
+        activeOfferCount: 1,
+        bestCurrentPrice: {
+          currency: "USD",
+          merchantName: "Shop Two",
+          price: "299.50"
+        },
+        hasLoadedCoupons: false,
+        hasMoreActiveOffers: false,
+        hasMoreCoupons: false,
+        latestPriceObservedAt: "2026-06-24T10:00:00Z"
+      }
+    }
+  });
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    3,
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    4,
+    environment,
+    expect.anything(),
+    { productId: SECOND_PRODUCT.id, first: 3 },
+    { signal: request.signal }
+  );
+});
+
+test("compare loader keeps product specs when one offer-context query fails", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+  const detailOffers = buildOfferContextConnection({
+    offers: [
+      {
+        id: "merchant-product-1",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Value Mart"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99",
+          observedAt: "2026-06-29T12:00:00Z"
+        },
+        activeCoupons: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      }
+    ]
+  });
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
+    .mockRejectedValueOnce(new Error("offer query failed"));
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    products: [
+      buildProductSummary(DETAIL_PRODUCT),
+      buildProductSummary(SECOND_PRODUCT)
+    ],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        status: "available"
+      },
+      [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id)
+    }
   });
 });
 
@@ -456,7 +871,19 @@ test("compare loader forwards the route abort signal to each Relay preload", asy
   );
   mockedFetchRouteQuery
     .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR));
+    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(
+        DETAIL_PRODUCT.id,
+        buildOfferContextConnection({ offers: [] })
+      )
+    )
+    .mockResolvedValueOnce(
+      buildFetchedOfferContextQuery(
+        SECOND_PRODUCT.id,
+        buildOfferContextConnection({ offers: [] })
+      )
+    );
 
   await compareLoader(buildCompareLoaderArgs({ environment, request }));
 
@@ -472,6 +899,20 @@ test("compare loader forwards the route abort signal to each Relay preload", asy
     environment,
     expect.anything(),
     { slug: "second-product" },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    3,
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 3 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    4,
+    environment,
+    expect.anything(),
+    { productId: SECOND_PRODUCT.id, first: 3 },
     { signal: request.signal }
   );
 });
@@ -761,6 +1202,9 @@ test("product picker resets pagination before rendering a changed selected set",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id)
+    },
     products: [buildProductSummary(DETAIL_PRODUCT)]
   };
   mockedUseLoaderData.mockImplementation(() => loaderData);
@@ -816,6 +1260,10 @@ test("product picker resets pagination before rendering a changed selected set",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
+      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
+    },
     products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)]
   };
 
@@ -869,6 +1317,129 @@ test("renders compared product cards returned by the route loader", () => {
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+});
+
+test("ready compare page renders decision summary rows above the specification matrix", () => {
+  const currentAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz"
+    }
+  ];
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes
+        }
+      ],
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          activeOfferCount: 3,
+          bestCurrentPrice: {
+            currency: "USD",
+            merchantName: "Value Mart",
+            price: "199.99"
+          },
+          hasLoadedCoupons: true,
+          hasMoreActiveOffers: true,
+          hasMoreCoupons: true,
+          latestPriceObservedAt: "2026-06-29T12:00:00Z"
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
+          activeOfferCount: 1,
+          bestCurrentPrice: {
+            currency: "USD",
+            merchantName: "Shop Two",
+            price: "299.50"
+          },
+          hasLoadedCoupons: false,
+          hasMoreActiveOffers: false,
+          hasMoreCoupons: false,
+          latestPriceObservedAt: "2026-06-24T10:00:00Z"
+        })
+      }
+    })
+  );
+
+  renderCompareRoute();
+
+  const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
+  const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
+  const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
+
+  expect(
+    decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(within(decisionSummary).getByText("Best current price")).toBeVisible();
+  expect(within(decisionSummary).getByText("199.99 USD at Value Mart")).toBeVisible();
+  expect(within(decisionSummary).getByText("299.50 USD at Shop Two")).toBeVisible();
+  expect(within(decisionSummary).getByText("Active offer count")).toBeVisible();
+  expect(within(decisionSummary).getByText("3 loaded; More available")).toBeVisible();
+  expect(within(decisionSummary).getByText("1 loaded")).toBeVisible();
+  expect(within(decisionSummary).getByText("Coupon signal")).toBeVisible();
+  expect(within(decisionSummary).getByText("More coupons available")).toBeVisible();
+  expect(within(decisionSummary).getByText("No coupons loaded")).toBeVisible();
+  expect(within(decisionSummary).getByText("Price recency")).toBeVisible();
+  expect(within(decisionSummary).getByText("2026-06-29")).toBeVisible();
+  expect(within(decisionSummary).getByText("2026-06-24")).toBeVisible();
+  expect(
+    within(decisionSummary).getByRole("link", { name: "Review Detail Product offers" })
+  ).toHaveAttribute("href", `/offers?productId=${DETAIL_PRODUCT.id}`);
+  expect(
+    within(decisionSummary).getByRole("link", { name: "Review Second Product offers" })
+  ).toHaveAttribute("href", `/offers?productId=${SECOND_PRODUCT.id}`);
+});
+
+test("ready compare page keeps specs visible when one offer context is unavailable", () => {
+  const currentAttributes = [
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    }
+  ];
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes
+        }
+      ],
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          activeOfferCount: 1,
+          bestCurrentPrice: {
+            currency: "USD",
+            merchantName: "Value Mart",
+            price: "199.99"
+          },
+          latestPriceObservedAt: "2026-06-29T12:00:00Z"
+        }),
+        [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id)
+      }
+    })
+  );
+
+  renderCompareRoute();
+
+  const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
+  const matrix = screen.getByRole("table", { name: "Shared specifications" });
+
+  expect(within(decisionSummary).getByText("Offer context unavailable")).toBeVisible();
+  expect(within(matrix).getByText("Panel type")).toBeVisible();
+  expect(within(matrix).getAllByText("IPS")).toHaveLength(2);
 });
 
 test("ready compare cards render product attributes", () => {

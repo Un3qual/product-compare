@@ -1,7 +1,11 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import type { Environment } from "relay-runtime";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
+import compareOfferContextQuery, {
+  type CompareOfferContextQuery
+} from "../../__generated__/CompareOfferContextQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -11,6 +15,7 @@ import {
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
+export const COMPARE_OFFER_CONTEXT_FIRST = 3;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 
@@ -37,6 +42,34 @@ export interface CompareProductAttributeSummary {
   unitSymbol?: string | null;
 }
 
+export type CompareOfferContextsByProductId = Record<string, CompareOfferContextSummary>;
+
+export type CompareOfferContextSummary =
+  | CompareAvailableOfferContextSummary
+  | CompareUnavailableOfferContextSummary;
+
+export interface CompareAvailableOfferContextSummary {
+  status: "available";
+  productId: string;
+  activeOfferCount: number;
+  bestCurrentPrice: CompareBestCurrentPriceSummary | null;
+  hasLoadedCoupons: boolean;
+  hasMoreActiveOffers: boolean;
+  hasMoreCoupons: boolean;
+  latestPriceObservedAt: string | null;
+}
+
+export interface CompareUnavailableOfferContextSummary {
+  status: "unavailable";
+  productId: string;
+}
+
+export interface CompareBestCurrentPriceSummary {
+  currency: string;
+  merchantName: string | null;
+  price: string;
+}
+
 export type CompareRouteLoaderData =
   | {
       status: "empty";
@@ -53,10 +86,12 @@ export type CompareRouteLoaderData =
       specMode: CompareSpecMode;
       slugs: string[];
       productQueries: Array<RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>>;
+      offerContexts: CompareOfferContextsByProductId;
       products: CompareProductSummary[];
     };
 
 type FetchedCompareProductQuery = FetchedRelayRouteQuery<ProductDetailRouteQuery>;
+type FetchedCompareOfferContextQuery = FetchedRelayRouteQuery<CompareOfferContextQuery>;
 
 export async function compareLoader({
   context,
@@ -113,13 +148,20 @@ export async function compareLoader({
       slugs
     };
   }
+  const presentProducts = products.filter(isPresentProduct);
+  const offerContexts = await fetchOfferContextsByProductId(
+    environment,
+    presentProducts,
+    request.signal
+  );
 
   return {
     status: "ready",
     specMode,
     slugs,
     productQueries: fetchedProductQueries.map((query) => query.descriptor),
-    products: products.filter(isPresentProduct).map(summarizeProduct)
+    offerContexts,
+    products: presentProducts.map(summarizeProduct)
   };
 }
 
@@ -174,6 +216,152 @@ function summarizeProduct(
       unitSymbol: attribute.unitSymbol
     }))
   };
+}
+
+async function fetchOfferContextsByProductId(
+  environment: Environment,
+  products: Array<NonNullable<ProductDetailRouteQuery["response"]["product"]>>,
+  signal: AbortSignal
+): Promise<CompareOfferContextsByProductId> {
+  const offerContextResults = await Promise.allSettled(
+    products.map((product) =>
+      fetchRouteQuery<CompareOfferContextQuery>(
+        environment,
+        compareOfferContextQuery,
+        { productId: product.id, first: COMPARE_OFFER_CONTEXT_FIRST },
+        { signal }
+      )
+    )
+  );
+  const offerContexts: CompareOfferContextsByProductId = {};
+
+  products.forEach((product, index) => {
+    const result = offerContextResults[index];
+
+    if (!result || result.status === "rejected") {
+      offerContexts[product.id] = summarizeUnavailableOfferContext(product.id);
+      return;
+    }
+
+    try {
+      offerContexts[product.id] = summarizeOfferContextQuery(product.id, result.value);
+    } catch {
+      offerContexts[product.id] = summarizeUnavailableOfferContext(product.id);
+    } finally {
+      result.value.dispose();
+    }
+  });
+
+  return offerContexts;
+}
+
+function summarizeOfferContextQuery(
+  productId: string,
+  query: FetchedCompareOfferContextQuery
+): CompareAvailableOfferContextSummary {
+  const offerNodes = query.data.merchantProducts.edges.map(({ node }) => node);
+  const bestCurrentPrice = lowestCurrentPrice(offerNodes);
+  const latestPriceObservedAt = mostRecentObservedAt(offerNodes);
+
+  return {
+    status: "available",
+    productId,
+    activeOfferCount: offerNodes.length,
+    bestCurrentPrice,
+    hasLoadedCoupons: offerNodes.some(
+      (offer) => (offer.activeCoupons?.edges.length ?? 0) > 0
+    ),
+    hasMoreActiveOffers: query.data.merchantProducts.pageInfo.hasNextPage,
+    hasMoreCoupons: offerNodes.some(
+      (offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false
+    ),
+    latestPriceObservedAt
+  };
+}
+
+function summarizeUnavailableOfferContext(productId: string): CompareUnavailableOfferContextSummary {
+  return {
+    status: "unavailable",
+    productId
+  };
+}
+
+function lowestCurrentPrice(
+  offerNodes: CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"][]
+): CompareBestCurrentPriceSummary | null {
+  let bestPrice:
+    | (CompareBestCurrentPriceSummary & {
+        numericPrice: number;
+      })
+    | null = null;
+
+  for (const offer of offerNodes) {
+    const latestPrice = offer.latestPrice;
+    const numericPrice = decimalStringToNumber(latestPrice?.price);
+
+    if (!latestPrice || numericPrice === null) {
+      continue;
+    }
+
+    if (bestPrice === null || numericPrice < bestPrice.numericPrice) {
+      bestPrice = {
+        currency: offer.currency,
+        merchantName: offer.merchant?.name ?? null,
+        numericPrice,
+        price: latestPrice.price
+      };
+    }
+  }
+
+  if (!bestPrice) {
+    return null;
+  }
+
+  return {
+    currency: bestPrice.currency,
+    merchantName: bestPrice.merchantName,
+    price: bestPrice.price
+  };
+}
+
+function mostRecentObservedAt(
+  offerNodes: CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"][]
+) {
+  const observedAtValues = offerNodes.flatMap((offer) => [
+    offer.latestPrice?.observedAt,
+    ...(offer.priceHistory?.edges.map(({ node }) => node.observedAt) ?? [])
+  ]);
+  let mostRecent: string | null = null;
+  let mostRecentTime = Number.NEGATIVE_INFINITY;
+
+  for (const observedAt of observedAtValues) {
+    if (!observedAt) {
+      continue;
+    }
+
+    const observedTime = Date.parse(observedAt);
+
+    if (Number.isNaN(observedTime)) {
+      continue;
+    }
+
+    if (observedTime > mostRecentTime) {
+      mostRecent = observedAt;
+      mostRecentTime = observedTime;
+    }
+  }
+
+  return mostRecent;
+}
+
+function decimalStringToNumber(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number.parseFloat(value);
+
+  return Number.isNaN(parsedValue) ? null : parsedValue;
 }
 
 function disposeFetchedProductQueries(productQueries: FetchedCompareProductQuery[]) {

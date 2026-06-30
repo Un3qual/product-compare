@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-30 after compare attribute metadata verification
+- Last verified: 2026-06-30 after compare offer decision-helper verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
@@ -27,6 +27,7 @@
 - [x] Task 8: add a ready-state selected-product tray and add-another heading.
 - [x] Task 9: add URL-backed compare matrix modes.
 - [x] Task 10: add typed, ordered, groupable compare attribute metadata.
+- [x] Task 11: add bounded, resilient compare offer decision helpers.
 
 ## Current Usable Product Batch
 
@@ -132,7 +133,7 @@
 
 ## Active Dispatch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
 - Owned paths:
@@ -152,6 +153,14 @@
   - `git diff --check`
 - Exit condition: `/compare` gives users a bounded, resilient decision summary
   for current price and offer quality alongside the specification matrix.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "offer context|decision summary|keeps specs visible"` - failed as expected with 3 failing tests and 77 skipped because the loader did not expose `offerContexts` and the route did not render `Decision summary`.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "offer context|decision summary|keeps specs visible"` - 3 tests passed, 77 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 80 tests, 0 failures.
+  - `cd assets && bun run relay` - completed with exit 0.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx` - 108 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs` - 8 tests, 0 failures.
 
 ## Completed Attribute Metadata Dispatch
 

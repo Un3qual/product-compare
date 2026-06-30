@@ -6,6 +6,7 @@ import productDetailRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ProductAttributeList } from "../products/product-attribute-list";
 import type {
+  CompareOfferContextSummary,
   CompareProductSummary,
   CompareRouteLoaderData,
   CompareSpecMode
@@ -21,6 +22,10 @@ export function CompareProductList({
 }) {
   return (
     <>
+      <DecisionSummary
+        offerContexts={loaderData.offerContexts}
+        products={loaderData.products}
+      />
       <CompareSpecificationMatrix
         products={loaderData.products}
         specMode={loaderData.specMode}
@@ -39,6 +44,141 @@ export function CompareProductList({
       </ul>
     </>
   );
+}
+
+function DecisionSummary({
+  offerContexts,
+  products
+}: {
+  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
+  products: CompareProductSummary[];
+}) {
+  if (products.length === 0) {
+    return null;
+  }
+
+  return (
+    <section>
+      <h2>Decision summary</h2>
+      <table aria-label="Decision summary">
+        <thead>
+          <tr>
+            <th scope="col">Decision</th>
+            {products.map((product) => (
+              <th key={product.id} scope="col">
+                {product.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Best current price</th>
+            {products.map((product) => (
+              <td key={`${product.id}-best-price`}>
+                {bestCurrentPriceLabel(offerContextForProduct(offerContexts, product.id))}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">Active offer count</th>
+            {products.map((product) => (
+              <td key={`${product.id}-offer-count`}>
+                {activeOfferCountLabel(offerContextForProduct(offerContexts, product.id))}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">Coupon signal</th>
+            {products.map((product) => (
+              <td key={`${product.id}-coupon-signal`}>
+                {couponSignalLabel(offerContextForProduct(offerContexts, product.id))}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">Price recency</th>
+            {products.map((product) => (
+              <td key={`${product.id}-price-recency`}>
+                {priceRecencyLabel(offerContextForProduct(offerContexts, product.id))}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">Review offers link</th>
+            {products.map((product) => (
+              <td key={`${product.id}-review-offers`}>
+                <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
+                  Review {product.name} offers
+                </Link>
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function offerContextForProduct(
+  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"] | undefined,
+  productId: string
+): CompareOfferContextSummary {
+  return offerContexts?.[productId] ?? { status: "unavailable", productId };
+}
+
+function bestCurrentPriceLabel(context: CompareOfferContextSummary) {
+  if (context.status === "unavailable") {
+    return "Offer context unavailable";
+  }
+
+  if (!context.bestCurrentPrice) {
+    return "No current price loaded";
+  }
+
+  return `${context.bestCurrentPrice.price} ${context.bestCurrentPrice.currency} at ${
+    context.bestCurrentPrice.merchantName ?? "Unknown merchant"
+  }`;
+}
+
+function activeOfferCountLabel(context: CompareOfferContextSummary) {
+  if (context.status === "unavailable") {
+    return "Unavailable";
+  }
+
+  return context.hasMoreActiveOffers
+    ? `${context.activeOfferCount} loaded; More available`
+    : `${context.activeOfferCount} loaded`;
+}
+
+function couponSignalLabel(context: CompareOfferContextSummary) {
+  if (context.status === "unavailable") {
+    return "Unavailable";
+  }
+
+  if (context.hasMoreCoupons) {
+    return "More coupons available";
+  }
+
+  return context.hasLoadedCoupons ? "Coupons available" : "No coupons loaded";
+}
+
+function priceRecencyLabel(context: CompareOfferContextSummary) {
+  if (context.status === "unavailable") {
+    return "Unavailable";
+  }
+
+  return dateLabel(context.latestPriceObservedAt) ?? "No price observations loaded";
+}
+
+function dateLabel(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : value.slice(0, 10);
 }
 
 function CompareSpecificationMatrix({
