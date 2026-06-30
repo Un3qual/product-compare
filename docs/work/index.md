@@ -33,38 +33,15 @@ in-depth comparison plan set is complete. Backend filter metadata/facets and
 frontend compare matrix modes landed in separate commits with focused
 verification.
 
-Compare attribute metadata is complete. The next executable row is compare
-offer decision helpers, which reuses the current pricing GraphQL contract and
-overlaps compare route files, so it should run as a single worker row.
+The full product filtering and in-depth comparison plan set is complete. No
+`ready` row is currently selected. The next coordinator pass should either
+promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md`
+and `docs/work/product-data-scraping.md`, promote persistent compare tray work,
+or choose another product-facing row.
 
 ## Ready Work
 
-### Compare Offer Decision Helpers
-
-- Status: ready
-- Lane: Frontend product comparison demo parity
-- Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
-- Active plan:
-  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
-- Next action: add bounded, resilient offer/price decision-helper rows to
-  `/compare` using the existing `merchantProducts(input:)` contract.
-- Owned paths:
-  - `assets/src/routes/compare/queries/CompareOfferContextQuery.ts`
-  - `assets/src/routes/compare/loader.ts`
-  - `assets/src/routes/compare/index.tsx`
-  - `assets/src/routes/compare/product-list.tsx`
-  - `assets/test/routes/compare/compare.route.test.tsx`
-  - `assets/schema.graphql`
-  - `assets/src/__generated__/**`
-  - `docs/work/frontend-product-comparison-demo-parity.md`
-- Verification:
-  - `cd assets && bun run relay`
-  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs`
-  - `git diff --check`
-- Exit condition: `/compare` gives users a bounded, resilient decision summary
-  for current price and offer quality alongside the specification matrix.
+No ready rows are currently selected.
 
 ## Just Completed
 
@@ -83,6 +60,9 @@ and dependent catalog UI follow-up completed these three work items:
 - Compare attribute metadata: `Product.currentAttributes` now includes typed,
   ordered, groupable metadata used by product detail and compare rendering while
   preserving the `valueText` fallback contract.
+- Compare offer decision helpers: `/compare` now renders a bounded, resilient
+  decision summary for current price and offer quality using the existing
+  `merchantProducts(input:)` pricing contract.
 
 The 2026-06-29 usable-product batch completed these five work items:
 
@@ -112,11 +92,9 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 
 ## Retained Follow-Up Work
 
-The product filtering and in-depth comparison plan set remains the primary
-product-facing candidate pool if the next pass should improve user-visible
-comparison quality. Backend filter metadata/facets, compare matrix modes,
-`/products` faceted filtering UI, and compare attribute metadata are complete.
-The retained row is compare offer decision helpers.
+The product filtering and in-depth comparison plan set is complete. Persistent
+compare tray work remains a product-facing follow-up candidate if the next pass
+should improve compare entry continuity across browse/detail pages.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The
