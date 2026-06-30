@@ -27,15 +27,43 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Query.t()
   def apply_filters(base_query \\ Product, filters) do
+    apply_filters_except(base_query, filters, nil)
+  end
+
+  @spec apply_filters_except(Ecto.Queryable.t(), map(), term()) :: Ecto.Query.t()
+  def apply_filters_except(base_query \\ Product, filters, omitted_group) do
     base_query
     |> from(as: :product)
-    |> apply_primary_type_filter(filters)
-    |> apply_numeric_filters(Map.get(filters, :numeric, []))
-    |> apply_bool_filters(Map.get(filters, :booleans, []))
-    |> apply_enum_filters(Map.get(filters, :enums, []))
-    |> apply_use_case_filter(Map.get(filters, :use_case_taxon_ids, []))
+    |> maybe_apply_primary_type_filter(filters, omitted_group)
+    |> apply_numeric_filters(filters_for_group(filters, :numeric, omitted_group))
+    |> apply_bool_filters(filters_for_group(filters, :booleans, omitted_group))
+    |> apply_enum_filters(filters_for_group(filters, :enums, omitted_group))
+    |> maybe_apply_use_case_filter(filters, omitted_group)
     |> order_by([product: p], asc: p.id)
   end
+
+  defp maybe_apply_primary_type_filter(query, _filters, :primary_type), do: query
+
+  defp maybe_apply_primary_type_filter(query, filters, _omitted_group),
+    do: apply_primary_type_filter(query, filters)
+
+  defp maybe_apply_use_case_filter(query, _filters, :use_case), do: query
+
+  defp maybe_apply_use_case_filter(query, filters, _omitted_group),
+    do: apply_use_case_filter(query, Map.get(filters, :use_case_taxon_ids, []))
+
+  defp filters_for_group(filters, key, {key, attribute_id}) do
+    filters
+    |> Map.get(key, [])
+    |> Enum.reject(fn filter ->
+      case normalize_integer_id(fetch_value(filter, :attribute_id)) do
+        {:ok, ^attribute_id} -> true
+        _ -> false
+      end
+    end)
+  end
+
+  defp filters_for_group(filters, key, _omitted_group), do: Map.get(filters, key, [])
 
   @spec apply_primary_type_filter(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp apply_primary_type_filter(query, filters) do

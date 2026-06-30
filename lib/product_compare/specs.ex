@@ -236,6 +236,63 @@ defmodule ProductCompare.Specs do
     |> Repo.all()
   end
 
+  @spec list_filterable_attributes([atom()]) :: [Attribute.t()]
+  def list_filterable_attributes(data_types) when is_list(data_types) do
+    Repo.all(
+      from attribute in Attribute,
+        where: attribute.is_filterable == true,
+        where: attribute.data_type in ^data_types,
+        order_by: [asc: attribute.display_name, asc: attribute.code, asc: attribute.id]
+    )
+  end
+
+  @spec get_filterable_attribute(pos_integer(), atom()) :: Attribute.t() | nil
+  def get_filterable_attribute(attribute_id, data_type)
+      when is_integer(attribute_id) and is_atom(data_type) do
+    Repo.one(
+      from attribute in Attribute,
+        where: attribute.id == ^attribute_id,
+        where: attribute.data_type == ^data_type,
+        where: attribute.is_filterable == true
+    )
+  end
+
+  @spec enum_option_belongs_to_attribute?(pos_integer(), pos_integer()) :: boolean()
+  def enum_option_belongs_to_attribute?(attribute_id, enum_option_id)
+      when is_integer(attribute_id) and is_integer(enum_option_id) do
+    Repo.exists?(
+      from attribute in Attribute,
+        join: enum_option in EnumOption,
+        on: enum_option.enum_set_id == attribute.enum_set_id,
+        where: attribute.id == ^attribute_id,
+        where: attribute.data_type == :enum,
+        where: attribute.is_filterable == true,
+        where: enum_option.id == ^enum_option_id
+    )
+  end
+
+  @spec list_enum_options_for_set(pos_integer()) :: [EnumOption.t()]
+  def list_enum_options_for_set(enum_set_id) when is_integer(enum_set_id) do
+    Repo.all(
+      from enum_option in EnumOption,
+        where: enum_option.enum_set_id == ^enum_set_id,
+        order_by: [asc: enum_option.sort_order, asc: enum_option.label, asc: enum_option.id]
+    )
+  end
+
+  @spec unit_symbol_for_dimension(pos_integer() | nil) :: String.t() | nil
+  def unit_symbol_for_dimension(nil), do: nil
+
+  def unit_symbol_for_dimension(dimension_id) when is_integer(dimension_id) do
+    Repo.one(
+      from unit in Unit,
+        where: unit.dimension_id == ^dimension_id,
+        order_by: [asc: unit.id],
+        limit: 1,
+        select: fragment("NULLIF(COALESCE(?, ?), '')", unit.symbol, unit.code)
+    )
+  end
+
   defp fetch_attribute(attribute_id) do
     case Repo.get(Attribute, attribute_id) do
       nil -> {:error, :attribute_not_found}

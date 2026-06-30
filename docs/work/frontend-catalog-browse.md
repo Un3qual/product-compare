@@ -139,7 +139,7 @@
 
 ## Active Dispatch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`.
 - Owned paths:
@@ -162,6 +162,40 @@
   - `git diff --check`
 - Exit condition: GraphQL exposes display-safe filter metadata/facet counts for
   the same filter input accepted by `products(filters:)`.
+- Implemented:
+  - Added `ProductCompare.Catalog.product_filter_metadata/1` backed by a focused
+    `ProductCompare.Catalog.FilterMetadata` query module.
+  - The metadata contract returns display-safe result counts, type and use-case
+    options, numeric ranges, boolean counts, enum option counts, selected state,
+    and disabled zero-count options.
+  - Facet counts and ranges reuse `ProductCompare.Catalog.Filtering` and omit
+    only the facet group being counted, preserving selected-current-claim
+    semantics.
+  - GraphQL now exposes `productFilterMetadata(filters:)` using the existing
+    `ProductFiltersInput` shape and Relay-safe IDs for taxons, attributes, and
+    enum options.
+  - Filter validation now rejects mismatched numeric, boolean, and enum
+    attribute types/options plus numeric filters where `min` exceeds `max`.
+- Completed verification:
+  - RED: `mix test test/product_compare/catalog/filter_metadata_test.exs` failed
+    with `ProductCompare.Catalog.product_filter_metadata/1 is undefined or
+    private`.
+  - RED: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    failed because `productFilterMetadata` was not in the schema and invalid
+    typed filters were accepted by `products(filters:)`.
+  - GREEN: `mix test test/product_compare/catalog/filter_metadata_test.exs` - 1
+    test, 0 failures.
+  - GREEN: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 23 tests, 0 failures.
+  - `mix typecheck` - completed with exit 0.
+  - Final: `mix test test/product_compare/catalog/filter_metadata_test.exs` -
+    1 test, 0 failures.
+  - Final: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+    - 2 tests, 0 failures.
+  - Final: `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 21 tests, 0 failures.
+  - Final: `mix typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Verification Commands
 

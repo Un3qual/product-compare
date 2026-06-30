@@ -31,6 +31,14 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     end
   end
 
+  @spec product_filter_metadata(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def product_filter_metadata(_parent, args, _resolution) do
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
+      {:ok, Catalog.product_filter_metadata(filters)}
+    end
+  end
+
   @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) ::
           {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
   def current_attributes(%Product{id: product_id}, _args, %{context: %{loader: loader}})
@@ -190,7 +198,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
              :taxon,
              "taxon",
              "invalid filter ids"
-           ) do
+           ),
+         :ok <- validate_filter_semantics(numeric_filters, boolean_filters, enum_filters) do
       normalized_filters =
         %{
           include_type_descendants: include_type_descendants,
@@ -284,6 +293,60 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   defp normalize_enum_filters(_filters), do: {:error, "invalid enum filter"}
+
+  defp validate_filter_semantics(numeric_filters, boolean_filters, enum_filters) do
+    with :ok <- validate_numeric_filter_semantics(numeric_filters),
+         :ok <- validate_boolean_filter_semantics(boolean_filters),
+         :ok <- validate_enum_filter_semantics(enum_filters) do
+      :ok
+    end
+  end
+
+  defp validate_numeric_filter_semantics(filters) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      cond do
+        is_nil(Specs.get_filterable_attribute(filter.attribute_id, :numeric)) ->
+          {:halt, {:error, "invalid numeric filter"}}
+
+        numeric_min_greater_than_max?(filter) ->
+          {:halt, {:error, "invalid numeric filter"}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
+  end
+
+  defp validate_boolean_filter_semantics(filters) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      if Specs.get_filterable_attribute(filter.attribute_id, :bool) do
+        {:cont, :ok}
+      else
+        {:halt, {:error, "invalid boolean filter"}}
+      end
+    end)
+  end
+
+  defp validate_enum_filter_semantics(filters) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      if Specs.enum_option_belongs_to_attribute?(filter.attribute_id, filter.enum_option_id) do
+        {:cont, :ok}
+      else
+        {:halt, {:error, "invalid enum filter"}}
+      end
+    end)
+  end
+
+  defp numeric_min_greater_than_max?(%{min: min, max: max})
+       when not is_nil(min) and not is_nil(max) do
+    Decimal.compare(to_decimal(min), to_decimal(max)) == :gt
+  end
+
+  defp numeric_min_greater_than_max?(_filter), do: false
+
+  defp to_decimal(%Decimal{} = value), do: value
+  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
+  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
 
   @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
           {:ok, list()} | {:error, String.t()}

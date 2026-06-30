@@ -537,6 +537,95 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                })
     end
 
+    test "products rejects numeric ranges where min exceeds max", %{conn: conn} do
+      {numeric_attribute, _unit} = numeric_attribute_with_unit_fixture()
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid numeric filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "numeric" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, numeric_attribute.id),
+                       "min" => "200",
+                       "max" => "100"
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects mismatched filter attribute types", %{conn: conn} do
+      text_attribute =
+        text_attribute_fixture(%{
+          code: unique_code("catalog-invalid-numeric-type"),
+          display_name: "Not Numeric"
+        })
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid numeric filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "numeric" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, text_attribute.id),
+                       "min" => "100",
+                       "max" => "200"
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects boolean filters for non-boolean attributes", %{conn: conn} do
+      text_attribute =
+        text_attribute_fixture(%{
+          code: unique_code("catalog-invalid-boolean-type"),
+          display_name: "Not Boolean"
+        })
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid boolean filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "booleans" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, text_attribute.id),
+                       "value" => true
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects enum options outside the filter attribute enum set", %{conn: conn} do
+      {enum_attribute, _option_a, _option_b} = enum_attribute_with_options_fixture()
+
+      {_other_enum_attribute, other_option, _other_option_b} =
+        enum_attribute_with_options_fixture()
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid enum filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "enums" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, other_option.id)
+                     }
+                   ]
+                 }
+               })
+    end
+
     test "products treats null optional list filters as omitted", %{conn: conn} do
       product = SpecsFixtures.product_fixture(%{slug: "catalog-null-list-filters"})
 

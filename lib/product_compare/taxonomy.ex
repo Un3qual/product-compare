@@ -263,6 +263,17 @@ defmodule ProductCompare.Taxonomy do
     end
   end
 
+  @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
+  def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
+    Repo.all(
+      from taxon in Taxon,
+        join: taxonomy in Taxonomy,
+        on: taxonomy.id == taxon.taxonomy_id,
+        where: taxonomy.code == ^taxonomy_code,
+        order_by: [asc: taxon.name, asc: taxon.code, asc: taxon.id]
+    )
+  end
+
   @spec list_taxon_aliases(pos_integer()) :: [TaxonAlias.t()]
   def list_taxon_aliases(taxon_id) do
     Repo.all(from ta in TaxonAlias, where: ta.taxon_id == ^taxon_id, order_by: [asc: ta.alias])
