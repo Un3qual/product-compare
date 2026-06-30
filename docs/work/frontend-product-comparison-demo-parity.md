@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-29 after compare selection tray verification
@@ -125,11 +125,43 @@
 
 ## Follow-Up Candidates
 
-- Add compare matrix modes for shared, differences-only, and all-spec views.
 - Add typed and ordered compare attribute metadata so differences do not rely on display text only.
 - Add offer and price decision-helper rows to `/compare` using bounded active-offer context.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
+
+## Active Dispatch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`.
+- Owned paths:
+  - `priv/repo/migrations/*_add_compare_group_to_taxon_attributes.exs`
+  - `lib/product_compare_schemas/specs/taxon_attribute.ex`
+  - `lib/product_compare/specs.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `assets/src/routes/products/product-attribute-list.tsx`
+  - `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `mix ecto.migrate`
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs`
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix typecheck`
+  - `git diff --check`
+- Exit condition: comparison rows can be grouped, ordered, and compared using
+  typed metadata instead of display text alone, while preserving the existing
+  `valueText` fallback contract.
 
 ## Completed Matrix Modes Dispatch
 
