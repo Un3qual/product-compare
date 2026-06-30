@@ -95,6 +95,8 @@ type FetchedCompareProductQuery = FetchedRelayRouteQuery<ProductDetailRouteQuery
 type FetchedCompareOfferContextQuery = FetchedRelayRouteQuery<CompareOfferContextQuery>;
 type CompareOfferContextNode =
   CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"];
+type CompareOfferContextPageInfo =
+  CompareOfferContextQuery["response"]["merchantProducts"]["pageInfo"];
 
 export async function compareLoader({
   context,
@@ -287,24 +289,19 @@ async function fetchOfferContextPages(
         },
         { signal }
       );
-      const pageInfo = page.data.merchantProducts.pageInfo;
-      const endCursor: string | null = pageInfo.endCursor ?? null;
-      const hasNextPage = pageInfo.hasNextPage;
-
       pages.push(page);
 
-      if (!hasNextPage || !endCursor || seenEndCursors.has(endCursor)) {
-        after = null;
-        continue;
+      const nextAfter = nextOfferContextCursor(
+        page.data.merchantProducts.pageInfo,
+        seenEndCursors,
+        pages.length
+      );
+
+      if (nextAfter) {
+        seenEndCursors.add(nextAfter);
       }
 
-      if (pages.length >= COMPARE_OFFER_CONTEXT_MAX_PAGES) {
-        after = null;
-        continue;
-      }
-
-      seenEndCursors.add(endCursor);
-      after = endCursor;
+      after = nextAfter;
     } while (after);
   } catch (error) {
     disposeFetchedOfferContextQueries(pages);
@@ -312,6 +309,24 @@ async function fetchOfferContextPages(
   }
 
   return pages;
+}
+
+function nextOfferContextCursor(
+  pageInfo: CompareOfferContextPageInfo,
+  seenEndCursors: Set<string>,
+  loadedPageCount: number
+) {
+  const endCursor: string | null = pageInfo.endCursor ?? null;
+
+  if (!pageInfo.hasNextPage || !endCursor) {
+    return null;
+  }
+
+  if (seenEndCursors.has(endCursor) || loadedPageCount >= COMPARE_OFFER_CONTEXT_MAX_PAGES) {
+    return null;
+  }
+
+  return endCursor;
 }
 
 function summarizeOfferContextQueries(
