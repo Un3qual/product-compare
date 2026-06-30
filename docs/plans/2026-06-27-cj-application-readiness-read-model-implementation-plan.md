@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** retained follow-up. This plan is retained behind the 2026-06-29 usable-product queue and is not a live dispatch row unless `docs/work/index.md` promotes it again.
 
 ---
 
@@ -18,7 +18,7 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_application_readiness.ex`
 - `test/product_compare/ingestion/cj_application_readiness_test.exs`
-- `docs/work/product-data-scraping.md` under the application-readiness evidence heading only
+- `docs/work/product-data-scraping.md` under `### Application Readiness Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
@@ -37,7 +37,7 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 - [ ] Return safe candidate maps and reason-code lists without `raw_metadata`.
 - [ ] Sort ready candidates by product count descending, then advertiser name and feed id.
 - [ ] Run `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

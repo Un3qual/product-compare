@@ -5,13 +5,40 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27 during visible filter control verification
+- Last verified: 2026-06-29 after offer filter context verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
+- Recently completed usable-product plan:
+  - `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Current Usable Product Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery-loader.test.ts`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` shows active filter context, reset actions, and a
+  path back to product selection without backend query changes.
+- Completed evidence:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx` -
+    13 tests, 4 expected failures for missing product guidance, active-filter
+    summary, reset links, and error-state filter context.
+  - GREEN: `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx` -
+    22 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 
@@ -57,6 +84,18 @@
 - `git diff --check`
 
 ## Just Completed
+
+- 2026-06-29 usable-product Task 4:
+  - Added a route-local active-filter summary for `/offers` showing the selected
+    product ID, merchant ID when present, offer status, and page size from
+    loader-normalized filters.
+  - Added reset and clear-merchant links that preserve the existing URL-filter
+    behavior without changing Relay variables, backend input shape, or cursor
+    pagination links.
+  - Improved the missing-product state with clearer product-selection guidance
+    while preserving the `/products` path.
+  - Verified focused route/loader coverage, frontend typecheck, and whitespace
+    checks.
 
 - Task 6:
   - Added visible `/offers` filter controls for `productId`, `merchantId`, `active-only`,

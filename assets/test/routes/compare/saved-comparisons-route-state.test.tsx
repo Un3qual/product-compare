@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
@@ -140,6 +140,50 @@ test("saved comparisons route starts with an empty status region when saved sets
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
+test("saved comparison cards summarize saved product counts", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      },
+      {
+        id: "saved-set-2",
+        name: "Office setup",
+        slugs: ["lamp"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("2 products in this saved comparison")).toBeInTheDocument();
+  expect(screen.getByText("1 product in this saved comparison")).toBeInTheDocument();
+});
+
+test("saved comparison cards scope reopen and delete actions to the set", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const actions = screen.getByRole("group", { name: "Actions for Desk setup" });
+  const openComparisonLink = within(actions).getByRole("link", { name: "Open comparison" });
+
+  expect(openComparisonLink).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
+  expect(within(actions).getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+});
+
 test("saved comparisons route announces deletion when deleting the last set", async () => {
   commitMutationMock.mockImplementation(({ onCompleted }) => {
     onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
@@ -187,6 +231,30 @@ test("saved comparisons route uses a descriptive sign-in link for unauthorized s
   expect(
     screen.getByRole("link", { name: "Sign in to view saved comparisons" })
   ).toBeInTheDocument();
+});
+
+test("empty saved comparisons state links to product browsing and comparison", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: []
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+  expect(screen.getByRole("link", { name: "Start a new comparison" })).toHaveAttribute(
+    "href",
+    "/compare"
+  );
 });
 
 test("saved comparisons route clears stale delete errors when a later delete succeeds", async () => {
@@ -481,6 +549,47 @@ test("saved comparisons route shows a no-match message when the filter excludes 
       "No saved comparisons match your filter."
     );
   });
+});
+
+test("filtered no-match state links to product browsing and comparison", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        slugs: ["chair", "desk"]
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
+    target: {
+      value: "non-matching-value"
+    }
+  });
+
+  await waitFor(() => {
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No saved comparisons match your filter."
+    );
+  });
+
+  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+  expect(screen.getByRole("link", { name: "Start a new comparison" })).toHaveAttribute(
+    "href",
+    "/compare"
+  );
 });
 
 test("saved comparisons route preserves pending delete state when the filter changes", async () => {

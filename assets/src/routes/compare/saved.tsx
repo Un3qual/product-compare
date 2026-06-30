@@ -88,6 +88,8 @@ export function SavedComparisonsRoute() {
   const viewState = buildSavedComparisonsViewState(loaderData, deletedSavedSetIds, filterText);
   const savedSetQueries =
     loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
+  const shouldShowReturnActions =
+    loaderData.status !== "unauthorized" && viewState.savedSets.length === 0;
 
   return (
     <CompareShell title="Saved comparisons">
@@ -109,6 +111,7 @@ export function SavedComparisonsRoute() {
           />
         </label>
       )}
+      {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
       {viewState.savedSets.length > 0 && savedSetQueries.length > 0 ? (
         <ResettableErrorBoundary
           fallback={
@@ -246,6 +249,19 @@ function buildSavedComparisonHref(slugs: string[]) {
   return `/compare?${searchParams.toString()}`;
 }
 
+function SavedComparisonReturnActions() {
+  return (
+    <nav aria-label="Saved comparison return paths">
+      <Link to="/products">Browse products</Link>{" "}
+      <Link to="/compare">Start a new comparison</Link>
+    </nav>
+  );
+}
+
+function formatSavedProductCount(productCount: number) {
+  return `${productCount} ${productCount === 1 ? "product" : "products"}`;
+}
+
 function SavedComparisonSetItem({
   onDelete,
   pendingDeleteIds,
@@ -256,26 +272,49 @@ function SavedComparisonSetItem({
   savedSet: SavedComparisonSetSummary;
 }) {
   const deletePending = pendingDeleteIds.has(savedSet.id);
+  const savedProductCount = formatSavedProductCount(savedSet.slugs.length);
 
   return (
     <li>
       <article>
         <h2>{savedSet.name}</h2>
+        <p>{savedProductCount} in this saved comparison</p>
         <p>{savedSet.slugs.join(", ")}</p>
-        <p>
-          <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
-        </p>
-        <button
-          disabled={deletePending}
-          onClick={() => {
-            onDelete(savedSet.id);
-          }}
-          type="button"
-        >
-          {deletePending ? "Deleting comparison..." : "Delete comparison"}
-        </button>
+        <SavedComparisonSetActions
+          deletePending={deletePending}
+          onDelete={onDelete}
+          savedSet={savedSet}
+        />
       </article>
     </li>
+  );
+}
+
+function SavedComparisonSetActions({
+  deletePending,
+  onDelete,
+  savedSet
+}: {
+  deletePending: boolean;
+  onDelete: (savedComparisonSetId: string) => void;
+  savedSet: SavedComparisonSetSummary;
+}) {
+  return (
+    <fieldset>
+      <legend>Actions for {savedSet.name}</legend>
+      <p>
+        <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
+      </p>
+      <button
+        disabled={deletePending}
+        onClick={() => {
+          onDelete(savedSet.id);
+        }}
+        type="button"
+      >
+        {deletePending ? "Deleting comparison..." : "Delete comparison"}
+      </button>
+    </fieldset>
   );
 }
 

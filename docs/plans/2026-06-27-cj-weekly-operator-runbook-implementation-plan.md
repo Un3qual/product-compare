@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown, existing repo verification.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** retained follow-up. This plan is retained behind the 2026-06-29 usable-product queue and is not a live dispatch row unless `docs/work/index.md` promotes it again.
 
 ---
 
@@ -17,7 +17,7 @@
 Owned paths:
 
 - `docs/runbooks/cj-weekly-operator-loop.md`
-- `docs/work/product-data-scraping.md` under the weekly-operator-runbook evidence heading only
+- `docs/work/product-data-scraping.md` under `### Weekly Operator Runbook Evidence` only
 
 Do not edit `lib/**`, `assets/**`, `docs/work/index.md`, `docs/plans/INDEX.md`, or existing plan docs.
 
@@ -34,7 +34,7 @@ Do not edit `lib/**`, `assets/**`, `docs/work/index.md`, `docs/plans/INDEX.md`, 
 - [ ] Create `docs/runbooks/cj-weekly-operator-loop.md` with sections: purpose, prerequisites, weekly flow, commands, decision records, troubleshooting, and hard guardrails.
 - [ ] Use only command names that exist in `lib/mix/tasks/**`; verify names with `mix help | rg 'product_compare.ingestion.cj_'` or direct file inspection.
 - [ ] Add a lane-doc evidence note that the runbook is docs-only and creates no new execution surface.
-- [ ] Run `! rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_API_TOKEN=[^[:space:]]+|CJ_ACCOUNT_ID=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` and ensure there are no placeholder or secret-value matches.
+- [ ] Run `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` and verify it exits 1 with no placeholder or secret-value matches.
 - [ ] Run `git diff --check`.
 
 ## Exit Condition

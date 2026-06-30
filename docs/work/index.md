@@ -22,17 +22,34 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-27
+Updated: 2026-06-29
 
-No `ready`, `needs_decision`, or `blocked` rows remain after completing the
-2026-06-27 cross-project parallel work-item batch. Add or promote a new row only
-after coordinator selection.
+The 2026-06-29 usable-product batch is complete. It moved the shopper decision
+loop forward across product browse cards, product detail actions, compare
+selection, offer filter context, and saved-comparison return paths.
+
+No `ready` row is currently selected. The next coordinator pass should either
+promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md` and
+`docs/work/product-data-scraping.md`, or choose another product-facing row.
 
 ## Ready Work
 
-No ready work is currently queued.
+No ready rows are currently selected.
 
 ## Just Completed
+
+The 2026-06-29 usable-product batch completed these five work items:
+
+- Frontend catalog browse: `/products` product decision cards with stable
+  detail, compare, and offer actions.
+- Frontend product detail: `/products/:slug` next-action block for compare,
+  offer review, and browse return.
+- Frontend product comparison: `/compare` selected-product tray and add-another
+  affordance.
+- Frontend offer discovery: `/offers` active filter context, reset actions, and
+  product-selection guidance.
+- Frontend saved comparisons: `/compare/saved` card summaries, scoped actions,
+  and empty/no-match return links.
 
 The 2026-06-27 cross-project parallel batch completed these ten work items:
 
@@ -47,13 +64,17 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 - Frontend affiliate setup: selected merchant context summaries.
 - Product data scraping: provider-neutral source-health read model.
 
-## Deferred Work
+## Retained Follow-Up Work
+
+The CJ read-model and weekly operator-runbook batch remains retained as the next
+Product data scraping follow-up once the usable-product queue has moved. The
+retained plans are listed in `docs/plans/INDEX.md` and
+`docs/work/product-data-scraping.md`.
 
 Application submission, account-manager contact, Tier-3 scraping, credential
 persistence, and CSV export remain out of scope. CJ candidate CSV score export
-is rejected and should not be promoted. The prior CJ read-model plans remain in
-the plan archive/candidate pool but are not the active queue after the
-cross-project correction.
+is rejected and should not be promoted. eBay Browse fallback remains blocked on
+CJ catalog-scope evidence.
 
 ## Executor Prompts
 

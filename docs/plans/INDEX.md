@@ -12,8 +12,13 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-No active work-item plans are currently promoted. Start at
-`docs/work/index.md` for the live dispatch queue before selecting new work.
+Start at `docs/work/index.md` for live dispatch status and ownership. The
+2026-06-29 usable-product batch completed. No implementation plan is currently
+active in the live queue.
+
+Active implementation plans:
+
+- None.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -25,7 +30,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| candidate | CJ read-model and weekly operator runbook batch | Product data scraping becomes the selected lane again and the coordinator explicitly chooses CJ-only read-model follow-up. | The ten CJ plans created on 2026-06-27 are kept but no longer active after the cross-project queue correction. |
+| retained | CJ read-model and weekly operator runbook batch | Promote after the 2026-06-29 usable-product queue has moved or when ingestion operator readiness becomes the highest product need again. | The ten CJ plans created on 2026-06-27 remain planned follow-up work and are tracked in `docs/work/product-data-scraping.md`; they are not currently live queue rows. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Completed Plan Archive
@@ -35,6 +40,13 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Usable-product frontend batch:
+  `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`,
+  `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`,
+  `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`,
+  `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-29-saved-comparisons-return-flow-implementation-plan.md`.
 - Cross-project frontend and ingestion follow-up batch:
   `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`,
   `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`,

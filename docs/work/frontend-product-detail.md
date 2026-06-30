@@ -5,7 +5,9 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27 (working tree)
+- Last verified: 2026-06-29 (working tree)
+- Recently completed usable-product plan:
+  - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -17,6 +19,30 @@
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Current Usable Product Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products/:slug` makes compare and offer review obvious
+  while preserving active-offer pagination and existing data contracts.
+- Completed evidence:
+  - RED: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+    - 27 tests, 1 failed as expected because the route had no accessible
+      `Next steps` decision region.
+  - GREEN: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+    - 27 tests, 0 failures.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 
@@ -49,6 +75,12 @@
 - `assets/src/routes/products/loader.ts` now parses `offersAfter` from `/products/:slug` URLs and forwards it as `after` to `ProductOffersRouteQuery` for URL-driven active-offer pagination.
 - `assets/src/routes/products/detail.tsx` now renders offer-section pagination links (`First offers` and `Next offers`) using slug-safe and cursor-safe product URLs.
 - `assets/test/routes/products/detail.route.test.tsx` now covers `offersAfter` forwarding and offer pagination links under active-offer pagination.
+- `assets/src/routes/products/detail.tsx` now renders a `Next steps`
+  decision block near the product summary with compare, offer-review, and
+  browse-product links without changing Relay query fields.
+- `assets/test/routes/products/detail.route.test.tsx` now covers the decision
+  block destinations, including encoded product slugs and product IDs, while
+  preserving active-offer pagination coverage.
 
 ## Completed
 

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useId } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
@@ -59,9 +59,7 @@ function ProductDetail({
       <h1>{product.name}</h1>
       <p>{product.brand?.name ?? "Unknown brand"}</p>
       {product.description ? <p>{product.description}</p> : null}
-      <p>
-        <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>Compare this product</Link>
-      </p>
+      <ProductDecisionActions productId={product.id} productSlug={product.slug} />
       <ProductSpecifications attributes={product.currentAttributes} />
       <section>
         <h2>Active offers</h2>
@@ -82,6 +80,33 @@ function ProductDetail({
           </ResettableErrorBoundary>
         )}
       </section>
+    </section>
+  );
+}
+
+function ProductDecisionActions({
+  productId,
+  productSlug
+}: {
+  productId: string;
+  productSlug: string;
+}) {
+  const titleId = useId();
+
+  return (
+    <section aria-labelledby={titleId}>
+      <h2 id={titleId}>Next steps</h2>
+      <ul>
+        <li>
+          <Link to={`/compare?slug=${encodeURIComponent(productSlug)}`}>Compare this product</Link>
+        </li>
+        <li>
+          <Link to={`/offers?productId=${encodeURIComponent(productId)}`}>Review active offers</Link>
+        </li>
+        <li>
+          <Link to="/products">Browse products</Link>
+        </li>
+      </ul>
     </section>
   );
 }

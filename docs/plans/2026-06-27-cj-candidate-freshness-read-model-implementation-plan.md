@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** retained follow-up. This plan is retained behind the 2026-06-29 usable-product queue and is not a live dispatch row unless `docs/work/index.md` promotes it again.
 
 ---
 
@@ -18,13 +18,13 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_candidate_freshness.ex`
 - `test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- `docs/work/product-data-scraping.md` under the candidate-freshness evidence heading only
+- `docs/work/product-data-scraping.md` under `### Candidate Freshness Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
 ## Scope
 
-- Bucket CJ candidates into `fresh`, `aging`, `stale`, and `missing_seen_at`.
+- Bucket CJ candidates into `fresh`, `aging`, and `stale`.
 - Defaults: `fresh_hours: 48`, `stale_hours: 168`.
 - Support custom positive integer thresholds while forcing `stale_hours >= fresh_hours`.
 - Return counts by bucket and by review status inside each bucket.
@@ -32,12 +32,12 @@ Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product
 
 ## Tasks
 
-- [ ] Add failing tests with candidates observed now, 72 hours ago, 10 days ago, and with nil `last_seen_at`; include a non-CJ row that must be ignored.
+- [ ] Add failing tests with candidates observed now, 72 hours ago, and 10 days ago; include a non-CJ row that must be ignored.
 - [ ] Create `ProductCompare.Ingestion.CJCandidateFreshness` with `summary/1` and `summary/2` where the second argument can inject `now` for deterministic tests.
 - [ ] Normalize invalid thresholds back to defaults and clamp `stale_hours` to at least `fresh_hours`.
 - [ ] Return plain maps containing threshold values plus bucket counts.
 - [ ] Run `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Elixir, Ecto, ExUnit.
 
-**Status:** ready. This plan is part of the 2026-06-27 parallel CJ work-item planning batch.
+**Status:** retained follow-up. This plan is retained behind the 2026-06-29 usable-product queue and is not a live dispatch row unless `docs/work/index.md` promotes it again.
 
 ---
 
@@ -18,26 +18,26 @@ Owned paths:
 
 - `lib/product_compare/ingestion/cj_merchant_identity_quality.ex`
 - `test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- `docs/work/product-data-scraping.md` under the merchant-identity-quality evidence heading only
+- `docs/work/product-data-scraping.md` under `### Merchant Identity Quality Evidence` only
 
 Do not edit `lib/mix/tasks/**`, `lib/product_compare/ingestion.ex`, `lib/product_compare_web/**`, `assets/**`, `docs/work/index.md`, or `docs/plans/INDEX.md`.
 
 ## Scope
 
 - Count CJ merchant identities.
-- Count identities missing merchant name, merchant domain, or linked merchant id.
+- Count identities missing merchant name or merchant domain. Do not add a missing `merchant_id` metric because the current schema and migration require a linked merchant.
 - Count duplicate normalized domains and duplicate normalized merchant names.
 - Return limited examples for duplicate domains/names with non-secret ids and display names only.
 - Do not mutate identities or merchants.
 
 ## Tasks
 
-- [ ] Add failing tests for missing source, complete identities, missing fields, duplicate domains, duplicate names, and non-CJ identities that must be ignored.
+- [ ] Add failing tests for missing source, complete identities, missing name/domain fields, duplicate domains, duplicate names, and non-CJ identities that must be ignored.
 - [ ] Create `ProductCompare.Ingestion.CJMerchantIdentityQuality` with `summary/1`, default duplicate example limit `5`, clamped to `1..25`.
 - [ ] Normalize duplicate keys by trimming and downcasing strings; ignore nil and blank values.
 - [ ] Return aggregate counts and bounded examples only.
 - [ ] Run `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`.
-- [ ] Run `mix typecheck` and `git diff --check`.
+- [ ] Run `mix format --check-formatted`, `mix typecheck`, and `git diff --check`.
 
 ## Exit Condition
 

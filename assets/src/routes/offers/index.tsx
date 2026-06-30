@@ -11,6 +11,11 @@ import {
   type OfferDiscoveryFilters,
   type OfferDiscoveryLoaderData
 } from "./loader";
+import {
+  OfferDiscoveryFilterForm,
+  OfferDiscoveryFilterSummary
+} from "./filters";
+import { offerDiscoveryPath } from "./paths";
 
 type OfferConnection = NonNullable<
   OfferDiscoveryRouteQuery["response"]["merchantProducts"]
@@ -36,6 +41,7 @@ export function OfferDiscoveryRoute() {
       </header>
 
       <OfferDiscoveryFilterForm filters={loaderData.filters} />
+      <OfferDiscoveryFilterSummary filters={loaderData.filters} />
 
       {loaderData.status === "missingProduct" ? (
         <MissingProductState />
@@ -56,65 +62,6 @@ export function OfferDiscoveryRoute() {
       )}
     </section>
   );
-}
-
-function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
-  return (
-    <form
-      action="/offers"
-      aria-label="Offer discovery filters"
-      key={offerDiscoveryFilterFormKey(filters)}
-      method="get"
-    >
-      <label>
-        Product ID
-        <input
-          autoComplete="off"
-          defaultValue={filters.productId ?? ""}
-          name="productId"
-          type="text"
-        />
-      </label>
-      <label>
-        Merchant ID
-        <input
-          autoComplete="off"
-          defaultValue={filters.merchantId ?? ""}
-          name="merchantId"
-          type="text"
-        />
-      </label>
-      <label>
-        <input
-          defaultChecked={!filters.activeOnly}
-          name="activeOnly"
-          type="checkbox"
-          value="false"
-        />
-        Include inactive offers
-      </label>
-      <label>
-        Page size
-        <input
-          autoComplete="off"
-          defaultValue={String(filters.first)}
-          min={1}
-          name="first"
-          type="number"
-        />
-      </label>
-      <button type="submit">Apply filters</button>
-    </form>
-  );
-}
-
-function offerDiscoveryFilterFormKey(filters: OfferDiscoveryFilters) {
-  return JSON.stringify([
-    filters.productId,
-    filters.merchantId,
-    filters.activeOnly,
-    filters.first
-  ]);
 }
 
 function OfferDiscoveryPanel({
@@ -378,6 +325,7 @@ function MissingProductState() {
   return (
     <section>
       <p>Start from browse products to choose a product.</p>
+      <p>Choose a product to review its current merchant offers.</p>
       <p>
         <Link to="/products">Browse products</Link>
       </p>
@@ -391,27 +339,6 @@ function OfferDiscoveryUnavailableFallback() {
       <p>Offers unavailable.</p>
     </section>
   );
-}
-
-function offerDiscoveryPath(filters: OfferDiscoveryFilters, after: string | null) {
-  const params = new URLSearchParams();
-
-  if (filters.productId) {
-    params.set("productId", filters.productId);
-  }
-
-  if (filters.merchantId) {
-    params.set("merchantId", filters.merchantId);
-  }
-
-  params.set("activeOnly", String(filters.activeOnly));
-  params.set("first", String(filters.first));
-
-  if (after) {
-    params.set("after", after);
-  }
-
-  return `/offers?${params.toString()}`;
 }
 
 function renderableOffers(connection: OfferConnection) {

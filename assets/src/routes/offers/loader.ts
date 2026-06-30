@@ -9,7 +9,7 @@ import {
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
 
-const DEFAULT_OFFERS_PAGE_SIZE = 6;
+export const DEFAULT_OFFERS_PAGE_SIZE = 6;
 const MAX_OFFERS_PAGE_SIZE = 50;
 
 export interface OfferDiscoveryFilters {

@@ -47,13 +47,15 @@
 
 ## Next Planned Slice
 
-- No implementation batch is currently ready in `docs/work/index.md`.
-- Captured CJ merchant feed candidates are exposed through a non-secret GraphQL
-  read model, durable review-status mutation, and Relay route at
-  `/ingestion/feed-candidates`.
+- The 2026-06-29 usable-product batch completed the shopper decision loop
+  improvements across browse product cards, product-detail next actions, compare
+  selection clarity, offer filter context, and saved-comparison return paths.
+- The retained CJ read-model and weekly operator-runbook plans remain tracked in
+  `docs/work/product-data-scraping.md` and `docs/plans/INDEX.md` for the next
+  ingestion-operator follow-up after product-facing progress.
 - CJ credential access, product-scope validation, quota observation,
-  representative redacted sample evidence, and owner approval are recorded for
-  the manual connector path.
-- Scheduled CJ discovery, candidate scoring, candidate approval workflows,
-  account-manager automation, and Tier-3 direct scraping remain deferred until a
-  later explicit product/backend decision.
+  representative redacted sample evidence, and owner approval remain recorded
+  for the manual connector path.
+- Account-manager automation, Tier-3 direct scraping, credential persistence,
+  application submission, and CSV export remain out of scope until a later
+  explicit product/backend decision.
