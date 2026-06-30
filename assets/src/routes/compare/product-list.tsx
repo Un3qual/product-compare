@@ -5,8 +5,14 @@ import productDetailRouteQuery, {
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ProductAttributeList } from "../products/product-attribute-list";
-import type { CompareProductSummary, CompareRouteLoaderData } from "./loader";
+import type {
+  CompareProductSummary,
+  CompareRouteLoaderData,
+  CompareSpecMode
+} from "./loader";
 import { buildComparePathAfterRemovingSlugIndex } from "./paths";
+
+const MISSING_ATTRIBUTE_VALUE = "Not available";
 
 export function CompareProductList({
   loaderData
@@ -15,7 +21,10 @@ export function CompareProductList({
 }) {
   return (
     <>
-      <SharedAttributeMatrix products={loaderData.products} />
+      <CompareSpecificationMatrix
+        products={loaderData.products}
+        specMode={loaderData.specMode}
+      />
       <ul>
         {loaderData.productQueries.map((productQuery, index) => (
           <CompareProductCard
@@ -24,6 +33,7 @@ export function CompareProductList({
             summary={loaderData.products[index]}
             selectedSlugs={loaderData.slugs}
             selectedIndex={index}
+            specMode={loaderData.specMode}
           />
         ))}
       </ul>
@@ -31,20 +41,27 @@ export function CompareProductList({
   );
 }
 
-function SharedAttributeMatrix({ products }: { products: CompareProductSummary[] }) {
+function CompareSpecificationMatrix({
+  products,
+  specMode
+}: {
+  products: CompareProductSummary[];
+  specMode: CompareSpecMode;
+}) {
   if (products.length < 2) {
     return null;
   }
 
-  const rows = buildSharedAttributeRows(products);
+  const rows = buildSpecificationRows(products, specMode);
+  const title = specificationMatrixTitle(specMode);
 
   return (
     <section>
-      <h2>Shared specifications</h2>
+      <h2>{title}</h2>
       {rows.length === 0 ? (
-        <p>No shared specifications across these products yet.</p>
+        <p>{emptySpecificationMatrixMessage(specMode)}</p>
       ) : (
-        <table aria-label="Shared specifications">
+        <table aria-label={title}>
           <thead>
             <tr>
               <th scope="col">Specification</th>
@@ -71,7 +88,31 @@ function SharedAttributeMatrix({ products }: { products: CompareProductSummary[]
   );
 }
 
-function buildSharedAttributeRows(products: CompareProductSummary[]) {
+interface CompareSpecificationRow {
+  code: string;
+  displayName: string;
+  missingValues: boolean[];
+  values: string[];
+}
+
+function buildSpecificationRows(
+  products: CompareProductSummary[],
+  specMode: CompareSpecMode
+) {
+  const rows = buildAllSpecificationRows(products);
+
+  if (specMode === "all") {
+    return rows;
+  }
+
+  if (specMode === "differences") {
+    return rows.filter(hasSpecificationDifference);
+  }
+
+  return rows.filter((row) => row.missingValues.every((isMissing) => !isMissing));
+}
+
+function buildAllSpecificationRows(products: CompareProductSummary[]): CompareSpecificationRow[] {
   const [firstProduct, ...remainingProducts] = products;
 
   if (!firstProduct || remainingProducts.length === 0) {
@@ -82,29 +123,102 @@ function buildSharedAttributeRows(products: CompareProductSummary[]) {
     buildFirstAttributeByCode(product.currentAttributes)
   );
   const seenCodes = new Set<string>();
-
-  return firstProduct.currentAttributes.flatMap((attribute) => {
+  const firstProductRows = firstProduct.currentAttributes.flatMap((attribute) => {
     if (seenCodes.has(attribute.code)) {
       return [];
     }
 
     seenCodes.add(attribute.code);
-    const sharedAttributes = attributeMaps.map((attributesByCode) =>
-      attributesByCode.get(attribute.code)
-    );
-
-    if (sharedAttributes.some((sharedAttribute) => !sharedAttribute)) {
-      return [];
-    }
 
     return [
-      {
+      buildSpecificationRow({
+        attributeMaps,
         code: attribute.code,
-        displayName: attribute.displayName,
-        values: sharedAttributes.map((sharedAttribute) => sharedAttribute?.valueText ?? "")
-      }
+        displayName: attribute.displayName
+      })
     ];
   });
+  const additionalRows = remainingProducts.flatMap((product) =>
+    product.currentAttributes.flatMap((attribute) => {
+      if (seenCodes.has(attribute.code)) {
+        return [];
+      }
+
+      seenCodes.add(attribute.code);
+
+      return [
+        buildSpecificationRow({
+          attributeMaps,
+          code: attribute.code,
+          displayName: attribute.displayName
+        })
+      ];
+    })
+  );
+
+  additionalRows.sort(compareSpecificationRowsByDisplayName);
+
+  return [...firstProductRows, ...additionalRows];
+}
+
+function buildSpecificationRow({
+  attributeMaps,
+  code,
+  displayName
+}: {
+  attributeMaps: Array<
+    Map<string, CompareProductSummary["currentAttributes"][number]>
+  >;
+  code: string;
+  displayName: string;
+}): CompareSpecificationRow {
+  const attributes = attributeMaps.map((attributesByCode) => attributesByCode.get(code));
+
+  return {
+    code,
+    displayName,
+    missingValues: attributes.map((attribute) => !attribute),
+    values: attributes.map((attribute) => attribute?.valueText ?? MISSING_ATTRIBUTE_VALUE)
+  };
+}
+
+function hasSpecificationDifference(row: CompareSpecificationRow) {
+  if (row.missingValues.some(Boolean)) {
+    return true;
+  }
+
+  return new Set(row.values).size > 1;
+}
+
+function compareSpecificationRowsByDisplayName(
+  firstRow: CompareSpecificationRow,
+  secondRow: CompareSpecificationRow
+) {
+  const nameComparison = firstRow.displayName.localeCompare(secondRow.displayName);
+
+  return nameComparison === 0 ? firstRow.code.localeCompare(secondRow.code) : nameComparison;
+}
+
+function specificationMatrixTitle(specMode: CompareSpecMode) {
+  switch (specMode) {
+    case "all":
+      return "All specifications";
+    case "differences":
+      return "Different specifications";
+    case "shared":
+      return "Shared specifications";
+  }
+}
+
+function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
+  switch (specMode) {
+    case "all":
+      return "No specifications are available for these products yet.";
+    case "differences":
+      return "No specification differences across these products yet.";
+    case "shared":
+      return "No shared specifications across these products yet.";
+  }
 }
 
 function buildFirstAttributeByCode(
@@ -142,11 +256,13 @@ function CompareProductCard({
   productQuery,
   selectedSlugs,
   selectedIndex,
+  specMode,
   summary
 }: {
   productQuery: Extract<CompareRouteLoaderData, { status: "ready" }>["productQueries"][number];
   selectedSlugs: readonly string[];
   selectedIndex: number;
+  specMode: CompareSpecMode;
   summary: CompareProductSummary | undefined;
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
@@ -155,7 +271,9 @@ function CompareProductCard({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const product = data.product;
-  const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex);
+  const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex, {
+    specMode
+  });
 
   if (!product) {
     return null;

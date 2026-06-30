@@ -15,6 +15,7 @@ import { CompareShell } from "./compare-shell";
 import {
   compareLoader,
   MAX_COMPARE_PRODUCTS,
+  type CompareSpecMode,
   type CompareProductSummary,
   type CompareRouteLoaderData
 } from "./loader";
@@ -23,7 +24,10 @@ import {
   CompareProductSummaryList
 } from "./product-list";
 import { CompareProductPickerBoundary } from "./product-picker";
-import { buildComparePathAfterRemovingSlugIndex } from "./paths";
+import {
+  buildComparePathAfterRemovingSlugIndex,
+  buildComparePathFromSlugs
+} from "./paths";
 interface SaveFeedbackState {
   error: string | null;
   inFlightSelectionKey: string | null;
@@ -186,7 +190,12 @@ export function CompareRoute() {
         {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}
         <CompareSelectionTray
           products={loaderData.products}
+          specMode={loaderData.specMode}
           selectedSlugs={loaderData.slugs}
+        />
+        <CompareSpecModeControls
+          selectedSlugs={loaderData.slugs}
+          specMode={loaderData.specMode}
         />
         <ResettableErrorBoundary
           resetToken={loaderData.productQueries}
@@ -204,6 +213,7 @@ export function CompareRoute() {
         {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
           <CompareProductPickerBoundary
             heading="Add another product"
+            specMode={loaderData.specMode}
             selectedSlugs={loaderData.slugs}
           />
         ) : null}
@@ -214,7 +224,10 @@ export function CompareRoute() {
   return (
     <CompareShell title="Compare products">
       {loaderData.status === "empty" ? (
-        <CompareProductPickerBoundary selectedSlugs={loaderData.slugs} />
+        <CompareProductPickerBoundary
+          specMode={loaderData.specMode}
+          selectedSlugs={loaderData.slugs}
+        />
       ) : null}
       {loaderData.status === "too_many" ? (
         <p>You can compare up to {MAX_COMPARE_PRODUCTS} products.</p>
@@ -228,9 +241,11 @@ export function CompareRoute() {
 
 function CompareSelectionTray({
   products,
+  specMode,
   selectedSlugs
 }: {
   products: CompareProductSummary[];
+  specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
   const titleId = useId();
@@ -245,7 +260,11 @@ function CompareSelectionTray({
         {products.map((product, index) => (
           <li key={`${product.id}-${selectedSlugs[index] ?? index}`}>
             <span>{product.name}</span>{" "}
-            <Link to={buildComparePathAfterRemovingSlugIndex(selectedSlugs, index)}>
+            <Link
+              to={buildComparePathAfterRemovingSlugIndex(selectedSlugs, index, {
+                specMode
+              })}
+            >
               Remove {product.name} from selection
             </Link>
           </li>
@@ -254,6 +273,42 @@ function CompareSelectionTray({
     </section>
   );
 }
+
+function CompareSpecModeControls({
+  selectedSlugs,
+  specMode
+}: {
+  selectedSlugs: readonly string[];
+  specMode: CompareSpecMode;
+}) {
+  return (
+    <nav aria-label="Specification views">
+      <ul>
+        {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
+          <li key={option.mode}>
+            <Link
+              aria-current={specMode === option.mode ? "page" : undefined}
+              to={buildComparePathFromSlugs(selectedSlugs, {
+                specMode: option.mode
+              })}
+            >
+              {option.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+const COMPARE_SPEC_MODE_OPTIONS: Array<{
+  label: string;
+  mode: CompareSpecMode;
+}> = [
+  { label: "Shared specs", mode: "shared" },
+  { label: "Differences", mode: "differences" },
+  { label: "All specs", mode: "all" }
+];
 
 function isActiveSaveRequest(
   activeSaveRequest: { id: number; selectionKey: string } | null,

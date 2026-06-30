@@ -25,6 +25,7 @@
 - [x] Task 6: run full demo-slice verification and close queue docs.
 - [x] Task 7: add compare selection remove controls.
 - [x] Task 8: add a ready-state selected-product tray and add-another heading.
+- [x] Task 9: add URL-backed compare matrix modes.
 
 ## Current Usable Product Batch
 
@@ -132,7 +133,7 @@
 
 ## Active Dispatch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`.
 - Owned paths:
@@ -150,6 +151,14 @@
 - Exit condition: `/compare` supports URL-backed shared, differences-only, and
   all-spec matrix modes while preserving save, add, remove, and selected-tray
   behavior.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare loader parses|compare loader returns an empty state|compare loader rejects more than three"` - failed as expected with 6 failing tests and 61 skipped because loader states did not expose `specMode`.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare loader parses|compare loader returns an empty state|compare loader rejects more than three"` - 6 tests passed, 61 skipped.
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "specification mode|all specification rows|different specification|empty differences"` - failed as expected with 6 failing tests and 67 skipped because compare mode controls, mode-preserving links, and mode-aware matrices were not implemented.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "specification mode|all specification rows|different specification|empty differences"` - 6 tests passed, 67 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 73 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 

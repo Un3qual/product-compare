@@ -259,14 +259,18 @@ const buildFetchedSavedComparisonPage = (
   dispose: vi.fn()
 });
 
-const buildReadyCompareLoaderData = () => ({
+const buildReadyCompareLoaderData = (
+  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>> = {}
+) => ({
   status: "ready" as const,
+  specMode: "shared" as const,
   slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
   productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
   products: [
     buildProductSummary(DETAIL_PRODUCT),
     buildProductSummary(SECOND_PRODUCT)
-  ]
+  ],
+  ...overrides
 });
 
 beforeEach(() => {
@@ -293,10 +297,33 @@ test("compare loader returns an empty state when no slugs are selected", async (
   await expect(
     compareLoader(buildCompareLoaderArgs())
   ).resolves.toEqual({
+    specMode: "shared",
     status: "empty",
     slugs: []
   });
 });
+
+test.each([
+  ["all", "all"],
+  ["differences", "differences"],
+  ["", "shared"],
+  ["unsupported", "shared"]
+] as const)(
+  "compare loader parses specs=%s as %s mode",
+  async (rawSpecMode, expectedSpecMode) => {
+    await expect(
+      compareLoader(
+        buildCompareLoaderArgs({
+          request: new Request(`https://app.example.com/compare?specs=${rawSpecMode}`)
+        })
+      )
+    ).resolves.toEqual({
+      specMode: expectedSpecMode,
+      status: "empty",
+      slugs: []
+    });
+  }
+);
 
 test("compare loader rejects more than three selected slugs", async () => {
   await expect(
@@ -308,6 +335,7 @@ test("compare loader rejects more than three selected slugs", async () => {
       })
     )
   ).resolves.toEqual({
+    specMode: "shared",
     status: "too_many",
     slugs: ["one", "two", "three", "four"]
   });
@@ -327,6 +355,7 @@ test("compare loader requests selected product details and preserves URL order",
     compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
+    specMode: "shared",
     slugs: ["detail-product", "second-product"],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
     products: [
@@ -398,6 +427,7 @@ test("compare loader returns not_found when any selected product is missing", as
     )
   ).resolves.toEqual({
     status: "not_found",
+    specMode: "shared",
     slugs: ["detail-product", "missing-product"]
   });
   expect(firstProductQuery.dispose).toHaveBeenCalledTimes(1);
@@ -500,6 +530,7 @@ test("compare loader throws when a rejected request is mixed with a missing prod
 test("empty compare page lets users choose products without editing the URL", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
+    specMode: "shared",
     slugs: []
   });
   mockedUseLazyLoadQuery.mockReturnValue({
@@ -547,6 +578,7 @@ test("empty compare page lets users choose products without editing the URL", ()
 test("product picker can advance beyond the first picker page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
+    specMode: "shared",
     slugs: []
   });
   mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
@@ -600,6 +632,7 @@ test("product picker can advance beyond the first picker page", () => {
 test("product picker keeps previous products visible when loading another page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
+    specMode: "shared",
     slugs: []
   });
   mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
@@ -656,6 +689,7 @@ test("product picker keeps previous products visible when loading another page",
 test("product picker resets pagination before rendering a changed selected set", () => {
   let loaderData: CompareRouteLoaderData = {
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
@@ -710,6 +744,7 @@ test("product picker resets pagination before rendering a changed selected set",
   const callsBeforeSelectionChange = mockedUseLazyLoadQuery.mock.calls.length;
   loaderData = {
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)]
@@ -730,6 +765,7 @@ test("product picker resets pagination before rendering a changed selected set",
 test("empty compare page handles an empty product picker", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
+    specMode: "shared",
     slugs: []
   });
   mockedUseLazyLoadQuery.mockReturnValue({
@@ -746,6 +782,7 @@ test("empty compare page handles an empty product picker", () => {
 test("renders a limit message when more than three products are selected", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "too_many",
+    specMode: "shared",
     slugs: ["one", "two", "three", "four"]
   });
 
@@ -1053,6 +1090,262 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
   expect(within(matrix).queryByText("Refresh rate duplicate")).not.toBeInTheDocument();
 });
 
+test("ready compare page renders specification mode links with stable URL state", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences"
+    })
+  );
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Shared specs" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product"
+  );
+  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&specs=differences"
+  );
+  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+  expect(screen.getByRole("link", { name: "All specs" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&specs=all"
+  );
+});
+
+test("ready compare page preserves specification mode in product-picker append links", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "all"
+    })
+  );
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:monitor-c",
+            name: "Monitor C",
+            slug: "monitor-c",
+            brand: { id: "Brand:panelco", name: "PanelCo" }
+          }
+        }
+      ]
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c&specs=all"
+  );
+});
+
+test("ready compare page preserves specification mode in remove links", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+      productQueries: [
+        DETAIL_PRODUCT_QUERY_DESCRIPTOR,
+        SECOND_PRODUCT_QUERY_DESCRIPTOR,
+        THIRD_PRODUCT_QUERY_DESCRIPTOR
+      ],
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT)
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+
+  expect(
+    within(selectionTray).getByRole("link", {
+      name: "Remove Detail Product from selection"
+    })
+  ).toHaveAttribute(
+    "href",
+    "/compare?slug=second-product&slug=third-product&specs=differences"
+  );
+  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
+    "href",
+    "/compare?slug=second-product&slug=third-product&specs=differences"
+  );
+});
+
+test("ready compare page renders all specification rows with missing cells", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    },
+    {
+      code: "brightness",
+      displayName: "Brightness",
+      valueText: "350 nits"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "all",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "All specifications" });
+  const rows = within(matrix).getAllByRole("row");
+
+  expect(rows[1]).toHaveTextContent("Refresh rate");
+  expect(rows[1]).toHaveTextContent("144 Hz");
+  expect(rows[1]).toHaveTextContent("Not available");
+  expect(rows[2]).toHaveTextContent("Panel type");
+  expect(rows[2]).toHaveTextContent("IPS");
+  expect(rows[3]).toHaveTextContent("Brightness");
+  expect(rows[3]).toHaveTextContent("Not available");
+  expect(rows[3]).toHaveTextContent("350 nits");
+  expect(within(matrix).getAllByText("Not available")).toHaveLength(2);
+});
+
+test("ready compare page renders only different specification rows", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    },
+    {
+      code: "weight",
+      displayName: "Weight",
+      valueText: "5 lb"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "165 Hz"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    },
+    {
+      code: "brightness",
+      displayName: "Brightness",
+      valueText: "350 nits"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Different specifications" });
+  const rows = within(matrix).getAllByRole("row");
+
+  expect(rows[1]).toHaveTextContent("Refresh rate");
+  expect(rows[1]).toHaveTextContent("144 Hz");
+  expect(rows[1]).toHaveTextContent("165 Hz");
+  expect(rows[2]).toHaveTextContent("Weight");
+  expect(rows[2]).toHaveTextContent("5 lb");
+  expect(rows[2]).toHaveTextContent("Not available");
+  expect(rows[3]).toHaveTextContent("Brightness");
+  expect(rows[3]).toHaveTextContent("Not available");
+  expect(rows[3]).toHaveTextContent("350 nits");
+  expect(within(matrix).queryByText("Panel type")).not.toBeInTheDocument();
+});
+
+test("ready compare page renders an empty differences state when specifications match", () => {
+  const currentAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("heading", { name: "Different specifications" })).toBeInTheDocument();
+  expect(screen.getByText("No specification differences across these products yet.")).toBeVisible();
+  expect(screen.queryByRole("table", { name: "Different specifications" })).not.toBeInTheDocument();
+});
+
 test("ready compare page lets users append a product without editing the URL", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
   mockedUseLazyLoadQuery.mockReturnValue({
@@ -1090,6 +1383,7 @@ test("ready compare page lets users append a product without editing the URL", (
 test("ready compare page renders a selected-product tray with ordered remove links", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
     productQueries: [
       DETAIL_PRODUCT_QUERY_DESCRIPTOR,
@@ -1133,6 +1427,7 @@ test("ready compare page renders a selected-product tray with ordered remove lin
 test("ready compare page handles an empty selected-product tray defensively", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [],
     productQueries: [],
     products: []
@@ -1178,6 +1473,7 @@ test("ready compare page labels the picker as an add-another-product path", () =
 test("ready compare cards include a remove link for the first selected product", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
     productQueries: [
       DETAIL_PRODUCT_QUERY_DESCRIPTOR,
@@ -1202,6 +1498,7 @@ test("ready compare cards include a remove link for the first selected product",
 test("ready compare cards include a remove link for a middle selected product", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
     productQueries: [
       DETAIL_PRODUCT_QUERY_DESCRIPTOR,
@@ -1226,6 +1523,7 @@ test("ready compare cards include a remove link for a middle selected product", 
 test("ready compare cards include a remove link for the last selected product", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
     productQueries: [
       DETAIL_PRODUCT_QUERY_DESCRIPTOR,
@@ -1250,6 +1548,7 @@ test("ready compare cards include a remove link for the last selected product", 
 test("ready compare card remove link clears all selected slugs when only one is selected", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
@@ -1364,6 +1663,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
     productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
@@ -1410,6 +1710,7 @@ test("compare route reports a fallback error when the save commit throws synchro
 test("renders a not-found message when any selected product is missing", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "not_found",
+    specMode: "shared",
     slugs: ["detail-product", "missing-product"]
   });
 

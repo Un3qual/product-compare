@@ -12,6 +12,8 @@ import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
 
+export type CompareSpecMode = "shared" | "differences" | "all";
+
 export interface CompareProductSummary {
   id: string;
   name: string;
@@ -30,14 +32,17 @@ export interface CompareProductAttributeSummary {
 export type CompareRouteLoaderData =
   | {
       status: "empty";
+      specMode: CompareSpecMode;
       slugs: [];
     }
   | {
       status: "too_many" | "not_found";
+      specMode: CompareSpecMode;
       slugs: string[];
     }
   | {
       status: "ready";
+      specMode: CompareSpecMode;
       slugs: string[];
       productQueries: Array<RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>>;
       products: CompareProductSummary[];
@@ -50,10 +55,12 @@ export async function compareLoader({
   request
 }: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
   const slugs = parseSelectedSlugs(request.url);
+  const specMode = compareSpecModeFromUrl(request.url);
 
   if (slugs.length === 0) {
     return {
       status: "empty",
+      specMode,
       slugs: []
     };
   }
@@ -61,6 +68,7 @@ export async function compareLoader({
   if (slugs.length > MAX_COMPARE_PRODUCTS) {
     return {
       status: "too_many",
+      specMode,
       slugs
     };
   }
@@ -93,16 +101,31 @@ export async function compareLoader({
 
     return {
       status: "not_found",
+      specMode,
       slugs
     };
   }
 
   return {
     status: "ready",
+    specMode,
     slugs,
     productQueries: fetchedProductQueries.map((query) => query.descriptor),
     products: products.filter(isPresentProduct).map(summarizeProduct)
   };
+}
+
+export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
+  const url = new URL(requestUrl);
+
+  switch (url.searchParams.get("specs")?.trim()) {
+    case "all":
+      return "all";
+    case "differences":
+      return "differences";
+    default:
+      return "shared";
+  }
 }
 
 function parseSelectedSlugs(requestUrl: string) {

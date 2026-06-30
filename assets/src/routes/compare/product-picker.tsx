@@ -5,7 +5,7 @@ import compareProductPickerQuery, {
   type CompareProductPickerQuery
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { MAX_COMPARE_PRODUCTS } from "./loader";
+import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 import { buildComparePathFromSlugs } from "./paths";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
@@ -15,12 +15,14 @@ type ComparePickerProduct =
 
 export function CompareProductPickerBoundary({
   heading = "Choose products",
+  specMode,
   selectedSlugs
 }: {
   heading?: string;
+  specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
-  const resetToken = selectedSlugs.join("|");
+  const resetToken = `${specMode}:${selectedSlugs.join("|")}`;
 
   return (
     <ResettableErrorBoundary
@@ -31,6 +33,7 @@ export function CompareProductPickerBoundary({
         <CompareProductPicker
           heading={heading}
           key={resetToken}
+          specMode={specMode}
           selectedSlugs={selectedSlugs}
         />
       </Suspense>
@@ -40,9 +43,11 @@ export function CompareProductPickerBoundary({
 
 function CompareProductPicker({
   heading,
+  specMode,
   selectedSlugs
 }: {
   heading: string;
+  specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
   const [after, setAfter] = useState<string | null>(null);
@@ -75,6 +80,7 @@ function CompareProductPicker({
       <h2>{heading}</h2>
       <CompareProductPickerOptions
         availableProducts={availableProducts}
+        specMode={specMode}
         selectedSlugs={selectedSlugs}
       />
       <ShowMoreProductsButton nextCursor={nextCursor} onShowMore={setAfter} />
@@ -103,9 +109,11 @@ function emptyProductPickerMessage(selectedSlugs: readonly string[]) {
 
 function CompareProductPickerOptions({
   availableProducts,
+  specMode,
   selectedSlugs
 }: {
   availableProducts: readonly ComparePickerProduct[];
+  specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
   if (availableProducts.length === 0) {
@@ -118,7 +126,7 @@ function CompareProductPickerOptions({
         <li key={product.id}>
           <h3>{product.name}</h3>
           <p>{product.brand.name}</p>
-          <Link to={buildComparePath(selectedSlugs, product.slug)}>
+          <Link to={buildComparePath(selectedSlugs, product.slug, specMode)}>
             Compare {product.name}
           </Link>
         </li>
@@ -150,13 +158,17 @@ function ShowMoreProductsButton({
   );
 }
 
-function buildComparePath(selectedSlugs: readonly string[], productSlug: string) {
+function buildComparePath(
+  selectedSlugs: readonly string[],
+  productSlug: string,
+  specMode: CompareSpecMode
+) {
   const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(
     0,
     MAX_COMPARE_PRODUCTS
   );
 
-  return buildComparePathFromSlugs(nextSlugs);
+  return buildComparePathFromSlugs(nextSlugs, { specMode });
 }
 
 function appendUniqueProducts(
