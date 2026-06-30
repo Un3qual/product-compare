@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-29 after compare selection tray verification
@@ -131,7 +131,7 @@
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
-## Active Dispatch
+## Completed Matrix Modes Dispatch
 
 - Status: done.
 - Plan:

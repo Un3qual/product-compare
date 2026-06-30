@@ -139,6 +139,31 @@
 
 ## Active Dispatch
 
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/filters.ts`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/queries/ProductFilterMetadataQuery.ts`
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/src/routes/catalog/loader.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `git diff --check`
+- Exit condition: `/products` exposes metadata-backed filters, preserves active
+  filter URLs through pagination, and clears back to the unfiltered browse page.
+
+## Completed Filter Metadata Dispatch
+
 - Status: done.
 - Plan:
   `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`.

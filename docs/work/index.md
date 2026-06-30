@@ -28,72 +28,60 @@ The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
 selection, offer filter context, and saved-comparison return paths.
 
-The coordinator promoted the first explicitly requested parallel batch from the
-product filtering and in-depth comparison plan set. The selected rows have
-disjoint write scopes: backend filter metadata/facets and frontend compare
-matrix modes. The catalog faceted-filtering UI remains dependent on the backend
-metadata contract, and the deeper compare metadata/offer-helper rows remain
-sequenced behind matrix modes because they share compare route files.
+The first explicitly requested parallel batch from the product filtering and
+in-depth comparison plan set is complete. Backend filter metadata/facets and
+frontend compare matrix modes landed in separate commits with focused
+verification.
+
+The next executable row is catalog faceted filtering UI. The deeper compare
+attribute metadata and offer-helper rows remain sequenced behind this row
+because they overlap Relay schema/generated artifacts and compare route files.
 
 ## Ready Work
 
-### Product Filter Metadata and Facets
+### Catalog Faceted Filtering UI
 
 - Status: ready
 - Lane: Frontend catalog browse
 - Work doc: `docs/work/frontend-catalog-browse.md`
 - Active plan:
-  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
-- Next action: add the backend and GraphQL `productFilterMetadata(filters:)`
-  metadata/facet contract while preserving existing `products(filters:)`
-  behavior.
+  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`
+- Next action: wire `/products` to parse/share URL-backed product filters, load
+  `products(filters:)` and `productFilterMetadata(filters:)`, render
+  metadata-backed filter controls, preserve filters through pagination, and
+  distinguish filtered empty states.
 - Owned paths:
-  - `lib/product_compare/catalog/filter_metadata.ex`
-  - `test/product_compare/catalog/filter_metadata_test.exs`
-  - `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-  - `lib/product_compare/catalog.ex`
-  - `lib/product_compare/catalog/filtering.ex`
-  - `lib/product_compare/specs.ex`
-  - `lib/product_compare/taxonomy.ex`
-  - `lib/product_compare_web/schema.ex`
-  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
-  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `assets/src/routes/catalog/filters.ts`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/queries/ProductFilterMetadataQuery.ts`
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/src/routes/catalog/loader.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
   - `docs/work/frontend-catalog-browse.md`
 - Verification:
-  - `mix test test/product_compare/catalog/filter_metadata_test.exs`
-  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
-  - `mix typecheck`
-  - `git diff --check`
-- Exit condition: a browser client can ask GraphQL for display-safe filter
-  metadata and facet counts using the same filter input shape that
-  `products(filters:)` already accepts.
-
-### Compare Matrix Modes
-
-- Status: ready
-- Lane: Frontend product comparison demo parity
-- Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
-- Active plan:
-  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`
-- Next action: add URL-backed `specs=shared|differences|all` comparison matrix
-  modes using existing `Product.currentAttributes` display values.
-- Owned paths:
-  - `assets/src/routes/compare/loader.ts`
-  - `assets/src/routes/compare/paths.ts`
-  - `assets/src/routes/compare/index.tsx`
-  - `assets/src/routes/compare/product-list.tsx`
-  - `assets/src/routes/compare/product-picker.tsx`
-  - `assets/test/routes/compare/compare.route.test.tsx`
-  - `docs/work/frontend-product-comparison-demo-parity.md`
-- Verification:
-  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
   - `cd assets && bun run typecheck`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
   - `git diff --check`
-- Exit condition: `/compare` can show shared specs, all specs, and only
-  meaningful differences through stable URL state.
+- Exit condition: a user can filter `/products` by metadata-backed type, use
+  case, numeric, boolean, and enum controls, share the resulting URL, paginate
+  without losing filters, and clear filters back to a clean browse page.
 
 ## Just Completed
+
+The 2026-06-30 first product filtering and in-depth comparison parallel batch
+completed these two work items:
+
+- Backend filter metadata/facets: GraphQL now exposes
+  `productFilterMetadata(filters:)` with display-safe counts, ranges, selected
+  state, and typed filter validation using the existing `ProductFiltersInput`.
+- Frontend product comparison: `/compare` now supports URL-backed
+  `specs=shared|differences|all` matrix modes with mode-preserving add/remove
+  links and explicit missing values.
 
 The 2026-06-29 usable-product batch completed these five work items:
 
@@ -123,11 +111,11 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 
 ## Retained Follow-Up Work
 
-The product filtering and in-depth comparison plan set is now the primary
+The product filtering and in-depth comparison plan set remains the primary
 product-facing candidate pool if the next pass should improve user-visible
-comparison quality. It includes backend filter metadata/facets, `/products`
-faceted filtering UI, compare matrix modes, compare attribute metadata, and
-compare offer decision helpers.
+comparison quality. Backend filter metadata/facets and compare matrix modes are
+complete. The retained rows are `/products` faceted filtering UI, compare
+attribute metadata, and compare offer decision helpers.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The
