@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useMutation } from "react-relay";
 import createSavedComparisonSetMutation, {
   type CreateSavedComparisonSetMutation
 } from "../../__generated__/CreateSavedComparisonSetMutation.graphql";

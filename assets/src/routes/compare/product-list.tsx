@@ -165,9 +165,9 @@ function CompareProductCard({
     <li>
       <article>
         <h2>{product.name}</h2>
-        <p>{product.brand?.name ?? summary?.brandName ?? "Unknown brand"}</p>
+        <p>{compareProductBrandName(product, summary)}</p>
         <p>{product.slug}</p>
-        {product.description ? <p>{product.description}</p> : null}
+        <CompareProductDescription description={product.description} />
         <ProductAttributeList
           attributes={product.currentAttributes}
           emptyMessage="No product attributes available yet."
@@ -176,4 +176,15 @@ function CompareProductCard({
       </article>
     </li>
   );
+}
+
+function compareProductBrandName(
+  product: NonNullable<ProductDetailRouteQuery["response"]["product"]>,
+  summary: CompareProductSummary | undefined
+) {
+  return product.brand?.name ?? summary?.brandName ?? "Unknown brand";
+}
+
+function CompareProductDescription({ description }: { description: string | null | undefined }) {
+  return description ? <p>{description}</p> : null;
 }

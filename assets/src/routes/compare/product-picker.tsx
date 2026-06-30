@@ -60,51 +60,93 @@ function CompareProductPicker({
   const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
-  const pageInfo = data.products.pageInfo ?? { hasNextPage: false, endCursor: null };
-  const nextCursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+  const nextCursor = nextProductPageCursor(data.products.pageInfo);
 
   useEffect(() => {
     setLoadedProducts((products) => appendUniqueProducts(products, pageProducts));
   }, [pageProducts]);
 
-  if (availableProducts.length === 0 && !nextCursor) {
-    const message =
-      selectedSlugs.length === 0
-        ? "No products are available to compare yet."
-        : "No additional products are available to compare yet.";
-
-    return <p>{message}</p>;
+  if (isEmptyProductPicker(availableProducts, nextCursor)) {
+    return <p>{emptyProductPickerMessage(selectedSlugs)}</p>;
   }
 
   return (
     <section>
       <h2>{heading}</h2>
-      {availableProducts.length > 0 ? (
-        <ul>
-          {availableProducts.map((product) => (
-            <li key={product.id}>
-              <h3>{product.name}</h3>
-              <p>{product.brand.name}</p>
-              <Link to={buildComparePath(selectedSlugs, product.slug)}>
-                Compare {product.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No additional products are available on this page.</p>
-      )}
-      {nextCursor ? (
-        <button
-          onClick={() => {
-            setAfter(nextCursor);
-          }}
-          type="button"
-        >
-          Show more products
-        </button>
-      ) : null}
+      <CompareProductPickerOptions
+        availableProducts={availableProducts}
+        selectedSlugs={selectedSlugs}
+      />
+      <ShowMoreProductsButton nextCursor={nextCursor} onShowMore={setAfter} />
     </section>
+  );
+}
+
+function nextProductPageCursor(
+  pageInfo: CompareProductPickerQuery["response"]["products"]["pageInfo"] | null | undefined
+) {
+  return pageInfo?.hasNextPage ? pageInfo.endCursor : null;
+}
+
+function isEmptyProductPicker(
+  availableProducts: readonly ComparePickerProduct[],
+  nextCursor: string | null | undefined
+) {
+  return availableProducts.length === 0 && !nextCursor;
+}
+
+function emptyProductPickerMessage(selectedSlugs: readonly string[]) {
+  return selectedSlugs.length === 0
+    ? "No products are available to compare yet."
+    : "No additional products are available to compare yet.";
+}
+
+function CompareProductPickerOptions({
+  availableProducts,
+  selectedSlugs
+}: {
+  availableProducts: readonly ComparePickerProduct[];
+  selectedSlugs: readonly string[];
+}) {
+  if (availableProducts.length === 0) {
+    return <p>No additional products are available on this page.</p>;
+  }
+
+  return (
+    <ul>
+      {availableProducts.map((product) => (
+        <li key={product.id}>
+          <h3>{product.name}</h3>
+          <p>{product.brand.name}</p>
+          <Link to={buildComparePath(selectedSlugs, product.slug)}>
+            Compare {product.name}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ShowMoreProductsButton({
+  nextCursor,
+  onShowMore
+}: {
+  nextCursor: string | null | undefined;
+  onShowMore: (nextCursor: string) => void;
+}) {
+  if (!nextCursor) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={() => {
+        onShowMore(nextCursor);
+      }}
+      type="button"
+    >
+      Show more products
+    </button>
   );
 }
 
