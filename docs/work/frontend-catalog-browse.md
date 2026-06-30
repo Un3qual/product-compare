@@ -14,6 +14,9 @@
   - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`
+- Planned faceted filtering follow-up:
+  - `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
+  - `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes a `/products` route with SSR-safe rendering.
   - The route loads the first page of products from the existing GraphQL `products` connection.
@@ -118,6 +121,21 @@
 
 1. The 2026-03-17 catalog browse baseline batch is complete.
 2. The 2026-06-27 cross-project page-size follow-up is complete.
+3. The 2026-06-29 decision-card follow-up is complete.
+
+## Planned Follow-Up
+
+- Product filter metadata and facets:
+  - Add a backend and GraphQL `productFilterMetadata(filters:)` contract for
+    display-safe type, use-case, numeric, boolean, and enum filter metadata.
+  - Keep result filtering on the existing `products(filters:)` surface and
+    compute metadata from unpaginated, selected-current-claim filters.
+- Catalog faceted filtering UI:
+  - Wire `/products` to parse and serialize filter URL state, preload
+    metadata, render filter controls, preserve filters across pagination, and
+    show filtered empty states.
+  - This UI row depends on the metadata/facet contract and should not hardcode
+    environment-specific IDs.
 
 ## Verification Commands
 

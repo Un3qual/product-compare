@@ -30,8 +30,19 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| planned | Product filtering and in-depth comparison batch | Promote when product-facing comparison/filtering quality is the highest need. | Five detailed plans added on 2026-06-30: filter metadata/facets, catalog faceted filtering UI, compare matrix modes, compare attribute metadata, and compare offer decision helpers. |
 | retained | CJ read-model and weekly operator runbook batch | Promote after the 2026-06-29 usable-product queue has moved or when ingestion operator readiness becomes the highest product need again. | The ten CJ plans created on 2026-06-27 remain planned follow-up work and are tracked in `docs/work/product-data-scraping.md`; they are not currently live queue rows. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
+
+## Planned Follow-Up Groups
+
+- Planned product filtering and in-depth comparison follow-up:
+  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`,
+  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`,
+  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`,
+  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
 
 ## Completed Plan Archive
 

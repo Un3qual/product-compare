@@ -29,8 +29,10 @@ loop forward across product browse cards, product detail actions, compare
 selection, offer filter context, and saved-comparison return paths.
 
 No `ready` row is currently selected. The next coordinator pass should either
-promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md` and
-`docs/work/product-data-scraping.md`, or choose another product-facing row.
+promote the new product filtering and in-depth comparison plan set from
+`docs/plans/INDEX.md`, promote the retained CJ read-model/operator batch from
+`docs/plans/INDEX.md` and `docs/work/product-data-scraping.md`, or choose
+another product-facing row.
 
 ## Ready Work
 
@@ -65,6 +67,12 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 - Product data scraping: provider-neutral source-health read model.
 
 ## Retained Follow-Up Work
+
+The product filtering and in-depth comparison plan set is now the primary
+product-facing candidate pool if the next pass should improve user-visible
+comparison quality. It includes backend filter metadata/facets, `/products`
+faceted filtering UI, compare matrix modes, compare attribute metadata, and
+compare offer decision helpers.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The

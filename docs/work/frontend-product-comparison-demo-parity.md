@@ -9,6 +9,10 @@
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
+- Planned in-depth comparison follow-up plans:
+  - `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`
+  - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
+  - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
 ## Batch Status
@@ -120,7 +124,9 @@
 
 ## Follow-Up Candidates
 
-- Build an aligned comparison matrix for attributes shared across selected products.
+- Add compare matrix modes for shared, differences-only, and all-spec views.
+- Add typed and ordered compare attribute metadata so differences do not rely on display text only.
+- Add offer and price decision-helper rows to `/compare` using bounded active-offer context.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
