@@ -33,50 +33,38 @@ in-depth comparison plan set is complete. Backend filter metadata/facets and
 frontend compare matrix modes landed in separate commits with focused
 verification.
 
-Catalog faceted filtering UI is complete. The next executable row is compare
-attribute metadata. The compare offer-helper row remains sequenced behind this
-row because both rows overlap Relay schema/generated artifacts and compare route
-files.
+Compare attribute metadata is complete. The next executable row is compare
+offer decision helpers, which reuses the current pricing GraphQL contract and
+overlaps compare route files, so it should run as a single worker row.
 
 ## Ready Work
 
-### Compare Attribute Metadata
+### Compare Offer Decision Helpers
 
 - Status: ready
 - Lane: Frontend product comparison demo parity
 - Work doc: `docs/work/frontend-product-comparison-demo-parity.md`
 - Active plan:
-  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
-- Next action: extend `Product.currentAttributes` with typed, ordered,
-  groupable metadata, then update product detail and compare rendering to use
-  the richer shape while preserving `valueText`.
+  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
+- Next action: add bounded, resilient offer/price decision-helper rows to
+  `/compare` using the existing `merchantProducts(input:)` contract.
 - Owned paths:
-  - `priv/repo/migrations/*_add_compare_group_to_taxon_attributes.exs`
-  - `lib/product_compare_schemas/specs/taxon_attribute.ex`
-  - `lib/product_compare/specs.ex`
-  - `lib/product_compare_web/schema.ex`
-  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
-  - `test/product_compare_web/graphql/catalog_queries_test.exs`
-  - `assets/src/routes/products/product-attribute-list.tsx`
-  - `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
+  - `assets/src/routes/compare/queries/CompareOfferContextQuery.ts`
   - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/index.tsx`
   - `assets/src/routes/compare/product-list.tsx`
-  - `assets/test/routes/products/detail.route.test.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `assets/schema.graphql`
   - `assets/src/__generated__/**`
   - `docs/work/frontend-product-comparison-demo-parity.md`
 - Verification:
-  - `mix ecto.migrate`
-  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs`
   - `cd assets && bun run relay`
-  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx`
   - `cd assets && bun run typecheck`
-  - `mix typecheck`
+  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs`
   - `git diff --check`
-- Exit condition: comparison rows can be grouped, ordered, and compared using
-  typed metadata instead of display text alone, while existing clients that read
-  `code`, `displayName`, `dataType`, and `valueText` continue to work.
+- Exit condition: `/compare` gives users a bounded, resilient decision summary
+  for current price and offer quality alongside the specification matrix.
 
 ## Just Completed
 
@@ -92,6 +80,9 @@ and dependent catalog UI follow-up completed these three work items:
 - Frontend catalog browse: `/products` now renders metadata-backed faceted
   filters, preserves active filter URLs through pagination, and clears back to
   the unfiltered browse page.
+- Compare attribute metadata: `Product.currentAttributes` now includes typed,
+  ordered, groupable metadata used by product detail and compare rendering while
+  preserving the `valueText` fallback contract.
 
 The 2026-06-29 usable-product batch completed these five work items:
 
@@ -123,9 +114,9 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 
 The product filtering and in-depth comparison plan set remains the primary
 product-facing candidate pool if the next pass should improve user-visible
-comparison quality. Backend filter metadata/facets, compare matrix modes, and
-`/products` faceted filtering UI are complete. The retained rows are compare
-attribute metadata and compare offer decision helpers.
+comparison quality. Backend filter metadata/facets, compare matrix modes,
+`/products` faceted filtering UI, and compare attribute metadata are complete.
+The retained row is compare offer decision helpers.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The

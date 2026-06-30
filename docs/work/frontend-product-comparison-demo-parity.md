@@ -126,12 +126,34 @@
 
 ## Follow-Up Candidates
 
-- Add typed and ordered compare attribute metadata so differences do not rely on display text only.
 - Add offer and price decision-helper rows to `/compare` using bounded active-offer context.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
 ## Active Dispatch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/queries/CompareOfferContextQuery.ts`
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs`
+  - `git diff --check`
+- Exit condition: `/compare` gives users a bounded, resilient decision summary
+  for current price and offer quality alongside the specification matrix.
+
+## Completed Attribute Metadata Dispatch
 
 - Status: done.
 - Plan:
