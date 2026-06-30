@@ -5,7 +5,7 @@
 - Status: ready
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 after compare selection tray verification
+- Last verified: 2026-06-30 after compare attribute metadata verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
@@ -26,6 +26,7 @@
 - [x] Task 7: add compare selection remove controls.
 - [x] Task 8: add a ready-state selected-product tray and add-another heading.
 - [x] Task 9: add URL-backed compare matrix modes.
+- [x] Task 10: add typed, ordered, groupable compare attribute metadata.
 
 ## Current Usable Product Batch
 
@@ -132,7 +133,7 @@
 
 ## Active Dispatch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`.
 - Owned paths:
@@ -162,6 +163,22 @@
 - Exit condition: comparison rows can be grouped, ordered, and compared using
   typed metadata instead of display text alone, while preserving the existing
   `valueText` fallback contract.
+- Completed verification:
+  - RED: `mix test test/product_compare_web/graphql/catalog_queries_test.exs:148` - failed as expected because `ProductAttributeValue` did not expose `attributeId`, `sortOrder`, `groupLabel`, `isRequired`, `numericValue`, `booleanValue`, `enumOptionId`, or `unitSymbol`.
+  - RED: `mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs:84` - failed as expected because `TaxonAttribute.changeset/2` ignored `compare_group_label`.
+  - GREEN: `mix test test/product_compare_web/graphql/catalog_queries_test.exs:148` - 1 test, 0 failures.
+  - GREEN: `mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs:84` - 1 test, 0 failures.
+  - RED: `bun x vitest run test/routes/products/detail.route.test.tsx -t "grouped by compare group label"` - failed as expected because grouped specification headings were not rendered.
+  - RED: `bun x vitest run test/routes/compare/compare.route.test.tsx -t "typed attribute metadata|sort order before display name|typed numeric and boolean"` - failed as expected because loader metadata was stripped, rows used first-product order, and differences used display text only.
+  - GREEN: `bun x vitest run test/routes/products/detail.route.test.tsx -t "grouped by compare group label"` - 1 test passed, 27 skipped.
+  - GREEN: `bun x vitest run test/routes/compare/compare.route.test.tsx -t "typed attribute metadata|sort order before display name|typed numeric and boolean"` - 3 tests passed, 73 skipped.
+  - `mix ecto.migrate` - completed with exit 0; migration `20260630180000` applied.
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs` - 29 tests, 0 failures.
+  - `bun run relay` - completed with exit 0.
+  - `bun x vitest run test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx` - 104 tests, 0 failures.
+  - `bun run typecheck` - completed with exit 0.
+  - `mix typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Completed Matrix Modes Dispatch
 

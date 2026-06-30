@@ -2,6 +2,7 @@ defmodule ProductCompare.Specs.ProductAttributeClaimChangesetTest do
   use ProductCompare.DataCase, async: true
 
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Specs.TaxonAttribute
 
   describe "ProductAttributeClaim.changeset/2 typed-value invariants" do
     test "accepts exactly one typed value" do
@@ -76,6 +77,20 @@ defmodule ProductCompare.Specs.ProductAttributeClaimChangesetTest do
       refute changeset.valid?
 
       assert "must be less than or equal to value_num_base_max" in errors_on(changeset).value_num_base_min
+    end
+  end
+
+  describe "TaxonAttribute.changeset/2 compare metadata" do
+    test "accepts a nullable compare group label" do
+      changeset =
+        TaxonAttribute.changeset(%TaxonAttribute{}, %{
+          taxon_id: 1,
+          attribute_id: 2,
+          compare_group_label: "Performance"
+        })
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :compare_group_label) == "Performance"
     end
   end
 

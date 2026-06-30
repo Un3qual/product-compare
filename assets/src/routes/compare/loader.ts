@@ -24,9 +24,17 @@ export interface CompareProductSummary {
 }
 
 export interface CompareProductAttributeSummary {
+  attributeId?: string;
   code: string;
   displayName: string;
   valueText: string;
+  sortOrder?: number | null;
+  groupLabel?: string | null;
+  isRequired?: boolean;
+  numericValue?: string | null;
+  booleanValue?: boolean | null;
+  enumOptionId?: string | null;
+  unitSymbol?: string | null;
 }
 
 export type CompareRouteLoaderData =
@@ -153,9 +161,17 @@ function summarizeProduct(
     description: typeof product.description === "string" ? product.description : null,
     brandName: product.brand?.name ?? null,
     currentAttributes: product.currentAttributes.map((attribute) => ({
+      attributeId: attribute.attributeId,
       code: attribute.code,
       displayName: attribute.displayName,
-      valueText: attribute.valueText
+      valueText: attribute.valueText,
+      sortOrder: attribute.sortOrder,
+      groupLabel: attribute.groupLabel,
+      isRequired: attribute.isRequired,
+      numericValue: attribute.numericValue,
+      booleanValue: attribute.booleanValue,
+      enumOptionId: attribute.enumOptionId,
+      unitSymbol: attribute.unitSymbol
     }))
   };
 }

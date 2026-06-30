@@ -99,10 +99,18 @@ type DetailProduct = {
     name: string;
   };
   currentAttributes: ReadonlyArray<{
+    attributeId?: string;
     code: string;
     displayName: string;
     dataType: string;
     valueText: string;
+    sortOrder?: number | null;
+    groupLabel?: string | null;
+    isRequired?: boolean;
+    numericValue?: string | null;
+    booleanValue?: boolean | null;
+    enumOptionId?: string | null;
+    unitSymbol?: string | null;
   }>;
 };
 
@@ -998,6 +1006,87 @@ test("renders product specifications from current attributes", () => {
   expect(screen.getByText("144 Hz")).toBeVisible();
   expect(screen.getByText("Panel type")).toBeVisible();
   expect(screen.getByText("OLED")).toBeVisible();
+});
+
+test("renders product specifications grouped by compare group label", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    currentAttributes: [
+      {
+        attributeId: "QXR0cmlidXRlOjE=",
+        code: "refresh-rate",
+        displayName: "Refresh rate",
+        dataType: "numeric",
+        valueText: "144 Hz",
+        sortOrder: 1,
+        groupLabel: "Performance",
+        isRequired: true,
+        numericValue: "144",
+        booleanValue: null,
+        enumOptionId: null,
+        unitSymbol: "Hz"
+      },
+      {
+        attributeId: "QXR0cmlidXRlOjI=",
+        code: "hdr",
+        displayName: "HDR",
+        dataType: "bool",
+        valueText: "Yes",
+        sortOrder: 2,
+        groupLabel: "Capabilities",
+        isRequired: false,
+        numericValue: null,
+        booleanValue: true,
+        enumOptionId: null,
+        unitSymbol: null
+      },
+      {
+        attributeId: "QXR0cmlidXRlOjM=",
+        code: "release-year",
+        displayName: "Release year",
+        dataType: "int",
+        valueText: "2026",
+        sortOrder: null,
+        groupLabel: null,
+        isRequired: false,
+        numericValue: null,
+        booleanValue: null,
+        enumOptionId: null,
+        unitSymbol: null
+      }
+    ]
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const specifications = screen
+    .getByRole("heading", { name: "Specifications" })
+    .closest("section");
+
+  expect(specifications).not.toBeNull();
+  const specSection = within(specifications as HTMLElement);
+
+  expect(specSection.getByRole("heading", { name: "Performance" })).toBeVisible();
+  expect(specSection.getByText("Refresh rate")).toBeVisible();
+  expect(specSection.getByText("144 Hz")).toBeVisible();
+  expect(specSection.getByRole("heading", { name: "Capabilities" })).toBeVisible();
+  expect(specSection.getByText("HDR")).toBeVisible();
+  expect(specSection.getByText("Yes")).toBeVisible();
+  expect(specSection.getByText("Release year")).toBeVisible();
+  expect(specSection.getByText("2026")).toBeVisible();
 });
 
 test("links from product detail to compare with the current product selected", () => {

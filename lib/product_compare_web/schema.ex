@@ -862,10 +862,18 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :product_attribute_value do
+    field :attribute_id, non_null(:id)
     field :code, non_null(:string)
     field :display_name, non_null(:string)
     field :data_type, non_null(:string)
     field :value_text, non_null(:string)
+    field :sort_order, :integer
+    field :group_label, :string
+    field :is_required, non_null(:boolean)
+    field :numeric_value, :decimal
+    field :boolean_value, :boolean
+    field :enum_option_id, :id
+    field :unit_symbol, :string
   end
 
   object :merchant_product do

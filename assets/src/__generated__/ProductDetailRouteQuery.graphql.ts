@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f09a85c07101995335edba4707d7621e>>
+ * @generated SignedSource<<59b4f44f212a4c313d2a227d26445a7f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -19,9 +19,17 @@ export type ProductDetailRouteQuery$data = {
       readonly name: string;
     };
     readonly currentAttributes: ReadonlyArray<{
+      readonly attributeId: string;
+      readonly booleanValue: boolean | null | undefined;
       readonly code: string;
       readonly dataType: string;
       readonly displayName: string;
+      readonly enumOptionId: string | null | undefined;
+      readonly groupLabel: string | null | undefined;
+      readonly isRequired: boolean;
+      readonly numericValue: any | null | undefined;
+      readonly sortOrder: number | null | undefined;
+      readonly unitSymbol: string | null | undefined;
       readonly valueText: string;
     }>;
     readonly description: string | null | undefined;
@@ -113,6 +121,13 @@ v3 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
+            "name": "attributeId",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
             "name": "code",
             "storageKey": null
           },
@@ -135,6 +150,55 @@ v3 = [
             "args": null,
             "kind": "ScalarField",
             "name": "valueText",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "sortOrder",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "groupLabel",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "isRequired",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "numericValue",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "booleanValue",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "enumOptionId",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "unitSymbol",
             "storageKey": null
           }
         ],
@@ -162,16 +226,16 @@ return {
     "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "981b2b39810306c0a22e55fa9bd1f7b5",
+    "cacheID": "c6d5eccde5dae38d013d44ba67fe20a5",
     "id": null,
     "metadata": {},
     "name": "ProductDetailRouteQuery",
     "operationKind": "query",
-    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      code\n      displayName\n      dataType\n      valueText\n    }\n  }\n}\n"
+    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "7623e15c81514e656db9341617ac0e90";
+(node as any).hash = "c66ade7d013b1780c6366601a08ff4e6";
 
 export default node;

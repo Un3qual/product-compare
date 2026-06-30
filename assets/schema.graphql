@@ -103,10 +103,18 @@ type Product implements Node {
 }
 
 type ProductAttributeValue {
+  attributeId: ID!
   code: String!
   displayName: String!
   dataType: String!
   valueText: String!
+  sortOrder: Int
+  groupLabel: String
+  isRequired: Boolean!
+  numericValue: Decimal
+  booleanValue: Boolean
+  enumOptionId: ID
+  unitSymbol: String
 }
 
 type Brand implements Node {

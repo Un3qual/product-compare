@@ -100,10 +100,18 @@ type CompareTestProduct = {
     name: string;
   };
   currentAttributes: ReadonlyArray<{
+    attributeId?: string;
     code: string;
     displayName: string;
     dataType: string;
     valueText: string;
+    sortOrder?: number | null;
+    groupLabel?: string | null;
+    isRequired?: boolean;
+    numericValue?: string | null;
+    booleanValue?: boolean | null;
+    enumOptionId?: string | null;
+    unitSymbol?: string | null;
   }>;
 };
 
@@ -211,9 +219,17 @@ const buildProductSummary = (product: CompareTestProduct) => ({
   description: product.description,
   brandName: product.brand.name,
   currentAttributes: product.currentAttributes.map((attribute) => ({
+    attributeId: attribute.attributeId,
     code: attribute.code,
     displayName: attribute.displayName,
-    valueText: attribute.valueText
+    valueText: attribute.valueText,
+    sortOrder: attribute.sortOrder,
+    groupLabel: attribute.groupLabel,
+    isRequired: attribute.isRequired,
+    numericValue: attribute.numericValue,
+    booleanValue: attribute.booleanValue,
+    enumOptionId: attribute.enumOptionId,
+    unitSymbol: attribute.unitSymbol
   }))
 });
 
@@ -378,6 +394,59 @@ test("compare loader requests selected product details and preserves URL order",
     { slug: "second-product" },
     { signal: request.signal }
   );
+});
+
+test("compare loader preserves typed attribute metadata for compare rows", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+  const productWithMetadata = {
+    ...DETAIL_PRODUCT,
+    currentAttributes: [
+      {
+        attributeId: "QXR0cmlidXRlOjE=",
+        code: "refresh-rate",
+        displayName: "Refresh rate",
+        dataType: "numeric",
+        valueText: "144 Hz",
+        sortOrder: 2,
+        groupLabel: "Performance",
+        isRequired: true,
+        numericValue: "144",
+        booleanValue: null,
+        enumOptionId: null,
+        unitSymbol: "Hz"
+      }
+    ]
+  } satisfies CompareTestProduct;
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedProductQuery(productWithMetadata, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    products: [
+      {
+        currentAttributes: [
+          {
+            attributeId: "QXR0cmlidXRlOjE=",
+            code: "refresh-rate",
+            displayName: "Refresh rate",
+            valueText: "144 Hz",
+            sortOrder: 2,
+            groupLabel: "Performance",
+            isRequired: true,
+            numericValue: "144",
+            booleanValue: null,
+            enumOptionId: null,
+            unitSymbol: "Hz"
+          }
+        ]
+      }
+    ]
+  });
 });
 
 test("compare loader forwards the route abort signal to each Relay preload", async () => {
@@ -936,14 +1005,82 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
     "Detail Product",
     "Second Product"
   ]);
-  expect(rows[1]).toHaveTextContent("Refresh rate");
-  expect(rows[1]).toHaveTextContent("144 Hz");
-  expect(rows[1]).toHaveTextContent("165 Hz");
-  expect(rows[2]).toHaveTextContent("Panel type");
-  expect(rows[2]).toHaveTextContent("IPS");
-  expect(rows[2]).toHaveTextContent("OLED");
+  expect(rows[1]).toHaveTextContent("Panel type");
+  expect(rows[1]).toHaveTextContent("IPS");
+  expect(rows[1]).toHaveTextContent("OLED");
+  expect(rows[2]).toHaveTextContent("Refresh rate");
+  expect(rows[2]).toHaveTextContent("144 Hz");
+  expect(rows[2]).toHaveTextContent("165 Hz");
   expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
   expect(screen.getByText("350 nits")).toBeVisible();
+});
+
+test("ready compare matrix orders specification rows by sort order before display name", () => {
+  const detailProductAttributes = [
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS",
+      sortOrder: 30
+    },
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz",
+      sortOrder: 10
+    },
+    {
+      code: "brightness",
+      displayName: "Brightness",
+      valueText: "350 nits",
+      sortOrder: 20
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "brightness",
+      displayName: "Brightness",
+      valueText: "400 nits",
+      sortOrder: 20
+    },
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "165 Hz",
+      sortOrder: 10
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "OLED",
+      sortOrder: 30
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "all",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "All specifications" });
+  const rows = within(matrix).getAllByRole("row");
+
+  expect(rows[1]).toHaveTextContent("Refresh rate");
+  expect(rows[2]).toHaveTextContent("Brightness");
+  expect(rows[3]).toHaveTextContent("Panel type");
 });
 
 test("ready compare page renders an empty shared-attribute state when no attributes overlap", () => {
@@ -1229,14 +1366,14 @@ test("ready compare page renders all specification rows with missing cells", () 
   const matrix = screen.getByRole("table", { name: "All specifications" });
   const rows = within(matrix).getAllByRole("row");
 
-  expect(rows[1]).toHaveTextContent("Refresh rate");
-  expect(rows[1]).toHaveTextContent("144 Hz");
+  expect(rows[1]).toHaveTextContent("Brightness");
   expect(rows[1]).toHaveTextContent("Not available");
+  expect(rows[1]).toHaveTextContent("350 nits");
   expect(rows[2]).toHaveTextContent("Panel type");
   expect(rows[2]).toHaveTextContent("IPS");
-  expect(rows[3]).toHaveTextContent("Brightness");
+  expect(rows[3]).toHaveTextContent("Refresh rate");
+  expect(rows[3]).toHaveTextContent("144 Hz");
   expect(rows[3]).toHaveTextContent("Not available");
-  expect(rows[3]).toHaveTextContent("350 nits");
   expect(within(matrix).getAllByText("Not available")).toHaveLength(2);
 });
 
@@ -1297,16 +1434,83 @@ test("ready compare page renders only different specification rows", () => {
   const matrix = screen.getByRole("table", { name: "Different specifications" });
   const rows = within(matrix).getAllByRole("row");
 
-  expect(rows[1]).toHaveTextContent("Refresh rate");
-  expect(rows[1]).toHaveTextContent("144 Hz");
-  expect(rows[1]).toHaveTextContent("165 Hz");
-  expect(rows[2]).toHaveTextContent("Weight");
-  expect(rows[2]).toHaveTextContent("5 lb");
-  expect(rows[2]).toHaveTextContent("Not available");
-  expect(rows[3]).toHaveTextContent("Brightness");
+  expect(rows[1]).toHaveTextContent("Brightness");
+  expect(rows[1]).toHaveTextContent("Not available");
+  expect(rows[1]).toHaveTextContent("350 nits");
+  expect(rows[2]).toHaveTextContent("Refresh rate");
+  expect(rows[2]).toHaveTextContent("144 Hz");
+  expect(rows[2]).toHaveTextContent("165 Hz");
+  expect(rows[3]).toHaveTextContent("Weight");
+  expect(rows[3]).toHaveTextContent("5 lb");
   expect(rows[3]).toHaveTextContent("Not available");
-  expect(rows[3]).toHaveTextContent("350 nits");
   expect(within(matrix).queryByText("Panel type")).not.toBeInTheDocument();
+});
+
+test("ready compare differences compare typed numeric and boolean values before display text", () => {
+  const detailProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144 Hz",
+      numericValue: "144"
+    },
+    {
+      code: "hdr",
+      displayName: "HDR",
+      valueText: "Yes",
+      booleanValue: true
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      valueText: "144.0 hertz",
+      numericValue: "144"
+    },
+    {
+      code: "hdr",
+      displayName: "HDR",
+      valueText: "true",
+      booleanValue: true
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "OLED"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Different specifications" });
+
+  expect(within(matrix).queryByText("Refresh rate")).not.toBeInTheDocument();
+  expect(within(matrix).queryByText("HDR")).not.toBeInTheDocument();
+  expect(within(matrix).getByText("Panel type")).toBeVisible();
+  expect(within(matrix).getByText("IPS")).toBeVisible();
+  expect(within(matrix).getByText("OLED")).toBeVisible();
 });
 
 test("ready compare page renders an empty differences state when specifications match", () => {

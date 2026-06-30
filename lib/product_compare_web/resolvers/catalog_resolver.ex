@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
+  alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
@@ -41,7 +42,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) ::
           {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def current_attributes(%Product{id: product_id}, _args, %{context: %{loader: loader}})
+  def current_attributes(%Product{id: product_id} = product, _args, %{context: %{loader: loader}})
       when is_integer(product_id) do
     loader
     |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
@@ -49,6 +50,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       attributes =
         loader
         |> Dataloader.get(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+        |> Specs.with_current_attribute_metadata(product.primary_type_taxon_id)
         |> Enum.map(&format_current_attribute/1)
 
       {:ok, attributes}
@@ -353,14 +355,30 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
 
-  defp format_current_attribute(%{attribute: attribute, claim: claim}) do
+  defp format_current_attribute(%{attribute: attribute, claim: claim} = current_attribute) do
+    taxon_attribute = Map.get(current_attribute, :taxon_attribute)
+
     %{
+      attribute_id: GlobalId.encode(:attribute, attribute.id),
       code: attribute.code,
       display_name: attribute.display_name,
       data_type: Atom.to_string(attribute.data_type),
-      value_text: format_claim_value(claim)
+      value_text: format_claim_value(claim),
+      sort_order: taxon_attribute && taxon_attribute.sort_order,
+      group_label: taxon_attribute && taxon_attribute.compare_group_label,
+      is_required: (taxon_attribute && taxon_attribute.is_required) || false,
+      numeric_value: numeric_claim_value(claim),
+      boolean_value: boolean_claim_value(claim),
+      enum_option_id: GlobalId.encode_optional_value(:enum_option, claim.enum_option_id),
+      unit_symbol: unit_symbol(claim.unit)
     }
   end
+
+  defp numeric_claim_value(%{value_num_base: %Decimal{} = value}), do: value
+  defp numeric_claim_value(_claim), do: nil
+
+  defp boolean_claim_value(%{value_bool: value}) when is_boolean(value), do: value
+  defp boolean_claim_value(_claim), do: nil
 
   defp format_claim_value(%{value_bool: value}) when is_boolean(value) do
     if value, do: "Yes", else: "No"
@@ -390,6 +408,10 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     do: "#{value} #{code}"
 
   defp append_unit(value, _unit), do: value
+
+  defp unit_symbol(%{symbol: symbol}) when is_binary(symbol) and symbol != "", do: symbol
+  defp unit_symbol(%{code: code}) when is_binary(code) and code != "", do: code
+  defp unit_symbol(_unit), do: nil
 
   defp saved_comparison_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     %{

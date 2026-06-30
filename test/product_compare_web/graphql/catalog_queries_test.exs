@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
@@ -142,6 +143,126 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "valueText" => "144 Hz"
                }
              ] = attributes
+    end
+
+    test "product exposes typed current attribute metadata for comparisons", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("metadata-monitor"),
+          name: "Metadata Monitor"
+        })
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "typed-attribute-metadata-monitor",
+          primary_type_taxon: monitor_taxon
+        })
+
+      {refresh_rate_attribute, hz_unit} = refresh_rate_attribute_with_unit_fixture()
+
+      hdr_attribute =
+        bool_attribute_fixture(%{code: unique_code("metadata-hdr"), display_name: "HDR"})
+
+      {panel_attribute, oled_option, _lcd_option} = enum_attribute_with_options_fixture()
+
+      create_taxon_attribute!(monitor_taxon, hdr_attribute, %{
+        sort_order: 1,
+        is_required: false,
+        compare_group_label: "Capabilities"
+      })
+
+      create_taxon_attribute!(monitor_taxon, refresh_rate_attribute, %{
+        sort_order: 2,
+        is_required: true,
+        compare_group_label: "Performance"
+      })
+
+      create_taxon_attribute!(monitor_taxon, panel_attribute, %{
+        sort_order: 3,
+        is_required: false,
+        compare_group_label: "Display"
+      })
+
+      product
+      |> accept_claim!(hdr_attribute, %{value_bool: true}, moderator)
+      |> select_current_claim!(product, hdr_attribute, moderator)
+
+      product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, refresh_rate_attribute, moderator)
+
+      product
+      |> accept_claim!(panel_attribute, %{enum_option_id: oled_option.id}, moderator)
+      |> select_current_claim!(product, panel_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => attributes
+                 }
+               }
+             } = graphql(conn, product_attribute_metadata_query(), %{"slug" => product.slug})
+
+      hdr_code = hdr_attribute.code
+
+      assert [
+               %{
+                 "code" => ^hdr_code,
+                 "attributeId" => hdr_attribute_id,
+                 "displayName" => "HDR",
+                 "dataType" => "bool",
+                 "valueText" => "Yes",
+                 "sortOrder" => 1,
+                 "groupLabel" => "Capabilities",
+                 "isRequired" => false,
+                 "numericValue" => nil,
+                 "booleanValue" => true,
+                 "enumOptionId" => nil,
+                 "unitSymbol" => nil
+               },
+               %{
+                 "code" => "refresh-rate",
+                 "attributeId" => refresh_rate_attribute_id,
+                 "displayName" => "Refresh rate",
+                 "dataType" => "numeric",
+                 "valueText" => "144 Hz",
+                 "sortOrder" => 2,
+                 "groupLabel" => "Performance",
+                 "isRequired" => true,
+                 "numericValue" => "144",
+                 "booleanValue" => nil,
+                 "enumOptionId" => nil,
+                 "unitSymbol" => "Hz"
+               },
+               %{
+                 "code" => panel_code,
+                 "attributeId" => panel_attribute_id,
+                 "displayName" => "Catalog Enum Filter Attribute",
+                 "dataType" => "enum",
+                 "valueText" => "Option A",
+                 "sortOrder" => 3,
+                 "groupLabel" => "Display",
+                 "isRequired" => false,
+                 "numericValue" => nil,
+                 "booleanValue" => nil,
+                 "enumOptionId" => oled_option_id,
+                 "unitSymbol" => nil
+               }
+             ] = attributes
+
+      assert hdr_attribute_id == relay_id(:attribute, hdr_attribute.id)
+      assert refresh_rate_attribute_id == relay_id(:attribute, refresh_rate_attribute.id)
+      assert panel_code == panel_attribute.code
+      assert panel_attribute_id == relay_id(:attribute, panel_attribute.id)
+      assert oled_option_id == relay_id(:enum_option, oled_option.id)
     end
 
     test "product returns an empty currentAttributes list when no current claims exist", %{
@@ -772,6 +893,29 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp product_attribute_metadata_query do
+    """
+    query ProductAttributeMetadata($slug: String!) {
+      product(slug: $slug) {
+        currentAttributes {
+          attributeId
+          code
+          displayName
+          dataType
+          valueText
+          sortOrder
+          groupLabel
+          isRequired
+          numericValue
+          booleanValue
+          enumOptionId
+          unitSymbol
+        }
+      }
+    }
+    """
+  end
+
   defp aliased_products_query do
     """
     query AliasedProducts($firstSlug: String!, $secondSlug: String!) {
@@ -879,6 +1023,20 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
 
     claim
+  end
+
+  defp create_taxon_attribute!(taxon, attribute, attrs) do
+    %TaxonAttribute{}
+    |> TaxonAttribute.changeset(
+      Map.merge(
+        %{
+          taxon_id: taxon.id,
+          attribute_id: attribute.id
+        },
+        attrs
+      )
+    )
+    |> Repo.insert!()
   end
 
   defp numeric_attribute_with_unit_fixture do

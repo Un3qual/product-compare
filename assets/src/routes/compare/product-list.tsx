@@ -91,8 +91,10 @@ function CompareSpecificationMatrix({
 interface CompareSpecificationRow {
   code: string;
   displayName: string;
+  sortOrder: number | null;
   missingValues: boolean[];
   values: string[];
+  comparisonValues: string[];
 }
 
 function buildSpecificationRows(
@@ -156,9 +158,7 @@ function buildAllSpecificationRows(products: CompareProductSummary[]): CompareSp
     })
   );
 
-  additionalRows.sort(compareSpecificationRowsByDisplayName);
-
-  return [...firstProductRows, ...additionalRows];
+  return [...firstProductRows, ...additionalRows].sort(compareSpecificationRows);
 }
 
 function buildSpecificationRow({
@@ -177,8 +177,10 @@ function buildSpecificationRow({
   return {
     code,
     displayName,
+    sortOrder: firstPresentSortOrder(attributes),
     missingValues: attributes.map((attribute) => !attribute),
-    values: attributes.map((attribute) => attribute?.valueText ?? MISSING_ATTRIBUTE_VALUE)
+    values: attributes.map((attribute) => attribute?.valueText ?? MISSING_ATTRIBUTE_VALUE),
+    comparisonValues: attributes.map(buildAttributeComparisonValue)
   };
 }
 
@@ -187,16 +189,86 @@ function hasSpecificationDifference(row: CompareSpecificationRow) {
     return true;
   }
 
-  return new Set(row.values).size > 1;
+  return new Set(row.comparisonValues).size > 1;
 }
 
-function compareSpecificationRowsByDisplayName(
+function compareSpecificationRows(
   firstRow: CompareSpecificationRow,
   secondRow: CompareSpecificationRow
 ) {
+  const sortOrderComparison = compareSpecificationSortOrders(
+    firstRow.sortOrder,
+    secondRow.sortOrder
+  );
+
+  if (sortOrderComparison !== 0) {
+    return sortOrderComparison;
+  }
+
   const nameComparison = firstRow.displayName.localeCompare(secondRow.displayName);
 
   return nameComparison === 0 ? firstRow.code.localeCompare(secondRow.code) : nameComparison;
+}
+
+function compareSpecificationSortOrders(
+  firstSortOrder: number | null,
+  secondSortOrder: number | null
+) {
+  if (typeof firstSortOrder === "number" && typeof secondSortOrder === "number") {
+    return firstSortOrder - secondSortOrder;
+  }
+
+  if (typeof firstSortOrder === "number") {
+    return -1;
+  }
+
+  if (typeof secondSortOrder === "number") {
+    return 1;
+  }
+
+  return 0;
+}
+
+function firstPresentSortOrder(
+  attributes: Array<CompareProductSummary["currentAttributes"][number] | undefined>
+) {
+  return attributes.find((attribute) => typeof attribute?.sortOrder === "number")?.sortOrder ?? null;
+}
+
+function buildAttributeComparisonValue(
+  attribute: CompareProductSummary["currentAttributes"][number] | undefined
+) {
+  if (!attribute) {
+    return "missing";
+  }
+
+  if (typeof attribute.numericValue === "string" && attribute.numericValue.trim() !== "") {
+    return `numeric:${normalizeDecimalComparisonValue(attribute.numericValue)}`;
+  }
+
+  if (typeof attribute.booleanValue === "boolean") {
+    return `boolean:${attribute.booleanValue}`;
+  }
+
+  return `text:${attribute.valueText}`;
+}
+
+function normalizeDecimalComparisonValue(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!/^-?\d+(\.\d+)?$/.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  const sign = trimmedValue.startsWith("-") ? "-" : "";
+  const unsignedValue = sign ? trimmedValue.slice(1) : trimmedValue;
+  const [integerPart, rawFractionPart = ""] = unsignedValue.split(".");
+  const normalizedIntegerPart = integerPart.replace(/^0+(?=\d)/, "") || "0";
+  const normalizedFractionPart = rawFractionPart.replace(/0+$/, "");
+
+  return normalizedFractionPart
+    ? `${sign}${normalizedIntegerPart}.${normalizedFractionPart}`
+    : `${sign}${normalizedIntegerPart}`;
 }
 
 function specificationMatrixTitle(specMode: CompareSpecMode) {
