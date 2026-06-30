@@ -410,7 +410,9 @@ type CompareBestCurrentPriceCandidate = CompareBestCurrentPriceSummary & {
   numericPrice: number;
 };
 
-function currentPriceCandidate(offer: CompareOfferContextNode) {
+function currentPriceCandidate(
+  offer: CompareOfferContextNode
+): CompareBestCurrentPriceCandidate | null {
   const latestPrice = offer.latestPrice;
   const numericPrice = decimalStringToNumber(latestPrice?.price);
 
