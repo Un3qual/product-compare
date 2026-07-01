@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
@@ -144,6 +145,185 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              ] = attributes
     end
 
+    test "product exposes typed current attribute metadata for comparisons", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("metadata-monitor"),
+          name: "Metadata Monitor"
+        })
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "typed-attribute-metadata-monitor",
+          primary_type_taxon: monitor_taxon
+        })
+
+      {refresh_rate_attribute, hz_unit} = refresh_rate_attribute_with_unit_fixture()
+
+      hdr_attribute =
+        bool_attribute_fixture(%{code: unique_code("metadata-hdr"), display_name: "HDR"})
+
+      {panel_attribute, oled_option, _lcd_option} = enum_attribute_with_options_fixture()
+
+      create_taxon_attribute!(monitor_taxon, hdr_attribute, %{
+        sort_order: 1,
+        is_required: false,
+        compare_group_label: "Capabilities"
+      })
+
+      create_taxon_attribute!(monitor_taxon, refresh_rate_attribute, %{
+        sort_order: 2,
+        is_required: true,
+        compare_group_label: "Performance"
+      })
+
+      create_taxon_attribute!(monitor_taxon, panel_attribute, %{
+        sort_order: 3,
+        is_required: false,
+        compare_group_label: "Display"
+      })
+
+      product
+      |> accept_claim!(hdr_attribute, %{value_bool: true}, moderator)
+      |> select_current_claim!(product, hdr_attribute, moderator)
+
+      product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, refresh_rate_attribute, moderator)
+
+      product
+      |> accept_claim!(panel_attribute, %{enum_option_id: oled_option.id}, moderator)
+      |> select_current_claim!(product, panel_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => attributes
+                 }
+               }
+             } = graphql(conn, product_attribute_metadata_query(), %{"slug" => product.slug})
+
+      hdr_code = hdr_attribute.code
+
+      assert [
+               %{
+                 "code" => ^hdr_code,
+                 "attributeId" => hdr_attribute_id,
+                 "displayName" => "HDR",
+                 "dataType" => "bool",
+                 "valueText" => "Yes",
+                 "sortOrder" => 1,
+                 "groupLabel" => "Capabilities",
+                 "isRequired" => false,
+                 "numericValue" => nil,
+                 "booleanValue" => true,
+                 "enumOptionId" => nil,
+                 "unitSymbol" => nil
+               },
+               %{
+                 "code" => "refresh-rate",
+                 "attributeId" => refresh_rate_attribute_id,
+                 "displayName" => "Refresh rate",
+                 "dataType" => "numeric",
+                 "valueText" => "144 Hz",
+                 "sortOrder" => 2,
+                 "groupLabel" => "Performance",
+                 "isRequired" => true,
+                 "numericValue" => "144",
+                 "booleanValue" => nil,
+                 "enumOptionId" => nil,
+                 "unitSymbol" => "Hz"
+               },
+               %{
+                 "code" => panel_code,
+                 "attributeId" => panel_attribute_id,
+                 "displayName" => "Catalog Enum Filter Attribute",
+                 "dataType" => "enum",
+                 "valueText" => "Option A",
+                 "sortOrder" => 3,
+                 "groupLabel" => "Display",
+                 "isRequired" => false,
+                 "numericValue" => nil,
+                 "booleanValue" => nil,
+                 "enumOptionId" => oled_option_id,
+                 "unitSymbol" => nil
+               }
+             ] = attributes
+
+      assert hdr_attribute_id == relay_id(:attribute, hdr_attribute.id)
+      assert refresh_rate_attribute_id == relay_id(:attribute, refresh_rate_attribute.id)
+      assert panel_code == panel_attribute.code
+      assert panel_attribute_id == relay_id(:attribute, panel_attribute.id)
+      assert oled_option_id == relay_id(:enum_option, oled_option.id)
+    end
+
+    test "product exposes numeric current attribute metadata in base units", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("metadata-length-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("metadata-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: unique_code("metadata-mm"),
+        symbol: "mm",
+        multiplier_to_base: Decimal.new("1"),
+        offset_to_base: Decimal.new("0")
+      })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("metadata-size"),
+          display_name: "Screen size",
+          data_type: :numeric,
+          dimension_id: dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("metadata-inch-product")})
+
+      product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(product, attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => attributes
+                 }
+               }
+             } = graphql(conn, product_attribute_metadata_query(), %{"slug" => product.slug})
+
+      attribute_code = attribute.code
+
+      assert [
+               %{
+                 "code" => ^attribute_code,
+                 "dataType" => "numeric",
+                 "valueText" => "27 in",
+                 "numericValue" => "685.8",
+                 "unitSymbol" => "mm"
+               }
+             ] = attributes
+    end
+
     test "product returns an empty currentAttributes list when no current claims exist", %{
       conn: conn
     } do
@@ -218,6 +398,103 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              end)
 
       assert count_queries_targeting_table(queries, :product_attribute_current) == 1
+      assert count_queries_targeting_table(queries, :taxon_attributes) == 1
+    end
+
+    test "products caches base unit symbol lookups for current attribute connection nodes", %{
+      conn: conn
+    } do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("batched-length-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("batched-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: unique_code("batched-mm"),
+        symbol: "mm",
+        multiplier_to_base: Decimal.new("1"),
+        offset_to_base: Decimal.new("0")
+      })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("batched-size"),
+          display_name: "Screen size",
+          data_type: :numeric,
+          dimension_id: dimension.id
+        })
+
+      first_product = SpecsFixtures.product_fixture(%{slug: "batched-inch-first"})
+      second_product = SpecsFixtures.product_fixture(%{slug: "batched-inch-second"})
+
+      first_product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(first_product, attribute, moderator)
+
+      second_product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("32"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(second_product, attribute, moderator)
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_current_attribute_metadata_query(), %{"first" => 2})
+        end)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } = response
+
+      attribute_code = attribute.code
+
+      assert [
+               %{
+                 "node" => %{
+                   "slug" => "batched-inch-first",
+                   "currentAttributes" => [
+                     %{
+                       "code" => ^attribute_code,
+                       "valueText" => "27 in",
+                       "numericValue" => "685.8",
+                       "unitSymbol" => "mm"
+                     }
+                   ]
+                 }
+               },
+               %{
+                 "node" => %{
+                   "slug" => "batched-inch-second",
+                   "currentAttributes" => [
+                     %{
+                       "code" => ^attribute_code,
+                       "valueText" => "32 in",
+                       "numericValue" => "812.8",
+                       "unitSymbol" => "mm"
+                     }
+                   ]
+                 }
+               }
+             ] = edges
+
+      assert count_base_unit_symbol_queries(queries) == 1
     end
 
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
@@ -459,6 +736,54 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert only_id == relay_id(:product, matching_product.id)
     end
 
+    test "products treats multiple enum options for one attribute as alternatives", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      {enum_attribute, option_a, option_b} = enum_attribute_with_options_fixture()
+
+      option_a_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-filter-enum-or-a"})
+
+      option_b_product =
+        SpecsFixtures.product_fixture(%{slug: "catalog-filter-enum-or-b"})
+
+      option_a_product
+      |> accept_claim!(enum_attribute, %{enum_option_id: option_a.id}, moderator)
+      |> select_current_claim!(option_a_product, enum_attribute, moderator)
+
+      option_b_product
+      |> accept_claim!(enum_attribute, %{enum_option_id: option_b.id}, moderator)
+      |> select_current_claim!(option_b_product, enum_attribute, moderator)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "enums" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, option_a.id)
+                     },
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, option_b.id)
+                     }
+                   ]
+                 }
+               })
+
+      product_ids = Enum.map(edges, &get_in(&1, ["node", "id"]))
+
+      assert product_ids == [
+               relay_id(:product, option_a_product.id),
+               relay_id(:product, option_b_product.id)
+             ]
+    end
+
     test "products supports use-case taxon filters", %{conn: conn} do
       moderator = AccountsFixtures.user_fixture()
       use_case_taxonomy = TaxonomyFixtures.taxonomy_fixture("use_case", "Use Case")
@@ -531,6 +856,95 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                      %{
                        "attributeId" => relay_id(:product, 123),
                        "min" => "100.0"
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects numeric ranges where min exceeds max", %{conn: conn} do
+      {numeric_attribute, _unit} = numeric_attribute_with_unit_fixture()
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid numeric filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "numeric" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, numeric_attribute.id),
+                       "min" => "200",
+                       "max" => "100"
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects mismatched filter attribute types", %{conn: conn} do
+      text_attribute =
+        text_attribute_fixture(%{
+          code: unique_code("catalog-invalid-numeric-type"),
+          display_name: "Not Numeric"
+        })
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid numeric filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "numeric" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, text_attribute.id),
+                       "min" => "100",
+                       "max" => "200"
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects boolean filters for non-boolean attributes", %{conn: conn} do
+      text_attribute =
+        text_attribute_fixture(%{
+          code: unique_code("catalog-invalid-boolean-type"),
+          display_name: "Not Boolean"
+        })
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid boolean filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "booleans" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, text_attribute.id),
+                       "value" => true
+                     }
+                   ]
+                 }
+               })
+    end
+
+    test "products rejects enum options outside the filter attribute enum set", %{conn: conn} do
+      {enum_attribute, _option_a, _option_b} = enum_attribute_with_options_fixture()
+
+      {_other_enum_attribute, other_option, _other_option_b} =
+        enum_attribute_with_options_fixture()
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid enum filter", "path" => ["products"]} | _]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "enums" => [
+                     %{
+                       "attributeId" => relay_id(:attribute, enum_attribute.id),
+                       "enumOptionId" => relay_id(:enum_option, other_option.id)
                      }
                    ]
                  }
@@ -683,6 +1097,29 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp product_attribute_metadata_query do
+    """
+    query ProductAttributeMetadata($slug: String!) {
+      product(slug: $slug) {
+        currentAttributes {
+          attributeId
+          code
+          displayName
+          dataType
+          valueText
+          sortOrder
+          groupLabel
+          isRequired
+          numericValue
+          booleanValue
+          enumOptionId
+          unitSymbol
+        }
+      }
+    }
+    """
+  end
+
   defp aliased_products_query do
     """
     query AliasedProducts($firstSlug: String!, $secondSlug: String!) {
@@ -716,6 +1153,26 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
               displayName
               dataType
               valueText
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp products_current_attribute_metadata_query do
+    """
+    query ProductsCurrentAttributeMetadata($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            currentAttributes {
+              code
+              valueText
+              numericValue
+              unitSymbol
             }
           }
         }
@@ -774,6 +1231,12 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
+  defp count_base_unit_symbol_queries(queries) do
+    Enum.count(queries, fn query ->
+      String.contains?(query, ~s(FROM "units")) and String.contains?(query, "CASE WHEN")
+    end)
+  end
+
   defp accept_claim!(product, attribute, typed_value, moderator) do
     assert {:ok, claim} =
              Specs.propose_claim(product.id, attribute.id, typed_value, %{
@@ -790,6 +1253,20 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
 
     claim
+  end
+
+  defp create_taxon_attribute!(taxon, attribute, attrs) do
+    %TaxonAttribute{}
+    |> TaxonAttribute.changeset(
+      Map.merge(
+        %{
+          taxon_id: taxon.id,
+          attribute_id: attribute.id
+        },
+        attrs
+      )
+    )
+    |> Repo.insert!()
   end
 
   defp numeric_attribute_with_unit_fixture do

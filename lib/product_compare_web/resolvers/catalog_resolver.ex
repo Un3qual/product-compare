@@ -9,19 +9,26 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
+  alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.TaxonAttribute
+
+  @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
-  def product(_parent, args, _resolution) do
+  def product(_parent, args, resolution) do
+    clear_base_unit_symbol_cache(resolution)
     {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def products(_parent, args, _resolution) do
+  def products(_parent, args, resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
     with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       query = Filtering.apply_filters(Product, filters)
 
@@ -31,17 +38,33 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     end
   end
 
+  @spec product_filter_metadata(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def product_filter_metadata(_parent, args, _resolution) do
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
+      {:ok, Catalog.product_filter_metadata(filters)}
+    end
+  end
+
   @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) ::
           {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def current_attributes(%Product{id: product_id}, _args, %{context: %{loader: loader}})
+  def current_attributes(
+        %Product{id: product_id} = product,
+        _args,
+        %{context: %{loader: loader}} = resolution
+      )
       when is_integer(product_id) do
     loader
     |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+    |> load_taxon_attributes(product.primary_type_taxon_id)
     |> on_load(fn loader ->
       attributes =
         loader
         |> Dataloader.get(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
-        |> Enum.map(&format_current_attribute/1)
+        |> Specs.with_current_attribute_metadata_from_taxon_attributes(
+          loaded_taxon_attributes(loader, product.primary_type_taxon_id)
+        )
+        |> format_current_attributes(resolution)
 
       {:ok, attributes}
     end)
@@ -51,7 +74,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     attributes =
       product_id
       |> Specs.list_current_attributes_for_product()
-      |> Enum.map(&format_current_attribute/1)
+      |> format_current_attributes()
 
     {:ok, attributes}
   end
@@ -190,7 +213,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
              :taxon,
              "taxon",
              "invalid filter ids"
-           ) do
+           ),
+         :ok <- validate_filter_semantics(numeric_filters, boolean_filters, enum_filters) do
       normalized_filters =
         %{
           include_type_descendants: include_type_descendants,
@@ -285,19 +309,181 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   defp normalize_enum_filters(_filters), do: {:error, "invalid enum filter"}
 
+  defp validate_filter_semantics(numeric_filters, boolean_filters, enum_filters) do
+    attribute_types =
+      [numeric_filters, boolean_filters, enum_filters]
+      |> Enum.flat_map(&Enum.map(&1, fn filter -> filter.attribute_id end))
+      |> Specs.filterable_attribute_types()
+
+    enum_option_pairs =
+      Specs.filterable_enum_option_pairs(
+        Enum.map(enum_filters, & &1.attribute_id),
+        Enum.map(enum_filters, & &1.enum_option_id)
+      )
+
+    with :ok <- validate_numeric_filter_semantics(numeric_filters, attribute_types),
+         :ok <- validate_boolean_filter_semantics(boolean_filters, attribute_types),
+         :ok <- validate_enum_filter_semantics(enum_filters, enum_option_pairs) do
+      :ok
+    end
+  end
+
+  defp validate_numeric_filter_semantics(filters, attribute_types) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      cond do
+        Map.get(attribute_types, filter.attribute_id) != :numeric ->
+          {:halt, {:error, "invalid numeric filter"}}
+
+        numeric_min_greater_than_max?(filter) ->
+          {:halt, {:error, "invalid numeric filter"}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
+  end
+
+  defp validate_boolean_filter_semantics(filters, attribute_types) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      if Map.get(attribute_types, filter.attribute_id) == :bool do
+        {:cont, :ok}
+      else
+        {:halt, {:error, "invalid boolean filter"}}
+      end
+    end)
+  end
+
+  defp validate_enum_filter_semantics(filters, enum_option_pairs) do
+    Enum.reduce_while(filters, :ok, fn filter, :ok ->
+      if MapSet.member?(enum_option_pairs, {filter.attribute_id, filter.enum_option_id}) do
+        {:cont, :ok}
+      else
+        {:halt, {:error, "invalid enum filter"}}
+      end
+    end)
+  end
+
+  defp numeric_min_greater_than_max?(%{min: min, max: max})
+       when not is_nil(min) and not is_nil(max) do
+    Decimal.compare(to_decimal(min), to_decimal(max)) == :gt
+  end
+
+  defp numeric_min_greater_than_max?(_filter), do: false
+
+  defp to_decimal(%Decimal{} = value), do: value
+  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
+  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+
+  defp load_taxon_attributes(loader, taxon_id) when is_integer(taxon_id) do
+    Dataloader.load(loader, Catalog, {:many, TaxonAttribute}, taxon_id: taxon_id)
+  end
+
+  defp load_taxon_attributes(loader, _taxon_id), do: loader
+
+  defp loaded_taxon_attributes(loader, taxon_id) when is_integer(taxon_id) do
+    Dataloader.get(loader, Catalog, {:many, TaxonAttribute}, taxon_id: taxon_id)
+  end
+
+  defp loaded_taxon_attributes(_loader, _taxon_id), do: []
+
   @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
           {:ok, list()} | {:error, String.t()}
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
 
-  defp format_current_attribute(%{attribute: attribute, claim: claim}) do
+  defp format_current_attributes(current_attributes, resolution \\ nil) do
+    base_unit_symbols_by_dimension =
+      current_attributes
+      |> Enum.flat_map(&non_base_numeric_dimension_id/1)
+      |> unit_symbols_for_dimensions(resolution)
+
+    Enum.map(current_attributes, &format_current_attribute(&1, base_unit_symbols_by_dimension))
+  end
+
+  defp unit_symbols_for_dimensions(dimension_ids, nil),
+    do: Specs.unit_symbols_for_dimensions(dimension_ids)
+
+  defp unit_symbols_for_dimensions(dimension_ids, resolution) do
+    case base_unit_symbol_cache_key(resolution) do
+      nil -> Specs.unit_symbols_for_dimensions(dimension_ids)
+      cache_key -> cached_unit_symbols_for_dimensions(dimension_ids, cache_key)
+    end
+  end
+
+  defp cached_unit_symbols_for_dimensions(dimension_ids, cache_key) do
+    dimension_ids = Enum.uniq(dimension_ids)
+    cached_symbols = Process.get(cache_key, %{})
+
+    missing_dimension_ids =
+      Enum.reject(dimension_ids, &Map.has_key?(cached_symbols, &1))
+
+    symbols =
+      case missing_dimension_ids do
+        [] ->
+          cached_symbols
+
+        ids ->
+          fetched_symbols = Specs.unit_symbols_for_dimensions(ids)
+          loaded_symbols = Map.new(ids, &{&1, Map.get(fetched_symbols, &1)})
+          updated_symbols = Map.merge(cached_symbols, loaded_symbols)
+
+          Process.put(cache_key, updated_symbols)
+          updated_symbols
+      end
+
+    Map.take(symbols, dimension_ids)
+  end
+
+  defp clear_base_unit_symbol_cache(resolution) do
+    if cache_key = base_unit_symbol_cache_key(resolution) do
+      Process.delete(cache_key)
+    end
+
+    :ok
+  end
+
+  defp base_unit_symbol_cache_key(%{context: context}) when is_map(context),
+    do: Map.get(context, @base_unit_symbol_cache_context_key)
+
+  defp base_unit_symbol_cache_key(_resolution), do: nil
+
+  defp non_base_numeric_dimension_id(%{
+         attribute: %{data_type: :numeric, dimension_id: dimension_id},
+         claim: %{value_num_base: %Decimal{}, unit: unit}
+       })
+       when is_integer(dimension_id) do
+    if base_unit?(unit), do: [], else: [dimension_id]
+  end
+
+  defp non_base_numeric_dimension_id(_current_attribute), do: []
+
+  defp format_current_attribute(
+         %{attribute: attribute, claim: claim} = current_attribute,
+         base_unit_symbols_by_dimension
+       ) do
+    taxon_attribute = Map.get(current_attribute, :taxon_attribute)
+
     %{
+      attribute_id: GlobalId.encode(:attribute, attribute.id),
       code: attribute.code,
       display_name: attribute.display_name,
       data_type: Atom.to_string(attribute.data_type),
-      value_text: format_claim_value(claim)
+      value_text: format_claim_value(claim),
+      sort_order: taxon_attribute && taxon_attribute.sort_order,
+      group_label: taxon_attribute && taxon_attribute.compare_group_label,
+      is_required: (taxon_attribute && taxon_attribute.is_required) || false,
+      numeric_value: numeric_claim_value(claim),
+      boolean_value: boolean_claim_value(claim),
+      enum_option_id: GlobalId.encode_optional_value(:enum_option, claim.enum_option_id),
+      unit_symbol: attribute_unit_symbol(attribute, claim, base_unit_symbols_by_dimension)
     }
   end
+
+  defp numeric_claim_value(%{value_num_base: %Decimal{} = value}), do: value
+  defp numeric_claim_value(_claim), do: nil
+
+  defp boolean_claim_value(%{value_bool: value}) when is_boolean(value), do: value
+  defp boolean_claim_value(_claim), do: nil
 
   defp format_claim_value(%{value_bool: value}) when is_boolean(value) do
     if value, do: "Yes", else: "No"
@@ -327,6 +513,37 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     do: "#{value} #{code}"
 
   defp append_unit(value, _unit), do: value
+
+  defp attribute_unit_symbol(
+         %{data_type: :numeric, dimension_id: dimension_id},
+         %{value_num_base: %Decimal{}, unit: unit},
+         base_unit_symbols_by_dimension
+       )
+       when is_integer(dimension_id) do
+    if base_unit?(unit) do
+      unit_symbol(unit)
+    else
+      Map.get(base_unit_symbols_by_dimension, dimension_id)
+    end
+  end
+
+  defp attribute_unit_symbol(%{data_type: :numeric}, %{value_num_base: %Decimal{}}, _symbols),
+    do: nil
+
+  defp attribute_unit_symbol(_attribute, claim, _symbols), do: unit_symbol(claim.unit)
+
+  defp base_unit?(%{
+         multiplier_to_base: %Decimal{} = multiplier,
+         offset_to_base: %Decimal{} = offset
+       }) do
+    Decimal.equal?(multiplier, Decimal.new("1")) and Decimal.equal?(offset, Decimal.new("0"))
+  end
+
+  defp base_unit?(_unit), do: false
+
+  defp unit_symbol(%{symbol: symbol}) when is_binary(symbol) and symbol != "", do: symbol
+  defp unit_symbol(%{code: code}) when is_binary(code) and code != "", do: code
+  defp unit_symbol(_unit), do: nil
 
   defp saved_comparison_changeset_error_payload(%Ecto.Changeset{} = changeset) do
     %{

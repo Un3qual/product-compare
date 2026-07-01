@@ -27,15 +27,43 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Query.t()
   def apply_filters(base_query \\ Product, filters) do
+    apply_filters_except(base_query, filters, nil)
+  end
+
+  @spec apply_filters_except(Ecto.Queryable.t(), map(), term()) :: Ecto.Query.t()
+  def apply_filters_except(base_query \\ Product, filters, omitted_group) do
     base_query
     |> from(as: :product)
-    |> apply_primary_type_filter(filters)
-    |> apply_numeric_filters(Map.get(filters, :numeric, []))
-    |> apply_bool_filters(Map.get(filters, :booleans, []))
-    |> apply_enum_filters(Map.get(filters, :enums, []))
-    |> apply_use_case_filter(Map.get(filters, :use_case_taxon_ids, []))
+    |> maybe_apply_primary_type_filter(filters, omitted_group)
+    |> apply_numeric_filters(filters_for_group(filters, :numeric, omitted_group))
+    |> apply_bool_filters(filters_for_group(filters, :booleans, omitted_group))
+    |> apply_enum_filters(filters_for_group(filters, :enums, omitted_group))
+    |> maybe_apply_use_case_filter(filters, omitted_group)
     |> order_by([product: p], asc: p.id)
   end
+
+  defp maybe_apply_primary_type_filter(query, _filters, :primary_type), do: query
+
+  defp maybe_apply_primary_type_filter(query, filters, _omitted_group),
+    do: apply_primary_type_filter(query, filters)
+
+  defp maybe_apply_use_case_filter(query, _filters, :use_case), do: query
+
+  defp maybe_apply_use_case_filter(query, filters, _omitted_group),
+    do: apply_use_case_filter(query, Map.get(filters, :use_case_taxon_ids, []))
+
+  defp filters_for_group(filters, key, {key, attribute_id}) do
+    filters
+    |> Map.get(key, [])
+    |> Enum.reject(fn filter ->
+      case normalize_integer_id(fetch_value(filter, :attribute_id)) do
+        {:ok, ^attribute_id} -> true
+        _ -> false
+      end
+    end)
+  end
+
+  defp filters_for_group(filters, key, _omitted_group), do: Map.get(filters, key, [])
 
   @spec apply_primary_type_filter(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp apply_primary_type_filter(query, filters) do
@@ -68,22 +96,26 @@ defmodule ProductCompare.Catalog.Filtering do
     Enum.reduce(numeric_filters, query, fn filter, acc ->
       case normalize_integer_id(fetch_value(filter, :attribute_id)) do
         {:ok, attribute_id} ->
-          min = fetch_value(filter, :min)
-          max = fetch_value(filter, :max)
+          min = filter |> fetch_value(:min) |> normalize_numeric_bound()
+          max = filter |> fetch_value(:max) |> normalize_numeric_bound()
 
-          base_exists_query =
-            from pacur in ProductAttributeCurrent,
-              join: pac in ProductAttributeClaim,
-              on: pac.id == pacur.claim_id,
-              where: pacur.product_id == parent_as(:product).id,
-              where: pac.attribute_id == ^attribute_id
+          if is_nil(min) and is_nil(max) do
+            acc
+          else
+            base_exists_query =
+              from pacur in ProductAttributeCurrent,
+                join: pac in ProductAttributeClaim,
+                on: pac.id == pacur.claim_id,
+                where: pacur.product_id == parent_as(:product).id,
+                where: pac.attribute_id == ^attribute_id
 
-          exists_query =
-            base_exists_query
-            |> maybe_apply_numeric_min(min)
-            |> maybe_apply_numeric_max(max)
+            exists_query =
+              base_exists_query
+              |> maybe_apply_numeric_min(min)
+              |> maybe_apply_numeric_max(max)
 
-          where(acc, [product: _p], exists(exists_query))
+            where(acc, [product: _p], exists(exists_query))
+          end
 
         :error ->
           acc
@@ -115,21 +147,34 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_enum_filters(Ecto.Query.t(), [enum_filter()]) :: Ecto.Query.t()
   defp apply_enum_filters(query, enum_filters) do
-    Enum.reduce(enum_filters, query, fn filter, acc ->
+    enum_filters
+    |> Enum.reduce(%{}, fn filter, acc ->
       with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
            {:ok, enum_option_id} <- normalize_integer_id(fetch_value(filter, :enum_option_id)) do
-        exists_query =
-          from pacur in ProductAttributeCurrent,
-            join: pac in ProductAttributeClaim,
-            on: pac.id == pacur.claim_id,
-            where: pacur.product_id == parent_as(:product).id,
-            where: pac.attribute_id == ^attribute_id,
-            where: pac.enum_option_id == ^enum_option_id
-
-        where(acc, [product: _p], exists(exists_query))
+        Map.update(
+          acc,
+          attribute_id,
+          MapSet.new([enum_option_id]),
+          &MapSet.put(&1, enum_option_id)
+        )
       else
         _ -> acc
       end
+    end)
+    |> Enum.map(fn {attribute_id, enum_option_ids} ->
+      {attribute_id, enum_option_ids |> MapSet.to_list() |> Enum.sort()}
+    end)
+    |> Enum.sort_by(fn {attribute_id, _enum_option_ids} -> attribute_id end)
+    |> Enum.reduce(query, fn {attribute_id, enum_option_ids}, acc ->
+      exists_query =
+        from pacur in ProductAttributeCurrent,
+          join: pac in ProductAttributeClaim,
+          on: pac.id == pacur.claim_id,
+          where: pacur.product_id == parent_as(:product).id,
+          where: pac.attribute_id == ^attribute_id,
+          where: pac.enum_option_id in ^enum_option_ids
+
+      where(acc, [product: _p], exists(exists_query))
     end)
   end
 
@@ -158,9 +203,11 @@ defmodule ProductCompare.Catalog.Filtering do
             on: t.id == pt.taxon_id,
             join: tx in Taxonomy,
             on: tx.id == t.taxonomy_id,
+            join: closure in TaxonClosure,
+            on: closure.descendant_id == pt.taxon_id,
             where: pt.product_id == parent_as(:product).id,
             where: tx.code == "use_case",
-            where: pt.taxon_id in ^ids
+            where: closure.ancestor_id in ^ids
 
         where(query, [product: _p], exists(exists_query))
     end
@@ -191,4 +238,18 @@ defmodule ProductCompare.Catalog.Filtering do
 
   defp maybe_apply_numeric_max(query, max),
     do: where(query, [_pacur, pac], pac.value_num_base <= ^max)
+
+  defp normalize_numeric_bound(nil), do: nil
+  defp normalize_numeric_bound(%Decimal{} = value), do: value
+  defp normalize_numeric_bound(value) when is_integer(value), do: value
+  defp normalize_numeric_bound(value) when is_float(value), do: Decimal.from_float(value)
+
+  defp normalize_numeric_bound(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, ""} -> decimal
+      _invalid -> nil
+    end
+  end
+
+  defp normalize_numeric_bound(_value), do: nil
 end

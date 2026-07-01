@@ -31,6 +31,11 @@ defmodule ProductCompareWeb.Schema do
 
   @impl true
   def context(context) do
+    context =
+      Map.put_new_lazy(context, :catalog_base_unit_symbol_cache_key, fn ->
+        {CatalogResolver, :base_unit_symbols_by_dimension, make_ref()}
+      end)
+
     Map.put_new_lazy(context, :loader, fn -> Loader.new(context) end)
   end
 
@@ -96,6 +101,13 @@ defmodule ProductCompareWeb.Schema do
       arg(:filters, :product_filters_input)
 
       resolve(&CatalogResolver.products/3)
+    end
+
+    @desc "Returns display-safe metadata for product filter controls."
+    field :product_filter_metadata, non_null(:product_filter_metadata) do
+      arg(:filters, :product_filters_input)
+
+      resolve(&CatalogResolver.product_filter_metadata/3)
     end
 
     @desc "Returns the current authenticated user's saved comparison sets."
@@ -365,6 +377,68 @@ defmodule ProductCompareWeb.Schema do
     field :booleans, list_of(non_null(:product_boolean_filter_input))
     field :enums, list_of(non_null(:product_enum_filter_input))
     field :use_case_taxon_ids, list_of(non_null(:id))
+  end
+
+  object :product_filter_metadata do
+    field :result_count, non_null(:integer)
+    field :type_options, non_null(list_of(non_null(:product_filter_option)))
+    field :use_case_options, non_null(list_of(non_null(:product_filter_option)))
+    field :numeric_filters, non_null(list_of(non_null(:product_numeric_filter_metadata)))
+    field :boolean_filters, non_null(list_of(non_null(:product_boolean_filter_metadata)))
+    field :enum_filters, non_null(list_of(non_null(:product_enum_filter_metadata)))
+  end
+
+  object :product_filter_option do
+    field :id, non_null(:id) do
+      resolve(fn option, _, _ -> GlobalId.encode_required(option.id_type, option.id) end)
+    end
+
+    field :label, non_null(:string)
+    field :count, non_null(:integer)
+    field :selected, non_null(:boolean)
+    field :disabled, non_null(:boolean)
+  end
+
+  object :product_numeric_filter_metadata do
+    field :attribute_id, non_null(:id) do
+      resolve(fn metadata, _, _ ->
+        GlobalId.encode_required(:attribute, metadata.attribute_id)
+      end)
+    end
+
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :unit_symbol, :string
+    field :min, :decimal
+    field :max, :decimal
+    field :selected_min, :decimal
+    field :selected_max, :decimal
+  end
+
+  object :product_boolean_filter_metadata do
+    field :attribute_id, non_null(:id) do
+      resolve(fn metadata, _, _ ->
+        GlobalId.encode_required(:attribute, metadata.attribute_id)
+      end)
+    end
+
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :true_count, non_null(:integer)
+    field :false_count, non_null(:integer)
+    field :selected_value, :boolean
+  end
+
+  object :product_enum_filter_metadata do
+    field :attribute_id, non_null(:id) do
+      resolve(fn metadata, _, _ ->
+        GlobalId.encode_required(:attribute, metadata.attribute_id)
+      end)
+    end
+
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :options, non_null(list_of(non_null(:product_filter_option)))
   end
 
   input_object :create_saved_comparison_set_input do
@@ -793,10 +867,18 @@ defmodule ProductCompareWeb.Schema do
   end
 
   object :product_attribute_value do
+    field :attribute_id, non_null(:id)
     field :code, non_null(:string)
     field :display_name, non_null(:string)
     field :data_type, non_null(:string)
     field :value_text, non_null(:string)
+    field :sort_order, :integer
+    field :group_label, :string
+    field :is_required, non_null(:boolean)
+    field :numeric_value, :decimal
+    field :boolean_value, :boolean
+    field :enum_option_id, :id
+    field :unit_symbol, :string
   end
 
   object :merchant_product do

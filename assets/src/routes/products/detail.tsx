@@ -10,7 +10,10 @@ import productOffersRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
-import { ProductAttributeList } from "./product-attribute-list";
+import {
+  ProductAttributeList,
+  type ProductAttributeListItem
+} from "./product-attribute-list";
 
 export function ProductDetailRoute() {
   const loaderData = useLoaderData<typeof productDetailLoader>() as ProductDetailLoaderData;
@@ -114,11 +117,7 @@ function ProductDecisionActions({
 function ProductSpecifications({
   attributes
 }: {
-  attributes: ReadonlyArray<{
-    code: string;
-    displayName: string;
-    valueText: string;
-  }>;
+  attributes: ReadonlyArray<ProductAttributeListItem>;
 }) {
   return (
     <section>

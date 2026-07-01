@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b7a2f47c4fb580689aeb1978f4578248>>
+ * @generated SignedSource<<60dfc9eadc03a86d9c0b3a89ad5e6a28>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,8 +9,30 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
+export type ProductFiltersInput = {
+  booleans?: ReadonlyArray<ProductBooleanFilterInput> | null | undefined;
+  enums?: ReadonlyArray<ProductEnumFilterInput> | null | undefined;
+  includeTypeDescendants?: boolean | null | undefined;
+  numeric?: ReadonlyArray<ProductNumericFilterInput> | null | undefined;
+  primaryTypeTaxonId?: string | null | undefined;
+  useCaseTaxonIds?: ReadonlyArray<string> | null | undefined;
+};
+export type ProductNumericFilterInput = {
+  attributeId: string;
+  max?: any | null | undefined;
+  min?: any | null | undefined;
+};
+export type ProductBooleanFilterInput = {
+  attributeId: string;
+  value: boolean;
+};
+export type ProductEnumFilterInput = {
+  attributeId: string;
+  enumOptionId: string;
+};
 export type BrowseProductsRouteQuery$variables = {
   after?: string | null | undefined;
+  filters?: ProductFiltersInput | null | undefined;
   first: number;
 };
 export type BrowseProductsRouteQuery$data = {
@@ -47,23 +69,28 @@ var v0 = {
 v1 = {
   "defaultValue": null,
   "kind": "LocalArgument",
-  "name": "first"
+  "name": "filters"
 },
 v2 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "first"
+},
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v3 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v4 = [
+v5 = [
   {
     "alias": null,
     "args": [
@@ -71,6 +98,11 @@ v4 = [
         "kind": "Variable",
         "name": "after",
         "variableName": "after"
+      },
+      {
+        "kind": "Variable",
+        "name": "filters",
+        "variableName": "filters"
       },
       {
         "kind": "Variable",
@@ -106,8 +138,8 @@ v4 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v2/*: any*/),
               (v3/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -123,8 +155,8 @@ v4 = [
                 "name": "brand",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v3/*: any*/)
+                  (v3/*: any*/),
+                  (v4/*: any*/)
                 ],
                 "storageKey": null
               }
@@ -167,36 +199,38 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*: any*/),
-      (v1/*: any*/)
+      (v1/*: any*/),
+      (v2/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "BrowseProductsRouteQuery",
-    "selections": (v4/*: any*/),
+    "selections": (v5/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*: any*/),
+      (v0/*: any*/),
+      (v1/*: any*/)
     ],
     "kind": "Operation",
     "name": "BrowseProductsRouteQuery",
-    "selections": (v4/*: any*/)
+    "selections": (v5/*: any*/)
   },
   "params": {
-    "cacheID": "9e7d53d104c77878d194425c7bcfeb12",
+    "cacheID": "ade30c356994495ca6a975a9b1cf4903",
     "id": null,
     "metadata": {},
     "name": "BrowseProductsRouteQuery",
     "operationKind": "query",
-    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "83817b0b333c8d1d581dddca9a213df9";
+(node as any).hash = "80b99607b965862d84f257e9741b83e2";
 
 export default node;

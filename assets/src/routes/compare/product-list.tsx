@@ -5,8 +5,25 @@ import productDetailRouteQuery, {
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ProductAttributeList } from "../products/product-attribute-list";
-import type { CompareProductSummary, CompareRouteLoaderData } from "./loader";
+import type {
+  CompareProductSummary,
+  CompareRouteLoaderData,
+  CompareSpecMode
+} from "./loader";
+import { DecisionSummary } from "./decision-summary";
 import { buildComparePathAfterRemovingSlugIndex } from "./paths";
+
+const MISSING_ATTRIBUTE_VALUE = "Not available";
+const SPECIFICATION_MATRIX_TITLES: Record<CompareSpecMode, string> = {
+  all: "All specifications",
+  differences: "Different specifications",
+  shared: "Shared specifications"
+};
+const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
+  all: "No specifications are available for these products yet.",
+  differences: "No specification differences across these products yet.",
+  shared: "No shared specifications across these products yet."
+};
 
 export function CompareProductList({
   loaderData
@@ -15,7 +32,14 @@ export function CompareProductList({
 }) {
   return (
     <>
-      <SharedAttributeMatrix products={loaderData.products} />
+      <DecisionSummary
+        offerContexts={loaderData.offerContexts}
+        products={loaderData.products}
+      />
+      <CompareSpecificationMatrix
+        products={loaderData.products}
+        specMode={loaderData.specMode}
+      />
       <ul>
         {loaderData.productQueries.map((productQuery, index) => (
           <CompareProductCard
@@ -24,6 +48,7 @@ export function CompareProductList({
             summary={loaderData.products[index]}
             selectedSlugs={loaderData.slugs}
             selectedIndex={index}
+            specMode={loaderData.specMode}
           />
         ))}
       </ul>
@@ -31,20 +56,27 @@ export function CompareProductList({
   );
 }
 
-function SharedAttributeMatrix({ products }: { products: CompareProductSummary[] }) {
+function CompareSpecificationMatrix({
+  products,
+  specMode
+}: {
+  products: CompareProductSummary[];
+  specMode: CompareSpecMode;
+}) {
   if (products.length < 2) {
     return null;
   }
 
-  const rows = buildSharedAttributeRows(products);
+  const rows = buildSpecificationRows(products, specMode);
+  const title = specificationMatrixTitle(specMode);
 
   return (
     <section>
-      <h2>Shared specifications</h2>
+      <h2>{title}</h2>
       {rows.length === 0 ? (
-        <p>No shared specifications across these products yet.</p>
+        <p>{emptySpecificationMatrixMessage(specMode)}</p>
       ) : (
-        <table aria-label="Shared specifications">
+        <table aria-label={title}>
           <thead>
             <tr>
               <th scope="col">Specification</th>
@@ -71,7 +103,33 @@ function SharedAttributeMatrix({ products }: { products: CompareProductSummary[]
   );
 }
 
-function buildSharedAttributeRows(products: CompareProductSummary[]) {
+interface CompareSpecificationRow {
+  code: string;
+  displayName: string;
+  sortOrder: number | null;
+  missingValues: boolean[];
+  values: string[];
+  comparisonValues: string[];
+}
+
+function buildSpecificationRows(
+  products: CompareProductSummary[],
+  specMode: CompareSpecMode
+) {
+  const rows = buildAllSpecificationRows(products);
+
+  if (specMode === "all") {
+    return rows;
+  }
+
+  if (specMode === "differences") {
+    return rows.filter(hasSpecificationDifference);
+  }
+
+  return rows.filter((row) => row.missingValues.every((isMissing) => !isMissing));
+}
+
+function buildAllSpecificationRows(products: CompareProductSummary[]): CompareSpecificationRow[] {
   const [firstProduct, ...remainingProducts] = products;
 
   if (!firstProduct || remainingProducts.length === 0) {
@@ -82,29 +140,216 @@ function buildSharedAttributeRows(products: CompareProductSummary[]) {
     buildFirstAttributeByCode(product.currentAttributes)
   );
   const seenCodes = new Set<string>();
-
-  return firstProduct.currentAttributes.flatMap((attribute) => {
+  const firstProductRows = firstProduct.currentAttributes.flatMap((attribute) => {
     if (seenCodes.has(attribute.code)) {
       return [];
     }
 
     seenCodes.add(attribute.code);
-    const sharedAttributes = attributeMaps.map((attributesByCode) =>
-      attributesByCode.get(attribute.code)
-    );
-
-    if (sharedAttributes.some((sharedAttribute) => !sharedAttribute)) {
-      return [];
-    }
 
     return [
-      {
+      buildSpecificationRow({
+        attributeMaps,
         code: attribute.code,
-        displayName: attribute.displayName,
-        values: sharedAttributes.map((sharedAttribute) => sharedAttribute?.valueText ?? "")
-      }
+        displayName: attribute.displayName
+      })
     ];
   });
+  const additionalRows = remainingProducts.flatMap((product) =>
+    product.currentAttributes.flatMap((attribute) => {
+      if (seenCodes.has(attribute.code)) {
+        return [];
+      }
+
+      seenCodes.add(attribute.code);
+
+      return [
+        buildSpecificationRow({
+          attributeMaps,
+          code: attribute.code,
+          displayName: attribute.displayName
+        })
+      ];
+    })
+  );
+
+  return [...firstProductRows, ...additionalRows].sort(compareSpecificationRows);
+}
+
+function buildSpecificationRow({
+  attributeMaps,
+  code,
+  displayName
+}: {
+  attributeMaps: Array<
+    Map<string, CompareProductSummary["currentAttributes"][number]>
+  >;
+  code: string;
+  displayName: string;
+}): CompareSpecificationRow {
+  const attributes = attributeMaps.map((attributesByCode) => attributesByCode.get(code));
+
+  return {
+    code,
+    displayName,
+    sortOrder: firstPresentSortOrder(attributes),
+    missingValues: attributes.map((attribute) => !attribute),
+    values: attributes.map((attribute) => attribute?.valueText ?? MISSING_ATTRIBUTE_VALUE),
+    comparisonValues: attributes.map(buildAttributeComparisonValue)
+  };
+}
+
+function hasSpecificationDifference(row: CompareSpecificationRow) {
+  if (row.missingValues.some(Boolean)) {
+    return true;
+  }
+
+  return new Set(row.comparisonValues).size > 1;
+}
+
+function compareSpecificationRows(
+  firstRow: CompareSpecificationRow,
+  secondRow: CompareSpecificationRow
+) {
+  const sortOrderComparison = compareSpecificationSortOrders(
+    firstRow.sortOrder,
+    secondRow.sortOrder
+  );
+
+  if (sortOrderComparison !== 0) {
+    return sortOrderComparison;
+  }
+
+  const nameComparison = firstRow.displayName.localeCompare(secondRow.displayName);
+
+  return nameComparison === 0 ? firstRow.code.localeCompare(secondRow.code) : nameComparison;
+}
+
+function compareSpecificationSortOrders(
+  firstSortOrder: number | null,
+  secondSortOrder: number | null
+) {
+  if (typeof firstSortOrder === "number" && typeof secondSortOrder === "number") {
+    return firstSortOrder - secondSortOrder;
+  }
+
+  if (typeof firstSortOrder === "number") {
+    return -1;
+  }
+
+  if (typeof secondSortOrder === "number") {
+    return 1;
+  }
+
+  return 0;
+}
+
+function firstPresentSortOrder(
+  attributes: Array<CompareProductSummary["currentAttributes"][number] | undefined>
+) {
+  return attributes.find((attribute) => typeof attribute?.sortOrder === "number")?.sortOrder ?? null;
+}
+
+function buildAttributeComparisonValue(
+  attribute: CompareProductSummary["currentAttributes"][number] | undefined
+) {
+  if (!attribute) {
+    return "missing";
+  }
+
+  if (typeof attribute.numericValue === "string" && attribute.numericValue.trim() !== "") {
+    const normalizedNumericValue = normalizeDecimalComparisonValue(attribute.numericValue);
+    const normalizedUnitSymbol = normalizeUnitComparisonValue(attribute.unitSymbol);
+
+    return `numeric:${normalizedNumericValue}:${normalizedUnitSymbol}`;
+  }
+
+  if (typeof attribute.booleanValue === "boolean") {
+    return `boolean:${attribute.booleanValue}`;
+  }
+
+  return `text:${attribute.valueText}`;
+}
+
+const DECIMAL_COMPARISON_VALUE_PATTERN =
+  /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+const MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT = 1_000;
+
+interface ParsedDecimalComparisonValue {
+  sign: -1 | 1;
+  integer: string;
+  fraction: string;
+  exponent: number;
+}
+
+function normalizeDecimalComparisonValue(value: string) {
+  const trimmedValue = value.trim();
+  const parsedValue = parseDecimalComparisonValue(trimmedValue);
+
+  if (!parsedValue) {
+    return trimmedValue;
+  }
+
+  const digits = `${parsedValue.integer}${parsedValue.fraction}`;
+
+  if (/^0*$/.test(digits)) {
+    return "0";
+  }
+
+  const decimalPoint = parsedValue.integer.length + parsedValue.exponent;
+  const [rawIntegerPart, rawFractionPart] = splitDecimalComparisonDigits(digits, decimalPoint);
+  const sign = parsedValue.sign === -1 ? "-" : "";
+  const normalizedIntegerPart = rawIntegerPart.replace(/^0+/, "") || "0";
+  const normalizedFractionPart = rawFractionPart.replace(/0+$/, "");
+
+  return normalizedFractionPart
+    ? `${sign}${normalizedIntegerPart}.${normalizedFractionPart}`
+    : `${sign}${normalizedIntegerPart}`;
+}
+
+function parseDecimalComparisonValue(value: string): ParsedDecimalComparisonValue | null {
+  if (!DECIMAL_COMPARISON_VALUE_PATTERN.test(value)) {
+    return null;
+  }
+
+  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
+  const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
+  const exponent = Number.parseInt(rawExponent, 10);
+
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT) {
+    return null;
+  }
+
+  const [integer, fraction = ""] = coefficient.split(".");
+
+  return { sign, integer, fraction, exponent };
+}
+
+function splitDecimalComparisonDigits(digits: string, decimalPoint: number) {
+  if (decimalPoint <= 0) {
+    return ["0", `${"0".repeat(Math.abs(decimalPoint))}${digits}`];
+  }
+
+  if (decimalPoint >= digits.length) {
+    return [`${digits}${"0".repeat(decimalPoint - digits.length)}`, ""];
+  }
+
+  return [digits.slice(0, decimalPoint), digits.slice(decimalPoint)];
+}
+
+function normalizeUnitComparisonValue(unitSymbol: string | null | undefined) {
+  return unitSymbol?.trim() ?? "";
+}
+
+function specificationMatrixTitle(specMode: CompareSpecMode) {
+  return SPECIFICATION_MATRIX_TITLES[specMode] ?? SPECIFICATION_MATRIX_TITLES.shared;
+}
+
+function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
+  return (
+    EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode] ?? EMPTY_SPECIFICATION_MATRIX_MESSAGES.shared
+  );
 }
 
 function buildFirstAttributeByCode(
@@ -142,11 +387,13 @@ function CompareProductCard({
   productQuery,
   selectedSlugs,
   selectedIndex,
+  specMode,
   summary
 }: {
   productQuery: Extract<CompareRouteLoaderData, { status: "ready" }>["productQueries"][number];
   selectedSlugs: readonly string[];
   selectedIndex: number;
+  specMode: CompareSpecMode;
   summary: CompareProductSummary | undefined;
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
@@ -155,7 +402,9 @@ function CompareProductCard({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const product = data.product;
-  const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex);
+  const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex, {
+    specMode
+  });
 
   if (!product) {
     return null;

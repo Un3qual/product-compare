@@ -22,21 +22,47 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-29
+Updated: 2026-06-30
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
 selection, offer filter context, and saved-comparison return paths.
 
-No `ready` row is currently selected. The next coordinator pass should either
-promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md` and
-`docs/work/product-data-scraping.md`, or choose another product-facing row.
+The first explicitly requested parallel batch from the product filtering and
+in-depth comparison plan set is complete. Backend filter metadata/facets and
+frontend compare matrix modes landed in separate commits with focused
+verification.
+
+The full product filtering and in-depth comparison plan set is complete. No
+`ready` row is currently selected. The next coordinator pass should either
+promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md`
+and `docs/work/product-data-scraping.md`, promote persistent compare tray work,
+or choose another product-facing row.
 
 ## Ready Work
 
 No ready rows are currently selected.
 
 ## Just Completed
+
+The 2026-06-30 first product filtering and in-depth comparison parallel batch
+and dependent catalog UI follow-up completed these three work items:
+
+- Backend filter metadata/facets: GraphQL now exposes
+  `productFilterMetadata(filters:)` with display-safe counts, ranges, selected
+  state, and typed filter validation using the existing `ProductFiltersInput`.
+- Frontend product comparison: `/compare` now supports URL-backed
+  `specs=shared|differences|all` matrix modes with mode-preserving add/remove
+  links and explicit missing values.
+- Frontend catalog browse: `/products` now renders metadata-backed faceted
+  filters, preserves active filter URLs through pagination, and clears back to
+  the unfiltered browse page.
+- Compare attribute metadata: `Product.currentAttributes` now includes typed,
+  ordered, groupable metadata used by product detail and compare rendering while
+  preserving the `valueText` fallback contract.
+- Compare offer decision helpers: `/compare` now renders a bounded, resilient
+  decision summary for current price and offer quality using the existing
+  `merchantProducts(input:)` pricing contract.
 
 The 2026-06-29 usable-product batch completed these five work items:
 
@@ -65,6 +91,10 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 - Product data scraping: provider-neutral source-health read model.
 
 ## Retained Follow-Up Work
+
+The product filtering and in-depth comparison plan set is complete. Persistent
+compare tray work remains a product-facing follow-up candidate if the next pass
+should improve compare entry continuity across browse/detail pages.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The

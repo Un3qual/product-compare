@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done
+- Status: done (catalog faceted filtering UI)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 (working tree)
+- Last verified: 2026-06-30 (working tree)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -14,6 +14,9 @@
   - `docs/plans/2026-03-17-frontend-catalog-browse-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-catalog-browse-page-size-implementation-plan.md`
+- Planned faceted filtering follow-up:
+  - `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
+  - `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes a `/products` route with SSR-safe rendering.
   - The route loads the first page of products from the existing GraphQL `products` connection.
@@ -118,6 +121,136 @@
 
 1. The 2026-03-17 catalog browse baseline batch is complete.
 2. The 2026-06-27 cross-project page-size follow-up is complete.
+3. The 2026-06-29 decision-card follow-up is complete.
+
+## Planned Follow-Up
+
+- Product filter metadata and facets:
+  - Add a backend and GraphQL `productFilterMetadata(filters:)` contract for
+    display-safe type, use-case, numeric, boolean, and enum filter metadata.
+  - Keep result filtering on the existing `products(filters:)` surface and
+    compute metadata from unpaginated, selected-current-claim filters.
+- Catalog faceted filtering UI:
+  - Wire `/products` to parse and serialize filter URL state, preload
+    metadata, render filter controls, preserve filters across pagination, and
+    show filtered empty states.
+  - This UI row depends on the metadata/facet contract and should not hardcode
+    environment-specific IDs.
+
+## Active Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/filters.ts`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/queries/ProductFilterMetadataQuery.ts`
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/src/routes/catalog/loader.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `git diff --check`
+- Exit condition: `/products` exposes metadata-backed filters, preserves active
+  filter URLs through pagination, and clears back to the unfiltered browse page.
+- Implemented:
+  - Added route-local catalog filter URL parsing and path serialization for
+    type, descendant, use-case, numeric, boolean, and enum filters.
+  - `/products` now passes the parsed `ProductFiltersInput` to both
+    `products(filters:)` and `productFilterMetadata(filters:)` through Relay.
+  - Added a metadata-backed GET filter form that preserves page size, omits
+    stale `after` cursors, and renders type, use-case, numeric, boolean, and
+    enum controls from GraphQL metadata.
+  - Added active filter summary rows, a `Clear filters` link, filtered empty
+    copy, and filter-preserving first/next pagination links.
+  - Refreshed `assets/schema.graphql` and generated Relay artifacts for
+    `BrowseProductsRouteQuery` and `ProductFilterMetadataQuery`.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 2 expected loader failures because URL filter params were not
+    passed as `filters` variables.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 28 tests, 0 failures after adding filter parsing and metadata preload.
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 4 expected UI failures because the filter form, active summary,
+    filter-preserving pagination links, and filtered empty copy were missing.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 32 tests, 0 failures after rendering metadata-backed controls.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 32 tests, 0 failures.
+  - Final: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 23 tests, 0 failures.
+  - Final: `git diff --check` - completed with exit 0.
+
+## Completed Filter Metadata Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`.
+- Owned paths:
+  - `lib/product_compare/catalog/filter_metadata.ex`
+  - `test/product_compare/catalog/filter_metadata_test.exs`
+  - `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `lib/product_compare/catalog.ex`
+  - `lib/product_compare/catalog/filtering.ex`
+  - `lib/product_compare/specs.ex`
+  - `lib/product_compare/taxonomy.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `mix test test/product_compare/catalog/filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `mix typecheck`
+  - `git diff --check`
+- Exit condition: GraphQL exposes display-safe filter metadata/facet counts for
+  the same filter input accepted by `products(filters:)`.
+- Implemented:
+  - Added `ProductCompare.Catalog.product_filter_metadata/1` backed by a focused
+    `ProductCompare.Catalog.FilterMetadata` query module.
+  - The metadata contract returns display-safe result counts, type and use-case
+    options, numeric ranges, boolean counts, enum option counts, selected state,
+    and disabled zero-count options.
+  - Facet counts and ranges reuse `ProductCompare.Catalog.Filtering` and omit
+    only the facet group being counted, preserving selected-current-claim
+    semantics.
+  - GraphQL now exposes `productFilterMetadata(filters:)` using the existing
+    `ProductFiltersInput` shape and Relay-safe IDs for taxons, attributes, and
+    enum options.
+  - Filter validation now rejects mismatched numeric, boolean, and enum
+    attribute types/options plus numeric filters where `min` exceeds `max`.
+- Completed verification:
+  - RED: `mix test test/product_compare/catalog/filter_metadata_test.exs` failed
+    with `ProductCompare.Catalog.product_filter_metadata/1 is undefined or
+    private`.
+  - RED: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    failed because `productFilterMetadata` was not in the schema and invalid
+    typed filters were accepted by `products(filters:)`.
+  - GREEN: `mix test test/product_compare/catalog/filter_metadata_test.exs` - 1
+    test, 0 failures.
+  - GREEN: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 23 tests, 0 failures.
+  - `mix typecheck` - completed with exit 0.
+  - Final: `mix test test/product_compare/catalog/filter_metadata_test.exs` -
+    1 test, 0 failures.
+  - Final: `mix test test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+    - 2 tests, 0 failures.
+  - Final: `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 21 tests, 0 failures.
+  - Final: `mix typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Verification Commands
 

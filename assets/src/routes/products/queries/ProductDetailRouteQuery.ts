@@ -12,10 +12,18 @@ export const productDetailRouteQuery = graphql`
         name
       }
       currentAttributes {
+        attributeId
         code
         displayName
         dataType
         valueText
+        sortOrder
+        groupLabel
+        isRequired
+        numericValue
+        booleanValue
+        enumOptionId
+        unitSymbol
       }
     }
   }

@@ -5,10 +5,14 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 after compare selection tray verification
+- Last verified: 2026-06-30 after compare offer decision-helper verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
+- Planned in-depth comparison follow-up plans:
+  - `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`
+  - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
+  - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
 ## Batch Status
@@ -21,6 +25,9 @@
 - [x] Task 6: run full demo-slice verification and close queue docs.
 - [x] Task 7: add compare selection remove controls.
 - [x] Task 8: add a ready-state selected-product tray and add-another heading.
+- [x] Task 9: add URL-backed compare matrix modes.
+- [x] Task 10: add typed, ordered, groupable compare attribute metadata.
+- [x] Task 11: add bounded, resilient compare offer decision helpers.
 
 ## Current Usable Product Batch
 
@@ -120,9 +127,117 @@
 
 ## Follow-Up Candidates
 
-- Build an aligned comparison matrix for attributes shared across selected products.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
+
+## Active Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/queries/CompareOfferContextQuery.ts`
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs`
+  - `git diff --check`
+- Exit condition: `/compare` gives users a bounded, resilient decision summary
+  for current price and offer quality alongside the specification matrix.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "offer context|decision summary|keeps specs visible"` - failed as expected with 3 failing tests and 77 skipped because the loader did not expose `offerContexts` and the route did not render `Decision summary`.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "offer context|decision summary|keeps specs visible"` - 3 tests passed, 77 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 80 tests, 0 failures.
+  - `cd assets && bun run relay` - completed with exit 0.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/products/detail.route.test.tsx` - 108 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `mix test test/product_compare_web/graphql/pricing_queries_test.exs` - 8 tests, 0 failures.
+
+## Completed Attribute Metadata Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`.
+- Owned paths:
+  - `priv/repo/migrations/*_add_compare_group_to_taxon_attributes.exs`
+  - `lib/product_compare_schemas/specs/taxon_attribute.ex`
+  - `lib/product_compare/specs.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `assets/src/routes/products/product-attribute-list.tsx`
+  - `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/schema.graphql`
+  - `assets/src/__generated__/**`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `mix ecto.migrate`
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs`
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `mix typecheck`
+  - `git diff --check`
+- Exit condition: comparison rows can be grouped, ordered, and compared using
+  typed metadata instead of display text alone, while preserving the existing
+  `valueText` fallback contract.
+- Completed verification:
+  - RED: `mix test test/product_compare_web/graphql/catalog_queries_test.exs:148` - failed as expected because `ProductAttributeValue` did not expose `attributeId`, `sortOrder`, `groupLabel`, `isRequired`, `numericValue`, `booleanValue`, `enumOptionId`, or `unitSymbol`.
+  - RED: `mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs:84` - failed as expected because `TaxonAttribute.changeset/2` ignored `compare_group_label`.
+  - GREEN: `mix test test/product_compare_web/graphql/catalog_queries_test.exs:148` - 1 test, 0 failures.
+  - GREEN: `mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs:84` - 1 test, 0 failures.
+  - RED: `bun x vitest run test/routes/products/detail.route.test.tsx -t "grouped by compare group label"` - failed as expected because grouped specification headings were not rendered.
+  - RED: `bun x vitest run test/routes/compare/compare.route.test.tsx -t "typed attribute metadata|sort order before display name|typed numeric and boolean"` - failed as expected because loader metadata was stripped, rows used first-product order, and differences used display text only.
+  - GREEN: `bun x vitest run test/routes/products/detail.route.test.tsx -t "grouped by compare group label"` - 1 test passed, 27 skipped.
+  - GREEN: `bun x vitest run test/routes/compare/compare.route.test.tsx -t "typed attribute metadata|sort order before display name|typed numeric and boolean"` - 3 tests passed, 73 skipped.
+  - `mix ecto.migrate` - completed with exit 0; migration `20260630180000` applied.
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs` - 29 tests, 0 failures.
+  - `bun run relay` - completed with exit 0.
+  - `bun x vitest run test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx` - 104 tests, 0 failures.
+  - `bun run typecheck` - completed with exit 0.
+  - `mix typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
+## Completed Matrix Modes Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/loader.ts`
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/src/routes/compare/product-picker.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare` supports URL-backed shared, differences-only, and
+  all-spec matrix modes while preserving save, add, remove, and selected-tray
+  behavior.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare loader parses|compare loader returns an empty state|compare loader rejects more than three"` - failed as expected with 6 failing tests and 61 skipped because loader states did not expose `specMode`.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare loader parses|compare loader returns an empty state|compare loader rejects more than three"` - 6 tests passed, 61 skipped.
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "specification mode|all specification rows|different specification|empty differences"` - failed as expected with 6 failing tests and 67 skipped because compare mode controls, mode-preserving links, and mode-aware matrices were not implemented.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "specification mode|all specification rows|different specification|empty differences"` - 6 tests passed, 67 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 73 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Verification
 

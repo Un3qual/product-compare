@@ -6,6 +6,7 @@ defmodule ProductCompare.Catalog do
   import Ecto.Query
   alias Ecto.Multi
 
+  alias ProductCompare.Catalog.FilterMetadata
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
@@ -27,6 +28,11 @@ defmodule ProductCompare.Catalog do
     Product
     |> Filtering.apply_filters(filters)
     |> Repo.all()
+  end
+
+  @spec product_filter_metadata(map()) :: map()
+  def product_filter_metadata(filters) do
+    FilterMetadata.metadata(filters)
   end
 
   @spec create_brand(map()) :: {:ok, Brand.t()} | {:error, Ecto.Changeset.t()}
