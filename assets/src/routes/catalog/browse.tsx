@@ -18,22 +18,12 @@ import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import { catalogBrowseFirstPagePath, catalogBrowseNextPagePath } from "./paths";
 
 type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
-type ProductFilterMetadata = ProductFilterMetadataQuery["response"]["productFilterMetadata"];
 
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
   enums: []
-};
-
-const EMPTY_FILTER_METADATA: ProductFilterMetadata = {
-  resultCount: 0,
-  typeOptions: [],
-  useCaseOptions: [],
-  numericFilters: [],
-  booleanFilters: [],
-  enumFilters: []
 };
 
 export function BrowseRoute() {
@@ -96,7 +86,7 @@ function BrowseProducts({
     productFilterMetadataQuery,
     metadataQueryRef
   );
-  const filterMetadata = metadataData.productFilterMetadata ?? EMPTY_FILTER_METADATA;
+  const filterMetadata = metadataData.productFilterMetadata;
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = data.products.edges.map(({ node }) => node);
   const currentAfter = query.__relayQuery.variables.after;

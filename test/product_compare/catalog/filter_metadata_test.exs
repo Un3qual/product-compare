@@ -364,6 +364,40 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
                option_by_id(metadata.use_case_options, office_taxon.id)
     end
 
+    test "scopes use-case facet count query to use_case taxonomy product taxons" do
+      moderator = AccountsFixtures.user_fixture()
+      use_case_taxonomy = TaxonomyFixtures.taxonomy_fixture("use_case", "Use Case")
+
+      gaming_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: use_case_taxonomy.id,
+          code: unique_code("filter-meta-query-scope-gaming"),
+          name: "Gaming"
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-query-scope")})
+
+      assert {:ok, _} =
+               Taxonomy.assign_use_case(product.id, gaming_taxon.id, moderator.id, :editorial)
+
+      {_metadata, queries} =
+        capture_select_queries(fn ->
+          Catalog.product_filter_metadata(%{})
+        end)
+
+      use_case_count_query =
+        Enum.find(queries, fn query ->
+          String.contains?(query, ~s(FROM "product_taxons")) and
+            String.contains?(query, ~s(JOIN "taxon_closure")) and
+            String.contains?(query, ~s(GROUP BY))
+        end)
+
+      assert is_binary(use_case_count_query)
+      assert use_case_count_query =~ ~s(JOIN "taxons")
+      assert use_case_count_query =~ ~s(JOIN "taxonomies")
+      assert use_case_count_query =~ ~s(."code" =)
+    end
+
     test "treats multiple selected enum options for one attribute as alternatives" do
       moderator = AccountsFixtures.user_fixture()
 
@@ -401,6 +435,96 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
 
       assert %{count: 1, selected: true, disabled: false} =
                option_by_id(enum_filter.options, ips_option.id)
+    end
+
+    test "merges duplicate selected numeric filters for one attribute into the effective range" do
+      moderator = AccountsFixtures.user_fixture()
+      {refresh_rate_attribute, hz_unit} = numeric_attribute_with_unit_fixture()
+
+      below_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-duplicate-num-below")})
+
+      matching_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-duplicate-num-match")})
+
+      above_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-duplicate-num-above")})
+
+      below_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("90"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(below_product, refresh_rate_attribute, moderator)
+
+      matching_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("144"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(matching_product, refresh_rate_attribute, moderator)
+
+      above_product
+      |> accept_claim!(
+        refresh_rate_attribute,
+        %{value_num: Decimal.new("240"), unit_id: hz_unit.id},
+        moderator
+      )
+      |> select_current_claim!(above_product, refresh_rate_attribute, moderator)
+
+      metadata =
+        Catalog.product_filter_metadata(%{
+          numeric: [
+            %{attribute_id: refresh_rate_attribute.id, min: Decimal.new("100")},
+            %{attribute_id: refresh_rate_attribute.id, max: Decimal.new("200")}
+          ]
+        })
+
+      numeric_filter =
+        Enum.find(metadata.numeric_filters, &(&1.attribute_id == refresh_rate_attribute.id))
+
+      assert metadata.result_count == 1
+      assert Decimal.equal?(numeric_filter.min, Decimal.new("90"))
+      assert Decimal.equal?(numeric_filter.max, Decimal.new("240"))
+      assert Decimal.equal?(numeric_filter.selected_min, Decimal.new("100"))
+      assert Decimal.equal?(numeric_filter.selected_max, Decimal.new("200"))
+    end
+
+    test "does not collapse conflicting duplicate boolean filters into a single selected value" do
+      moderator = AccountsFixtures.user_fixture()
+      hdr_attribute = bool_attribute_fixture()
+
+      true_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-duplicate-bool-true")})
+
+      false_product =
+        SpecsFixtures.product_fixture(%{slug: unique_code("filter-meta-duplicate-bool-false")})
+
+      true_product
+      |> accept_claim!(hdr_attribute, %{value_bool: true}, moderator)
+      |> select_current_claim!(true_product, hdr_attribute, moderator)
+
+      false_product
+      |> accept_claim!(hdr_attribute, %{value_bool: false}, moderator)
+      |> select_current_claim!(false_product, hdr_attribute, moderator)
+
+      metadata =
+        Catalog.product_filter_metadata(%{
+          booleans: [
+            %{attribute_id: hdr_attribute.id, value: true},
+            %{attribute_id: hdr_attribute.id, value: false}
+          ]
+        })
+
+      boolean_filter =
+        Enum.find(metadata.boolean_filters, &(&1.attribute_id == hdr_attribute.id))
+
+      assert metadata.result_count == 0
+      assert boolean_filter.true_count == 1
+      assert boolean_filter.false_count == 1
+      assert is_nil(boolean_filter.selected_value)
     end
 
     test "labels numeric base ranges with the base unit symbol" do
@@ -612,6 +736,46 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
 
   defp option_by_id(options, id) do
     Enum.find(options, &(&1.id == id))
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

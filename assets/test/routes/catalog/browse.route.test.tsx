@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
-import { createOperationDescriptor } from "relay-runtime";
+import { createOperationDescriptor, type Variables } from "relay-runtime";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import browseProductsRouteQueryArtifact, {
   type BrowseProductsRouteQuery
@@ -10,16 +10,16 @@ import browseProductsRouteQueryArtifact, {
 import type { ProductFilterMetadataQuery } from "../../../src/__generated__/ProductFilterMetadataQuery.graphql";
 import {
   createRelayRouterContext,
-  preloadRouteQuery,
+  fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../../src/relay/route-preload";
 import { browseLoader } from "../../../src/routes/catalog/loader";
 import { BrowseRoute } from "../../../src/routes/catalog/browse";
 import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
 
-const { preloadRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
+const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
   vi.hoisted(() => ({
-    preloadRouteQueryMock: vi.fn(),
+    fetchRouteQueryMock: vi.fn(),
     useLoaderDataMock: vi.fn(),
     usePreloadedQueryMock: vi.fn(),
     useRoutePreloadedQueryMock: vi.fn()
@@ -32,7 +32,7 @@ vi.mock("../../../src/relay/route-preload", async () => {
 
   return {
     ...actual,
-    preloadRouteQuery: preloadRouteQueryMock,
+    fetchRouteQuery: fetchRouteQueryMock,
     useRoutePreloadedQuery: useRoutePreloadedQueryMock
   };
 });
@@ -55,7 +55,7 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
+const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -68,6 +68,7 @@ const emptyCatalogFilters = {
   booleans: [],
   enums: []
 };
+type MockRouteQueryRef = { dispose: () => void; variables: Variables };
 
 const buildBrowseLoaderArgs = ({
   environment = createRelayEnvironment(),
@@ -106,16 +107,27 @@ function filterMetadataQueryDescriptorFromVariables(
   };
 }
 
-function mockSuccessfulBrowseLoaderPreloads({
+function fetchedRouteQueryResult<TDescriptor>(
+  descriptor: TDescriptor,
+  dispose = vi.fn()
+) {
+  return {
+    data: {},
+    descriptor,
+    dispose
+  };
+}
+
+function mockSuccessfulBrowseLoaderFetches({
   productDescriptor = browseQueryDescriptor,
   metadataDescriptor = filterMetadataQueryDescriptor
 }: {
   productDescriptor?: ReturnType<typeof browseQueryDescriptorFromVariables>;
   metadataDescriptor?: ReturnType<typeof filterMetadataQueryDescriptorFromVariables>;
 } = {}) {
-  mockedPreloadRouteQuery
-    .mockResolvedValueOnce(productDescriptor)
-    .mockResolvedValueOnce(metadataDescriptor);
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(fetchedRouteQueryResult(productDescriptor))
+    .mockResolvedValueOnce(fetchedRouteQueryResult(metadataDescriptor));
 }
 
 function readyBrowseLoaderData({
@@ -299,6 +311,50 @@ function buildProductFilterMetadataResponse({
   };
 }
 
+function mockBrowseRouteRelayData({
+  loaderData = readyBrowseLoaderData(),
+  metadataData = buildProductFilterMetadataResponse(),
+  metadataQueryRef,
+  productData = buildBrowseProductsResponse({
+    products: [
+      {
+        id: "product-1",
+        name: "Catalog First",
+        slug: "catalog-first"
+      }
+    ]
+  }),
+  productQueryRef
+}: {
+  loaderData?: ReturnType<typeof readyBrowseLoaderData>;
+  metadataData?: ProductFilterMetadataQuery["response"];
+  metadataQueryRef?: MockRouteQueryRef;
+  productData?: BrowseProductsRouteQuery["response"];
+  productQueryRef?: MockRouteQueryRef;
+} = {}) {
+  const resolvedProductQueryRef = productQueryRef ?? {
+    dispose: vi.fn(),
+    variables: loaderData.query.__relayQuery.variables
+  };
+  const resolvedMetadataQueryRef = metadataQueryRef ?? {
+    dispose: vi.fn(),
+    variables: loaderData.metadataQuery.__relayQuery.variables
+  };
+
+  mockedUseLoaderData.mockReturnValue(loaderData);
+  mockedUseRoutePreloadedQuery
+    .mockReturnValueOnce(resolvedProductQueryRef)
+    .mockReturnValueOnce(resolvedMetadataQueryRef);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(productData)
+    .mockReturnValueOnce(metadataData);
+
+  return {
+    metadataQueryRef: resolvedMetadataQueryRef,
+    productQueryRef: resolvedProductQueryRef
+  };
+}
+
 function renderBrowseRouteWithRelayData({
   initialEntries = ["/products"],
   loaderData = readyBrowseLoaderData(),
@@ -318,17 +374,11 @@ function renderBrowseRouteWithRelayData({
   metadataData?: ReturnType<typeof buildProductFilterMetadataResponse>;
   productData?: ReturnType<typeof buildBrowseProductsResponse>;
 } = {}) {
-  const productQueryRef = { dispose: vi.fn(), variables: loaderData.query.__relayQuery.variables };
-  const metadataQueryRef = {
-    dispose: vi.fn(),
-    variables: loaderData.metadataQuery.__relayQuery.variables
-  };
-
-  mockedUseLoaderData.mockReturnValue(loaderData);
-  mockedUseRoutePreloadedQuery
-    .mockReturnValueOnce(productQueryRef)
-    .mockReturnValueOnce(metadataQueryRef);
-  mockedUsePreloadedQuery.mockReturnValueOnce(productData).mockReturnValueOnce(metadataData);
+  mockBrowseRouteRelayData({
+    loaderData,
+    metadataData,
+    productData
+  });
 
   return render(
     <MemoryRouter initialEntries={initialEntries}>
@@ -338,7 +388,7 @@ function renderBrowseRouteWithRelayData({
 }
 
 beforeEach(() => {
-  preloadRouteQueryMock.mockReset();
+  fetchRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
@@ -348,13 +398,13 @@ test("browse loader preloads and returns the Relay browse route query", async ()
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12 },
@@ -366,13 +416,13 @@ test("browse loader defaults to a page size of 12 when first is omitted", async 
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12 },
@@ -388,7 +438,7 @@ test("browse loader preserves supported first values from the URL", async () => 
     after: "cursor-next-page"
   });
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: queryDescriptorWithCursorAndFirst
   });
 
@@ -401,7 +451,7 @@ test("browse loader preserves supported first values from the URL", async () => 
     })
   );
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 24, after: "cursor-next-page" },
@@ -413,13 +463,13 @@ test("browse loader drops oversized first values above 48", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=100");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12 },
@@ -431,13 +481,13 @@ test("browse loader drops first values that are not page-size options", async ()
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=35");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12 },
@@ -449,13 +499,13 @@ test("browse loader drops malformed first values", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?first=12abc");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12 },
@@ -467,13 +517,13 @@ test("browse loader forwards the requested pagination cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products?after=cursor-next-page");
 
-  mockSuccessfulBrowseLoaderPreloads();
+  mockSuccessfulBrowseLoaderFetches();
 
   await expect(
     browseLoader(buildBrowseLoaderArgs({ environment, request }))
   ).resolves.toEqual(readyBrowseLoaderData());
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 12, after: "cursor-next-page" },
@@ -515,7 +565,7 @@ test("browse loader passes URL filters to the product and metadata queries", asy
     ]
   };
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
       first: 12,
       filters: expectedFilters
@@ -527,14 +577,14 @@ test("browse loader passes URL filters to the product and metadata queries", asy
 
   await browseLoader(buildBrowseLoaderArgs({ environment, request }));
 
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
     environment,
     expect.anything(),
@@ -563,7 +613,7 @@ test("browse loader drops blank numeric bounds and malformed boolean filter valu
     ]
   };
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
       first: 12,
       filters: expectedFilters
@@ -575,14 +625,14 @@ test("browse loader drops blank numeric bounds and malformed boolean filter valu
 
   await browseLoader(buildBrowseLoaderArgs({ environment, request }));
 
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
     environment,
     expect.anything(),
@@ -609,7 +659,7 @@ test("browse loader drops malformed decimal numeric bounds", async () => {
     ]
   };
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
       first: 12,
       filters: expectedFilters
@@ -621,14 +671,14 @@ test("browse loader drops malformed decimal numeric bounds", async () => {
 
   await browseLoader(buildBrowseLoaderArgs({ environment, request }));
 
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
     environment,
     expect.anything(),
@@ -662,7 +712,7 @@ test("browse loader keeps backend-accepted decimal numeric bound forms", async (
     ]
   };
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
       first: 12,
       filters: expectedFilters
@@ -674,14 +724,14 @@ test("browse loader keeps backend-accepted decimal numeric bound forms", async (
 
   await browseLoader(buildBrowseLoaderArgs({ environment, request }));
 
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
     environment,
     expect.anything(),
@@ -705,7 +755,7 @@ test("browse loader drops numeric ranges whose minimum is greater than their max
     ]
   };
 
-  mockSuccessfulBrowseLoaderPreloads({
+  mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
       first: 12,
       filters: expectedFilters
@@ -717,14 +767,14 @@ test("browse loader drops numeric ranges whose minimum is greater than their max
 
   await browseLoader(buildBrowseLoaderArgs({ environment, request }));
 
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     1,
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
     2,
     environment,
     expect.anything(),
@@ -738,7 +788,7 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
   const preloadError = new Error("missing operation");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  mockedPreloadRouteQuery.mockImplementation(() => {
+  mockedFetchRouteQuery.mockImplementation(() => {
     throw preloadError;
   });
 
@@ -747,6 +797,56 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
       browseLoader(buildBrowseLoaderArgs({ environment }))
     ).resolves.toEqual({ status: "error" });
 
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
+      error: preloadError
+    });
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("browse loader disposes the product query when metadata preload fails", async () => {
+  const environment = createRelayEnvironment();
+  const preloadError = new Error("metadata preload failed");
+  const disposeProductRouteQuery = vi.fn();
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedFetchRouteQuery
+    .mockResolvedValueOnce(fetchedRouteQueryResult(browseQueryDescriptor, disposeProductRouteQuery))
+    .mockRejectedValueOnce(preloadError);
+
+  try {
+    await expect(
+      browseLoader(buildBrowseLoaderArgs({ environment }))
+    ).resolves.toEqual({ status: "error" });
+
+    expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
+      error: preloadError
+    });
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("browse loader disposes the metadata query when product preload fails", async () => {
+  const environment = createRelayEnvironment();
+  const preloadError = new Error("product preload failed");
+  const disposeMetadataRouteQuery = vi.fn();
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedFetchRouteQuery
+    .mockRejectedValueOnce(preloadError)
+    .mockResolvedValueOnce(
+      fetchedRouteQueryResult(filterMetadataQueryDescriptor, disposeMetadataRouteQuery)
+    );
+
+  try {
+    await expect(
+      browseLoader(buildBrowseLoaderArgs({ environment }))
+    ).resolves.toEqual({ status: "error" });
+
+    expect(disposeMetadataRouteQuery).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError
     });
@@ -766,7 +866,7 @@ test("browse loader rethrows missing Relay router context configuration errors",
       })
     ).rejects.toThrow("Relay environment is missing from the route loader context");
 
-    expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+    expect(mockedFetchRouteQuery).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   } finally {
     consoleErrorSpy.mockRestore();
@@ -778,7 +878,7 @@ test("browse loader rethrows aborted route preloads", async () => {
   const abortError = new DOMException("The operation was aborted.", "AbortError");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  mockedPreloadRouteQuery.mockRejectedValue(abortError);
+  mockedFetchRouteQuery.mockRejectedValue(abortError);
 
   try {
     await expect(
@@ -850,40 +950,40 @@ test("Relay store reads each URL-driven browse page without previous page edges"
 test("renders browse products from the Relay route query", () => {
   const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
-        {
-          node: {
-            id: "product-1",
-            name: "Catalog First",
-            slug: "catalog-first",
-            brand: {
-              id: "brand-1",
-              name: "Acme"
+  mockBrowseRouteRelayData({
+    productQueryRef: queryRef,
+    productData: {
+      products: {
+        edges: [
+          {
+            cursor: "cursor-1",
+            node: {
+              id: "product-1",
+              name: "Catalog First",
+              slug: "catalog-first",
+              brand: {
+                id: "brand-1",
+                name: "Acme"
+              }
+            }
+          },
+          {
+            cursor: "cursor-2",
+            node: {
+              id: "product-2",
+              name: "Catalog Second",
+              slug: "catalog-second",
+              brand: {
+                id: "brand-2",
+                name: "Globex"
+              }
             }
           }
-        },
-        {
-          node: {
-            id: "product-2",
-            name: "Catalog Second",
-            slug: "catalog-second",
-            brand: {
-              id: "brand-2",
-              name: "Globex"
-            }
-          }
+        ],
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "cursor-next-page"
         }
-      ],
-      pageInfo: {
-        hasNextPage: true,
-        endCursor: "cursor-next-page"
       }
     }
   });
@@ -1368,44 +1468,22 @@ test("preserves active filters in pagination links and omits stale cursors from 
 });
 
 test("renders decision actions for each browse product card", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    productData: buildBrowseProductsResponse({
+      products: [
         {
-          node: {
-            id: "product-1",
-            name: "Catalog First",
-            slug: "catalog-first",
-            brand: {
-              id: "brand-1",
-              name: "Acme"
-            }
-          }
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
         },
         {
-          node: {
-            id: "product-2",
-            name: "Catalog Second",
-            slug: "catalog-second",
-            brand: {
-              id: "brand-2",
-              name: "Globex"
-            }
-          }
+          id: "product-2",
+          name: "Catalog Second",
+          slug: "catalog-second"
         }
       ],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
-      }
-    }
+      hasNextPage: false
+    })
   });
 
   render(
@@ -1446,33 +1524,17 @@ test("renders decision actions for each browse product card", () => {
 });
 
 test("encodes reserved characters in browse product decision links", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    productData: buildBrowseProductsResponse({
+      products: [
         {
-          node: {
-            id: "product/reserved?id=1",
-            name: "Reserved Product",
-            slug: "reserved/product?variant=1",
-            brand: {
-              id: "brand-reserved",
-              name: "Reserved Brand"
-            }
-          }
+          id: "product/reserved?id=1",
+          name: "Reserved Product",
+          slug: "reserved/product?variant=1"
         }
       ],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
-      }
-    }
+      hasNextPage: false
+    })
   });
 
   render(
@@ -1500,33 +1562,17 @@ test("encodes reserved characters in browse product decision links", () => {
 });
 
 test("keeps browse product cards named when slugs contain spaces", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    productData: buildBrowseProductsResponse({
+      products: [
         {
-          node: {
-            id: "product-spaced",
-            name: "Spaced Product",
-            slug: "spaced product",
-            brand: {
-              id: "brand-spaced",
-              name: "Spaced Brand"
-            }
-          }
+          id: "product-spaced",
+          name: "Spaced Product",
+          slug: "spaced product"
         }
       ],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
-      }
-    }
+      hasNextPage: false
+    })
   });
 
   render(
@@ -1560,31 +1606,23 @@ test("renders selected page size and preserves first in pagination links", () =>
   };
   const queryRef = { dispose: vi.fn(), variables: { first: 24, after: "cursor-current-page" } };
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: cursorDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    loaderData: readyBrowseLoaderData({
+      pageSize: 24,
+      query: cursorDescriptor
+    }),
+    productQueryRef: queryRef,
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
         {
-          node: {
-            id: "product-page-2",
-            name: "Page Two Product",
-            slug: "page-two-product",
-            brand: {
-              id: "brand-page-2",
-              name: "Page Two Brand"
-            }
-          }
+          id: "product-page-2",
+          name: "Page Two Product",
+          slug: "page-two-product"
         }
-      ],
-      pageInfo: {
-        hasNextPage: true,
-        endCursor: "cursor-next-page"
-      }
-    }
+      ]
+    })
   });
 
   render(
@@ -1618,31 +1656,22 @@ test("renders next and first-page pagination links from the browse query", () =>
   };
   const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "cursor-current-page" } };
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: cursorDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    loaderData: readyBrowseLoaderData({
+      query: cursorDescriptor
+    }),
+    productQueryRef: queryRef,
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
         {
-          node: {
-            id: "product-page-2",
-            name: "Page Two Product",
-            slug: "page-two-product",
-            brand: {
-              id: "brand-page-2",
-              name: "Page Two Brand"
-            }
-          }
+          id: "product-page-2",
+          name: "Page Two Product",
+          slug: "page-two-product"
         }
-      ],
-      pageInfo: {
-        hasNextPage: true,
-        endCursor: "cursor-next-page"
-      }
-    }
+      ]
+    })
   });
 
   render(
@@ -1666,33 +1695,17 @@ test("renders next and first-page pagination links from the browse query", () =>
 });
 
 test("omits browse pagination links on the first page when there is no next page", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [
+  mockBrowseRouteRelayData({
+    productData: buildBrowseProductsResponse({
+      hasNextPage: false,
+      products: [
         {
-          node: {
-            id: "product-final-page",
-            name: "Final Page Product",
-            slug: "final-page-product",
-            brand: {
-              id: "brand-final-page",
-              name: "Final Page Brand"
-            }
-          }
+          id: "product-final-page",
+          name: "Final Page Product",
+          slug: "final-page-product"
         }
-      ],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
-      }
-    }
+      ]
+    })
   });
 
   render(
@@ -1754,6 +1767,24 @@ test("renders a local unavailable state when the Relay route query errors", () =
   }
 });
 
+test("renders a local unavailable state when filter metadata is missing", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  try {
+    renderBrowseRouteWithRelayData({
+      metadataData: {
+        productFilterMetadata: null
+      } as unknown as ReturnType<typeof buildProductFilterMetadataResponse>
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
+    expect(screen.getByText("Please refresh the page or try again later.")).toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: "Filter products" })).not.toBeInTheDocument();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
 test("resets the local unavailable state when fresh loader data arrives", async () => {
   const failedQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
   const recoveredQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
@@ -1783,32 +1814,37 @@ test("resets the local unavailable state when fresh loader data arrives", async 
 
     expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
 
-    mockedUseLoaderData.mockReturnValue({
-      status: "ready",
-      query: retryDescriptor
-    });
-    mockedUseRoutePreloadedQuery.mockReturnValue(recoveredQueryRef);
-    mockedUsePreloadedQuery.mockReturnValue({
-      products: {
-        edges: [
-          {
-            node: {
-              id: "product-recovered",
-              name: "Recovered Product",
-              slug: "recovered-product",
-              brand: {
-                id: "brand-recovered",
-                name: "Recovered Brand"
+    mockedUseLoaderData.mockReturnValue(readyBrowseLoaderData({ query: retryDescriptor }));
+    mockedUseRoutePreloadedQuery
+      .mockReturnValueOnce(recoveredQueryRef)
+      .mockReturnValueOnce({
+        dispose: vi.fn(),
+        variables: filterMetadataQueryDescriptor.__relayQuery.variables
+      });
+    mockedUsePreloadedQuery
+      .mockReturnValueOnce({
+        products: {
+          edges: [
+            {
+              cursor: "cursor-recovered",
+              node: {
+                id: "product-recovered",
+                name: "Recovered Product",
+                slug: "recovered-product",
+                brand: {
+                  id: "brand-recovered",
+                  name: "Recovered Brand"
+                }
               }
             }
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: null
           }
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null
         }
-      }
-    });
+      })
+      .mockReturnValueOnce(buildProductFilterMetadataResponse());
 
     view.rerender(
       <MemoryRouter>
@@ -1835,19 +1871,14 @@ test("resets the local unavailable state when fresh loader data arrives", async 
 });
 
 test("renders an empty-state message when the Relay query returns no products", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
+  mockBrowseRouteRelayData({
+    productData: {
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
       }
     }
   });
@@ -1946,19 +1977,14 @@ test("renders the recoverable empty-state message when a cursor page is empty bu
 });
 
 test("keeps a next-page recovery link when an empty result has a next cursor", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: browseQueryDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [],
-      pageInfo: {
-        hasNextPage: true,
-        endCursor: "cursor-without-products"
+  mockBrowseRouteRelayData({
+    productData: {
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "cursor-without-products"
+        }
       }
     }
   });
@@ -1986,17 +2012,18 @@ test("keeps a first-page recovery link when a cursor page returns no products", 
   };
   const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "stale-cursor" } };
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    query: cursorDescriptor
-  });
-  mockedUseRoutePreloadedQuery.mockReturnValue(queryRef);
-  mockedUsePreloadedQuery.mockReturnValue({
-    products: {
-      edges: [],
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
+  mockBrowseRouteRelayData({
+    loaderData: readyBrowseLoaderData({
+      query: cursorDescriptor
+    }),
+    productQueryRef: queryRef,
+    productData: {
+      products: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
       }
     }
   });

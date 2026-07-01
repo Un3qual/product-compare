@@ -23,12 +23,13 @@ Owned paths:
 - Modify `assets/src/routes/catalog/loader.ts`
 - Modify `assets/src/routes/catalog/browse.tsx`
 - Modify `assets/test/routes/catalog/browse.route.test.tsx`
-- Modify `assets/schema.graphql`
-- Modify `assets/src/__generated__/**` through `bun run relay`
+- Regenerate `assets/src/__generated__/**` through `bun run relay`
 - Modify `docs/work/frontend-catalog-browse.md`
 
 Do not edit backend filter semantics in this row. If GraphQL metadata is missing
 or stale, stop and record the blocker instead of hardcoding IDs.
+No GraphQL schema changes are expected for this frontend-only row; schema work
+belongs to the backend metadata plan.
 
 ## URL Contract
 

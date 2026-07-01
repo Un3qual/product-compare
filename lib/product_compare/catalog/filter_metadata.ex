@@ -13,7 +13,9 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.ProductTaxon
+  alias ProductCompareSchemas.Taxonomy.Taxon
   alias ProductCompareSchemas.Taxonomy.TaxonClosure
+  alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   @type filter_group ::
           nil
@@ -87,7 +89,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp numeric_filters(filters) do
     attributes = Specs.list_filterable_attributes([:numeric])
-    selected_filters = selected_filters_by_attribute(filters, :numeric)
+    selected_filters = selected_numeric_filters_by_attribute(filters)
 
     ranges =
       aggregate_by_selected_attribute(
@@ -122,7 +124,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp boolean_filters(filters) do
     attributes = Specs.list_filterable_attributes([:bool])
-    selected_filters = selected_filters_by_attribute(filters, :booleans)
+    selected_filters = selected_boolean_filters_by_attribute(filters)
 
     counts_by_attribute =
       aggregate_by_selected_attribute(
@@ -209,8 +211,13 @@ defmodule ProductCompare.Catalog.FilterMetadata do
       from product_taxon in ProductTaxon,
         join: product in subquery(filtered_query),
         on: product.id == product_taxon.product_id,
+        join: taxon in Taxon,
+        on: taxon.id == product_taxon.taxon_id,
+        join: taxonomy in TaxonomySchema,
+        on: taxonomy.id == taxon.taxonomy_id,
         join: closure in TaxonClosure,
         on: closure.descendant_id == product_taxon.taxon_id,
+        where: taxonomy.code == "use_case",
         group_by: closure.ancestor_id,
         select: {closure.ancestor_id, count(product_taxon.product_id, :distinct)}
     )
@@ -334,10 +341,71 @@ defmodule ProductCompare.Catalog.FilterMetadata do
     end)
   end
 
-  defp selected_filters_by_attribute(filters, key) do
+  defp selected_numeric_filters_by_attribute(filters) do
     filters
-    |> Map.get(key, [])
-    |> Map.new(fn filter -> {Map.fetch!(filter, :attribute_id), filter} end)
+    |> Map.get(:numeric, [])
+    |> Enum.reduce(%{}, fn filter, acc ->
+      attribute_id = Map.fetch!(filter, :attribute_id)
+      Map.update(acc, attribute_id, filter, &merge_numeric_filters(&1, filter))
+    end)
+  end
+
+  defp selected_boolean_filters_by_attribute(filters) do
+    filters
+    |> Map.get(:booleans, [])
+    |> Enum.reduce(%{}, fn filter, acc ->
+      attribute_id = Map.fetch!(filter, :attribute_id)
+      Map.update(acc, attribute_id, filter, &merge_boolean_filters(&1, filter))
+    end)
+  end
+
+  defp merge_numeric_filters(existing_filter, next_filter) do
+    %{
+      attribute_id: Map.fetch!(existing_filter, :attribute_id),
+      min: merge_numeric_min(Map.get(existing_filter, :min), Map.get(next_filter, :min)),
+      max: merge_numeric_max(Map.get(existing_filter, :max), Map.get(next_filter, :max))
+    }
+  end
+
+  defp merge_numeric_min(nil, value), do: value
+  defp merge_numeric_min(value, nil), do: value
+
+  defp merge_numeric_min(existing_value, next_value) do
+    case Decimal.compare(to_decimal(existing_value), to_decimal(next_value)) do
+      :lt -> next_value
+      _comparison -> existing_value
+    end
+  end
+
+  defp merge_numeric_max(nil, value), do: value
+  defp merge_numeric_max(value, nil), do: value
+
+  defp merge_numeric_max(existing_value, next_value) do
+    case Decimal.compare(to_decimal(existing_value), to_decimal(next_value)) do
+      :gt -> next_value
+      _comparison -> existing_value
+    end
+  end
+
+  defp to_decimal(%Decimal{} = value), do: value
+  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
+  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
+
+  defp merge_boolean_filters(existing_filter, next_filter) do
+    existing_value = Map.get(existing_filter, :value)
+    next_value = Map.get(next_filter, :value)
+
+    cond do
+      is_nil(existing_value) ->
+        existing_filter
+
+      existing_value == next_value ->
+        existing_filter
+
+      true ->
+        %{attribute_id: Map.fetch!(existing_filter, :attribute_id), value: nil}
+    end
   end
 
   defp selected_enum_filters_by_attribute(filters) do

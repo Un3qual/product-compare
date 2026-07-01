@@ -401,6 +401,102 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert count_queries_targeting_table(queries, :taxon_attributes) == 1
     end
 
+    test "products caches base unit symbol lookups for current attribute connection nodes", %{
+      conn: conn
+    } do
+      moderator = AccountsFixtures.user_fixture()
+      dimension = SpecsFixtures.dimension_fixture(%{code: unique_code("batched-length-dim")})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: dimension,
+          code: unique_code("batched-inch"),
+          symbol: "in",
+          multiplier_to_base: Decimal.new("25.4")
+        })
+
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: unique_code("batched-mm"),
+        symbol: "mm",
+        multiplier_to_base: Decimal.new("1"),
+        offset_to_base: Decimal.new("0")
+      })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("batched-size"),
+          display_name: "Screen size",
+          data_type: :numeric,
+          dimension_id: dimension.id
+        })
+
+      first_product = SpecsFixtures.product_fixture(%{slug: "batched-inch-first"})
+      second_product = SpecsFixtures.product_fixture(%{slug: "batched-inch-second"})
+
+      first_product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("27"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(first_product, attribute, moderator)
+
+      second_product
+      |> accept_claim!(
+        attribute,
+        %{value_num: Decimal.new("32"), unit_id: inch_unit.id},
+        moderator
+      )
+      |> select_current_claim!(second_product, attribute, moderator)
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_current_attribute_metadata_query(), %{"first" => 2})
+        end)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => edges
+                 }
+               }
+             } = response
+
+      attribute_code = attribute.code
+
+      assert [
+               %{
+                 "node" => %{
+                   "slug" => "batched-inch-first",
+                   "currentAttributes" => [
+                     %{
+                       "code" => ^attribute_code,
+                       "valueText" => "27 in",
+                       "numericValue" => "685.8",
+                       "unitSymbol" => "mm"
+                     }
+                   ]
+                 }
+               },
+               %{
+                 "node" => %{
+                   "slug" => "batched-inch-second",
+                   "currentAttributes" => [
+                     %{
+                       "code" => ^attribute_code,
+                       "valueText" => "32 in",
+                       "numericValue" => "812.8",
+                       "unitSymbol" => "mm"
+                     }
+                   ]
+                 }
+               }
+             ] = edges
+
+      assert count_base_unit_symbol_queries(queries) == 1
+    end
+
     test "products returns a paginated connection with stable ordering", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{slug: "catalog-first", name: "Catalog First"})
@@ -1065,6 +1161,26 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
+  defp products_current_attribute_metadata_query do
+    """
+    query ProductsCurrentAttributeMetadata($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            currentAttributes {
+              code
+              valueText
+              numericValue
+              unitSymbol
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -1113,6 +1229,12 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
   defp count_queries_targeting_table(queries, table) when is_atom(table) do
     Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
+  end
+
+  defp count_base_unit_symbol_queries(queries) do
+    Enum.count(queries, fn query ->
+      String.contains?(query, ~s(FROM "units")) and String.contains?(query, "CASE WHEN")
+    end)
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

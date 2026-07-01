@@ -6,8 +6,8 @@ import productFilterMetadataQuery, {
   type ProductFilterMetadataQuery
 } from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import {
+  fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  preloadRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
@@ -58,14 +58,14 @@ export async function browseLoader({
   }
 
   try {
-    const [query, metadataQuery] = await Promise.all([
-      preloadRouteQuery<BrowseProductsRouteQuery>(
+    const [queryResult, metadataQueryResult] = await Promise.allSettled([
+      fetchRouteQuery<BrowseProductsRouteQuery>(
         environment,
         browseProductsRouteQuery,
         variables,
         { signal: request.signal }
       ),
-      preloadRouteQuery<ProductFilterMetadataQuery>(
+      fetchRouteQuery<ProductFilterMetadataQuery>(
         environment,
         productFilterMetadataQuery,
         metadataVariables,
@@ -73,12 +73,26 @@ export async function browseLoader({
       )
     ]);
 
+    if (queryResult.status === "rejected") {
+      if (metadataQueryResult.status === "fulfilled") {
+        metadataQueryResult.value.dispose();
+      }
+
+      throw queryResult.reason;
+    }
+
+    if (metadataQueryResult.status === "rejected") {
+      queryResult.value.dispose();
+
+      throw metadataQueryResult.reason;
+    }
+
     return {
       status: "ready",
       filters,
       pageSize,
-      query,
-      metadataQuery
+      query: queryResult.value.descriptor,
+      metadataQuery: metadataQueryResult.value.descriptor
     };
   } catch (error) {
     return recoverRouteLoaderError<BrowseProductsLoaderData>(

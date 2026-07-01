@@ -127,7 +127,6 @@
 
 ## Follow-Up Candidates
 
-- Add offer and price decision-helper rows to `/compare` using bounded active-offer context.
 - Add a persistent compare tray across browse/detail pages.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 

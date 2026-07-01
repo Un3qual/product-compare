@@ -16,14 +16,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
+  @base_unit_symbol_cache_key {__MODULE__, :base_unit_symbols_by_dimension}
+
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, _resolution) do
+    clear_base_unit_symbol_cache()
+
     {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def products(_parent, args, _resolution) do
+    clear_base_unit_symbol_cache()
+
     with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       query = Filtering.apply_filters(Product, filters)
 
@@ -386,9 +392,38 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     base_unit_symbols_by_dimension =
       current_attributes
       |> Enum.flat_map(&non_base_numeric_dimension_id/1)
-      |> Specs.unit_symbols_for_dimensions()
+      |> cached_unit_symbols_for_dimensions()
 
     Enum.map(current_attributes, &format_current_attribute(&1, base_unit_symbols_by_dimension))
+  end
+
+  defp cached_unit_symbols_for_dimensions(dimension_ids) do
+    dimension_ids = Enum.uniq(dimension_ids)
+    cached_symbols = Process.get(@base_unit_symbol_cache_key, %{})
+
+    missing_dimension_ids =
+      Enum.reject(dimension_ids, &Map.has_key?(cached_symbols, &1))
+
+    symbols =
+      case missing_dimension_ids do
+        [] ->
+          cached_symbols
+
+        ids ->
+          fetched_symbols = Specs.unit_symbols_for_dimensions(ids)
+          loaded_symbols = Map.new(ids, &{&1, Map.get(fetched_symbols, &1)})
+          updated_symbols = Map.merge(cached_symbols, loaded_symbols)
+
+          Process.put(@base_unit_symbol_cache_key, updated_symbols)
+          updated_symbols
+      end
+
+    Map.take(symbols, dimension_ids)
+  end
+
+  defp clear_base_unit_symbol_cache do
+    Process.delete(@base_unit_symbol_cache_key)
+    :ok
   end
 
   defp non_base_numeric_dimension_id(%{

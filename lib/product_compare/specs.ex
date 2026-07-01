@@ -21,6 +21,7 @@ defmodule ProductCompare.Specs do
   alias ProductCompareSchemas.Catalog.Product
 
   @max_bigint_id 9_223_372_036_854_775_807
+  defguardp valid_id_guard(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
 
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
@@ -111,17 +112,19 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec convert_to_base(Decimal.t() | number(), pos_integer()) ::
+  @spec convert_to_base(Decimal.t() | number(), term()) ::
           {:ok, Decimal.t()} | {:error, :unit_not_found}
-  def convert_to_base(value_num, unit_id) do
+  def convert_to_base(value_num, unit_id) when valid_id_guard(unit_id) do
     case Repo.get(Unit, unit_id) do
       nil -> {:error, :unit_not_found}
       unit -> {:ok, UnitConversion.to_base(value_num, unit)}
     end
   end
 
-  @spec get_source_artifact(integer()) :: SourceArtifact.t() | nil
-  def get_source_artifact(id) when is_integer(id) and id >= 1 and id <= @max_bigint_id do
+  def convert_to_base(_value_num, _unit_id), do: {:error, :unit_not_found}
+
+  @spec get_source_artifact(term()) :: SourceArtifact.t() | nil
+  def get_source_artifact(id) when valid_id_guard(id) do
     SourceArtifact
     |> Repo.get(id)
     |> Repo.preload(:source)
@@ -228,8 +231,8 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  @spec list_current_attributes_for_product(pos_integer()) :: [map()]
-  def list_current_attributes_for_product(product_id) do
+  @spec list_current_attributes_for_product(term()) :: [map()]
+  def list_current_attributes_for_product(product_id) when valid_id_guard(product_id) do
     product = Repo.get(Product, product_id)
 
     product_id
@@ -237,6 +240,8 @@ defmodule ProductCompare.Specs do
     |> Repo.all()
     |> with_current_attribute_metadata(product && product.primary_type_taxon_id)
   end
+
+  def list_current_attributes_for_product(_product_id), do: []
 
   @spec with_current_attribute_metadata([ProductAttributeCurrent.t()], pos_integer() | nil) :: [
           map()
@@ -262,7 +267,7 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec filterable_attribute_types([pos_integer()]) :: %{pos_integer() => atom()}
+  @spec filterable_attribute_types(term()) :: %{pos_integer() => atom()}
   def filterable_attribute_types(attribute_ids) when is_list(attribute_ids) do
     attribute_ids
     |> normalize_ids()
@@ -281,9 +286,11 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  @spec get_filterable_attribute(pos_integer(), atom()) :: Attribute.t() | nil
+  def filterable_attribute_types(_attribute_ids), do: %{}
+
+  @spec get_filterable_attribute(term(), term()) :: Attribute.t() | nil
   def get_filterable_attribute(attribute_id, data_type)
-      when is_integer(attribute_id) and is_atom(data_type) do
+      when valid_id_guard(attribute_id) and is_atom(data_type) do
     Repo.one(
       from attribute in Attribute,
         where: attribute.id == ^attribute_id,
@@ -292,7 +299,9 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec filterable_enum_option_pairs([pos_integer()], [pos_integer()]) :: MapSet.t()
+  def get_filterable_attribute(_attribute_id, _data_type), do: nil
+
+  @spec filterable_enum_option_pairs(term(), term()) :: MapSet.t()
   def filterable_enum_option_pairs(attribute_ids, enum_option_ids)
       when is_list(attribute_ids) and is_list(enum_option_ids) do
     attribute_ids = normalize_ids(attribute_ids)
@@ -315,9 +324,11 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  @spec enum_option_belongs_to_attribute?(pos_integer(), pos_integer()) :: boolean()
+  def filterable_enum_option_pairs(_attribute_ids, _enum_option_ids), do: MapSet.new()
+
+  @spec enum_option_belongs_to_attribute?(term(), term()) :: boolean()
   def enum_option_belongs_to_attribute?(attribute_id, enum_option_id)
-      when is_integer(attribute_id) and is_integer(enum_option_id) do
+      when valid_id_guard(attribute_id) and valid_id_guard(enum_option_id) do
     Repo.exists?(
       from attribute in Attribute,
         join: enum_option in EnumOption,
@@ -329,8 +340,10 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec list_enum_options_for_set(pos_integer()) :: [EnumOption.t()]
-  def list_enum_options_for_set(enum_set_id) when is_integer(enum_set_id) do
+  def enum_option_belongs_to_attribute?(_attribute_id, _enum_option_id), do: false
+
+  @spec list_enum_options_for_set(term()) :: [EnumOption.t()]
+  def list_enum_options_for_set(enum_set_id) when valid_id_guard(enum_set_id) do
     Repo.all(
       from enum_option in EnumOption,
         where: enum_option.enum_set_id == ^enum_set_id,
@@ -338,7 +351,9 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec list_enum_options_for_sets([pos_integer()]) :: %{pos_integer() => [EnumOption.t()]}
+  def list_enum_options_for_set(_enum_set_id), do: []
+
+  @spec list_enum_options_for_sets(term()) :: %{pos_integer() => [EnumOption.t()]}
   def list_enum_options_for_sets(enum_set_ids) when is_list(enum_set_ids) do
     enum_set_ids
     |> normalize_ids()
@@ -361,17 +376,21 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  @spec unit_symbol_for_dimension(pos_integer() | nil) :: String.t() | nil
+  def list_enum_options_for_sets(_enum_set_ids), do: %{}
+
+  @spec unit_symbol_for_dimension(term()) :: String.t() | nil
   def unit_symbol_for_dimension(nil), do: nil
 
-  def unit_symbol_for_dimension(dimension_id) when is_integer(dimension_id) do
+  def unit_symbol_for_dimension(dimension_id) when valid_id_guard(dimension_id) do
     dimension_id
     |> List.wrap()
     |> unit_symbols_for_dimensions()
     |> Map.get(dimension_id)
   end
 
-  @spec unit_symbols_for_dimensions([pos_integer() | nil]) :: %{pos_integer() => String.t()}
+  def unit_symbol_for_dimension(_dimension_id), do: nil
+
+  @spec unit_symbols_for_dimensions(term()) :: %{pos_integer() => String.t()}
   def unit_symbols_for_dimensions(dimension_ids) when is_list(dimension_ids) do
     dimension_ids
     |> normalize_ids()
@@ -403,6 +422,8 @@ defmodule ProductCompare.Specs do
         end)
     end
   end
+
+  def unit_symbols_for_dimensions(_dimension_ids), do: %{}
 
   @spec with_current_attribute_metadata_from_taxon_attributes(
           [ProductAttributeCurrent.t()],
@@ -450,7 +471,7 @@ defmodule ProductCompare.Specs do
   defp taxon_attribute_metadata_by_attribute_id([], _taxon_id), do: %{}
 
   defp taxon_attribute_metadata_by_attribute_id(attribute_ids, taxon_id)
-       when is_integer(taxon_id) do
+       when valid_id_guard(taxon_id) do
     TaxonAttribute
     |> where([taxon_attribute], taxon_attribute.taxon_id == ^taxon_id)
     |> where([taxon_attribute], taxon_attribute.attribute_id in ^attribute_ids)
@@ -458,11 +479,15 @@ defmodule ProductCompare.Specs do
     |> Map.new(&{&1.attribute_id, &1})
   end
 
+  defp taxon_attribute_metadata_by_attribute_id(_attribute_ids, _taxon_id), do: %{}
+
   defp normalize_ids(ids) do
     ids
-    |> Enum.filter(&is_integer/1)
+    |> Enum.filter(&valid_id?/1)
     |> Enum.uniq()
   end
+
+  defp valid_id?(id), do: is_integer(id) and id > 0 and id <= @max_bigint_id
 
   defp current_attribute_sort_key(%{attribute: attribute, taxon_attribute: taxon_attribute}) do
     sort_order = taxon_attribute && taxon_attribute.sort_order
