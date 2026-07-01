@@ -1188,7 +1188,25 @@ test("clears the descendant filter from submitted data when the product type is 
 });
 
 test("selects descendants by default when choosing a product type", () => {
-  renderBrowseRouteWithRelayData();
+  const metadataData = buildProductFilterMetadataResponse();
+
+  renderBrowseRouteWithRelayData({
+    metadataData: {
+      productFilterMetadata: {
+        ...metadataData.productFilterMetadata,
+        typeOptions: [
+          ...metadataData.productFilterMetadata.typeOptions,
+          {
+            id: "type-monitors",
+            label: "Monitors",
+            count: 3,
+            selected: false,
+            disabled: false
+          }
+        ]
+      }
+    }
+  });
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const productTypeSelect = within(filterForm).getByRole("combobox", {
@@ -1211,6 +1229,12 @@ test("selects descendants by default when choosing a product type", () => {
 
   fireEvent.click(includeDescendantsCheckbox);
 
+  expect(includeDescendantsCheckbox).not.toBeChecked();
+  expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
+
+  fireEvent.change(productTypeSelect, { target: { value: "type-monitors" } });
+
+  expect(productTypeSelect).toHaveValue("type-monitors");
   expect(includeDescendantsCheckbox).not.toBeChecked();
   expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
 });

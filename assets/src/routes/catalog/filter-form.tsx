@@ -37,8 +37,15 @@ export function CatalogFilterForm({
   );
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
+    const hadSelectedTypeTaxon = selectedTypeTaxonId !== "";
+
     setSelectedTypeTaxonId(typeTaxonId);
-    setIncludeTypeDescendants(typeTaxonId !== "");
+
+    if (typeTaxonId === "") {
+      setIncludeTypeDescendants(false);
+    } else if (!hadSelectedTypeTaxon) {
+      setIncludeTypeDescendants(true);
+    }
   }
 
   return (

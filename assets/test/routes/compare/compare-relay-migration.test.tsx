@@ -547,8 +547,13 @@ test("saved comparisons route deletes saved sets through a Relay mutation", asyn
 function buildReadyLoaderData() {
   return {
     status: "ready" as const,
+    specMode: "shared" as const,
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     productQueries: [detailProductQueryDescriptor, secondProductQueryDescriptor],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
+      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
+    },
     products: [
       {
         id: DETAIL_PRODUCT.id,
