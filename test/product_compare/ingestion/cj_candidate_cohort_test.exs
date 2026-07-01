@@ -124,6 +124,84 @@ defmodule ProductCompare.Ingestion.CJCandidateCohortTest do
       assert Enum.map(top_shortlisted_candidates, & &1.fit_score) == [25, 25]
     end
 
+    test "orders same-score same-seen candidates by name feed provider and id tiebreakers" do
+      source = source_fixture()
+      other_source = source_fixture(%{name: "CJ secondary"})
+
+      alpha_advertiser =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Alpha Merchant",
+          feed_name: "Shared Feed",
+          provider_feed_id: "cj-shared-provider"
+        })
+
+      bravo_advertiser =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Bravo Merchant",
+          feed_name: "Shared Feed",
+          provider_feed_id: "cj-shared-provider-bravo"
+        })
+
+      alpha_feed =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Alpha Feed",
+          provider_feed_id: "cj-shared-feed-alpha"
+        })
+
+      beta_feed =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Beta Feed",
+          provider_feed_id: "cj-shared-feed-beta"
+        })
+
+      provider_a =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Same Feed",
+          provider_feed_id: "cj-provider-a"
+        })
+
+      provider_b =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Same Feed",
+          provider_feed_id: "cj-provider-b"
+        })
+
+      lower_id =
+        same_score_candidate_fixture(source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Same Feed",
+          provider_feed_id: "cj-provider-same"
+        })
+
+      higher_id =
+        same_score_candidate_fixture(other_source, %{
+          advertiser_name: "Same Merchant",
+          feed_name: "Same Feed",
+          provider_feed_id: "cj-provider-same"
+        })
+
+      assert %{top_shortlisted_candidates: top_shortlisted_candidates} =
+               CJCandidateCohort.summary(limit: 20)
+
+      assert Enum.map(top_shortlisted_candidates, & &1.id) == [
+               alpha_advertiser.id,
+               bravo_advertiser.id,
+               alpha_feed.id,
+               beta_feed.id,
+               provider_a.id,
+               provider_b.id,
+               lower_id.id,
+               higher_id.id
+             ]
+
+      assert Enum.map(top_shortlisted_candidates, & &1.fit_score) ==
+               List.duplicate(25, 8)
+    end
+
     test "normalizes limit option with default, strings, clamps, and fallback" do
       source = source_fixture()
       merchant_feed_candidate_fixture(source)
@@ -265,5 +343,23 @@ defmodule ProductCompare.Ingestion.CJCandidateCohortTest do
              Ingestion.upsert_merchant_feed_candidate(source, attrs)
 
     candidate
+  end
+
+  defp same_score_candidate_fixture(source, attrs) do
+    merchant_feed_candidate_fixture(
+      source,
+      Map.merge(
+        %{
+          advertiser_country: "US",
+          currency: nil,
+          language: nil,
+          last_seen_at: ~U[2026-06-04 20:00:00Z],
+          product_count: nil,
+          review_status: "shortlisted",
+          source_feed_type: "PRODUCT"
+        },
+        attrs
+      )
+    )
   end
 end

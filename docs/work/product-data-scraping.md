@@ -138,8 +138,9 @@ Parallel workers must add completion evidence only under their assigned heading.
     counts plus highest-fit shortlisted CJ candidates with explicit safe fields
     and derived `fit_score`.
   - Added focused tests for CJ-only counts, CJ-only fit-score ordering,
-    same-score `last_seen_at` tiebreaking, limit normalization, safe returned
-    keys, and read-only behavior.
+    same-score `last_seen_at`, advertiser name, feed name, provider feed id,
+    and id tiebreaking, limit normalization, safe returned keys, and read-only
+    behavior.
   - Red verification:
     initial `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
     stopped before compile because test dependencies had not been fetched in the
@@ -149,6 +150,11 @@ Parallel workers must add completion evidence only under their assigned heading.
   - Green verification:
     `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
     passed with 5 tests, 0 failures.
+  - Review follow-up verification:
+    `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    passed with 6 tests, 0 failures after adding explicit same-score,
+    same-timestamp coverage for advertiser name, feed name, provider feed id,
+    and id tiebreakers.
   - Final gates:
     `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
     completed with exit 0.
