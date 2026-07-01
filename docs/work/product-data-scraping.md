@@ -131,7 +131,32 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Candidate Cohort Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJCandidateCohort.summary/1` as a safe,
+    read-only CJ candidate cohort read model over `merchant_feed_candidates`.
+  - Returned CJ-only pending, shortlisted, dismissed, and total review-status
+    counts plus highest-fit shortlisted CJ candidates with explicit safe fields
+    and derived `fit_score`.
+  - Added focused tests for CJ-only counts, CJ-only fit-score ordering,
+    same-score `last_seen_at` tiebreaking, limit normalization, safe returned
+    keys, and read-only behavior.
+  - Red verification:
+    initial `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    stopped before compile because test dependencies had not been fetched in the
+    worktree; after `mix deps.get`, the same focused test failed with undefined
+    `ProductCompare.Ingestion.CJCandidateCohort.summary/0` and `summary/1`
+    calls, 5 tests, 5 failures.
+  - Green verification:
+    `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    passed with 5 tests, 0 failures.
+  - Final gates:
+    `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    completed with exit 0.
+  - Scope guardrails:
+    no Mix task, GraphQL or browser route, mutation path, CJ network call,
+    scheduler behavior, credential persistence, credential/account/tracking
+    exposure, raw metadata exposure, provider payload exposure, or CSV export
+    path was added.
 
 ### Candidate Market Coverage Evidence
 
