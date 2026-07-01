@@ -2,23 +2,24 @@
 
 ## Snapshot
 
-- Status: retained follow-up
+- Status: live ready parallel batch
 - Priority: P2
 - Source of truth: this file
-- Live queue row: retained behind the 2026-06-29 usable-product queue
+- Live queue row: promoted on 2026-07-01 as the CJ read-model and weekly
+  operator-runbook parallel batch
 - Last verified: 2026-06-27 after source-health focused tests, `mix typecheck`,
   and `git diff --check`
-- Last plan refresh: 2026-06-29 after retaining the CJ read-model and weekly
-  operator runbook candidate pool behind product-facing work
+- Last plan refresh: 2026-07-01 after promoting the CJ read-model and weekly
+  operator runbook candidate pool into the live queue
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Retained implementation plans:
-  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
+- Active implementation plans:
+  - `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
+  - `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
@@ -90,11 +91,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: retained follow-up
-- Batch: CJ read-model and weekly operator runbook ten-batch slice.
+- Status: ready
+- Batch: CJ read-model and weekly operator runbook live parallel batch.
 - Plans:
-  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
+  - `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
+  - `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
@@ -104,9 +105,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 - Decision:
-  - Keep the CJ-only read-model/runbook candidate pool planned, but move it
-    behind the 2026-06-29 usable-product queue so the live dispatch makes
-    product-facing progress first.
+  - Promote the CJ-only read-model/runbook candidate pool now that the
+    usable-product, product filtering/in-depth comparison, and persistent
+    compare tray queues have moved.
 - Parallel slices:
   - Candidate cohort, market coverage, freshness, run health, run throughput,
     import artifact quality, import price quality, merchant identity quality,
@@ -122,12 +123,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     queries, raw metadata, credentials, account ids, tracking params, provider
     error payloads, or secret values.
   - Parallel workers may edit only their row's target paths and the named
-    evidence heading in this lane doc if this retained batch is promoted again.
+    evidence heading in this lane doc.
 
-## Retained Batch Evidence Headings
+## Live Batch Evidence Headings
 
-If this retained batch is promoted again, parallel workers must add completion
-evidence only under their assigned heading.
+Parallel workers must add completion evidence only under their assigned heading.
 
 ### Candidate Cohort Evidence
 
