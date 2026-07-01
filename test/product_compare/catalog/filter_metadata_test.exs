@@ -477,8 +477,9 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
       metadata =
         Catalog.product_filter_metadata(%{
           numeric: [
-            %{attribute_id: refresh_rate_attribute.id, min: Decimal.new("100")},
-            %{attribute_id: refresh_rate_attribute.id, max: Decimal.new("200")}
+            %{attribute_id: refresh_rate_attribute.id, min: "not-a-decimal"},
+            %{attribute_id: refresh_rate_attribute.id, min: "100"},
+            %{attribute_id: refresh_rate_attribute.id, max: "200"}
           ]
         })
 

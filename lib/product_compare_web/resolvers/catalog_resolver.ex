@@ -16,19 +16,18 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
-  @base_unit_symbol_cache_key {__MODULE__, :base_unit_symbols_by_dimension}
+  @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
-  def product(_parent, args, _resolution) do
-    clear_base_unit_symbol_cache()
-
+  def product(_parent, args, resolution) do
+    clear_base_unit_symbol_cache(resolution)
     {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def products(_parent, args, _resolution) do
-    clear_base_unit_symbol_cache()
+  def products(_parent, args, resolution) do
+    clear_base_unit_symbol_cache(resolution)
 
     with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       query = Filtering.apply_filters(Product, filters)
@@ -49,7 +48,11 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   @spec current_attributes(Product.t(), map(), Absinthe.Resolution.t()) ::
           {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def current_attributes(%Product{id: product_id} = product, _args, %{context: %{loader: loader}})
+  def current_attributes(
+        %Product{id: product_id} = product,
+        _args,
+        %{context: %{loader: loader}} = resolution
+      )
       when is_integer(product_id) do
     loader
     |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
@@ -61,7 +64,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
         |> Specs.with_current_attribute_metadata_from_taxon_attributes(
           loaded_taxon_attributes(loader, product.primary_type_taxon_id)
         )
-        |> format_current_attributes()
+        |> format_current_attributes(resolution)
 
       {:ok, attributes}
     end)
@@ -388,18 +391,28 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
 
-  defp format_current_attributes(current_attributes) do
+  defp format_current_attributes(current_attributes, resolution \\ nil) do
     base_unit_symbols_by_dimension =
       current_attributes
       |> Enum.flat_map(&non_base_numeric_dimension_id/1)
-      |> cached_unit_symbols_for_dimensions()
+      |> unit_symbols_for_dimensions(resolution)
 
     Enum.map(current_attributes, &format_current_attribute(&1, base_unit_symbols_by_dimension))
   end
 
-  defp cached_unit_symbols_for_dimensions(dimension_ids) do
+  defp unit_symbols_for_dimensions(dimension_ids, nil),
+    do: Specs.unit_symbols_for_dimensions(dimension_ids)
+
+  defp unit_symbols_for_dimensions(dimension_ids, resolution) do
+    case base_unit_symbol_cache_key(resolution) do
+      nil -> Specs.unit_symbols_for_dimensions(dimension_ids)
+      cache_key -> cached_unit_symbols_for_dimensions(dimension_ids, cache_key)
+    end
+  end
+
+  defp cached_unit_symbols_for_dimensions(dimension_ids, cache_key) do
     dimension_ids = Enum.uniq(dimension_ids)
-    cached_symbols = Process.get(@base_unit_symbol_cache_key, %{})
+    cached_symbols = Process.get(cache_key, %{})
 
     missing_dimension_ids =
       Enum.reject(dimension_ids, &Map.has_key?(cached_symbols, &1))
@@ -414,17 +427,25 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
           loaded_symbols = Map.new(ids, &{&1, Map.get(fetched_symbols, &1)})
           updated_symbols = Map.merge(cached_symbols, loaded_symbols)
 
-          Process.put(@base_unit_symbol_cache_key, updated_symbols)
+          Process.put(cache_key, updated_symbols)
           updated_symbols
       end
 
     Map.take(symbols, dimension_ids)
   end
 
-  defp clear_base_unit_symbol_cache do
-    Process.delete(@base_unit_symbol_cache_key)
+  defp clear_base_unit_symbol_cache(resolution) do
+    if cache_key = base_unit_symbol_cache_key(resolution) do
+      Process.delete(cache_key)
+    end
+
     :ok
   end
+
+  defp base_unit_symbol_cache_key(%{context: context}) when is_map(context),
+    do: Map.get(context, @base_unit_symbol_cache_context_key)
+
+  defp base_unit_symbol_cache_key(_resolution), do: nil
 
   defp non_base_numeric_dimension_id(%{
          attribute: %{data_type: :numeric, dimension_id: dimension_id},

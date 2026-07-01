@@ -31,6 +31,11 @@ defmodule ProductCompareWeb.Schema do
 
   @impl true
   def context(context) do
+    context =
+      Map.put_new_lazy(context, :catalog_base_unit_symbol_cache_key, fn ->
+        {CatalogResolver, :base_unit_symbols_by_dimension, make_ref()}
+      end)
+
     Map.put_new_lazy(context, :loader, fn -> Loader.new(context) end)
   end
 

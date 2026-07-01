@@ -96,8 +96,8 @@ defmodule ProductCompare.Catalog.Filtering do
     Enum.reduce(numeric_filters, query, fn filter, acc ->
       case normalize_integer_id(fetch_value(filter, :attribute_id)) do
         {:ok, attribute_id} ->
-          min = fetch_value(filter, :min)
-          max = fetch_value(filter, :max)
+          min = filter |> fetch_value(:min) |> normalize_numeric_bound()
+          max = filter |> fetch_value(:max) |> normalize_numeric_bound()
 
           base_exists_query =
             from pacur in ProductAttributeCurrent,
@@ -234,4 +234,18 @@ defmodule ProductCompare.Catalog.Filtering do
 
   defp maybe_apply_numeric_max(query, max),
     do: where(query, [_pacur, pac], pac.value_num_base <= ^max)
+
+  defp normalize_numeric_bound(nil), do: nil
+  defp normalize_numeric_bound(%Decimal{} = value), do: value
+  defp normalize_numeric_bound(value) when is_integer(value), do: value
+  defp normalize_numeric_bound(value) when is_float(value), do: Decimal.from_float(value)
+
+  defp normalize_numeric_bound(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, ""} -> decimal
+      _invalid -> nil
+    end
+  end
+
+  defp normalize_numeric_bound(_value), do: nil
 end
