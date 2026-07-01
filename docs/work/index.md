@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-06-30
+Updated: 2026-07-01
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -33,15 +33,39 @@ in-depth comparison plan set is complete. Backend filter metadata/facets and
 frontend compare matrix modes landed in separate commits with focused
 verification.
 
-The full product filtering and in-depth comparison plan set is complete. No
-`ready` row is currently selected. The next coordinator pass should either
-promote the retained CJ read-model/operator batch from `docs/plans/INDEX.md`
-and `docs/work/product-data-scraping.md`, promote persistent compare tray work,
-or choose another product-facing row.
+The full product filtering and in-depth comparison plan set is complete.
+Persistent compare tray work is now selected as the single `ready` row so the
+next worker can improve compare entry continuity across browse and detail pages.
+The retained CJ read-model/operator batch remains follow-up work in
+`docs/plans/INDEX.md` and `docs/work/product-data-scraping.md`.
 
 ## Ready Work
 
-No ready rows are currently selected.
+### Persistent Compare Tray
+
+Status: ready
+Lane: Frontend product comparison demo parity (`docs/work/frontend-product-comparison-demo-parity.md`)
+Active plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
+Next action: Add a persistent compare tray across `/products` and `/products/:slug` so shoppers can see the current URL-backed compare selection, add or remove selected products from browse/detail pages, and continue to `/compare` without losing repeated `slug` param order.
+Owned paths:
+- `assets/src/routes/compare/paths.ts`
+- `assets/src/routes/compare/selection-tray.tsx`
+- `assets/src/routes/compare/index.tsx`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/src/routes/products/detail.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+- `docs/work/frontend-catalog-browse.md`
+- `docs/work/frontend-product-detail.md`
+Verification:
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: Browse and detail pages expose a persistent compare tray/action area that preserves repeated `slug` params in URL order, supports bounded add/remove behavior, links to `/compare`, and records completed evidence in the compare, catalog, and detail lane docs.
 
 ## Just Completed
 
@@ -91,10 +115,6 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 - Product data scraping: provider-neutral source-health read model.
 
 ## Retained Follow-Up Work
-
-The product filtering and in-depth comparison plan set is complete. Persistent
-compare tray work remains a product-facing follow-up candidate if the next pass
-should improve compare entry continuity across browse/detail pages.
 
 The CJ read-model and weekly operator-runbook batch remains retained as the next
 Product data scraping follow-up once the usable-product queue has moved. The

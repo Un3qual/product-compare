@@ -2,11 +2,13 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (persistent compare tray promoted)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-30 after compare offer decision-helper verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
+- Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
+- Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
 - Recently completed usable-product plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`
 - Planned in-depth comparison follow-up plans:
@@ -127,10 +129,37 @@
 
 ## Follow-Up Candidates
 
-- Add a persistent compare tray across browse/detail pages.
+- Persistent compare tray across browse/detail pages has been promoted to the
+  live queue as `Persistent Compare Tray`.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
 ## Active Dispatch
+
+Status: ready
+Lane: Frontend product comparison demo parity (`docs/work/frontend-product-comparison-demo-parity.md`)
+Active plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
+Next action: Add a persistent compare tray across `/products` and `/products/:slug` so shoppers can see the current URL-backed compare selection, add or remove selected products from browse/detail pages, and continue to `/compare` without losing repeated `slug` param order.
+Owned paths:
+- `assets/src/routes/compare/paths.ts`
+- `assets/src/routes/compare/selection-tray.tsx`
+- `assets/src/routes/compare/index.tsx`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/src/routes/products/detail.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+- `docs/work/frontend-catalog-browse.md`
+- `docs/work/frontend-product-detail.md`
+Verification:
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: Browse and detail pages expose a persistent compare tray/action area that preserves repeated `slug` params in URL order, supports bounded add/remove behavior, links to `/compare`, and records completed evidence in the compare, catalog, and detail lane docs.
+
+## Completed Offer Decision Helpers Dispatch
 
 - Status: done.
 - Plan:
