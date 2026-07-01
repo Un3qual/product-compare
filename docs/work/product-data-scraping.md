@@ -323,23 +323,35 @@ Parallel workers must add completion evidence only under their assigned heading.
     - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
   - Feed discovery credential preflight:
     - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
-  - Application cohort report:
-    - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
-  - Product import status:
-    - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
+  - Consolidated CJ candidate reports:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+  - Consolidated CJ run reports/resume:
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
   - Scheduled product import runtime:
     - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
     - `mix test test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
   - Combined final verification:
-    - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+    - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
     - `mix typecheck`
     - `git diff --check`
 
 ## Recent Verification Commands
 
+- CJ Mix task surface cleanup:
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+    - Result: new consolidated run/candidate task tests passed with 9 tests, 0
+      failures.
+  - Current operator tasks are consolidated under
+    `mix product_compare.ingestion.cj_runs` for latest/history/failed/resume
+    run workflows and `mix product_compare.ingestion.cj_candidates` for stale,
+    fit-gap, and application-cohort reports.
 - CJ operator loop batch:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_resume_test.exs test/mix/tasks/product_compare_ingestion_cj_import_history_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_history_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_staleness_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_review_batch_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_markdown_test.exs test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs test/mix/tasks/product_compare_ingestion_cj_failed_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidate_fit_gaps_test.exs`
-    - Result: passed, 67 tests, 0 failures.
+  - Historical focused tests were consolidated into
+    `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs` and
+    `test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_review_batch_test.exs test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs`
+    remains the focused verification for retained operator tasks from that
+    batch.
   - `mix typecheck`
     - Result: completed with exit 0.
   - `git diff --check`
@@ -383,8 +395,10 @@ Parallel workers must add completion evidence only under their assigned heading.
 ### Combined Verification
 
 - Focused runtime/status backend verification:
-  - `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 21 tests, 0 failures.
+  - Historical status-task verification before consolidation passed with 21
+    tests, 0 failures.
+  - Current equivalent after 2026-07-01 task consolidation:
+    `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
 - Focused frontend verification:
   - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates-loader.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
     - Result: passed, 2 files, 22 tests.
@@ -457,44 +471,16 @@ Parallel workers must add completion evidence only under their assigned heading.
 ### Discovery Status
 
 - Completed `docs/plans/2026-06-26-cj-feed-discovery-status-task-implementation-plan.md`.
-- Red verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: failed as expected with 6 failures because
-      `Mix.Tasks.ProductCompare.Ingestion.CjDiscoveryStatus.run/1` was undefined.
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: failed as expected with 1 failure because multiline
-      `latest_error_summary` output split the compact line-oriented report.
-- Green verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 6 tests, 0 failures.
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 6 tests, 0 failures after single-line value formatting.
-- Final verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 6 tests, 0 failures.
-  - `mix typecheck`
-    - Result: passed with no output.
-  - `git diff --check`
-    - Result: passed with no output.
+- Superseded on 2026-07-01 by
+  `mix product_compare.ingestion.cj_runs --surface discovery --report latest`;
+  the standalone discovery-status task was removed during Mix task surface
+  consolidation.
+- Historical verification is retained in the dated plan; current coverage lives
+  in `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`.
 - Follow-up review fix:
   - Sanitized persisted `latest_error_summary` output so the status task never
     echoes raw provider/client error text, live payloads, account IDs, tokens, or
     tracking parameters.
-- Follow-up red verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: failed as expected with 1 failure because
-      `latest_error_summary` included a CJ API token assignment and raw GraphQL/HTTP
-      body text.
-- Follow-up green verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 7 tests, 0 failures.
-- Follow-up final verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_discovery_status_test.exs`
-    - Result: passed, 7 tests, 0 failures.
-  - `mix typecheck`
-    - Result: passed with no output.
-  - `git diff --check`
-    - Result: passed with no output.
 
 ### Feed Candidate Controls
 
@@ -571,14 +557,16 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 - Completed
   `docs/plans/2026-06-26-cj-application-cohort-report-implementation-plan.md`.
-- Added `mix product_compare.ingestion.cj_application_cohort` for read-only,
-  non-secret review of CJ feed candidates by status, country, currency,
-  language, product count, and limit.
+- Superseded on 2026-07-01 by
+  `mix product_compare.ingestion.cj_candidates --report application-cohort`;
+  the standalone application-cohort task was removed during Mix task surface
+  consolidation.
 - The report uses existing candidate rows only; it does not create merchants,
   applications, emails, provider calls, scheduled work, or CSV files.
 - Focused verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs`
-    - Result: passed, 6 tests, 0 failures.
+  - Historical standalone-task verification is retained in the dated plan.
+  - Current coverage:
+    `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
   - `mix typecheck`
     - Result: passed with no output.
   - `git diff --check`
@@ -588,14 +576,17 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 - Completed
   `docs/plans/2026-06-26-cj-product-import-status-task-implementation-plan.md`.
-- Added `mix product_compare.ingestion.cj_import_status` for read-only status
-  reporting over CJ `shoppingProducts` import runs.
+- Superseded on 2026-07-01 by
+  `mix product_compare.ingestion.cj_runs --surface import --report latest`; the
+  standalone import-status task was removed during Mix task surface
+  consolidation.
 - The task reports aggregate run and freshness fields only, ignores
   `shoppingProductFeeds` discovery runs, and redacts non-empty error summaries
   instead of printing raw provider or credential-bearing text.
 - Focused verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs`
-    - Result: passed, 6 tests, 0 failures.
+  - Historical standalone-task verification is retained in the dated plan.
+  - Current coverage:
+    `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
   - `mix typecheck`
     - Result: passed with no output.
   - `git diff --check`
@@ -625,9 +616,10 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Six-Plan Combined Verification
 
-- `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_application_cohort_test.exs test/mix/tasks/product_compare_ingestion_cj_import_status_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
-  - Result: passed, 45 tests, 0 failures after the scheduler background-output
-    follow-up.
+- Historical six-plan verification before consolidation passed with 45 tests, 0
+  failures after the scheduler background-output follow-up.
+- Current equivalent after 2026-07-01 task consolidation:
+  `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
 - `mix typecheck`
   - Result: passed with no output.
 - `git diff --check`
@@ -710,12 +702,13 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Shortlist Export
 
-- Rejected CJ candidate CSV export. The old
-  `mix product_compare.ingestion.cj_candidate_export` command now fails fast
-  instead of rendering candidate data.
+- Rejected CJ candidate CSV export. The old standalone CSV-export command was
+  removed during 2026-07-01 task-surface consolidation; the rejection now lives in
+  `mix product_compare.ingestion.cj_candidates --report export` and in the
+  lane guardrails.
 - Verification:
-  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidate_export_test.exs`
-    - rejection contract tests pass.
+  - `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+    - rejection contract remains covered by the consolidated candidate task.
   - `mix typecheck` - passed.
   - `git diff --check` - passed.
 
