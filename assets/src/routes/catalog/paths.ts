@@ -1,6 +1,11 @@
 import { uniqueCatalogEnumFilters, type CatalogFilters } from "./filters";
 
-export function catalogBrowsePath(filters: CatalogFilters, first: number, after?: string | null) {
+export function catalogBrowsePath(
+  filters: CatalogFilters,
+  first: number,
+  after?: string | null,
+  compareSlugs: readonly string[] = []
+) {
   const params = new URLSearchParams();
 
   params.set("first", String(first));
@@ -10,15 +15,26 @@ export function catalogBrowsePath(filters: CatalogFilters, first: number, after?
     params.set("after", after);
   }
 
+  appendCompareSlugParams(params, compareSlugs);
+
   return `/products?${params.toString()}`;
 }
 
-export function catalogBrowseFirstPagePath(filters: CatalogFilters, first: number) {
-  return catalogBrowsePath(filters, first);
+export function catalogBrowseFirstPagePath(
+  filters: CatalogFilters,
+  first: number,
+  compareSlugs: readonly string[] = []
+) {
+  return catalogBrowsePath(filters, first, null, compareSlugs);
 }
 
-export function catalogBrowseNextPagePath(filters: CatalogFilters, first: number, after: string) {
-  return catalogBrowsePath(filters, first, after);
+export function catalogBrowseNextPagePath(
+  filters: CatalogFilters,
+  first: number,
+  after: string,
+  compareSlugs: readonly string[] = []
+) {
+  return catalogBrowsePath(filters, first, after, compareSlugs);
 }
 
 function appendCatalogFilterParams(params: URLSearchParams, filters: CatalogFilters) {
@@ -66,5 +82,15 @@ function appendBooleanFilterParams(params: URLSearchParams, filters: CatalogFilt
 function appendEnumFilterParams(params: URLSearchParams, filters: CatalogFilters) {
   for (const enumFilter of uniqueCatalogEnumFilters(filters.enums)) {
     params.append(`enum.${enumFilter.attributeId}`, enumFilter.enumOptionId);
+  }
+}
+
+function appendCompareSlugParams(params: URLSearchParams, compareSlugs: readonly string[]) {
+  for (const slug of compareSlugs) {
+    const trimmedSlug = slug.trim();
+
+    if (trimmedSlug.length > 0) {
+      params.append("slug", trimmedSlug);
+    }
   }
 }

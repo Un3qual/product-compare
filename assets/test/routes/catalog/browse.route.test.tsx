@@ -989,7 +989,7 @@ test("renders browse products from the Relay route query", () => {
   });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products"]}>
       <BrowseRoute />
     </MemoryRouter>
   );
@@ -1000,17 +1000,17 @@ test("renders browse products from the Relay route query", () => {
     "href",
     "/products/catalog-first"
   );
-  expect(screen.getByRole("link", { name: "Compare Catalog First" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
     "href",
-    "/compare?slug=catalog-first"
+    "/products?slug=catalog-first"
   );
   expect(screen.getByRole("link", { name: "View offers for Catalog First" })).toHaveAttribute(
     "href",
     "/offers?productId=product-1"
   );
-  expect(screen.getByRole("link", { name: "Compare Catalog Second" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Add Catalog Second to compare" })).toHaveAttribute(
     "href",
-    "/compare?slug=catalog-second"
+    "/products?slug=catalog-second"
   );
   expect(screen.getByRole("link", { name: "View offers for Catalog Second" })).toHaveAttribute(
     "href",
@@ -1150,6 +1150,62 @@ test("renders selected catalog filters with an active summary and clear link", (
     "href",
     "/products?first=24"
   );
+});
+
+test("renders a persistent compare tray on browse and preserves compare slugs through controls", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?first=24&slug=detail-product&slug=second-product"],
+    loaderData: readyBrowseLoaderData({
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24
+      })
+    }),
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        },
+        {
+          id: "product-2",
+          name: "Catalog Second",
+          slug: "catalog-second"
+        }
+      ]
+    })
+  });
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+
+  expect(within(selectionTray).getByText("2 of 3 products selected.")).toBeVisible();
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product"
+  );
+  expect(
+    within(selectionTray).getByRole("link", {
+      name: "Remove detail-product from selection"
+    })
+  ).toHaveAttribute("href", "/products?first=24&slug=second-product");
+  expect(screen.getByRole("link", { name: "Add Catalog Second to compare" })).toHaveAttribute(
+    "href",
+    "/products?first=24&slug=detail-product&slug=second-product&slug=catalog-second"
+  );
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&after=cursor-next-page&slug=detail-product&slug=second-product"
+  );
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  expect(new FormData(filterForm).getAll("slug")).toEqual([
+    "detail-product",
+    "second-product"
+  ]);
 });
 
 test("clears the descendant filter from submitted data when the product type is cleared", () => {
@@ -1539,7 +1595,7 @@ test("renders decision actions for each browse product card", () => {
   });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products"]}>
       <BrowseRoute />
     </MemoryRouter>
   );
@@ -1553,8 +1609,8 @@ test("renders decision actions for each browse product card", () => {
     within(firstProductActions).getByRole("link", { name: "View details for Catalog First" })
   ).toHaveAttribute("href", "/products/catalog-first");
   expect(
-    within(firstProductActions).getByRole("link", { name: "Compare Catalog First" })
-  ).toHaveAttribute("href", "/compare?slug=catalog-first");
+    within(firstProductActions).getByRole("link", { name: "Add Catalog First to compare" })
+  ).toHaveAttribute("href", "/products?slug=catalog-first");
   expect(
     within(firstProductActions).getByRole("link", { name: "View offers for Catalog First" })
   ).toHaveAttribute("href", "/offers?productId=product-1");
@@ -1568,8 +1624,8 @@ test("renders decision actions for each browse product card", () => {
     within(secondProductActions).getByRole("link", { name: "View details for Catalog Second" })
   ).toHaveAttribute("href", "/products/catalog-second");
   expect(
-    within(secondProductActions).getByRole("link", { name: "Compare Catalog Second" })
-  ).toHaveAttribute("href", "/compare?slug=catalog-second");
+    within(secondProductActions).getByRole("link", { name: "Add Catalog Second to compare" })
+  ).toHaveAttribute("href", "/products?slug=catalog-second");
   expect(
     within(secondProductActions).getByRole("link", { name: "View offers for Catalog Second" })
   ).toHaveAttribute("href", "/offers?productId=product-2");
@@ -1590,7 +1646,7 @@ test("encodes reserved characters in browse product decision links", () => {
   });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products"]}>
       <BrowseRoute />
     </MemoryRouter>
   );
@@ -1606,8 +1662,8 @@ test("encodes reserved characters in browse product decision links", () => {
     within(productActions).getByRole("link", { name: "View details for Reserved Product" })
   ).toHaveAttribute("href", "/products/reserved%2Fproduct%3Fvariant%3D1");
   expect(
-    within(productActions).getByRole("link", { name: "Compare Reserved Product" })
-  ).toHaveAttribute("href", "/compare?slug=reserved%2Fproduct%3Fvariant%3D1");
+    within(productActions).getByRole("link", { name: "Add Reserved Product to compare" })
+  ).toHaveAttribute("href", "/products?slug=reserved%2Fproduct%3Fvariant%3D1");
   expect(
     within(productActions).getByRole("link", { name: "View offers for Reserved Product" })
   ).toHaveAttribute("href", "/offers?productId=product%2Freserved%3Fid%3D1");
@@ -1628,7 +1684,7 @@ test("keeps browse product cards named when slugs contain spaces", () => {
   });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products"]}>
       <BrowseRoute />
     </MemoryRouter>
   );
@@ -1642,8 +1698,8 @@ test("keeps browse product cards named when slugs contain spaces", () => {
     within(productActions).getByRole("link", { name: "View details for Spaced Product" })
   ).toHaveAttribute("href", "/products/spaced%20product");
   expect(
-    within(productActions).getByRole("link", { name: "Compare Spaced Product" })
-  ).toHaveAttribute("href", "/compare?slug=spaced%20product");
+    within(productActions).getByRole("link", { name: "Add Spaced Product to compare" })
+  ).toHaveAttribute("href", "/products?slug=spaced+product");
   expect(
     within(productActions).getByRole("link", { name: "View offers for Spaced Product" })
   ).toHaveAttribute("href", "/offers?productId=product-spaced");
@@ -1899,7 +1955,7 @@ test("resets the local unavailable state when fresh loader data arrives", async 
       .mockReturnValueOnce(buildProductFilterMetadataResponse());
 
     view.rerender(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/products"]}>
         <BrowseRoute />
       </MemoryRouter>
     );
@@ -1909,9 +1965,9 @@ test("resets the local unavailable state when fresh loader data arrives", async 
       "href",
       "/products/recovered-product"
     );
-    expect(screen.getByRole("link", { name: "Compare Recovered Product" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Add Recovered Product to compare" })).toHaveAttribute(
       "href",
-      "/compare?slug=recovered-product"
+      "/products?slug=recovered-product"
     );
     expect(screen.getByRole("link", { name: "View offers for Recovered Product" })).toHaveAttribute(
       "href",
