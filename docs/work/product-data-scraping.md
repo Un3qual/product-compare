@@ -135,7 +135,24 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Candidate Market Coverage Evidence
 
-- Pending.
+- Added `ProductCompare.Ingestion.CJCandidateMarketCoverage` and
+  `test/product_compare/ingestion/cj_candidate_market_coverage_test.exs` as a
+  read-only CJ market coverage aggregate over persisted merchant feed
+  candidates.
+- Red verification:
+  `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
+  failed with undefined `ProductCompare.Ingestion.CJCandidateMarketCoverage.summary/1`
+  before the production module existed.
+- Green focused verification:
+  `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
+  passed with 3 tests, 0 failures.
+- Final gates:
+  `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+  completed with exit 0.
+- Guardrail evidence:
+  no Mix task, GraphQL or browser route, mutation, network call, file write,
+  raw metadata exposure, secret/account/tracking exposure, scheduler behavior,
+  or CSV export path was added.
 
 ### Candidate Freshness Evidence
 
