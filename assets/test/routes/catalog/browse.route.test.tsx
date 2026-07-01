@@ -13,6 +13,7 @@ import {
   fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../../src/relay/route-preload";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { browseLoader } from "../../../src/routes/catalog/loader";
 import { BrowseRoute } from "../../../src/routes/catalog/browse";
 import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
@@ -1180,8 +1181,10 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
   });
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
 
-  expect(within(selectionTray).getByText("2 of 3 products selected.")).toBeVisible();
+  expect(selectionCount).toHaveTextContent(`2 of ${MAX_COMPARE_PRODUCTS} products selected.`);
+  expect(selectionCount).toHaveAttribute("aria-live", "polite");
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product"
@@ -1206,6 +1209,54 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
     "detail-product",
     "second-product"
   ]);
+});
+
+test("preserves in-progress filter control state when compare selection changes", () => {
+  const loaderData = readyBrowseLoaderData();
+  const metadataData = buildProductFilterMetadataResponse();
+  const productData = buildBrowseProductsResponse({
+    products: [
+      {
+        id: "product-1",
+        name: "Catalog First",
+        slug: "catalog-first"
+      }
+    ]
+  });
+
+  renderBrowseRouteWithRelayData({
+    loaderData,
+    metadataData,
+    productData
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" });
+  const typeSelect = within(filterForm).getByRole("combobox", { name: "Product type" });
+
+  fireEvent.change(typeSelect, { target: { value: "type-laptops" } });
+  mockedUseRoutePreloadedQuery
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: loaderData.query.__relayQuery.variables
+    })
+    .mockReturnValueOnce({
+      dispose: vi.fn(),
+      variables: loaderData.metadataQuery.__relayQuery.variables
+    });
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(productData)
+    .mockReturnValueOnce(metadataData);
+  fireEvent.click(screen.getByRole("link", { name: "Add Catalog First to compare" }));
+
+  const updatedFilterForm = screen.getByRole(
+    "form",
+    { name: "Filter products" }
+  ) as HTMLFormElement;
+
+  expect(within(updatedFilterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
+    "type-laptops"
+  );
+  expect(new FormData(updatedFilterForm).getAll("slug")).toEqual(["catalog-first"]);
 });
 
 test("clears the descendant filter from submitted data when the product type is cleared", () => {

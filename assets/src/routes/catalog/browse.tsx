@@ -104,11 +104,7 @@ function BrowseProducts({
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
   const hasFilteredEmptyState = hasActiveFilters && filterMetadata.resultCount === 0;
-  const filterFormKey = catalogBrowseFirstPagePath(
-    activeFilters,
-    currentPageSize,
-    selectedCompareSlugs
-  );
+  const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
       ? catalogBrowseNextPagePath(

@@ -76,8 +76,8 @@ export function CatalogFilterForm({
 function CompareSlugFields({ compareSlugs }: { compareSlugs: readonly string[] }) {
   return (
     <>
-      {compareSlugs.map((slug, index) => (
-        <input key={`${slug}-${index}`} type="hidden" name="slug" value={slug} />
+      {compareSlugs.map((slug) => (
+        <input key={slug} type="hidden" name="slug" value={slug} />
       ))}
     </>
   );

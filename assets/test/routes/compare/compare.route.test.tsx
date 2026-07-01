@@ -11,7 +11,11 @@ import {
 } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import { compareLoader, type CompareRouteLoaderData } from "../../../src/routes/compare/loader";
+import {
+  compareLoader,
+  MAX_COMPARE_PRODUCTS,
+  type CompareRouteLoaderData
+} from "../../../src/routes/compare/loader";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
@@ -453,10 +457,10 @@ test("compare path helpers normalize selected slugs and rewrite current-route qu
     )
   ).toEqual(["detail-product", "second-product"]);
   expect(
-    selectedCompareSlugsAfterAdding(["detail-product"], "second-product", 3)
+    selectedCompareSlugsAfterAdding(["detail-product"], "second-product", MAX_COMPARE_PRODUCTS)
   ).toEqual(["detail-product", "second-product"]);
   expect(
-    selectedCompareSlugsAfterAdding(["detail-product"], "detail-product", 3)
+    selectedCompareSlugsAfterAdding(["detail-product"], "detail-product", MAX_COMPARE_PRODUCTS)
   ).toEqual(["detail-product"]);
   expect(
     buildCurrentRoutePathWithCompareSlugs(
@@ -1494,7 +1498,9 @@ test("renders a limit message when more than three products are selected", () =>
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-  expect(screen.getByText("You can compare up to 3 products.")).toBeInTheDocument();
+  expect(
+    screen.getByText(`You can compare up to ${MAX_COMPARE_PRODUCTS} products.`)
+  ).toBeInTheDocument();
 });
 
 test("renders compared product cards returned by the route loader", () => {
@@ -2465,8 +2471,12 @@ test("ready compare page renders a selected-product tray with ordered remove lin
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
   const selectedProducts = within(selectionTray).getAllByRole("listitem");
+  const selectionCount = within(selectionTray).getByRole("status");
 
-  expect(within(selectionTray).getByText("3 of 3 products selected.")).toBeVisible();
+  expect(selectionCount).toHaveTextContent(
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+  );
+  expect(selectionCount).toHaveAttribute("aria-live", "polite");
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product&slug=third-product"
@@ -2504,8 +2514,9 @@ test("ready compare page handles an empty selected-product tray defensively", ()
   renderCompareRoute();
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
 
-  expect(within(selectionTray).getByText("0 of 3 products selected.")).toBeVisible();
+  expect(selectionCount).toHaveTextContent(`0 of ${MAX_COMPARE_PRODUCTS} products selected.`);
   expect(within(selectionTray).queryAllByRole("listitem")).toHaveLength(0);
   expect(
     within(selectionTray).queryByRole("link", { name: /Remove .+ from selection/ })
@@ -2701,7 +2712,9 @@ test("compare route saves the current ready-state selection", async () => {
     );
   });
 
-  expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
+  await waitFor(() => {
+    expect(getSaveFeedbackStatus()).toHaveTextContent("Comparison saved.");
+  });
 });
 
 test("compare route clears stale save feedback when selected products change", async () => {
@@ -2726,7 +2739,7 @@ test("compare route clears stale save feedback when selected products change", a
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
+    expect(getSaveFeedbackStatus()).toHaveTextContent("Comparison saved.");
   });
 
   mockedUseLoaderData.mockReturnValue({
@@ -2743,7 +2756,7 @@ test("compare route clears stale save feedback when selected products change", a
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("status")).toHaveTextContent("");
+  expect(getSaveFeedbackStatus()).toHaveTextContent("");
 
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
@@ -2753,7 +2766,7 @@ test("compare route clears stale save feedback when selected products change", a
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("status")).toHaveTextContent("");
+  expect(getSaveFeedbackStatus()).toHaveTextContent("");
 });
 
 test("compare route reports a fallback error when the save commit throws synchronously", async () => {
@@ -3559,6 +3572,10 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     { signal: request.signal }
   );
 });
+
+function getSaveFeedbackStatus() {
+  return screen.getAllByRole("status")[0];
+}
 
 function renderCompareRoute() {
   return render(

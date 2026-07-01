@@ -9,6 +9,7 @@ import {
   preloadRouteQuery,
   useRoutePreloadedQuery
 } from "../../../src/relay/route-preload";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
 import { ProductDetailRoute } from "../../../src/routes/products/detail";
 
@@ -1193,8 +1194,10 @@ test("renders a persistent compare tray on product detail and preserves compare 
   );
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
 
-  expect(within(selectionTray).getByText("1 of 3 products selected.")).toBeVisible();
+  expect(selectionCount).toHaveTextContent(`1 of ${MAX_COMPARE_PRODUCTS} products selected.`);
+  expect(selectionCount).toHaveAttribute("aria-live", "polite");
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
     "/compare?slug=second-product"
