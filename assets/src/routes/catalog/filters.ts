@@ -70,6 +70,13 @@ interface DecimalFilterValueParts {
   fraction: string;
 }
 
+interface ParsedDecimalFilterValue {
+  sign: -1 | 1;
+  rawInteger: string;
+  rawFraction: string;
+  exponent: number;
+}
+
 export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   const numericFilters = new Map<string, CatalogNumericFilter>();
   const booleanFilters = new Map<string, CatalogBooleanFilter>();
@@ -254,6 +261,22 @@ function compareDecimalFilterValues(left: string, right: string) {
 }
 
 function decimalFilterValueParts(value: string): DecimalFilterValueParts | null {
+  const parsed = parseDecimalFilterValue(value);
+
+  if (!parsed) {
+    return null;
+  }
+
+  const digits = significantDecimalDigits(parsed);
+
+  if (digits === "") {
+    return { sign: 1, integer: "0", fraction: "" };
+  }
+
+  return normalizeDecimalParts(parsed.sign, digits, parsed.rawInteger.length + parsed.exponent);
+}
+
+function parseDecimalFilterValue(value: string): ParsedDecimalFilterValue | null {
   if (!DECIMAL_FILTER_VALUE_PATTERN.test(value)) {
     return null;
   }
@@ -268,31 +291,32 @@ function decimalFilterValueParts(value: string): DecimalFilterValueParts | null 
   }
 
   const [rawInteger, rawFraction = ""] = coefficient.split(".");
-  const digits = `${rawInteger}${rawFraction}`.replace(/^0+/, "");
 
-  if (digits === "") {
-    return { sign: 1, integer: "0", fraction: "" };
-  }
+  return { sign, rawInteger, rawFraction, exponent };
+}
 
-  const decimalPoint = rawInteger.length + exponent;
-  let integer: string;
-  let fraction: string;
+function significantDecimalDigits(value: ParsedDecimalFilterValue) {
+  return `${value.rawInteger}${value.rawFraction}`.replace(/^0+/, "");
+}
 
-  if (decimalPoint <= 0) {
-    integer = "0";
-    fraction = `${"0".repeat(Math.abs(decimalPoint))}${digits}`;
-  } else if (decimalPoint >= digits.length) {
-    integer = `${digits}${"0".repeat(decimalPoint - digits.length)}`;
-    fraction = "";
-  } else {
-    integer = digits.slice(0, decimalPoint);
-    fraction = digits.slice(decimalPoint);
-  }
-
-  integer = integer.replace(/^0+/, "") || "0";
-  fraction = fraction.replace(/0+$/, "");
+function normalizeDecimalParts(sign: -1 | 1, digits: string, decimalPoint: number) {
+  const [rawInteger, rawFraction] = splitDecimalDigits(digits, decimalPoint);
+  const integer = rawInteger.replace(/^0+/, "") || "0";
+  const fraction = rawFraction.replace(/0+$/, "");
 
   return { sign, integer, fraction };
+}
+
+function splitDecimalDigits(digits: string, decimalPoint: number) {
+  if (decimalPoint <= 0) {
+    return ["0", `${"0".repeat(Math.abs(decimalPoint))}${digits}`];
+  }
+
+  if (decimalPoint >= digits.length) {
+    return [`${digits}${"0".repeat(decimalPoint - digits.length)}`, ""];
+  }
+
+  return [digits.slice(0, decimalPoint), digits.slice(decimalPoint)];
 }
 
 function compareAbsoluteDecimalFilterValues(
