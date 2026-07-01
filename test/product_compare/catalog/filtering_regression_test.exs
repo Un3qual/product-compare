@@ -105,9 +105,17 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       moderator = AccountsFixtures.user_fixture()
       use_case_taxonomy = TaxonomyFixtures.taxonomy_fixture("use_case", "Use Case")
 
+      desktop_setup_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: use_case_taxonomy.id,
+          code: unique_code("use-case-desktop-setup"),
+          name: "Desktop Setup"
+        })
+
       gaming_taxon =
         TaxonomyFixtures.taxon_fixture(%{
           taxonomy_id: use_case_taxonomy.id,
+          parent_id: desktop_setup_taxon.id,
           code: unique_code("use-case-gaming"),
           name: "Gaming"
         })
@@ -142,6 +150,10 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       results = Catalog.filter_products(%{use_case_taxon_ids: [gaming_taxon.id]})
 
       assert Enum.map(results, & &1.id) == [gaming_product.id]
+
+      parent_results = Catalog.filter_products(%{use_case_taxon_ids: [desktop_setup_taxon.id]})
+
+      assert Enum.map(parent_results, & &1.id) == [gaming_product.id]
     end
   end
 

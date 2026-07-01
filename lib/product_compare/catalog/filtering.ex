@@ -199,9 +199,11 @@ defmodule ProductCompare.Catalog.Filtering do
             on: t.id == pt.taxon_id,
             join: tx in Taxonomy,
             on: tx.id == t.taxonomy_id,
+            join: closure in TaxonClosure,
+            on: closure.descendant_id == pt.taxon_id,
             where: pt.product_id == parent_as(:product).id,
             where: tx.code == "use_case",
-            where: pt.taxon_id in ^ids
+            where: closure.ancestor_id in ^ids
 
         where(query, [product: _p], exists(exists_query))
     end
