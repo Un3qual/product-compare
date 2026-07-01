@@ -42,6 +42,37 @@ defmodule ProductCompare.Ingestion do
     :updated_at
   ]
 
+  @merchant_feed_candidate_fit_score_fragment """
+  (CASE
+    WHEN ? >= 10000 THEN 50
+    WHEN ? >= 1000 THEN 35
+    WHEN ? >= 100 THEN 20
+    WHEN ? > 0 THEN 10
+    ELSE 0
+  END) +
+  (CASE WHEN upper(coalesce(?, '')) = 'US' THEN 20 ELSE 0 END) +
+  (CASE WHEN upper(coalesce(?, '')) = 'USD' THEN 15 ELSE 0 END) +
+  (CASE WHEN upper(coalesce(?, '')) = 'EN' THEN 10 ELSE 0 END) +
+  (CASE WHEN coalesce(?, '') != '' THEN 5 ELSE 0 END)
+  """
+
+  @doc false
+  defmacro merchant_feed_candidate_fit_score(candidate) do
+    quote do
+      fragment(
+        unquote(@merchant_feed_candidate_fit_score_fragment),
+        unquote(candidate).product_count,
+        unquote(candidate).product_count,
+        unquote(candidate).product_count,
+        unquote(candidate).product_count,
+        unquote(candidate).advertiser_country,
+        unquote(candidate).currency,
+        unquote(candidate).language,
+        unquote(candidate).source_feed_type
+      )
+    end
+  end
+
   @spec start_import_run(map()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
   def start_import_run(attrs) do
     attrs =
@@ -138,30 +169,7 @@ defmodule ProductCompare.Ingestion do
 
   defp order_merchant_feed_candidates(query, :fit_score_desc) do
     order_by(query, [candidate],
-      desc:
-        fragment(
-          """
-          (CASE
-            WHEN ? >= 10000 THEN 50
-            WHEN ? >= 1000 THEN 35
-            WHEN ? >= 100 THEN 20
-            WHEN ? > 0 THEN 10
-            ELSE 0
-          END) +
-          (CASE WHEN upper(coalesce(?, '')) = 'US' THEN 20 ELSE 0 END) +
-          (CASE WHEN upper(coalesce(?, '')) = 'USD' THEN 15 ELSE 0 END) +
-          (CASE WHEN upper(coalesce(?, '')) = 'EN' THEN 10 ELSE 0 END) +
-          (CASE WHEN coalesce(?, '') != '' THEN 5 ELSE 0 END)
-          """,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.advertiser_country,
-          candidate.currency,
-          candidate.language,
-          candidate.source_feed_type
-        ),
+      desc: merchant_feed_candidate_fit_score(candidate),
       desc: candidate.last_seen_at,
       asc: candidate.advertiser_name,
       asc: candidate.feed_name,

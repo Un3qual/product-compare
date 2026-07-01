@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
   """
 
   import Ecto.Query
+  import ProductCompare.Ingestion, only: [merchant_feed_candidate_fit_score: 1]
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -17,19 +18,6 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
   @default_limit 10
   @min_limit 1
   @max_limit 50
-  @fit_score_fragment """
-  (CASE
-    WHEN ? >= 10000 THEN 50
-    WHEN ? >= 1000 THEN 35
-    WHEN ? >= 100 THEN 20
-    WHEN ? > 0 THEN 10
-    ELSE 0
-  END) +
-  (CASE WHEN upper(coalesce(?, '')) = 'US' THEN 20 ELSE 0 END) +
-  (CASE WHEN upper(coalesce(?, '')) = 'USD' THEN 15 ELSE 0 END) +
-  (CASE WHEN upper(coalesce(?, '')) = 'EN' THEN 10 ELSE 0 END) +
-  (CASE WHEN coalesce(?, '') != '' THEN 5 ELSE 0 END)
-  """
 
   @type review_status_counts :: %{
           pending: non_neg_integer(),
@@ -103,18 +91,7 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
       candidate.provider == @provider and candidate.review_status == "shortlisted"
     )
     |> order_by([candidate],
-      desc:
-        fragment(
-          @fit_score_fragment,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.advertiser_country,
-          candidate.currency,
-          candidate.language,
-          candidate.source_feed_type
-        ),
+      desc: merchant_feed_candidate_fit_score(candidate),
       desc: candidate.last_seen_at,
       asc: candidate.advertiser_name,
       asc: candidate.feed_name,
@@ -141,18 +118,7 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
       last_seen_at: candidate.last_seen_at,
       inserted_at: candidate.inserted_at,
       updated_at: candidate.updated_at,
-      fit_score:
-        fragment(
-          @fit_score_fragment,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.product_count,
-          candidate.advertiser_country,
-          candidate.currency,
-          candidate.language,
-          candidate.source_feed_type
-        )
+      fit_score: merchant_feed_candidate_fit_score(candidate)
     })
     |> Repo.all()
   end

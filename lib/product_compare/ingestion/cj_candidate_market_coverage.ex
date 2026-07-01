@@ -71,6 +71,11 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
     review_status
   end
 
+  defp review_status_filter(%{"review_status" => review_status})
+       when review_status in @review_statuses do
+    review_status
+  end
+
   defp review_status_filter(_opts), do: nil
 
   defp totals(base_query) do

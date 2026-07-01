@@ -149,6 +149,32 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverageTest do
              } = CJCandidateMarketCoverage.summary(review_status: "dismissed")
     end
 
+    test "applies supported review status filters from string-keyed map options" do
+      source = source_fixture()
+
+      merchant_feed_candidate_fixture(source, %{
+        provider_feed_id: "cj-pending",
+        review_status: "pending"
+      })
+
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_country: "CA",
+        provider_feed_id: "cj-shortlisted",
+        review_status: "shortlisted"
+      })
+
+      assert %{
+               review_status_filter: "pending",
+               total_candidate_count: 1,
+               shortlisted_candidate_count: 0,
+               dimensions: %{
+                 advertiser_country: [
+                   %{bucket: "US", candidate_count: 1, shortlisted_candidate_count: 0}
+                 ]
+               }
+             } = CJCandidateMarketCoverage.summary(%{"review_status" => "pending"})
+    end
+
     test "ignores unsupported review status filters" do
       source = source_fixture()
 
