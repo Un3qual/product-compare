@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done
+- Status: done (persistent compare tray detail support)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 (working tree)
+- Last verified: 2026-07-01 after persistent compare tray verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -44,6 +44,32 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Persistent Compare Tray Detail Support
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Implemented:
+  - `/products/:slug` now parses repeated `slug` params from the URL and
+    renders the shared selected-products tray near the product summary.
+  - The detail compare action now adds the current product in place while
+    preserving route-local `offersAfter` params.
+  - Tray remove links rewrite only compare slugs and preserve detail route
+    params; removing the last selected product returns to the clean detail URL.
+  - `Browse products` return links preserve selected compare slugs as
+    repeated `slug` params on `/products`.
+- Verification:
+  - RED: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx -t "persistent compare tray|adds the current detail product|preserves compare slugs|Compare this product|Add this product"` - failed as expected with 3 failed tests and 28 skipped because the detail route still had the old direct compare link and no shared tray.
+  - GREEN: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx -t "persistent compare tray|adds the current detail product|preserves compare slugs|Compare this product|Add this product"` - 3 passed, 28 skipped.
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx` - 31 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx` - 163 tests, 0 failures.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
 ## Current Cross-Project Batch
 
 - Status: done.
@@ -78,6 +104,9 @@
 - `assets/src/routes/products/detail.tsx` now renders a `Next steps`
   decision block near the product summary with compare, offer-review, and
   browse-product links without changing Relay query fields.
+- `assets/src/routes/products/detail.tsx` now renders URL-backed compare
+  selections in the shared tray, adds the current product in place while
+  preserving `offersAfter`, and preserves compare slugs on browse-return links.
 - `assets/test/routes/products/detail.route.test.tsx` now covers the decision
   block destinations, including encoded product slugs and product IDs, while
   preserving active-offer pagination coverage.

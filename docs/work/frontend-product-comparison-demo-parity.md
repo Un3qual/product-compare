@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready (persistent compare tray promoted)
+- Status: done (persistent compare tray implemented)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-30 after compare offer decision-helper verification
+- Last verified: 2026-07-01 after persistent compare tray verification
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -30,6 +30,46 @@
 - [x] Task 9: add URL-backed compare matrix modes.
 - [x] Task 10: add typed, ordered, groupable compare attribute metadata.
 - [x] Task 11: add bounded, resilient compare offer decision helpers.
+- [x] Task 12: add a persistent URL-backed compare tray across compare,
+  browse, and product detail routes.
+
+## Completed Persistent Compare Tray Dispatch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/selection-tray.tsx`
+  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/filter-form.tsx`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+  - `docs/work/frontend-catalog-browse.md`
+  - `docs/work/frontend-product-detail.md`
+- Implemented:
+  - Added shared compare URL helpers that parse, dedupe, append, cap, and
+    rewrite repeated `slug` params while preserving route-local search params.
+  - Extracted the selected-products tray into
+    `assets/src/routes/compare/selection-tray.tsx` with an `Open comparison`
+    link, slug fallback labels, and route-supplied remove links.
+  - `/products` and `/products/:slug` now render the shared tray from URL
+    state, preserve repeated compare slugs through local add/remove links, and
+    keep `/compare?slug=...` as the full comparison destination.
+- Verification:
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare path helpers"` - failed as expected with 1 failed test and 86 skipped because `selectedCompareSlugsFromSearch` was not exported yet.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "compare path helpers"` - 1 passed, 86 skipped.
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "selected-product tray"` - failed as expected with 1 failed test, 1 passed, and 85 skipped because `Open comparison` was missing.
+  - GREEN: `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "selected-product tray"` - 2 passed, 85 skipped.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx` - 87 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx` - 163 tests, 0 failures.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Usable Product Batch
 
@@ -129,13 +169,11 @@
 
 ## Follow-Up Candidates
 
-- Persistent compare tray across browse/detail pages has been promoted to the
-  live queue as `Persistent Compare Tray`.
 - Add demo parity for API token management, affiliate setup, revenue reporting, and merchant discovery after their current queued refinements complete.
 
 ## Active Dispatch
 
-Status: ready
+Status: done
 Lane: Frontend product comparison demo parity (`docs/work/frontend-product-comparison-demo-parity.md`)
 Active plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
 Next action: Add a persistent compare tray across `/products` and `/products/:slug` so shoppers can see the current URL-backed compare selection, add or remove selected products from browse/detail pages, and continue to `/compare` without losing repeated `slug` param order.
