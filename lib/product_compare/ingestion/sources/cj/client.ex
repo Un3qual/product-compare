@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   query(
     $companyId: ID!,
     $keywords: [String!],
+    $advertiserIds: [ID!],
     $limit: Int!,
     $offset: Int!,
     $currency: String,
@@ -17,6 +18,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     shoppingProducts(
       companyId: $companyId,
       keywords: $keywords,
+      advertiserIds: $advertiserIds,
       partnerStatus: JOINED,
       limit: $limit,
       offset: $offset,
@@ -151,6 +153,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
         query: @product_query,
         variables: %{
           companyId: company_id,
+          advertiserIds: advertiser_ids(opts),
           keywords: Map.get(opts, :keywords, ["shoe"]),
           limit: limit,
           offset: offset,
@@ -288,6 +291,43 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
       areas -> areas
     end
   end
+
+  defp advertiser_ids(opts) do
+    opts
+    |> Map.get(:advertiser_ids)
+    |> normalize_advertiser_ids()
+  end
+
+  defp normalize_advertiser_ids(nil), do: nil
+
+  defp normalize_advertiser_ids(value) when is_list(value) do
+    value
+    |> Enum.map(&string_value/1)
+    |> Enum.reject(&is_nil/1)
+    |> case do
+      [] -> nil
+      values -> values
+    end
+  end
+
+  defp normalize_advertiser_ids(value) do
+    case string_value(value) do
+      nil -> nil
+      value -> [value]
+    end
+  end
+
+  defp string_value(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp string_value(value) when is_integer(value), do: Integer.to_string(value)
+  defp string_value(_value), do: nil
 
   defp blank_to_nil(value) when is_binary(value) do
     value

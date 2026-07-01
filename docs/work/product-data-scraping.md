@@ -321,6 +321,9 @@ Parallel workers must add completion evidence only under their assigned heading.
     - `mix test test/mix/tasks/product_compare_ingestion_cj_credentials_test.exs`
   - Product import credential preflight:
     - `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+  - Product import from reviewed feed candidates:
+    - `mix product_compare.ingestion.cj_import --from-candidates --review-status shortlisted --candidate-limit 10 --limit 25 --pages 1`
+    - `mix product_compare.ingestion.cj_import --provider-feed-id <provider-feed-id> --limit 25 --pages 1`
   - Feed discovery credential preflight:
     - `mix test test/mix/tasks/product_compare_ingestion_cj_feeds_test.exs`
   - Consolidated CJ candidate reports:
@@ -337,6 +340,14 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ## Recent Verification Commands
 
+- CJ feed-candidate product import:
+  - `mix test test/product_compare/ingestion/sources/cj/client_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+    - Result: passed, 19 tests, 0 failures.
+  - `mix test test/mix/tasks`
+    - Result: passed, 60 tests, 0 failures.
+  - Current product import task can now import products from explicit discovered
+    feed candidates by `--provider-feed-id`, or from reviewed candidates with
+    `--from-candidates --review-status shortlisted`.
 - CJ Mix task surface cleanup:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
     - Result: new consolidated run/candidate task tests passed with 9 tests, 0

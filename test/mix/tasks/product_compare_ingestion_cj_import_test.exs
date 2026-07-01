@@ -6,6 +6,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -205,6 +206,125 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 2
     end
 
+    test "imports products for explicit discovered feed candidates by advertiser id" do
+      source = source_fixture()
+
+      candidate =
+        insert_candidate!(source, %{
+          advertiser_id: "adv-kotobukiya",
+          advertiser_name: "Kotobukiya",
+          currency: "USD",
+          feed_name: "Kotobukiya US Product Feed",
+          provider_feed_id: "feed-kotobukiya"
+        })
+
+      parent = self()
+
+      fetcher = fn cursor, opts ->
+        send(parent, {:fetch, cursor, opts})
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok,
+                  %{
+                    candidates_imported: 1,
+                    candidates_matched: 1,
+                    failed: 0,
+                    fetched: 1,
+                    normalized: 1,
+                    persisted: 1
+                  }} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 1,
+                     provider_feed_ids: [candidate.provider_feed_id]
+                   )
+        end)
+
+      assert_receive {:fetch, nil, opts}
+      assert opts[:advertiser_ids] == ["adv-kotobukiya"]
+      assert opts[:currency] == "USD"
+      assert opts[:keywords] == nil
+      assert opts[:limit] == 1
+
+      assert output =~ "candidate_count=1"
+      assert output =~ "imported_candidates=1"
+      assert output =~ "persisted=1"
+
+      assert %ImportRun{
+               query: %{
+                 "advertiserIds" => ["adv-kotobukiya"],
+                 "feedName" => "Kotobukiya US Product Feed",
+                 "merchantFeedCandidateId" => candidate_id,
+                 "providerFeedId" => "feed-kotobukiya"
+               },
+               records_persisted: 1,
+               status: "succeeded"
+             } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
+
+      assert candidate_id == candidate.id
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 1
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "imports only shortlisted candidates when importing from reviewed candidates" do
+      source = source_fixture()
+
+      shortlisted =
+        insert_candidate!(source, %{
+          advertiser_id: "adv-shortlisted",
+          provider_feed_id: "feed-shortlisted",
+          review_status: "shortlisted"
+        })
+
+      pending =
+        insert_candidate!(source, %{
+          advertiser_id: "adv-pending",
+          provider_feed_id: "feed-pending",
+          review_status: "pending"
+        })
+
+      parent = self()
+
+      fetcher = fn cursor, opts ->
+        send(parent, {:fetch, cursor, opts})
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{candidates_imported: 1, candidates_matched: 1, persisted: 1}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     from_candidates: true,
+                     limit: 1,
+                     pages: 1,
+                     review_status: "shortlisted"
+                   )
+        end)
+
+      assert_receive {:fetch, nil, opts}
+      assert opts[:advertiser_ids] == ["adv-shortlisted"]
+      refute_received {:fetch, _, %{advertiser_ids: ["adv-pending"]}}
+
+      assert output =~ "candidate_count=1"
+      assert output =~ "imported_candidates=1"
+
+      assert %ImportRun{query: %{"providerFeedId" => "feed-shortlisted"}} =
+               Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
+
+      refute Repo.get_by(ImportRun,
+               source_id: pending.source_id,
+               surface: "shoppingProducts",
+               query: %{"providerFeedId" => pending.provider_feed_id}
+             )
+
+      assert shortlisted.provider_feed_id == "feed-shortlisted"
+    end
+
     test "can suppress report output for background callers" do
       fetcher = fn _cursor, _opts ->
         {:ok, product_validation_fixture(), nil}
@@ -375,6 +495,47 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       "title" => "Second Redacted Shopping Product"
     })
     |> List.wrap()
+  end
+
+  defp source_fixture(attrs \\ %{}) do
+    suffix = "#{System.unique_integer([:positive])}-#{System.system_time(:nanosecond)}"
+
+    %Source{}
+    |> Source.changeset(
+      Map.merge(
+        %{kind: "affiliate_feed", name: "CJ #{suffix}", domain: "cj-#{suffix}.example"},
+        attrs
+      )
+    )
+    |> Repo.insert!()
+  end
+
+  defp insert_candidate!(source, attrs) do
+    attrs =
+      Map.merge(
+        %{
+          source_id: source.id,
+          advertiser_country: "US",
+          advertiser_id: "adv-1",
+          advertiser_name: "Trail Merchant",
+          currency: "USD",
+          feed_name: "US Shopping",
+          language: "EN",
+          last_seen_at: DateTime.utc_now(),
+          product_count: 10,
+          provider: "cj",
+          provider_feed_id: "feed-1",
+          provider_last_updated_at: DateTime.utc_now(),
+          raw_metadata: %{},
+          review_status: "pending",
+          source_feed_type: "SHOPPING"
+        },
+        attrs
+      )
+
+    %MerchantFeedCandidate{}
+    |> MerchantFeedCandidate.changeset(attrs)
+    |> Repo.insert!()
   end
 
   defp restore_env(name, nil), do: System.delete_env(name)

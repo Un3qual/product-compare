@@ -5,9 +5,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   use Mix.Task
 
+  import Ecto.Query
+
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Specs.Source
 
   @shortdoc "Imports one manual CJ shopping product page"
   @credential_requirements [
@@ -47,10 +52,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp do_run_import(opts) do
-    if Keyword.get(opts, :check_credentials, false) do
-      {:ok, credential_report(opts)}
-    else
-      do_import(opts)
+    cond do
+      Keyword.get(opts, :check_credentials, false) ->
+        {:ok, credential_report(opts)}
+
+      candidate_import_requested?(opts) ->
+        import_candidates(opts)
+
+      true ->
+        do_import(opts)
     end
   end
 
@@ -60,7 +70,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     fetch_opts = fetch_opts(opts)
     pages = page_count(opts)
 
-    with {:ok, source} <- fetch_source(),
+    with {:ok, source} <- import_source(opts),
          {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
@@ -92,12 +102,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
           pages: :integer,
           serviceable_area: :string,
           check_credentials: :boolean,
-          require_ready: :boolean
+          require_ready: :boolean,
+          provider_feed_id: :keep,
+          from_candidates: :boolean,
+          review_status: :string,
+          candidate_limit: :integer
         ]
       )
 
     opts
-    |> Keyword.update(:keywords, ["shoe"], &parse_keywords/1)
+    |> parse_optional_keywords()
     |> Keyword.put_new(:limit, 25)
     |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
     |> Keyword.put_new(:currency, "USD")
@@ -105,6 +119,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.put_new(:check_credentials, false)
     |> Keyword.put_new(:require_ready, false)
     |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
+    |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
   end
 
   defp parse_keywords(value) do
@@ -118,11 +133,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end
   end
 
+  defp parse_optional_keywords(opts) do
+    if Keyword.has_key?(opts, :keywords) do
+      Keyword.update!(opts, :keywords, &parse_keywords/1)
+    else
+      opts
+    end
+  end
+
   defp fetch_opts(opts) do
     [
+      advertiser_ids: normalize_advertiser_ids(Keyword.get(opts, :advertiser_ids)),
       currency: Keyword.get(opts, :currency, "USD"),
       keywords: Keyword.get(opts, :keywords, ["shoe"]),
       limit: Keyword.get(opts, :limit, 25),
+      merchant_feed_candidate_id: Keyword.get(opts, :merchant_feed_candidate_id),
+      provider_feed_id: Keyword.get(opts, :provider_feed_id),
+      feed_name: Keyword.get(opts, :feed_name),
       serviceable_areas: Keyword.get(opts, :serviceable_areas, ["US"])
     ]
   end
@@ -139,16 +166,31 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       source_id: source.id,
       provider: "cj",
       surface: "shoppingProducts",
-      query: %{
-        "currency" => Keyword.fetch!(fetch_opts, :currency),
-        "keywords" => Keyword.fetch!(fetch_opts, :keywords),
-        "serviceableAreas" => serviceable_areas_for_query(fetch_opts)
-      },
+      query: import_run_query(fetch_opts),
       cursor_start: cursor || 0,
       page_size: Keyword.fetch!(fetch_opts, :limit),
       pages_requested: pages
     })
   end
+
+  defp import_run_query(fetch_opts) do
+    %{
+      "currency" => Keyword.fetch!(fetch_opts, :currency),
+      "keywords" => Keyword.fetch!(fetch_opts, :keywords),
+      "serviceableAreas" => serviceable_areas_for_query(fetch_opts)
+    }
+    |> put_query_field("advertiserIds", Keyword.fetch!(fetch_opts, :advertiser_ids))
+    |> put_query_field(
+      "merchantFeedCandidateId",
+      Keyword.fetch!(fetch_opts, :merchant_feed_candidate_id)
+    )
+    |> put_query_field("providerFeedId", Keyword.fetch!(fetch_opts, :provider_feed_id))
+    |> put_query_field("feedName", Keyword.fetch!(fetch_opts, :feed_name))
+  end
+
+  defp put_query_field(query, _key, nil), do: query
+  defp put_query_field(query, _key, []), do: query
+  defp put_query_field(query, key, value), do: Map.put(query, key, value)
 
   defp complete_import_run(import_run, report, next_cursor) do
     status = if report.failed == 0, do: "succeeded", else: "failed"
@@ -188,6 +230,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   defp fetch_source do
     SourceResolver.fetch_source()
+  end
+
+  defp import_source(opts) do
+    case Keyword.get(opts, :source) do
+      %Source{} = source -> {:ok, source}
+      _source -> fetch_source()
+    end
   end
 
   defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
@@ -270,6 +319,178 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       persisted: 0
     }
   end
+
+  defp candidate_import_requested?(opts) do
+    Keyword.get(opts, :from_candidates, false) ||
+      opts
+      |> Keyword.get(:provider_feed_ids, [])
+      |> Enum.any?()
+  end
+
+  defp import_candidates(opts) do
+    candidates = import_candidates_query(opts) |> Repo.all()
+
+    candidates
+    |> Enum.reduce(initial_candidate_report(length(candidates)), &import_candidate(&1, &2, opts))
+    |> then(fn report ->
+      maybe_print_candidate_report(report, opts)
+      candidate_report_result(report)
+    end)
+  end
+
+  defp import_candidates_query(opts) do
+    provider_feed_ids = Keyword.get(opts, :provider_feed_ids, [])
+
+    MerchantFeedCandidate
+    |> where([candidate], candidate.provider == "cj")
+    |> maybe_filter_provider_feed_ids(provider_feed_ids)
+    |> maybe_filter_review_status(provider_feed_ids, Keyword.get(opts, :review_status))
+    |> order_by([candidate],
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.id
+    )
+    |> limit(^candidate_limit(provider_feed_ids, Keyword.get(opts, :candidate_limit)))
+    |> preload(:source)
+  end
+
+  defp maybe_filter_provider_feed_ids(query, []), do: query
+
+  defp maybe_filter_provider_feed_ids(query, provider_feed_ids) do
+    where(query, [candidate], candidate.provider_feed_id in ^provider_feed_ids)
+  end
+
+  defp maybe_filter_review_status(query, [_first | _rest], _review_status), do: query
+
+  defp maybe_filter_review_status(query, [], review_status) do
+    status = normalize_review_status(review_status || "shortlisted")
+
+    where(query, [candidate], candidate.review_status == ^status)
+  end
+
+  defp normalize_review_status(status) when status in ~w(pending shortlisted dismissed),
+    do: status
+
+  defp normalize_review_status(status), do: Mix.raise("invalid review status: #{status}")
+
+  defp candidate_limit([_first | _rest], _candidate_limit), do: 50
+  defp candidate_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
+  defp candidate_limit([], _value), do: 10
+
+  defp initial_candidate_report(candidate_count) do
+    initial_aggregate_report()
+    |> Map.merge(%{
+      candidate_failures: 0,
+      candidates_imported: 0,
+      candidates_matched: candidate_count,
+      candidates_skipped: 0
+    })
+  end
+
+  defp import_candidate(%MerchantFeedCandidate{} = candidate, report, opts) do
+    case candidate_import_opts(candidate, opts) do
+      {:ok, import_opts} ->
+        case do_import(import_opts) do
+          {:ok, import_report} ->
+            report
+            |> merge_candidate_import_report(import_report)
+            |> Map.update!(:candidates_imported, &(&1 + 1))
+
+          {:error, {:row_failures, import_report}} when is_map(import_report) ->
+            report
+            |> merge_candidate_import_report(import_report)
+            |> Map.update!(:candidate_failures, &(&1 + 1))
+
+          {:error, _reason} ->
+            Map.update!(report, :candidate_failures, &(&1 + 1))
+        end
+
+      :skip ->
+        Map.update!(report, :candidates_skipped, &(&1 + 1))
+    end
+  end
+
+  defp candidate_import_opts(%MerchantFeedCandidate{} = candidate, opts) do
+    case normalize_string(candidate.advertiser_id) do
+      nil ->
+        :skip
+
+      advertiser_id ->
+        {:ok,
+         opts
+         |> Keyword.put(:source, candidate.source)
+         |> Keyword.put(:advertiser_ids, [advertiser_id])
+         |> Keyword.put(
+           :currency,
+           normalize_string(candidate.currency) || Keyword.get(opts, :currency, "USD")
+         )
+         |> Keyword.put(:keywords, Keyword.get(opts, :keywords, nil))
+         |> Keyword.put(:merchant_feed_candidate_id, candidate.id)
+         |> Keyword.put(:provider_feed_id, candidate.provider_feed_id)
+         |> Keyword.put(:feed_name, candidate.feed_name)
+         |> Keyword.put(:print_report, false)}
+    end
+  end
+
+  defp merge_candidate_import_report(report, import_report) do
+    report
+    |> merge_report(import_report)
+    |> Map.update!(:pages_fetched, &(&1 + Map.get(import_report, :pages_fetched, 0)))
+  end
+
+  defp candidate_report_result(%{candidate_failures: 0, failed: 0} = report), do: {:ok, report}
+
+  defp candidate_report_result(report), do: {:error, {:candidate_import_failures, report}}
+
+  defp maybe_print_candidate_report(report, opts) do
+    if Keyword.get(opts, :print_report, true) do
+      IO.puts(
+        "candidate_count=#{report.candidates_matched} imported_candidates=#{report.candidates_imported} skipped_candidates=#{report.candidates_skipped} candidate_failures=#{report.candidate_failures} fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
+      )
+    end
+  end
+
+  defp normalize_provider_feed_ids(opts) do
+    opts
+    |> Keyword.get_values(:provider_feed_id)
+    |> Enum.flat_map(&List.wrap/1)
+    |> Enum.concat(List.wrap(Keyword.get(opts, :provider_feed_ids, [])))
+    |> Enum.map(&normalize_string/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp normalize_advertiser_ids(nil), do: nil
+
+  defp normalize_advertiser_ids(value) when is_list(value) do
+    value
+    |> Enum.map(&normalize_string/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> case do
+      [] -> nil
+      values -> values
+    end
+  end
+
+  defp normalize_advertiser_ids(value) do
+    case normalize_string(value) do
+      nil -> nil
+      value -> [value]
+    end
+  end
+
+  defp normalize_string(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp normalize_string(value) when is_integer(value), do: Integer.to_string(value)
+  defp normalize_string(_value), do: nil
 
   defp credential_report(opts) do
     missing_required =
