@@ -18,6 +18,11 @@ import {
 } from "../../../src/routes/compare/saved-data";
 import { RouteErrorBoundary } from "../../../src/routes/compare/error-boundary";
 import { CompareRoute } from "../../../src/routes/compare/index";
+import {
+  buildCurrentRoutePathWithCompareSlugs,
+  selectedCompareSlugsAfterAdding,
+  selectedCompareSlugsFromSearch
+} from "../../../src/routes/compare/paths";
 import { SavedComparisonsRoute } from "../../../src/routes/compare/saved";
 import {
   buildAbortableRequest,
@@ -439,6 +444,27 @@ beforeEach(() => {
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockCompareRouteQueries();
+});
+
+test("compare path helpers normalize selected slugs and rewrite current-route query strings", () => {
+  expect(
+    selectedCompareSlugsFromSearch(
+      "?slug=detail-product&slug=&slug=second-product&slug=detail-product"
+    )
+  ).toEqual(["detail-product", "second-product"]);
+  expect(
+    selectedCompareSlugsAfterAdding(["detail-product"], "second-product", 3)
+  ).toEqual(["detail-product", "second-product"]);
+  expect(
+    selectedCompareSlugsAfterAdding(["detail-product"], "detail-product", 3)
+  ).toEqual(["detail-product"]);
+  expect(
+    buildCurrentRoutePathWithCompareSlugs(
+      "/products",
+      "?first=24&slug=detail-product&typeTaxonId=type-laptops",
+      ["second-product"]
+    )
+  ).toBe("/products?first=24&typeTaxonId=type-laptops&slug=second-product");
 });
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
