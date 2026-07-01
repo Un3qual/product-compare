@@ -59,7 +59,9 @@ function ProductDetail({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const location = useLocation();
-  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search);
+  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
+    maxProducts: MAX_COMPARE_PRODUCTS
+  });
 
   if (!data.product) {
     return <ProductNotFoundFallback />;

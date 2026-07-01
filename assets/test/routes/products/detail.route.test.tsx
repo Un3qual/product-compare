@@ -1213,6 +1213,47 @@ test("renders a persistent compare tray on product detail and preserves compare 
   );
 });
 
+test("clamps URL-driven compare selections before rendering product detail controls", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter
+      initialEntries={[
+        "/products/detail-product?slug=first-product&slug=second-product&slug=third-product&slug=detail-product"
+      ]}
+    >
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
+
+  expect(selectionCount).toHaveTextContent(
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+  );
+  expect(within(selectionTray).getAllByRole("listitem")).toHaveLength(MAX_COMPARE_PRODUCTS);
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=first-product&slug=second-product&slug=third-product"
+  );
+  expect(screen.getByText("Compare selection full")).toBeInTheDocument();
+  expect(screen.queryByText("This product is selected for comparison")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products?slug=first-product&slug=second-product&slug=third-product"
+  );
+});
+
 test("adds the current detail product while preserving offersAfter", () => {
   const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor-next-page");
 

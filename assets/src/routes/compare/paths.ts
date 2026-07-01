@@ -4,8 +4,15 @@ interface BuildComparePathOptions {
   specMode?: CompareSpecMode;
 }
 
-export function selectedCompareSlugsFromSearch(search: string): string[] {
-  return normalizedCompareSlugs(new URLSearchParams(search).getAll("slug"));
+interface NormalizeCompareSlugsOptions {
+  maxProducts?: number;
+}
+
+export function selectedCompareSlugsFromSearch(
+  search: string,
+  options: NormalizeCompareSlugsOptions = {}
+): string[] {
+  return normalizedCompareSlugs(new URLSearchParams(search).getAll("slug"), options);
 }
 
 export function selectedCompareSlugsAfterAdding(
@@ -13,7 +20,7 @@ export function selectedCompareSlugsAfterAdding(
   slug: string,
   maxProducts: number
 ): string[] {
-  const nextSelectedSlugs = normalizedCompareSlugs(selectedSlugs);
+  const nextSelectedSlugs = normalizedCompareSlugs(selectedSlugs, { maxProducts });
   const normalizedSlug = slug.trim();
 
   if (
@@ -41,9 +48,7 @@ export function buildCurrentRoutePathWithCompareSlugs(
     }
   }
 
-  for (const slug of normalizedCompareSlugs(selectedSlugs)) {
-    nextParams.append("slug", slug);
-  }
+  appendNormalizedCompareSlugParams(nextParams, selectedSlugs);
 
   const nextQueryString = nextParams.toString();
 
@@ -56,9 +61,7 @@ export function buildComparePathFromSlugs(
 ) {
   const params = new URLSearchParams();
 
-  for (const slug of normalizedCompareSlugs(selectedSlugs)) {
-    params.append("slug", slug);
-  }
+  appendNormalizedCompareSlugParams(params, selectedSlugs);
 
   if (options.specMode && options.specMode !== "shared") {
     params.set("specs", options.specMode);
@@ -79,11 +82,30 @@ export function buildComparePathAfterRemovingSlugIndex(
   return buildComparePathFromSlugs(nextSelectedSlugs, options);
 }
 
-function normalizedCompareSlugs(slugs: readonly string[]): string[] {
+function appendNormalizedCompareSlugParams(
+  params: URLSearchParams,
+  slugs: readonly string[]
+) {
+  for (const slug of normalizedCompareSlugs(slugs)) {
+    params.append("slug", slug);
+  }
+}
+
+function normalizedCompareSlugs(
+  slugs: readonly string[],
+  options: NormalizeCompareSlugsOptions = {}
+): string[] {
   const selectedSlugs: string[] = [];
   const seenSlugs = new Set<string>();
 
   for (const slug of slugs) {
+    if (
+      options.maxProducts !== undefined &&
+      selectedSlugs.length >= options.maxProducts
+    ) {
+      break;
+    }
+
     const normalizedSlug = slug.trim();
 
     if (normalizedSlug.length === 0 || seenSlugs.has(normalizedSlug)) {
