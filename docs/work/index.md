@@ -59,44 +59,6 @@ Batch rules:
   heading from the same worker branch.
 - CJ candidate CSV score export remains rejected and must not be promoted.
 
-#### CJ Candidate Cohort Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
-Next action: Add the read-only CJ candidate cohort aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_candidate_cohort.ex`
-- `test/product_compare/ingestion/cj_candidate_cohort_test.exs`
-- `docs/work/product-data-scraping.md` under `### Candidate Cohort Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: Candidate cohort read model is covered by focused tests and completion evidence is recorded only under `### Candidate Cohort Evidence`.
-
-#### CJ Candidate Market Coverage Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
-Next action: Add the read-only CJ candidate market coverage aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_candidate_market_coverage.ex`
-- `test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
-- `docs/work/product-data-scraping.md` under `### Candidate Market Coverage Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: Candidate market coverage read model is covered by focused tests and completion evidence is recorded only under `### Candidate Market Coverage Evidence`.
-
 #### CJ Candidate Freshness Read Model
 
 Status: ready

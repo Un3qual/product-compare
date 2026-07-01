@@ -59,7 +59,8 @@
   - The detail compare action now adds the current product in place while
     preserving route-local `offersAfter` params.
   - Tray remove links rewrite only compare slugs and preserve detail route
-    params; removing the last selected product returns to the clean detail URL.
+    params; removing the last selected product drops compare slugs while keeping
+    route-local params such as `offersAfter`.
   - `Browse products` return links preserve selected compare slugs as
     repeated `slug` params on `/products`.
 - Verification:
