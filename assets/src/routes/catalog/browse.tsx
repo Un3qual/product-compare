@@ -98,7 +98,9 @@ function BrowseProducts({
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = data.products.edges.map(({ node }) => node);
   const location = useLocation();
-  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search);
+  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
+    maxProducts: MAX_COMPARE_PRODUCTS
+  });
   const currentBrowsePathname = browseRoutePathname(location.pathname);
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;

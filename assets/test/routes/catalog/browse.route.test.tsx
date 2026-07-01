@@ -1211,6 +1211,56 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
   ]);
 });
 
+test("clamps URL-driven compare selections before rendering browse controls", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: [
+      "/products?first=24&slug=detail-product&slug=second-product&slug=third-product&slug=fourth-product"
+    ],
+    loaderData: readyBrowseLoaderData({
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24
+      })
+    }),
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        }
+      ]
+    })
+  });
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
+
+  expect(selectionCount).toHaveTextContent(
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+  );
+  expect(within(selectionTray).getAllByRole("listitem")).toHaveLength(MAX_COMPARE_PRODUCTS);
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=third-product"
+  );
+  expect(screen.getByText("Compare selection full")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&after=cursor-next-page&slug=detail-product&slug=second-product&slug=third-product"
+  );
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  expect(new FormData(filterForm).getAll("slug")).toEqual([
+    "detail-product",
+    "second-product",
+    "third-product"
+  ]);
+});
+
 test("preserves in-progress filter control state when compare selection changes", () => {
   const loaderData = readyBrowseLoaderData();
   const metadataData = buildProductFilterMetadataResponse();
