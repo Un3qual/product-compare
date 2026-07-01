@@ -221,7 +221,7 @@ Owned paths:
 - `docs/runbooks/cj-weekly-operator-loop.md`
 - `docs/work/product-data-scraping.md` under `### Weekly Operator Runbook Evidence` only
 Verification:
-- `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` exits 1 with no matches
+- `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[o]wed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` exits 1 with no matches
 - `git diff --check`
 Exit condition: The weekly operator runbook exists, avoids unfinished placeholders and secret-looking assignments, and completion evidence is recorded only under `### Weekly Operator Runbook Evidence`.
 
