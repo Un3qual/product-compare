@@ -1187,6 +1187,34 @@ test("clears the descendant filter from submitted data when the product type is 
   expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
 });
 
+test("selects descendants by default when choosing a product type", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const productTypeSelect = within(filterForm).getByRole("combobox", {
+    name: "Product type"
+  });
+  const includeDescendantsCheckbox = within(filterForm).getByRole("checkbox", {
+    name: "Include subcategories"
+  });
+
+  expect(productTypeSelect).toHaveValue("");
+  expect(includeDescendantsCheckbox).not.toBeChecked();
+  expect(includeDescendantsCheckbox).toBeDisabled();
+
+  fireEvent.change(productTypeSelect, { target: { value: "type-laptops" } });
+
+  expect(productTypeSelect).toHaveValue("type-laptops");
+  expect(includeDescendantsCheckbox).toBeChecked();
+  expect(includeDescendantsCheckbox).not.toBeDisabled();
+  expect(new FormData(filterForm).get("includeTypeDescendants")).toBe("1");
+
+  fireEvent.click(includeDescendantsCheckbox);
+
+  expect(includeDescendantsCheckbox).not.toBeChecked();
+  expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
+});
+
 test("refreshes filter controls when loader filters clear on the same browse route", () => {
   const activeFilters = {
     typeTaxonId: "type-laptops",

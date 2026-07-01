@@ -271,22 +271,71 @@ function buildAttributeComparisonValue(
   return `text:${attribute.valueText}`;
 }
 
+const DECIMAL_COMPARISON_VALUE_PATTERN =
+  /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+const MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT = 1_000;
+
+interface ParsedDecimalComparisonValue {
+  sign: -1 | 1;
+  integer: string;
+  fraction: string;
+  exponent: number;
+}
+
 function normalizeDecimalComparisonValue(value: string) {
   const trimmedValue = value.trim();
+  const parsedValue = parseDecimalComparisonValue(trimmedValue);
 
-  if (!/^-?\d+(\.\d+)?$/.test(trimmedValue)) {
+  if (!parsedValue) {
     return trimmedValue;
   }
 
-  const sign = trimmedValue.startsWith("-") ? "-" : "";
-  const unsignedValue = sign ? trimmedValue.slice(1) : trimmedValue;
-  const [integerPart, rawFractionPart = ""] = unsignedValue.split(".");
-  const normalizedIntegerPart = integerPart.replace(/^0+(?=\d)/, "") || "0";
+  const digits = `${parsedValue.integer}${parsedValue.fraction}`;
+
+  if (/^0*$/.test(digits)) {
+    return "0";
+  }
+
+  const decimalPoint = parsedValue.integer.length + parsedValue.exponent;
+  const [rawIntegerPart, rawFractionPart] = splitDecimalComparisonDigits(digits, decimalPoint);
+  const sign = parsedValue.sign === -1 ? "-" : "";
+  const normalizedIntegerPart = rawIntegerPart.replace(/^0+/, "") || "0";
   const normalizedFractionPart = rawFractionPart.replace(/0+$/, "");
 
   return normalizedFractionPart
     ? `${sign}${normalizedIntegerPart}.${normalizedFractionPart}`
     : `${sign}${normalizedIntegerPart}`;
+}
+
+function parseDecimalComparisonValue(value: string): ParsedDecimalComparisonValue | null {
+  if (!DECIMAL_COMPARISON_VALUE_PATTERN.test(value)) {
+    return null;
+  }
+
+  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
+  const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
+  const exponent = Number.parseInt(rawExponent, 10);
+
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT) {
+    return null;
+  }
+
+  const [integer, fraction = ""] = coefficient.split(".");
+
+  return { sign, integer, fraction, exponent };
+}
+
+function splitDecimalComparisonDigits(digits: string, decimalPoint: number) {
+  if (decimalPoint <= 0) {
+    return ["0", `${"0".repeat(Math.abs(decimalPoint))}${digits}`];
+  }
+
+  if (decimalPoint >= digits.length) {
+    return [`${digits}${"0".repeat(decimalPoint - digits.length)}`, ""];
+  }
+
+  return [digits.slice(0, decimalPoint), digits.slice(decimalPoint)];
 }
 
 function normalizeUnitComparisonValue(unitSymbol: string | null | undefined) {

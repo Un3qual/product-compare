@@ -2291,6 +2291,62 @@ test("ready compare differences include numeric rows when units differ", () => {
   expect(within(matrix).getByText("1 cm")).toBeVisible();
 });
 
+test("ready compare differences normalize exponent numeric values", () => {
+  const detailProductAttributes = [
+    {
+      code: "storage",
+      displayName: "Storage",
+      valueText: "1000 GB",
+      numericValue: "1e3",
+      unitSymbol: "GB"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "IPS"
+    }
+  ];
+  const secondProductAttributes = [
+    {
+      code: "storage",
+      displayName: "Storage",
+      valueText: "1000.0 GB",
+      numericValue: "1000",
+      unitSymbol: "GB"
+    },
+    {
+      code: "panel-type",
+      displayName: "Panel type",
+      valueText: "OLED"
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      specMode: "differences",
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: detailProductAttributes
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: secondProductAttributes
+        }
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  const matrix = screen.getByRole("table", { name: "Different specifications" });
+
+  expect(within(matrix).queryByText("Storage")).not.toBeInTheDocument();
+  expect(within(matrix).getByText("Panel type")).toBeVisible();
+  expect(within(matrix).getByText("IPS")).toBeVisible();
+  expect(within(matrix).getByText("OLED")).toBeVisible();
+});
+
 test("ready compare page renders an empty differences state when specifications match", () => {
   const currentAttributes = [
     {

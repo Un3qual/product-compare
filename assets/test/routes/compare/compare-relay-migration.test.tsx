@@ -128,6 +128,44 @@ const secondProductQueryRef = {
   variables: secondProductQueryDescriptor.__relayQuery.variables
 };
 
+function buildEmptyOfferContextQuery(productId: string) {
+  return {
+    data: {
+      merchantProducts: {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null
+        }
+      }
+    },
+    descriptor: {
+      __relayQuery: {
+        operationName: "CompareOfferContextQuery",
+        text:
+          "query CompareOfferContextQuery($productId: ID!, $first: Int!, $after: String) { " +
+          "merchantProducts(productId: $productId, first: $first, after: $after) { " +
+          "edges { node { id } } } }",
+        variables: { productId, first: 3, after: null }
+      }
+    },
+    dispose: vi.fn()
+  };
+}
+
+function buildEmptyOfferContextSummary(productId: string) {
+  return {
+    status: "available" as const,
+    productId,
+    activeOfferCount: 0,
+    bestCurrentPrice: null,
+    hasLoadedCoupons: false,
+    hasMoreActiveOffers: false,
+    hasMoreCoupons: false,
+    latestPriceObservedAt: null
+  };
+}
+
 const savedComparisonsRouteQueryDescriptor = {
   __relayQuery: {
     operationName: "SavedComparisonsRouteQuery",
@@ -184,14 +222,21 @@ test("compare loader preloads selected product detail queries through Relay", as
       },
       descriptor: secondProductQueryDescriptor,
       dispose: vi.fn()
-    });
+    })
+    .mockResolvedValueOnce(buildEmptyOfferContextQuery(DETAIL_PRODUCT.id))
+    .mockResolvedValueOnce(buildEmptyOfferContextQuery(SECOND_PRODUCT.id));
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
+    specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     productQueries: [detailProductQueryDescriptor, secondProductQueryDescriptor],
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
+      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
+    },
     products: [
       {
         id: DETAIL_PRODUCT.id,
@@ -224,6 +269,20 @@ test("compare loader preloads selected product detail queries through Relay", as
     environment,
     expect.anything(),
     { slug: SECOND_PRODUCT.slug },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    3,
+    environment,
+    expect.anything(),
+    { productId: DETAIL_PRODUCT.id, first: 3, after: null },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    4,
+    environment,
+    expect.anything(),
+    { productId: SECOND_PRODUCT.id, first: 3, after: null },
     { signal: request.signal }
   );
 });

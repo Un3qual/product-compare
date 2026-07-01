@@ -38,10 +38,7 @@ export function CatalogFilterForm({
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     setSelectedTypeTaxonId(typeTaxonId);
-
-    if (typeTaxonId === "") {
-      setIncludeTypeDescendants(false);
-    }
+    setIncludeTypeDescendants(typeTaxonId !== "");
   }
 
   return (
