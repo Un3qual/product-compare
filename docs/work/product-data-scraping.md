@@ -348,6 +348,11 @@ Parallel workers must add completion evidence only under their assigned heading.
   - Current product import task can now import products from explicit discovered
     feed candidates by `--provider-feed-id`, or from reviewed candidates with
     `--from-candidates --review-status shortlisted`.
+  - Follow-up correction: CJ `shoppingProducts` rejects an `advertiserIds`
+    argument. Feed-candidate imports now pass each candidate `provider_feed_id`
+    through CJ's supported `adIds` filter, pass `advertiser_id` as optional
+    `partnerIds` when present, and record both supported filters in the
+    import-run query.
 - CJ Mix task surface cleanup:
   - `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
     - Result: new consolidated run/candidate task tests passed with 9 tests, 0

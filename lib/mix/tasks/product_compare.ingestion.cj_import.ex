@@ -143,11 +143,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   defp fetch_opts(opts) do
     [
-      advertiser_ids: normalize_advertiser_ids(Keyword.get(opts, :advertiser_ids)),
+      ad_ids: normalize_ids(Keyword.get(opts, :ad_ids, Keyword.get(opts, :provider_feed_id))),
       currency: Keyword.get(opts, :currency, "USD"),
       keywords: Keyword.get(opts, :keywords, ["shoe"]),
       limit: Keyword.get(opts, :limit, 25),
       merchant_feed_candidate_id: Keyword.get(opts, :merchant_feed_candidate_id),
+      partner_ids:
+        normalize_ids(Keyword.get(opts, :partner_ids, Keyword.get(opts, :advertiser_ids))),
       provider_feed_id: Keyword.get(opts, :provider_feed_id),
       feed_name: Keyword.get(opts, :feed_name),
       serviceable_areas: Keyword.get(opts, :serviceable_areas, ["US"])
@@ -179,7 +181,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       "keywords" => Keyword.fetch!(fetch_opts, :keywords),
       "serviceableAreas" => serviceable_areas_for_query(fetch_opts)
     }
-    |> put_query_field("advertiserIds", Keyword.fetch!(fetch_opts, :advertiser_ids))
+    |> put_query_field("adIds", Keyword.fetch!(fetch_opts, :ad_ids))
+    |> put_query_field("partnerIds", Keyword.fetch!(fetch_opts, :partner_ids))
     |> put_query_field(
       "merchantFeedCandidateId",
       Keyword.fetch!(fetch_opts, :merchant_feed_candidate_id)
@@ -411,22 +414,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp candidate_import_opts(%MerchantFeedCandidate{} = candidate, opts) do
-    case normalize_string(candidate.advertiser_id) do
+    case normalize_string(candidate.provider_feed_id) do
       nil ->
         :skip
 
-      advertiser_id ->
+      provider_feed_id ->
         {:ok,
          opts
          |> Keyword.put(:source, candidate.source)
-         |> Keyword.put(:advertiser_ids, [advertiser_id])
+         |> Keyword.put(:ad_ids, [provider_feed_id])
+         |> Keyword.put(:partner_ids, List.wrap(normalize_string(candidate.advertiser_id)))
          |> Keyword.put(
            :currency,
            normalize_string(candidate.currency) || Keyword.get(opts, :currency, "USD")
          )
          |> Keyword.put(:keywords, Keyword.get(opts, :keywords, nil))
          |> Keyword.put(:merchant_feed_candidate_id, candidate.id)
-         |> Keyword.put(:provider_feed_id, candidate.provider_feed_id)
+         |> Keyword.put(:provider_feed_id, provider_feed_id)
          |> Keyword.put(:feed_name, candidate.feed_name)
          |> Keyword.put(:print_report, false)}
     end
@@ -460,9 +464,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Enum.uniq()
   end
 
-  defp normalize_advertiser_ids(nil), do: nil
+  defp normalize_ids(nil), do: nil
 
-  defp normalize_advertiser_ids(value) when is_list(value) do
+  defp normalize_ids(value) when is_list(value) do
     value
     |> Enum.map(&normalize_string/1)
     |> Enum.reject(&is_nil/1)
@@ -473,7 +477,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end
   end
 
-  defp normalize_advertiser_ids(value) do
+  defp normalize_ids(value) do
     case normalize_string(value) do
       nil -> nil
       value -> [value]

@@ -206,7 +206,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 2
     end
 
-    test "imports products for explicit discovered feed candidates by advertiser id" do
+    test "imports products for explicit discovered feed candidates by CJ feed and partner ids" do
       source = source_fixture()
 
       candidate =
@@ -245,7 +245,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert_receive {:fetch, nil, opts}
-      assert opts[:advertiser_ids] == ["adv-kotobukiya"]
+      assert opts[:ad_ids] == ["feed-kotobukiya"]
+      assert opts[:partner_ids] == ["adv-kotobukiya"]
       assert opts[:currency] == "USD"
       assert opts[:keywords] == nil
       assert opts[:limit] == 1
@@ -256,9 +257,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
       assert %ImportRun{
                query: %{
-                 "advertiserIds" => ["adv-kotobukiya"],
+                 "adIds" => ["feed-kotobukiya"],
                  "feedName" => "Kotobukiya US Product Feed",
                  "merchantFeedCandidateId" => candidate_id,
+                 "partnerIds" => ["adv-kotobukiya"],
                  "providerFeedId" => "feed-kotobukiya"
                },
                records_persisted: 1,
@@ -266,6 +268,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
              } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
 
       assert candidate_id == candidate.id
+
+      refute Map.has_key?(
+               Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts").query,
+               "advertiserIds"
+             )
+
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
@@ -307,8 +315,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert_receive {:fetch, nil, opts}
-      assert opts[:advertiser_ids] == ["adv-shortlisted"]
-      refute_received {:fetch, _, %{advertiser_ids: ["adv-pending"]}}
+      assert opts[:ad_ids] == ["feed-shortlisted"]
+      assert opts[:partner_ids] == ["adv-shortlisted"]
+      refute_received {:fetch, _, %{partner_ids: ["adv-pending"]}}
 
       assert output =~ "candidate_count=1"
       assert output =~ "imported_candidates=1"
@@ -323,6 +332,51 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
              )
 
       assert shortlisted.provider_feed_id == "feed-shortlisted"
+    end
+
+    test "imports a discovered feed candidate by feed id without an advertiser id" do
+      source = source_fixture()
+
+      candidate =
+        insert_candidate!(source, %{
+          advertiser_id: nil,
+          provider_feed_id: "feed-without-advertiser",
+          review_status: "shortlisted"
+        })
+
+      parent = self()
+
+      fetcher = fn cursor, opts ->
+        send(parent, {:fetch, cursor, opts})
+        {:ok, product_validation_fixture(), nil}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:ok, %{candidates_imported: 1, candidates_matched: 1, persisted: 1}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 1,
+                     provider_feed_ids: [candidate.provider_feed_id]
+                   )
+        end)
+
+      assert_receive {:fetch, nil, opts}
+      assert opts[:ad_ids] == ["feed-without-advertiser"]
+      assert opts[:partner_ids] == nil
+
+      assert output =~ "candidate_count=1"
+      assert output =~ "imported_candidates=1"
+
+      assert %ImportRun{
+               query: %{
+                 "adIds" => ["feed-without-advertiser"],
+                 "providerFeedId" => "feed-without-advertiser"
+               },
+               records_persisted: 1,
+               status: "succeeded"
+             } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
     end
 
     test "can suppress report output for background callers" do

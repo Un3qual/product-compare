@@ -8,8 +8,9 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   @product_query """
   query(
     $companyId: ID!,
+    $adIds: [ID!],
     $keywords: [String!],
-    $advertiserIds: [ID!],
+    $partnerIds: [ID!],
     $limit: Int!,
     $offset: Int!,
     $currency: String,
@@ -17,8 +18,9 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   ) {
     shoppingProducts(
       companyId: $companyId,
+      adIds: $adIds,
       keywords: $keywords,
-      advertiserIds: $advertiserIds,
+      partnerIds: $partnerIds,
       partnerStatus: JOINED,
       limit: $limit,
       offset: $offset,
@@ -152,11 +154,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
       Jason.encode!(%{
         query: @product_query,
         variables: %{
+          adIds: ad_ids(opts),
           companyId: company_id,
-          advertiserIds: advertiser_ids(opts),
           keywords: Map.get(opts, :keywords, ["shoe"]),
           limit: limit,
           offset: offset,
+          partnerIds: partner_ids(opts),
           currency: Map.get(opts, :currency, "USD"),
           serviceableAreas: serviceable_areas(opts)
         }
@@ -292,15 +295,21 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     end
   end
 
-  defp advertiser_ids(opts) do
+  defp ad_ids(opts) do
     opts
-    |> Map.get(:advertiser_ids)
-    |> normalize_advertiser_ids()
+    |> Map.get(:ad_ids)
+    |> normalize_ids()
   end
 
-  defp normalize_advertiser_ids(nil), do: nil
+  defp partner_ids(opts) do
+    opts
+    |> Map.get(:partner_ids, Map.get(opts, :advertiser_ids))
+    |> normalize_ids()
+  end
 
-  defp normalize_advertiser_ids(value) when is_list(value) do
+  defp normalize_ids(nil), do: nil
+
+  defp normalize_ids(value) when is_list(value) do
     value
     |> Enum.map(&string_value/1)
     |> Enum.reject(&is_nil/1)
@@ -310,7 +319,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     end
   end
 
-  defp normalize_advertiser_ids(value) do
+  defp normalize_ids(value) do
     case string_value(value) do
       nil -> nil
       value -> [value]

@@ -96,7 +96,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
       assert query =~ "$serviceableAreas: [String!]"
     end
 
-    test "can scope shoppingProducts to discovered advertiser ids" do
+    test "scopes shoppingProducts to discovered feeds and advertisers" do
       System.put_env("CJ_API_TOKEN", "test-token")
       System.put_env("CJ_ACCOUNT_ID", "1234567")
 
@@ -124,7 +124,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
 
       assert {:ok, [], nil} =
                Client.fetch_batch(nil,
-                 advertiser_ids: ["adv-1"],
+                 ad_ids: ["feed-1"],
+                 partner_ids: ["adv-1"],
                  keywords: nil,
                  limit: 25,
                  transport: transport
@@ -135,16 +136,20 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
       assert %{
                "query" => query,
                "variables" => %{
-                 "advertiserIds" => ["adv-1"],
                  "companyId" => "1234567",
                  "keywords" => nil,
                  "limit" => 25,
-                 "offset" => 0
+                 "offset" => 0,
+                 "adIds" => ["feed-1"],
+                 "partnerIds" => ["adv-1"]
                }
              } = Jason.decode!(body)
 
-      assert query =~ "$advertiserIds: [ID!]"
-      assert query =~ "advertiserIds: $advertiserIds"
+      assert query =~ "$adIds: [ID!]"
+      assert query =~ "adIds: $adIds"
+      assert query =~ "$partnerIds: [ID!]"
+      assert query =~ "partnerIds: $partnerIds"
+      refute query =~ "advertiserIds"
     end
 
     test "returns a missing env error before calling the transport" do
