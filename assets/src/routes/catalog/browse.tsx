@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Link, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
@@ -9,6 +9,14 @@ import productFilterMetadataQuery, {
 } from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
+import {
+  buildComparePathFromSlugs,
+  buildCurrentRoutePathWithCompareSlugs,
+  selectedCompareSlugsAfterAdding,
+  selectedCompareSlugsFromSearch
+} from "../compare/paths";
+import { CompareSelectionTray } from "../compare/selection-tray";
 import {
   hasActiveCatalogFilters,
   type CatalogFilters
@@ -89,6 +97,11 @@ function BrowseProducts({
   const filterMetadata = metadataData.productFilterMetadata;
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = data.products.edges.map(({ node }) => node);
+  const location = useLocation();
+  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
+    maxProducts: MAX_COMPARE_PRODUCTS
+  });
+  const currentBrowsePathname = browseRoutePathname(location.pathname);
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
@@ -96,26 +109,60 @@ function BrowseProducts({
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
-      ? catalogBrowseNextPagePath(activeFilters, currentPageSize, data.products.pageInfo.endCursor)
+      ? catalogBrowseNextPagePath(
+          activeFilters,
+          currentPageSize,
+          data.products.pageInfo.endCursor,
+          selectedCompareSlugs
+        )
       : null;
   const paginationLinks =
     currentAfter || nextProductsPath ? (
       <nav aria-label="Browse product pages">
         {currentAfter ? (
-          <Link to={catalogBrowseFirstPagePath(activeFilters, currentPageSize)}>First products</Link>
+          <Link
+            to={catalogBrowseFirstPagePath(
+              activeFilters,
+              currentPageSize,
+              selectedCompareSlugs
+            )}
+          >
+            First products
+          </Link>
         ) : null}
         {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
       </nav>
     ) : null;
+  const selectionTray =
+    selectedCompareSlugs.length > 0 ? (
+      <CompareSelectionTray
+        items={products.map((product) => ({
+          label: product.name,
+          slug: product.slug
+        }))}
+        maxProducts={MAX_COMPARE_PRODUCTS}
+        openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
+        removePathForIndex={(index) =>
+          buildCurrentRoutePathWithCompareSlugs(
+            currentBrowsePathname,
+            location.search,
+            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
+          )
+        }
+        selectedSlugs={selectedCompareSlugs}
+      />
+    ) : null;
   const filterControls = (
     <>
       <CatalogFilterForm
+        compareSlugs={selectedCompareSlugs}
         key={filterFormKey}
         filters={activeFilters}
         metadata={filterMetadata}
         pageSize={currentPageSize}
       />
       <CatalogActiveFilterSummary
+        compareSlugs={selectedCompareSlugs}
         filters={activeFilters}
         metadata={filterMetadata}
         pageSize={currentPageSize}
@@ -126,6 +173,7 @@ function BrowseProducts({
   if (products.length === 0) {
     return (
       <section>
+        {selectionTray}
         {filterControls}
         <p>
           {hasFilteredEmptyState
@@ -139,11 +187,17 @@ function BrowseProducts({
 
   return (
     <>
+      {selectionTray}
       {filterControls}
       <ul>
         {products.map((product) => (
           <li key={product.id}>
-            <BrowseProductCard product={product} />
+            <BrowseProductCard
+              currentPathname={currentBrowsePathname}
+              currentSearch={location.search}
+              product={product}
+              selectedCompareSlugs={selectedCompareSlugs}
+            />
           </li>
         ))}
       </ul>
@@ -152,7 +206,17 @@ function BrowseProducts({
   );
 }
 
-function BrowseProductCard({ product }: { product: BrowseProductNode }) {
+function BrowseProductCard({
+  currentPathname,
+  currentSearch,
+  product,
+  selectedCompareSlugs
+}: {
+  currentPathname: string;
+  currentSearch: string;
+  product: BrowseProductNode;
+  selectedCompareSlugs: readonly string[];
+}) {
   return (
     <article aria-label={product.name}>
       <h2>{product.name}</h2>
@@ -160,15 +224,16 @@ function BrowseProductCard({ product }: { product: BrowseProductNode }) {
       <p>{product.brand.name}</p>
       <ul aria-label={`Decision actions for ${product.name}`}>
         <li>
-          <Link to={browseProductDetailPath(product.slug)}>
+          <Link to={browseProductDetailPath(product.slug, selectedCompareSlugs)}>
             View details for {product.name}
           </Link>
         </li>
-        <li>
-          <Link to={`/compare?slug=${encodeURIComponent(product.slug)}`}>
-            Compare {product.name}
-          </Link>
-        </li>
+        <CompareAction
+          currentPathname={currentPathname}
+          currentSearch={currentSearch}
+          product={product}
+          selectedCompareSlugs={selectedCompareSlugs}
+        />
         <li>
           <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
             View offers for {product.name}
@@ -179,6 +244,54 @@ function BrowseProductCard({ product }: { product: BrowseProductNode }) {
   );
 }
 
-function browseProductDetailPath(slug: string) {
-  return `/products/${encodeURIComponent(slug)}`;
+function CompareAction({
+  currentPathname,
+  currentSearch,
+  product,
+  selectedCompareSlugs
+}: {
+  currentPathname: string;
+  currentSearch: string;
+  product: BrowseProductNode;
+  selectedCompareSlugs: readonly string[];
+}) {
+  if (selectedCompareSlugs.includes(product.slug)) {
+    return <li>{product.name} selected for comparison</li>;
+  }
+
+  if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
+    return <li>Compare selection full</li>;
+  }
+
+  const nextCompareSlugs = selectedCompareSlugsAfterAdding(
+    selectedCompareSlugs,
+    product.slug,
+    MAX_COMPARE_PRODUCTS
+  );
+
+  return (
+    <li>
+      <Link
+        to={buildCurrentRoutePathWithCompareSlugs(
+          currentPathname,
+          currentSearch,
+          nextCompareSlugs
+        )}
+      >
+        Add {product.name} to compare
+      </Link>
+    </li>
+  );
+}
+
+function browseProductDetailPath(slug: string, selectedCompareSlugs: readonly string[]) {
+  return buildCurrentRoutePathWithCompareSlugs(
+    `/products/${encodeURIComponent(slug)}`,
+    "",
+    selectedCompareSlugs
+  );
+}
+
+function browseRoutePathname(pathname: string) {
+  return pathname === "/" ? "/products" : pathname;
 }

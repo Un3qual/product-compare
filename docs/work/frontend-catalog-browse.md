@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done (catalog faceted filtering UI)
+- Status: done (persistent compare tray browse support)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-30 (working tree)
+- Last verified: 2026-07-01 after persistent compare tray verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -71,6 +71,35 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Persistent Compare Tray Browse Support
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/filter-form.tsx`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Implemented:
+  - `/products` now parses repeated `slug` params from the current URL and
+    renders the shared selected-products tray when compare selections exist.
+  - Browse card compare actions now add products in place by rewriting the
+    current `/products` URL instead of jumping directly to `/compare`.
+  - Product detail links, first/next pagination, filter GET submissions, and
+    clear-filter links preserve selected compare slugs without preserving stale
+    `after` cursors through filter submissions.
+  - Off-page selected products use slug fallback labels; visible selected
+    browse products use their route-loaded product names.
+- Verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "persistent compare tray|adds a browse product|preserves compare slugs|renders decision actions"` - failed as expected with 2 failed tests and 43 skipped because the tray was missing and card actions still linked directly to `/compare`.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "persistent compare tray|adds a browse product|preserves compare slugs|renders decision actions"` - 2 passed, 43 skipped.
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx` - 45 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx` - 163 tests, 0 failures.
+  - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
 ## Current Cross-Project Batch
 
 - Status: done.
@@ -103,6 +132,9 @@
 - `assets/src/routes/catalog/browse.tsx` now renders each populated product row
   as a named decision card with explicit details, compare, and offers actions
   without changing the browse loader or Relay query shape.
+- `assets/src/routes/catalog/browse.tsx` now renders URL-backed compare
+  selections in the shared tray, uses route-local add links for browse cards,
+  and preserves compare slugs through browse controls.
 - `assets/test/routes/catalog/browse.route.test.tsx` now covers page-size normalization, selected page-size rendering, and pagination link preservation.
 - `assets/test/routes/catalog/browse.route.test.tsx` now covers the decision-card
   action labels/destinations while keeping page-size and pagination regressions

@@ -1,5 +1,5 @@
 import { Suspense, useId } from "react";
-import { Link, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
@@ -9,6 +9,14 @@ import productOffersRouteQuery, {
 } from "../../__generated__/ProductOffersRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
+import {
+  buildComparePathFromSlugs,
+  buildCurrentRoutePathWithCompareSlugs,
+  selectedCompareSlugsAfterAdding,
+  selectedCompareSlugsFromSearch
+} from "../compare/paths";
+import { CompareSelectionTray } from "../compare/selection-tray";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -50,6 +58,10 @@ function ProductDetail({
     productQuery
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
+  const location = useLocation();
+  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
+    maxProducts: MAX_COMPARE_PRODUCTS
+  });
 
   if (!data.product) {
     return <ProductNotFoundFallback />;
@@ -62,7 +74,32 @@ function ProductDetail({
       <h1>{product.name}</h1>
       <p>{product.brand?.name ?? "Unknown brand"}</p>
       {product.description ? <p>{product.description}</p> : null}
-      <ProductDecisionActions productId={product.id} productSlug={product.slug} />
+      {selectedCompareSlugs.length > 0 ? (
+        <CompareSelectionTray
+          items={[
+            {
+              label: product.name,
+              slug: product.slug
+            }
+          ]}
+          maxProducts={MAX_COMPARE_PRODUCTS}
+          openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
+          removePathForIndex={(index) =>
+            productDetailPathWithCompareSlugs(
+              product.slug,
+              location.search,
+              selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
+            )
+          }
+          selectedSlugs={selectedCompareSlugs}
+        />
+      ) : null}
+      <ProductDecisionActions
+        currentSearch={location.search}
+        productId={product.id}
+        productSlug={product.slug}
+        selectedCompareSlugs={selectedCompareSlugs}
+      />
       <ProductSpecifications attributes={product.currentAttributes} />
       <section>
         <h2>Active offers</h2>
@@ -78,6 +115,7 @@ function ProductDetail({
                 query={offers.query}
                 productSlug={product.slug}
                 offersAfter={offers.query.__relayQuery.variables.after ?? null}
+                selectedCompareSlugs={selectedCompareSlugs}
               />
             </Suspense>
           </ResettableErrorBoundary>
@@ -88,11 +126,15 @@ function ProductDetail({
 }
 
 function ProductDecisionActions({
+  currentSearch,
   productId,
-  productSlug
+  productSlug,
+  selectedCompareSlugs
 }: {
+  currentSearch: string;
   productId: string;
   productSlug: string;
+  selectedCompareSlugs: readonly string[];
 }) {
   const titleId = useId();
 
@@ -100,17 +142,53 @@ function ProductDecisionActions({
     <section aria-labelledby={titleId}>
       <h2 id={titleId}>Next steps</h2>
       <ul>
-        <li>
-          <Link to={`/compare?slug=${encodeURIComponent(productSlug)}`}>Compare this product</Link>
-        </li>
+        <DetailCompareAction
+          currentSearch={currentSearch}
+          productSlug={productSlug}
+          selectedCompareSlugs={selectedCompareSlugs}
+        />
         <li>
           <Link to={`/offers?productId=${encodeURIComponent(productId)}`}>Review active offers</Link>
         </li>
         <li>
-          <Link to="/products">Browse products</Link>
+          <Link to={buildCurrentRoutePathWithCompareSlugs("/products", "", selectedCompareSlugs)}>
+            Browse products
+          </Link>
         </li>
       </ul>
     </section>
+  );
+}
+
+function DetailCompareAction({
+  currentSearch,
+  productSlug,
+  selectedCompareSlugs
+}: {
+  currentSearch: string;
+  productSlug: string;
+  selectedCompareSlugs: readonly string[];
+}) {
+  if (selectedCompareSlugs.includes(productSlug)) {
+    return <li>This product is selected for comparison</li>;
+  }
+
+  if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
+    return <li>Compare selection full</li>;
+  }
+
+  const nextCompareSlugs = selectedCompareSlugsAfterAdding(
+    selectedCompareSlugs,
+    productSlug,
+    MAX_COMPARE_PRODUCTS
+  );
+
+  return (
+    <li>
+      <Link to={productDetailPathWithCompareSlugs(productSlug, currentSearch, nextCompareSlugs)}>
+        Add this product to compare
+      </Link>
+    </li>
   );
 }
 
@@ -157,7 +235,8 @@ function OffersUnavailableFallback() {
 function ProductOffers({
   query,
   productSlug,
-  offersAfter
+  offersAfter,
+  selectedCompareSlugs
 }: {
   query: Extract<
     Extract<ProductDetailLoaderData, { status: "ready" }>["offers"],
@@ -165,6 +244,7 @@ function ProductOffers({
   >["query"];
   productSlug: string;
   offersAfter: string | null;
+  selectedCompareSlugs: readonly string[];
 }) {
   const queryRef = useRoutePreloadedQuery<ProductOffersRouteQuery>(
     productOffersRouteQuery,
@@ -195,11 +275,19 @@ function ProductOffers({
   const paginationLinks =
     offersAfter || (data.merchantProducts.pageInfo.hasNextPage && data.merchantProducts.pageInfo.endCursor) ? (
       <nav aria-label="Active offer pages">
-        {offersAfter ? <Link to={productOffersPath(productSlug)}>First offers</Link> : null}
+        {offersAfter ? (
+          <Link to={productOffersPath(productSlug, null, selectedCompareSlugs)}>
+            First offers
+          </Link>
+        ) : null}
         {data.merchantProducts.pageInfo.hasNextPage &&
         data.merchantProducts.pageInfo.endCursor ? (
           <Link
-            to={productOffersPath(productSlug, data.merchantProducts.pageInfo.endCursor)}
+            to={productOffersPath(
+              productSlug,
+              data.merchantProducts.pageInfo.endCursor,
+              selectedCompareSlugs
+            )}
           >
             Next offers
           </Link>
@@ -243,18 +331,42 @@ function ProductOffers({
   );
 }
 
-function productOffersPath(productSlug: string, offersAfter?: string | null) {
+function productDetailPath(productSlug: string) {
+  return `/products/${encodeURIComponent(productSlug)}`;
+}
+
+function productDetailPathWithCompareSlugs(
+  productSlug: string,
+  search: string,
+  selectedCompareSlugs: readonly string[]
+) {
+  return buildCurrentRoutePathWithCompareSlugs(
+    productDetailPath(productSlug),
+    search,
+    selectedCompareSlugs
+  );
+}
+
+function productOffersPath(
+  productSlug: string,
+  offersAfter?: string | null,
+  selectedCompareSlugs: readonly string[] = []
+) {
   const params = new URLSearchParams();
 
   if (offersAfter) {
     params.set("offersAfter", offersAfter);
   }
 
+  for (const slug of selectedCompareSlugs) {
+    params.append("slug", slug);
+  }
+
   const query = params.toString();
 
   return query.length > 0
-    ? `/products/${encodeURIComponent(productSlug)}?${query}`
-    : `/products/${encodeURIComponent(productSlug)}`;
+    ? `${productDetailPath(productSlug)}?${query}`
+    : productDetailPath(productSlug);
 }
 
 function OfferPriceHistory({

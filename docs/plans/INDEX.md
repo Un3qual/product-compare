@@ -13,12 +13,23 @@ of active and candidate plans, not the dispatch queue.
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership. The
-2026-06-29 usable-product batch completed. No implementation plan is currently
-active in the live queue.
+2026-06-29 usable-product batch, the product filtering and in-depth comparison
+batch, and the persistent compare tray follow-up completed. The CJ read-model
+and weekly operator-runbook batch is active in the live queue as one parallel
+batch.
 
 Active implementation plans:
 
-- None.
+- `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
+- `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
+- `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -30,19 +41,12 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| planned | Product filtering and in-depth comparison batch | Promote when product-facing comparison/filtering quality is the highest need. | Five detailed plans added on 2026-06-30: filter metadata/facets, catalog faceted filtering UI, compare matrix modes, compare attribute metadata, and compare offer decision helpers. |
-| retained | CJ read-model and weekly operator runbook batch | Promote after the 2026-06-29 usable-product queue has moved or when ingestion operator readiness becomes the highest product need again. | The ten CJ plans created on 2026-06-27 remain planned follow-up work and are tracked in `docs/work/product-data-scraping.md`; they are not currently live queue rows. |
 | blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Planned Follow-Up Groups
 
-- Planned product filtering and in-depth comparison follow-up:
-  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`,
-  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`,
-  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`,
-  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`,
-  and
-  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
+- No planned follow-up groups are currently listed outside the blocked
+  candidate pool. Start at `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive
 
@@ -50,6 +54,18 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Product filtering, persistent compare tray, and CJ batch promotion:
+  `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`,
+  `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`,
+  `docs/plans/2026-06-30-compare-matrix-modes-implementation-plan.md`,
+  `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`,
+  `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`,
+  `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`,
+  and
+  `docs/plans/2026-07-01-cj-read-model-operator-batch-promotion-implementation-plan.md`.
 
 - Usable-product frontend batch:
   `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`,

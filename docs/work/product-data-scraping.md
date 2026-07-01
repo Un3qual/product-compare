@@ -2,23 +2,23 @@
 
 ## Snapshot
 
-- Status: retained follow-up
+- Status: live ready parallel batch
 - Priority: P2
 - Source of truth: this file
-- Live queue row: retained behind the 2026-06-29 usable-product queue
-- Last verified: 2026-06-27 after source-health focused tests, `mix typecheck`,
-  and `git diff --check`
-- Last plan refresh: 2026-06-29 after retaining the CJ read-model and weekly
-  operator runbook candidate pool behind product-facing work
+- Live queue row: promoted on 2026-07-01 as the CJ read-model and weekly
+  operator-runbook parallel batch
+- Last verified: 2026-07-01 against current code/tests for the completed
+  candidate cohort and market coverage rows; their evidence sections record
+  final gates
+- Last plan refresh: 2026-07-01 after promoting the CJ read-model and weekly
+  operator runbook candidate pool into the live queue
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Retained implementation plans:
-  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
+- Active implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
@@ -28,6 +28,8 @@
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 - Recently completed implementation plans:
+  - `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
+  - `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
 - Previous implementation plans:
   - `docs/plans/2026-06-27-cj-product-import-resume-task-implementation-plan.md`
@@ -90,11 +92,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Current Batch
 
-- Status: retained follow-up
-- Batch: CJ read-model and weekly operator runbook ten-batch slice.
+- Status: ready
+- Batch: Remaining CJ read-model and weekly operator runbook live parallel batch.
 - Plans:
-  - `docs/plans/2026-06-27-cj-candidate-cohort-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
@@ -104,13 +104,13 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 - Decision:
-  - Keep the CJ-only read-model/runbook candidate pool planned, but move it
-    behind the 2026-06-29 usable-product queue so the live dispatch makes
-    product-facing progress first.
+  - Promote the CJ-only read-model/runbook candidate pool now that the
+    usable-product, product filtering/in-depth comparison, and persistent
+    compare tray queues have moved.
 - Parallel slices:
-  - Candidate cohort, market coverage, freshness, run health, run throughput,
-    import artifact quality, import price quality, merchant identity quality,
-    application readiness, and the weekly operator runbook.
+  - Freshness, run health, run throughput, import artifact quality, import price
+    quality, merchant identity quality, application readiness, and the weekly
+    operator runbook.
 - Work-item guardrails:
   - Read-model rows add one standalone read-only module plus focused tests.
   - The runbook row is docs-only for the workflow system and creates no
@@ -122,20 +122,67 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     queries, raw metadata, credentials, account ids, tracking params, provider
     error payloads, or secret values.
   - Parallel workers may edit only their row's target paths and the named
-    evidence heading in this lane doc if this retained batch is promoted again.
+    evidence heading in this lane doc.
 
-## Retained Batch Evidence Headings
+## Live Batch Evidence Headings
 
-If this retained batch is promoted again, parallel workers must add completion
-evidence only under their assigned heading.
+Parallel workers must add completion evidence only under their assigned heading.
 
 ### Candidate Cohort Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJCandidateCohort.summary/1` as a safe,
+    read-only CJ candidate cohort read model over `merchant_feed_candidates`.
+  - Returned CJ-only pending, shortlisted, dismissed, and total review-status
+    counts plus highest-fit shortlisted CJ candidates with explicit safe fields
+    and derived `fit_score`.
+  - Added focused tests for CJ-only counts, CJ-only fit-score ordering,
+    same-score `last_seen_at`, advertiser name, feed name, provider feed id,
+    and id tiebreaking, limit normalization, safe returned keys, and read-only
+    behavior.
+  - Red verification:
+    initial `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    stopped before compile because test dependencies had not been fetched in the
+    worktree; after `mix deps.get`, the same focused test failed with undefined
+    `ProductCompare.Ingestion.CJCandidateCohort.summary/0` and `summary/1`
+    calls, 5 tests, 5 failures.
+  - Green verification:
+    `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    passed with 5 tests, 0 failures.
+  - Review follow-up verification:
+    `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+    passed with 6 tests, 0 failures after adding explicit same-score,
+    same-timestamp coverage for advertiser name, feed name, provider feed id,
+    and id tiebreakers.
+  - Final gates:
+    `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    completed with exit 0.
+  - Scope guardrails:
+    no Mix task, GraphQL or browser route, mutation path, CJ network call,
+    scheduler behavior, credential persistence, credential/account/tracking
+    exposure, raw metadata exposure, provider payload exposure, or CSV export
+    path was added.
 
 ### Candidate Market Coverage Evidence
 
-- Pending.
+- Added `ProductCompare.Ingestion.CJCandidateMarketCoverage` and
+  `test/product_compare/ingestion/cj_candidate_market_coverage_test.exs` as a
+  read-only CJ market coverage aggregate over persisted merchant feed
+  candidates.
+- Red verification:
+  `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
+  failed with undefined `ProductCompare.Ingestion.CJCandidateMarketCoverage.summary/1`
+  before the production module existed.
+- Green focused verification:
+  `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
+  passed with 3 tests, 0 failures.
+- Final gates:
+  `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+  completed with exit 0.
+- Guardrail evidence:
+  no Mix task, GraphQL or browser route, mutation, network call, file write,
+  raw metadata exposure, secret/account/tracking exposure, scheduler behavior,
+  or CSV export path was added.
 
 ### Candidate Freshness Evidence
 
@@ -230,8 +277,8 @@ evidence only under their assigned heading.
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - After the ten CJ read-model/operator rows complete, choose whether to expose
-    these read models through a dashboard contract, continue with another
+  - After the remaining CJ read-model/operator rows complete, choose whether to
+    expose these read models through a dashboard contract, continue with another
     source-health/dashboard slice, or explicitly defer further ingestion work.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
@@ -243,10 +290,6 @@ evidence only under their assigned heading.
 
 ## Current Batch Verification Commands
 
-- CJ candidate cohort read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
-- CJ candidate market coverage read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
 - CJ candidate freshness read model:
   - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
 - CJ run health read model:
@@ -268,6 +311,9 @@ evidence only under their assigned heading.
   - `mix format --check-formatted` for Elixir read-model rows
   - `mix typecheck`
   - `git diff --check`
+- Recently completed candidate cohort and market coverage read models:
+  - `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
+  - `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
 - Recently completed source health read model:
   - `mix test test/product_compare/ingestion/source_health_test.exs`
 - Previous readiness batch verification commands:

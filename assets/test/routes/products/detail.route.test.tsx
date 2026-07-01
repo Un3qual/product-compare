@@ -9,6 +9,7 @@ import {
   preloadRouteQuery,
   useRoutePreloadedQuery
 } from "../../../src/relay/route-preload";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
 import { ProductDetailRoute } from "../../../src/routes/products/detail";
 
@@ -471,16 +472,16 @@ test("renders product decision actions with compare, offer review, and browse de
   });
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products/detail%2Fproduct%20slug"]}>
       <ProductDetailRoute />
     </MemoryRouter>
   );
 
   const actions = screen.getByRole("region", { name: "Next steps" });
 
-  expect(within(actions).getByRole("link", { name: "Compare this product" })).toHaveAttribute(
+  expect(within(actions).getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail%2Fproduct%20slug"
+    "/products/detail%2Fproduct%20slug?slug=detail%2Fproduct+slug"
   );
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
     "href",
@@ -1150,7 +1151,7 @@ test("renders product specification group labels case-insensitively", () => {
   expect(specSection.getByText("2026")).toBeVisible();
 });
 
-test("links from product detail to compare with the current product selected", () => {
+test("adds the current detail product to compare from product detail", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -1163,14 +1164,123 @@ test("links from product detail to compare with the current product selected", (
   mockProductAndOffersQueries(buildOffersData([]));
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products/detail-product"]}>
       <ProductDetailRoute />
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("link", { name: "Compare this product" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product"
+    "/products/detail-product?slug=detail-product"
+  );
+});
+
+test("renders a persistent compare tray on product detail and preserves compare slugs", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter initialEntries={["/products/detail-product?slug=second-product"]}>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
+
+  expect(selectionCount).toHaveTextContent(`1 of ${MAX_COMPARE_PRODUCTS} products selected.`);
+  expect(selectionCount).toHaveAttribute("aria-live", "polite");
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=second-product"
+  );
+  expect(
+    within(selectionTray).getByRole("link", {
+      name: "Remove second-product from selection"
+    })
+  ).toHaveAttribute("href", "/products/detail-product");
+  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products?slug=second-product"
+  );
+});
+
+test("clamps URL-driven compare selections before rendering product detail controls", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter
+      initialEntries={[
+        "/products/detail-product?slug=first-product&slug=second-product&slug=third-product&slug=detail-product"
+      ]}
+    >
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const selectionTray = screen.getByRole("region", { name: "Selected products" });
+  const selectionCount = within(selectionTray).getByRole("status");
+
+  expect(selectionCount).toHaveTextContent(
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+  );
+  expect(within(selectionTray).getAllByRole("listitem")).toHaveLength(MAX_COMPARE_PRODUCTS);
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=first-product&slug=second-product&slug=third-product"
+  );
+  expect(screen.getByText("Compare selection full")).toBeInTheDocument();
+  expect(screen.queryByText("This product is selected for comparison")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products?slug=first-product&slug=second-product&slug=third-product"
+  );
+});
+
+test("adds the current detail product while preserving offersAfter", () => {
+  const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor-next-page");
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: offersDescriptorWithAfter
+    }
+  });
+  mockRouteQueryRefs(offersDescriptorWithAfter);
+  mockProductAndOffersQueries(buildOffersData([]));
+
+  render(
+    <MemoryRouter
+      initialEntries={[
+        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product"
+      ]}
+    >
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
+    "href",
+    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product"
   );
 });
 

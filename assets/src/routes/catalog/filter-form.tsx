@@ -23,10 +23,12 @@ const EMPTY_CATALOG_FILTERS: CatalogFilters = {
 };
 
 export function CatalogFilterForm({
+  compareSlugs = [],
   filters,
   metadata,
   pageSize
 }: {
+  compareSlugs?: readonly string[];
   filters: CatalogFilters;
   metadata: ProductFilterMetadata;
   pageSize: number;
@@ -51,6 +53,7 @@ export function CatalogFilterForm({
   return (
     <form method="get" action="/products" aria-label="Filter products">
       <PageSizeField pageSize={pageSize} />
+      <CompareSlugFields compareSlugs={compareSlugs} />
       <ProductTypeField
         metadata={metadata}
         selectedTypeTaxonId={selectedTypeTaxonId}
@@ -67,6 +70,16 @@ export function CatalogFilterForm({
       <EnumFiltersFieldset filters={filters} metadata={metadata} />
       <button type="submit">Apply filters</button>
     </form>
+  );
+}
+
+function CompareSlugFields({ compareSlugs }: { compareSlugs: readonly string[] }) {
+  return (
+    <>
+      {compareSlugs.map((slug) => (
+        <input key={slug} type="hidden" name="slug" value={slug} />
+      ))}
+    </>
   );
 }
 
@@ -346,10 +359,12 @@ function EnumFilterFieldset({
 }
 
 export function CatalogActiveFilterSummary({
+  compareSlugs = [],
   filters,
   metadata,
   pageSize
 }: {
+  compareSlugs?: readonly string[];
   filters: CatalogFilters;
   metadata: CatalogFilterMetadata;
   pageSize: number;
@@ -369,7 +384,9 @@ export function CatalogActiveFilterSummary({
           ))}
         </ul>
       ) : null}
-      <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize)}>Clear filters</Link>
+      <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize, compareSlugs)}>
+        Clear filters
+      </Link>
     </section>
   );
 }

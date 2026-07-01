@@ -1,7 +1,58 @@
-import type { CompareSpecMode } from "./loader";
+import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 
 interface BuildComparePathOptions {
   specMode?: CompareSpecMode;
+}
+
+interface NormalizeCompareSlugsOptions {
+  maxProducts?: number;
+}
+
+export function selectedCompareSlugsFromSearch(
+  search: string,
+  options: NormalizeCompareSlugsOptions = {}
+): string[] {
+  return normalizedCompareSlugs(new URLSearchParams(search).getAll("slug"), options);
+}
+
+export function selectedCompareSlugsAfterAdding(
+  selectedSlugs: readonly string[],
+  slug: string,
+  maxProducts: number
+): string[] {
+  const nextSelectedSlugs = normalizedCompareSlugs(selectedSlugs, { maxProducts });
+  const normalizedSlug = slug.trim();
+
+  if (
+    normalizedSlug.length === 0 ||
+    nextSelectedSlugs.includes(normalizedSlug) ||
+    nextSelectedSlugs.length >= maxProducts
+  ) {
+    return nextSelectedSlugs;
+  }
+
+  return [...nextSelectedSlugs, normalizedSlug];
+}
+
+export function buildCurrentRoutePathWithCompareSlugs(
+  pathname: string,
+  search: string,
+  selectedSlugs: readonly string[]
+): string {
+  const currentParams = new URLSearchParams(search);
+  const nextParams = new URLSearchParams();
+
+  for (const [key, value] of currentParams) {
+    if (key !== "slug") {
+      nextParams.append(key, value);
+    }
+  }
+
+  appendNormalizedCompareSlugParams(nextParams, selectedSlugs);
+
+  const nextQueryString = nextParams.toString();
+
+  return nextQueryString.length > 0 ? `${pathname}?${nextQueryString}` : pathname;
 }
 
 export function buildComparePathFromSlugs(
@@ -10,9 +61,7 @@ export function buildComparePathFromSlugs(
 ) {
   const params = new URLSearchParams();
 
-  for (const slug of selectedSlugs) {
-    params.append("slug", slug);
-  }
+  appendNormalizedCompareSlugParams(params, selectedSlugs);
 
   if (options.specMode && options.specMode !== "shared") {
     params.set("specs", options.specMode);
@@ -31,4 +80,41 @@ export function buildComparePathAfterRemovingSlugIndex(
   const nextSelectedSlugs = selectedSlugs.filter((_, index) => index !== removeIndex);
 
   return buildComparePathFromSlugs(nextSelectedSlugs, options);
+}
+
+function appendNormalizedCompareSlugParams(
+  params: URLSearchParams,
+  slugs: readonly string[]
+) {
+  for (const slug of normalizedCompareSlugs(slugs, { maxProducts: MAX_COMPARE_PRODUCTS })) {
+    params.append("slug", slug);
+  }
+}
+
+function normalizedCompareSlugs(
+  slugs: readonly string[],
+  options: NormalizeCompareSlugsOptions = {}
+): string[] {
+  const selectedSlugs: string[] = [];
+  const seenSlugs = new Set<string>();
+
+  for (const slug of slugs) {
+    if (
+      options.maxProducts !== undefined &&
+      selectedSlugs.length >= options.maxProducts
+    ) {
+      break;
+    }
+
+    const normalizedSlug = slug.trim();
+
+    if (normalizedSlug.length === 0 || seenSlugs.has(normalizedSlug)) {
+      continue;
+    }
+
+    selectedSlugs.push(normalizedSlug);
+    seenSlugs.add(normalizedSlug);
+  }
+
+  return selectedSlugs;
 }
