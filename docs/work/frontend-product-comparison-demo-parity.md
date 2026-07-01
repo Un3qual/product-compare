@@ -178,6 +178,7 @@ Lane: Frontend product comparison demo parity (`docs/work/frontend-product-compa
 Active plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
 Next action: Add a persistent compare tray across `/products` and `/products/:slug` so shoppers can see the current URL-backed compare selection, add or remove selected products from browse/detail pages, and continue to `/compare` without losing repeated `slug` param order.
 Owned paths:
+
 - `assets/src/routes/compare/paths.ts`
 - `assets/src/routes/compare/selection-tray.tsx`
 - `assets/src/routes/compare/index.tsx`

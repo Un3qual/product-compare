@@ -50,6 +50,7 @@ secret values out of scope.
 ### Parallel Batch: CJ Read-Model And Weekly Operator Runbook
 
 Batch rules:
+
 - Workers start from `docs/work/index.md`, `docs/work/operating-model.md`,
   `docs/work/product-data-scraping.md`, and their row's active plan.
 - Parallel workers may edit only their row's owned paths and the named evidence
@@ -65,10 +66,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
 Next action: Add the read-only CJ candidate cohort aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_candidate_cohort.ex`
 - `test/product_compare/ingestion/cj_candidate_cohort_test.exs`
 - `docs/work/product-data-scraping.md` under `### Candidate Cohort Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -82,10 +85,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
 Next action: Add the read-only CJ candidate market coverage aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_candidate_market_coverage.ex`
 - `test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
 - `docs/work/product-data-scraping.md` under `### Candidate Market Coverage Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -99,10 +104,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
 Next action: Add the read-only CJ candidate freshness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_candidate_freshness.ex`
 - `test/product_compare/ingestion/cj_candidate_freshness_test.exs`
 - `docs/work/product-data-scraping.md` under `### Candidate Freshness Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -116,10 +123,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
 Next action: Add the read-only CJ run health aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_run_health.ex`
 - `test/product_compare/ingestion/cj_run_health_test.exs`
 - `docs/work/product-data-scraping.md` under `### Run Health Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_run_health_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -133,10 +142,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
 Next action: Add the read-only CJ run throughput aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_run_throughput.ex`
 - `test/product_compare/ingestion/cj_run_throughput_test.exs`
 - `docs/work/product-data-scraping.md` under `### Run Throughput Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -150,10 +161,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
 Next action: Add the read-only CJ import artifact quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_import_artifact_quality.ex`
 - `test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
 - `docs/work/product-data-scraping.md` under `### Import Artifact Quality Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -167,10 +180,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
 Next action: Add the read-only CJ import price quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_import_price_quality.ex`
 - `test/product_compare/ingestion/cj_import_price_quality_test.exs`
 - `docs/work/product-data-scraping.md` under `### Import Price Quality Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -184,10 +199,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
 Next action: Add the read-only CJ merchant identity quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_merchant_identity_quality.ex`
 - `test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
 - `docs/work/product-data-scraping.md` under `### Merchant Identity Quality Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -201,10 +218,12 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
 Next action: Add the read-only CJ application readiness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, application submission, or CSV export paths.
 Owned paths:
+
 - `lib/product_compare/ingestion/cj_application_readiness.ex`
 - `test/product_compare/ingestion/cj_application_readiness_test.exs`
 - `docs/work/product-data-scraping.md` under `### Application Readiness Evidence` only
 Verification:
+
 - `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
 - `mix format --check-formatted`
 - `mix typecheck`
@@ -218,9 +237,11 @@ Lane: Product data scraping (`docs/work/product-data-scraping.md`)
 Active plan: `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
 Next action: Write the docs-only weekly CJ operator runbook without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credential persistence, application submission, account-manager automation, Tier-3 scraping, or CSV export paths.
 Owned paths:
+
 - `docs/runbooks/cj-weekly-operator-loop.md`
 - `docs/work/product-data-scraping.md` under `### Weekly Operator Runbook Evidence` only
 Verification:
+
 - `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[o]wed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` exits 1 with no matches
 - `git diff --check`
 Exit condition: The weekly operator runbook exists, avoids unfinished placeholders and secret-looking assignments, and completion evidence is recorded only under `### Weekly Operator Runbook Evidence`.
