@@ -1,4 +1,4 @@
-import type { CompareSpecMode } from "./loader";
+import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 
 interface BuildComparePathOptions {
   specMode?: CompareSpecMode;
@@ -86,7 +86,7 @@ function appendNormalizedCompareSlugParams(
   params: URLSearchParams,
   slugs: readonly string[]
 ) {
-  for (const slug of normalizedCompareSlugs(slugs)) {
+  for (const slug of normalizedCompareSlugs(slugs, { maxProducts: MAX_COMPARE_PRODUCTS })) {
     params.append("slug", slug);
   }
 }

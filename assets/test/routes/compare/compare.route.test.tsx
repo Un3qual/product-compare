@@ -23,6 +23,7 @@ import {
 import { RouteErrorBoundary } from "../../../src/routes/compare/error-boundary";
 import { CompareRoute } from "../../../src/routes/compare/index";
 import {
+  buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch
@@ -450,7 +451,7 @@ beforeEach(() => {
   mockCompareRouteQueries();
 });
 
-test("compare path helpers normalize selected slugs and rewrite current-route query strings", () => {
+test("compare path helpers normalize selected slugs and cap serialized route query strings", () => {
   expect(
     selectedCompareSlugsFromSearch(
       "?slug=detail-product&slug=&slug=second-product&slug=detail-product"
@@ -466,9 +467,22 @@ test("compare path helpers normalize selected slugs and rewrite current-route qu
     buildCurrentRoutePathWithCompareSlugs(
       "/products",
       "?first=24&slug=detail-product&typeTaxonId=type-laptops",
-      ["second-product"]
+      [
+        DETAIL_PRODUCT.slug,
+        SECOND_PRODUCT.slug,
+        THIRD_PRODUCT.slug,
+        "fourth-product"
+      ]
     )
-  ).toBe("/products?first=24&typeTaxonId=type-laptops&slug=second-product");
+  ).toBe(
+    "/products?first=24&typeTaxonId=type-laptops&slug=detail-product&slug=second-product&slug=third-product"
+  );
+  expect(
+    buildComparePathFromSlugs(
+      [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug, "fourth-product"],
+      { specMode: "all" }
+    )
+  ).toBe("/compare?slug=detail-product&slug=second-product&slug=third-product&specs=all");
 });
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
