@@ -2467,6 +2467,10 @@ test("ready compare page renders a selected-product tray with ordered remove lin
   const selectedProducts = within(selectionTray).getAllByRole("listitem");
 
   expect(within(selectionTray).getByText("3 of 3 products selected.")).toBeVisible();
+  expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=detail-product&slug=second-product&slug=third-product"
+  );
   expect(selectedProducts).toHaveLength(3);
   expect(selectedProducts[0]).toHaveTextContent("Detail Product");
   expect(selectedProducts[1]).toHaveTextContent("Second Product");

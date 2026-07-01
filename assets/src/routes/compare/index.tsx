@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useId, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import createSavedComparisonSetMutation, {
@@ -16,7 +16,6 @@ import {
   compareLoader,
   MAX_COMPARE_PRODUCTS,
   type CompareSpecMode,
-  type CompareProductSummary,
   type CompareRouteLoaderData
 } from "./loader";
 import {
@@ -28,6 +27,7 @@ import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
 } from "./paths";
+import { CompareSelectionTray } from "./selection-tray";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{
   label: string;
@@ -199,8 +199,19 @@ export function CompareRoute() {
         </p>
         {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}
         <CompareSelectionTray
-          products={loaderData.products}
-          specMode={loaderData.specMode}
+          items={loaderData.products.map((product) => ({
+            label: product.name,
+            slug: product.slug
+          }))}
+          maxProducts={MAX_COMPARE_PRODUCTS}
+          openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
+            specMode: loaderData.specMode
+          })}
+          removePathForIndex={(index) =>
+            buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
+              specMode: loaderData.specMode
+            })
+          }
           selectedSlugs={loaderData.slugs}
         />
         <CompareSpecModeControls
@@ -246,41 +257,6 @@ export function CompareRoute() {
         <p>One or more selected products were not found.</p>
       ) : null}
     </CompareShell>
-  );
-}
-
-function CompareSelectionTray({
-  products,
-  specMode,
-  selectedSlugs
-}: {
-  products: CompareProductSummary[];
-  specMode: CompareSpecMode;
-  selectedSlugs: readonly string[];
-}) {
-  const titleId = useId();
-
-  return (
-    <section aria-labelledby={titleId}>
-      <h2 id={titleId}>Selected products</h2>
-      <p>
-        {products.length} of {MAX_COMPARE_PRODUCTS} products selected.
-      </p>
-      <ul>
-        {products.map((product, index) => (
-          <li key={`${product.id}-${selectedSlugs[index] ?? index}`}>
-            <span>{product.name}</span>{" "}
-            <Link
-              to={buildComparePathAfterRemovingSlugIndex(selectedSlugs, index, {
-                specMode
-              })}
-            >
-              Remove {product.name} from selection
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
