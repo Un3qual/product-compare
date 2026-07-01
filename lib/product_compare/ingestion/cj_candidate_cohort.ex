@@ -9,7 +9,7 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
   """
 
   import Ecto.Query
-  import ProductCompare.Ingestion, only: [merchant_feed_candidate_fit_score: 1]
+  import ProductCompare.Ingestion.FitScore, only: [merchant_feed_candidate_fit_score: 1]
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
