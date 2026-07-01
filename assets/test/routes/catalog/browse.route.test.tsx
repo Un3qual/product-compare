@@ -640,7 +640,7 @@ test("browse loader drops malformed decimal numeric bounds", async () => {
 test("browse loader keeps backend-accepted decimal numeric bound forms", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/products?numeric.relay-attribute-price.min=.5&numeric.relay-attribute-price.max=1e3&numeric.relay-attribute-weight.min=%2B1&numeric.relay-attribute-weight.max=1."
+    "https://app.example.com/products?numeric.relay-attribute-price.min=.5&numeric.relay-attribute-price.max=1e3&numeric.relay-attribute-weight.min=%2B1&numeric.relay-attribute-weight.max=1.&numeric.relay-attribute-latency.min=0001e2&numeric.relay-attribute-latency.max=200"
   );
   const expectedFilters = {
     numeric: [
@@ -653,6 +653,11 @@ test("browse loader keeps backend-accepted decimal numeric bound forms", async (
         attributeId: "relay-attribute-weight",
         min: "+1",
         max: "1."
+      },
+      {
+        attributeId: "relay-attribute-latency",
+        min: "0001e2",
+        max: "200"
       }
     ]
   };

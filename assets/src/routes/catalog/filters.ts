@@ -267,9 +267,9 @@ function decimalFilterValueParts(value: string): DecimalFilterValueParts | null 
     return null;
   }
 
-  const digits = significantDecimalDigits(parsed);
+  const digits = decimalDigits(parsed);
 
-  if (digits === "") {
+  if (isZeroDecimalDigits(digits)) {
     return { sign: 1, integer: "0", fraction: "" };
   }
 
@@ -295,8 +295,12 @@ function parseDecimalFilterValue(value: string): ParsedDecimalFilterValue | null
   return { sign, rawInteger, rawFraction, exponent };
 }
 
-function significantDecimalDigits(value: ParsedDecimalFilterValue) {
-  return `${value.rawInteger}${value.rawFraction}`.replace(/^0+/, "");
+function decimalDigits(value: ParsedDecimalFilterValue) {
+  return `${value.rawInteger}${value.rawFraction}`;
+}
+
+function isZeroDecimalDigits(digits: string) {
+  return /^0*$/.test(digits);
 }
 
 function normalizeDecimalParts(sign: -1 | 1, digits: string, decimalPoint: number) {
