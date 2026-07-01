@@ -43,6 +43,13 @@ batch and should not be recreated or promoted.
   `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`,
   and
   `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`.
+- Planned 2026-07-01 next-five follow-up set:
+  `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`,
+  `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`,
+  `docs/plans/2026-07-01-cj-read-model-operator-batch-promotion-implementation-plan.md`,
+  `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`,
+  and
+  `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`.
 
 ## Completed Plan Archive
 
