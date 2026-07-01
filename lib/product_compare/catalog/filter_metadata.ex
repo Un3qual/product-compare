@@ -209,8 +209,10 @@ defmodule ProductCompare.Catalog.FilterMetadata do
       from product_taxon in ProductTaxon,
         join: product in subquery(filtered_query),
         on: product.id == product_taxon.product_id,
-        group_by: product_taxon.taxon_id,
-        select: {product_taxon.taxon_id, count(product_taxon.product_id, :distinct)}
+        join: closure in TaxonClosure,
+        on: closure.descendant_id == product_taxon.taxon_id,
+        group_by: closure.ancestor_id,
+        select: {closure.ancestor_id, count(product_taxon.product_id, :distinct)}
     )
     |> Map.new()
   end

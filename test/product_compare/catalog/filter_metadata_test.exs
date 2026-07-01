@@ -313,6 +313,57 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
                option_by_id(metadata.type_options, monitor_taxon.id)
     end
 
+    test "counts child products for parent use-case facets" do
+      moderator = AccountsFixtures.user_fixture()
+      use_case_taxonomy = TaxonomyFixtures.taxonomy_fixture("use_case", "Use Case")
+
+      desktop_setup_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: use_case_taxonomy.id,
+          code: unique_code("filter-meta-desktop-setup"),
+          name: "Desktop Setup"
+        })
+
+      gaming_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: use_case_taxonomy.id,
+          parent_id: desktop_setup_taxon.id,
+          code: unique_code("filter-meta-desktop-gaming"),
+          name: "Gaming"
+        })
+
+      office_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: use_case_taxonomy.id,
+          parent_id: desktop_setup_taxon.id,
+          code: unique_code("filter-meta-desktop-office"),
+          name: "Office"
+        })
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: unique_code("filter-meta-desktop-product")
+        })
+
+      assert {:ok, _} =
+               Taxonomy.assign_use_case(product.id, gaming_taxon.id, moderator.id, :editorial)
+
+      metadata = Catalog.product_filter_metadata(%{})
+
+      desktop_setup_taxon_id = desktop_setup_taxon.id
+      gaming_taxon_id = gaming_taxon.id
+      office_taxon_id = office_taxon.id
+
+      assert %{id: ^desktop_setup_taxon_id, count: 1, selected: false, disabled: false} =
+               option_by_id(metadata.use_case_options, desktop_setup_taxon.id)
+
+      assert %{id: ^gaming_taxon_id, count: 1, selected: false, disabled: false} =
+               option_by_id(metadata.use_case_options, gaming_taxon.id)
+
+      assert %{id: ^office_taxon_id, count: 0, selected: false, disabled: true} =
+               option_by_id(metadata.use_case_options, office_taxon.id)
+    end
+
     test "treats multiple selected enum options for one attribute as alternatives" do
       moderator = AccountsFixtures.user_fixture()
 

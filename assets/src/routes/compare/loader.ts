@@ -299,10 +299,11 @@ function summarizeOfferContextQueries(
   const offerNodes = queries.flatMap((query) =>
     query.data.merchantProducts.edges.map(({ node }) => node)
   );
-  const bestCurrentPrice = lowestCurrentPrice(offerNodes);
   const latestPriceObservedAt = mostRecentObservedAt(offerNodes);
   const lastQuery = queries[queries.length - 1];
   const lastPageInfo = lastQuery?.data.merchantProducts.pageInfo;
+  const hasMoreActiveOffers = lastPageInfo?.hasNextPage ?? false;
+  const bestCurrentPrice = hasMoreActiveOffers ? null : lowestCurrentPrice(offerNodes);
 
   return {
     status: "available",
@@ -312,7 +313,7 @@ function summarizeOfferContextQueries(
     hasLoadedCoupons: offerNodes.some(
       (offer) => (offer.activeCoupons?.edges.length ?? 0) > 0
     ),
-    hasMoreActiveOffers: lastPageInfo?.hasNextPage ?? false,
+    hasMoreActiveOffers,
     hasMoreCoupons: offerNodes.some(
       (offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false
     ),

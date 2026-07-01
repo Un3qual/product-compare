@@ -619,7 +619,7 @@ test("compare loader preserves typed attribute metadata for compare rows", async
   });
 });
 
-test("compare loader summarizes the first offer-context page for each selected product", async () => {
+test("compare loader summarizes bounded offer-context pages without treating incomplete pages as globally ranked", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
@@ -773,11 +773,7 @@ test("compare loader summarizes the first offer-context page for each selected p
         status: "available",
         productId: DETAIL_PRODUCT.id,
         activeOfferCount: 3,
-        bestCurrentPrice: {
-          currency: "USD",
-          merchantName: "Value Mart",
-          price: "199.99"
-        },
+        bestCurrentPrice: null,
         hasLoadedCoupons: true,
         hasMoreActiveOffers: true,
         hasMoreCoupons: true,

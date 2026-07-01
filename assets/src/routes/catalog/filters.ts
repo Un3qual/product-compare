@@ -60,6 +60,15 @@ export interface CatalogFilterMetadata {
 const NUMERIC_FILTER_PARAM_PATTERN = /^numeric\.(.+)\.(min|max)$/;
 const BOOLEAN_FILTER_PARAM_PATTERN = /^boolean\.(.+)$/;
 const ENUM_FILTER_PARAM_PATTERN = /^enum\.(.+)$/;
+const DECIMAL_FILTER_VALUE_PATTERN =
+  /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+const MAX_DECIMAL_EXPONENT_SHIFT = 1_000;
+
+interface DecimalFilterValueParts {
+  sign: -1 | 1;
+  integer: string;
+  fraction: string;
+}
 
 export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   const numericFilters = new Map<string, CatalogNumericFilter>();
@@ -85,9 +94,7 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
     ...(typeTaxonId ? { typeTaxonId } : {}),
     ...(typeTaxonId && includeTypeDescendants ? { includeTypeDescendants: true } : {}),
     useCaseTaxonIds,
-    numeric: Array.from(numericFilters.values()).filter(
-      (filter) => filter.min !== undefined || filter.max !== undefined
-    ),
+    numeric: validCatalogNumericFilters(Array.from(numericFilters.values())),
     booleans: Array.from(booleanFilters.values()),
     enums: Array.from(enumFilters.values())
   };
@@ -101,8 +108,12 @@ function storeNumericFilter(
   const numericMatch = NUMERIC_FILTER_PARAM_PATTERN.exec(name);
   const value = rawValue.trim();
 
-  if (!numericMatch || value === "") {
+  if (!numericMatch) {
     return false;
+  }
+
+  if (value === "" || !isValidDecimalFilterValue(value)) {
+    return true;
   }
 
   const [, attributeId, bound] = numericMatch;
@@ -161,6 +172,7 @@ export function catalogFiltersToProductFiltersInput(
   }
 
   const enumFilters = uniqueCatalogEnumFilters(filters.enums);
+  const numericFilters = validCatalogNumericFilters(filters.numeric);
 
   return {
     ...(filters.typeTaxonId ? { primaryTypeTaxonId: filters.typeTaxonId } : {}),
@@ -168,7 +180,7 @@ export function catalogFiltersToProductFiltersInput(
       ? { includeTypeDescendants: true }
       : {}),
     ...(filters.useCaseTaxonIds.length > 0 ? { useCaseTaxonIds: filters.useCaseTaxonIds } : {}),
-    ...(filters.numeric.length > 0 ? { numeric: filters.numeric } : {}),
+    ...(numericFilters.length > 0 ? { numeric: numericFilters } : {}),
     ...(filters.booleans.length > 0 ? { booleans: filters.booleans } : {}),
     ...(enumFilters.length > 0 ? { enums: enumFilters } : {})
   };
@@ -188,10 +200,122 @@ export function hasActiveCatalogFilters(filters: CatalogFilters) {
   return (
     Boolean(filters.typeTaxonId) ||
     filters.useCaseTaxonIds.length > 0 ||
-    filters.numeric.length > 0 ||
+    validCatalogNumericFilters(filters.numeric).length > 0 ||
     filters.booleans.length > 0 ||
     filters.enums.length > 0
   );
+}
+
+function validCatalogNumericFilters(filters: readonly CatalogNumericFilter[]) {
+  return filters
+    .filter(hasNumericFilterBound)
+    .filter(hasValidNumericBounds)
+    .filter(hasOrderedNumericBounds);
+}
+
+function hasNumericFilterBound(filter: CatalogNumericFilter) {
+  return filter.min !== undefined || filter.max !== undefined;
+}
+
+function hasValidNumericBounds(filter: CatalogNumericFilter) {
+  return (
+    (filter.min === undefined || isValidDecimalFilterValue(filter.min)) &&
+    (filter.max === undefined || isValidDecimalFilterValue(filter.max))
+  );
+}
+
+function hasOrderedNumericBounds(filter: CatalogNumericFilter) {
+  if (filter.min === undefined || filter.max === undefined) {
+    return true;
+  }
+
+  return compareDecimalFilterValues(filter.min, filter.max) <= 0;
+}
+
+function isValidDecimalFilterValue(value: string) {
+  return decimalFilterValueParts(value) !== null;
+}
+
+function compareDecimalFilterValues(left: string, right: string) {
+  const leftParts = decimalFilterValueParts(left);
+  const rightParts = decimalFilterValueParts(right);
+
+  if (!leftParts || !rightParts) {
+    return 0;
+  }
+
+  if (leftParts.sign !== rightParts.sign) {
+    return leftParts.sign > rightParts.sign ? 1 : -1;
+  }
+
+  const absoluteComparison = compareAbsoluteDecimalFilterValues(leftParts, rightParts);
+
+  return leftParts.sign === -1 ? -absoluteComparison : absoluteComparison;
+}
+
+function decimalFilterValueParts(value: string): DecimalFilterValueParts | null {
+  if (!DECIMAL_FILTER_VALUE_PATTERN.test(value)) {
+    return null;
+  }
+
+  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
+  const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
+  const exponent = Number.parseInt(rawExponent, 10);
+
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > MAX_DECIMAL_EXPONENT_SHIFT) {
+    return null;
+  }
+
+  const [rawInteger, rawFraction = ""] = coefficient.split(".");
+  const digits = `${rawInteger}${rawFraction}`.replace(/^0+/, "");
+
+  if (digits === "") {
+    return { sign: 1, integer: "0", fraction: "" };
+  }
+
+  const decimalPoint = rawInteger.length + exponent;
+  let integer: string;
+  let fraction: string;
+
+  if (decimalPoint <= 0) {
+    integer = "0";
+    fraction = `${"0".repeat(Math.abs(decimalPoint))}${digits}`;
+  } else if (decimalPoint >= digits.length) {
+    integer = `${digits}${"0".repeat(decimalPoint - digits.length)}`;
+    fraction = "";
+  } else {
+    integer = digits.slice(0, decimalPoint);
+    fraction = digits.slice(decimalPoint);
+  }
+
+  integer = integer.replace(/^0+/, "") || "0";
+  fraction = fraction.replace(/0+$/, "");
+
+  return { sign, integer, fraction };
+}
+
+function compareAbsoluteDecimalFilterValues(
+  left: DecimalFilterValueParts,
+  right: DecimalFilterValueParts
+) {
+  if (left.integer.length !== right.integer.length) {
+    return left.integer.length > right.integer.length ? 1 : -1;
+  }
+
+  if (left.integer !== right.integer) {
+    return left.integer > right.integer ? 1 : -1;
+  }
+
+  const fractionLength = Math.max(left.fraction.length, right.fraction.length);
+  const leftFraction = left.fraction.padEnd(fractionLength, "0");
+  const rightFraction = right.fraction.padEnd(fractionLength, "0");
+
+  if (leftFraction === rightFraction) {
+    return 0;
+  }
+
+  return leftFraction > rightFraction ? 1 : -1;
 }
 
 export function catalogFilterSummaryItems(

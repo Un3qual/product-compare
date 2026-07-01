@@ -591,6 +591,143 @@ test("browse loader drops blank numeric bounds and malformed boolean filter valu
   );
 });
 
+test("browse loader drops malformed decimal numeric bounds", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products?numeric.relay-attribute-price.min=10abc&numeric.relay-attribute-price.max=99.99&numeric.relay-attribute-weight.min=0x10&numeric.relay-attribute-refresh.min=120.5"
+  );
+  const expectedFilters = {
+    numeric: [
+      {
+        attributeId: "relay-attribute-price",
+        max: "99.99"
+      },
+      {
+        attributeId: "relay-attribute-refresh",
+        min: "120.5"
+      }
+    ]
+  };
+
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader keeps backend-accepted decimal numeric bound forms", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products?numeric.relay-attribute-price.min=.5&numeric.relay-attribute-price.max=1e3&numeric.relay-attribute-weight.min=%2B1&numeric.relay-attribute-weight.max=1."
+  );
+  const expectedFilters = {
+    numeric: [
+      {
+        attributeId: "relay-attribute-price",
+        min: ".5",
+        max: "1e3"
+      },
+      {
+        attributeId: "relay-attribute-weight",
+        min: "+1",
+        max: "1."
+      }
+    ]
+  };
+
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader drops numeric ranges whose minimum is greater than their maximum", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/products?numeric.relay-attribute-price.min=100&numeric.relay-attribute-price.max=50&numeric.relay-attribute-refresh.min=120&numeric.relay-attribute-refresh.max=240"
+  );
+  const expectedFilters = {
+    numeric: [
+      {
+        attributeId: "relay-attribute-refresh",
+        min: "120",
+        max: "240"
+      }
+    ]
+  };
+
+  mockSuccessfulBrowseLoaderPreloads({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedPreloadRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
 test("browse loader marks the catalog unavailable when Relay preload fails", async () => {
   const environment = createRelayEnvironment();
   const preloadError = new Error("missing operation");
