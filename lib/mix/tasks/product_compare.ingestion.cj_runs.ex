@@ -2,6 +2,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   @moduledoc "Reports and resumes CJ ingestion runs from one operator task."
 
   use Mix.Task
+  require Logger
 
   import Ecto.Query
 
@@ -145,13 +146,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   defp normalize_surface(surface, _report), do: Mix.raise("invalid surface: #{surface}")
 
-  defp normalize_limit(value) when is_integer(value) and value < 1, do: 1
-  defp normalize_limit(value) when is_integer(value) and value > @max_limit, do: @max_limit
-  defp normalize_limit(value) when is_integer(value), do: value
-  defp normalize_limit(_value), do: @default_limit
+  defp normalize_limit(nil), do: @default_limit
+
+  defp normalize_limit(value) when is_integer(value) and value > 0 and value <= @max_limit,
+    do: value
+
+  defp normalize_limit(value) when is_integer(value) and value > @max_limit,
+    do: Mix.raise("CJ runs report limit is #{@max_limit}")
+
+  defp normalize_limit(_value), do: Mix.raise("invalid --limit: expected a positive integer")
 
   defp normalize_max_age_hours(value) when is_integer(value) and value > 0, do: value
-  defp normalize_max_age_hours(_value), do: @default_max_age_hours
+  defp normalize_max_age_hours(nil), do: @default_max_age_hours
+
+  defp normalize_max_age_hours(_value),
+    do: Mix.raise("invalid --max-age-hours: expected a positive integer")
 
   defp print_latest(opts) do
     surface = Keyword.fetch!(opts, :surface)
@@ -336,7 +345,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
     case safe_run(runner, runner_opts) do
       {:ok, report} ->
         render_discovery_resume(runner_opts, report) |> IO.puts()
-        :ok
+        {:ok, report}
 
       _error ->
         Mix.raise("CJ feed discovery resume failed")
@@ -346,9 +355,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   defp safe_run(runner, runner_opts) do
     runner.(runner_opts)
   rescue
-    _exception -> {:error, :runner_exception}
+    exception ->
+      log_runner_failure(:error, exception, __STACKTRACE__, runner_opts)
+      {:error, :runner_exception}
   catch
-    _kind, _reason -> {:error, :runner_exception}
+    kind, reason ->
+      log_runner_failure(kind, reason, __STACKTRACE__, runner_opts)
+      {:error, :runner_exception}
   end
 
   defp handle_missing_cursor!(opts) do
@@ -370,6 +383,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
       keywords: query_keywords(query),
       currency: query_currency(query),
       serviceable_areas: query_serviceable_areas(query),
+      ad_ids: query_ids(query, "adIds"),
+      partner_ids: query_ids(query, "partnerIds"),
+      provider_feed_id: query_value(query, "providerFeedId"),
+      merchant_feed_candidate_id: query_value(query, "merchantFeedCandidateId"),
+      feed_name: query_value(query, "feedName"),
       limit:
         Keyword.fetch!(opts, :limit) ||
           CliOptions.positive_integer_or_default(latest_run.page_size, @default_import_limit),
@@ -390,12 +408,26 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   end
 
   defp query_keywords(%{} = query) do
-    case Map.get(query, "keywords") do
-      [_first | _rest] = keywords -> keywords
-      value when is_binary(value) -> [value]
-      _value -> @default_keywords
+    case Map.fetch(query, "keywords") do
+      {:ok, nil} -> nil
+      {:ok, []} -> []
+      {:ok, [_first | _rest] = keywords} -> keywords
+      {:ok, value} when is_binary(value) -> [value]
+      :error -> @default_keywords
+      {:ok, _value} -> @default_keywords
     end
   end
+
+  defp query_ids(%{} = query, key) do
+    case Map.get(query, key) do
+      [_first | _rest] = keywords -> keywords
+      [] -> []
+      value when is_binary(value) -> [value]
+      _value -> nil
+    end
+  end
+
+  defp query_value(%{} = query, key), do: Map.get(query, key)
 
   defp query_currency(%{} = query) do
     case Map.get(query, "currency") do
@@ -414,6 +446,71 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   defp advertiser_country(%ImportRun{query: query}) when is_map(query) do
     Map.get(query, "advertiserCountry") || "US"
+  end
+
+  defp log_runner_failure(kind, reason, stacktrace, runner_opts) do
+    surface = runner_surface(runner_opts)
+
+    Logger.error(fn ->
+      "CJ #{runner_label(surface)} resume runner failed " <>
+        runner_context(surface, runner_opts) <>
+        "\n" <>
+        Exception.format(kind, reason, stacktrace)
+    end)
+  end
+
+  defp runner_surface(runner_opts) do
+    if Keyword.has_key?(runner_opts, :advertiser_country) do
+      @discovery_surface
+    else
+      @import_surface
+    end
+  end
+
+  defp runner_label(@import_surface), do: "import"
+  defp runner_label(@discovery_surface), do: "discovery"
+
+  defp runner_context(@import_surface, runner_opts) do
+    [
+      {:surface, @import_surface},
+      {:cursor, Keyword.get(runner_opts, :cursor)},
+      {:limit, Keyword.get(runner_opts, :limit)},
+      {:pages, Keyword.get(runner_opts, :pages)},
+      {:keywords_count, value_count(Keyword.get(runner_opts, :keywords))},
+      {:serviceable_areas_count, value_count(Keyword.get(runner_opts, :serviceable_areas))},
+      {:ad_ids_count, value_count(Keyword.get(runner_opts, :ad_ids))},
+      {:partner_ids_count, value_count(Keyword.get(runner_opts, :partner_ids))},
+      {:has_provider_feed_id, present?(Keyword.get(runner_opts, :provider_feed_id))},
+      {:has_merchant_feed_candidate_id,
+       present?(Keyword.get(runner_opts, :merchant_feed_candidate_id))},
+      {:has_feed_name, present?(Keyword.get(runner_opts, :feed_name))}
+    ]
+    |> format_runner_context()
+  end
+
+  defp runner_context(@discovery_surface, runner_opts) do
+    [
+      {:surface, @discovery_surface},
+      {:advertiser_country, Keyword.get(runner_opts, :advertiser_country)},
+      {:cursor, Keyword.get(runner_opts, :cursor)},
+      {:limit, Keyword.get(runner_opts, :limit)},
+      {:pages, Keyword.get(runner_opts, :pages)}
+    ]
+    |> format_runner_context()
+  end
+
+  defp value_count(nil), do: 0
+  defp value_count(values) when is_list(values), do: length(values)
+  defp value_count(_value), do: 1
+
+  defp present?(nil), do: false
+  defp present?(""), do: false
+  defp present?([]), do: false
+  defp present?(_value), do: true
+
+  defp format_runner_context(fields) do
+    fields
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
   end
 
   defp render_import_resume(runner_opts, report) do

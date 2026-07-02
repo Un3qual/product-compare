@@ -2,6 +2,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
   use ProductCompare.DataCase, async: false
 
   import ExUnit.CaptureIO
+  import ExUnit.CaptureLog
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjRuns
   alias ProductCompare.Repo
@@ -100,6 +101,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         capture_io(fn -> CjRuns.run(["--report", "failed", "--require-clean"]) end)
       end
     end
+
+    test "rejects invalid report limits and max age values" do
+      assert_raise Mix.Error, "invalid --limit: expected a positive integer", fn ->
+        capture_io(fn -> CjRuns.run(["--report", "history", "--limit", "0"]) end)
+      end
+
+      assert_raise Mix.Error, "CJ runs report limit is 50", fn ->
+        capture_io(fn -> CjRuns.run(["--report", "history", "--limit", "51"]) end)
+      end
+
+      assert_raise Mix.Error, "invalid --max-age-hours: expected a positive integer", fn ->
+        capture_io(fn -> CjRuns.run(["--report", "latest", "--max-age-hours", "0"]) end)
+      end
+    end
   end
 
   describe "run_resume/1" do
@@ -140,6 +155,50 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
       assert output =~ "next_cursor=125"
     end
 
+    test "resumes import with saved feed, partner, and candidate scoping" do
+      source = source_fixture()
+      candidate = insert_candidate!(source, %{provider_feed_id: "feed-scope"})
+
+      insert_run!(source, %{
+        surface: "shoppingProducts",
+        status: "succeeded",
+        cursor_end: 100,
+        page_size: 25,
+        query: %{
+          "keywords" => nil,
+          "currency" => "CAD",
+          "serviceableAreas" => ["CA"],
+          "adIds" => ["ad-1"],
+          "partnerIds" => ["partner-1"],
+          "providerFeedId" => "feed-scope",
+          "merchantFeedCandidateId" => candidate.id,
+          "feedName" => "Scoped Feed"
+        }
+      })
+
+      parent = self()
+
+      runner = fn opts ->
+        send(parent, {:runner_opts, opts})
+        {:ok, %{fetched: 1, normalized: 1, persisted: 1, failed: 0, next_cursor: 125}}
+      end
+
+      capture_io(fn ->
+        assert {:ok, %{next_cursor: 125}} =
+                 CjRuns.run_resume(surface: "import", runner: runner, pages: 1)
+      end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:keywords] == nil
+      assert opts[:currency] == "CAD"
+      assert opts[:serviceable_areas] == ["CA"]
+      assert opts[:ad_ids] == ["ad-1"]
+      assert opts[:partner_ids] == ["partner-1"]
+      assert opts[:provider_feed_id] == "feed-scope"
+      assert opts[:merchant_feed_candidate_id] == candidate.id
+      assert opts[:feed_name] == "Scoped Feed"
+    end
+
     test "resumes discovery from latest successful discovery cursor" do
       source = source_fixture()
 
@@ -160,7 +219,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
 
       output =
         capture_io(fn ->
-          assert :ok = CjRuns.run_resume(surface: "discovery", runner: runner, pages: 3)
+          assert {:ok, %{next_cursor: 84}} =
+                   CjRuns.run_resume(surface: "discovery", runner: runner, pages: 3)
         end)
 
       assert_receive {:runner_opts, opts}
@@ -171,6 +231,78 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
       assert output =~ "surface=shoppingProductFeeds cursor_start=80"
       assert output =~ "candidates_persisted=4"
       assert output =~ "next_cursor=84"
+    end
+
+    test "logs runner exceptions with sanitized resume context" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        surface: "shoppingProducts",
+        status: "succeeded",
+        cursor_end: 100,
+        page_size: 25,
+        query: %{
+          "keywords" => ["secret keyword"],
+          "providerFeedId" => "secret-feed",
+          "partnerIds" => ["secret-partner"]
+        }
+      })
+
+      runner = fn _opts -> raise "intentional resume failure" end
+
+      log =
+        capture_log(fn ->
+          assert_raise Mix.Error, "CJ product import resume failed", fn ->
+            capture_io(fn ->
+              CjRuns.run_resume(surface: "import", runner: runner, pages: 2)
+            end)
+          end
+        end)
+
+      assert log =~ "CJ import resume runner failed"
+      assert log =~ "RuntimeError"
+      assert log =~ "intentional resume failure"
+      assert log =~ "surface=shoppingProducts"
+      assert log =~ "cursor=100"
+      assert log =~ "limit=25"
+      assert log =~ "pages=2"
+      assert log =~ "has_provider_feed_id=true"
+      assert log =~ "partner_ids_count=1"
+      refute log =~ "secret keyword"
+      refute log =~ "secret-feed"
+      refute log =~ "secret-partner"
+    end
+
+    test "logs runner throws with sanitized resume context" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        surface: "shoppingProductFeeds",
+        status: "succeeded",
+        cursor_end: 80,
+        page_size: 50,
+        query: %{"advertiserCountry" => "CA"}
+      })
+
+      runner = fn _opts -> throw({:resume_failed, :from_runner}) end
+
+      log =
+        capture_log(fn ->
+          assert_raise Mix.Error, "CJ feed discovery resume failed", fn ->
+            capture_io(fn ->
+              CjRuns.run_resume(surface: "discovery", runner: runner, pages: 3)
+            end)
+          end
+        end)
+
+      assert log =~ "CJ discovery resume runner failed"
+      assert log =~ "throw"
+      assert log =~ "{:resume_failed, :from_runner}"
+      assert log =~ "surface=shoppingProductFeeds"
+      assert log =~ "advertiser_country=CA"
+      assert log =~ "cursor=80"
+      assert log =~ "limit=50"
+      assert log =~ "pages=3"
     end
   end
 
