@@ -186,23 +186,108 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Candidate Freshness Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJCandidateFreshness.summary/1` and
+    `summary/2` as a read-only CJ candidate freshness aggregate over
+    `merchant_feed_candidates`.
+  - Buckets CJ-only candidates into fresh, aging, and stale ranges using
+    normalized thresholds, with review-status counts inside each bucket.
+  - Added deterministic tests for now/72-hour/10-day observations, non-CJ
+    exclusion, threshold normalization, stale-hour clamping, and read-only
+    behavior.
+- Verification:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/cj_run_throughput_test.exs test/product_compare/ingestion/cj_import_artifact_quality_test.exs test/product_compare/ingestion/cj_import_price_quality_test.exs`
+    exited 0: 11 tests, 0 failures.
+  - `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    exited 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, raw metadata exposure, or CSV
+  export path was added.
 
 ### Run Health Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJRunHealth.summary/0` as a read-only
+    latest-run health aggregate over CJ `ingestion_runs`.
+  - Reports latest `shoppingProducts` and `shoppingProductFeeds` status,
+    timestamps, cursor bounds, page/record counts, success booleans, and
+    missing entries without returning stored query maps or raw error summaries.
+  - Added focused tests for latest-by-started-at selection, failed-run error
+    redaction, non-CJ exclusion, and empty-database missing entries.
+- Verification:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/cj_run_throughput_test.exs test/product_compare/ingestion/cj_import_artifact_quality_test.exs test/product_compare/ingestion/cj_import_price_quality_test.exs`
+    exited 0: 11 tests, 0 failures.
+  - `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    exited 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, raw query/error exposure, or CSV
+  export path was added.
 
 ### Run Throughput Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJRunThroughput.daily_summary/1` and
+    `daily_summary/2` as a read-only daily CJ run throughput aggregate over
+    `ingestion_runs`.
+  - Aggregates CJ runs by UTC date and surface, sums page/record counters, and
+    counts succeeded and failed runs inside a normalized 1-to-90 day window.
+  - Added deterministic tests for two dates, both CJ surfaces, non-CJ exclusion,
+    old-run exclusion, ordering, and day-window normalization.
+- Verification:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/cj_run_throughput_test.exs test/product_compare/ingestion/cj_import_artifact_quality_test.exs test/product_compare/ingestion/cj_import_price_quality_test.exs`
+    exited 0: 11 tests, 0 failures.
+  - `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    exited 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, raw query/error exposure, or CSV
+  export path was added.
 
 ### Import Artifact Quality Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJImportArtifactQuality.summary/0` as a
+    read-only aggregate over the existing CJ source, `source_artifacts`, and
+    `external_products`.
+  - Reports artifact counts, external-product counts, linked/unlinked product
+    counts, and latest artifact/product timestamps while returning zero counts
+    when the CJ source is absent.
+  - Added focused tests for missing source, persisted artifacts, linked and
+    unlinked external products, ignored non-CJ source data, and safe returned
+    keys.
+- Verification:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/cj_run_throughput_test.exs test/product_compare/ingestion/cj_import_artifact_quality_test.exs test/product_compare/ingestion/cj_import_price_quality_test.exs`
+    exited 0: 11 tests, 0 failures.
+  - `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    exited 0.
+- Guardrail evidence:
+  no source resolver insert/update helper, Mix task, scheduler behavior,
+  network call, GraphQL field, browser route, mutation, credential persistence,
+  artifact URL/raw JSON exposure, or CSV export path was added.
 
 ### Import Price Quality Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJImportPriceQuality.summary/1` as a
+    read-only price coverage aggregate for CJ source-linked merchants.
+  - Counts distinct CJ-linked merchant products, with/without prices,
+    active/inactive rows, fresh/stale latest prices, and normalized currency
+    buckets without exposing offer URLs or raw artifacts.
+  - Added focused tests for duplicate CJ merchant identities, unrelated non-CJ
+    merchant products, recent and stale prices, unpriced products, blank
+    currency normalization, safe returned keys, and stale-threshold
+    normalization.
+- Verification:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/cj_run_throughput_test.exs test/product_compare/ingestion/cj_import_artifact_quality_test.exs test/product_compare/ingestion/cj_import_price_quality_test.exs`
+    exited 0: 11 tests, 0 failures.
+  - `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+    exited 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, offer URL/raw artifact exposure,
+  or CSV export path was added.
 
 ### Merchant Identity Quality Evidence
 
