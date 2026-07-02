@@ -1,11 +1,11 @@
 defmodule ProductCompare.Ingestion.CJCandidateFreshnessTest do
   use ProductCompare.DataCase, async: true
 
-  alias ProductCompare.Ingestion
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Ingestion.CJCandidateFreshness
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Specs.Source
 
   describe "summary/2" do
     test "returns CJ-only freshness buckets by review status" do
@@ -81,6 +81,12 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshnessTest do
 
       assert %{fresh_hours: 96, stale_hours: 96} =
                CJCandidateFreshness.summary([fresh_hours: 96, stale_hours: 24], now)
+
+      assert %{fresh_hours: 48, stale_hours: 168} =
+               CJCandidateFreshness.summary(["not-an-option"], now)
+
+      assert %{fresh_hours: 12, stale_hours: 36} =
+               CJCandidateFreshness.summary(%{"fresh_hours" => 12, "stale_hours" => 36}, now)
     end
 
     test "does not mutate candidates while summarizing freshness" do
@@ -108,54 +114,5 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshnessTest do
       assert DateTime.compare(after_summary.reviewed_at, before_summary.reviewed_at) == :eq
       assert after_summary.raw_metadata == before_summary.raw_metadata
     end
-  end
-
-  defp source_fixture(attrs \\ %{}) do
-    suffix = System.unique_integer([:positive])
-
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
-  end
-
-  defp merchant_feed_candidate_fixture(source, attrs) do
-    suffix = System.unique_integer([:positive])
-
-    attrs =
-      Map.merge(
-        %{
-          advertiser_country: "US",
-          advertiser_id: "adv-#{suffix}",
-          advertiser_name: "Merchant #{suffix}",
-          currency: "USD",
-          feed_name: "Feed #{suffix}",
-          language: "EN",
-          last_seen_at: ~U[2026-07-01 18:00:00Z],
-          product_count: 1,
-          provider: "cj",
-          provider_feed_id: "feed-#{suffix}",
-          provider_last_updated_at: ~U[2026-07-01 18:00:00Z],
-          raw_metadata: %{},
-          review_note: nil,
-          review_status: "pending",
-          reviewed_at: nil,
-          source_feed_type: "SHOPPING"
-        },
-        attrs
-      )
-
-    assert {:ok, %MerchantFeedCandidate{} = candidate} =
-             Ingestion.upsert_merchant_feed_candidate(source, attrs)
-
-    candidate
   end
 end

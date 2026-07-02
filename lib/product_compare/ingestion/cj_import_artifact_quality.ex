@@ -9,15 +9,12 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQuality do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJSource
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Specs.ExternalProduct
-  alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @provider "cj"
-  @source_kind "affiliate_feed"
-  @source_name "CJ"
-  @source_domain "cj.com"
 
   @type summary :: %{
           provider: String.t(),
@@ -32,21 +29,10 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQuality do
 
   @spec summary() :: summary()
   def summary do
-    case cj_source_id() do
+    case CJSource.id() do
       nil -> empty_summary()
       source_id -> source_summary(source_id)
     end
-  end
-
-  defp cj_source_id do
-    Source
-    |> where(
-      [source],
-      source.kind == @source_kind and source.name == @source_name and
-        source.domain == @source_domain
-    )
-    |> select([source], source.id)
-    |> Repo.one()
   end
 
   defp source_summary(source_id) do

@@ -1,11 +1,12 @@
 defmodule ProductCompare.Ingestion.CJImportArtifactQualityTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Ingestion.CJImportArtifactQuality
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Specs.ExternalProduct
-  alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "summary/0" do
@@ -83,23 +84,6 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQualityTest do
 
       assert_safe_summary(summary)
     end
-  end
-
-  defp source_fixture(attrs) do
-    suffix = System.unique_integer([:positive])
-
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
   end
 
   defp source_artifact_fixture(source, attrs) do

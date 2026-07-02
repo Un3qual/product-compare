@@ -1,10 +1,9 @@
 defmodule ProductCompare.Ingestion.CJRunThroughputTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Ingestion.CJRunThroughput
-  alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
-  alias ProductCompareSchemas.Specs.Source
 
   describe "daily_summary/2" do
     test "aggregates CJ runs by UTC date and surface inside the requested window" do
@@ -125,52 +124,9 @@ defmodule ProductCompare.Ingestion.CJRunThroughputTest do
       assert %{days: 14} = CJRunThroughput.daily_summary([days: "bad"], now)
       assert %{days: 1} = CJRunThroughput.daily_summary([days: 0], now)
       assert %{days: 90} = CJRunThroughput.daily_summary([days: 100], now)
+      assert %{days: 14} = CJRunThroughput.daily_summary(["not-an-option"], now)
+      assert %{days: 7} = CJRunThroughput.daily_summary(%{"days" => 7}, now)
     end
-  end
-
-  defp source_fixture(attrs \\ %{}) do
-    suffix = System.unique_integer([:positive])
-
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
-  end
-
-  defp import_run_fixture(source, attrs) do
-    attrs =
-      Map.merge(
-        %{
-          source_id: source.id,
-          provider: "cj",
-          surface: "shoppingProducts",
-          query: %{"accountId" => "secret"},
-          status: "succeeded",
-          started_at: ~U[2026-07-02 12:00:00Z],
-          finished_at: ~U[2026-07-02 12:05:00Z],
-          page_size: 50,
-          pages_requested: 1,
-          pages_fetched: 1,
-          records_fetched: 1,
-          records_normalized: 1,
-          records_persisted: 1,
-          records_failed: 0,
-          error_summary: nil
-        },
-        attrs
-      )
-
-    %ImportRun{}
-    |> ImportRun.changeset(attrs)
-    |> Repo.insert!()
   end
 
   defp assert_safe_summary(summary) do

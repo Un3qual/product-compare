@@ -1,10 +1,9 @@
 defmodule ProductCompare.Ingestion.CJRunHealthTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Ingestion.CJRunHealth
-  alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
-  alias ProductCompareSchemas.Specs.Source
 
   describe "summary/0" do
     test "returns latest safe CJ run health per surface" do
@@ -156,53 +155,6 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
 
       assert_safe_summary(summary)
     end
-  end
-
-  defp source_fixture(attrs \\ %{}) do
-    suffix = System.unique_integer([:positive])
-
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
-  end
-
-  defp import_run_fixture(source, attrs) do
-    attrs =
-      Map.merge(
-        %{
-          source_id: source.id,
-          provider: "cj",
-          surface: "shoppingProducts",
-          query: %{},
-          status: "succeeded",
-          started_at: ~U[2026-07-02 12:00:00Z],
-          finished_at: ~U[2026-07-02 12:05:00Z],
-          cursor_start: nil,
-          cursor_end: nil,
-          page_size: 50,
-          pages_requested: 1,
-          pages_fetched: 1,
-          records_fetched: 1,
-          records_normalized: 1,
-          records_persisted: 1,
-          records_failed: 0,
-          error_summary: nil
-        },
-        attrs
-      )
-
-    %ImportRun{}
-    |> ImportRun.changeset(attrs)
-    |> Repo.insert!()
   end
 
   defp assert_safe_summary(summary) do

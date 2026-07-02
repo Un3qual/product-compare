@@ -9,16 +9,13 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJSource
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
-  alias ProductCompareSchemas.Specs.Source
 
   @provider "cj"
-  @source_kind "affiliate_feed"
-  @source_name "CJ"
-  @source_domain "cj.com"
   @default_stale_price_hours 168
   @min_stale_price_hours 1
 
@@ -40,7 +37,7 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
   @spec summary(keyword() | map() | term()) :: summary()
   def summary(opts \\ []) do
     opts = opts(opts)
-    now = Map.get(opts, :now, DateTime.utc_now())
+    now = option(opts, :now, DateTime.utc_now())
     stale_price_hours = stale_price_hours(opts)
     stale_after = DateTime.add(now, -stale_price_hours, :hour)
     merchant_products = cj_merchant_products_query()
@@ -54,15 +51,22 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
     })
   end
 
-  defp opts(opts) when is_list(opts) or is_map(opts), do: Map.new(opts)
+  defp opts(opts) when is_list(opts) do
+    if Keyword.keyword?(opts), do: Map.new(opts), else: %{}
+  end
+
+  defp opts(opts) when is_map(opts), do: opts
   defp opts(_opts), do: %{}
 
   defp stale_price_hours(opts) do
     opts
-    |> Map.get(:stale_price_hours, @default_stale_price_hours)
+    |> option(:stale_price_hours, @default_stale_price_hours)
     |> normalize_stale_price_hours()
     |> max(@min_stale_price_hours)
   end
+
+  defp option(opts, key, default),
+    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
 
   defp normalize_stale_price_hours(value) when is_integer(value), do: value
   defp normalize_stale_price_hours(_value), do: @default_stale_price_hours
@@ -72,13 +76,8 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
     |> join(:inner, [merchant_product], identity in MerchantSourceIdentity,
       on: identity.merchant_id == merchant_product.merchant_id
     )
-    |> join(:inner, [_merchant_product, identity], source in Source,
+    |> join(:inner, [_merchant_product, identity], source in subquery(CJSource.query()),
       on: source.id == identity.source_id
-    )
-    |> where(
-      [_merchant_product, _identity, source],
-      source.kind == @source_kind and source.name == @source_name and
-        source.domain == @source_domain
     )
     |> distinct([merchant_product], merchant_product.id)
     |> select([merchant_product], %{

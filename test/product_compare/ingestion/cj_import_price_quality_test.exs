@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Ingestion.CJImportPriceQuality
   alias ProductCompare.Repo
@@ -8,7 +10,6 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
-  alias ProductCompareSchemas.Specs.Source
 
   describe "summary/1" do
     test "summarizes distinct CJ-linked merchant product price coverage" do
@@ -104,24 +105,12 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
 
       assert %{stale_price_hours: 168} =
                CJImportPriceQuality.summary(now: now, stale_price_hours: "bad")
+
+      assert %{stale_price_hours: 168} = CJImportPriceQuality.summary(["not-an-option"])
+
+      assert %{stale_price_hours: 24} =
+               CJImportPriceQuality.summary(%{"now" => now, "stale_price_hours" => 24})
     end
-  end
-
-  defp source_fixture(attrs) do
-    suffix = System.unique_integer([:positive])
-
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
   end
 
   defp merchant_fixture(attrs) do
@@ -163,29 +152,23 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
   end
 
   defp merchant_product_fixture(merchant, attrs) do
-    attrs =
-      attrs
-      |> Map.put_new(:merchant_id, merchant.id)
-      |> Map.put_new(:product_id, SpecsFixtures.product_fixture().id)
-      |> Map.put_new(:external_sku, "sku-#{System.unique_integer([:positive])}")
-      |> Map.put_new(:last_seen_at, ~U[2026-07-01 12:00:00.000000Z])
-
     %MerchantProduct{}
-    |> MerchantProduct.changeset(attrs)
+    |> MerchantProduct.changeset(merchant_product_attrs(merchant, attrs))
     |> Repo.insert!()
   end
 
   defp raw_merchant_product_fixture(merchant, attrs) do
-    attrs =
-      attrs
-      |> Map.put_new(:merchant_id, merchant.id)
-      |> Map.put_new(:product_id, SpecsFixtures.product_fixture().id)
-      |> Map.put_new(:external_sku, "sku-#{System.unique_integer([:positive])}")
-      |> Map.put_new(:last_seen_at, ~U[2026-07-01 12:00:00.000000Z])
-
     %MerchantProduct{}
-    |> struct(attrs)
+    |> struct(merchant_product_attrs(merchant, attrs))
     |> Repo.insert!()
+  end
+
+  defp merchant_product_attrs(merchant, attrs) do
+    attrs
+    |> Map.put_new(:merchant_id, merchant.id)
+    |> Map.put_new(:product_id, SpecsFixtures.product_fixture().id)
+    |> Map.put_new(:external_sku, "sku-#{System.unique_integer([:positive])}")
+    |> Map.put_new(:last_seen_at, ~U[2026-07-01 12:00:00.000000Z])
   end
 
   defp price_point_fixture(merchant_product, attrs) do

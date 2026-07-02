@@ -13,6 +13,10 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
 
   @provider "cj"
   @surfaces ["shoppingProducts", "shoppingProductFeeds"]
+  @surface_keys %{
+    "shoppingProducts" => :shoppingProducts,
+    "shoppingProductFeeds" => :shoppingProductFeeds
+  }
 
   @type run_health :: %{
           surface: String.t(),
@@ -40,20 +44,23 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
 
   @spec summary() :: summary()
   def summary do
+    latest_by_surface = latest_health_by_surface()
+
     %{
       provider: @provider,
       surfaces:
         Map.new(@surfaces, fn surface ->
-          {String.to_existing_atom(surface), latest_health(surface)}
+          {Map.fetch!(@surface_keys, surface),
+           Map.get(latest_by_surface, surface, missing_health(surface))}
         end)
     }
   end
 
-  defp latest_health(surface) do
+  defp latest_health_by_surface do
     ImportRun
-    |> where([run], run.provider == @provider and run.surface == ^surface)
-    |> order_by([run], desc: run.started_at, desc: run.id)
-    |> limit(1)
+    |> where([run], run.provider == @provider and run.surface in ^@surfaces)
+    |> distinct([run], run.surface)
+    |> order_by([run], asc: run.surface, desc: run.started_at, desc: run.id)
     |> select([run], %{
       surface: run.surface,
       missing: false,
@@ -73,11 +80,8 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
       has_error_summary:
         fragment("? IS NOT NULL AND BTRIM(?) <> ''", run.error_summary, run.error_summary)
     })
-    |> Repo.one()
-    |> case do
-      nil -> missing_health(surface)
-      health -> health
-    end
+    |> Repo.all()
+    |> Map.new(&{&1.surface, &1})
   end
 
   defp missing_health(surface) do

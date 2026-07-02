@@ -15,13 +15,17 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   @provider "cj"
   @default_fresh_hours 48
   @default_stale_hours 168
-  @review_statuses [:pending, :shortlisted, :dismissed]
+  @known_review_statuses [:pending, :shortlisted, :dismissed]
+  @review_statuses @known_review_statuses ++ [:other]
+  @review_status_keys Map.new(@known_review_statuses, &{Atom.to_string(&1), &1})
   @buckets [:fresh, :aging, :stale]
+  @bucket_keys Map.new(@buckets, &{Atom.to_string(&1), &1})
 
   @type review_status_counts :: %{
           pending: non_neg_integer(),
           shortlisted: non_neg_integer(),
           dismissed: non_neg_integer(),
+          other: non_neg_integer(),
           total: non_neg_integer()
         }
 
@@ -54,15 +58,24 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
     }
   end
 
-  defp thresholds(opts) when is_list(opts) or is_map(opts) do
-    opts = Map.new(opts)
-    fresh_hours = positive_integer(Map.get(opts, :fresh_hours), @default_fresh_hours)
-    stale_hours = positive_integer(Map.get(opts, :stale_hours), @default_stale_hours)
+  defp thresholds(opts) when is_list(opts) do
+    if Keyword.keyword?(opts) do
+      thresholds(Map.new(opts))
+    else
+      thresholds(%{})
+    end
+  end
+
+  defp thresholds(opts) when is_map(opts) do
+    fresh_hours = positive_integer(option(opts, :fresh_hours), @default_fresh_hours)
+    stale_hours = positive_integer(option(opts, :stale_hours), @default_stale_hours)
 
     %{fresh_hours: fresh_hours, stale_hours: max(stale_hours, fresh_hours)}
   end
 
-  defp thresholds(_opts), do: thresholds([])
+  defp thresholds(_opts), do: thresholds(%{})
+
+  defp option(opts, key), do: Map.get(opts, key, Map.get(opts, Atom.to_string(key)))
 
   defp positive_integer(value, _default) when is_integer(value) and value > 0, do: value
   defp positive_integer(_value, default), do: default
@@ -104,8 +117,8 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
       |> Repo.all()
 
     Enum.reduce(rows, empty_buckets(), fn row, buckets ->
-      bucket = String.to_existing_atom(row.bucket)
-      review_status = String.to_existing_atom(row.review_status)
+      bucket = Map.fetch!(@bucket_keys, row.bucket)
+      review_status = Map.get(@review_status_keys, row.review_status, :other)
 
       update_in(buckets, [bucket], fn summary ->
         status_counts =

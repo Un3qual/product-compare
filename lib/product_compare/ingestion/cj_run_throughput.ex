@@ -48,16 +48,26 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
     }
   end
 
-  defp days(opts) when is_list(opts) or is_map(opts) do
+  defp days(opts) when is_list(opts) do
+    if Keyword.keyword?(opts) do
+      opts |> Map.new() |> days()
+    else
+      @default_days
+    end
+  end
+
+  defp days(opts) when is_map(opts) do
     opts
-    |> Map.new()
-    |> Map.get(:days, @default_days)
+    |> option(:days, @default_days)
     |> normalize_days()
     |> max(@min_days)
     |> min(@max_days)
   end
 
   defp days(_opts), do: @default_days
+
+  defp option(opts, key, default),
+    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
 
   defp normalize_days(value) when is_integer(value), do: value
   defp normalize_days(_value), do: @default_days
