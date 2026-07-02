@@ -418,6 +418,36 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(ImportRun, :count, :id) == 0
     end
 
+    test "returns an error before fetching when explicit provider feed ids partially match" do
+      source = source_fixture()
+
+      candidate =
+        insert_candidate!(source, %{
+          advertiser_id: "adv-existing",
+          provider_feed_id: "existing-feed",
+          review_status: "shortlisted"
+        })
+
+      fetcher = fn _cursor, _opts ->
+        flunk("partial explicit feed matches must fail before importing the matched subset")
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:error, {:provider_feed_candidates_not_found, ["missing-feed"]}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 1,
+                     provider_feed_ids: [candidate.provider_feed_id, "missing-feed"]
+                   )
+        end)
+
+      assert output =~ "candidate_count=1"
+      assert output =~ "imported_candidates=0"
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+    end
+
     test "imports every explicitly requested feed candidate without applying the default candidate cap" do
       source = source_fixture()
 

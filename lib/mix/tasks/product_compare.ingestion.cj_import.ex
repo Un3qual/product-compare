@@ -342,12 +342,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
     candidates = import_candidates_query(opts) |> Repo.all()
 
-    candidates
-    |> Enum.reduce(initial_candidate_report(length(candidates)), &import_candidate(&1, &2, opts))
-    |> then(fn report ->
-      maybe_print_candidate_report(report, opts)
-      candidate_report_result(report, opts)
-    end)
+    case missing_provider_feed_ids(candidates, opts) do
+      [] ->
+        candidates
+        |> Enum.reduce(
+          initial_candidate_report(length(candidates)),
+          &import_candidate(&1, &2, opts)
+        )
+        |> then(fn report ->
+          maybe_print_candidate_report(report, opts)
+          candidate_report_result(report, opts)
+        end)
+
+      missing_feed_ids ->
+        report = initial_candidate_report(length(candidates))
+        maybe_print_candidate_report(report, opts)
+        {:error, {:provider_feed_candidates_not_found, missing_feed_ids}}
+    end
   end
 
   defp import_candidates_query(opts) do
@@ -378,6 +389,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     status = normalize_review_status(review_status || "shortlisted")
 
     where(query, [candidate], candidate.review_status == ^status)
+  end
+
+  defp missing_provider_feed_ids(candidates, opts) do
+    matched_feed_ids =
+      candidates
+      |> Enum.map(&normalize_string(&1.provider_feed_id))
+      |> Enum.reject(&is_nil/1)
+      |> MapSet.new()
+
+    opts
+    |> Keyword.get(:provider_feed_ids, [])
+    |> Enum.reject(&MapSet.member?(matched_feed_ids, &1))
   end
 
   defp normalize_review_status(status) when status in ~w(pending shortlisted dismissed),
