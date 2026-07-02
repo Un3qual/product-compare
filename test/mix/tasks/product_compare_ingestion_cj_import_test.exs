@@ -317,7 +317,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert_receive {:fetch, nil, opts}
       assert opts[:ad_ids] == ["feed-shortlisted"]
       assert opts[:partner_ids] == ["adv-shortlisted"]
-      refute_received {:fetch, _, %{partner_ids: ["adv-pending"]}}
+      refute_received {:fetch, _, _}
 
       assert output =~ "candidate_count=1"
       assert output =~ "imported_candidates=1"
@@ -325,11 +325,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert %ImportRun{query: %{"providerFeedId" => "feed-shortlisted"}} =
                Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
 
-      refute Repo.get_by(ImportRun,
-               source_id: pending.source_id,
-               surface: "shoppingProducts",
-               query: %{"providerFeedId" => pending.provider_feed_id}
-             )
+      imported_feed_ids = imported_feed_ids(source)
+
+      assert imported_feed_ids == [shortlisted.provider_feed_id]
+      refute pending.provider_feed_id in imported_feed_ids
 
       assert shortlisted.provider_feed_id == "feed-shortlisted"
     end
@@ -376,6 +375,104 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                },
                records_persisted: 1,
                status: "succeeded"
+             } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
+    end
+
+    test "imports every explicitly requested feed candidate without applying the default candidate cap" do
+      source = source_fixture()
+
+      requested_feed_ids =
+        Enum.map(1..51, fn index ->
+          feed_id = "feed-explicit-#{index}"
+
+          insert_candidate!(source, %{
+            advertiser_id: "adv-explicit-#{index}",
+            advertiser_name: "Explicit Merchant #{index}",
+            feed_name: "Explicit Feed #{index}",
+            provider_feed_id: feed_id,
+            review_status: "pending"
+          })
+
+          feed_id
+        end)
+
+      parent = self()
+
+      fetcher = fn _cursor, opts ->
+        send(parent, {:fetch, Keyword.fetch!(opts, :provider_feed_id), opts})
+        {:ok, [], nil}
+      end
+
+      capture_io(fn ->
+        assert {:ok, %{candidates_imported: 51, candidates_matched: 51}} =
+                 CjImport.run_import(
+                   fetcher: fetcher,
+                   limit: 1,
+                   pages: 1,
+                   provider_feed_ids: requested_feed_ids
+                 )
+      end)
+
+      fetched_feed_ids =
+        Enum.map(requested_feed_ids, fn _feed_id ->
+          assert_receive {:fetch, provider_feed_id, opts}
+          assert opts[:ad_ids] == [provider_feed_id]
+          provider_feed_id
+        end)
+
+      assert MapSet.new(fetched_feed_ids) == MapSet.new(requested_feed_ids)
+      refute_received {:fetch, _, _}
+      assert Repo.aggregate(ImportRun, :count, :id) == 51
+    end
+
+    test "candidate import summary includes persisted page counts when a later page fetch fails" do
+      source = source_fixture()
+
+      candidate =
+        insert_candidate!(source, %{
+          advertiser_id: "adv-partial",
+          provider_feed_id: "feed-partial",
+          review_status: "shortlisted"
+        })
+
+      fetcher = fn
+        nil, _opts -> {:ok, product_validation_fixture(), 1}
+        1, _opts -> {:error, :provider_timeout}
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:error,
+                  {:candidate_import_failures,
+                   %{
+                     candidate_failures: 1,
+                     candidates_imported: 0,
+                     candidates_matched: 1,
+                     failed: 0,
+                     fetched: 1,
+                     normalized: 1,
+                     pages_fetched: 1,
+                     persisted: 1
+                   }}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 2,
+                     provider_feed_ids: [candidate.provider_feed_id]
+                   )
+        end)
+
+      assert output =~ "candidate_failures=1"
+      assert output =~ "fetched=1 normalized=1 persisted=1 failed=0 pages_fetched=1"
+
+      assert %ImportRun{
+               status: "failed",
+               error_summary: "fetch_failed",
+               pages_fetched: 1,
+               records_fetched: 1,
+               records_normalized: 1,
+               records_persisted: 1,
+               records_failed: 0
              } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
     end
 
@@ -590,6 +687,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
     %MerchantFeedCandidate{}
     |> MerchantFeedCandidate.changeset(attrs)
     |> Repo.insert!()
+  end
+
+  defp imported_feed_ids(source) do
+    ImportRun
+    |> where([run], run.source_id == ^source.id)
+    |> where([run], run.surface == "shoppingProducts")
+    |> select([run], run.query)
+    |> Repo.all()
+    |> Enum.map(&Map.get(&1, "providerFeedId"))
   end
 
   defp restore_env(name, nil), do: System.delete_env(name)

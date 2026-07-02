@@ -8,6 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   import Ecto.Query
 
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
   alias ProductCompare.Repo
@@ -84,7 +85,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
         {:error, reason, report, next_cursor} ->
           case fail_import_run(import_run, report, next_cursor) do
-            {:ok, _completed_run} -> {:error, reason}
+            {:ok, _completed_run} -> fetch_failure_result(reason, report)
             {:error, finalization_reason} -> {:error, finalization_reason}
           end
       end
@@ -376,7 +377,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   defp normalize_review_status(status), do: Mix.raise("invalid review status: #{status}")
 
-  defp candidate_limit([_first | _rest], _candidate_limit), do: 50
+  defp candidate_limit([_first | _rest] = provider_feed_ids, _candidate_limit),
+    do: length(provider_feed_ids)
+
   defp candidate_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
   defp candidate_limit([], _value), do: 10
 
@@ -400,6 +403,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
             |> Map.update!(:candidates_imported, &(&1 + 1))
 
           {:error, {:row_failures, import_report}} when is_map(import_report) ->
+            report
+            |> merge_candidate_import_report(import_report)
+            |> Map.update!(:candidate_failures, &(&1 + 1))
+
+          {:error, {:fetch_failed, _reason, import_report}} when is_map(import_report) ->
             report
             |> merge_candidate_import_report(import_report)
             |> Map.update!(:candidate_failures, &(&1 + 1))
@@ -446,6 +454,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   defp candidate_report_result(report), do: {:error, {:candidate_import_failures, report}}
 
+  defp fetch_failure_result(reason, report) do
+    if partial_report?(report) do
+      {:error, {:fetch_failed, reason, report}}
+    else
+      {:error, reason}
+    end
+  end
+
+  defp partial_report?(report) do
+    Enum.any?(
+      ~w(failed fetched normalized pages_fetched persisted)a,
+      &(Map.get(report, &1, 0) > 0)
+    )
+  end
+
   defp maybe_print_candidate_report(report, opts) do
     if Keyword.get(opts, :print_report, true) do
       IO.puts(
@@ -459,42 +482,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.get_values(:provider_feed_id)
     |> Enum.flat_map(&List.wrap/1)
     |> Enum.concat(List.wrap(Keyword.get(opts, :provider_feed_ids, [])))
-    |> Enum.map(&normalize_string/1)
+    |> Enum.map(&IdNormalizer.normalize_id/1)
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
-  end
-
-  defp normalize_ids(nil), do: nil
-
-  defp normalize_ids(value) when is_list(value) do
-    value
-    |> Enum.map(&normalize_string/1)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq()
-    |> case do
-      [] -> nil
-      values -> values
-    end
   end
 
   defp normalize_ids(value) do
-    case normalize_string(value) do
-      nil -> nil
-      value -> [value]
-    end
-  end
-
-  defp normalize_string(value) when is_binary(value) do
     value
-    |> String.trim()
+    |> IdNormalizer.normalize_ids()
     |> case do
-      "" -> nil
-      value -> value
+      nil -> nil
+      values -> values
     end
+    |> maybe_uniq_ids()
   end
 
-  defp normalize_string(value) when is_integer(value), do: Integer.to_string(value)
-  defp normalize_string(_value), do: nil
+  defp maybe_uniq_ids(nil), do: nil
+  defp maybe_uniq_ids(values), do: Enum.uniq(values)
+
+  defp normalize_string(value), do: IdNormalizer.normalize_id(value)
 
   defp credential_report(opts) do
     missing_required =
@@ -522,16 +528,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Kernel.not()
   end
 
-  defp blank_to_nil(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" -> nil
-      trimmed -> trimmed
-    end
-  end
-
-  defp blank_to_nil(value), do: value
+  defp blank_to_nil(value), do: IdNormalizer.blank_to_nil(value)
 
   defp print_report(report) do
     IO.puts(
