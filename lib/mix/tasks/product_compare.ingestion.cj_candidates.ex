@@ -97,6 +97,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
   end
 
   defp normalize_status(_status, "fit-gaps"), do: "pending"
+  defp normalize_status(_status, "application-cohort"), do: "shortlisted"
   defp normalize_status(_status, _report), do: "all"
 
   defp normalize_format(nil), do: @default_format
@@ -228,8 +229,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
   end
 
   defp application_candidates(opts) do
+    status = Keyword.fetch!(opts, :status)
+
     Ingestion.list_merchant_feed_candidates_query(
-      review_status: "shortlisted",
+      review_status: status,
       sort: :fit_score_desc
     )
     |> where([candidate], candidate.provider == @provider)
@@ -249,7 +252,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
   defp maybe_filter_string(query, _field, nil), do: query
 
   defp maybe_filter_string(query, field, expected),
-    do: where(query, [candidate], field(candidate, ^field) == ^expected)
+    do:
+      where(
+        query,
+        [candidate],
+        fragment("UPPER(BTRIM(?))", field(candidate, ^field)) == ^expected
+      )
 
   defp maybe_filter_min_product_count(query, nil), do: query
 

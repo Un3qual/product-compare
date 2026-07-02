@@ -120,6 +120,84 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
       refute output =~ "adv-pending"
     end
 
+    test "application cohort applies the requested review status" do
+      source = source_fixture()
+
+      pending =
+        candidate_fixture(source, %{
+          advertiser_id: "adv-pending-status",
+          provider_feed_id: "feed-pending-status",
+          review_status: "pending"
+        })
+
+      candidate_fixture(source, %{
+        advertiser_id: "adv-shortlisted-status",
+        provider_feed_id: "feed-shortlisted-status",
+        review_status: "shortlisted"
+      })
+
+      output =
+        capture_io(fn ->
+          CjCandidates.run([
+            "--report",
+            "application-cohort",
+            "--status",
+            "pending"
+          ])
+        end)
+
+      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, pending.id)
+
+      assert output =~ "provider=cj report=application-cohort format=lines count=1"
+      assert output =~ candidate_id
+      assert output =~ "adv-pending-status"
+      refute output =~ "adv-shortlisted-status"
+    end
+
+    test "application cohort normalizes market filters against stored provider values" do
+      source = source_fixture()
+
+      normalized =
+        candidate_fixture(source, %{
+          advertiser_country: " us ",
+          advertiser_id: "adv-normalized-market",
+          currency: " usd ",
+          language: " en ",
+          provider_feed_id: "feed-normalized-market",
+          review_status: "shortlisted"
+        })
+
+      candidate_fixture(source, %{
+        advertiser_country: "CA",
+        advertiser_id: "adv-ca-market",
+        currency: "CAD",
+        language: "FR",
+        provider_feed_id: "feed-ca-market",
+        review_status: "shortlisted"
+      })
+
+      output =
+        capture_io(fn ->
+          CjCandidates.run([
+            "--report",
+            "application-cohort",
+            "--country",
+            "us",
+            "--currency",
+            "usd",
+            "--language",
+            "en"
+          ])
+        end)
+
+      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, normalized.id)
+
+      assert output =~ "provider=cj report=application-cohort format=lines count=1"
+      assert output =~ candidate_id
+      assert output =~ "adv-normalized-market"
+      refute output =~ "adv-ca-market"
+    end
+
     test "rejects removed CSV export report" do
       assert_raise Mix.Error, "CJ candidate CSV export is not supported", fn ->
         capture_io(fn -> CjCandidates.run(["--report", "export"]) end)
