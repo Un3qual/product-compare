@@ -3,12 +3,16 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   Minimal CJ GraphQL client for manual product ingestion.
   """
 
+  alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
+
   @endpoint "https://ads.api.cj.com/query"
 
   @product_query """
   query(
     $companyId: ID!,
+    $adIds: [ID!],
     $keywords: [String!],
+    $partnerIds: [ID!],
     $limit: Int!,
     $offset: Int!,
     $currency: String,
@@ -16,7 +20,9 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   ) {
     shoppingProducts(
       companyId: $companyId,
+      adIds: $adIds,
       keywords: $keywords,
+      partnerIds: $partnerIds,
       partnerStatus: JOINED,
       limit: $limit,
       offset: $offset,
@@ -126,12 +132,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   defp required_config(opts, option_key, env_key) do
     opts
     |> Map.get(option_key)
-    |> blank_to_nil()
+    |> IdNormalizer.blank_to_nil()
     |> case do
       nil ->
         env_key
         |> System.get_env()
-        |> blank_to_nil()
+        |> IdNormalizer.blank_to_nil()
         |> case do
           nil -> {:error, {:missing_env, env_key}}
           value -> {:ok, value}
@@ -150,10 +156,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
       Jason.encode!(%{
         query: @product_query,
         variables: %{
+          adIds: ad_ids(opts),
           companyId: company_id,
           keywords: Map.get(opts, :keywords, ["shoe"]),
           limit: limit,
           offset: offset,
+          partnerIds: partner_ids(opts),
           currency: Map.get(opts, :currency, "USD"),
           serviceableAreas: serviceable_areas(opts)
         }
@@ -289,14 +297,15 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     end
   end
 
-  defp blank_to_nil(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" -> nil
-      value -> value
-    end
+  defp ad_ids(opts) do
+    opts
+    |> Map.get(:ad_ids)
+    |> IdNormalizer.normalize_ids()
   end
 
-  defp blank_to_nil(value), do: value
+  defp partner_ids(opts) do
+    opts
+    |> Map.get(:partner_ids, Map.get(opts, :advertiser_ids))
+    |> IdNormalizer.normalize_ids()
+  end
 end

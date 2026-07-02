@@ -96,6 +96,62 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
       assert query =~ "$serviceableAreas: [String!]"
     end
 
+    test "scopes shoppingProducts to discovered feeds and advertisers" do
+      System.put_env("CJ_API_TOKEN", "test-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+
+      parent = self()
+
+      transport = fn request ->
+        send(parent, {:request, request})
+
+        {:ok,
+         %{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "data" => %{
+                 "shoppingProducts" => %{
+                   "count" => 0,
+                   "limit" => 25,
+                   "totalCount" => 0,
+                   "resultList" => []
+                 }
+               }
+             })
+         }}
+      end
+
+      assert {:ok, [], nil} =
+               Client.fetch_batch(nil,
+                 ad_ids: ["feed-1"],
+                 partner_ids: ["adv-1"],
+                 keywords: nil,
+                 limit: 25,
+                 transport: transport
+               )
+
+      assert_receive {:request, %{body: body}}
+
+      assert %{
+               "query" => query,
+               "variables" => %{
+                 "companyId" => "1234567",
+                 "keywords" => nil,
+                 "limit" => 25,
+                 "offset" => 0,
+                 "adIds" => ["feed-1"],
+                 "partnerIds" => ["adv-1"]
+               }
+             } = Jason.decode!(body)
+
+      assert query =~ "$adIds: [ID!]"
+      assert query =~ "adIds: $adIds"
+      assert query =~ "$partnerIds: [ID!]"
+      assert query =~ "partnerIds: $partnerIds"
+      refute query =~ "advertiserIds"
+    end
+
     test "returns a missing env error before calling the transport" do
       transport = fn _request -> flunk("transport should not be called without credentials") end
 
