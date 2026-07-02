@@ -3,6 +3,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   Minimal CJ GraphQL client for manual product ingestion.
   """
 
+  alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
+
   @endpoint "https://ads.api.cj.com/query"
 
   @product_query """
@@ -130,12 +132,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   defp required_config(opts, option_key, env_key) do
     opts
     |> Map.get(option_key)
-    |> blank_to_nil()
+    |> IdNormalizer.blank_to_nil()
     |> case do
       nil ->
         env_key
         |> System.get_env()
-        |> blank_to_nil()
+        |> IdNormalizer.blank_to_nil()
         |> case do
           nil -> {:error, {:missing_env, env_key}}
           value -> {:ok, value}
@@ -298,54 +300,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   defp ad_ids(opts) do
     opts
     |> Map.get(:ad_ids)
-    |> normalize_ids()
+    |> IdNormalizer.normalize_ids()
   end
 
   defp partner_ids(opts) do
     opts
     |> Map.get(:partner_ids, Map.get(opts, :advertiser_ids))
-    |> normalize_ids()
+    |> IdNormalizer.normalize_ids()
   end
-
-  defp normalize_ids(nil), do: nil
-
-  defp normalize_ids(value) when is_list(value) do
-    value
-    |> Enum.map(&string_value/1)
-    |> Enum.reject(&is_nil/1)
-    |> case do
-      [] -> nil
-      values -> values
-    end
-  end
-
-  defp normalize_ids(value) do
-    case string_value(value) do
-      nil -> nil
-      value -> [value]
-    end
-  end
-
-  defp string_value(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" -> nil
-      value -> value
-    end
-  end
-
-  defp string_value(value) when is_integer(value), do: Integer.to_string(value)
-  defp string_value(_value), do: nil
-
-  defp blank_to_nil(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" -> nil
-      value -> value
-    end
-  end
-
-  defp blank_to_nil(value), do: value
 end
