@@ -378,6 +378,46 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
              } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
     end
 
+    test "rejects blank explicit provider feed ids before default imports" do
+      fetcher = fn _cursor, _opts ->
+        flunk("blank explicit feed ids must not fall through to the default import")
+      end
+
+      assert_raise Mix.Error, "invalid --provider-feed-id: expected a non-empty CJ feed id", fn ->
+        CjImport.run_import(fetcher: fetcher, provider_feed_ids: [" "])
+      end
+
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+    end
+
+    test "returns an error when explicit provider feed ids match no candidates" do
+      source = source_fixture()
+
+      insert_candidate!(source, %{
+        provider_feed_id: "existing-feed",
+        review_status: "shortlisted"
+      })
+
+      fetcher = fn _cursor, _opts ->
+        flunk("missing explicit feed ids must not fetch unrelated candidates")
+      end
+
+      output =
+        capture_io(fn ->
+          assert {:error, {:provider_feed_candidates_not_found, ["missing-feed"]}} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     limit: 1,
+                     pages: 1,
+                     provider_feed_ids: ["missing-feed"]
+                   )
+        end)
+
+      assert output =~ "candidate_count=0"
+      assert output =~ "imported_candidates=0"
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+    end
+
     test "imports every explicitly requested feed candidate without applying the default candidate cap" do
       source = source_fixture()
 

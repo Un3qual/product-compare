@@ -332,13 +332,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp import_candidates(opts) do
+    opts =
+      Keyword.update(
+        opts,
+        :provider_feed_ids,
+        [],
+        &normalize_provider_feed_id_list!/1
+      )
+
     candidates = import_candidates_query(opts) |> Repo.all()
 
     candidates
     |> Enum.reduce(initial_candidate_report(length(candidates)), &import_candidate(&1, &2, opts))
     |> then(fn report ->
       maybe_print_candidate_report(report, opts)
-      candidate_report_result(report)
+      candidate_report_result(report, opts)
     end)
   end
 
@@ -450,9 +458,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Map.update!(:pages_fetched, &(&1 + Map.get(import_report, :pages_fetched, 0)))
   end
 
-  defp candidate_report_result(%{candidate_failures: 0, failed: 0} = report), do: {:ok, report}
+  defp candidate_report_result(%{candidates_matched: 0} = report, opts) do
+    case Keyword.get(opts, :provider_feed_ids, []) do
+      [] -> {:ok, report}
+      provider_feed_ids -> {:error, {:provider_feed_candidates_not_found, provider_feed_ids}}
+    end
+  end
 
-  defp candidate_report_result(report), do: {:error, {:candidate_import_failures, report}}
+  defp candidate_report_result(%{candidate_failures: 0, failed: 0} = report, _opts),
+    do: {:ok, report}
+
+  defp candidate_report_result(report, _opts), do: {:error, {:candidate_import_failures, report}}
 
   defp fetch_failure_result(reason, report) do
     if partial_report?(report) do
@@ -482,9 +498,24 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.get_values(:provider_feed_id)
     |> Enum.flat_map(&List.wrap/1)
     |> Enum.concat(List.wrap(Keyword.get(opts, :provider_feed_ids, [])))
+    |> normalize_provider_feed_id_list!()
+  end
+
+  defp normalize_provider_feed_id_list!(values) do
+    values
+    |> List.wrap()
+    |> Enum.flat_map(&List.wrap/1)
     |> Enum.map(&IdNormalizer.normalize_id/1)
-    |> Enum.reject(&is_nil/1)
+    |> reject_blank_provider_feed_ids!()
     |> Enum.uniq()
+  end
+
+  defp reject_blank_provider_feed_ids!(ids) do
+    if Enum.any?(ids, &is_nil/1) do
+      Mix.raise("invalid --provider-feed-id: expected a non-empty CJ feed id")
+    end
+
+    ids
   end
 
   defp normalize_ids(value) do

@@ -199,6 +199,44 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
       assert opts[:feed_name] == "Scoped Feed"
     end
 
+    test "resumes legacy import feed filters from provider feed and advertiser ids" do
+      source = source_fixture()
+
+      insert_run!(source, %{
+        surface: "shoppingProducts",
+        status: "succeeded",
+        cursor_end: 100,
+        page_size: 25,
+        query: %{
+          "keywords" => nil,
+          "currency" => "USD",
+          "serviceableAreas" => ["US"],
+          "advertiserIds" => ["legacy-adv"],
+          "providerFeedId" => "legacy-feed",
+          "feedName" => "Legacy Feed"
+        }
+      })
+
+      parent = self()
+
+      runner = fn opts ->
+        send(parent, {:runner_opts, opts})
+        {:ok, %{fetched: 1, normalized: 1, persisted: 1, failed: 0, next_cursor: 125}}
+      end
+
+      capture_io(fn ->
+        assert {:ok, %{next_cursor: 125}} =
+                 CjRuns.run_resume(surface: "import", runner: runner, pages: 1)
+      end)
+
+      assert_receive {:runner_opts, opts}
+      assert opts[:keywords] == nil
+      assert opts[:ad_ids] == ["legacy-feed"]
+      assert opts[:partner_ids] == ["legacy-adv"]
+      assert opts[:provider_feed_id] == "legacy-feed"
+      assert opts[:feed_name] == "Legacy Feed"
+    end
+
     test "resumes discovery from latest successful discovery cursor" do
       source = source_fixture()
 
