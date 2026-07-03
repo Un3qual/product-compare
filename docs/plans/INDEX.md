@@ -14,17 +14,13 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership. The
 2026-06-29 usable-product batch, the product filtering and in-depth comparison
-batch, the persistent compare tray follow-up, and the CJ read-model plus weekly
-operator-runbook batch completed. The live queue now promotes five
-product-facing follow-up rows.
+batch, the persistent compare tray follow-up, the CJ read-model plus weekly
+operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
+completed. The live queue has no ready rows.
 
 Active implementation plans:
 
-- `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`
-- `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`
-- `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`
-- `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`
-- `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`
+- None.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -40,9 +36,8 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- No planned follow-up groups are currently listed outside the five
-  product-facing ready rows and the blocked candidate pool. Start at
-  `docs/work/index.md` for live dispatch status.
+- No planned follow-up groups are currently listed outside the blocked
+  candidate pool. Start at `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive
 
@@ -50,6 +45,14 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Product-facing follow-up batch:
+  `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`,
+  `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`,
+  `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`,
+  `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`,
+  and
+  `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`.
 
 - CJ read-model and weekly operator-runbook batch:
   `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`,

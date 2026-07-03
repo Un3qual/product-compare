@@ -40,9 +40,9 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
-## Queued Product-Facing Batch
+## Completed Product-Facing Batch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`.
 - Owned paths:
@@ -62,7 +62,14 @@
 
 ### Offer Discovery Sort And Highlights Evidence
 
-- Queued row evidence belongs here when the row completes.
+- RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx` -
+  29 tests, 20 expected failures for missing sort normalization, sort controls,
+  sort-preserving links, loaded-page sorting, and best-price labeling.
+- GREEN: `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx` -
+  29 tests, 0 failures, including price low-to-high `Best price on this page`
+  labeling and price high-to-low `Highest price on this page` labeling.
+- Final integration: `cd assets && bun run typecheck` - completed with exit 0.
+- `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 

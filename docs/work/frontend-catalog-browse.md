@@ -100,9 +100,9 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
-## Queued Product-Facing Batch
+## Completed Product-Facing Batch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`.
 - Owned paths:
@@ -121,7 +121,19 @@
 
 ### Catalog Product Card Spec Teasers Evidence
 
-- Queued row evidence belongs here when the row completes.
+- Implemented:
+  - `BrowseProductsRouteQuery` now requests product `currentAttributes` fields
+    needed for browse-card specification teasers.
+  - `/products` cards now render a `Specification highlights` list with at most
+    three rows in Relay response order.
+  - Cards with no current attributes omit the specification teaser list.
+- Verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "specification highlights|current specification"` failed with 2 expected failures because the query did not select `currentAttributes` and cards did not render a `Specification highlights` list.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "specification highlights|current specification"` - 2 tests passed, 47 skipped.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx` - 49 tests, 0 failures.
+  - Final integration: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch
 

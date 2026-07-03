@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-02
+Updated: 2026-07-03
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -43,126 +43,42 @@ identity quality read model, application readiness read model, and weekly
 operator runbook landed on the current stack and have completion evidence in
 `docs/work/product-data-scraping.md`.
 
-The live queue is now a product-facing follow-up batch. These rows are
-unblocked by existing frontend routes and GraphQL contracts, avoid CJ ingestion
-surfaces, and keep backend/schema work out of scope unless a row explicitly
-names it.
+The product-facing follow-up batch is complete. It used existing frontend
+routes and GraphQL contracts, avoided CJ ingestion surfaces, and kept
+backend/schema work out of scope.
 
 ## Ready Work
 
-### Parallel Batch: Product-Facing Follow-Up Rows
+None.
 
-Batch rules:
+## Blocked Work
 
-- Workers start from `docs/work/index.md`, `docs/work/operating-model.md`,
-  their row's lane work doc, and their row's active plan.
-- Parallel workers may edit only their row's owned paths and the named evidence
-  heading in the row's lane work doc.
-- Do not implement another row's route, tests, generated artifacts, or evidence
-  heading from the same worker branch.
-- Do not add CJ ingestion behavior, scheduler behavior, browser auth REST
-  endpoints, credential persistence, account-manager automation, Tier-3
-  scraping, application submission, or CSV export paths.
+### eBay Browse Fallback Connector
 
-#### Catalog Product Card Spec Teasers
-
-Status: ready
-Lane: Frontend catalog browse (`docs/work/frontend-catalog-browse.md`)
-Active plan: `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`
-Next action: Add bounded current-specification teaser rows to `/products` cards using the existing `Product.currentAttributes` contract while preserving filter, pagination, and compare-selection URLs.
-Owned paths:
-
-- `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
-- `docs/work/frontend-catalog-browse.md` under `### Catalog Product Card Spec Teasers Evidence` only
-Verification:
-
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-Exit condition: `/products` cards show bounded current-spec teasers, empty-spec cards stay clean, and completion evidence is recorded only under `### Catalog Product Card Spec Teasers Evidence`.
-
-#### Product Detail Offer Summary
-
-Status: ready
-Lane: Frontend product detail (`docs/work/frontend-product-detail.md`)
-Active plan: `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`
-Next action: Add a compact active-offer summary to `/products/:slug` from fields already loaded by `ProductOffersRouteQuery` without changing backend schema, pricing resolvers, or offer pagination.
-Owned paths:
-
-- `assets/src/routes/products/detail.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-product-detail.md` under `### Product Detail Offer Summary Evidence` only
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-Exit condition: `/products/:slug` summarizes the visible active-offer page without changing empty, unavailable, paginated, coupon, price-history, or compare-selection behavior.
-
-#### Offer Discovery Sort And Highlights
-
-Status: ready
-Lane: Frontend offer discovery (`docs/work/frontend-offer-discovery-demo-parity.md`)
-Active plan: `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`
-Next action: Add route-local sort controls and page-local best-price highlighting to `/offers` without changing backend ordering, cursor semantics, or `merchantProducts(input:)`.
-Owned paths:
-
-- `assets/src/routes/offers/loader.ts`
-- `assets/src/routes/offers/paths.ts`
-- `assets/src/routes/offers/filters.tsx`
-- `assets/src/routes/offers/index.tsx`
-- `assets/test/routes/offers/offer-discovery-loader.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md` under `### Offer Discovery Sort And Highlights Evidence` only
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-Exit condition: `/offers` preserves all existing filters and pagination while allowing loaded-page sort by default order, price, or merchant name, with completion evidence recorded under `### Offer Discovery Sort And Highlights Evidence`.
-
-#### Saved Comparisons Sort Controls
-
-Status: ready
-Lane: Frontend saved comparisons (`docs/work/frontend-saved-comparisons-ui.md`)
-Active plan: `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`
-Next action: Add client-side sort controls for loaded `/compare/saved` rows while preserving filtering, reopen links, delete behavior, auth state, and empty/no-match return paths.
-Owned paths:
-
-- `assets/src/routes/compare/saved.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `assets/test/routes/compare/saved-comparisons-test-helpers.ts`
-- `docs/work/frontend-saved-comparisons-ui.md` under `### Saved Comparisons Sort Controls Evidence` only
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-Exit condition: `/compare/saved` can sort loaded saved sets by current order, name, and product count without changing backend saved-comparison contracts.
-
-#### Merchant Directory Website Links
-
-Status: ready
-Lane: Frontend merchant discovery (`docs/work/frontend-merchant-discovery-demo-parity.md`)
-Active plan: `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`
-Next action: Turn safe merchant domains on `/merchants` into explicit website links without adding merchant-only offer browsing, backend filters, GraphQL schema changes, or affiliate mutations.
-Owned paths:
-
-- `assets/src/routes/merchants/index.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md` under `### Merchant Directory Website Links Evidence` only
-Verification:
-
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-Exit condition: `/merchants` renders safe external website links from current merchant data and leaves unsafe domains as non-link text.
+Status: blocked
+Lane: Product ingestion (`docs/work/product-data-scraping.md`)
+Blocker: CJ validation records that the approved CJ account lacks usable product
+catalog scope.
+Unblock condition: record CJ catalog-scope evidence or an explicit product
+decision to pursue the fallback connector.
 
 ## Just Completed
+
+The 2026-07-03 product-facing follow-up batch completed these five work items:
+
+- Frontend catalog browse: `/products` cards now show bounded current-spec
+  teasers from the existing `Product.currentAttributes` contract.
+- Frontend product detail: `/products/:slug` now summarizes the visible
+  active-offer page with loaded-offer count, lowest visible price, coupon
+  availability, and missing-price count.
+- Frontend offer discovery: `/offers` now preserves route-local sort controls
+  through filters and pagination and applies sort-specific labels to the first
+  visible numeric price result.
+- Frontend saved comparisons: `/compare/saved` now sorts loaded saved sets by
+  current order, name, and product count while preserving filter, reopen, and
+  delete behavior.
+- Frontend merchant discovery: `/merchants` now renders safe merchant website
+  links while leaving unsafe domains as text.
 
 The CJ read-model and weekly operator-runbook batch is complete and no longer
 live queue work. The lane evidence records final gates for:

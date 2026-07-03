@@ -65,6 +65,16 @@ const SAVED_SET_QUERY_DESCRIPTOR = {
     }
   }
 };
+const NEXT_SAVED_SET_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "SavedComparisonsRouteQuery",
+    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    variables: {
+      first: 20,
+      after: "cursor-1"
+    }
+  }
+};
 
 const SAVED_SET_QUERY_REF = {
   dispose: vi.fn(),
@@ -97,6 +107,30 @@ const buildReadyLoaderData = () => {
     savedSets: [buildSavedSet()]
   };
 };
+
+function buildSortableSavedSets() {
+  return [
+    {
+      id: "saved-set-1",
+      name: "Desk setup",
+      slugs: ["chair", "desk"]
+    },
+    {
+      id: "saved-set-2",
+      name: "Alpha kit",
+      slugs: ["lamp"]
+    },
+    {
+      id: "saved-set-3",
+      name: "Office suite",
+      slugs: ["monitor", "keyboard", "mouse"]
+    }
+  ];
+}
+
+function savedComparisonNames() {
+  return screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+}
 
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
@@ -182,6 +216,146 @@ test("saved comparison cards scope reopen and delete actions to the set", () => 
 
   expect(openComparisonLink).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
   expect(within(actions).getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+});
+
+test("saved comparisons route restores current order after another sort", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: buildSortableSavedSets()
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const sortSelect = screen.getByRole("combobox", { name: "Sort saved comparisons" });
+
+  expect(sortSelect).toHaveValue("current");
+  expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
+
+  fireEvent.change(sortSelect, { target: { value: "name-asc" } });
+  expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
+
+  fireEvent.change(sortSelect, { target: { value: "current" } });
+  expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
+});
+
+test("saved comparisons route sorts loaded sets by name A-Z", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: buildSortableSavedSets()
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
+    target: { value: "name-asc" }
+  });
+
+  expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
+});
+
+test("saved comparisons route sorts loaded sets by product count high-to-low", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: buildSortableSavedSets()
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
+    target: { value: "product-count-desc" }
+  });
+
+  expect(savedComparisonNames()).toEqual(["Office suite", "Desk setup", "Alpha kit"]);
+});
+
+test("saved comparisons route sorts filtered loaded sets by product count low-to-high", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: buildSortableSavedSets()
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
+    target: { value: "e" }
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
+    target: { value: "product-count-asc" }
+  });
+
+  expect(savedComparisonNames()).toEqual(["Desk setup", "Office suite"]);
+});
+
+test("saved comparisons route keeps row actions scoped when sorting changes", async () => {
+  const commits: Array<{
+    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
+  }> = [];
+
+  commitMutationMock.mockImplementation((config) => {
+    commits.push(config);
+  });
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: buildSortableSavedSets()
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  const sortSelect = screen.getByRole("combobox", { name: "Sort saved comparisons" });
+
+  fireEvent.change(sortSelect, { target: { value: "product-count-desc" } });
+  const alphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
+
+  expect(within(alphaActions).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=lamp"
+  );
+
+  fireEvent.click(within(alphaActions).getByRole("button", { name: "Delete comparison" }));
+
+  await waitFor(() => {
+    expect(commits).toHaveLength(1);
+  });
+
+  fireEvent.change(sortSelect, { target: { value: "product-count-asc" } });
+
+  const resortedAlphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
+
+  expect(
+    within(resortedAlphaActions).getByRole("button", { name: "Deleting comparison..." })
+  ).toBeDisabled();
+  expect(
+    within(resortedAlphaActions).getByRole("link", { name: "Open comparison" })
+  ).toHaveAttribute("href", "/compare?slug=lamp");
+
+  act(() => {
+    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
+  });
 });
 
 test("saved comparisons route announces deletion when deleting the last set", async () => {
@@ -512,6 +686,67 @@ test("saved comparisons route filters Relay-backed saved set pages", () => {
   expect(screen.getByText("Office setup")).toBeInTheDocument();
   expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
   expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
+});
+
+test("saved comparisons route sorts Relay-backed loaded pages as one list", () => {
+  const firstPageSavedSets = [
+    {
+      id: "saved-set-1",
+      name: "Desk setup",
+      slugs: ["chair", "desk"]
+    },
+    {
+      id: "saved-set-2",
+      name: "Zoo kit",
+      slugs: ["storage-bin"]
+    }
+  ];
+  const secondPageSavedSets = [
+    {
+      id: "saved-set-3",
+      name: "Alpha kit",
+      slugs: ["lamp"]
+    },
+    {
+      id: "saved-set-4",
+      name: "Office suite",
+      slugs: ["monitor", "keyboard", "mouse"]
+    }
+  ];
+
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR, NEXT_SAVED_SET_QUERY_DESCRIPTOR],
+    savedSets: [...firstPageSavedSets, ...secondPageSavedSets]
+  });
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(buildSavedComparisonSetsPageData(firstPageSavedSets))
+    .mockReturnValueOnce(buildSavedComparisonSetsPageData(secondPageSavedSets));
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
+    target: { value: "name-asc" }
+  });
+
+  expect(savedComparisonNames()).toEqual([
+    "Alpha kit",
+    "Desk setup",
+    "Office suite",
+    "Zoo kit"
+  ]);
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    SAVED_SET_QUERY_DESCRIPTOR
+  );
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    NEXT_SAVED_SET_QUERY_DESCRIPTOR
+  );
 });
 
 test("saved comparisons route shows a no-match message when the filter excludes all saved sets", async () => {

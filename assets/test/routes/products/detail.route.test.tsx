@@ -455,6 +455,121 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
+test("renders an offer snapshot from the visible active offer page", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-1",
+              node: {
+                code: "SAVE20",
+                description: "Save on the detail product.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: null,
+                terms: null
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      },
+      {
+        id: "merchant-product-2",
+        url: "https://value.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-2",
+          name: "Value Mart"
+        },
+        latestPrice: {
+          id: "price-2",
+          price: "149.50"
+        },
+        activeCoupons: {
+          edges: [
+            {
+              cursor: "coupon-cursor-2",
+              node: {
+                code: "VALUE10",
+                description: "Value discount.",
+                discountType: "PERCENT",
+                discountValue: "10",
+                currency: null,
+                validTo: null,
+                terms: null
+              }
+            }
+          ],
+          pageInfo: {
+            hasNextPage: false
+          }
+        }
+      },
+      {
+        id: "merchant-product-3",
+        url: "https://noprice.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-3",
+          name: "No Price Shop"
+        },
+        latestPrice: null
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const activeOffersHeading = screen.getByRole("heading", { name: "Active offers" });
+  const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
+  const offersList = screen.getByRole("list", { name: "Active offer list" });
+
+  expect(
+    activeOffersHeading.compareDocumentPosition(offerSnapshot) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(
+    offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(within(offerSnapshot).getByText("Visible active offers")).toBeVisible();
+  expect(within(offerSnapshot).getByText("3")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Coupon availability")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
+  expect(within(offerSnapshot).getByText("1 offer")).toBeVisible();
+});
+
 test("renders product decision actions with compare, offer review, and browse destinations", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -1343,6 +1458,7 @@ test("renders an empty-offers message when no active offers exist", () => {
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("drops offers with unsafe urls", () => {

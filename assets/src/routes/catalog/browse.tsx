@@ -27,6 +27,8 @@ import { catalogBrowseFirstPagePath, catalogBrowseNextPagePath } from "./paths";
 
 type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
 
+const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
+
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
@@ -222,6 +224,7 @@ function BrowseProductCard({
       <h2>{product.name}</h2>
       <p>{product.slug}</p>
       <p>{product.brand.name}</p>
+      <SpecificationHighlights attributes={product.currentAttributes} />
       <ul aria-label={`Decision actions for ${product.name}`}>
         <li>
           <Link to={browseProductDetailPath(product.slug, selectedCompareSlugs)}>
@@ -241,6 +244,31 @@ function BrowseProductCard({
         </li>
       </ul>
     </article>
+  );
+}
+
+function SpecificationHighlights({
+  attributes
+}: {
+  attributes: BrowseProductNode["currentAttributes"];
+}) {
+  const highlights = attributes.slice(0, SPECIFICATION_HIGHLIGHT_LIMIT);
+
+  if (highlights.length === 0) {
+    return null;
+  }
+
+  return (
+    <section>
+      <h3>Specification highlights</h3>
+      <ul aria-label="Specification highlights">
+        {highlights.map((attribute) => (
+          <li key={attribute.code}>
+            {attribute.displayName}: {attribute.valueText}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

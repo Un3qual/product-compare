@@ -2,9 +2,17 @@ import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,
+  type OfferDiscoverySort,
   type OfferDiscoveryFilters
 } from "./loader";
-import { offerDiscoveryPath } from "./paths";
+import { offerDiscoveryPath, offerDiscoveryResetPath } from "./paths";
+
+const SORT_OPTIONS: Array<{ label: string; value: OfferDiscoverySort }> = [
+  { label: "Default order", value: "default" },
+  { label: "Price: low to high", value: "price_asc" },
+  { label: "Price: high to low", value: "price_desc" },
+  { label: "Merchant name", value: "merchant_name" }
+];
 
 export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
   return (
@@ -51,6 +59,16 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
           type="number"
         />
       </label>
+      <label>
+        Sort
+        <select defaultValue={filters.sort} name="sort">
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit">Apply filters</button>
     </form>
   );
@@ -61,7 +79,8 @@ function offerDiscoveryFilterFormKey(filters: OfferDiscoveryFilters) {
     filters.productId,
     filters.merchantId,
     filters.activeOnly,
-    filters.first
+    filters.first,
+    filters.sort
   ]);
 }
 
@@ -78,7 +97,7 @@ export function OfferDiscoveryFilterSummary({ filters }: { filters: OfferDiscove
       </dl>
       {hasNonDefaultOfferFilters(filters) ? (
         <p>
-          <Link to="/offers">Reset filters</Link>
+          <Link to={offerDiscoveryResetPath(filters)}>Reset filters</Link>
         </p>
       ) : null}
       {filters.merchantId ? (
@@ -111,6 +130,10 @@ function offerDiscoveryFilterSummaryItems(filters: OfferDiscoveryFilters) {
     {
       label: "Page size",
       value: String(filters.first)
+    },
+    {
+      label: "Sort",
+      value: offerDiscoverySortLabel(filters.sort)
     }
   ];
 }
@@ -127,4 +150,8 @@ function hasNonDefaultOfferFilters(filters: OfferDiscoveryFilters) {
 
 function clearMerchantFilterPath(filters: OfferDiscoveryFilters) {
   return offerDiscoveryPath({ ...filters, merchantId: null }, null);
+}
+
+function offerDiscoverySortLabel(sort: OfferDiscoverySort) {
+  return SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Default order";
 }

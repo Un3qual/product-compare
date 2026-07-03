@@ -40,9 +40,9 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
-## Queued Product-Facing Batch
+## Completed Product-Facing Batch
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`.
 - Owned paths:
@@ -58,7 +58,18 @@
 
 ### Merchant Directory Website Links Evidence
 
-- Queued row evidence belongs here when the row completes.
+- Added route coverage for domain-only website link normalization, already
+  absolute HTTPS links, and non-HTTP merchant domains remaining text only.
+- RED verification:
+  `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  failed as expected with 2 missing-link failures and 8 passing tests.
+- GREEN verification:
+  `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  passed with 10 tests and 0 failures.
+- Typecheck:
+  `cd assets && bun run typecheck` completed with exit 0 in the final
+  integrated batch.
+- Diff hygiene: `git diff --check` passed with exit 0.
 
 ## Verification
 

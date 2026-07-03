@@ -94,6 +94,68 @@ test("merchant directory renders merchant names and domains", () => {
   );
 });
 
+test("merchant directory normalizes domain-only website links to HTTPS", () => {
+  renderMerchantDirectoryRoute();
+
+  expect(getMerchantListItem("Acme Market")).toHaveTextContent("acme.example");
+  const websiteLink = within(getMerchantListItem("Acme Market")).getByRole("link", {
+    name: "Visit merchant website"
+  });
+
+  expect(websiteLink).toHaveAttribute("href", "https://acme.example");
+  expect(websiteLink).toHaveAttribute("target", "_blank");
+  expect(websiteLink).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+test("merchant directory preserves already absolute HTTPS website links", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id: "merchant-3",
+          name: "Secure Seller",
+          domain: "https://secure.example/deals?source=directory"
+        }
+      ]
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const websiteLink = within(getMerchantListItem("Secure Seller")).getByRole("link", {
+    name: "Visit merchant website"
+  });
+
+  expect(websiteLink).toHaveAttribute("href", "https://secure.example/deals?source=directory");
+  expect(websiteLink).toHaveAttribute("target", "_blank");
+  expect(websiteLink).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+test("merchant directory leaves non-HTTP merchant domains as text only", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id: "merchant-4",
+          name: "File Seller",
+          domain: "ftp://files.example"
+        }
+      ]
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const merchantItem = getMerchantListItem("File Seller");
+
+  expect(merchantItem).toHaveTextContent("ftp://files.example");
+  expect(
+    within(merchantItem).queryByRole("link", {
+      name: "Visit merchant website"
+    })
+  ).not.toBeInTheDocument();
+});
+
 test("merchant directory renders an empty state", () => {
   mockedUsePreloadedQuery.mockReturnValue(buildMerchantDirectoryData({ merchants: [] }));
 
@@ -214,6 +276,16 @@ function renderMerchantDirectoryRoute() {
       <MerchantDirectoryRoute />
     </MemoryRouter>
   );
+}
+
+function getMerchantListItem(name: string) {
+  const listItem = screen.getByRole("heading", { name }).closest("li");
+
+  if (!listItem) {
+    throw new Error(`Expected ${name} to render inside a merchant list item.`);
+  }
+
+  return listItem;
 }
 
 function buildReadyLoaderData(

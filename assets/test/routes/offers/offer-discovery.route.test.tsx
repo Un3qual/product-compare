@@ -85,7 +85,8 @@ test("offer discovery asks users to start from browse products when productId is
       after: null,
       first: 6,
       merchantId: null,
-      productId: null
+      productId: null,
+      sort: "default"
     }
   } satisfies OfferDiscoveryLoaderData);
 
@@ -110,7 +111,8 @@ test("offer discovery summarizes missing product filters without reset actions",
       after: null,
       first: 6,
       merchantId: null,
-      productId: null
+      productId: null,
+      sort: "default"
     }
   } satisfies OfferDiscoveryLoaderData);
 
@@ -120,6 +122,8 @@ test("offer discovery summarizes missing product filters without reset actions",
 
   expect(within(filterSummary).getByText("Product ID")).toBeVisible();
   expect(within(filterSummary).getByText("Not selected")).toBeVisible();
+  expect(within(filterSummary).getByText("Sort")).toBeVisible();
+  expect(within(filterSummary).getByText("Default order")).toBeVisible();
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(
     within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
@@ -134,7 +138,8 @@ test("offer discovery renders filter controls with existing filter values", () =
     buildReadyLoaderData({
       first: 12,
       activeOnly: false,
-      merchantId: "TWVyY2hhbnQ6NDU2"
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      sort: "price_desc"
     })
   );
 
@@ -152,6 +157,7 @@ test("offer discovery renders filter controls with existing filter values", () =
   );
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+  expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_desc");
 });
 
 test("offer discovery summarizes active filters", () => {
@@ -159,7 +165,8 @@ test("offer discovery summarizes active filters", () => {
     buildReadyLoaderData({
       first: 12,
       activeOnly: false,
-      merchantId: "TWVyY2hhbnQ6NDU2"
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      sort: "merchant_name"
     })
   );
 
@@ -175,6 +182,8 @@ test("offer discovery summarizes active filters", () => {
   expect(within(filterSummary).getByText("All offers included")).toBeVisible();
   expect(within(filterSummary).getByText("Page size")).toBeVisible();
   expect(within(filterSummary).getByText("12")).toBeVisible();
+  expect(within(filterSummary).getByText("Sort")).toBeVisible();
+  expect(within(filterSummary).getByText("Merchant name")).toBeVisible();
 });
 
 test("offer discovery omits merchant summary actions when no merchant filter is active", () => {
@@ -202,7 +211,8 @@ test("offer discovery provides route-local filter reset links", () => {
       after: "cursor-1",
       first: 12,
       activeOnly: false,
-      merchantId: "TWVyY2hhbnQ6NDU2"
+      merchantId: "TWVyY2hhbnQ6NDU2",
+      sort: "price_asc"
     })
   );
 
@@ -210,11 +220,11 @@ test("offer discovery provides route-local filter reset links", () => {
 
   expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers"
+    "/offers?sort=price_asc"
   );
   expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc"
   );
 });
 
@@ -226,7 +236,8 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
       activeOnly: false,
       first: 24,
       merchantId: "TWVyY2hhbnQ6NDU2",
-      productId: "UHJvZHVjdDo5OTk="
+      productId: "UHJvZHVjdDo5OTk=",
+      sort: "merchant_name"
     })
   );
 
@@ -244,6 +255,7 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
   );
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
+  expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("merchant_name");
 });
 
 test("offer discovery renders ready offer rows", () => {
@@ -312,6 +324,101 @@ test("offer discovery keeps offer links when merchant metadata is unavailable", 
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
 });
 
+test("offer discovery sorts visible offers by ascending price and labels the first numeric result", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "price_asc" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-expensive",
+          product: buildProduct("product-expensive", "Expensive Product"),
+          merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
+          latestPrice: buildLatestPrice("price-expensive", "299.00")
+        }),
+        buildOffer({
+          id: "merchant-product-no-price",
+          product: buildProduct("product-no-price", "No Price Product"),
+          merchant: buildMerchant("merchant-no-price", "Middle Market"),
+          latestPrice: null
+        }),
+        buildOffer({
+          id: "merchant-product-budget",
+          product: buildProduct("product-budget", "Budget Product"),
+          merchant: buildMerchant("merchant-budget", "Alpha Market"),
+          latestPrice: buildLatestPrice("price-budget", "129.00")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(offerHeadings()).toEqual([
+    "Budget Product",
+    "Expensive Product",
+    "No Price Product"
+  ]);
+
+  const bestOffer = screen.getByRole("heading", { name: "Budget Product" }).closest("li");
+
+  expect(bestOffer).not.toBeNull();
+  expect(within(bestOffer as HTMLElement).getByText("Best price on this page")).toBeVisible();
+  expect(screen.getAllByText("Best price on this page")).toHaveLength(1);
+});
+
+test("offer discovery sorts visible offers by descending price", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "price_desc" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-budget",
+          product: buildProduct("product-budget", "Budget Product"),
+          merchant: buildMerchant("merchant-budget", "Alpha Market"),
+          latestPrice: buildLatestPrice("price-budget", "129.00")
+        }),
+        buildOffer({
+          id: "merchant-product-expensive",
+          product: buildProduct("product-expensive", "Expensive Product"),
+          merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
+          latestPrice: buildLatestPrice("price-expensive", "299.00")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(offerHeadings()).toEqual(["Expensive Product", "Budget Product"]);
+  expect(screen.getByText("Highest price on this page")).toBeVisible();
+  expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
+});
+
+test("offer discovery sorts visible offers by merchant name without price labels", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "merchant_name" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-zephyr",
+          product: buildProduct("product-zephyr", "Zephyr Product"),
+          merchant: buildMerchant("merchant-zephyr", "Zephyr Market")
+        }),
+        buildOffer({
+          id: "merchant-product-alpha",
+          product: buildProduct("product-alpha", "Alpha Product"),
+          merchant: buildMerchant("merchant-alpha", "Alpha Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(offerHeadings()).toEqual(["Alpha Product", "Zephyr Product"]);
+  expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
+});
+
 test("offer discovery renders inactive filter state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -337,8 +444,8 @@ test("offer discovery renders inactive filter state", () => {
             slug: "detail-product"
           },
           latestPrice: null,
-      activeCoupons: buildCouponConnection([]),
-      priceHistory: buildPriceHistoryConnection([])
+          activeCoupons: buildCouponConnection([]),
+          priceHistory: buildPriceHistoryConnection([])
         }
       ]
     })
@@ -358,7 +465,8 @@ test("offer discovery pagination preserves active-only and page-size filters", (
       after: "previous-cursor",
       first: 12,
       merchantId: "TWVyY2hhbnQ6NDU2",
-      activeOnly: false
+      activeOnly: false,
+      sort: "price_desc"
     })
   );
   mockedUsePreloadedQuery.mockReturnValue(
@@ -373,11 +481,11 @@ test("offer discovery pagination preserves active-only and page-size filters", (
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc"
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&after=next-cursor"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc&after=next-cursor"
   );
 });
 
@@ -425,7 +533,8 @@ test("offer discovery renders the loader error state", () => {
       after: null,
       first: 6,
       merchantId: null,
-      productId: "UHJvZHVjdDoxMjM="
+      productId: "UHJvZHVjdDoxMjM=",
+      sort: "default"
     }
   } satisfies OfferDiscoveryLoaderData);
 
@@ -440,6 +549,8 @@ test("offer discovery renders the loader error state", () => {
   expect(within(filterSummary).getByText("Active offers only")).toBeVisible();
   expect(within(filterSummary).getByText("Page size")).toBeVisible();
   expect(within(filterSummary).getByText("6")).toBeVisible();
+  expect(within(filterSummary).getByText("Sort")).toBeVisible();
+  expect(within(filterSummary).getByText("Default order")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
@@ -468,6 +579,12 @@ function renderOfferDiscoveryRoute() {
   );
 }
 
+function offerHeadings() {
+  return screen
+    .getAllByRole("heading", { level: 2 })
+    .map((heading) => heading.textContent);
+}
+
 function buildReadyLoaderData(
   filters: Partial<Extract<OfferDiscoveryLoaderData, { status: "ready" }>["filters"]> = {}
 ) {
@@ -479,10 +596,53 @@ function buildReadyLoaderData(
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",
+      sort: "default",
       ...filters
     },
     query: OFFER_DISCOVERY_QUERY_DESCRIPTOR
   } satisfies OfferDiscoveryLoaderData;
+}
+
+function buildOffer(overrides: Partial<OfferNode> = {}): OfferNode {
+  return {
+    id: "merchant-product-1",
+    url: "https://merchant.example.com/detail-product",
+    currency: "USD",
+    isActive: true,
+    merchant: buildMerchant("merchant-1", "Acme Market"),
+    product: buildProduct("product-1", "Detail Product"),
+    latestPrice: buildLatestPrice("price-1", "199.99"),
+    activeCoupons: buildCouponConnection([]),
+    priceHistory: buildPriceHistoryConnection([]),
+    ...overrides
+  };
+}
+
+function buildMerchant(id: string, name: string): NonNullable<OfferNode["merchant"]> {
+  return {
+    id,
+    name,
+    domain: `${name.toLowerCase().replace(/\s+/g, "-")}.example`
+  };
+}
+
+function buildProduct(id: string, name: string): NonNullable<OfferNode["product"]> {
+  return {
+    id,
+    name,
+    slug: name.toLowerCase().replace(/\s+/g, "-")
+  };
+}
+
+function buildLatestPrice(
+  id: string,
+  price: string
+): NonNullable<OfferNode["latestPrice"]> {
+  return {
+    id,
+    price,
+    observedAt: "2026-06-01T00:00:00Z"
+  };
 }
 
 function buildOfferDiscoveryData({

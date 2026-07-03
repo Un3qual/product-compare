@@ -13,6 +13,13 @@ export const browseProductsRouteQuery = graphql`
             id
             name
           }
+          currentAttributes {
+            code
+            displayName
+            valueText
+            sortOrder
+            groupLabel
+          }
         }
       }
       pageInfo {

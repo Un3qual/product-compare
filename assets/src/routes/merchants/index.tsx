@@ -17,6 +17,8 @@ type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
 >;
 
+const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
 
@@ -107,12 +109,23 @@ function MerchantDirectoryList({
   return (
     <>
       <ul aria-label="Merchants">
-        {merchants.map((merchant) => (
-          <li key={merchant.id}>
-            <h2>{merchant.name}</h2>
-            <p>{merchant.domain}</p>
-          </li>
-        ))}
+        {merchants.map((merchant) => {
+          const websiteHref = merchantWebsiteHref(merchant.domain);
+
+          return (
+            <li key={merchant.id}>
+              <h2>{merchant.name}</h2>
+              <p>{merchant.domain}</p>
+              {websiteHref ? (
+                <p>
+                  <a href={websiteHref} target="_blank" rel="noopener noreferrer">
+                    Visit merchant website
+                  </a>
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>
@@ -128,6 +141,32 @@ function MerchantDirectoryList({
       ) : null}
     </>
   );
+}
+
+function merchantWebsiteHref(domain: string) {
+  const value = domain.trim();
+
+  if (value.length === 0) {
+    return null;
+  }
+
+  if (URL_SCHEME_PATTERN.test(value)) {
+    return isHttpWebsiteUrl(value) ? value : null;
+  }
+
+  const normalizedHref = `https://${value}`;
+
+  return isHttpWebsiteUrl(normalizedHref) ? normalizedHref : null;
+}
+
+function isHttpWebsiteUrl(value: string) {
+  try {
+    const url = new URL(value);
+
+    return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 function MerchantDirectoryUnavailableFallback() {

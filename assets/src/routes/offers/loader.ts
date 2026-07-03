@@ -11,6 +11,14 @@ import { recoverRouteLoaderError } from "../loader-errors";
 
 export const DEFAULT_OFFERS_PAGE_SIZE = 6;
 const MAX_OFFERS_PAGE_SIZE = 50;
+const OFFER_DISCOVERY_SORT_VALUES = [
+  "default",
+  "price_asc",
+  "price_desc",
+  "merchant_name"
+] as const;
+
+export type OfferDiscoverySort = (typeof OFFER_DISCOVERY_SORT_VALUES)[number];
 
 export interface OfferDiscoveryFilters {
   activeOnly: boolean;
@@ -18,6 +26,7 @@ export interface OfferDiscoveryFilters {
   first: number;
   merchantId: string | null;
   productId: string | null;
+  sort: OfferDiscoverySort;
 }
 
 export type OfferDiscoveryLoaderData =
@@ -78,7 +87,8 @@ export function offerDiscoveryFiltersFromUrl(url: URL): OfferDiscoveryFilters {
     after: nonBlankParam(url, "after"),
     first: pageSizeFromUrl(url),
     merchantId: nonBlankParam(url, "merchantId"),
-    productId: nonBlankParam(url, "productId")
+    productId: nonBlankParam(url, "productId"),
+    sort: sortFromUrl(url)
   };
 }
 
@@ -120,6 +130,19 @@ function pageSizeFromUrl(url: URL) {
   }
 
   return parsedValue;
+}
+
+function sortFromUrl(url: URL): OfferDiscoverySort {
+  const value = nonBlankParam(url, "sort");
+
+  return isOfferDiscoverySort(value) ? value : "default";
+}
+
+function isOfferDiscoverySort(value: string | null): value is OfferDiscoverySort {
+  return (
+    value !== null &&
+    (OFFER_DISCOVERY_SORT_VALUES as readonly string[]).includes(value)
+  );
 }
 
 function nonBlankParam(url: URL, name: string) {
