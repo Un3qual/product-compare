@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-01
+Updated: 2026-07-02
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -38,8 +38,10 @@ Persistent Compare Tray work is complete through
 `871fecb docs: record persistent compare tray verification`, and the compare,
 catalog, and detail lane docs record the completed evidence.
 
-The CJ read-model and weekly operator-runbook batch is now promoted as the live
-parallel batch. The batch is CJ-only and keeps application submission,
+The CJ read-model and weekly operator-runbook batch remains the live parallel
+batch, but the first five read models are complete. The only remaining ready
+rows are merchant identity quality, application readiness, and the weekly
+operator runbook. The batch is CJ-only and keeps application submission,
 account-manager automation, Tier-3 scraping, credential persistence, GraphQL/UI
 surfaces, scheduler behavior, network calls, mutations, CSV export paths, raw
 artifact exposure, account ids, tracking params, provider error payloads, and
@@ -58,101 +60,6 @@ Batch rules:
 - Do not implement another row's read model, runbook, tests, or evidence
   heading from the same worker branch.
 - CJ candidate CSV score export remains rejected and must not be promoted.
-
-#### CJ Candidate Freshness Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-Next action: Add the read-only CJ candidate freshness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_candidate_freshness.ex`
-- `test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- `docs/work/product-data-scraping.md` under `### Candidate Freshness Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: Candidate freshness read model is covered by focused tests and completion evidence is recorded only under `### Candidate Freshness Evidence`.
-
-#### CJ Run Health Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-Next action: Add the read-only CJ run health aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_run_health.ex`
-- `test/product_compare/ingestion/cj_run_health_test.exs`
-- `docs/work/product-data-scraping.md` under `### Run Health Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_run_health_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ run health read model is covered by focused tests and completion evidence is recorded only under `### Run Health Evidence`.
-
-#### CJ Run Throughput Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-Next action: Add the read-only CJ run throughput aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_run_throughput.ex`
-- `test/product_compare/ingestion/cj_run_throughput_test.exs`
-- `docs/work/product-data-scraping.md` under `### Run Throughput Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ run throughput read model is covered by focused tests and completion evidence is recorded only under `### Run Throughput Evidence`.
-
-#### CJ Import Artifact Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ import artifact quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_import_artifact_quality.ex`
-- `test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Import Artifact Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ import artifact quality read model is covered by focused tests and completion evidence is recorded only under `### Import Artifact Quality Evidence`.
-
-#### CJ Import Price Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ import price quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_import_price_quality.ex`
-- `test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Import Price Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ import price quality read model is covered by focused tests and completion evidence is recorded only under `### Import Price Quality Evidence`.
 
 #### CJ Merchant Identity Quality Read Model
 
@@ -210,8 +117,18 @@ Exit condition: The weekly operator runbook exists, avoids unfinished placeholde
 
 ## Just Completed
 
+The first five CJ read-model rows from the current product data scraping batch
+are complete and no longer live queue work. The lane evidence records final
+gates for:
+
+- CJ candidate freshness.
+- CJ run health.
+- CJ run throughput.
+- CJ import artifact quality.
+- CJ import price quality.
+
 The 2026-06-30 first product filtering and in-depth comparison parallel batch
-and dependent catalog UI follow-up completed these three work items:
+and dependent catalog UI follow-up completed these work items:
 
 - Backend filter metadata/facets: GraphQL now exposes
   `productFilterMetadata(filters:)` with display-safe counts, ranges, selected

@@ -8,8 +8,10 @@
 - Live queue row: promoted on 2026-07-01 as the CJ read-model and weekly
   operator-runbook parallel batch
 - Last verified: 2026-07-01 against current code/tests for the completed
-  candidate cohort and market coverage rows; their evidence sections record
-  final gates
+  candidate cohort, market coverage, and first five CJ read-model rows; their
+  evidence sections record final gates
+- Last documentation refresh: 2026-07-02 after reconciling the live queue with
+  completed CJ read-model evidence
 - Last plan refresh: 2026-07-01 after promoting the CJ read-model and weekly
   operator runbook candidate pool into the live queue
 - Historical context:
@@ -19,15 +21,15 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Active implementation plans:
+  - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
+  - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+- Recently completed implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
-- Recently completed implementation plans:
   - `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
   - `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-project-source-health-read-model-implementation-plan.md`
@@ -95,11 +97,6 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Status: ready
 - Batch: Remaining CJ read-model and weekly operator runbook live parallel batch.
 - Plans:
-  - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
@@ -108,9 +105,8 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
     usable-product, product filtering/in-depth comparison, and persistent
     compare tray queues have moved.
 - Parallel slices:
-  - Freshness, run health, run throughput, import artifact quality, import price
-    quality, merchant identity quality, application readiness, and the weekly
-    operator runbook.
+  - Merchant identity quality, application readiness, and the weekly operator
+    runbook.
 - Work-item guardrails:
   - Read-model rows add one standalone read-only module plus focused tests.
   - The runbook row is docs-only for the workflow system and creates no
@@ -375,16 +371,6 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ## Current Batch Verification Commands
 
-- CJ candidate freshness read model:
-  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- CJ run health read model:
-  - `mix test test/product_compare/ingestion/cj_run_health_test.exs`
-- CJ run throughput read model:
-  - `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
-- CJ import artifact quality read model:
-  - `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- CJ import price quality read model:
-  - `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
 - CJ merchant identity quality read model:
   - `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
 - CJ application readiness read model:
@@ -396,6 +382,12 @@ Parallel workers must add completion evidence only under their assigned heading.
   - `mix format --check-formatted` for Elixir read-model rows
   - `mix typecheck`
   - `git diff --check`
+- Recently completed CJ read models:
+  - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
+  - `mix test test/product_compare/ingestion/cj_run_health_test.exs`
+  - `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
+  - `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
+  - `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
 - Recently completed candidate cohort and market coverage read models:
   - `mix test test/product_compare/ingestion/cj_candidate_cohort_test.exs`
   - `mix test test/product_compare/ingestion/cj_candidate_market_coverage_test.exs`
