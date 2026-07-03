@@ -6,6 +6,7 @@ defmodule ProductCompare.Taxonomy do
   import Ecto.Query
 
   alias Ecto.Multi
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Taxonomy.{ProductTaxon, Taxon, TaxonAlias, TaxonClosure, Taxonomy}
 
@@ -23,7 +24,7 @@ defmodule ProductCompare.Taxonomy do
   def upsert_taxonomy(attrs) do
     now = DateTime.utc_now()
     changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
-    code = fetch_attr(attrs, :code)
+    code = Input.fetch_attr(attrs, :code)
 
     if changeset.valid? do
       update_fields =
@@ -54,25 +55,15 @@ defmodule ProductCompare.Taxonomy do
   end
 
   defp provided?(attrs, key),
-    do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    string_key = Atom.to_string(key)
-
-    case attrs do
-      %{^key => value} -> value
-      %{^string_key => value} -> value
-      _ -> nil
-    end
-  end
+    do: Input.attr_key_present?(attrs, key)
 
   defp present?(value) when is_binary(value), do: String.trim(value) != ""
   defp present?(_value), do: false
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}
   def create_taxon(attrs) do
-    parent_id = fetch_attr(attrs, :parent_id)
-    taxonomy_id = fetch_attr(attrs, :taxonomy_id)
+    parent_id = Input.fetch_attr(attrs, :parent_id)
+    taxonomy_id = Input.fetch_attr(attrs, :taxonomy_id)
 
     with :ok <- validate_parent_taxonomy(parent_id, taxonomy_id) do
       now = DateTime.utc_now()
@@ -299,7 +290,7 @@ defmodule ProductCompare.Taxonomy do
   defp validate_parent_taxonomy(nil, _taxonomy_id), do: :ok
 
   defp validate_parent_taxonomy(parent_id, taxonomy_id) do
-    with {:ok, normalized_taxonomy_id} <- normalize_integer_id(taxonomy_id) do
+    with {:ok, normalized_taxonomy_id} <- Input.normalize_integer_id(taxonomy_id) do
       case Repo.get(Taxon, parent_id) do
         nil -> {:error, :parent_not_found}
         %Taxon{taxonomy_id: ^normalized_taxonomy_id} -> :ok
@@ -332,15 +323,4 @@ defmodule ProductCompare.Taxonomy do
 
     if Repo.exists?(query), do: {:error, :cycle_detected}, else: :ok
   end
-
-  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
-
-  defp normalize_integer_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
-      _ -> :error
-    end
-  end
-
-  defp normalize_integer_id(_value), do: :error
 end

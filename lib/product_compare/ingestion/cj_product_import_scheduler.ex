@@ -8,6 +8,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   require Logger
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
+  alias ProductCompare.Ingestion.OptionNormalization
 
   @default_currency "USD"
   @default_initial_delay_ms 60_000
@@ -34,11 +35,16 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       currency: uppercase_string_option(opts, :currency, @default_currency),
       cursor: cursor_option(opts),
       initial_delay_ms:
-        non_negative_integer_option(opts, :initial_delay_ms, @default_initial_delay_ms),
-      interval_ms: positive_integer_option(opts, :interval_ms, @default_interval_ms),
+        OptionNormalization.non_negative_integer_option(
+          opts,
+          :initial_delay_ms,
+          @default_initial_delay_ms
+        ),
+      interval_ms:
+        OptionNormalization.positive_integer_option(opts, :interval_ms, @default_interval_ms),
       keywords: keywords_option(opts),
-      limit: positive_integer_option(opts, :limit, @default_limit),
-      pages: positive_integer_option(opts, :pages, @default_pages),
+      limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
+      pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
       runner: Keyword.get(opts, :runner, &run_default_import/1),
       serviceable_areas: serviceable_areas_option(opts)
     }
@@ -207,20 +213,6 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
     case Keyword.get(opts, :cursor) do
       value when is_integer(value) and value >= 0 -> value
       _invalid -> nil
-    end
-  end
-
-  defp non_negative_integer_option(opts, key, default) do
-    case Keyword.get(opts, key, default) do
-      value when is_integer(value) and value >= 0 -> value
-      _invalid -> default
-    end
-  end
-
-  defp positive_integer_option(opts, key, default) do
-    case Keyword.get(opts, key, default) do
-      value when is_integer(value) and value > 0 -> value
-      _invalid -> default
     end
   end
 end

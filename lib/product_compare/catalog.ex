@@ -8,6 +8,7 @@ defmodule ProductCompare.Catalog do
 
   alias ProductCompare.Catalog.FilterMetadata
   alias ProductCompare.Catalog.Filtering
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Accounts.User
@@ -256,7 +257,7 @@ defmodule ProductCompare.Catalog do
     if is_nil(value) do
       {:error, :primary_type_taxon_required}
     else
-      with {:ok, primary_type_taxon_id} <- normalize_integer_id(value),
+      with {:ok, primary_type_taxon_id} <- Input.normalize_integer_id(value),
            {:ok, :type} <- Taxonomy.ensure_taxon_in_taxonomy(primary_type_taxon_id, "type") do
         :ok
       else
@@ -264,15 +265,4 @@ defmodule ProductCompare.Catalog do
       end
     end
   end
-
-  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
-
-  defp normalize_integer_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
-      _ -> :error
-    end
-  end
-
-  defp normalize_integer_id(_value), do: :error
 end

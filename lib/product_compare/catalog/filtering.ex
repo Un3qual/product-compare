@@ -5,6 +5,7 @@ defmodule ProductCompare.Catalog.Filtering do
 
   import Ecto.Query
 
+  alias ProductCompare.Input
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -56,7 +57,7 @@ defmodule ProductCompare.Catalog.Filtering do
     filters
     |> Map.get(key, [])
     |> Enum.reject(fn filter ->
-      case normalize_integer_id(fetch_value(filter, :attribute_id)) do
+      case Input.normalize_integer_id(fetch_value(filter, :attribute_id)) do
         {:ok, ^attribute_id} -> true
         _ -> false
       end
@@ -72,7 +73,7 @@ defmodule ProductCompare.Catalog.Filtering do
         query
 
       taxon_id ->
-        case normalize_integer_id(taxon_id) do
+        case Input.normalize_integer_id(taxon_id) do
           {:ok, normalized_taxon_id} ->
             if fetch_value(filters, :include_type_descendants) == true do
               exists_query =
@@ -94,7 +95,7 @@ defmodule ProductCompare.Catalog.Filtering do
   @spec apply_numeric_filters(Ecto.Query.t(), [numeric_filter()]) :: Ecto.Query.t()
   defp apply_numeric_filters(query, numeric_filters) do
     Enum.reduce(numeric_filters, query, fn filter, acc ->
-      case normalize_integer_id(fetch_value(filter, :attribute_id)) do
+      case Input.normalize_integer_id(fetch_value(filter, :attribute_id)) do
         {:ok, attribute_id} ->
           min = filter |> fetch_value(:min) |> normalize_numeric_bound()
           max = filter |> fetch_value(:max) |> normalize_numeric_bound()
@@ -128,7 +129,7 @@ defmodule ProductCompare.Catalog.Filtering do
     Enum.reduce(bool_filters, query, fn filter, acc ->
       value = fetch_value(filter, :value)
 
-      with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
+      with {:ok, attribute_id} <- Input.normalize_integer_id(fetch_value(filter, :attribute_id)),
            true <- is_boolean(value) do
         exists_query =
           from pacur in ProductAttributeCurrent,
@@ -149,8 +150,9 @@ defmodule ProductCompare.Catalog.Filtering do
   defp apply_enum_filters(query, enum_filters) do
     enum_filters
     |> Enum.reduce(%{}, fn filter, acc ->
-      with {:ok, attribute_id} <- normalize_integer_id(fetch_value(filter, :attribute_id)),
-           {:ok, enum_option_id} <- normalize_integer_id(fetch_value(filter, :enum_option_id)) do
+      with {:ok, attribute_id} <- Input.normalize_integer_id(fetch_value(filter, :attribute_id)),
+           {:ok, enum_option_id} <-
+             Input.normalize_integer_id(fetch_value(filter, :enum_option_id)) do
         Map.update(
           acc,
           attribute_id,
@@ -185,7 +187,7 @@ defmodule ProductCompare.Catalog.Filtering do
     validated_ids =
       use_case_taxon_ids
       |> Enum.reduce([], fn id, acc ->
-        case normalize_integer_id(id) do
+        case Input.normalize_integer_id(id) do
           {:ok, normalized} -> [normalized | acc]
           :error -> acc
         end
@@ -217,17 +219,6 @@ defmodule ProductCompare.Catalog.Filtering do
     do: Map.get(map, key, Map.get(map, Atom.to_string(key)))
 
   defp fetch_value(_map, _key), do: nil
-
-  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
-
-  defp normalize_integer_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
-      _ -> :error
-    end
-  end
-
-  defp normalize_integer_id(_value), do: :error
 
   defp maybe_apply_numeric_min(query, nil), do: query
 

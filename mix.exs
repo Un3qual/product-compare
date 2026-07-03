@@ -85,7 +85,7 @@ defmodule ProductCompare.MixProject do
       typecheck: ["compile --warnings-as-errors --all-warnings"],
       quality: [
         "credo --all",
-        "ex_dna --max-clones 25",
+        "ex_dna --max-clones 6",
         "reach.check --smells --strict --baseline .reach-baseline.json",
         "dialyzer"
       ],

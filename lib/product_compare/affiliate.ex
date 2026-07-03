@@ -5,6 +5,7 @@ defmodule ProductCompare.Affiliate do
 
   import Ecto.Query
 
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
@@ -98,21 +99,9 @@ defmodule ProductCompare.Affiliate do
     Enum.flat_map(fields, fn field ->
       cond do
         Map.has_key?(changeset.changes, field) -> [{field, Map.fetch!(changeset.changes, field)}]
-        attr_key_present?(attrs, field) -> [{field, fetch_attr(attrs, field)}]
+        Input.attr_key_present?(attrs, field) -> [{field, Input.fetch_attr(attrs, field)}]
         true -> []
       end
     end)
   end
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-  end
-
-  defp fetch_attr(_attrs, _key), do: nil
-
-  defp attr_key_present?(attrs, key) when is_map(attrs) do
-    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
-  end
-
-  defp attr_key_present?(_attrs, _key), do: false
 end

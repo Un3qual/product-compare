@@ -5,6 +5,7 @@ defmodule ProductCompare.CommerceAttribution do
 
   import Ecto.Query
 
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -527,7 +528,7 @@ defmodule ProductCompare.CommerceAttribution do
     if attr_present?(attrs, :click_session_id) do
       attrs
     else
-      case get_attr(attrs, :public_click_id) do
+      case Input.fetch_attr(attrs, :public_click_id) do
         nil ->
           attrs
 
@@ -550,7 +551,7 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp put_default_attribution_confidence(attrs) do
     cond do
-      attr_key_present?(attrs, :attribution_confidence) ->
+      Input.attr_key_present?(attrs, :attribution_confidence) ->
         attrs
 
       attr_present?(attrs, :click_session_id) ->
@@ -563,22 +564,12 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp present_upsert_fields(attrs, changeset, fields) do
     for field <- fields,
-        attr_key_present?(attrs, field),
+        Input.attr_key_present?(attrs, field),
         do: {field, Ecto.Changeset.get_field(changeset, field)}
   end
-
-  defp get_attr(attrs, key) when is_map(attrs),
-    do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-
-  defp get_attr(_attrs, _key), do: nil
 
   defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
   defp put_attr(attrs, _key, _value), do: attrs
 
-  defp attr_present?(attrs, key), do: not is_nil(get_attr(attrs, key))
-
-  defp attr_key_present?(attrs, key) when is_map(attrs),
-    do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
-
-  defp attr_key_present?(_attrs, _key), do: false
+  defp attr_present?(attrs, key), do: not is_nil(Input.fetch_attr(attrs, key))
 end

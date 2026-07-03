@@ -27,6 +27,20 @@ defmodule ProductCompare.Ingestion.OptionNormalization do
     |> min(max_value)
   end
 
+  def non_negative_integer_option(opts, key, default) do
+    case option(opts, key, default) do
+      value when is_integer(value) and value >= 0 -> value
+      _invalid -> default
+    end
+  end
+
+  def positive_integer_option(opts, key, default) do
+    case option(opts, key, default) do
+      value when is_integer(value) and value > 0 -> value
+      _invalid -> default
+    end
+  end
+
   defp normalize_integer(value, _default) when is_integer(value), do: value
 
   defp normalize_integer(value, default) when is_binary(value) do

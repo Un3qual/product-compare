@@ -41,8 +41,6 @@
    "The pattern variable __password@1 can never match the type, because it is covered by previous clauses."},
   {"lib/product_compare/accounts.ex",
    "The pattern pattern <_query@1, __status@1, __now@1> can never match the type, because it is covered by previous clauses."},
-  {"lib/product_compare/affiliate.ex",
-   "The pattern pattern <__attrs@1, __key@1> can never match the type, because it is covered by previous clauses."},
   {"lib/product_compare/catalog.ex", "Type mismatch in call without opaque term in insert."},
   {"lib/product_compare/ingestion.ex",
    "The pattern variable _error@1 can never match the type, because it is covered by previous clauses."},

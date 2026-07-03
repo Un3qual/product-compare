@@ -25,72 +25,37 @@ defmodule ProductCompare.Specs do
 
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
-    now = DateTime.utc_now()
-    changeset = Dimension.changeset(%Dimension{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:code],
-      returning: true
-    )
+    upsert_by_conflict(Dimension, attrs, [:code])
   end
 
   @spec upsert_unit(map()) :: {:ok, Unit.t()} | {:error, Ecto.Changeset.t()}
   def upsert_unit(attrs) do
-    now = DateTime.utc_now()
-    changeset = Unit.changeset(%Unit{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:dimension_id, :code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:dimension_id, :code],
-      returning: true
-    )
+    upsert_by_conflict(Unit, attrs, [:dimension_id, :code])
   end
 
   @spec upsert_enum_set(map()) :: {:ok, EnumSet.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_set(attrs) do
-    now = DateTime.utc_now()
-    changeset = EnumSet.changeset(%EnumSet{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:code],
-      returning: true
-    )
+    upsert_by_conflict(EnumSet, attrs, [:code])
   end
 
   @spec upsert_enum_option(map()) :: {:ok, EnumOption.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_option(attrs) do
+    upsert_by_conflict(EnumOption, attrs, [:enum_set_id, :code])
+  end
+
+  defp upsert_by_conflict(schema_module, attrs, conflict_fields) do
     now = DateTime.utc_now()
-    changeset = EnumOption.changeset(%EnumOption{}, attrs)
+    changeset = schema_module.changeset(struct(schema_module), attrs)
 
     update_fields =
       changeset.changes
-      |> Map.drop([:enum_set_id, :code])
+      |> Map.drop(conflict_fields)
       |> Map.to_list()
 
     Repo.insert(
       changeset,
       on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:enum_set_id, :code],
+      conflict_target: conflict_fields,
       returning: true
     )
   end

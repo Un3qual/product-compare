@@ -6,6 +6,7 @@ defmodule ProductCompare.Ingestion do
   import Ecto.Query
   import ProductCompare.Ingestion.FitScore, only: [merchant_feed_candidate_fit_score: 1]
 
+  alias ProductCompare.ChangesetErrors
   alias ProductCompare.Catalog
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
@@ -347,7 +348,7 @@ defmodule ProductCompare.Ingestion do
           {:ok, product}
 
         {:error, %Ecto.Changeset{} = changeset} ->
-          if unique_error_on_field?(changeset, :slug) do
+          if ChangesetErrors.unique_error_on_field?(changeset, :slug) do
             {:ok, Repo.get_by!(Product, slug: slug)}
           else
             {:error, changeset}
@@ -379,7 +380,7 @@ defmodule ProductCompare.Ingestion do
         {:ok, taxon}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        if unique_error_on_any_field?(changeset, [:taxonomy_id, :code]) do
+        if ChangesetErrors.unique_error_on_any_field?(changeset, [:taxonomy_id, :code]) do
           {:ok, Repo.get_by!(Taxon, taxonomy_id: taxonomy_id, code: "ingested-product")}
         else
           {:error, changeset}
@@ -882,17 +883,6 @@ defmodule ProductCompare.Ingestion do
     else
       attrs
     end
-  end
-
-  defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
-    Enum.any?(errors, fn
-      {^field, {_message, opts}} -> opts[:constraint] == :unique
-      _ -> false
-    end)
-  end
-
-  defp unique_error_on_any_field?(changeset, fields) do
-    Enum.any?(fields, &unique_error_on_field?(changeset, &1))
   end
 
   defp preload_merchant({:ok, identity}), do: {:ok, Repo.preload(identity, :merchant)}

@@ -5,6 +5,7 @@ defmodule ProductCompare.Discussions do
 
   import Ecto.Query
 
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -117,41 +118,16 @@ defmodule ProductCompare.Discussions do
   defp normalize_pagination(opts) do
     limit =
       opts
-      |> get_pagination_value(:limit, @default_page_limit)
-      |> clamp_limit(@default_page_limit, @max_page_limit)
+      |> Input.pagination_value(:limit, @default_page_limit)
+      |> Input.clamp_limit(@default_page_limit, @max_page_limit)
 
     offset =
       opts
-      |> get_pagination_value(:offset, 0)
-      |> clamp_non_negative(0)
+      |> Input.pagination_value(:offset, 0)
+      |> Input.clamp_non_negative(0)
 
     {limit, offset}
   end
-
-  defp get_pagination_value(opts, key, default) when is_list(opts) do
-    opts
-    |> Keyword.get(key, default)
-    |> parse_pagination_value(default)
-  end
-
-  defp get_pagination_value(opts, key, default) when is_map(opts) do
-    opts
-    |> Map.get(key, Map.get(opts, Atom.to_string(key), default))
-    |> parse_pagination_value(default)
-  end
-
-  defp get_pagination_value(_opts, _key, default), do: default
-
-  defp parse_pagination_value(value, _default) when is_integer(value), do: value
-
-  defp parse_pagination_value(value, default) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> parsed
-      _ -> default
-    end
-  end
-
-  defp parse_pagination_value(_value, default), do: default
 
   defp drop_client_verified_purchase(attrs) when is_map(attrs) do
     attrs
@@ -170,8 +146,8 @@ defmodule ProductCompare.Discussions do
       get_attr_value(attrs, :product_id) ||
         if(review, do: review.product_id, else: nil)
 
-    with {:ok, parsed_merchant_product_id} <- normalize_integer_id(merchant_product_id),
-         {:ok, parsed_product_id} <- normalize_integer_id(product_id),
+    with {:ok, parsed_merchant_product_id} <- Input.normalize_integer_id(merchant_product_id),
+         {:ok, parsed_product_id} <- Input.normalize_integer_id(product_id),
          true <- merchant_product_matches_product?(parsed_merchant_product_id, parsed_product_id) do
       true
     else
@@ -190,21 +166,4 @@ defmodule ProductCompare.Discussions do
     do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
 
   defp get_attr_value(_attrs, _key), do: nil
-
-  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
-
-  defp normalize_integer_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
-      _ -> :error
-    end
-  end
-
-  defp normalize_integer_id(_value), do: :error
-
-  defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
-  defp clamp_limit(_value, default, _max), do: default
-
-  defp clamp_non_negative(value, _default) when is_integer(value) and value >= 0, do: value
-  defp clamp_non_negative(_value, default), do: default
 end
