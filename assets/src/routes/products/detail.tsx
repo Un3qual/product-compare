@@ -263,6 +263,7 @@ function ProductOffers({
     return [
       {
         id: node.id,
+        currency: normalizedCurrency(node.currency),
         merchantName,
         url: safeUrl,
         priceText: formatPriceText(node.latestPrice?.price, node.currency),
@@ -335,6 +336,7 @@ function ProductOffers({
 }
 
 type VisibleProductOffer = {
+  currency: string | null;
   id: string;
   merchantName: string;
   url: string;
@@ -384,23 +386,17 @@ function OfferSnapshot({ summary }: { summary: OfferSnapshotSummary }) {
 function buildOfferSnapshotSummary(
   offers: ReadonlyArray<VisibleProductOffer>
 ): OfferSnapshotSummary {
-  const lowestPricedOffer = offers.reduce<VisibleProductOffer | null>((lowestOffer, offer) => {
-    if (!hasVisiblePrice(offer)) {
-      return lowestOffer;
-    }
-
-    if (!lowestOffer || !hasVisiblePrice(lowestOffer)) {
-      return offer;
-    }
-
-    return offer.numericPrice < lowestOffer.numericPrice ? offer : lowestOffer;
-  }, null);
+  const visiblePricedOffers = offers.filter(hasVisiblePrice);
+  const lowestPricedOffer =
+    visiblePricedOffers.length > 0 && canComparePrices(visiblePricedOffers)
+      ? visiblePricedOffers.reduce((lowestOffer, offer) =>
+          offer.numericPrice < lowestOffer.numericPrice ? offer : lowestOffer
+        )
+      : null;
 
   return {
     visibleOfferCount: offers.length,
-    lowestVisiblePriceText: lowestPricedOffer?.priceText
-      ? `${lowestPricedOffer.priceText} at ${lowestPricedOffer.merchantName}`
-      : null,
+    lowestVisiblePriceText: lowestVisiblePriceText(lowestPricedOffer, visiblePricedOffers),
     couponAvailabilityCount: offers.filter(
       (offer) => offer.coupons.length > 0 || offer.couponsHasMore
     ).length,
@@ -410,8 +406,27 @@ function buildOfferSnapshotSummary(
 
 function hasVisiblePrice(
   offer: VisibleProductOffer
-): offer is VisibleProductOffer & { numericPrice: number; priceText: string } {
-  return offer.numericPrice !== null && offer.priceText !== null;
+): offer is VisibleProductOffer & { currency: string; numericPrice: number; priceText: string } {
+  return offer.numericPrice !== null && offer.priceText !== null && offer.currency !== null;
+}
+
+function canComparePrices(offers: ReadonlyArray<VisibleProductOffer & { currency: string }>) {
+  return new Set(offers.map((offer) => offer.currency)).size <= 1;
+}
+
+function lowestVisiblePriceText(
+  lowestPricedOffer:
+    | (VisibleProductOffer & { currency: string; numericPrice: number; priceText: string })
+    | null,
+  visiblePricedOffers: ReadonlyArray<VisibleProductOffer & { currency: string }>
+) {
+  if (visiblePricedOffers.length > 0 && !canComparePrices(visiblePricedOffers)) {
+    return "Multiple currencies";
+  }
+
+  return lowestPricedOffer?.priceText
+    ? `${lowestPricedOffer.priceText} at ${lowestPricedOffer.merchantName}`
+    : null;
 }
 
 function productDetailPath(productSlug: string) {
@@ -591,6 +606,16 @@ function formatPriceText(price: unknown, currency: unknown) {
   }
 
   return null;
+}
+
+function normalizedCurrency(currency: unknown) {
+  if (typeof currency !== "string") {
+    return null;
+  }
+
+  const trimmedCurrency = currency.trim();
+
+  return trimmedCurrency === "" ? null : trimmedCurrency;
 }
 
 function formatObservedDate(value: unknown) {

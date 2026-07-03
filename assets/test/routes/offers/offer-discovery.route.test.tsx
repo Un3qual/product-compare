@@ -366,6 +366,36 @@ test("offer discovery sorts visible offers by ascending price and labels the fir
   expect(screen.getAllByText("Best price on this page")).toHaveLength(1);
 });
 
+test("offer discovery does not price-sort or label mixed-currency pages", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "price_asc" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-usd",
+          product: buildProduct("product-usd", "USD Product"),
+          merchant: buildMerchant("merchant-usd", "USD Market"),
+          latestPrice: buildLatestPrice("price-usd", "199.00"),
+          currency: "USD"
+        }),
+        buildOffer({
+          id: "merchant-product-eur",
+          product: buildProduct("product-eur", "EUR Product"),
+          merchant: buildMerchant("merchant-eur", "Euro Market"),
+          latestPrice: buildLatestPrice("price-eur", "149.00"),
+          currency: "EUR"
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(offerHeadings()).toEqual(["USD Product", "EUR Product"]);
+  expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
+  expect(screen.queryByText("Highest price on this page")).not.toBeInTheDocument();
+});
+
 test("offer discovery sorts visible offers by descending price", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "price_desc" }));
   mockedUsePreloadedQuery.mockReturnValue(

@@ -30,6 +30,7 @@ type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
 type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
 type RenderableOffer = {
   href: string;
+  latestPriceCurrency: string | null;
   latestPriceValue: number | null;
   offer: OfferNode;
   originalIndex: number;
@@ -103,10 +104,9 @@ function OfferDiscoveryList({
   connection: OfferConnection;
   filters: OfferDiscoveryFilters;
 }) {
-  const offers = sortedRenderableOffers(
-    renderableOffers(connection),
-    filters.sort
-  );
+  const renderableOfferRows = renderableOffers(connection);
+  const canComparePrices = priceSortUsesSingleCurrency(renderableOfferRows);
+  const offers = sortedRenderableOffers(renderableOfferRows, filters.sort, canComparePrices);
 
   return (
     <>
@@ -123,7 +123,8 @@ function OfferDiscoveryList({
               highlightLabel={priceSortHighlightLabel(
                 filters.sort,
                 index,
-                renderableOffer
+                renderableOffer,
+                canComparePrices
               )}
             />
           ))}
@@ -370,11 +371,13 @@ function renderableOffers(connection: OfferConnection) {
 
   connection.edges.forEach(({ node: offer }, originalIndex) => {
     const href = safeHttpUrl(offer.url);
+    const latestPriceValue = numericLatestPrice(offer);
 
     if (href) {
       offers.push({
         href,
-        latestPriceValue: numericLatestPrice(offer),
+        latestPriceCurrency: latestPriceValue === null ? null : offer.currency,
+        latestPriceValue,
         offer,
         originalIndex
       });
@@ -386,9 +389,10 @@ function renderableOffers(connection: OfferConnection) {
 
 function sortedRenderableOffers(
   offers: RenderableOffer[],
-  sort: OfferDiscoverySort
+  sort: OfferDiscoverySort,
+  canComparePrices: boolean
 ) {
-  if (sort === "default") {
+  if (sort === "default" || (isPriceSort(sort) && !canComparePrices)) {
     return offers;
   }
 
@@ -451,9 +455,10 @@ function compareByOriginalIndex(left: RenderableOffer, right: RenderableOffer) {
 function priceSortHighlightLabel(
   sort: OfferDiscoverySort,
   index: number,
-  offer: RenderableOffer
+  offer: RenderableOffer,
+  canComparePrices: boolean
 ) {
-  if (index !== 0 || offer.latestPriceValue === null) {
+  if (!canComparePrices || index !== 0 || offer.latestPriceValue === null) {
     return null;
   }
 
@@ -470,6 +475,22 @@ function priceSortHighlightLabel(
 
 function numericLatestPrice(offer: OfferNode) {
   return decimalStringToNumber(offer.latestPrice?.price);
+}
+
+function isPriceSort(
+  sort: OfferDiscoverySort
+): sort is Extract<OfferDiscoverySort, "price_asc" | "price_desc"> {
+  return sort === "price_asc" || sort === "price_desc";
+}
+
+function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffer>) {
+  const currencies = new Set(
+    offers.flatMap((offer) =>
+      offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency]
+    )
+  );
+
+  return currencies.size <= 1;
 }
 
 function safeHttpUrl(url: string) {

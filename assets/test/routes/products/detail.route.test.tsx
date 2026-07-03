@@ -633,6 +633,60 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
   expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
 });
 
+test("renders offer snapshot without lowest-price claim for mixed currencies", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-usd",
+        url: "https://usd.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-usd",
+          name: "USD Shop"
+        },
+        latestPrice: {
+          id: "price-usd",
+          price: "199.99"
+        }
+      },
+      {
+        id: "merchant-product-eur",
+        url: "https://eur.example.com/detail-product",
+        currency: "EUR",
+        merchant: {
+          id: "merchant-eur",
+          name: "Euro Shop"
+        },
+        latestPrice: {
+          id: "price-eur",
+          price: "149.99"
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
+
+  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Multiple currencies")).toBeVisible();
+  expect(within(offerSnapshot).queryByText("149.99 EUR at Euro Shop")).not.toBeInTheDocument();
+});
+
 test("renders product decision actions with compare, offer review, and browse destinations", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
