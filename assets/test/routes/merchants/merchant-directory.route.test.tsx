@@ -156,6 +156,31 @@ test("merchant directory leaves non-HTTP merchant domains as text only", () => {
   ).not.toBeInTheDocument();
 });
 
+test("merchant directory rejects website links with URL userinfo", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id: "merchant-userinfo",
+          name: "Misleading Seller",
+          domain: "https://trusted.example@attacker.example/deals"
+        }
+      ]
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const merchantItem = getMerchantListItem("Misleading Seller");
+
+  expect(merchantItem).toHaveTextContent("https://trusted.example@attacker.example/deals");
+  expect(
+    within(merchantItem).queryByRole("link", {
+      name: "Visit merchant website"
+    })
+  ).not.toBeInTheDocument();
+});
+
 test("merchant directory renders an empty state", () => {
   mockedUsePreloadedQuery.mockReturnValue(buildMerchantDirectoryData({ merchants: [] }));
 

@@ -12,6 +12,7 @@ import {
   type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
+import { decimalStringToNumber } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 
 export const MAX_COMPARE_PRODUCTS = 3;
@@ -435,16 +436,6 @@ function mostRecentObservedAt(
   }
 
   return mostRecent;
-}
-
-function decimalStringToNumber(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const parsedValue = Number.parseFloat(value);
-
-  return Number.isNaN(parsedValue) ? null : parsedValue;
 }
 
 function disposeFetchedProductQueries(productQueries: FetchedCompareProductQuery[]) {

@@ -8,7 +8,6 @@ import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -431,6 +430,10 @@ function sortSavedComparisonSets(
     case "product-count-asc":
       sortedSavedSets.sort((left, right) => left.slugs.length - right.slugs.length);
       break;
+    default: {
+      const exhaustiveCheck: never = sortMode;
+      return exhaustiveCheck;
+    }
   }
 
   return sortedSavedSets;

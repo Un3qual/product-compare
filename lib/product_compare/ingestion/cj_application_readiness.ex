@@ -10,6 +10,7 @@ defmodule ProductCompare.Ingestion.CJApplicationReadiness do
   import Ecto.Query
 
   alias ProductCompare.Repo
+  alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @provider "cj"
@@ -52,26 +53,67 @@ defmodule ProductCompare.Ingestion.CJApplicationReadiness do
   @spec summary(keyword() | map() | term()) :: summary()
   def summary(opts \\ []) do
     limit = limit(opts)
-    candidates = shortlisted_candidates()
-    {ready_candidates, blocked_candidates} = Enum.split_with(candidates, &ready?/1)
+    shortlisted_query = shortlisted_candidate_query()
+    ready_query = ready_candidate_query(shortlisted_query)
+    blocked_query = blocked_candidate_query(shortlisted_query)
 
     %{
       provider: @provider,
       limit: limit,
-      shortlisted_candidate_count: length(candidates),
-      ready_candidate_count: length(ready_candidates),
-      blocked_candidate_count: length(blocked_candidates),
-      ready_candidates: ready_candidates |> Enum.take(limit) |> Enum.map(&candidate_map/1),
-      blocked_candidates: blocked_candidates |> Enum.take(limit) |> Enum.map(&candidate_map/1)
+      shortlisted_candidate_count: count_candidates(shortlisted_query),
+      ready_candidate_count: count_candidates(ready_query),
+      blocked_candidate_count: count_candidates(blocked_query),
+      ready_candidates: ready_query |> limited_candidates(limit) |> Enum.map(&candidate_map/1),
+      blocked_candidates: blocked_query |> limited_candidates(limit) |> Enum.map(&candidate_map/1)
     }
   end
 
-  defp shortlisted_candidates do
+  defp shortlisted_candidate_query do
     MerchantFeedCandidate
     |> where(
       [candidate],
       candidate.provider == @provider and candidate.review_status == "shortlisted"
     )
+  end
+
+  defp ready_candidate_query(query), do: where(query, ^ready_condition())
+
+  defp blocked_candidate_query(query), do: where(query, ^blocked_condition())
+
+  defp ready_condition do
+    dynamic(
+      [candidate],
+      not is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.advertiser_name)) and
+        not is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.advertiser_id)) and
+        not is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.provider_feed_id)) and
+        candidate.product_count > 0 and
+        fragment("UPPER(BTRIM(?))", candidate.advertiser_country) == "US" and
+        fragment("UPPER(BTRIM(?))", candidate.currency) == "USD" and
+        fragment("UPPER(BTRIM(?))", candidate.language) == "EN"
+    )
+  end
+
+  defp blocked_condition do
+    dynamic(
+      [candidate],
+      is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.advertiser_name)) or
+        is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.advertiser_id)) or
+        is_nil(fragment("NULLIF(BTRIM(?), '')", candidate.provider_feed_id)) or
+        is_nil(candidate.product_count) or
+        candidate.product_count <= 0 or
+        is_nil(fragment("UPPER(BTRIM(?))", candidate.advertiser_country)) or
+        fragment("UPPER(BTRIM(?))", candidate.advertiser_country) != "US" or
+        is_nil(fragment("UPPER(BTRIM(?))", candidate.currency)) or
+        fragment("UPPER(BTRIM(?))", candidate.currency) != "USD" or
+        is_nil(fragment("UPPER(BTRIM(?))", candidate.language)) or
+        fragment("UPPER(BTRIM(?))", candidate.language) != "EN"
+    )
+  end
+
+  defp count_candidates(query), do: Repo.aggregate(query, :count, :id)
+
+  defp limited_candidates(query, limit) do
+    query
     |> order_by([candidate],
       desc_nulls_last: candidate.product_count,
       asc: candidate.advertiser_name,
@@ -90,10 +132,9 @@ defmodule ProductCompare.Ingestion.CJApplicationReadiness do
       product_count: candidate.product_count,
       review_status: candidate.review_status
     })
+    |> limit(^limit)
     |> Repo.all()
   end
-
-  defp ready?(candidate), do: reason_codes(candidate) == []
 
   defp candidate_map(candidate), do: Map.put(candidate, :reason_codes, reason_codes(candidate))
 
@@ -136,36 +177,13 @@ defmodule ProductCompare.Ingestion.CJApplicationReadiness do
   end
 
   defp limit(opts) do
-    opts
-    |> option(:limit, @default_limit)
-    |> normalize_limit()
-    |> max(@min_limit)
-    |> min(@max_limit)
+    OptionNormalization.bounded_integer(
+      OptionNormalization.option(opts, :limit, @default_limit),
+      default: @default_limit,
+      min: @min_limit,
+      max: @max_limit
+    )
   end
-
-  defp option(opts, key, default) when is_list(opts) do
-    if Keyword.keyword?(opts) do
-      Keyword.get(opts, key, default)
-    else
-      default
-    end
-  end
-
-  defp option(opts, key, default) when is_map(opts),
-    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
-
-  defp option(_opts, _key, default), do: default
-
-  defp normalize_limit(value) when is_integer(value), do: value
-
-  defp normalize_limit(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {limit, ""} -> limit
-      _invalid -> @default_limit
-    end
-  end
-
-  defp normalize_limit(_value), do: @default_limit
 
   defp normalize_code(value) when is_binary(value) do
     value

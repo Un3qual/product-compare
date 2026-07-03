@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
@@ -11,13 +11,11 @@ const {
   commitMutationMock,
   useLoaderDataMock,
   useMutationMock,
-  usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
-  usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
 
@@ -26,8 +24,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    useMutation: useMutationMock
   };
 });
 
@@ -53,7 +50,6 @@ vi.mock("react-router-dom", async () => {
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
-const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const SAVED_SET_QUERY_DESCRIPTOR = {
@@ -93,12 +89,10 @@ beforeEach(() => {
   commitMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
-  mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   SAVED_SET_QUERY_REF.dispose.mockReset();
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockedUseRoutePreloadedQuery.mockReturnValue(SAVED_SET_QUERY_REF as never);
-  mockedUsePreloadedQuery.mockReturnValue(buildSavedComparisonSetsPageData([buildSavedSet()]));
 });
 
 const buildReadyLoaderData = () => {
@@ -665,7 +659,6 @@ test("saved comparisons route filters Relay-backed saved set pages", () => {
     savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
     savedSets
   });
-  mockedUsePreloadedQuery.mockReturnValue(buildSavedComparisonSetsPageData(savedSets));
 
   render(
     <MemoryRouter>
@@ -688,7 +681,7 @@ test("saved comparisons route filters Relay-backed saved set pages", () => {
   expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
 });
 
-test("saved comparisons route sorts Relay-backed loaded pages as one list", () => {
+test("saved comparisons route sorts combined loader saved sets while retaining loaded page queries", () => {
   const firstPageSavedSets = [
     {
       id: "saved-set-1",
@@ -719,9 +712,6 @@ test("saved comparisons route sorts Relay-backed loaded pages as one list", () =
     savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR, NEXT_SAVED_SET_QUERY_DESCRIPTOR],
     savedSets: [...firstPageSavedSets, ...secondPageSavedSets]
   });
-  mockedUsePreloadedQuery
-    .mockReturnValueOnce(buildSavedComparisonSetsPageData(firstPageSavedSets))
-    .mockReturnValueOnce(buildSavedComparisonSetsPageData(secondPageSavedSets));
 
   render(
     <MemoryRouter>
@@ -1016,28 +1006,3 @@ test("saved comparison query keys are stable across variable property order", ()
 
   expect(secondKey).toBe(firstKey);
 });
-
-function buildSavedComparisonSetsPageData(
-  savedSets: Array<{ id: string; name: string; slugs: string[] }>
-) {
-  return {
-    mySavedComparisonSets: {
-      edges: savedSets.map((savedSet) => ({
-        node: {
-          id: savedSet.id,
-          name: savedSet.name,
-          items: savedSet.slugs.map((slug, index) => ({
-            position: index,
-            product: {
-              slug
-            }
-          }))
-        }
-      })),
-      pageInfo: {
-        hasNextPage: false,
-        endCursor: null
-      }
-    }
-  };
-}

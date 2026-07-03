@@ -102,8 +102,6 @@
   - 33 tests, 0 failures.
 - `cd assets && bun run --bun typecheck`
   - `tsc --noEmit` completed with exit 0 using TypeScript 5.9.3.
-- `cd assets && bun run typecheck`
-  - `tsc --noEmit` completed with exit 0.
 - `git diff --check` - completed with exit 0.
 
 ## Current Cross-Project Batch

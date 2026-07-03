@@ -540,6 +540,19 @@ test("renders an offer snapshot from the visible active offer page", () => {
           name: "No Price Shop"
         },
         latestPrice: null
+      },
+      {
+        id: "merchant-product-4",
+        url: "https://badprice.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-4",
+          name: "Bad Price Shop"
+        },
+        latestPrice: {
+          id: "price-bad",
+          price: "not-a-price"
+        }
       }
     ])
   );
@@ -561,13 +574,63 @@ test("renders an offer snapshot from the visible active offer page", () => {
     offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
   ).toBeTruthy();
   expect(within(offerSnapshot).getByText("Visible active offers")).toBeVisible();
-  expect(within(offerSnapshot).getByText("3")).toBeVisible();
+  expect(within(offerSnapshot).getByText("4")).toBeVisible();
   expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
   expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toBeVisible();
   expect(within(offerSnapshot).getByText("Coupon availability")).toBeVisible();
   expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
   expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
-  expect(within(offerSnapshot).getByText("1 offer")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
+});
+
+test("renders offer snapshot fallback when no visible offer has a numeric display price", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-bad-price",
+        url: "https://bad-price.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-bad-price",
+          name: "Bad Price Shop"
+        },
+        latestPrice: {
+          id: "price-bad",
+          price: "not-a-price"
+        }
+      },
+      {
+        id: "merchant-product-missing-price",
+        url: "https://missing-price.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-missing-price",
+          name: "Missing Price Shop"
+        },
+        latestPrice: null
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
+
+  expect(within(offerSnapshot).getByText("No visible prices")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
 });
 
 test("renders product decision actions with compare, offer review, and browse destinations", () => {

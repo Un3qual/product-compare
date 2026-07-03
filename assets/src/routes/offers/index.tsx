@@ -6,6 +6,7 @@ import offerDiscoveryRouteQuery, {
 } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { decimalStringToNumber } from "../decimal-values";
 import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
@@ -33,6 +34,7 @@ type RenderableOffer = {
   offer: OfferNode;
   originalIndex: number;
 };
+type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base"
@@ -118,7 +120,7 @@ function OfferDiscoveryList({
               key={renderableOffer.offer.id}
               offer={renderableOffer.offer}
               offerHref={renderableOffer.href}
-              priceSortHighlightLabel={priceSortHighlightLabel(
+              highlightLabel={priceSortHighlightLabel(
                 filters.sort,
                 index,
                 renderableOffer
@@ -135,11 +137,11 @@ function OfferDiscoveryList({
 function OfferListItem({
   offer,
   offerHref,
-  priceSortHighlightLabel
+  highlightLabel
 }: {
   offer: OfferNode;
   offerHref: string;
-  priceSortHighlightLabel: string | null;
+  highlightLabel: string | null;
 }) {
   const priceHistory = priceHistoryConnection(offer.priceHistory);
   const activeCoupons = couponConnection(offer.activeCoupons);
@@ -155,7 +157,7 @@ function OfferListItem({
         <OfferMerchantLink href={offerHref} merchantName={merchantName} />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
-        {priceSortHighlightLabel ? <p>{priceSortHighlightLabel}</p> : null}
+        {highlightLabel ? <p>{highlightLabel}</p> : null}
         <p>{offerLatestPriceLabel(offer)}</p>
 
         <PriceHistorySummary
@@ -398,18 +400,23 @@ function sortedRenderableOffers(
 function compareRenderableOffers(
   left: RenderableOffer,
   right: RenderableOffer,
-  sort: OfferDiscoverySort
+  sort: RenderableOfferSort
 ) {
   if (sort === "price_asc" || sort === "price_desc") {
     return compareByPrice(left, right, sort);
   }
 
-  const merchantComparison = MERCHANT_NAME_COLLATOR.compare(
-    offerMerchantName(left.offer.merchant),
-    offerMerchantName(right.offer.merchant)
-  );
+  if (sort === "merchant_name") {
+    const merchantComparison = MERCHANT_NAME_COLLATOR.compare(
+      offerMerchantName(left.offer.merchant),
+      offerMerchantName(right.offer.merchant)
+    );
 
-  return merchantComparison || compareByOriginalIndex(left, right);
+    return merchantComparison || compareByOriginalIndex(left, right);
+  }
+
+  const exhaustiveCheck: never = sort;
+  throw new Error(`Unsupported offer sort: ${exhaustiveCheck}`);
 }
 
 function compareByPrice(
@@ -462,15 +469,7 @@ function priceSortHighlightLabel(
 }
 
 function numericLatestPrice(offer: OfferNode) {
-  const price = offer.latestPrice?.price?.trim();
-
-  if (!price) {
-    return null;
-  }
-
-  const numericPrice = Number(price);
-
-  return Number.isFinite(numericPrice) ? numericPrice : null;
+  return decimalStringToNumber(offer.latestPrice?.price);
 }
 
 function safeHttpUrl(url: string) {

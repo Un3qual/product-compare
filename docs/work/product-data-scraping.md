@@ -429,8 +429,8 @@ Completion evidence remains under each assigned heading.
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - Further ingestion work is deferred while the live queue executes the
-    product-facing follow-up rows.
+  - Further ingestion work remains deferred; the live queue is now empty after
+    the product-facing follow-up batch completed.
   - If ingestion is promoted again later, choose whether to expose these read
     models through a dashboard contract, continue with another source-health
     dashboard slice, or keep ingestion operator surfaces deferred.

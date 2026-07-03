@@ -3,13 +3,15 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
   Safe read-only merchant identity quality aggregate for CJ-linked merchants.
 
   The summary uses CJ source-scoped merchant identities and returns aggregate
-  completeness counts plus bounded duplicate examples. It does not expose source
+  completeness counts plus duplicate examples bounded by `duplicate_example_limit`
+  for both returned groups and identities per group. It does not expose source
   identifiers, credentials, raw provider payloads, or tracking parameters.
   """
 
   import Ecto.Query
 
   alias ProductCompare.Ingestion.CJSource
+  alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
 
@@ -51,29 +53,97 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
   @spec summary(keyword() | map() | term()) :: summary()
   def summary(opts \\ []) do
     duplicate_example_limit = duplicate_example_limit(opts)
-    identities = cj_identities()
-
-    duplicate_domains = duplicate_groups(identities, :merchant_domain, :domain)
-    duplicate_merchant_names = duplicate_groups(identities, :merchant_name, :merchant_name)
+    identity_query = cj_identity_query()
+    counts = identity_counts(identity_query)
 
     %{
       provider: @provider,
       duplicate_example_limit: duplicate_example_limit,
-      identity_count: length(identities),
-      missing_merchant_name_count: Enum.count(identities, &blank?(&1.merchant_name)),
-      missing_merchant_domain_count: Enum.count(identities, &blank?(&1.merchant_domain)),
-      duplicate_domain_count: length(duplicate_domains),
-      duplicate_name_count: length(duplicate_merchant_names),
-      duplicate_domains: limited_duplicate_examples(duplicate_domains, duplicate_example_limit),
+      identity_count: counts.identity_count,
+      missing_merchant_name_count: counts.missing_merchant_name_count,
+      missing_merchant_domain_count: counts.missing_merchant_domain_count,
+      duplicate_domain_count: duplicate_group_count(identity_query, :merchant_domain),
+      duplicate_name_count: duplicate_group_count(identity_query, :merchant_name),
+      duplicate_domains:
+        duplicate_examples(identity_query, :merchant_domain, :domain, duplicate_example_limit),
       duplicate_merchant_names:
-        limited_duplicate_examples(duplicate_merchant_names, duplicate_example_limit)
+        duplicate_examples(
+          identity_query,
+          :merchant_name,
+          :merchant_name,
+          duplicate_example_limit
+        )
     }
   end
 
-  defp cj_identities do
+  defp cj_identity_query do
     MerchantSourceIdentity
     |> join(:inner, [identity], source in subquery(CJSource.query()),
       on: source.id == identity.source_id
+    )
+  end
+
+  defp identity_counts(query) do
+    Repo.one(
+      from identity in query,
+        select: %{
+          identity_count: count(identity.id),
+          missing_merchant_name_count:
+            fragment(
+              "count(*) FILTER (WHERE NULLIF(BTRIM(?), '') IS NULL)",
+              identity.merchant_name
+            ),
+          missing_merchant_domain_count:
+            fragment(
+              "count(*) FILTER (WHERE NULLIF(BTRIM(?), '') IS NULL)",
+              identity.merchant_domain
+            )
+        }
+    )
+  end
+
+  defp duplicate_group_count(query, field) do
+    duplicate_group_query(query, field)
+    |> subquery()
+    |> select([group], count(group.value))
+    |> Repo.one()
+  end
+
+  defp duplicate_examples(query, field, output_key, limit) do
+    duplicate_group_query(query, field)
+    |> subquery()
+    |> order_by([group], desc: group.identity_count, asc: group.value)
+    |> limit(^limit)
+    |> select([group], %{value: group.value, identity_count: group.identity_count})
+    |> Repo.all()
+    |> Enum.map(fn group ->
+      %{
+        output_key => group.value,
+        identity_count: group.identity_count,
+        identities: duplicate_group_identities(query, field, group.value, limit)
+      }
+    end)
+  end
+
+  defp duplicate_group_query(query, field) do
+    query
+    |> where(
+      [identity],
+      not is_nil(fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)))
+    )
+    |> group_by([identity], fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)))
+    |> having([identity], count(identity.id) > 1)
+    |> select([identity], %{
+      value: fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)),
+      identity_count: count(identity.id)
+    })
+  end
+
+  defp duplicate_group_identities(query, field, value, limit) do
+    query
+    |> where(
+      [identity],
+      fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)) == ^value
     )
     |> order_by([identity], asc: identity.id)
     |> select([identity], %{
@@ -81,74 +151,20 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
       merchant_name: identity.merchant_name,
       merchant_domain: identity.merchant_domain
     })
+    |> limit(^limit)
     |> Repo.all()
   end
 
-  defp duplicate_groups(identities, field, output_key) do
-    identities
-    |> Enum.group_by(&(normalize_key(Map.fetch!(&1, field)) || :missing))
-    |> Map.delete(:missing)
-    |> Enum.filter(fn {_key, group_identities} -> length(group_identities) > 1 end)
-    |> Enum.sort_by(fn {key, group_identities} -> {-length(group_identities), key} end)
-    |> Enum.map(fn {key, group_identities} ->
-      %{
-        output_key => key,
-        identity_count: length(group_identities),
-        identities: Enum.sort_by(group_identities, & &1.id)
-      }
-    end)
-  end
-
-  defp limited_duplicate_examples(duplicate_groups, limit) do
-    duplicate_groups
-    |> Enum.take(limit)
-    |> Enum.map(fn duplicate_group ->
-      %{duplicate_group | identities: Enum.take(duplicate_group.identities, limit)}
-    end)
-  end
-
   defp duplicate_example_limit(opts) do
-    opts
-    |> option(:duplicate_example_limit, @default_duplicate_example_limit)
-    |> normalize_duplicate_example_limit()
-    |> max(@min_duplicate_example_limit)
-    |> min(@max_duplicate_example_limit)
+    OptionNormalization.bounded_integer(
+      OptionNormalization.option(
+        opts,
+        :duplicate_example_limit,
+        @default_duplicate_example_limit
+      ),
+      default: @default_duplicate_example_limit,
+      min: @min_duplicate_example_limit,
+      max: @max_duplicate_example_limit
+    )
   end
-
-  defp option(opts, key, default) when is_list(opts) do
-    if Keyword.keyword?(opts) do
-      Keyword.get(opts, key, default)
-    else
-      default
-    end
-  end
-
-  defp option(opts, key, default) when is_map(opts),
-    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
-
-  defp option(_opts, _key, default), do: default
-
-  defp normalize_duplicate_example_limit(value) when is_integer(value), do: value
-
-  defp normalize_duplicate_example_limit(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {limit, ""} -> limit
-      _invalid -> @default_duplicate_example_limit
-    end
-  end
-
-  defp normalize_duplicate_example_limit(_value), do: @default_duplicate_example_limit
-
-  defp normalize_key(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" -> nil
-      value -> String.downcase(value)
-    end
-  end
-
-  defp normalize_key(_value), do: nil
-
-  defp blank?(value), do: is_nil(normalize_key(value))
 end

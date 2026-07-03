@@ -252,7 +252,13 @@ function SpecificationHighlights({
 }: {
   attributes: BrowseProductNode["currentAttributes"];
 }) {
-  const highlights = attributes.slice(0, SPECIFICATION_HIGHLIGHT_LIMIT);
+  const highlights = [...attributes]
+    .sort(
+      (left, right) =>
+        (left.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+        (right.sortOrder ?? Number.MAX_SAFE_INTEGER)
+    )
+    .slice(0, SPECIFICATION_HIGHLIGHT_LIMIT);
 
   if (highlights.length === 0) {
     return null;

@@ -927,7 +927,7 @@ test("browse route query includes current specification teaser fields", () => {
   expect(artifact.params?.text).toContain("displayName");
   expect(artifact.params?.text).toContain("valueText");
   expect(artifact.params?.text).toContain("sortOrder");
-  expect(artifact.params?.text).toContain("groupLabel");
+  expect(artifact.params?.text).not.toContain("groupLabel");
 });
 
 test("Relay store reads each URL-driven browse page without previous page edges", () => {
@@ -1066,14 +1066,14 @@ test("renders bounded specification highlights on browse product cards", () => {
               code: "screen_size",
               displayName: "Screen Size",
               valueText: "15 inches",
-              sortOrder: 10,
+              sortOrder: 20,
               groupLabel: "Display"
             },
             {
               code: "battery_life",
               displayName: "Battery Life",
               valueText: "12 hours",
-              sortOrder: 20,
+              sortOrder: 10,
               groupLabel: "Power"
             },
             {
@@ -1123,8 +1123,8 @@ test("renders bounded specification highlights on browse product cards", () => {
   const richHighlightRows = within(richHighlights).getAllByRole("listitem");
 
   expect(richHighlightRows).toHaveLength(3);
-  expect(richHighlightRows[0]).toHaveTextContent("Screen Size: 15 inches");
-  expect(richHighlightRows[1]).toHaveTextContent("Battery Life: 12 hours");
+  expect(richHighlightRows[0]).toHaveTextContent("Battery Life: 12 hours");
+  expect(richHighlightRows[1]).toHaveTextContent("Screen Size: 15 inches");
   expect(richHighlightRows[2]).toHaveTextContent("Weight: 3 lb");
   expect(within(richProductCard).queryByText("Connectivity: Wi-Fi 6")).not.toBeInTheDocument();
 

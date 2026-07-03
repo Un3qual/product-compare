@@ -128,36 +128,78 @@ defmodule ProductCompare.Ingestion.CJApplicationReadinessTest do
     test "normalizes limit and keeps aggregate counts uncapped" do
       source = source_fixture()
 
-      for index <- 1..3 do
-        merchant_feed_candidate_fixture(source, %{
-          advertiser_name: "Ready Merchant #{index}",
-          product_count: 100 - index,
-          provider_feed_id: "cj-ready-#{index}",
-          review_status: "shortlisted"
-        })
-      end
+      ready_candidates =
+        for index <- 1..3 do
+          merchant_feed_candidate_fixture(source, %{
+            advertiser_name: "Ready Merchant #{index}",
+            product_count: 100 - index,
+            provider_feed_id: "cj-ready-#{index}",
+            review_status: "shortlisted"
+          })
+        end
 
-      for index <- 1..2 do
-        merchant_feed_candidate_fixture(source, %{
-          advertiser_name: nil,
-          provider_feed_id: "cj-blocked-#{index}",
-          review_status: "shortlisted"
-        })
-      end
+      blocked_candidates =
+        for index <- 1..2 do
+          merchant_feed_candidate_fixture(source, %{
+            advertiser_name: nil,
+            provider_feed_id: "cj-blocked-#{index}",
+            review_status: "shortlisted"
+          })
+        end
 
       assert %{
                limit: 2,
                shortlisted_candidate_count: 5,
                ready_candidate_count: 3,
                blocked_candidate_count: 2,
-               ready_candidates: [_, _],
-               blocked_candidates: [_, _]
+               ready_candidates: limited_ready_candidates,
+               blocked_candidates: limited_blocked_candidates
              } = CJApplicationReadiness.summary(%{"limit" => "2"})
+
+      assert Enum.map(limited_ready_candidates, & &1.id) ==
+               ready_candidates |> Enum.take(2) |> Enum.map(& &1.id)
+
+      assert Enum.map(limited_blocked_candidates, & &1.id) ==
+               Enum.map(blocked_candidates, & &1.id)
 
       assert %{limit: 1} = CJApplicationReadiness.summary(limit: 0)
       assert %{limit: 100} = CJApplicationReadiness.summary(limit: 101)
       assert %{limit: 25} = CJApplicationReadiness.summary(limit: "bad")
       assert %{limit: 25} = CJApplicationReadiness.summary(["not-an-option"])
+    end
+
+    test "classifies nil readiness fields as blocked" do
+      source = source_fixture()
+
+      blocked =
+        raw_merchant_feed_candidate_fixture(source, %{
+          advertiser_country: nil,
+          advertiser_id: "adv-nil-fields",
+          advertiser_name: "Nil Fields Merchant",
+          currency: nil,
+          language: nil,
+          product_count: nil,
+          provider_feed_id: "cj-nil-fields",
+          review_status: "shortlisted"
+        })
+
+      assert %{
+               ready_candidate_count: 0,
+               blocked_candidate_count: 1,
+               blocked_candidates: [
+                 %{
+                   id: blocked_id,
+                   reason_codes: [
+                     :missing_product_count,
+                     :non_us_market,
+                     :non_usd_currency,
+                     :non_english_language
+                   ]
+                 }
+               ]
+             } = CJApplicationReadiness.summary()
+
+      assert blocked_id == blocked.id
     end
 
     test "does not mutate candidate review or metadata fields" do

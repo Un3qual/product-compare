@@ -146,11 +146,11 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
                CJMerchantIdentityQuality.summary(duplicate_example_limit: "bad")
     end
 
-    test "counts all duplicate groups even when examples are limited" do
+    test "uses duplicate example limit for groups and identities while counting all groups" do
       cj_source = source_fixture(%{kind: "affiliate_feed", name: "CJ", domain: "cj.com"})
 
       Enum.each(1..3, fn group_index ->
-        Enum.each(1..2, fn identity_index ->
+        Enum.each(1..3, fn identity_index ->
           merchant =
             merchant_fixture(%{
               name: "Duplicate Group #{group_index} Merchant #{identity_index}",
@@ -171,7 +171,8 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
              } = CJMerchantIdentityQuality.summary(duplicate_example_limit: 2)
 
       assert length(duplicate_domains) == 2
-      assert Enum.all?(duplicate_domains, &(&1.identity_count == 2))
+      assert Enum.all?(duplicate_domains, &(&1.identity_count == 3))
+      assert Enum.all?(duplicate_domains, &(length(&1.identities) == 2))
     end
 
     test "does not mutate merchant identity rows" do

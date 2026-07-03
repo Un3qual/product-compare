@@ -17,6 +17,7 @@ import {
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/selection-tray";
+import { decimalStringToNumber } from "../decimal-values";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -384,11 +385,11 @@ function buildOfferSnapshotSummary(
   offers: ReadonlyArray<VisibleProductOffer>
 ): OfferSnapshotSummary {
   const lowestPricedOffer = offers.reduce<VisibleProductOffer | null>((lowestOffer, offer) => {
-    if (offer.numericPrice === null) {
+    if (!hasVisiblePrice(offer)) {
       return lowestOffer;
     }
 
-    if (!lowestOffer || lowestOffer.numericPrice === null) {
+    if (!lowestOffer || !hasVisiblePrice(lowestOffer)) {
       return offer;
     }
 
@@ -403,8 +404,14 @@ function buildOfferSnapshotSummary(
     couponAvailabilityCount: offers.filter(
       (offer) => offer.coupons.length > 0 || offer.couponsHasMore
     ).length,
-    missingPriceCount: offers.filter((offer) => !offer.priceText).length
+    missingPriceCount: offers.filter((offer) => !hasVisiblePrice(offer)).length
   };
+}
+
+function hasVisiblePrice(
+  offer: VisibleProductOffer
+): offer is VisibleProductOffer & { numericPrice: number; priceText: string } {
+  return offer.numericPrice !== null && offer.priceText !== null;
 }
 
 function productDetailPath(productSlug: string) {
@@ -654,26 +661,6 @@ function formatCouponAvailabilityCount(count: number) {
 
 function formatOfferCount(count: number) {
   return `${count} ${count === 1 ? "offer" : "offers"}`;
-}
-
-function decimalStringToNumber(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-
-  if (trimmedValue === "") {
-    return null;
-  }
-
-  const parsedValue = Number(trimmedValue);
-
-  return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
 function normalizeOfferUrl(rawUrl: unknown): string | null {

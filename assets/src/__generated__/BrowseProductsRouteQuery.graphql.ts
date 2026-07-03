@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1b8308a28abcfc151c767e5c14f7a28b>>
+ * @generated SignedSource<<2fce86a9685d81d6e389ee2fd557f855>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -47,7 +47,6 @@ export type BrowseProductsRouteQuery$data = {
         readonly currentAttributes: ReadonlyArray<{
           readonly code: string;
           readonly displayName: string;
-          readonly groupLabel: string | null | undefined;
           readonly sortOrder: number | null | undefined;
           readonly valueText: string;
         }>;
@@ -202,13 +201,6 @@ v5 = [
                     "kind": "ScalarField",
                     "name": "sortOrder",
                     "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "groupLabel",
-                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -274,16 +266,16 @@ return {
     "selections": (v5/*: any*/)
   },
   "params": {
-    "cacheID": "5f9a2cf2ce518098109a15485d20b694",
+    "cacheID": "71396ef3a0dee1ba77f1cd153ca68ae7",
     "id": null,
     "metadata": {},
     "name": "BrowseProductsRouteQuery",
     "operationKind": "query",
-    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        currentAttributes {\n          code\n          displayName\n          valueText\n          sortOrder\n          groupLabel\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        currentAttributes {\n          code\n          displayName\n          valueText\n          sortOrder\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "6fd36ff6d9f5c03212851c0563068f49";
+(node as any).hash = "505713db801527641776b9d0a3f4bf3f";
 
 export default node;
