@@ -38,94 +38,145 @@ Persistent Compare Tray work is complete through
 `871fecb docs: record persistent compare tray verification`, and the compare,
 catalog, and detail lane docs record the completed evidence.
 
-The CJ read-model and weekly operator-runbook batch remains the live parallel
-batch, but the first five read models are complete. The only remaining ready
-rows are merchant identity quality, application readiness, and the weekly
-operator runbook. The batch is CJ-only and keeps application submission,
-account-manager automation, Tier-3 scraping, credential persistence, GraphQL/UI
-surfaces, scheduler behavior, network calls, mutations, CSV export paths, raw
-artifact exposure, account ids, tracking params, provider error payloads, and
-secret values out of scope.
+The CJ read-model and weekly operator-runbook batch is complete. The merchant
+identity quality read model, application readiness read model, and weekly
+operator runbook landed on the current stack and have completion evidence in
+`docs/work/product-data-scraping.md`.
+
+The live queue is now a product-facing follow-up batch. These rows are
+unblocked by existing frontend routes and GraphQL contracts, avoid CJ ingestion
+surfaces, and keep backend/schema work out of scope unless a row explicitly
+names it.
 
 ## Ready Work
 
-### Parallel Batch: CJ Read-Model And Weekly Operator Runbook
+### Parallel Batch: Product-Facing Follow-Up Rows
 
 Batch rules:
 
 - Workers start from `docs/work/index.md`, `docs/work/operating-model.md`,
-  `docs/work/product-data-scraping.md`, and their row's active plan.
+  their row's lane work doc, and their row's active plan.
 - Parallel workers may edit only their row's owned paths and the named evidence
-  heading in `docs/work/product-data-scraping.md`.
-- Do not implement another row's read model, runbook, tests, or evidence
+  heading in the row's lane work doc.
+- Do not implement another row's route, tests, generated artifacts, or evidence
   heading from the same worker branch.
-- CJ candidate CSV score export remains rejected and must not be promoted.
+- Do not add CJ ingestion behavior, scheduler behavior, browser auth REST
+  endpoints, credential persistence, account-manager automation, Tier-3
+  scraping, application submission, or CSV export paths.
 
-#### CJ Merchant Identity Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ merchant identity quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_merchant_identity_quality.ex`
-- `test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Merchant Identity Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ merchant identity quality read model is covered by focused tests and completion evidence is recorded only under `### Merchant Identity Quality Evidence`.
-
-#### CJ Application Readiness Read Model
+#### Catalog Product Card Spec Teasers
 
 Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-Next action: Add the read-only CJ application readiness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, application submission, or CSV export paths.
+Lane: Frontend catalog browse (`docs/work/frontend-catalog-browse.md`)
+Active plan: `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`
+Next action: Add bounded current-specification teaser rows to `/products` cards using the existing `Product.currentAttributes` contract while preserving filter, pagination, and compare-selection URLs.
 Owned paths:
 
-- `lib/product_compare/ingestion/cj_application_readiness.ex`
-- `test/product_compare/ingestion/cj_application_readiness_test.exs`
-- `docs/work/product-data-scraping.md` under `### Application Readiness Evidence` only
+- `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
+- `docs/work/frontend-catalog-browse.md` under `### Catalog Product Card Spec Teasers Evidence` only
 Verification:
 
-- `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
 - `git diff --check`
-Exit condition: CJ application readiness read model is covered by focused tests and completion evidence is recorded only under `### Application Readiness Evidence`.
+Exit condition: `/products` cards show bounded current-spec teasers, empty-spec cards stay clean, and completion evidence is recorded only under `### Catalog Product Card Spec Teasers Evidence`.
 
-#### CJ Weekly Operator Runbook
+#### Product Detail Offer Summary
 
 Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
-Next action: Write the docs-only weekly CJ operator runbook without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credential persistence, application submission, account-manager automation, Tier-3 scraping, or CSV export paths.
+Lane: Frontend product detail (`docs/work/frontend-product-detail.md`)
+Active plan: `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`
+Next action: Add a compact active-offer summary to `/products/:slug` from fields already loaded by `ProductOffersRouteQuery` without changing backend schema, pricing resolvers, or offer pagination.
 Owned paths:
 
-- `docs/runbooks/cj-weekly-operator-loop.md`
-- `docs/work/product-data-scraping.md` under `### Weekly Operator Runbook Evidence` only
+- `assets/src/routes/products/detail.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md` under `### Product Detail Offer Summary Evidence` only
 Verification:
 
-- `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[o]wed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` exits 1 with no matches
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
 - `git diff --check`
-Exit condition: The weekly operator runbook exists, avoids unfinished placeholders and secret-looking assignments, and completion evidence is recorded only under `### Weekly Operator Runbook Evidence`.
+Exit condition: `/products/:slug` summarizes the visible active-offer page without changing empty, unavailable, paginated, coupon, price-history, or compare-selection behavior.
+
+#### Offer Discovery Sort And Highlights
+
+Status: ready
+Lane: Frontend offer discovery (`docs/work/frontend-offer-discovery-demo-parity.md`)
+Active plan: `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`
+Next action: Add route-local sort controls and page-local best-price highlighting to `/offers` without changing backend ordering, cursor semantics, or `merchantProducts(input:)`.
+Owned paths:
+
+- `assets/src/routes/offers/loader.ts`
+- `assets/src/routes/offers/paths.ts`
+- `assets/src/routes/offers/filters.tsx`
+- `assets/src/routes/offers/index.tsx`
+- `assets/test/routes/offers/offer-discovery-loader.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md` under `### Offer Discovery Sort And Highlights Evidence` only
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: `/offers` preserves all existing filters and pagination while allowing loaded-page sort by default order, price, or merchant name, with completion evidence recorded under `### Offer Discovery Sort And Highlights Evidence`.
+
+#### Saved Comparisons Sort Controls
+
+Status: ready
+Lane: Frontend saved comparisons (`docs/work/frontend-saved-comparisons-ui.md`)
+Active plan: `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`
+Next action: Add client-side sort controls for loaded `/compare/saved` rows while preserving filtering, reopen links, delete behavior, auth state, and empty/no-match return paths.
+Owned paths:
+
+- `assets/src/routes/compare/saved.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-test-helpers.ts`
+- `docs/work/frontend-saved-comparisons-ui.md` under `### Saved Comparisons Sort Controls Evidence` only
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: `/compare/saved` can sort loaded saved sets by current order, name, and product count without changing backend saved-comparison contracts.
+
+#### Merchant Directory Website Links
+
+Status: ready
+Lane: Frontend merchant discovery (`docs/work/frontend-merchant-discovery-demo-parity.md`)
+Active plan: `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`
+Next action: Turn safe merchant domains on `/merchants` into explicit website links without adding merchant-only offer browsing, backend filters, GraphQL schema changes, or affiliate mutations.
+Owned paths:
+
+- `assets/src/routes/merchants/index.tsx`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-discovery-demo-parity.md` under `### Merchant Directory Website Links Evidence` only
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: `/merchants` renders safe external website links from current merchant data and leaves unsafe domains as non-link text.
 
 ## Just Completed
 
-The first five CJ read-model rows from the current product data scraping batch
-are complete and no longer live queue work. The lane evidence records final
-gates for:
+The CJ read-model and weekly operator-runbook batch is complete and no longer
+live queue work. The lane evidence records final gates for:
 
+- CJ candidate cohort.
+- CJ candidate market coverage.
 - CJ candidate freshness.
 - CJ run health.
 - CJ run throughput.
 - CJ import artifact quality.
 - CJ import price quality.
+- CJ merchant identity quality.
+- CJ application readiness.
+- CJ weekly operator runbook.
 
 The 2026-06-30 first product filtering and in-depth comparison parallel batch
 and dependent catalog UI follow-up completed these work items:

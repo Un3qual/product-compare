@@ -58,6 +58,27 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Queued Product-Facing Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/saved.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `assets/test/routes/compare/saved-comparisons-test-helpers.ts`
+  - `docs/work/frontend-saved-comparisons-ui.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare/saved` can sort loaded saved sets by current order,
+  name, and product count without changing backend saved-comparison contracts.
+
+### Saved Comparisons Sort Controls Evidence
+
+- Queued row evidence belongs here when the row completes.
+
 ## Current Cross-Project Batch
 
 - Status: done.

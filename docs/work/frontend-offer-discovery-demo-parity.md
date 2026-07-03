@@ -40,6 +40,30 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Queued Product-Facing Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/loader.ts`
+  - `assets/src/routes/offers/paths.ts`
+  - `assets/src/routes/offers/filters.tsx`
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery-loader.test.ts`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` preserves existing filters and pagination while
+  adding loaded-page sort and page-local best-price highlighting.
+
+### Offer Discovery Sort And Highlights Evidence
+
+- Queued row evidence belongs here when the row completes.
+
 ## Current Cross-Project Batch
 
 - Status: done.

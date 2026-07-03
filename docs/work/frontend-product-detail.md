@@ -71,6 +71,27 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Queued Product-Facing Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products/:slug` summarizes the visible active-offer page
+  without changing empty, unavailable, paginated, coupon, price-history, or
+  compare-selection behavior.
+
+### Product Detail Offer Summary Evidence
+
+- Queued row evidence belongs here when the row completes.
+
 ## Current Cross-Project Batch
 
 - Status: done.

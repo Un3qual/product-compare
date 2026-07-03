@@ -100,6 +100,29 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Queued Product-Facing Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` cards show bounded current-spec teasers without
+  regressing filters, pagination, or compare-selection URL behavior.
+
+### Catalog Product Card Spec Teasers Evidence
+
+- Queued row evidence belongs here when the row completes.
+
 ## Current Cross-Project Batch
 
 - Status: done.

@@ -2,18 +2,20 @@
 
 ## Snapshot
 
-- Status: live ready parallel batch
+- Status: done (CJ read-model and weekly operator runbook batch)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: promoted on 2026-07-01 as the CJ read-model and weekly
+- Live queue row: completed after the 2026-07-01 CJ read-model and weekly
   operator-runbook parallel batch
-- Last verified: 2026-07-01 against current code/tests for the completed
-  candidate cohort, market coverage, and first five CJ read-model rows; their
-  evidence sections record final gates
-- Last documentation refresh: 2026-07-02 after reconciling the live queue with
-  completed CJ read-model evidence
-- Last plan refresh: 2026-07-01 after promoting the CJ read-model and weekly
-  operator runbook candidate pool into the live queue
+- Last verified: 2026-07-02 against current code/tests for the completed
+  candidate cohort, market coverage, candidate freshness, run health, run
+  throughput, import artifact quality, import price quality, merchant identity
+  quality, application readiness, and weekly operator runbook; their evidence
+  sections record final gates
+- Last documentation refresh: 2026-07-02 after closing the CJ live queue rows
+  and promoting product-facing follow-up work
+- Last plan refresh: 2026-07-02 after moving the CJ read-model and weekly
+  operator runbook plans to completed status
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -21,10 +23,11 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Active implementation plans:
+  - None.
+- Recently completed implementation plans:
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
-- Recently completed implementation plans:
   - `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
@@ -92,22 +95,22 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - Defer broad direct-site scraping until at least two official source connectors are operational.
 - This is currently a personal project: record Ryan's owner approval for CJ account use instead of requiring external approval for Tier-1 CJ validation. Keep Tier-3 direct scraping out of scope for this batch.
 
-## Current Batch
+## Completed Batch
 
-- Status: ready
-- Batch: Remaining CJ read-model and weekly operator runbook live parallel batch.
+- Status: done
+- Batch: CJ read-model and weekly operator runbook parallel batch.
 - Plans:
-  - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-  - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+  - See the recently completed implementation plans listed in this snapshot.
 - Decision:
-  - Promote the CJ-only read-model/runbook candidate pool now that the
-    usable-product, product filtering/in-depth comparison, and persistent
-    compare tray queues have moved.
-- Parallel slices:
+  - Close the CJ-only read-model/runbook candidate pool and return the live
+    queue to product-facing work.
+- Completed slices:
+  - Candidate cohort and market coverage.
+  - Candidate freshness, run health, run throughput, import artifact quality,
+    and import price quality.
   - Merchant identity quality, application readiness, and the weekly operator
     runbook.
-- Work-item guardrails:
+- Work-item guardrails preserved:
   - Read-model rows add one standalone read-only module plus focused tests.
   - The runbook row is docs-only for the workflow system and creates no
     execution surface.
@@ -117,12 +120,12 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   - Rows must not expose raw source-artifact payloads, artifact URLs, import
     queries, raw metadata, credentials, account ids, tracking params, provider
     error payloads, or secret values.
-  - Parallel workers may edit only their row's target paths and the named
-    evidence heading in this lane doc.
+  - Completion evidence remains under the named evidence headings in this lane
+    doc.
 
-## Live Batch Evidence Headings
+## Completed Batch Evidence Headings
 
-Parallel workers must add completion evidence only under their assigned heading.
+Completion evidence remains under each assigned heading.
 
 ### Candidate Cohort Evidence
 
@@ -426,9 +429,11 @@ Parallel workers must add completion evidence only under their assigned heading.
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - After the remaining CJ read-model/operator rows complete, choose whether to
-    expose these read models through a dashboard contract, continue with another
-    source-health/dashboard slice, or explicitly defer further ingestion work.
+  - Further ingestion work is deferred while the live queue executes the
+    product-facing follow-up rows.
+  - If ingestion is promoted again later, choose whether to expose these read
+    models through a dashboard contract, continue with another source-health
+    dashboard slice, or keep ingestion operator surfaces deferred.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
 ## Deferred Follow-Up Plan Candidates
@@ -437,7 +442,7 @@ Parallel workers must add completion evidence only under their assigned heading.
   approved CJ account lacks usable product catalog scope.
 - CJ candidate CSV score export is rejected and should not be promoted.
 
-## Current Batch Verification Commands
+## Completed Batch Verification Commands
 
 - CJ merchant identity quality read model:
   - `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
@@ -450,7 +455,7 @@ Parallel workers must add completion evidence only under their assigned heading.
   - `mix format --check-formatted` for Elixir read-model rows
   - `mix typecheck`
   - `git diff --check`
-- Recently completed CJ read models:
+- CJ read models:
   - `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
   - `mix test test/product_compare/ingestion/cj_run_health_test.exs`
   - `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
