@@ -287,7 +287,33 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Merchant Identity Quality Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJMerchantIdentityQuality.summary/1` as a
+    read-only CJ merchant identity aggregate over `merchant_source_identities`.
+  - Counts CJ identities, missing merchant names/domains, duplicate normalized
+    domains, and duplicate normalized merchant names while returning bounded
+    safe duplicate examples.
+  - Added focused tests for missing CJ source, complete and incomplete
+    identities, duplicate domain/name normalization, non-CJ exclusion, example
+    limit normalization, safe returned keys, and read-only behavior.
+- Red verification:
+  `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
+  failed with undefined `ProductCompare.Ingestion.CJMerchantIdentityQuality.summary/0`
+  before the production module existed.
+- Green focused verification:
+  `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
+  passed with 5 tests, 0 failures.
+- Review follow-up:
+  separated aggregate duplicate-group counts from bounded duplicate examples so
+  `duplicate_domain_count` and `duplicate_name_count` are not capped by
+  `duplicate_example_limit`.
+- Final gates:
+  `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+  completed with exit 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, merchant source identifier, raw
+  metadata exposure, or CSV export path was added.
 
 ### Application Readiness Evidence
 
