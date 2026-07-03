@@ -346,7 +346,24 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Weekly Operator Runbook Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `docs/runbooks/cj-weekly-operator-loop.md` as a docs-only weekly CJ
+    operator loop runbook using existing CJ Mix task names.
+  - Documented prerequisites, weekly flow, exact command examples, decision
+    records, troubleshooting, and hard guardrails.
+  - Kept credential values, account ids, tracking params, raw metadata, raw
+    provider payloads, application submission, account-manager automation,
+    credential persistence, Tier-3 scraping, scheduler behavior, GraphQL/UI
+    surfaces, and CSV export paths out of scope.
+- Verification:
+  - `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[ow]ed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md`
+    exited 1 with no matches.
+  - `git diff --check` completed with exit 0.
+- Guardrail evidence:
+  docs-only change; no code, Mix task, scheduler behavior, network call,
+  GraphQL field, browser route, mutation, credential persistence, application
+  submission, account-manager automation, Tier-3 scraping, raw metadata
+  exposure, or CSV export path was added.
 
 ## Recent Completed Batch
 
