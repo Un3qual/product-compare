@@ -33,5 +33,7 @@ export function offerDiscoveryResetPath(filters: OfferDiscoveryFilters) {
     return "/offers";
   }
 
-  return "/offers?" + new URLSearchParams({ sort: filters.sort }).toString();
+  const params = new URLSearchParams({ sort: filters.sort });
+
+  return `/offers?${params}`;
 }
