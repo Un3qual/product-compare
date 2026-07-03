@@ -15,11 +15,11 @@ import {
   routeMutationErrorMessage
 } from "../route-errors";
 import type {
+  savedComparisonsLoader,
   SavedComparisonSetQueryDescriptor,
   SavedComparisonSetSummary,
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
-import { savedComparisonsLoader } from "./saved-data";
 import { CompareShell } from "./compare-shell";
 
 type SavedComparisonSortMode =
