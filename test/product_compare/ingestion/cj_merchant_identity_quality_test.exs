@@ -170,9 +170,9 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
                duplicate_domains: duplicate_domains
              } = CJMerchantIdentityQuality.summary(duplicate_example_limit: 2)
 
-      assert length(duplicate_domains) == 2
+      assert [_, _] = duplicate_domains
       assert Enum.all?(duplicate_domains, &(&1.identity_count == 3))
-      assert Enum.all?(duplicate_domains, &(length(&1.identities) == 2))
+      assert Enum.all?(duplicate_domains, &match?(%{identities: [_, _]}, &1))
     end
 
     test "batches duplicate identity examples for selected groups" do
@@ -203,8 +203,8 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
                duplicate_domains: duplicate_domains
              } = summary
 
-      assert length(duplicate_domains) == 3
-      assert Enum.all?(duplicate_domains, &(length(&1.identities) == 3))
+      assert [_, _, _] = duplicate_domains
+      assert Enum.all?(duplicate_domains, &match?(%{identities: [_, _, _]}, &1))
 
       assert Enum.count(select_queries, &windowed_identity_query?/1) == 1
     end

@@ -183,8 +183,8 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
             where: c.product_id == ^product.id and c.attribute_id == ^attribute.id
         )
 
-      assert length(rows) == 1
-      assert hd(rows).claim_id in [claim_a.id, claim_b.id]
+      assert [row] = rows
+      assert row.claim_id in [claim_a.id, claim_b.id]
     end
   end
 end

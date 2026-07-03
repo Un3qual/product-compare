@@ -27,7 +27,13 @@ defmodule ProductCompare.MixProject do
 
   def cli do
     [
-      preferred_envs: [ci: :test, precommit: :test, typecheck: :test]
+      preferred_envs: [
+        ci: :test,
+        dialyzer: :test,
+        precommit: :test,
+        quality: :test,
+        typecheck: :test
+      ]
     ]
   end
 
@@ -53,7 +59,12 @@ defmodule ProductCompare.MixProject do
       {:argon2_elixir, "~> 4.0"},
       {:absinthe, "~> 1.7"},
       {:absinthe_plug, "~> 1.5"},
-      {:dataloader, "~> 2.0"}
+      {:dataloader, "~> 2.0"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:ex_slop, "~> 0.4.2", only: [:dev, :test], runtime: false},
+      {:reach, "~> 2.7", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -72,10 +83,17 @@ defmodule ProductCompare.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       typecheck: ["compile --warnings-as-errors --all-warnings"],
-      ci: ["format --check-formatted", "typecheck", "test --cover"],
+      quality: [
+        "credo --all",
+        "ex_dna --max-clones 10",
+        "reach.check --smells --strict --baseline .reach-baseline.json",
+        "dialyzer"
+      ],
+      ci: ["format --check-formatted", "typecheck", "quality", "test --cover"],
       precommit: [
         "format",
         "typecheck",
+        "quality",
         "test --cover"
       ],
       deps_prune: ["deps.unlock --unused"]

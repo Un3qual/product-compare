@@ -232,7 +232,7 @@ defmodule ProductCompare.Catalog do
       Enum.any?(product_ids, &(not is_integer(&1) or &1 <= 0)) ->
         {:error, :invalid_product_id}
 
-      length(product_ids) > 3 ->
+      Enum.count_until(product_ids, 4) > 3 ->
         {:error, :too_many_products}
 
       Enum.uniq(product_ids) != product_ids ->
@@ -244,10 +244,14 @@ defmodule ProductCompare.Catalog do
   end
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do
+    primary_type_taxon_id_key = "primary_type_taxon_id"
+
     value =
-      Map.get(attrs, :primary_type_taxon_id) ||
-        Map.get(attrs, "primary_type_taxon_id") ||
-        (product && product.primary_type_taxon_id)
+      case attrs do
+        %{primary_type_taxon_id: value} -> value
+        %{^primary_type_taxon_id_key => value} -> value
+        _ -> product && product.primary_type_taxon_id
+      end
 
     if is_nil(value) do
       {:error, :primary_type_taxon_required}

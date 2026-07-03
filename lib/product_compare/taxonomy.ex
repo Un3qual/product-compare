@@ -23,7 +23,7 @@ defmodule ProductCompare.Taxonomy do
   def upsert_taxonomy(attrs) do
     now = DateTime.utc_now()
     changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
-    code = Map.get(attrs, :code) || Map.get(attrs, "code")
+    code = fetch_attr(attrs, :code)
 
     if changeset.valid? do
       update_fields =
@@ -56,13 +56,23 @@ defmodule ProductCompare.Taxonomy do
   defp provided?(attrs, key),
     do: Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
 
+  defp fetch_attr(attrs, key) when is_map(attrs) do
+    string_key = Atom.to_string(key)
+
+    case attrs do
+      %{^key => value} -> value
+      %{^string_key => value} -> value
+      _ -> nil
+    end
+  end
+
   defp present?(value) when is_binary(value), do: String.trim(value) != ""
   defp present?(_value), do: false
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}
   def create_taxon(attrs) do
-    parent_id = Map.get(attrs, :parent_id) || Map.get(attrs, "parent_id")
-    taxonomy_id = Map.get(attrs, :taxonomy_id) || Map.get(attrs, "taxonomy_id")
+    parent_id = fetch_attr(attrs, :parent_id)
+    taxonomy_id = fetch_attr(attrs, :taxonomy_id)
 
     with :ok <- validate_parent_taxonomy(parent_id, taxonomy_id) do
       now = DateTime.utc_now()
