@@ -1,4 +1,6 @@
-export function decimalStringToNumber(value: unknown) {
+const DECIMAL_STRING_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+
+export function decimalStringToNumber(value?: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -13,7 +15,10 @@ export function decimalStringToNumber(value: unknown) {
     return null;
   }
 
-  const parsedValue = Number(trimmedValue);
+  if (!DECIMAL_STRING_PATTERN.test(trimmedValue)) {
+    return null;
+  }
 
+  const parsedValue = Number(trimmedValue);
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }

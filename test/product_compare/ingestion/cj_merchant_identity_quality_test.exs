@@ -1,5 +1,5 @@
 defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
   import ProductCompare.Fixtures.CJIngestionFixtures
 
@@ -175,6 +175,40 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
       assert Enum.all?(duplicate_domains, &(length(&1.identities) == 2))
     end
 
+    test "batches duplicate identity examples for selected groups" do
+      cj_source = source_fixture(%{kind: "affiliate_feed", name: "CJ", domain: "cj.com"})
+
+      Enum.each(1..4, fn group_index ->
+        Enum.each(1..3, fn identity_index ->
+          merchant =
+            merchant_fixture(%{
+              name: "Batch Duplicate #{group_index} Merchant #{identity_index}",
+              domain: "batch-duplicate-#{group_index}-#{identity_index}.example"
+            })
+
+          merchant_source_identity_fixture(cj_source, merchant, %{
+            merchant_name: "Batch Duplicate #{group_index} Merchant #{identity_index}",
+            merchant_domain: "batch-duplicate-#{group_index}.example"
+          })
+        end)
+      end)
+
+      {summary, select_queries} =
+        capture_select_queries(fn ->
+          CJMerchantIdentityQuality.summary(duplicate_example_limit: 3)
+        end)
+
+      assert %{
+               duplicate_domain_count: 4,
+               duplicate_domains: duplicate_domains
+             } = summary
+
+      assert length(duplicate_domains) == 3
+      assert Enum.all?(duplicate_domains, &(length(&1.identities) == 3))
+
+      assert Enum.count(select_queries, &windowed_identity_query?/1) == 1
+    end
+
     test "does not mutate merchant identity rows" do
       cj_source = source_fixture(%{kind: "affiliate_feed", name: "CJ", domain: "cj.com"})
       merchant = merchant_fixture(%{name: "Read Only Merchant", domain: "read-only.example"})
@@ -252,5 +286,51 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
         assert identity_keys == MapSet.new([:id, :merchant_name, :merchant_domain])
       end)
     end)
+  end
+
+  defp capture_select_queries(fun) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if select_query?(metadata.query) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(ref, acc) do
+    receive do
+      {^ref, query} -> drain_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp select_query?(query) when is_binary(query) do
+    query
+    |> String.trim_leading()
+    |> String.upcase()
+    |> String.starts_with?("SELECT")
+  end
+
+  defp windowed_identity_query?(query) do
+    query
+    |> String.downcase()
+    |> String.contains?("row_number() over")
   end
 end

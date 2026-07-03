@@ -9,8 +9,10 @@ defmodule ProductCompare.Ingestion.OptionNormalization do
     end
   end
 
-  def option(opts, key, default) when is_map(opts),
+  def option(opts, key, default) when is_map(opts) and is_atom(key),
     do: Map.get(opts, key, Map.get(opts, Atom.to_string(key), default))
+
+  def option(opts, key, default) when is_map(opts), do: Map.get(opts, key, default)
 
   def option(_opts, _key, default), do: default
 

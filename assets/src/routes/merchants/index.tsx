@@ -17,7 +17,7 @@ type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
 >;
 
-const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+const ABSOLUTE_URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
 
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
@@ -150,7 +150,7 @@ function merchantWebsiteHref(domain: string) {
     return null;
   }
 
-  if (URL_SCHEME_PATTERN.test(value)) {
+  if (ABSOLUTE_URL_SCHEME_PATTERN.test(value)) {
     return isHttpWebsiteUrl(value) ? value : null;
   }
 

@@ -131,6 +131,28 @@ test("merchant directory preserves already absolute HTTPS website links", () => 
   expect(websiteLink).toHaveAttribute("rel", "noopener noreferrer");
 });
 
+test("merchant directory normalizes domain and port website links to HTTPS", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id: "merchant-port",
+          name: "Port Seller",
+          domain: "portal.example:8443"
+        }
+      ]
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const websiteLink = within(getMerchantListItem("Port Seller")).getByRole("link", {
+    name: "Visit merchant website"
+  });
+
+  expect(websiteLink).toHaveAttribute("href", "https://portal.example:8443");
+});
+
 test("merchant directory leaves non-HTTP merchant domains as text only", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({

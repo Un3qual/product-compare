@@ -652,7 +652,7 @@ function formatFiniteNumberText(value: unknown) {
     return null;
   }
 
-  return Number.isFinite(Number(trimmedValue)) ? trimmedValue : null;
+  return decimalStringToNumber(trimmedValue) !== null ? trimmedValue : null;
 }
 
 function formatCouponAvailabilityCount(count: number) {
