@@ -317,7 +317,32 @@ Parallel workers must add completion evidence only under their assigned heading.
 
 ### Application Readiness Evidence
 
-- Pending.
+- Worker implementation:
+  - Added `ProductCompare.Ingestion.CJApplicationReadiness.summary/1` as a
+    read-only manual application readiness aggregate over shortlisted CJ
+    `merchant_feed_candidates`.
+  - Classifies shortlisted CJ candidates as ready or blocked using advertiser,
+    feed id, product count, country, currency, and language signals.
+  - Returns bounded safe candidate maps with deterministic reason codes and no
+    `raw_metadata` exposure.
+  - Added focused tests for empty data, CJ-only shortlisted filtering, ready
+    candidate ordering, blocked reason codes, limit normalization with uncapped
+    aggregate counts, safe returned keys, and read-only behavior.
+- Red verification:
+  `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
+  failed with undefined `ProductCompare.Ingestion.CJApplicationReadiness.summary/0`
+  and `summary/1` before the production module existed.
+- Green focused verification:
+  `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
+  passed with 5 tests, 0 failures.
+- Final gates:
+  `mix format --check-formatted`, `mix typecheck`, and `git diff --check`
+  completed with exit 0.
+- Guardrail evidence:
+  no Mix task, scheduler behavior, network call, GraphQL field, browser route,
+  mutation, credential persistence, account id, application submission,
+  affiliate link creation, raw metadata exposure, file write, or CSV export path
+  was added.
 
 ### Weekly Operator Runbook Evidence
 
