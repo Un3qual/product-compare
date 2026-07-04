@@ -1,4 +1,9 @@
 const RESERVED_IPV6_PREFIXES = ["fc", "fd", "fe8", "fe9", "fea", "feb", "ff", "2001:db8"];
+const DOCUMENTATION_IPV4_RANGES = new Set([
+  "192.0.2",
+  "198.51.100",
+  "203.0.113"
+]);
 
 export function externalHttpUrlHref(value: string) {
   const href = value.trim();
@@ -153,11 +158,7 @@ function isLinkLocalIPv4Range(first: number, second: number) {
 }
 
 function isDocumentationIPv4Range(first: number, second: number, third: number) {
-  return (
-    (first === 192 && second === 0 && third === 2) ||
-    (first === 198 && second === 51 && third === 100) ||
-    (first === 203 && second === 0 && third === 113)
-  );
+  return DOCUMENTATION_IPV4_RANGES.has(`${first}.${second}.${third}`);
 }
 
 function isBenchmarkIPv4Range(first: number, second: number) {
