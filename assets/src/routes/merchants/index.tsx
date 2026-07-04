@@ -17,11 +17,6 @@ type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
 >;
 
-const ABSOLUTE_URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
-const MALFORMED_HTTP_AUTHORITY_PATTERN = /^https?:\/\/[\\/]/i;
-const BARE_DOMAIN_PATTERN =
-  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?::[0-9]{1,5})?$/i;
-
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
 
@@ -153,11 +148,11 @@ function merchantWebsiteHref(domain: string) {
     return null;
   }
 
-  if (ABSOLUTE_URL_SCHEME_PATTERN.test(value)) {
+  if (hasAbsoluteUrlScheme(value)) {
     return isHttpWebsiteUrl(value) ? value : null;
   }
 
-  if (!BARE_DOMAIN_PATTERN.test(value)) {
+  if (!isHostnameShapedBareDomain(value)) {
     return null;
   }
 
@@ -167,7 +162,7 @@ function merchantWebsiteHref(domain: string) {
 }
 
 function isHttpWebsiteUrl(value: string) {
-  if (MALFORMED_HTTP_AUTHORITY_PATTERN.test(value)) {
+  if (hasMalformedHttpAuthority(value)) {
     return false;
   }
 
@@ -183,6 +178,144 @@ function isHttpWebsiteUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function hasAbsoluteUrlScheme(value: string) {
+  const separatorIndex = value.indexOf("://");
+
+  if (separatorIndex <= 0) {
+    return false;
+  }
+
+  for (let index = 0; index < separatorIndex; index += 1) {
+    if (!isSchemeCharacter(value[index], index)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function hasMalformedHttpAuthority(value: string) {
+  const lowerValue = value.toLowerCase();
+  const authorityStart =
+    lowerValue.startsWith("https://") ? "https://".length : "http://".length;
+
+  return (
+    (lowerValue.startsWith("https://") || lowerValue.startsWith("http://")) &&
+    (value[authorityStart] === "/" || value[authorityStart] === "\\")
+  );
+}
+
+function isHostnameShapedBareDomain(value: string) {
+  if (
+    value.includes("/") ||
+    value.includes("\\") ||
+    value.includes("@") ||
+    value.includes("?") ||
+    value.includes("#")
+  ) {
+    return false;
+  }
+
+  const parsedDomain = parseBareDomain(value);
+
+  if (!parsedDomain) {
+    return false;
+  }
+
+  const labels = parsedDomain.hostname.split(".");
+
+  return labels.length >= 2 && labels.every(isValidHostnameLabel);
+}
+
+function parseBareDomain(value: string) {
+  const colonIndex = value.lastIndexOf(":");
+
+  if (colonIndex === -1) {
+    return { hostname: value };
+  }
+
+  if (value.indexOf(":") !== colonIndex) {
+    return null;
+  }
+
+  const hostname = value.slice(0, colonIndex);
+  const port = value.slice(colonIndex + 1);
+
+  if (!isValidPort(port)) {
+    return null;
+  }
+
+  return { hostname };
+}
+
+function isValidHostnameLabel(label: string) {
+  if (
+    label.length === 0 ||
+    label.length > 63 ||
+    label.startsWith("-") ||
+    label.endsWith("-")
+  ) {
+    return false;
+  }
+
+  for (const character of label) {
+    if (!isAsciiLetterOrDigit(character) && character !== "-") {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isValidPort(port: string) {
+  if (port.length === 0 || port.length > 5) {
+    return false;
+  }
+
+  for (const character of port) {
+    if (!isDigit(character)) {
+      return false;
+    }
+  }
+
+  const portNumber = Number(port);
+
+  return portNumber > 0 && portNumber <= 65_535;
+}
+
+function isSchemeCharacter(character: string, index: number) {
+  if (index === 0) {
+    return isAsciiLetter(character);
+  }
+
+  return (
+    isAsciiLetter(character) ||
+    isDigit(character) ||
+    character === "+" ||
+    character === "." ||
+    character === "-"
+  );
+}
+
+function isAsciiLetterOrDigit(character: string) {
+  return isAsciiLetter(character) || isDigit(character);
+}
+
+function isAsciiLetter(character: string) {
+  const codePoint = character.charCodeAt(0);
+
+  return (
+    (codePoint >= "A".charCodeAt(0) && codePoint <= "Z".charCodeAt(0)) ||
+    (codePoint >= "a".charCodeAt(0) && codePoint <= "z".charCodeAt(0))
+  );
+}
+
+function isDigit(character: string) {
+  const codePoint = character.charCodeAt(0);
+
+  return codePoint >= "0".charCodeAt(0) && codePoint <= "9".charCodeAt(0);
 }
 
 function MerchantDirectoryUnavailableFallback() {
