@@ -5,23 +5,9 @@ export function externalHttpUrlHref(value: string) {
     return null;
   }
 
-  try {
-    const url = new URL(href);
+  const url = parseUrl(href);
 
-    if (
-      (url.protocol !== "http:" && url.protocol !== "https:") ||
-      url.hostname.length === 0 ||
-      url.username.length > 0 ||
-      url.password.length > 0 ||
-      !isValidHostname(url.hostname)
-    ) {
-      return null;
-    }
-
-    return href;
-  } catch {
-    return null;
-  }
+  return url && isSafeExternalHttpUrl(url) ? href : null;
 }
 
 export function externalWebsiteHref(value: string) {
@@ -40,6 +26,28 @@ export function externalWebsiteHref(value: string) {
   }
 
   return externalHttpUrlHref(`https://${domain}`);
+}
+
+function parseUrl(value: string) {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
+function isSafeExternalHttpUrl(url: URL) {
+  return (
+    isHttpProtocol(url.protocol) &&
+    url.hostname.length > 0 &&
+    url.username.length === 0 &&
+    url.password.length === 0 &&
+    isValidHostname(url.hostname)
+  );
+}
+
+function isHttpProtocol(protocol: string) {
+  return protocol === "http:" || protocol === "https:";
 }
 
 function hasAbsoluteUrlScheme(value: string) {
