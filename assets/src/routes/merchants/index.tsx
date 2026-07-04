@@ -6,6 +6,7 @@ import merchantDirectoryRouteQuery, {
 } from "../../__generated__/MerchantDirectoryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { externalWebsiteHref } from "../external-links";
 import {
   merchantDirectoryLoader,
   type MerchantDirectoryLoaderData,
@@ -108,7 +109,7 @@ function MerchantDirectoryList({
     <>
       <ul aria-label="Merchants">
         {merchants.map((merchant) => {
-          const websiteHref = merchantWebsiteHref(merchant.domain);
+          const websiteHref = externalWebsiteHref(merchant.domain);
 
           return (
             <li key={merchant.id}>
@@ -139,183 +140,6 @@ function MerchantDirectoryList({
       ) : null}
     </>
   );
-}
-
-function merchantWebsiteHref(domain: string) {
-  const value = domain.trim();
-
-  if (value.length === 0) {
-    return null;
-  }
-
-  if (hasAbsoluteUrlScheme(value)) {
-    return isHttpWebsiteUrl(value) ? value : null;
-  }
-
-  if (!isHostnameShapedBareDomain(value)) {
-    return null;
-  }
-
-  const normalizedHref = `https://${value}`;
-
-  return isHttpWebsiteUrl(normalizedHref) ? normalizedHref : null;
-}
-
-function isHttpWebsiteUrl(value: string) {
-  if (hasMalformedHttpAuthority(value)) {
-    return false;
-  }
-
-  try {
-    const url = new URL(value);
-
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.hostname.length > 0 &&
-      url.username.length === 0 &&
-      url.password.length === 0
-    );
-  } catch {
-    return false;
-  }
-}
-
-function hasAbsoluteUrlScheme(value: string) {
-  const separatorIndex = value.indexOf("://");
-
-  if (separatorIndex <= 0) {
-    return false;
-  }
-
-  for (let index = 0; index < separatorIndex; index += 1) {
-    if (!isSchemeCharacter(value[index], index)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function hasMalformedHttpAuthority(value: string) {
-  const lowerValue = value.toLowerCase();
-  const authorityStart =
-    lowerValue.startsWith("https://") ? "https://".length : "http://".length;
-
-  return (
-    (lowerValue.startsWith("https://") || lowerValue.startsWith("http://")) &&
-    (value[authorityStart] === "/" || value[authorityStart] === "\\")
-  );
-}
-
-function isHostnameShapedBareDomain(value: string) {
-  if (
-    value.includes("/") ||
-    value.includes("\\") ||
-    value.includes("@") ||
-    value.includes("?") ||
-    value.includes("#")
-  ) {
-    return false;
-  }
-
-  const parsedDomain = parseBareDomain(value);
-
-  if (!parsedDomain) {
-    return false;
-  }
-
-  const labels = parsedDomain.hostname.split(".");
-
-  return labels.length >= 2 && labels.every(isValidHostnameLabel);
-}
-
-function parseBareDomain(value: string) {
-  const colonIndex = value.lastIndexOf(":");
-
-  if (colonIndex === -1) {
-    return { hostname: value };
-  }
-
-  if (value.indexOf(":") !== colonIndex) {
-    return null;
-  }
-
-  const hostname = value.slice(0, colonIndex);
-  const port = value.slice(colonIndex + 1);
-
-  if (!isValidPort(port)) {
-    return null;
-  }
-
-  return { hostname };
-}
-
-function isValidHostnameLabel(label: string) {
-  if (
-    label.length === 0 ||
-    label.length > 63 ||
-    label.startsWith("-") ||
-    label.endsWith("-")
-  ) {
-    return false;
-  }
-
-  for (const character of label) {
-    if (!isAsciiLetterOrDigit(character) && character !== "-") {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function isValidPort(port: string) {
-  if (port.length === 0 || port.length > 5) {
-    return false;
-  }
-
-  for (const character of port) {
-    if (!isDigit(character)) {
-      return false;
-    }
-  }
-
-  const portNumber = Number(port);
-
-  return portNumber > 0 && portNumber <= 65_535;
-}
-
-function isSchemeCharacter(character: string, index: number) {
-  if (index === 0) {
-    return isAsciiLetter(character);
-  }
-
-  return (
-    isAsciiLetter(character) ||
-    isDigit(character) ||
-    character === "+" ||
-    character === "." ||
-    character === "-"
-  );
-}
-
-function isAsciiLetterOrDigit(character: string) {
-  return isAsciiLetter(character) || isDigit(character);
-}
-
-function isAsciiLetter(character: string) {
-  const codePoint = character.charCodeAt(0);
-
-  return (
-    (codePoint >= "A".charCodeAt(0) && codePoint <= "Z".charCodeAt(0)) ||
-    (codePoint >= "a".charCodeAt(0) && codePoint <= "z".charCodeAt(0))
-  );
-}
-
-function isDigit(character: string) {
-  const codePoint = character.charCodeAt(0);
-
-  return codePoint >= "0".charCodeAt(0) && codePoint <= "9".charCodeAt(0);
 }
 
 function MerchantDirectoryUnavailableFallback() {

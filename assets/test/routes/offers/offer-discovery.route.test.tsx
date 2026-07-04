@@ -324,6 +324,30 @@ test("offer discovery keeps offer links when merchant metadata is unavailable", 
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
 });
 
+test.each([
+  ["URL credentials", "https://trusted.example@attacker.example/deals"],
+  ["malformed HTTP authority", "https:////attacker.example/deals"],
+  ["invalid host labels", "https://bad_domain.example/deals"],
+  ["non-HTTP scheme", "ftp://files.example/deals"]
+])("offer discovery drops offer links with %s", (_caseName, url) => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "unsafe-offer",
+          url,
+          merchant: buildMerchant("unsafe-merchant", "Unsafe Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByText("No offers match these filters.")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Unsafe Market" })).not.toBeInTheDocument();
+});
+
 test("offer discovery sorts visible offers by ascending price and labels the first numeric result", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ sort: "price_asc" }));
   mockedUsePreloadedQuery.mockReturnValue(

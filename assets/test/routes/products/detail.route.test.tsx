@@ -455,6 +455,48 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
+test("renders offers with valid urls and null merchants using a fallback label", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-null-merchant",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: null,
+        latestPrice: {
+          id: "price-null-merchant",
+          price: "179.00"
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/detail-product"
+  );
+  expect(screen.getByText("179.00 USD")).toBeInTheDocument();
+  expect(within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(
+    "179.00 USD at Visit offer"
+  )).toBeVisible();
+});
+
 test("renders an offer snapshot from the visible active offer page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -1578,7 +1620,10 @@ test("renders an empty-offers message when no active offers exist", () => {
   expect(screen.queryByRole("region", { name: "Offer snapshot" })).not.toBeInTheDocument();
 });
 
-test("drops offers with unsafe urls", () => {
+test.each([
+  ["non-HTTP scheme", "ftp://unsafe.example/offer"],
+  ["URL credentials", "https://trusted.example@attacker.example/offer"]
+])("drops offers with unsafe urls: %s", (_caseName, url) => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -1592,7 +1637,7 @@ test("drops offers with unsafe urls", () => {
     buildOffersData([
       {
         id: "merchant-product-1",
-        url: "ftp://unsafe.example/offer",
+        url,
         currency: "USD",
         merchant: {
           id: "merchant-1",

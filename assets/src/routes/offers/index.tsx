@@ -7,6 +7,7 @@ import offerDiscoveryRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
+import { externalHttpUrlHref } from "../external-links";
 import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
@@ -370,7 +371,7 @@ function renderableOffers(connection: OfferConnection) {
   const offers: RenderableOffer[] = [];
 
   connection.edges.forEach(({ node: offer }, originalIndex) => {
-    const href = safeHttpUrl(offer.url);
+    const href = externalHttpUrlHref(offer.url);
     const latestPriceValue = numericLatestPrice(offer);
 
     if (href) {
@@ -489,16 +490,6 @@ function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffer>) {
       offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency]
     )
   );
-}
-
-function safeHttpUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-
-    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:" ? url : null;
-  } catch {
-    return null;
-  }
 }
 
 function priceLabel(price: string | null | undefined, currency: string) {

@@ -18,6 +18,7 @@ import {
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/selection-tray";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
+import { externalHttpUrlHref } from "../external-links";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -254,9 +255,8 @@ function ProductOffers({
   const data = usePreloadedQuery<ProductOffersRouteQuery>(productOffersRouteQuery, queryRef);
   const offers = data.merchantProducts.edges.flatMap(({ node }) => {
     const safeUrl = normalizeOfferUrl(node.url);
-    const merchantName = node.merchant?.name;
 
-    if (!safeUrl || !merchantName) {
+    if (!safeUrl) {
       return [];
     }
 
@@ -264,7 +264,7 @@ function ProductOffers({
       {
         id: node.id,
         currency: normalizedCurrency(node.currency),
-        merchantName,
+        merchantName: productOfferMerchantName(node.merchant),
         url: safeUrl,
         priceText: formatPriceText(node.latestPrice?.price, node.currency),
         numericPrice: decimalStringToNumber(node.latestPrice?.price),
@@ -333,6 +333,13 @@ function ProductOffers({
       {paginationLinks}
     </>
   );
+}
+
+type ProductOfferNode =
+  ProductOffersRouteQuery["response"]["merchantProducts"]["edges"][number]["node"];
+
+function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
+  return merchant?.name ?? "Visit offer";
 }
 
 type VisibleProductOffer = {
@@ -693,11 +700,5 @@ function normalizeOfferUrl(rawUrl: unknown): string | null {
     return null;
   }
 
-  try {
-    const parsed = new URL(rawUrl);
-
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
-  } catch {
-    return null;
-  }
+  return externalHttpUrlHref(rawUrl);
 }
