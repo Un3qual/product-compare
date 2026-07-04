@@ -1,3 +1,5 @@
+const RESERVED_IPV6_PREFIXES = ["fc", "fd", "fe8", "fe9", "fea", "feb", "ff", "2001:db8"];
+
 export function externalHttpUrlHref(value: string) {
   const href = value.trim();
 
@@ -42,12 +44,138 @@ function isSafeExternalHttpUrl(url: URL) {
     url.hostname.length > 0 &&
     url.username.length === 0 &&
     url.password.length === 0 &&
-    isValidHostname(url.hostname)
+    isValidHostname(url.hostname) &&
+    isPublicHostname(url.hostname)
   );
 }
 
 function isHttpProtocol(protocol: string) {
   return protocol === "http:" || protocol === "https:";
+}
+
+function isPublicHostname(hostname: string) {
+  const normalizedHostname = hostname.toLowerCase();
+
+  return (
+    !isLocalhostHostname(normalizedHostname) &&
+    !isReservedIpHostname(normalizedHostname)
+  );
+}
+
+function isLocalhostHostname(hostname: string) {
+  return hostname === "localhost" || hostname.endsWith(".localhost");
+}
+
+function isReservedIpHostname(hostname: string) {
+  const ipv4Address = parseIPv4Address(hostname);
+
+  if (ipv4Address) {
+    return isReservedIPv4Address(ipv4Address);
+  }
+
+  const ipv6Address = parseBracketedIPv6Address(hostname);
+
+  return ipv6Address ? isReservedIPv6Address(ipv6Address) : false;
+}
+
+function parseIPv4Address(hostname: string) {
+  const octets = hostname.split(".");
+
+  if (octets.length !== 4) {
+    return null;
+  }
+
+  const parsedOctets: number[] = [];
+
+  for (const octet of octets) {
+    const parsedOctet = parseIPv4Octet(octet);
+
+    if (parsedOctet === null) {
+      return null;
+    }
+
+    parsedOctets.push(parsedOctet);
+  }
+
+  return parsedOctets as [number, number, number, number];
+}
+
+function parseIPv4Octet(value: string) {
+  if (value.length === 0 || value.length > 3) {
+    return null;
+  }
+
+  for (const character of value) {
+    if (!isDigit(character)) {
+      return null;
+    }
+  }
+
+  const octet = Number(value);
+
+  return octet <= 255 ? octet : null;
+}
+
+function isReservedIPv4Address([first, second, third]: [
+  number,
+  number,
+  number,
+  number
+]) {
+  return (
+    isReservedFirstIPv4Octet(first) ||
+    isPrivateIPv4Range(first, second) ||
+    isSharedAddressSpace(first, second) ||
+    isLinkLocalIPv4Range(first, second) ||
+    isDocumentationIPv4Range(first, second, third) ||
+    isBenchmarkIPv4Range(first, second)
+  );
+}
+
+function isReservedFirstIPv4Octet(octet: number) {
+  return octet === 0 || octet === 127 || octet >= 224;
+}
+
+function isPrivateIPv4Range(first: number, second: number) {
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
+
+function isSharedAddressSpace(first: number, second: number) {
+  return first === 100 && second >= 64 && second <= 127;
+}
+
+function isLinkLocalIPv4Range(first: number, second: number) {
+  return first === 169 && second === 254;
+}
+
+function isDocumentationIPv4Range(first: number, second: number, third: number) {
+  return (
+    (first === 192 && second === 0 && third === 2) ||
+    (first === 198 && second === 51 && third === 100) ||
+    (first === 203 && second === 0 && third === 113)
+  );
+}
+
+function isBenchmarkIPv4Range(first: number, second: number) {
+  return first === 198 && (second === 18 || second === 19);
+}
+
+function parseBracketedIPv6Address(hostname: string) {
+  return hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : null;
+}
+
+function isReservedIPv6Address(address: string) {
+  return (
+    address === "::" ||
+    address === "::1" ||
+    RESERVED_IPV6_PREFIXES.some((prefix) => address.startsWith(prefix))
+  );
 }
 
 function hasAbsoluteUrlScheme(value: string) {

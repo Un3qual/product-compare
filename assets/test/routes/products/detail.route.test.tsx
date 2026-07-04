@@ -1622,7 +1622,8 @@ test("renders an empty-offers message when no active offers exist", () => {
 
 test.each([
   ["non-HTTP scheme", "ftp://unsafe.example/offer"],
-  ["URL credentials", "https://trusted.example@attacker.example/offer"]
+  ["URL credentials", "https://trusted.example@attacker.example/offer"],
+  ["private network URL", "http://192.168.1.1/offer"]
 ])("drops offers with unsafe urls: %s", (_caseName, url) => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

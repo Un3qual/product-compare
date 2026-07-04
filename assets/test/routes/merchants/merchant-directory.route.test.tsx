@@ -157,6 +157,9 @@ test.each([
   ["Protocol Relative Seller", "merchant-protocol-relative", "//attacker.example"],
   ["Backslash Seller", "merchant-backslash", "\\attacker.example"],
   ["Invalid Domain Seller", "merchant-invalid-domain", "bad_domain.example"],
+  ["Localhost Seller", "merchant-localhost", "http://localhost/deals"],
+  ["Private Network Seller", "merchant-private-network", "http://192.168.1.1/deals"],
+  ["Private IPv6 Seller", "merchant-private-ipv6", "http://[fc00::1]/deals"],
   ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"]
 ])("merchant directory leaves malformed bare domain %s as text only", (name, id, domain) => {
   mockedUsePreloadedQuery.mockReturnValue(

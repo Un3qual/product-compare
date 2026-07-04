@@ -328,6 +328,8 @@ test.each([
   ["URL credentials", "https://trusted.example@attacker.example/deals"],
   ["malformed HTTP authority", "https:////attacker.example/deals"],
   ["invalid host labels", "https://bad_domain.example/deals"],
+  ["localhost URL", "http://localhost/deals"],
+  ["private network URL", "http://192.168.1.1/deals"],
   ["non-HTTP scheme", "ftp://files.example/deals"]
 ])("offer discovery drops offer links with %s", (_caseName, url) => {
   mockedUsePreloadedQuery.mockReturnValue(
