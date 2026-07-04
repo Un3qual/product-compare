@@ -77,12 +77,12 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec convert_to_base(Decimal.t() | number(), term()) ::
-          {:ok, Decimal.t()} | {:error, :unit_not_found}
+  @spec convert_to_base(Decimal.t() | number() | binary(), term()) ::
+          {:ok, Decimal.t()} | {:error, :unit_not_found | :invalid_decimal}
   def convert_to_base(value_num, unit_id) when valid_id_guard(unit_id) do
     case Repo.get(Unit, unit_id) do
       nil -> {:error, :unit_not_found}
-      unit -> {:ok, UnitConversion.to_base(value_num, unit)}
+      unit -> to_base(value_num, unit)
     end
   end
 
@@ -482,6 +482,7 @@ defmodule ProductCompare.Specs do
          typed_value
        ) do
     with {:ok, value_num} <- fetch_typed_value(typed_value, :value_num),
+         {:ok, value_num} <- to_decimal(value_num),
          {:ok, unit_id} <- fetch_typed_value(typed_value, :unit_id),
          {:ok, unit} <- fetch_unit(unit_id, dimension_id),
          {:ok, value_num_base_min} <-
@@ -498,9 +499,8 @@ defmodule ProductCompare.Specs do
              :value_num_max,
              unit
            ),
+         {:ok, value_num_base} <- to_base(value_num, unit),
          :ok <- validate_numeric_range(value_num_base_min, value_num_base_max) do
-      value_num_base = UnitConversion.to_base(value_num, unit)
-
       {:ok,
        %{
          value_num: value_num,
@@ -624,7 +624,7 @@ defmodule ProductCompare.Specs do
 
       {nil, source_unit_value} ->
         with {:ok, source_decimal} <- to_decimal(source_unit_value) do
-          {:ok, UnitConversion.to_base(source_decimal, unit)}
+          to_base(source_decimal, unit)
         end
 
       {_base_value, _source_unit_value} ->
@@ -655,4 +655,11 @@ defmodule ProductCompare.Specs do
   end
 
   defp to_decimal(_value), do: {:error, :invalid_decimal_type}
+
+  defp to_base(value, unit) do
+    case UnitConversion.to_base(value, unit) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, :invalid_decimal}
+    end
+  end
 end

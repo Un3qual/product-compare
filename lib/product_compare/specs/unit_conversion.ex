@@ -6,11 +6,16 @@ defmodule ProductCompare.Specs.UnitConversion do
   alias ProductCompareSchemas.DecimalInput
   alias ProductCompareSchemas.Specs.Unit
 
-  @spec to_base(Decimal.t() | number() | binary(), Unit.t()) :: Decimal.t()
+  @spec to_base(Decimal.t() | number() | binary(), Unit.t()) :: Decimal.t() | nil
   def to_base(value, %Unit{} = unit) do
-    value
-    |> DecimalInput.to_decimal()
-    |> Decimal.mult(DecimalInput.to_decimal(unit.multiplier_to_base))
-    |> Decimal.add(DecimalInput.to_decimal(unit.offset_to_base))
+    with %Decimal{} = value <- DecimalInput.to_decimal(value),
+         %Decimal{} = multiplier <- DecimalInput.to_decimal(unit.multiplier_to_base),
+         %Decimal{} = offset <- DecimalInput.to_decimal(unit.offset_to_base) do
+      value
+      |> Decimal.mult(multiplier)
+      |> Decimal.add(offset)
+    else
+      _invalid_decimal -> nil
+    end
   end
 end

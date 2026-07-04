@@ -36,6 +36,35 @@ defmodule ProductCompare.Specs.UnitConversionTest do
       assert Decimal.equal?(converted, Decimal.new("32"))
     end
 
+    test "returns nil for invalid decimal input" do
+      length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_invalid_decimal"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_invalid_decimal",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      assert UnitConversion.to_base("not-a-decimal", inch_unit) == nil
+    end
+
+    test "rejects invalid decimal input through the Specs boundary" do
+      length_dimension =
+        SpecsFixtures.dimension_fixture(%{code: "length_invalid_decimal_boundary"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_invalid_decimal_boundary",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      assert Specs.convert_to_base("not-a-decimal", inch_unit.id) == {:error, :invalid_decimal}
+    end
+
     test "rejects numeric claims with mismatched unit dimensions" do
       length_dimension = SpecsFixtures.dimension_fixture(%{code: "length_for_mismatch"})
       frequency_dimension = SpecsFixtures.dimension_fixture(%{code: "frequency_for_mismatch"})
@@ -207,6 +236,40 @@ defmodule ProductCompare.Specs.UnitConversionTest do
                    value_num: Decimal.new("27"),
                    unit_id: inch_unit.id,
                    value_num_base_min: "not-a-decimal"
+                 },
+                 %{source_type: :user}
+               )
+    end
+
+    test "rejects invalid decimal values for the primary numeric value" do
+      length_dimension =
+        SpecsFixtures.dimension_fixture(%{code: "length_for_invalid_primary_decimal"})
+
+      inch_unit =
+        SpecsFixtures.unit_fixture(%{
+          dimension: length_dimension,
+          code: "in_for_invalid_primary_decimal",
+          multiplier_to_base: Decimal.new("25.4"),
+          offset_to_base: Decimal.new("0")
+        })
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "diagonal_with_invalid_primary_decimal",
+          display_name: "Diagonal",
+          data_type: :numeric,
+          dimension_id: length_dimension.id
+        })
+
+      product = SpecsFixtures.product_fixture(%{slug: "primary-invalid-decimal-product"})
+
+      assert {:error, :invalid_decimal} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{
+                   value_num: "not-a-decimal",
+                   unit_id: inch_unit.id
                  },
                  %{source_type: :user}
                )
