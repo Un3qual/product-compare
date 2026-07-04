@@ -165,6 +165,11 @@ test.each([
     "merchant-ipv4-mapped-loopback",
     "http://[::ffff:127.0.0.1]/deals"
   ],
+  [
+    "IPv4-Compatible Loopback Seller",
+    "merchant-ipv4-compatible-loopback",
+    "http://[::127.0.0.1]/deals"
+  ],
   ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"]
 ])("merchant directory leaves malformed bare domain %s as text only", (name, id, domain) => {
   mockedUsePreloadedQuery.mockReturnValue(

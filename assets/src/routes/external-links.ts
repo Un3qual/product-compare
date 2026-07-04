@@ -172,10 +172,10 @@ function parseBracketedIPv6Address(hostname: string) {
 }
 
 function isReservedIPv6Address(address: string) {
-  const mappedIPv4Address = parseIPv4MappedIPv6Address(address);
+  const embeddedIPv4Address = parseEmbeddedIPv4Address(address);
 
-  if (mappedIPv4Address) {
-    return isReservedIPv4Address(mappedIPv4Address);
+  if (embeddedIPv4Address) {
+    return isReservedIPv4Address(embeddedIPv4Address);
   }
 
   return (
@@ -185,19 +185,30 @@ function isReservedIPv6Address(address: string) {
   );
 }
 
-function parseIPv4MappedIPv6Address(address: string) {
-  if (!address.startsWith("::ffff:")) {
+function parseEmbeddedIPv4Address(address: string) {
+  if (address.startsWith("::ffff:")) {
+    return parseEmbeddedIPv4AddressSuffix(address.slice("::ffff:".length));
+  }
+
+  if (address.startsWith("::")) {
+    return parseEmbeddedIPv4AddressSuffix(address.slice("::".length));
+  }
+
+  return null;
+}
+
+function parseEmbeddedIPv4AddressSuffix(value: string) {
+  if (value.length === 0) {
     return null;
   }
 
-  const embeddedAddress = address.slice("::ffff:".length);
-  const dottedAddress = parseIPv4Address(embeddedAddress);
+  const dottedAddress = parseIPv4Address(value);
 
   if (dottedAddress) {
     return dottedAddress;
   }
 
-  const hexWords = embeddedAddress.split(":");
+  const hexWords = value.split(":");
 
   if (hexWords.length !== 2) {
     return null;
@@ -254,12 +265,20 @@ function hasMalformedHttpAuthority(value: string) {
   const lowerValue = value.toLowerCase();
 
   return (
+    hasMissingHttpAuthoritySlashes(lowerValue) ||
     lowerValue.startsWith("http:///") ||
     lowerValue.startsWith("https:///") ||
     lowerValue.startsWith("http://\\") ||
     lowerValue.startsWith("https://\\") ||
     lowerValue.startsWith("http:\\") ||
     lowerValue.startsWith("https:\\")
+  );
+}
+
+function hasMissingHttpAuthoritySlashes(value: string) {
+  return (
+    (value.startsWith("http:") && !value.startsWith("http://")) ||
+    (value.startsWith("https:") && !value.startsWith("https://"))
   );
 }
 

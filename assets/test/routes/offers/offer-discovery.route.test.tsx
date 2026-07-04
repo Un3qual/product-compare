@@ -331,6 +331,8 @@ test.each([
   ["localhost URL", "http://localhost/deals"],
   ["private network URL", "http://192.168.1.1/deals"],
   ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/deals"],
+  ["IPv4-compatible loopback IPv6 URL", "http://[::127.0.0.1]/deals"],
+  ["single-slash HTTP URL", "https:/merchant.example/deals"],
   ["non-HTTP scheme", "ftp://files.example/deals"]
 ])("offer discovery drops offer links with %s", (_caseName, url) => {
   mockedUsePreloadedQuery.mockReturnValue(

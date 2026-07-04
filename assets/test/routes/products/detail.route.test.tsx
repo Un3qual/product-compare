@@ -1626,7 +1626,9 @@ test.each([
   ["non-HTTP scheme", "ftp://unsafe.example/offer"],
   ["URL credentials", "https://trusted.example@attacker.example/offer"],
   ["private network URL", "http://192.168.1.1/offer"],
-  ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/offer"]
+  ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/offer"],
+  ["IPv4-compatible loopback IPv6 URL", "http://[::127.0.0.1]/offer"],
+  ["single-slash HTTP URL", "https:/merchant.example/offer"]
 ])("drops offers with unsafe urls: %s", (_caseName, url) => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
