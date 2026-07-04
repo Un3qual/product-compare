@@ -17,7 +17,7 @@ import {
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/selection-tray";
-import { decimalStringToNumber } from "../decimal-values";
+import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -411,7 +411,7 @@ function hasVisiblePrice(
 }
 
 function canComparePrices(offers: ReadonlyArray<VisibleProductOffer & { currency: string }>) {
-  return new Set(offers.map((offer) => offer.currency)).size <= 1;
+  return canComparePriceCurrencies(offers.map((offer) => offer.currency));
 }
 
 function lowestVisiblePriceText(

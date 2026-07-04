@@ -8,6 +8,7 @@ defmodule ProductCompare.Specs do
   alias Ecto.Multi
   alias ProductCompare.Repo
   alias ProductCompare.Specs.UnitConversion
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.Dimension
@@ -643,14 +644,12 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  defp to_decimal(%Decimal{} = value), do: {:ok, value}
-  defp to_decimal(value) when is_integer(value), do: {:ok, Decimal.new(value)}
-  defp to_decimal(value) when is_float(value), do: {:ok, Decimal.from_float(value)}
+  defp to_decimal(%Decimal{} = value), do: {:ok, DecimalInput.to_decimal(value)}
 
-  defp to_decimal(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> {:error, :invalid_decimal}
+  defp to_decimal(value) when is_integer(value) or is_float(value) or is_binary(value) do
+    case DecimalInput.to_decimal(value) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, :invalid_decimal}
     end
   end
 

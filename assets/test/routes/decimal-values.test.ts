@@ -1,4 +1,4 @@
-import { decimalStringToNumber } from "../../src/routes/decimal-values";
+import { canComparePriceCurrencies, decimalStringToNumber } from "../../src/routes/decimal-values";
 
 test("decimalStringToNumber normalizes finite decimal values", () => {
   expect(decimalStringToNumber(42)).toBe(42);
@@ -25,4 +25,12 @@ test("decimalStringToNumber rejects blank and non-decimal values", () => {
   expect(decimalStringToNumber("e3")).toBeNull();
   expect(decimalStringToNumber("0x10")).toBeNull();
   expect(decimalStringToNumber("Infinity")).toBeNull();
+});
+
+test("canComparePriceCurrencies allows price comparisons only within one currency bucket", () => {
+  expect(canComparePriceCurrencies([])).toBe(true);
+  expect(canComparePriceCurrencies(["USD"])).toBe(true);
+  expect(canComparePriceCurrencies(["USD", "USD"])).toBe(true);
+  expect(canComparePriceCurrencies(["USD", "EUR"])).toBe(false);
+  expect(canComparePriceCurrencies(["USD", null])).toBe(false);
 });

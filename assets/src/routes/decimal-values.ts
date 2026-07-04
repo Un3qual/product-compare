@@ -22,3 +22,7 @@ export function decimalStringToNumber(value?: unknown) {
   const parsedValue = Number(trimmedValue);
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
+
+export function canComparePriceCurrencies(currencies: ReadonlyArray<string | null>) {
+  return new Set(currencies).size <= 1;
+}

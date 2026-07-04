@@ -6,7 +6,7 @@ import offerDiscoveryRouteQuery, {
 } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { decimalStringToNumber } from "../decimal-values";
+import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
@@ -484,13 +484,11 @@ function isPriceSort(
 }
 
 function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffer>) {
-  const currencies = new Set(
+  return canComparePriceCurrencies(
     offers.flatMap((offer) =>
       offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency]
     )
   );
-
-  return currencies.size <= 1;
 }
 
 function safeHttpUrl(url: string) {
