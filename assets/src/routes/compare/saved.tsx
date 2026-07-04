@@ -104,7 +104,7 @@ export function SavedComparisonsRoute() {
 
   return (
     <CompareShell title="Saved comparisons">
-      <p aria-live="polite" role="status">
+      <p aria-label="Saved comparisons status" aria-live="polite" role="status">
         {viewState.statusMessage}
       </p>
       {deleteError ? <p role="alert">{deleteError}</p> : null}

@@ -126,6 +126,10 @@ function savedComparisonNames() {
   return screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
 }
 
+function savedComparisonsStatus() {
+  return screen.getByRole("status", { name: "Saved comparisons status" });
+}
+
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
 
@@ -165,7 +169,7 @@ test("saved comparisons route starts with an empty status region when saved sets
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(savedComparisonsStatus()).toBeEmptyDOMElement();
 });
 
 test("saved comparison cards summarize saved product counts", () => {
@@ -380,8 +384,8 @@ test("saved comparisons route announces deletion when deleting the last set", as
     expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
   });
 
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
-  expect(screen.getByRole("status")).not.toHaveTextContent("No saved comparisons yet.");
+  expect(savedComparisonsStatus()).toHaveTextContent("Comparison deleted.");
+  expect(savedComparisonsStatus()).not.toHaveTextContent("No saved comparisons yet.");
 });
 
 test("saved comparisons route uses a descriptive sign-in link for unauthorized state", () => {
@@ -414,7 +418,7 @@ test("empty saved comparisons state links to product browsing and comparison", (
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("status")).toHaveTextContent("No saved comparisons yet.");
+  expect(savedComparisonsStatus()).toHaveTextContent("No saved comparisons yet.");
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
     "/products"
@@ -770,7 +774,7 @@ test("saved comparisons route shows a no-match message when the filter excludes 
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(savedComparisonsStatus()).toHaveTextContent(
       "No saved comparisons match your filter."
     );
   });
@@ -802,7 +806,7 @@ test("filtered no-match state links to product browsing and comparison", async (
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(savedComparisonsStatus()).toHaveTextContent(
       "No saved comparisons match your filter."
     );
   });
@@ -947,7 +951,7 @@ test("saved comparisons route keeps the set visible when delete completes with t
 
   expect(screen.getByText("Desk setup")).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(savedComparisonsStatus()).toBeEmptyDOMElement();
 });
 
 test("saved comparisons route reports Relay mutation network failures", async () => {
