@@ -172,11 +172,66 @@ function parseBracketedIPv6Address(hostname: string) {
 }
 
 function isReservedIPv6Address(address: string) {
+  const mappedIPv4Address = parseIPv4MappedIPv6Address(address);
+
+  if (mappedIPv4Address) {
+    return isReservedIPv4Address(mappedIPv4Address);
+  }
+
   return (
     address === "::" ||
     address === "::1" ||
     RESERVED_IPV6_PREFIXES.some((prefix) => address.startsWith(prefix))
   );
+}
+
+function parseIPv4MappedIPv6Address(address: string) {
+  if (!address.startsWith("::ffff:")) {
+    return null;
+  }
+
+  const embeddedAddress = address.slice("::ffff:".length);
+  const dottedAddress = parseIPv4Address(embeddedAddress);
+
+  if (dottedAddress) {
+    return dottedAddress;
+  }
+
+  const hexWords = embeddedAddress.split(":");
+
+  if (hexWords.length !== 2) {
+    return null;
+  }
+
+  const highWord = parseIPv6HexWord(hexWords[0]);
+  const lowWord = parseIPv6HexWord(hexWords[1]);
+
+  if (highWord === null || lowWord === null) {
+    return null;
+  }
+
+  return [
+    highWord >> 8,
+    highWord & 0xff,
+    lowWord >> 8,
+    lowWord & 0xff
+  ] as [number, number, number, number];
+}
+
+function parseIPv6HexWord(value: string) {
+  if (value.length === 0 || value.length > 4) {
+    return null;
+  }
+
+  for (const character of value) {
+    if (!isHexDigit(character)) {
+      return null;
+    }
+  }
+
+  const word = Number.parseInt(value, 16);
+
+  return word <= 0xffff ? word : null;
 }
 
 function hasAbsoluteUrlScheme(value: string) {
@@ -325,4 +380,12 @@ function isDigit(character: string) {
   const codePoint = character.charCodeAt(0);
 
   return codePoint >= "0".charCodeAt(0) && codePoint <= "9".charCodeAt(0);
+}
+
+function isHexDigit(character: string) {
+  return (
+    isDigit(character) ||
+    (character >= "a" && character <= "f") ||
+    (character >= "A" && character <= "F")
+  );
 }

@@ -160,6 +160,11 @@ test.each([
   ["Localhost Seller", "merchant-localhost", "http://localhost/deals"],
   ["Private Network Seller", "merchant-private-network", "http://192.168.1.1/deals"],
   ["Private IPv6 Seller", "merchant-private-ipv6", "http://[fc00::1]/deals"],
+  [
+    "IPv4-Mapped Loopback Seller",
+    "merchant-ipv4-mapped-loopback",
+    "http://[::ffff:127.0.0.1]/deals"
+  ],
   ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"]
 ])("merchant directory leaves malformed bare domain %s as text only", (name, id, domain) => {
   mockedUsePreloadedQuery.mockReturnValue(

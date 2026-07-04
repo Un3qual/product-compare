@@ -623,6 +623,8 @@ test("renders an offer snapshot from the visible active offer page", () => {
   expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
   expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
   expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
+  expect(within(offersList).getByRole("link", { name: "Bad Price Shop" })).toBeVisible();
+  expect(within(offersList).queryByText("not-a-price USD")).not.toBeInTheDocument();
 });
 
 test("renders offer snapshot fallback when no visible offer has a numeric display price", () => {
@@ -1623,7 +1625,8 @@ test("renders an empty-offers message when no active offers exist", () => {
 test.each([
   ["non-HTTP scheme", "ftp://unsafe.example/offer"],
   ["URL credentials", "https://trusted.example@attacker.example/offer"],
-  ["private network URL", "http://192.168.1.1/offer"]
+  ["private network URL", "http://192.168.1.1/offer"],
+  ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/offer"]
 ])("drops offers with unsafe urls: %s", (_caseName, url) => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

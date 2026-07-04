@@ -604,7 +604,7 @@ function formatPriceText(price: unknown, currency: unknown) {
     return null;
   }
 
-  if (typeof price === "string" && price !== "") {
+  if (typeof price === "string" && decimalStringToNumber(price) !== null) {
     return `${price} ${currency}`;
   }
 
