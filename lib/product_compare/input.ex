@@ -1,6 +1,8 @@
 defmodule ProductCompare.Input do
   @moduledoc false
 
+  @max_signed_bigint 9_223_372_036_854_775_807
+
   @spec fetch_attr(map() | term(), atom()) :: term()
   def fetch_attr(attrs, key) when is_map(attrs) and is_atom(key),
     do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
@@ -28,12 +30,16 @@ defmodule ProductCompare.Input do
 
   def pagination_value(_opts, _key, default), do: default
 
-  @spec normalize_integer_id(term()) :: {:ok, integer()} | :error
-  def normalize_integer_id(value) when is_integer(value), do: {:ok, value}
+  @spec normalize_integer_id(term()) :: {:ok, pos_integer()} | :error
+  def normalize_integer_id(value)
+      when is_integer(value) and value > 0 and value <= @max_signed_bigint,
+      do: {:ok, value}
+
+  def normalize_integer_id(value) when is_integer(value), do: :error
 
   def normalize_integer_id(value) when is_binary(value) do
     case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
+      {parsed, ""} when parsed > 0 and parsed <= @max_signed_bigint -> {:ok, parsed}
       _invalid -> :error
     end
   end

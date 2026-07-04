@@ -198,7 +198,7 @@ test("offer discovery omits merchant summary actions when no merchant filter is 
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(within(filterSummary).getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D"
   );
   expect(
     within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
@@ -220,7 +220,7 @@ test("offer discovery provides route-local filter reset links", () => {
 
   expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers?sort=price_asc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc"
   );
   expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
     "href",

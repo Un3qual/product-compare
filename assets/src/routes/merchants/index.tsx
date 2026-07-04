@@ -18,6 +18,9 @@ type MerchantDirectoryConnection = NonNullable<
 >;
 
 const ABSOLUTE_URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
+const MALFORMED_HTTP_AUTHORITY_PATTERN = /^https?:\/\/[\\/]/i;
+const BARE_DOMAIN_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?::[0-9]{1,5})?$/i;
 
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
@@ -154,12 +157,20 @@ function merchantWebsiteHref(domain: string) {
     return isHttpWebsiteUrl(value) ? value : null;
   }
 
+  if (!BARE_DOMAIN_PATTERN.test(value)) {
+    return null;
+  }
+
   const normalizedHref = `https://${value}`;
 
   return isHttpWebsiteUrl(normalizedHref) ? normalizedHref : null;
 }
 
 function isHttpWebsiteUrl(value: string) {
+  if (MALFORMED_HTTP_AUTHORITY_PATTERN.test(value)) {
+    return false;
+  }
+
   try {
     const url = new URL(value);
 

@@ -29,11 +29,21 @@ export function offerDiscoveryPath(
 }
 
 export function offerDiscoveryResetPath(filters: OfferDiscoveryFilters) {
-  if (filters.sort === "default") {
+  const params = new URLSearchParams();
+
+  if (filters.productId) {
+    params.set("productId", filters.productId);
+  }
+
+  if (filters.sort !== "default") {
+    params.set("sort", filters.sort);
+  }
+
+  const query = params.toString();
+
+  if (!query) {
     return "/offers";
   }
 
-  const params = new URLSearchParams({ sort: filters.sort });
-
-  return `/offers?${params}`;
+  return `/offers?${query}`;
 }

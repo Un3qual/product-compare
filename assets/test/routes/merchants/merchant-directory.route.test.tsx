@@ -153,6 +153,35 @@ test("merchant directory normalizes domain and port website links to HTTPS", () 
   expect(websiteLink).toHaveAttribute("href", "https://portal.example:8443");
 });
 
+test.each([
+  ["Protocol Relative Seller", "merchant-protocol-relative", "//attacker.example"],
+  ["Backslash Seller", "merchant-backslash", "\\attacker.example"],
+  ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"]
+])("merchant directory leaves malformed bare domain %s as text only", (name, id, domain) => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id,
+          name,
+          domain
+        }
+      ]
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const merchantItem = getMerchantListItem(name);
+
+  expect(merchantItem).toHaveTextContent(domain);
+  expect(
+    within(merchantItem).queryByRole("link", {
+      name: "Visit merchant website"
+    })
+  ).not.toBeInTheDocument();
+});
+
 test("merchant directory leaves non-HTTP merchant domains as text only", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({

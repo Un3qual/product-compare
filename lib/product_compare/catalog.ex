@@ -74,7 +74,7 @@ defmodule ProductCompare.Catalog do
   def update_product(%Product{} = product, attrs) do
     with :ok <- validate_primary_type_taxon(attrs, product) do
       product
-      |> Product.changeset(attrs)
+      |> Product.changeset(drop_nil_primary_type_taxon(attrs))
       |> Repo.update()
     end
   end
@@ -249,8 +249,8 @@ defmodule ProductCompare.Catalog do
 
     value =
       case attrs do
-        %{primary_type_taxon_id: value} -> value
-        %{^primary_type_taxon_id_key => value} -> value
+        %{primary_type_taxon_id: value} when not is_nil(value) -> value
+        %{^primary_type_taxon_id_key => value} when not is_nil(value) -> value
         _ -> product && product.primary_type_taxon_id
       end
 
@@ -263,6 +263,20 @@ defmodule ProductCompare.Catalog do
       else
         _ -> {:error, :primary_type_taxon_must_be_type_taxon}
       end
+    end
+  end
+
+  defp drop_nil_primary_type_taxon(attrs) when is_map(attrs) do
+    attrs
+    |> drop_nil_key(:primary_type_taxon_id)
+    |> drop_nil_key("primary_type_taxon_id")
+  end
+
+  defp drop_nil_key(attrs, key) do
+    if Map.has_key?(attrs, key) and is_nil(Map.get(attrs, key)) do
+      Map.delete(attrs, key)
+    else
+      attrs
     end
   end
 end

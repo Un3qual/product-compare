@@ -1,4 +1,4 @@
-const DECIMAL_STRING_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+const DECIMAL_STRING_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 
 export function decimalStringToNumber(value?: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {

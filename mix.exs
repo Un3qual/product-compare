@@ -11,6 +11,7 @@ defmodule ProductCompare.MixProject do
       aliases: aliases(),
       deps: deps(),
       test_coverage: [summary: [threshold: 69]],
+      dialyzer: [plt_add_apps: [:mix, :ex_unit]],
       listeners: [Phoenix.CodeReloader]
     ]
   end
