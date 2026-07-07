@@ -8,6 +8,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
@@ -165,8 +166,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   defp print_latest(opts) do
     surface = Keyword.fetch!(opts, :surface)
     latest_run = latest_run(surface)
-    latest_success = latest_success(surface)
-    fresh = fresh?(latest_success, Keyword.fetch!(opts, :max_age_hours))
+    latest_success = CJRunReadiness.latest_success(surface)
+    fresh = CJRunReadiness.fresh?(latest_success, Keyword.fetch!(opts, :max_age_hours))
 
     enforce_required_success!(
       surface,
@@ -263,18 +264,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   end
 
   defp latest_success!(surface) do
-    latest_success(surface) ||
+    CJRunReadiness.latest_success(surface) ||
       Mix.raise("no successful CJ #{surface_label(surface)} found")
-  end
-
-  defp latest_success(surface) do
-    ImportRun
-    |> where([run], run.provider == @provider)
-    |> where([run], run.surface == ^surface)
-    |> where([run], run.status == "succeeded")
-    |> order_by([run], desc_nulls_last: run.finished_at, desc: run.started_at, desc: run.id)
-    |> limit(1)
-    |> Repo.one()
   end
 
   defp history_runs(surface, limit) do
@@ -574,12 +565,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
     |> where([candidate], candidate.provider == @provider)
     |> Repo.aggregate(:count, :id)
   end
-
-  defp fresh?(%ImportRun{finished_at: %DateTime{} = finished_at}, max_age_hours) do
-    DateTime.diff(DateTime.utc_now(), finished_at, :second) <= max_age_hours * 60 * 60
-  end
-
-  defp fresh?(_latest_success, _max_age_hours), do: false
 
   defp field(nil, _field), do: nil
   defp field(struct, field), do: Map.fetch!(struct, field)

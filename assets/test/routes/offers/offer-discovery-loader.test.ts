@@ -42,7 +42,8 @@ test("offerDiscoveryLoader asks for a product before preloading offers", async (
       after: null,
       first: 6,
       merchantId: null,
-      productId: null
+      productId: null,
+      sort: "default"
     }
   });
 
@@ -73,7 +74,8 @@ test("offerDiscoveryLoader preloads active offers for a product by default", asy
       after: null,
       first: 6,
       merchantId: null,
-      productId: PRODUCT_ID
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -120,7 +122,8 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
       after: "cursor-1",
       first: 12,
       merchantId: MERCHANT_ID,
-      productId: PRODUCT_ID
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -167,7 +170,8 @@ test("offerDiscoveryLoader preserves inactive-only filter and page-size", async 
       after: null,
       first: 12,
       merchantId: null,
-      productId: PRODUCT_ID
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -212,7 +216,8 @@ test("offerDiscoveryLoader normalizes blank cursor values", async () => {
       after: null,
       first: 12,
       merchantId: null,
-      productId: PRODUCT_ID
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -257,7 +262,87 @@ test("offerDiscoveryLoader drops invalid page-size and active-only params", asyn
       after: null,
       first: 6,
       merchantId: null,
+      productId: PRODUCT_ID,
+      sort: "default"
+    },
+    query: descriptor
+  });
+});
+
+test("offerDiscoveryLoader normalizes sort without changing GraphQL input", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    `https://app.example.test/offers?productId=${encodeURIComponent(
+      PRODUCT_ID
+    )}&sort=price_desc`
+  );
+  const descriptor = offerDiscoveryQueryDescriptor({
+    input: {
+      activeOnly: true,
+      first: 6,
       productId: PRODUCT_ID
+    }
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      activeOnly: true,
+      after: null,
+      first: 6,
+      merchantId: null,
+      productId: PRODUCT_ID,
+      sort: "price_desc"
+    },
+    query: descriptor
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      input: {
+        activeOnly: true,
+        first: 6,
+        productId: PRODUCT_ID
+      }
+    },
+    { signal: request.signal }
+  );
+});
+
+test("offerDiscoveryLoader drops unsupported sort params", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    `https://app.example.test/offers?productId=${encodeURIComponent(
+      PRODUCT_ID
+    )}&sort=lowest`
+  );
+  const descriptor = offerDiscoveryQueryDescriptor({
+    input: {
+      activeOnly: true,
+      first: 6,
+      productId: PRODUCT_ID
+    }
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      activeOnly: true,
+      after: null,
+      first: 6,
+      merchantId: null,
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -289,7 +374,8 @@ test("offerDiscoveryLoader drops malformed page-size params", async () => {
       after: null,
       first: 6,
       merchantId: null,
-      productId: PRODUCT_ID
+      productId: PRODUCT_ID,
+      sort: "default"
     },
     query: descriptor
   });
@@ -330,7 +416,8 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
         after: "cursor-2",
         first: 3,
         merchantId: null,
-        productId: PRODUCT_ID
+        productId: PRODUCT_ID,
+        sort: "default"
       }
     });
 

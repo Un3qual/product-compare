@@ -157,6 +157,10 @@ beforeEach(() => {
   mockProductQueries();
 });
 
+function saveComparisonStatus() {
+  return screen.getByRole("status", { name: "Save comparison status" });
+}
+
 test("compare route only submits one save mutation while the request is in flight", async () => {
   let pendingCompletion: ((response: unknown) => void) | undefined;
 
@@ -188,7 +192,7 @@ test("compare route only submits one save mutation while the request is in fligh
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
+    expect(saveComparisonStatus()).toHaveTextContent("Comparison saved.");
   });
 });
 
@@ -207,7 +211,7 @@ test("compare route keeps a stable status region in the DOM before and after sav
 
   render(compareRouteElement());
 
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(saveComparisonStatus()).toBeEmptyDOMElement();
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
@@ -225,7 +229,7 @@ test("compare route keeps a stable status region in the DOM before and after sav
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
+    expect(saveComparisonStatus()).toHaveTextContent("Comparison saved.");
   });
 });
 
@@ -256,7 +260,7 @@ test("compare route reports a generic error when save completes with top-level G
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(saveComparisonStatus()).toBeEmptyDOMElement();
 });
 
 test("compare route allows a later save after the current request settles", async () => {
@@ -313,15 +317,15 @@ test("compare route clears save feedback when the selected comparison changes", 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison saved.");
+    expect(saveComparisonStatus()).toHaveTextContent("Comparison saved.");
   });
 
   mockedUseLoaderData.mockReturnValue(SECOND_READY_LOADER_DATA);
   rerender(compareRouteElement());
 
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(saveComparisonStatus()).toBeEmptyDOMElement();
   await waitFor(() => {
-    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
@@ -357,7 +361,7 @@ test("compare route ignores stale save completions after the selected comparison
   });
 
   await waitFor(() => {
-    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });

@@ -58,6 +58,48 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Product-Facing Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/compare/saved.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `assets/test/routes/compare/saved-comparisons-test-helpers.ts`
+  - `docs/work/frontend-saved-comparisons-ui.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/compare/saved` can sort loaded saved sets by current order,
+  name, and product count without changing backend saved-comparison contracts.
+
+### Saved Comparisons Sort Controls Evidence
+
+- Completed implementation:
+  - `/compare/saved` now renders an authenticated sort control for loaded saved
+    comparison sets.
+  - Saved sets can be sorted by current order, name A-Z, product count
+    high-to-low, and product count low-to-high after local deletion and filter
+    matching.
+  - Sorting is applied to the merged loaded saved-set summary, not page-by-page
+    Relay render output, so multi-page loaded results sort as one list.
+  - Reopen URLs and row-scoped delete pending state remain tied to the saved set
+    after sort changes.
+- Completed verification:
+  - RED:
+    `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+    - 25 tests, 5 expected failures, 20 passed. The failures showed the missing
+      `Sort saved comparisons` combobox.
+  - GREEN:
+    `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+    - 26 tests, 0 failures, including a Relay-backed multi-page sort
+      regression.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `cd assets && bun run --bun typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
 ## Current Cross-Project Batch
 
 - Status: done.

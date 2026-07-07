@@ -3,18 +3,19 @@ defmodule ProductCompare.Specs.UnitConversion do
   Unit conversion helpers using canonical base unit storage.
   """
 
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareSchemas.Specs.Unit
 
-  @spec to_base(Decimal.t() | number() | binary(), Unit.t()) :: Decimal.t()
+  @spec to_base(Decimal.t() | number() | binary(), Unit.t()) :: Decimal.t() | nil
   def to_base(value, %Unit{} = unit) do
-    value
-    |> to_decimal()
-    |> Decimal.mult(to_decimal(unit.multiplier_to_base))
-    |> Decimal.add(to_decimal(unit.offset_to_base))
+    with %Decimal{} = value <- DecimalInput.to_decimal(value),
+         %Decimal{} = multiplier <- DecimalInput.to_decimal(unit.multiplier_to_base),
+         %Decimal{} = offset <- DecimalInput.to_decimal(unit.offset_to_base) do
+      value
+      |> Decimal.mult(multiplier)
+      |> Decimal.add(offset)
+    else
+      _invalid_decimal -> nil
+    end
   end
-
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
 end

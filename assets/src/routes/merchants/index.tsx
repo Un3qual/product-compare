@@ -6,6 +6,7 @@ import merchantDirectoryRouteQuery, {
 } from "../../__generated__/MerchantDirectoryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { externalWebsiteHref } from "../external-links";
 import {
   merchantDirectoryLoader,
   type MerchantDirectoryLoaderData,
@@ -107,12 +108,23 @@ function MerchantDirectoryList({
   return (
     <>
       <ul aria-label="Merchants">
-        {merchants.map((merchant) => (
-          <li key={merchant.id}>
-            <h2>{merchant.name}</h2>
-            <p>{merchant.domain}</p>
-          </li>
-        ))}
+        {merchants.map((merchant) => {
+          const websiteHref = externalWebsiteHref(merchant.domain);
+
+          return (
+            <li key={merchant.id}>
+              <h2>{merchant.name}</h2>
+              <p>{merchant.domain}</p>
+              {websiteHref ? (
+                <p>
+                  <a href={websiteHref} target="_blank" rel="noopener noreferrer">
+                    Visit merchant website
+                  </a>
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       {connection.pageInfo.hasPreviousPage && pagination.after ? (
         <p>

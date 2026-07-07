@@ -45,9 +45,9 @@
 - Product filtering now has backend `products(filters:)` support, display-safe
   GraphQL filter metadata/facet counts, and `/products` faceted controls.
 - Product comparison now has URL-driven selection, saved sets, shared,
-  differences, and all-spec matrices, typed/grouped attribute metadata, and
-  bounded offer/price decision-helper rows. Persistent compare tray work remains
-  a later product-facing candidate.
+  differences, and all-spec matrices, typed/grouped attribute metadata, bounded
+  offer/price decision-helper rows, and a persistent URL-backed compare tray
+  across browse and product detail routes.
 - CJ/Awin source-field mapping remains deferred pending additional account docs or sample payloads beyond the validated first CJ manual connector path.
 - Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, persisted merchant feed candidates, and durable candidate review status.
 
@@ -59,12 +59,10 @@
 - The 2026-06-30 product filtering and in-depth comparison plan set is complete:
   filter metadata/facets, catalog faceted filtering UI, compare matrix modes,
   compare attribute metadata, and compare offer decision helpers.
-- The next coordinator pass should promote the retained CJ read-model/operator
-  batch, persistent compare tray work, or another product-facing row from
-  `docs/work/index.md`.
-- The retained CJ read-model and weekly operator-runbook plans remain tracked in
-  `docs/work/product-data-scraping.md` and `docs/plans/INDEX.md` for the next
-  ingestion-operator follow-up after product-facing progress.
+- The CJ read-model and weekly operator-runbook batch is complete and recorded
+  in `docs/work/product-data-scraping.md`.
+- The next live queue batch is product-facing polish across catalog browse,
+  product detail, offer discovery, saved comparisons, and merchant discovery.
 - CJ credential access, product-scope validation, quota observation,
   representative redacted sample evidence, and owner approval remain recorded
   for the manual connector path.

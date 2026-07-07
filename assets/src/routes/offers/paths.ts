@@ -1,6 +1,9 @@
 import type { OfferDiscoveryFilters } from "./loader";
 
-export function offerDiscoveryPath(filters: OfferDiscoveryFilters, after: string | null) {
+export function offerDiscoveryPath(
+  filters: OfferDiscoveryFilters,
+  after: string | null
+) {
   const params = new URLSearchParams();
 
   if (filters.productId) {
@@ -14,9 +17,33 @@ export function offerDiscoveryPath(filters: OfferDiscoveryFilters, after: string
   params.set("activeOnly", String(filters.activeOnly));
   params.set("first", String(filters.first));
 
+  if (filters.sort !== "default") {
+    params.set("sort", filters.sort);
+  }
+
   if (after) {
     params.set("after", after);
   }
 
   return `/offers?${params.toString()}`;
+}
+
+export function offerDiscoveryResetPath(filters: OfferDiscoveryFilters) {
+  const params = new URLSearchParams();
+
+  if (filters.productId) {
+    params.set("productId", filters.productId);
+  }
+
+  if (filters.sort !== "default") {
+    params.set("sort", filters.sort);
+  }
+
+  const query = params.toString();
+
+  if (!query) {
+    return "/offers";
+  }
+
+  return `/offers?${query}`;
 }

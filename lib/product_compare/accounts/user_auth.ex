@@ -105,7 +105,7 @@ defmodule ProductCompare.Accounts.UserAuth do
                  Repo.rollback(:invalid_token)
              end
            end) do
-        {:ok, confirmed_user} -> {:ok, confirmed_user}
+        {:ok, %User{} = confirmed_user} -> {:ok, confirmed_user}
         {:error, :invalid_token} -> {:error, :invalid_token}
       end
     else

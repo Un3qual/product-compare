@@ -8,6 +8,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   require Logger
 
   alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.OptionNormalization
 
   @default_advertiser_country "US"
   @default_initial_delay_ms 60_000
@@ -32,10 +33,15 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
       cursor: Keyword.get(opts, :cursor),
       initial_delay_ms:
-        non_negative_integer_option(opts, :initial_delay_ms, @default_initial_delay_ms),
-      interval_ms: positive_integer_option(opts, :interval_ms, @default_interval_ms),
-      limit: positive_integer_option(opts, :limit, @default_limit),
-      pages: positive_integer_option(opts, :pages, @default_pages),
+        OptionNormalization.non_negative_integer_option(
+          opts,
+          :initial_delay_ms,
+          @default_initial_delay_ms
+        ),
+      interval_ms:
+        OptionNormalization.positive_integer_option(opts, :interval_ms, @default_interval_ms),
+      limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
+      pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
       runner: Keyword.get(opts, :runner, &CJFeedDiscovery.run/1)
     }
 
@@ -93,16 +99,17 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   end
 
   defp log_result({:error, _reason}, opts) do
-    Logger.warning(
-      "CJ feed discovery failed " <>
-        "advertiser_country=#{opts[:advertiser_country]} limit=#{opts[:limit]} " <>
-        "pages=#{opts[:pages]} cursor=#{inspect(opts[:cursor])}"
-    )
+    log_warning_result("CJ feed discovery failed", opts)
   end
 
   defp log_result(_unexpected, opts) do
+    log_warning_result("CJ feed discovery returned unexpected result", opts)
+  end
+
+  defp log_warning_result(prefix, opts) do
     Logger.warning(
-      "CJ feed discovery returned unexpected result " <>
+      prefix <>
+        " " <>
         "advertiser_country=#{opts[:advertiser_country]} limit=#{opts[:limit]} " <>
         "pages=#{opts[:pages]} cursor=#{inspect(opts[:cursor])}"
     )
@@ -126,20 +133,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
       _other ->
         default
-    end
-  end
-
-  defp non_negative_integer_option(opts, key, default) do
-    case Keyword.get(opts, key, default) do
-      value when is_integer(value) and value >= 0 -> value
-      _invalid -> default
-    end
-  end
-
-  defp positive_integer_option(opts, key, default) do
-    case Keyword.get(opts, key, default) do
-      value when is_integer(value) and value > 0 -> value
-      _invalid -> default
     end
   end
 end

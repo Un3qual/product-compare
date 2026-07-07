@@ -87,7 +87,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert second_product_id == relay_id(:product, second_product.id)
       assert first_brand_id == relay_id(:brand, first_product.brand_id)
       assert second_brand_id == relay_id(:brand, second_product.brand_id)
-      assert length(edges) == 4
+      assert [_, _, _, _] = edges
 
       Enum.each(merchant_products, fn {merchant_product, merchant, latest_price} ->
         assert Enum.any?(edges, fn edge ->

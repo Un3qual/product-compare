@@ -59,6 +59,6 @@ defmodule ProductCompare.DataCase do
   defp atomize_key(key) do
     String.to_existing_atom(key)
   rescue
-    ArgumentError -> String.to_atom(key)
+    ArgumentError -> key
   end
 end

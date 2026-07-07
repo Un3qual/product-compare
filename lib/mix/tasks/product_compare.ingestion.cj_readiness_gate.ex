@@ -5,10 +5,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @shortdoc "Checks CJ ingestion readiness"
@@ -81,8 +81,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
   defp build_report(opts) do
     missing_required = missing_required_env_vars()
     credentials_ready = missing_required == []
-    discovery_fresh = fresh?(latest_success(@discovery_surface), opts.max_discovery_age_hours)
-    import_fresh = fresh?(latest_success(@import_surface), opts.max_import_age_hours)
+
+    discovery_fresh =
+      @discovery_surface
+      |> CJRunReadiness.latest_success()
+      |> CJRunReadiness.fresh?(opts.max_discovery_age_hours)
+
+    import_fresh =
+      @import_surface
+      |> CJRunReadiness.latest_success()
+      |> CJRunReadiness.fresh?(opts.max_import_age_hours)
+
     candidate_count = candidate_count()
     shortlisted_count = shortlisted_count()
 
@@ -110,22 +119,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       _value -> false
     end
   end
-
-  defp latest_success(surface) do
-    ImportRun
-    |> where([run], run.provider == @provider)
-    |> where([run], run.surface == ^surface)
-    |> where([run], run.status == "succeeded")
-    |> order_by([run], desc_nulls_last: run.finished_at, desc: run.started_at, desc: run.id)
-    |> limit(1)
-    |> Repo.one()
-  end
-
-  defp fresh?(%ImportRun{finished_at: %DateTime{} = finished_at}, max_age_hours) do
-    DateTime.diff(DateTime.utc_now(), finished_at, :second) <= max_age_hours * 60 * 60
-  end
-
-  defp fresh?(_latest_success, _max_age_hours), do: false
 
   defp candidate_count do
     MerchantFeedCandidate

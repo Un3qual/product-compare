@@ -109,5 +109,19 @@ defmodule ProductCompare.Taxonomy.UseCaseAndGuardrailTest do
                  slug: "invalid-product-#{System.unique_integer([:positive])}"
                })
     end
+
+    test "update_product/2 falls back to existing primary type taxon when attrs contain nil" do
+      product = SpecsFixtures.product_fixture(%{slug: "nil-primary-type-product"})
+
+      assert {:ok, updated_product} =
+               Catalog.update_product(product, %{
+                 primary_type_taxon_id: nil,
+                 name: "Updated Nil Primary Type Product"
+               })
+
+      assert updated_product.id == product.id
+      assert updated_product.primary_type_taxon_id == product.primary_type_taxon_id
+      assert updated_product.name == "Updated Nil Primary Type Product"
+    end
   end
 end

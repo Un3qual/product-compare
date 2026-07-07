@@ -40,6 +40,37 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Product-Facing Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/merchants/index.tsx`
+  - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+  - `docs/work/frontend-merchant-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/merchants` renders safe external website links from current
+  merchant data and leaves unsafe domains as non-link text.
+
+### Merchant Directory Website Links Evidence
+
+- Added route coverage for domain-only website link normalization, already
+  absolute HTTPS links, and non-HTTP merchant domains remaining text only.
+- RED verification:
+  `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  failed as expected with 2 missing-link failures and 8 passing tests.
+- GREEN verification:
+  `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  passed with 10 tests and 0 failures.
+- Typecheck:
+  `cd assets && bun run typecheck` completed with exit 0 in the final
+  integrated batch.
+- Diff hygiene: `git diff --check` passed with exit 0.
+
 ## Verification
 
 - Plan creation verified the existing backend contract by reading `ARCHITECTURE.md`, `docs/plans/INDEX.md`, `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/pricing_resolver.ex`, and the local `assets/schema.graphql` merchant types.

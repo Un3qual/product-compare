@@ -8,6 +8,7 @@ defmodule ProductCompare.Ingestion.SourceHealth do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Repo
 
   @default_recent_failure_hours 168
@@ -128,21 +129,12 @@ defmodule ProductCompare.Ingestion.SourceHealth do
   defp recent_failure_hours(opts) do
     opts
     |> Keyword.get(:recent_failure_hours, @default_recent_failure_hours)
-    |> normalize_recent_failure_hours()
-    |> max(@min_recent_failure_hours)
-    |> min(@max_recent_failure_hours)
+    |> OptionNormalization.bounded_integer(
+      default: @default_recent_failure_hours,
+      min: @min_recent_failure_hours,
+      max: @max_recent_failure_hours
+    )
   end
-
-  defp normalize_recent_failure_hours(value) when is_integer(value), do: value
-
-  defp normalize_recent_failure_hours(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {hours, ""} -> hours
-      _invalid -> @default_recent_failure_hours
-    end
-  end
-
-  defp normalize_recent_failure_hours(_value), do: @default_recent_failure_hours
 
   defp utc_datetime(nil), do: nil
   defp utc_datetime(%DateTime{} = datetime), do: datetime

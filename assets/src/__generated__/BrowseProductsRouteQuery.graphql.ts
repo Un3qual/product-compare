@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<60dfc9eadc03a86d9c0b3a89ad5e6a28>>
+ * @generated SignedSource<<2fce86a9685d81d6e389ee2fd557f855>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -44,6 +44,12 @@ export type BrowseProductsRouteQuery$data = {
           readonly id: string;
           readonly name: string;
         };
+        readonly currentAttributes: ReadonlyArray<{
+          readonly code: string;
+          readonly displayName: string;
+          readonly sortOrder: number | null | undefined;
+          readonly valueText: string;
+        }>;
         readonly id: string;
         readonly name: string;
         readonly slug: string;
@@ -159,6 +165,45 @@ v5 = [
                   (v4/*: any*/)
                 ],
                 "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "ProductAttributeValue",
+                "kind": "LinkedField",
+                "name": "currentAttributes",
+                "plural": true,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "code",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "displayName",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "valueText",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "sortOrder",
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
               }
             ],
             "storageKey": null
@@ -221,16 +266,16 @@ return {
     "selections": (v5/*: any*/)
   },
   "params": {
-    "cacheID": "ade30c356994495ca6a975a9b1cf4903",
+    "cacheID": "71396ef3a0dee1ba77f1cd153ca68ae7",
     "id": null,
     "metadata": {},
     "name": "BrowseProductsRouteQuery",
     "operationKind": "query",
-    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        currentAttributes {\n          code\n          displayName\n          valueText\n          sortOrder\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "80b99607b965862d84f257e9741b83e2";
+(node as any).hash = "505713db801527641776b9d0a3f4bf3f";
 
 export default node;

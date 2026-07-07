@@ -32,21 +32,13 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   def upsert_affiliate_program(_parent, %{input: input}, %{
         context: %{current_user: _current_user}
       }) do
-    with {:ok, attrs} <-
-           normalize_attrs(input, [:affiliate_network_id, :merchant_id], program_attrs()),
-         {:ok, program} <- Affiliate.upsert_program(attrs) do
-      {:ok, %{program: program, errors: []}}
-    else
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {field, message} = GraphQLErrors.changeset_first_error(changeset)
-        {:ok, mutation_error_payload(:program, "INVALID_ARGUMENT", message, field)}
-
-      {:error, {:invalid_id, field}} ->
-        {:ok, mutation_error_payload(:program, "INVALID_ID", invalid_id_message(field), field)}
-
-      {:error, reason} when is_binary(reason) ->
-        {:ok, mutation_error_payload(:program, "INVALID_ARGUMENT", reason)}
-    end
+    affiliate_mutation(
+      :program,
+      input,
+      [:affiliate_network_id, :merchant_id],
+      program_attrs(),
+      &Affiliate.upsert_program/1
+    )
   end
 
   def upsert_affiliate_program(_parent, _args, _resolution),
@@ -55,21 +47,13 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @spec upsert_affiliate_link(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
   def upsert_affiliate_link(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
-    with {:ok, attrs} <-
-           normalize_attrs(input, [:merchant_product_id, :affiliate_network_id], link_attrs()),
-         {:ok, link} <- Affiliate.upsert_link(attrs) do
-      {:ok, %{link: link, errors: []}}
-    else
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {field, message} = GraphQLErrors.changeset_first_error(changeset)
-        {:ok, mutation_error_payload(:link, "INVALID_ARGUMENT", message, field)}
-
-      {:error, {:invalid_id, field}} ->
-        {:ok, mutation_error_payload(:link, "INVALID_ID", invalid_id_message(field), field)}
-
-      {:error, reason} when is_binary(reason) ->
-        {:ok, mutation_error_payload(:link, "INVALID_ARGUMENT", reason)}
-    end
+    affiliate_mutation(
+      :link,
+      input,
+      [:merchant_product_id, :affiliate_network_id],
+      link_attrs(),
+      &Affiliate.upsert_link/1
+    )
   end
 
   def upsert_affiliate_link(_parent, _args, _resolution),
@@ -78,25 +62,13 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @spec create_coupon(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
   def create_coupon(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
-    with {:ok, attrs} <-
-           normalize_attrs(
-             input,
-             [:merchant_id, :affiliate_network_id, :artifact_id],
-             coupon_attrs()
-           ),
-         {:ok, coupon} <- Affiliate.create_coupon(attrs) do
-      {:ok, %{coupon: coupon, errors: []}}
-    else
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {field, message} = GraphQLErrors.changeset_first_error(changeset)
-        {:ok, mutation_error_payload(:coupon, "INVALID_ARGUMENT", message, field)}
-
-      {:error, {:invalid_id, field}} ->
-        {:ok, mutation_error_payload(:coupon, "INVALID_ID", invalid_id_message(field), field)}
-
-      {:error, reason} when is_binary(reason) ->
-        {:ok, mutation_error_payload(:coupon, "INVALID_ARGUMENT", reason)}
-    end
+    affiliate_mutation(
+      :coupon,
+      input,
+      [:merchant_id, :affiliate_network_id, :artifact_id],
+      coupon_attrs(),
+      &Affiliate.create_coupon/1
+    )
   end
 
   def create_coupon(_parent, _args, _resolution),
@@ -157,6 +129,24 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   defp normalize_attrs(attrs, id_fields, attr_fields) do
     with {:ok, attrs} <- normalize_ids(attrs, id_fields) do
       {:ok, Input.take(attrs, attr_fields)}
+    end
+  end
+
+  defp affiliate_mutation(entity_field, input, id_fields, attr_fields, save_fun) do
+    with {:ok, attrs} <- normalize_attrs(input, id_fields, attr_fields),
+         {:ok, entity} <- save_fun.(attrs) do
+      {:ok, %{entity_field => entity, errors: []}}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {field, message} = GraphQLErrors.changeset_first_error(changeset)
+        {:ok, mutation_error_payload(entity_field, "INVALID_ARGUMENT", message, field)}
+
+      {:error, {:invalid_id, field}} ->
+        {:ok,
+         mutation_error_payload(entity_field, "INVALID_ID", invalid_id_message(field), field)}
+
+      {:error, reason} when is_binary(reason) ->
+        {:ok, mutation_error_payload(entity_field, "INVALID_ARGUMENT", reason)}
     end
   end
 

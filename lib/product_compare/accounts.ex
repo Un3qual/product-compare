@@ -6,6 +6,7 @@ defmodule ProductCompare.Accounts do
   import Ecto.Query
 
   alias ProductCompare.Accounts.UserAuth
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
@@ -347,13 +348,13 @@ defmodule ProductCompare.Accounts do
   def list_reputation_events(user_id, opts \\ []) do
     limit =
       opts
-      |> get_pagination_value(:limit, @default_reputation_events_limit)
-      |> clamp_limit(@default_reputation_events_limit, @max_reputation_events_limit)
+      |> Input.pagination_value(:limit, @default_reputation_events_limit)
+      |> Input.clamp_limit(@default_reputation_events_limit, @max_reputation_events_limit)
 
     offset =
       opts
-      |> get_pagination_value(:offset, 0)
-      |> clamp_non_negative(0)
+      |> Input.pagination_value(:offset, 0)
+      |> Input.clamp_non_negative(0)
 
     Repo.all(
       from e in ReputationEvent,
@@ -364,41 +365,10 @@ defmodule ProductCompare.Accounts do
     )
   end
 
-  defp get_pagination_value(opts, key, default) when is_list(opts) do
-    opts
-    |> Keyword.get(key, default)
-    |> parse_pagination_value(default)
-  end
-
-  defp get_pagination_value(opts, key, default) when is_map(opts) do
-    opts
-    |> Map.get(key, Map.get(opts, Atom.to_string(key), default))
-    |> parse_pagination_value(default)
-  end
-
-  defp get_pagination_value(_opts, _key, default), do: default
-
-  defp parse_pagination_value(value, _default) when is_integer(value), do: value
-
-  defp parse_pagination_value(value, default) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> parsed
-      _ -> default
-    end
-  end
-
-  defp parse_pagination_value(_value, default), do: default
-
   defp user_missing_password_hash?(%User{hashed_password: hashed_password}) do
     is_nil(hashed_password) or hashed_password == "" or
       not String.starts_with?(hashed_password, "$argon2")
   end
-
-  defp clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
-  defp clamp_limit(_value, default, _max), do: default
-
-  defp clamp_non_negative(value, _default) when is_integer(value) and value >= 0, do: value
-  defp clamp_non_negative(_value, default), do: default
 
   # Accounts currently authenticate via API tokens. For user rows created
   # without password input, generate a random 256-bit hex placeholder so
@@ -475,7 +445,7 @@ defmodule ProductCompare.Accounts do
         token_hash: token_hash,
         expires_at: api_token_expiry(attrs, now)
       }
-      |> maybe_put(:label, fetch_attr(attrs, :label))
+      |> maybe_put(:label, Input.fetch_attr(attrs, :label))
 
     case %ApiToken{}
          |> ApiToken.changeset(token_attrs)
@@ -526,7 +496,7 @@ defmodule ProductCompare.Accounts do
   defp merge_rotation_defaults(attrs, token) do
     attrs
     |> ensure_map()
-    |> maybe_put(:label, fetch_attr(attrs, :label) || token.label)
+    |> maybe_put(:label, Input.fetch_attr(attrs, :label) || token.label)
   end
 
   defp api_token_active?(%ApiToken{revoked_at: nil, expires_at: expires_at}, now) do
@@ -543,7 +513,7 @@ defmodule ProductCompare.Accounts do
 
   defp token_list_status_filter(opts) when is_map(opts) do
     opts
-    |> fetch_attr(:status)
+    |> Input.fetch_attr(:status)
     |> normalize_api_token_status_filter()
   end
 
@@ -582,8 +552,8 @@ defmodule ProductCompare.Accounts do
   defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
   defp api_token_expiry(attrs, now) do
-    if attr_key_present?(attrs, :expires_at) do
-      explicit_api_token_expiry(fetch_attr(attrs, :expires_at), now)
+    if Input.attr_key_present?(attrs, :expires_at) do
+      explicit_api_token_expiry(Input.fetch_attr(attrs, :expires_at), now)
     else
       default_api_token_expiry(now)
     end
@@ -598,18 +568,6 @@ defmodule ProductCompare.Accounts do
 
   defp default_api_token_expiry(now),
     do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-  end
-
-  defp fetch_attr(_attrs, _key), do: nil
-
-  defp attr_key_present?(attrs, key) when is_map(attrs) do
-    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
-  end
-
-  defp attr_key_present?(_attrs, _key), do: false
 
   defp ensure_map(attrs) when is_map(attrs), do: attrs
   defp ensure_map(_attrs), do: %{}

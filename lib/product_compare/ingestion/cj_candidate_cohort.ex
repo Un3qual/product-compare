@@ -11,6 +11,7 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
   import Ecto.Query
   import ProductCompare.Ingestion.FitScore, only: [merchant_feed_candidate_fit_score: 1]
 
+  alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
@@ -126,19 +127,10 @@ defmodule ProductCompare.Ingestion.CJCandidateCohort do
   defp limit(opts) do
     opts
     |> Keyword.get(:limit, @default_limit)
-    |> normalize_limit()
-    |> max(@min_limit)
-    |> min(@max_limit)
+    |> OptionNormalization.bounded_integer(
+      default: @default_limit,
+      min: @min_limit,
+      max: @max_limit
+    )
   end
-
-  defp normalize_limit(value) when is_integer(value), do: value
-
-  defp normalize_limit(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {limit, ""} -> limit
-      _invalid -> @default_limit
-    end
-  end
-
-  defp normalize_limit(_value), do: @default_limit
 end

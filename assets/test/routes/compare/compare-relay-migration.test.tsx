@@ -369,7 +369,9 @@ test("compare route saves the current selection through a Relay mutation", async
       })
     );
   });
-  expect(await screen.findByRole("status")).toHaveTextContent("Comparison saved.");
+  expect(
+    await screen.findByRole("status", { name: "Save comparison status" })
+  ).toHaveTextContent("Comparison saved.");
 });
 
 test("saved comparisons loader preloads saved-set pages through Relay", async () => {
@@ -428,7 +430,7 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
   expect(mockedFetchGraphQL).not.toHaveBeenCalled();
 });
 
-test("saved comparisons route renders saved sets from Relay route queries", () => {
+test("saved comparisons route renders loader summaries while retaining Relay route queries", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     savedSetQueries: [savedComparisonsRouteQueryDescriptor],
@@ -447,56 +449,19 @@ test("saved comparisons route renders saved sets from Relay route queries", () =
 
     throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
   });
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === savedComparisonsQueryRef) {
-      return {
-        mySavedComparisonSets: {
-          edges: [
-            {
-              node: {
-                id: "saved-set-1",
-                name: "Relay saved set",
-                items: [
-                  {
-                    position: 1,
-                    product: {
-                      slug: DETAIL_PRODUCT.slug
-                    }
-                  },
-                  {
-                    position: 2,
-                    product: {
-                      slug: SECOND_PRODUCT.slug
-                    }
-                  }
-                ]
-              }
-            }
-          ],
-          pageInfo: {
-            hasNextPage: false,
-            endCursor: null
-          }
-        }
-      };
-    }
-
-    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
-  });
-
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
     </MemoryRouter>
   );
 
-  expect(screen.getByText("Relay saved set")).toBeInTheDocument();
-  expect(screen.queryByText("Fallback saved set")).not.toBeInTheDocument();
-  expect(screen.getByText(`${DETAIL_PRODUCT.slug}, ${SECOND_PRODUCT.slug}`)).toBeInTheDocument();
+  expect(screen.getByText("Fallback saved set")).toBeInTheDocument();
+  expect(screen.getByText("fallback-product")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     savedComparisonsRouteQueryDescriptor
   );
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
 test("saved comparisons route deletes saved sets through a Relay mutation", async () => {

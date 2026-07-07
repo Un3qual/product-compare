@@ -47,6 +47,7 @@ Schema modules live under `ProductCompareSchemas` and remain schema-only.
 
 - `mix test`
 - `mix typecheck`
+- `mix quality`
 - `mix precommit`
 - `mix ci`
 

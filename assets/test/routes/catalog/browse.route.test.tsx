@@ -70,6 +70,19 @@ const emptyCatalogFilters = {
   enums: []
 };
 type MockRouteQueryRef = { dispose: () => void; variables: Variables };
+type BrowseProductAttributeFixture = {
+  code: string;
+  displayName: string;
+  valueText: string;
+  sortOrder?: number | null;
+  groupLabel?: string | null;
+};
+type BrowseProductFixture = {
+  currentAttributes?: ReadonlyArray<BrowseProductAttributeFixture>;
+  id: string;
+  name: string;
+  slug: string;
+};
 
 const buildBrowseLoaderArgs = ({
   environment = createRelayEnvironment(),
@@ -167,6 +180,16 @@ function getBrowseProductsRouteQueryArtifact() {
   };
 }
 
+function buildBrowseProductAttributes(
+  attributes: ReadonlyArray<BrowseProductAttributeFixture> = []
+) {
+  return attributes.map((attribute) => ({
+    ...attribute,
+    groupLabel: attribute.groupLabel ?? null,
+    sortOrder: attribute.sortOrder ?? null
+  }));
+}
+
 function buildBrowseProductsConnection({
   endCursor,
   hasNextPage,
@@ -174,11 +197,7 @@ function buildBrowseProductsConnection({
 }: {
   endCursor: string | null;
   hasNextPage: boolean;
-  products: Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>;
+  products: Array<BrowseProductFixture>;
 }) {
   return {
     edges: products.map((product, index) => ({
@@ -189,7 +208,8 @@ function buildBrowseProductsConnection({
         brand: {
           id: `brand-${product.id}`,
           name: `Brand for ${product.name}`
-        }
+        },
+        currentAttributes: buildBrowseProductAttributes(product.currentAttributes)
       }
     })),
     pageInfo: {
@@ -206,11 +226,7 @@ function buildBrowseProductsResponse({
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
-  products?: Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>;
+  products?: Array<BrowseProductFixture>;
 } = {}) {
   return {
     products: buildBrowseProductsConnection({
@@ -903,6 +919,17 @@ test("browse route query keeps URL-driven pages as separate store entries", () =
   expect(artifact.params?.metadata?.connection).toBeUndefined();
 });
 
+test("browse route query includes current specification teaser fields", () => {
+  const artifact = getBrowseProductsRouteQueryArtifact();
+
+  expect(artifact.params?.text).toContain("currentAttributes");
+  expect(artifact.params?.text).toContain("code");
+  expect(artifact.params?.text).toContain("displayName");
+  expect(artifact.params?.text).toContain("valueText");
+  expect(artifact.params?.text).toContain("sortOrder");
+  expect(artifact.params?.text).not.toContain("groupLabel");
+});
+
 test("Relay store reads each URL-driven browse page without previous page edges", () => {
   const environment = createRelayEnvironment();
   const firstPageOperation = createOperationDescriptor(browseProductsRouteQueryArtifact, {
@@ -965,7 +992,8 @@ test("renders browse products from the Relay route query", () => {
               brand: {
                 id: "brand-1",
                 name: "Acme"
-              }
+              },
+              currentAttributes: []
             }
           },
           {
@@ -977,7 +1005,8 @@ test("renders browse products from the Relay route query", () => {
               brand: {
                 id: "brand-2",
                 name: "Globex"
-              }
+              },
+              currentAttributes: []
             }
           }
         ],
@@ -1022,6 +1051,98 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
+});
+
+test("renders bounded specification highlights on browse product cards", () => {
+  renderBrowseRouteWithRelayData({
+    productData: buildBrowseProductsResponse({
+      products: [
+        {
+          id: "product-spec-rich",
+          name: "Spec Rich Product",
+          slug: "spec-rich-product",
+          currentAttributes: [
+            {
+              code: "screen_size",
+              displayName: "Screen Size",
+              valueText: "15 inches",
+              sortOrder: 20,
+              groupLabel: "Display"
+            },
+            {
+              code: "battery_life",
+              displayName: "Battery Life",
+              valueText: "12 hours",
+              sortOrder: 10,
+              groupLabel: "Power"
+            },
+            {
+              code: "weight",
+              displayName: "Weight",
+              valueText: "3 lb",
+              sortOrder: 30,
+              groupLabel: "Build"
+            },
+            {
+              code: "connectivity",
+              displayName: "Connectivity",
+              valueText: "Wi-Fi 6",
+              sortOrder: 40,
+              groupLabel: "Networking"
+            }
+          ]
+        },
+        {
+          id: "product-one-spec",
+          name: "One Spec Product",
+          slug: "one-spec-product",
+          currentAttributes: [
+            {
+              code: "panel_type",
+              displayName: "Panel Type",
+              valueText: "OLED",
+              sortOrder: 10,
+              groupLabel: "Display"
+            }
+          ]
+        },
+        {
+          id: "product-empty-specs",
+          name: "Empty Specs Product",
+          slug: "empty-specs-product",
+          currentAttributes: []
+        }
+      ]
+    })
+  });
+
+  const richProductCard = screen.getByRole("article", { name: "Spec Rich Product" });
+  const richHighlights = within(richProductCard).getByRole("list", {
+    name: "Specification highlights"
+  });
+  const richHighlightRows = within(richHighlights).getAllByRole("listitem");
+
+  expect(richHighlightRows).toHaveLength(3);
+  expect(richHighlightRows[0]).toHaveTextContent("Battery Life: 12 hours");
+  expect(richHighlightRows[1]).toHaveTextContent("Screen Size: 15 inches");
+  expect(richHighlightRows[2]).toHaveTextContent("Weight: 3 lb");
+  expect(within(richProductCard).queryByText("Connectivity: Wi-Fi 6")).not.toBeInTheDocument();
+
+  const oneSpecProductCard = screen.getByRole("article", { name: "One Spec Product" });
+  const oneSpecHighlights = within(oneSpecProductCard).getByRole("list", {
+    name: "Specification highlights"
+  });
+
+  expect(within(oneSpecHighlights).getAllByRole("listitem")).toHaveLength(1);
+  expect(within(oneSpecHighlights).getByText("Panel Type: OLED")).toBeInTheDocument();
+
+  const emptySpecProductCard = screen.getByRole("article", { name: "Empty Specs Product" });
+
+  expect(
+    within(emptySpecProductCard).queryByRole("list", {
+      name: "Specification highlights"
+    })
+  ).not.toBeInTheDocument();
 });
 
 test("renders metadata-backed catalog filter controls", () => {
@@ -2043,7 +2164,8 @@ test("resets the local unavailable state when fresh loader data arrives", async 
                 brand: {
                   id: "brand-recovered",
                   name: "Recovered Brand"
-                }
+                },
+                currentAttributes: []
               }
             }
           ],

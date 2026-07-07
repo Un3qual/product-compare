@@ -14,22 +14,13 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership. The
 2026-06-29 usable-product batch, the product filtering and in-depth comparison
-batch, and the persistent compare tray follow-up completed. The CJ read-model
-and weekly operator-runbook batch is active in the live queue as one parallel
-batch.
+batch, the persistent compare tray follow-up, the CJ read-model plus weekly
+operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
+completed. The live queue has no ready rows.
 
 Active implementation plans:
 
-- `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`
-- `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-- `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
+- None.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -54,6 +45,27 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Product-facing follow-up batch:
+  `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`,
+  `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`,
+  `docs/plans/2026-07-02-offer-discovery-sort-and-highlights-implementation-plan.md`,
+  `docs/plans/2026-07-02-saved-comparisons-sort-controls-implementation-plan.md`,
+  and
+  `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`.
+
+- CJ read-model and weekly operator-runbook batch:
+  `docs/plans/2026-07-01-cj-candidate-cohort-read-model-implementation-plan.md`,
+  `docs/plans/2026-07-01-cj-candidate-market-coverage-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`,
+  `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`,
+  and
+  `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`.
 
 - Product filtering, persistent compare tray, and CJ batch promotion:
   `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`,

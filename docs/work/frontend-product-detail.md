@@ -71,6 +71,39 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Product-Facing Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-02-product-detail-offer-summary-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products/:slug` summarizes the visible active-offer page
+  without changing empty, unavailable, paginated, coupon, price-history, or
+  compare-selection behavior.
+
+### Product Detail Offer Summary Evidence
+
+- Implemented route-local `Offer snapshot` rendering above the visible active
+  offer list. The summary is derived from the already loaded active-offer page:
+  visible offer count, lowest visible price with merchant name, loaded coupon
+  availability count, and missing latest price count. Empty visible-offer pages
+  omit the snapshot.
+- RED: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - 33 tests, 1 failed as expected because the route had no accessible
+    `Offer snapshot` region.
+- GREEN: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - 33 tests, 0 failures.
+- `cd assets && bun run --bun typecheck`
+  - `tsc --noEmit` completed with exit 0 using TypeScript 5.9.3.
+- `git diff --check` - completed with exit 0.
+
 ## Current Cross-Project Batch
 
 - Status: done.

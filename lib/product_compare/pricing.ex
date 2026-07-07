@@ -5,6 +5,7 @@ defmodule ProductCompare.Pricing do
 
   import Ecto.Query
 
+  alias ProductCompare.ChangesetErrors
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -21,7 +22,7 @@ defmodule ProductCompare.Pricing do
     # name-based imports and domain-based imports should converge to one row.
     case upsert_merchant_on_name(changeset, now) do
       {:error, %Ecto.Changeset{} = error_changeset} ->
-        if unique_error_on_field?(error_changeset, :domain) do
+        if ChangesetErrors.unique_error_on_field?(error_changeset, :domain) do
           upsert_merchant_on_domain(changeset, now)
         else
           {:error, error_changeset}
@@ -227,12 +228,5 @@ defmodule ProductCompare.Pricing do
       nil -> raise ArgumentError, "missing required #{key} filter"
       value -> value
     end
-  end
-
-  defp unique_error_on_field?(%Ecto.Changeset{errors: errors}, field) do
-    Enum.any?(errors, fn
-      {^field, {_message, opts}} -> opts[:constraint] == :unique
-      _ -> false
-    end)
   end
 end

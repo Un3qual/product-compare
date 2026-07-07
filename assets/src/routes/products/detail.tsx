@@ -17,6 +17,8 @@ import {
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/selection-tray";
+import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
+import { externalHttpUrlHref } from "../external-links";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -253,18 +255,19 @@ function ProductOffers({
   const data = usePreloadedQuery<ProductOffersRouteQuery>(productOffersRouteQuery, queryRef);
   const offers = data.merchantProducts.edges.flatMap(({ node }) => {
     const safeUrl = normalizeOfferUrl(node.url);
-    const merchantName = node.merchant?.name;
 
-    if (!safeUrl || !merchantName) {
+    if (!safeUrl) {
       return [];
     }
 
     return [
       {
         id: node.id,
-        merchantName,
+        currency: normalizedCurrency(node.currency),
+        merchantName: productOfferMerchantName(node.merchant),
         url: safeUrl,
         priceText: formatPriceText(node.latestPrice?.price, node.currency),
+        numericPrice: decimalStringToNumber(node.latestPrice?.price),
         coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
         couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
         priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
@@ -306,7 +309,8 @@ function ProductOffers({
 
   return (
     <>
-      <ul>
+      <OfferSnapshot summary={buildOfferSnapshotSummary(offers)} />
+      <ul aria-label="Active offer list">
         {offers.map((offer) => (
           <li key={offer.id}>
             <a href={offer.url} target="_blank" rel="noopener noreferrer">
@@ -329,6 +333,107 @@ function ProductOffers({
       {paginationLinks}
     </>
   );
+}
+
+type ProductOfferNode =
+  ProductOffersRouteQuery["response"]["merchantProducts"]["edges"][number]["node"];
+
+function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
+  return merchant?.name ?? "Visit offer";
+}
+
+type VisibleProductOffer = {
+  currency: string | null;
+  id: string;
+  merchantName: string;
+  url: string;
+  priceText: string | null;
+  numericPrice: number | null;
+  coupons: ReturnType<typeof buildCouponRows>;
+  couponsHasMore: boolean;
+  priceHistory: ReturnType<typeof buildPriceHistoryRows>;
+  priceHistoryHasMore: boolean;
+};
+
+type OfferSnapshotSummary = {
+  visibleOfferCount: number;
+  lowestVisiblePriceText: string | null;
+  couponAvailabilityCount: number;
+  missingPriceCount: number;
+};
+
+function OfferSnapshot({ summary }: { summary: OfferSnapshotSummary }) {
+  const titleId = useId();
+
+  return (
+    <section aria-labelledby={titleId}>
+      <h3 id={titleId}>Offer snapshot</h3>
+      <dl>
+        <div>
+          <dt>Visible active offers</dt>
+          <dd>{summary.visibleOfferCount}</dd>
+        </div>
+        <div>
+          <dt>Lowest visible price</dt>
+          <dd>{summary.lowestVisiblePriceText ?? "No visible prices"}</dd>
+        </div>
+        <div>
+          <dt>Coupon availability</dt>
+          <dd>{formatCouponAvailabilityCount(summary.couponAvailabilityCount)}</dd>
+        </div>
+        <div>
+          <dt>Missing latest price</dt>
+          <dd>{formatOfferCount(summary.missingPriceCount)}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function buildOfferSnapshotSummary(
+  offers: ReadonlyArray<VisibleProductOffer>
+): OfferSnapshotSummary {
+  const visiblePricedOffers = offers.filter(hasVisiblePrice);
+  const lowestPricedOffer =
+    visiblePricedOffers.length > 0 && canComparePrices(visiblePricedOffers)
+      ? visiblePricedOffers.reduce((lowestOffer, offer) =>
+          offer.numericPrice < lowestOffer.numericPrice ? offer : lowestOffer
+        )
+      : null;
+
+  return {
+    visibleOfferCount: offers.length,
+    lowestVisiblePriceText: lowestVisiblePriceText(lowestPricedOffer, visiblePricedOffers),
+    couponAvailabilityCount: offers.filter(
+      (offer) => offer.coupons.length > 0 || offer.couponsHasMore
+    ).length,
+    missingPriceCount: offers.filter((offer) => !hasVisiblePrice(offer)).length
+  };
+}
+
+function hasVisiblePrice(
+  offer: VisibleProductOffer
+): offer is VisibleProductOffer & { currency: string; numericPrice: number; priceText: string } {
+  return offer.numericPrice !== null && offer.priceText !== null && offer.currency !== null;
+}
+
+function canComparePrices(offers: ReadonlyArray<VisibleProductOffer & { currency: string }>) {
+  return canComparePriceCurrencies(offers.map((offer) => offer.currency));
+}
+
+function lowestVisiblePriceText(
+  lowestPricedOffer:
+    | (VisibleProductOffer & { currency: string; numericPrice: number; priceText: string })
+    | null,
+  visiblePricedOffers: ReadonlyArray<VisibleProductOffer & { currency: string }>
+) {
+  if (visiblePricedOffers.length > 0 && !canComparePrices(visiblePricedOffers)) {
+    return "Multiple currencies";
+  }
+
+  return lowestPricedOffer?.priceText
+    ? `${lowestPricedOffer.priceText} at ${lowestPricedOffer.merchantName}`
+    : null;
 }
 
 function productDetailPath(productSlug: string) {
@@ -499,7 +604,7 @@ function formatPriceText(price: unknown, currency: unknown) {
     return null;
   }
 
-  if (typeof price === "string" && price !== "") {
+  if (typeof price === "string" && decimalStringToNumber(price) !== null) {
     return `${price} ${currency}`;
   }
 
@@ -508,6 +613,16 @@ function formatPriceText(price: unknown, currency: unknown) {
   }
 
   return null;
+}
+
+function normalizedCurrency(currency: unknown) {
+  if (typeof currency !== "string") {
+    return null;
+  }
+
+  const trimmedCurrency = currency.trim();
+
+  return trimmedCurrency === "" ? null : trimmedCurrency;
 }
 
 function formatObservedDate(value: unknown) {
@@ -569,7 +684,15 @@ function formatFiniteNumberText(value: unknown) {
     return null;
   }
 
-  return Number.isFinite(Number(trimmedValue)) ? trimmedValue : null;
+  return decimalStringToNumber(trimmedValue) !== null ? trimmedValue : null;
+}
+
+function formatCouponAvailabilityCount(count: number) {
+  return `${formatOfferCount(count)} with coupons`;
+}
+
+function formatOfferCount(count: number) {
+  return `${count} ${count === 1 ? "offer" : "offers"}`;
 }
 
 function normalizeOfferUrl(rawUrl: unknown): string | null {
@@ -577,11 +700,5 @@ function normalizeOfferUrl(rawUrl: unknown): string | null {
     return null;
   }
 
-  try {
-    const parsed = new URL(rawUrl);
-
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
-  } catch {
-    return null;
-  }
+  return externalHttpUrlHref(rawUrl);
 }

@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-01
+Updated: 2026-07-03
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -38,180 +38,64 @@ Persistent Compare Tray work is complete through
 `871fecb docs: record persistent compare tray verification`, and the compare,
 catalog, and detail lane docs record the completed evidence.
 
-The CJ read-model and weekly operator-runbook batch is now promoted as the live
-parallel batch. The batch is CJ-only and keeps application submission,
-account-manager automation, Tier-3 scraping, credential persistence, GraphQL/UI
-surfaces, scheduler behavior, network calls, mutations, CSV export paths, raw
-artifact exposure, account ids, tracking params, provider error payloads, and
-secret values out of scope.
+The CJ read-model and weekly operator-runbook batch is complete. The merchant
+identity quality read model, application readiness read model, and weekly
+operator runbook landed on the current stack and have completion evidence in
+`docs/work/product-data-scraping.md`.
+
+The product-facing follow-up batch is complete. It used existing frontend
+routes and GraphQL contracts, avoided CJ ingestion surfaces, and kept
+backend/schema work out of scope.
 
 ## Ready Work
 
-### Parallel Batch: CJ Read-Model And Weekly Operator Runbook
+None.
 
-Batch rules:
+## Blocked Work
 
-- Workers start from `docs/work/index.md`, `docs/work/operating-model.md`,
-  `docs/work/product-data-scraping.md`, and their row's active plan.
-- Parallel workers may edit only their row's owned paths and the named evidence
-  heading in `docs/work/product-data-scraping.md`.
-- Do not implement another row's read model, runbook, tests, or evidence
-  heading from the same worker branch.
-- CJ candidate CSV score export remains rejected and must not be promoted.
+### eBay Browse Fallback Connector
 
-#### CJ Candidate Freshness Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-candidate-freshness-read-model-implementation-plan.md`
-Next action: Add the read-only CJ candidate freshness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_candidate_freshness.ex`
-- `test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- `docs/work/product-data-scraping.md` under `### Candidate Freshness Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_candidate_freshness_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: Candidate freshness read model is covered by focused tests and completion evidence is recorded only under `### Candidate Freshness Evidence`.
-
-#### CJ Run Health Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-run-health-read-model-implementation-plan.md`
-Next action: Add the read-only CJ run health aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_run_health.ex`
-- `test/product_compare/ingestion/cj_run_health_test.exs`
-- `docs/work/product-data-scraping.md` under `### Run Health Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_run_health_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ run health read model is covered by focused tests and completion evidence is recorded only under `### Run Health Evidence`.
-
-#### CJ Run Throughput Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-run-throughput-read-model-implementation-plan.md`
-Next action: Add the read-only CJ run throughput aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_run_throughput.ex`
-- `test/product_compare/ingestion/cj_run_throughput_test.exs`
-- `docs/work/product-data-scraping.md` under `### Run Throughput Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_run_throughput_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ run throughput read model is covered by focused tests and completion evidence is recorded only under `### Run Throughput Evidence`.
-
-#### CJ Import Artifact Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-import-artifact-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ import artifact quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_import_artifact_quality.ex`
-- `test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Import Artifact Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_import_artifact_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ import artifact quality read model is covered by focused tests and completion evidence is recorded only under `### Import Artifact Quality Evidence`.
-
-#### CJ Import Price Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-import-price-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ import price quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_import_price_quality.ex`
-- `test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Import Price Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_import_price_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ import price quality read model is covered by focused tests and completion evidence is recorded only under `### Import Price Quality Evidence`.
-
-#### CJ Merchant Identity Quality Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
-Next action: Add the read-only CJ merchant identity quality aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_merchant_identity_quality.ex`
-- `test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- `docs/work/product-data-scraping.md` under `### Merchant Identity Quality Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_merchant_identity_quality_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ merchant identity quality read model is covered by focused tests and completion evidence is recorded only under `### Merchant Identity Quality Evidence`.
-
-#### CJ Application Readiness Read Model
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
-Next action: Add the read-only CJ application readiness aggregate and focused tests without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credentials, account ids, application submission, or CSV export paths.
-Owned paths:
-
-- `lib/product_compare/ingestion/cj_application_readiness.ex`
-- `test/product_compare/ingestion/cj_application_readiness_test.exs`
-- `docs/work/product-data-scraping.md` under `### Application Readiness Evidence` only
-Verification:
-
-- `mix test test/product_compare/ingestion/cj_application_readiness_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-Exit condition: CJ application readiness read model is covered by focused tests and completion evidence is recorded only under `### Application Readiness Evidence`.
-
-#### CJ Weekly Operator Runbook
-
-Status: ready
-Lane: Product data scraping (`docs/work/product-data-scraping.md`)
-Active plan: `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
-Next action: Write the docs-only weekly CJ operator runbook without adding scheduler behavior, network calls, GraphQL fields, browser routes, mutations, credential persistence, application submission, account-manager automation, Tier-3 scraping, or CSV export paths.
-Owned paths:
-
-- `docs/runbooks/cj-weekly-operator-loop.md`
-- `docs/work/product-data-scraping.md` under `### Weekly Operator Runbook Evidence` only
-Verification:
-
-- `rg -n "T[O]DO|T[B]D|CJ candidate CSV score export is all[o]wed|CJ_(API_T[O]KEN|ACCOUNT_ID)=[^[:space:]]+" docs/runbooks/cj-weekly-operator-loop.md` exits 1 with no matches
-- `git diff --check`
-Exit condition: The weekly operator runbook exists, avoids unfinished placeholders and secret-looking assignments, and completion evidence is recorded only under `### Weekly Operator Runbook Evidence`.
+Status: blocked
+Lane: Product ingestion (`docs/work/product-data-scraping.md`)
+Blocker: CJ validation records that the approved CJ account lacks usable product
+catalog scope.
+Unblock condition: record CJ catalog-scope evidence or an explicit product
+decision to pursue the fallback connector.
 
 ## Just Completed
 
+The 2026-07-03 product-facing follow-up batch completed these five work items:
+
+- Frontend catalog browse: `/products` cards now show bounded current-spec
+  teasers from the existing `Product.currentAttributes` contract.
+- Frontend product detail: `/products/:slug` now summarizes the visible
+  active-offer page with loaded-offer count, lowest visible price, coupon
+  availability, and missing-price count.
+- Frontend offer discovery: `/offers` now preserves route-local sort controls
+  through filters and pagination and applies sort-specific labels to the first
+  visible numeric price result.
+- Frontend saved comparisons: `/compare/saved` now sorts loaded saved sets by
+  current order, name, and product count while preserving filter, reopen, and
+  delete behavior.
+- Frontend merchant discovery: `/merchants` now renders safe merchant website
+  links while leaving unsafe domains as text.
+
+The CJ read-model and weekly operator-runbook batch is complete and no longer
+live queue work. The lane evidence records final gates for:
+
+- CJ candidate cohort.
+- CJ candidate market coverage.
+- CJ candidate freshness.
+- CJ run health.
+- CJ run throughput.
+- CJ import artifact quality.
+- CJ import price quality.
+- CJ merchant identity quality.
+- CJ application readiness.
+- CJ weekly operator runbook.
+
 The 2026-06-30 first product filtering and in-depth comparison parallel batch
-and dependent catalog UI follow-up completed these three work items:
+and dependent catalog UI follow-up completed these work items:
 
 - Backend filter metadata/facets: GraphQL now exposes
   `productFilterMetadata(filters:)` with display-safe counts, ranges, selected

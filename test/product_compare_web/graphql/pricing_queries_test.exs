@@ -626,7 +626,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                }
              } = response
 
-      assert length(edges) == 4
+      assert [_, _, _, _] = edges
 
       Enum.each(merchant_products, fn {merchant_product, merchant, latest_price} ->
         assert Enum.any?(edges, fn edge ->
@@ -648,7 +648,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                end)
       end)
 
-      assert length(queries) == 4
+      assert [_, _, _, _] = queries
     end
   end
 

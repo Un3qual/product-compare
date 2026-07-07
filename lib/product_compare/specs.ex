@@ -8,6 +8,7 @@ defmodule ProductCompare.Specs do
   alias Ecto.Multi
   alias ProductCompare.Repo
   alias ProductCompare.Specs.UnitConversion
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.Dimension
@@ -25,72 +26,37 @@ defmodule ProductCompare.Specs do
 
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
-    now = DateTime.utc_now()
-    changeset = Dimension.changeset(%Dimension{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:code],
-      returning: true
-    )
+    upsert_by_conflict(Dimension, attrs, [:code])
   end
 
   @spec upsert_unit(map()) :: {:ok, Unit.t()} | {:error, Ecto.Changeset.t()}
   def upsert_unit(attrs) do
-    now = DateTime.utc_now()
-    changeset = Unit.changeset(%Unit{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:dimension_id, :code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:dimension_id, :code],
-      returning: true
-    )
+    upsert_by_conflict(Unit, attrs, [:dimension_id, :code])
   end
 
   @spec upsert_enum_set(map()) :: {:ok, EnumSet.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_set(attrs) do
-    now = DateTime.utc_now()
-    changeset = EnumSet.changeset(%EnumSet{}, attrs)
-
-    update_fields =
-      changeset.changes
-      |> Map.drop([:code])
-      |> Map.to_list()
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:code],
-      returning: true
-    )
+    upsert_by_conflict(EnumSet, attrs, [:code])
   end
 
   @spec upsert_enum_option(map()) :: {:ok, EnumOption.t()} | {:error, Ecto.Changeset.t()}
   def upsert_enum_option(attrs) do
+    upsert_by_conflict(EnumOption, attrs, [:enum_set_id, :code])
+  end
+
+  defp upsert_by_conflict(schema_module, attrs, conflict_fields) do
     now = DateTime.utc_now()
-    changeset = EnumOption.changeset(%EnumOption{}, attrs)
+    changeset = schema_module.changeset(struct(schema_module), attrs)
 
     update_fields =
       changeset.changes
-      |> Map.drop([:enum_set_id, :code])
+      |> Map.drop(conflict_fields)
       |> Map.to_list()
 
     Repo.insert(
       changeset,
       on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:enum_set_id, :code],
+      conflict_target: conflict_fields,
       returning: true
     )
   end
@@ -112,12 +78,12 @@ defmodule ProductCompare.Specs do
     )
   end
 
-  @spec convert_to_base(Decimal.t() | number(), term()) ::
-          {:ok, Decimal.t()} | {:error, :unit_not_found}
+  @spec convert_to_base(Decimal.t() | number() | binary(), term()) ::
+          {:ok, Decimal.t()} | {:error, :unit_not_found | :invalid_decimal}
   def convert_to_base(value_num, unit_id) when valid_id_guard(unit_id) do
     case Repo.get(Unit, unit_id) do
       nil -> {:error, :unit_not_found}
-      unit -> {:ok, UnitConversion.to_base(value_num, unit)}
+      unit -> to_base(value_num, unit)
     end
   end
 
@@ -517,6 +483,7 @@ defmodule ProductCompare.Specs do
          typed_value
        ) do
     with {:ok, value_num} <- fetch_typed_value(typed_value, :value_num),
+         {:ok, value_num} <- to_decimal(value_num),
          {:ok, unit_id} <- fetch_typed_value(typed_value, :unit_id),
          {:ok, unit} <- fetch_unit(unit_id, dimension_id),
          {:ok, value_num_base_min} <-
@@ -533,9 +500,8 @@ defmodule ProductCompare.Specs do
              :value_num_max,
              unit
            ),
+         {:ok, value_num_base} <- to_base(value_num, unit),
          :ok <- validate_numeric_range(value_num_base_min, value_num_base_max) do
-      value_num_base = UnitConversion.to_base(value_num, unit)
-
       {:ok,
        %{
          value_num: value_num,
@@ -659,7 +625,7 @@ defmodule ProductCompare.Specs do
 
       {nil, source_unit_value} ->
         with {:ok, source_decimal} <- to_decimal(source_unit_value) do
-          {:ok, UnitConversion.to_base(source_decimal, unit)}
+          to_base(source_decimal, unit)
         end
 
       {_base_value, _source_unit_value} ->
@@ -678,16 +644,21 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  defp to_decimal(%Decimal{} = value), do: {:ok, value}
-  defp to_decimal(value) when is_integer(value), do: {:ok, Decimal.new(value)}
-  defp to_decimal(value) when is_float(value), do: {:ok, Decimal.from_float(value)}
+  defp to_decimal(%Decimal{} = value), do: {:ok, DecimalInput.to_decimal(value)}
 
-  defp to_decimal(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> {:error, :invalid_decimal}
+  defp to_decimal(value) when is_integer(value) or is_float(value) or is_binary(value) do
+    case DecimalInput.to_decimal(value) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, :invalid_decimal}
     end
   end
 
   defp to_decimal(_value), do: {:error, :invalid_decimal_type}
+
+  defp to_base(value, unit) do
+    case UnitConversion.to_base(value, unit) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, :invalid_decimal}
+    end
+  end
 end

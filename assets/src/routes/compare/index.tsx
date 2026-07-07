@@ -194,7 +194,7 @@ export function CompareRoute() {
         }
         title="Compare products"
       >
-        <p aria-live="polite" role="status">
+        <p aria-label="Save comparison status" aria-live="polite" role="status">
           {activeSaveFeedback.message ?? ""}
         </p>
         {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}

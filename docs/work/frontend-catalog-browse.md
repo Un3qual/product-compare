@@ -100,6 +100,41 @@
   - `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Completed Product-Facing Batch
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` cards show bounded current-spec teasers without
+  regressing filters, pagination, or compare-selection URL behavior.
+
+### Catalog Product Card Spec Teasers Evidence
+
+- Implemented:
+  - `BrowseProductsRouteQuery` now requests product `currentAttributes` fields
+    needed for browse-card specification teasers.
+  - `/products` cards now render a `Specification highlights` list with at most
+    three rows in Relay response order.
+  - Cards with no current attributes omit the specification teaser list.
+- Verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "specification highlights|current specification"` failed with 2 expected failures because the query did not select `currentAttributes` and cards did not render a `Specification highlights` list.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx -t "specification highlights|current specification"` - 2 tests passed, 47 skipped.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx` - 49 tests, 0 failures.
+  - Final integration: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
+
 ## Current Cross-Project Batch
 
 - Status: done.

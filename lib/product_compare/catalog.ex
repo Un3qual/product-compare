@@ -8,6 +8,7 @@ defmodule ProductCompare.Catalog do
 
   alias ProductCompare.Catalog.FilterMetadata
   alias ProductCompare.Catalog.Filtering
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Accounts.User
@@ -73,7 +74,7 @@ defmodule ProductCompare.Catalog do
   def update_product(%Product{} = product, attrs) do
     with :ok <- validate_primary_type_taxon(attrs, product) do
       product
-      |> Product.changeset(attrs)
+      |> Product.changeset(drop_nil_primary_type_taxon(attrs))
       |> Repo.update()
     end
   end
@@ -232,7 +233,7 @@ defmodule ProductCompare.Catalog do
       Enum.any?(product_ids, &(not is_integer(&1) or &1 <= 0)) ->
         {:error, :invalid_product_id}
 
-      length(product_ids) > 3 ->
+      Enum.count_until(product_ids, 4) > 3 ->
         {:error, :too_many_products}
 
       Enum.uniq(product_ids) != product_ids ->
@@ -244,15 +245,19 @@ defmodule ProductCompare.Catalog do
   end
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do
+    primary_type_taxon_id_key = "primary_type_taxon_id"
+
     value =
-      Map.get(attrs, :primary_type_taxon_id) ||
-        Map.get(attrs, "primary_type_taxon_id") ||
-        (product && product.primary_type_taxon_id)
+      case attrs do
+        %{primary_type_taxon_id: value} when not is_nil(value) -> value
+        %{^primary_type_taxon_id_key => value} when not is_nil(value) -> value
+        _ -> product && product.primary_type_taxon_id
+      end
 
     if is_nil(value) do
       {:error, :primary_type_taxon_required}
     else
-      with {:ok, primary_type_taxon_id} <- normalize_integer_id(value),
+      with {:ok, primary_type_taxon_id} <- Input.normalize_integer_id(value),
            {:ok, :type} <- Taxonomy.ensure_taxon_in_taxonomy(primary_type_taxon_id, "type") do
         :ok
       else
@@ -261,14 +266,17 @@ defmodule ProductCompare.Catalog do
     end
   end
 
-  defp normalize_integer_id(value) when is_integer(value), do: {:ok, value}
-
-  defp normalize_integer_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {parsed, ""} -> {:ok, parsed}
-      _ -> :error
-    end
+  defp drop_nil_primary_type_taxon(attrs) when is_map(attrs) do
+    attrs
+    |> drop_nil_key(:primary_type_taxon_id)
+    |> drop_nil_key("primary_type_taxon_id")
   end
 
-  defp normalize_integer_id(_value), do: :error
+  defp drop_nil_key(attrs, key) do
+    if Map.has_key?(attrs, key) and is_nil(Map.get(attrs, key)) do
+      Map.delete(attrs, key)
+    else
+      attrs
+    end
+  end
 end

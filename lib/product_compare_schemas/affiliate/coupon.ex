@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Affiliate.Coupon do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.DecimalInput
+
   @discount_types [:percent, :amount, :free_shipping, :other]
 
   @type t :: %__MODULE__{}
@@ -121,13 +123,8 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
   defp validate_discount_value_bounds(changeset, _discount_type, _discount_value), do: changeset
 
   defp decimal_gt?(value, threshold),
-    do: Decimal.compare(to_decimal(value), Decimal.new(threshold)) == :gt
+    do: Decimal.compare(DecimalInput.to_decimal(value), Decimal.new(threshold)) == :gt
 
   defp decimal_lte?(value, threshold),
-    do: Decimal.compare(to_decimal(value), Decimal.new(threshold)) in [:lt, :eq]
-
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
+    do: Decimal.compare(DecimalInput.to_decimal(value), Decimal.new(threshold)) in [:lt, :eq]
 end

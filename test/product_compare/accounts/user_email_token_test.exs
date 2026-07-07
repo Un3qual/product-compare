@@ -200,7 +200,7 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
           match?(%User{}, Accounts.authenticate_user_by_email_and_password(user.email, password))
         end)
 
-      assert length(successful_passwords) == 1
+      assert [_successful_password] = successful_passwords
       assert is_nil(Accounts.get_user_by_reset_password_token(token))
     end
 
