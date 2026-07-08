@@ -7,10 +7,11 @@ defmodule ProductCompare.CommerceAttribution do
 
   alias ProductCompare.Input
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateProgram
+  alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
-  alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
@@ -225,6 +226,7 @@ defmodule ProductCompare.CommerceAttribution do
     if CommerceLink.valid_destination_url?(affiliate_link.affiliate_url) do
       %{
         destination_url: affiliate_link.affiliate_url,
+        affiliate_program_id: affiliate_program_id(affiliate_link, merchant_product),
         link_type: :affiliate,
         merchant_id: merchant_product.merchant_id,
         network: commerce_network(affiliate_link),
@@ -238,6 +240,7 @@ defmodule ProductCompare.CommerceAttribution do
   defp merchant_product_destination(merchant_product) do
     %{
       destination_url: merchant_product.url,
+      affiliate_program_id: nil,
       link_type: :non_affiliate,
       merchant_id: merchant_product.merchant_id,
       network: nil,
@@ -250,6 +253,22 @@ defmodule ProductCompare.CommerceAttribution do
     |> Repo.get_by(merchant_product_id: merchant_product_id)
     |> Repo.preload(:affiliate_network)
   end
+
+  defp affiliate_program_id(
+         %AffiliateLink{affiliate_network_id: affiliate_network_id},
+         %MerchantProduct{merchant_id: merchant_id}
+       )
+       when is_integer(affiliate_network_id) and is_integer(merchant_id) do
+    case Repo.get_by(AffiliateProgram,
+           affiliate_network_id: affiliate_network_id,
+           merchant_id: merchant_id
+         ) do
+      %AffiliateProgram{id: affiliate_program_id} -> affiliate_program_id
+      nil -> nil
+    end
+  end
+
+  defp affiliate_program_id(_affiliate_link, _merchant_product), do: nil
 
   defp commerce_network(%AffiliateLink{affiliate_network: %{name: name}}) when is_binary(name) do
     name
@@ -282,6 +301,7 @@ defmodule ProductCompare.CommerceAttribution do
   defp commerce_link_attrs(destination) do
     %{
       merchant_id: destination.merchant_id,
+      affiliate_program_id: destination.affiliate_program_id,
       destination_url: destination.destination_url,
       link_type: destination.link_type,
       network: destination.network,

@@ -136,6 +136,9 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       affiliate_network = affiliate_network_fixture(%{name: "Impact"})
 
+      affiliate_program =
+        affiliate_program_fixture(%{affiliate_network: affiliate_network, merchant: merchant})
+
       {:ok, _affiliate_link} =
         Affiliate.upsert_link(%{
           merchant_product_id: merchant_product.id,
@@ -152,6 +155,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert %CommerceLink{
                destination_url: "https://affiliate.example.com/click/merchant-product",
+               affiliate_program_id: affiliate_program_id,
                link_type: :affiliate,
                merchant_id: merchant_id,
                network: :impact,
@@ -160,6 +164,7 @@ defmodule ProductCompare.CommerceAttributionTest do
              } = tracked_click.commerce_link
 
       assert merchant_id == merchant.id
+      assert affiliate_program_id == affiliate_program.id
       assert %CommerceClickSession{source_surface: :web} = tracked_click.click_session
       assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
 
@@ -992,7 +997,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     merchant_product
   end
 
-  defp affiliate_network_fixture(attrs) do
+  defp affiliate_network_fixture(attrs \\ %{}) do
     suffix = System.unique_integer([:positive])
 
     {:ok, affiliate_network} =
@@ -1001,6 +1006,22 @@ defmodule ProductCompare.CommerceAttributionTest do
       |> Affiliate.upsert_network()
 
     affiliate_network
+  end
+
+  defp affiliate_program_fixture(attrs) do
+    affiliate_network =
+      Map.get_lazy(attrs, :affiliate_network, fn -> affiliate_network_fixture() end)
+
+    merchant = Map.get_lazy(attrs, :merchant, fn -> merchant_fixture() end)
+
+    {:ok, affiliate_program} =
+      attrs
+      |> Map.drop([:affiliate_network, :merchant])
+      |> Map.put_new(:affiliate_network_id, affiliate_network.id)
+      |> Map.put_new(:merchant_id, merchant.id)
+      |> Affiliate.upsert_program()
+
+    affiliate_program
   end
 
   defp pacific_datetime(year, month, day, hour, minute, second) do
