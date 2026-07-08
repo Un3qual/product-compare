@@ -159,8 +159,10 @@ function OfferListItem({
           productName={offerProductName(offer.product)}
         />
         <OfferMerchantAction
+          isActive={offer.isActive}
           merchantName={merchantName}
           merchantProductId={offer.id}
+          merchantUrl={offer.url}
         />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
@@ -198,22 +200,36 @@ function OfferListItemHeader({
 }
 
 function OfferMerchantAction({
+  isActive,
   merchantProductId,
+  merchantUrl,
   merchantName
 }: {
+  isActive: boolean;
   merchantProductId: string;
+  merchantUrl: string;
   merchantName: string;
 }) {
-  if (!merchantProductId) {
+  if (isActive && merchantProductId) {
+    return (
+      <div>
+        <TrackedCommerceClickAction
+          label={merchantName}
+          merchantProductId={merchantProductId}
+        />
+      </div>
+    );
+  }
+
+  const directMerchantHref = externalHttpUrlHref(merchantUrl);
+
+  if (!directMerchantHref) {
     return null;
   }
 
   return (
     <div>
-      <TrackedCommerceClickAction
-        label={merchantName}
-        merchantProductId={merchantProductId}
-      />
+      <a href={directMerchantHref}>{merchantName}</a>
     </div>
   );
 }

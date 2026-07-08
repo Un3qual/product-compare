@@ -117,6 +117,27 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
   end
 
+  describe "CommerceLink.valid_destination_url?/1" do
+    test "rejects browser-canonicalized private IPv4 host forms" do
+      for destination_url <- [
+            "http://2130706433/",
+            "http://0x7f000001/",
+            "http://017700000001/",
+            "http://127.1/"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
+    test "accepts public DNS hostnames with numeric labels" do
+      assert CommerceLink.valid_destination_url?("https://123.example.com/offer")
+    end
+
+    test "accepts browser-canonicalized public IPv4 host forms" do
+      assert CommerceLink.valid_destination_url?("https://134744072/offer")
+    end
+  end
+
   describe "click sessions" do
     test "records a public click id and resolves the redirect destination" do
       commerce_link = commerce_link_fixture(%{link_type: :non_affiliate, network: nil})

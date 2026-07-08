@@ -137,37 +137,78 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   end
 
   defp parse_ipv4_address(hostname) do
-    octets = String.split(hostname, ".")
+    parts = String.split(hostname, ".")
 
-    with 4 <- length(octets),
-         {:ok, parsed_octets} <- parse_ipv4_octets(octets) do
-      {:ok, List.to_tuple(parsed_octets)}
+    with part_count when part_count in 1..4 <- length(parts),
+         {:ok, parsed_parts} <- parse_ipv4_number_parts(parts),
+         true <- valid_ipv4_number_parts?(parsed_parts) do
+      {:ok, ipv4_number_parts_to_address(parsed_parts)}
     else
       _invalid -> :error
     end
   end
 
-  defp parse_ipv4_octets(octets) do
-    Enum.reduce_while(octets, {:ok, []}, fn octet, {:ok, parsed_octets} ->
-      case parse_ipv4_octet(octet) do
-        {:ok, parsed_octet} -> {:cont, {:ok, [parsed_octet | parsed_octets]}}
+  defp parse_ipv4_number_parts(parts) do
+    Enum.reduce_while(parts, {:ok, []}, fn part, {:ok, parsed_parts} ->
+      case parse_ipv4_number_part(part) do
+        {:ok, parsed_part} -> {:cont, {:ok, [parsed_part | parsed_parts]}}
         :error -> {:halt, :error}
       end
     end)
     |> case do
-      {:ok, parsed_octets} -> {:ok, Enum.reverse(parsed_octets)}
+      {:ok, parsed_parts} -> {:ok, Enum.reverse(parsed_parts)}
       :error -> :error
     end
   end
 
-  defp parse_ipv4_octet(octet) do
-    with true <- String.match?(octet, ~r/^\d{1,3}$/),
-         {parsed_octet, ""} <- Integer.parse(octet),
-         true <- parsed_octet <= 255 do
-      {:ok, parsed_octet}
+  defp parse_ipv4_number_part(""), do: :error
+
+  defp parse_ipv4_number_part("0x" <> hex) when hex != "" do
+    parse_ipv4_number_part(hex, 16, ~r/^[0-9a-f]+$/)
+  end
+
+  defp parse_ipv4_number_part("0" <> octal) when octal != "" do
+    parse_ipv4_number_part(octal, 8, ~r/^[0-7]+$/)
+  end
+
+  defp parse_ipv4_number_part(decimal) do
+    parse_ipv4_number_part(decimal, 10, ~r/^\d+$/)
+  end
+
+  defp parse_ipv4_number_part(part, base, pattern) do
+    with true <- String.match?(part, pattern),
+         {parsed_part, ""} <- Integer.parse(part, base) do
+      {:ok, parsed_part}
     else
       _invalid -> :error
     end
+  end
+
+  defp valid_ipv4_number_parts?(parts) do
+    part_count = length(parts)
+    {leading_parts, [last_part]} = Enum.split(parts, part_count - 1)
+
+    Enum.all?(leading_parts, &(&1 <= 255)) and
+      last_part < Integer.pow(256, 5 - part_count)
+  end
+
+  defp ipv4_number_parts_to_address(parts) do
+    part_count = length(parts)
+    {leading_parts, [last_part]} = Enum.split(parts, part_count - 1)
+
+    address =
+      leading_parts
+      |> Enum.with_index()
+      |> Enum.reduce(last_part, fn {part, index}, address ->
+        address + part * Integer.pow(256, 3 - index)
+      end)
+
+    {
+      div(address, 16_777_216),
+      rem(div(address, 65_536), 256),
+      rem(div(address, 256), 256),
+      rem(address, 256)
+    }
   end
 
   defp reserved_ipv4_address?({first, second, third, _fourth}) do

@@ -355,6 +355,76 @@ test("offer discovery tracks merchant clicks with only the merchant product ID",
   );
 });
 
+test("offer discovery keeps active All offers rows on tracked merchant actions", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ activeOnly: false }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-active",
+          url: "https://merchant.example.com/active-offer",
+          isActive: true,
+          merchant: buildMerchant("merchant-active", "Active Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Active Market" });
+
+  expect(screen.getByText("All offers")).toBeVisible();
+  expect(merchantLink).toHaveAttribute(
+    "href",
+    "/r/merchant-product?merchantProductId=merchant-product-active"
+  );
+
+  fireEvent.click(merchantLink);
+
+  expect(commitCommerceClickMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      variables: {
+        input: {
+          merchantProductId: "merchant-product-active"
+        }
+      }
+    })
+  );
+});
+
+test("offer discovery renders inactive All offers rows as safe direct merchant links", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ activeOnly: false }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-inactive",
+          url: "https://merchant.example.com/inactive-offer",
+          isActive: false,
+          merchant: buildMerchant("merchant-inactive", "Inactive Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Inactive Market" });
+
+  expect(screen.getByText("All offers")).toBeVisible();
+  expect(screen.getByText("Inactive")).toBeVisible();
+  expect(merchantLink).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/inactive-offer"
+  );
+
+  merchantLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  fireEvent.click(merchantLink);
+
+  expect(commitCommerceClickMock).not.toHaveBeenCalled();
+});
+
 test("offer discovery renders tracked click errors without nested paragraph markup", () => {
   commitCommerceClickMock.mockImplementation(({ onCompleted }) => {
     onCompleted(
