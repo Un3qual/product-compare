@@ -1,12 +1,14 @@
 defmodule ProductCompare.CommerceAttributionTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ImpactAdapter
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
@@ -119,6 +121,99 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert {:error, :not_found} ==
                CommerceAttribution.redirect_destination(Ecto.UUID.generate())
+    end
+  end
+
+  describe "track_outbound_click/1" do
+    test "uses an existing affiliate link as the tracked redirect destination" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com/click/merchant-product"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://affiliate.example.com/click/merchant-product",
+               link_type: :affiliate,
+               merchant_id: merchant_id,
+               network: :impact,
+               backfilled_from_affiliate_links: true,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+      assert %CommerceClickSession{source_surface: :web} = tracked_click.click_session
+      assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
+
+      assert {:ok, "https://affiliate.example.com/click/merchant-product"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "falls back to the merchant product URL when no affiliate link exists" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               merchant_id: merchant_id,
+               network: nil,
+               backfilled_from_affiliate_links: false,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+      assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
+    end
+
+    test "rejects unknown merchant products without creating link or click records" do
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{merchant_product_id: 9_999_999})
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects unsafe stored merchant destinations without creating click records" do
+      merchant_product = merchant_product_fixture(%{url: "javascript:alert(1)"})
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id
+               })
+
+      assert "must be a valid http/https URL" in errors_on(changeset).destination_url
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
     end
   end
 
@@ -842,6 +937,17 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp affiliate_network_fixture(attrs) do
+    suffix = System.unique_integer([:positive])
+
+    {:ok, affiliate_network} =
+      attrs
+      |> Map.put_new(:name, "Affiliate Network #{suffix}")
+      |> Affiliate.upsert_network()
+
+    affiliate_network
   end
 
   defp pacific_datetime(year, month, day, hour, minute, second) do

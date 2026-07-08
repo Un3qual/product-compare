@@ -5,7 +5,8 @@
 - Status: completed
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-23 after commerce attribution Task 3 GraphQL tests, context regression, typecheck, and diff check passed
+- Last verified: 2026-07-08 after Commerce Offer Interaction focused attribution,
+  redirect, and GraphQL click tests passed
 - Detailed plan:
   - `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
   - `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
@@ -40,6 +41,27 @@
 - Next step: keep CJ/Awin source-field mapping deferred until account docs or sample payloads are available. Product data ingestion remains blocked in `docs/work/product-data-scraping.md` on first-source selection, ownership, and the ingestion execution ADR.
 
 ## Completed
+
+- Commerce Offer Interaction Batch completed on 2026-07-08:
+  - Added a first-party `trackCommerceClick(input:)` GraphQL mutation that
+    accepts only `merchantProductId` and returns a relative `/r/:click_id`
+    redirect path.
+  - Resolved outbound destinations server-side from an existing affiliate link
+    when present, otherwise from `merchant_products.url`; raw browser-provided
+    destinations are rejected at GraphQL input validation.
+  - Reused the existing `commerce_links`, `commerce_click_sessions`, and
+    `/r/:click_id` redirect structures. Link/session writes happen together so
+    invalid stored destinations do not create click sessions.
+  - Guardrails: eBay Browse fallback, ingestion dashboard/operator surfaces,
+    live provider credentials/application work, Tier-3 scraping, and CSV export
+    remain deferred and out of scope.
+  - RED evidence:
+    `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs` -
+    failed for missing `track_outbound_click/1` and absent
+    `trackCommerceClick` schema/input.
+  - GREEN evidence:
+    `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs` -
+    35 tests, 0 failures.
 
 - Task 3 completed on 2026-05-23:
   - Added a read-only `revenueSummary` GraphQL query backed by the Task 2 dashboard summary contract.

@@ -19,6 +19,7 @@ import {
   OfferDiscoveryFilterSummary
 } from "./filters";
 import { offerDiscoveryPath } from "./paths";
+import { TrackedCommerceClickAction } from "./tracked-commerce-click";
 
 type OfferConnection = NonNullable<
   OfferDiscoveryRouteQuery["response"]["merchantProducts"]
@@ -30,7 +31,6 @@ type CouponEdge = ActiveCouponsConnection["edges"][number];
 type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
 type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
 type RenderableOffer = {
-  href: string;
   latestPriceCurrency: string | null;
   latestPriceValue: number | null;
   offer: OfferNode;
@@ -120,7 +120,6 @@ function OfferDiscoveryList({
             <OfferListItem
               key={renderableOffer.offer.id}
               offer={renderableOffer.offer}
-              offerHref={renderableOffer.href}
               highlightLabel={priceSortHighlightLabel(
                 filters.sort,
                 index,
@@ -131,6 +130,7 @@ function OfferDiscoveryList({
           ))}
         </ul>
       )}
+      <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={connection} filters={filters} />
     </>
   );
@@ -138,11 +138,9 @@ function OfferDiscoveryList({
 
 function OfferListItem({
   offer,
-  offerHref,
   highlightLabel
 }: {
   offer: OfferNode;
-  offerHref: string;
   highlightLabel: string | null;
 }) {
   const priceHistory = priceHistoryConnection(offer.priceHistory);
@@ -156,7 +154,7 @@ function OfferListItem({
           isActive={offer.isActive}
           productName={offerProductName(offer.product)}
         />
-        <OfferMerchantLink href={offerHref} merchantName={merchantName} />
+        <OfferMerchantAction merchantName={merchantName} merchantProductId={offer.id} />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
         {highlightLabel ? <p>{highlightLabel}</p> : null}
@@ -192,22 +190,79 @@ function OfferListItemHeader({
   );
 }
 
-function OfferMerchantLink({
-  href,
+function OfferMerchantAction({
+  merchantProductId,
   merchantName
 }: {
-  href: string;
+  merchantProductId: string;
   merchantName: string;
 }) {
-  if (!href) {
+  if (!merchantProductId) {
     return null;
   }
 
   return (
     <p>
-      <a href={href}>{merchantName}</a>
+      <TrackedCommerceClickAction
+        label={merchantName}
+        merchantProductId={merchantProductId}
+      />
     </p>
   );
+}
+
+function VisibleMerchantFilters({
+  filters,
+  offers
+}: {
+  filters: OfferDiscoveryFilters;
+  offers: ReadonlyArray<RenderableOffer>;
+}) {
+  const merchants = visibleMerchants(offers);
+
+  if (merchants.length === 0) {
+    return null;
+  }
+
+  const activeMerchant = filters.merchantId
+    ? merchants.find((merchant) => merchant.id === filters.merchantId) ?? null
+    : null;
+  const filterableMerchants = merchants.filter((merchant) => merchant.id !== filters.merchantId);
+
+  if (!activeMerchant && filterableMerchants.length === 0) {
+    return null;
+  }
+
+  return (
+    <section aria-label="Merchant filters on this page">
+      {activeMerchant ? <p>{`Filtered to ${activeMerchant.name}`}</p> : null}
+      {filterableMerchants.length > 0 ? (
+        <ul>
+          {filterableMerchants.map((merchant) => (
+            <li key={merchant.id}>
+              <Link
+                to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}
+              >
+                {`Filter to ${merchant.name}`}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function visibleMerchants(offers: ReadonlyArray<RenderableOffer>) {
+  const merchants = new Map<string, string>();
+
+  for (const { offer } of offers) {
+    if (offer.merchant?.id && offer.merchant.name) {
+      merchants.set(offer.merchant.id, offer.merchant.name);
+    }
+  }
+
+  return Array.from(merchants, ([id, name]) => ({ id, name }));
 }
 
 function OfferMerchantDomain({ domain }: { domain: string | null }) {
@@ -371,12 +426,10 @@ function renderableOffers(connection: OfferConnection) {
   const offers: RenderableOffer[] = [];
 
   connection.edges.forEach(({ node: offer }, originalIndex) => {
-    const href = externalHttpUrlHref(offer.url);
     const latestPriceValue = numericLatestPrice(offer);
 
-    if (href) {
+    if (externalHttpUrlHref(offer.url)) {
       offers.push({
-        href,
         latestPriceCurrency: latestPriceValue === null ? null : offer.currency,
         latestPriceValue,
         offer,

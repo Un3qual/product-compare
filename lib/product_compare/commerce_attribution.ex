@@ -10,11 +10,21 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
+  alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @revenue_statuses [:approved, :paid]
   @max_bigint_id 9_223_372_036_854_775_807
+  @affiliate_network_names %{
+    "amazon" => :amazon_associates,
+    "amazon associates" => :amazon_associates,
+    "awin" => :awin,
+    "cj" => :cj,
+    "commission junction" => :cj,
+    "impact" => :impact,
+    "rakuten" => :rakuten
+  }
 
   @commerce_link_upsert_fields [
     :network,
@@ -66,6 +76,26 @@ defmodule ProductCompare.CommerceAttribution do
     %CommerceClickSession{}
     |> CommerceClickSession.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec track_outbound_click(map()) ::
+          {:ok,
+           %{
+             commerce_link: CommerceLink.t(),
+             click_session: CommerceClickSession.t(),
+             redirect_path: String.t()
+           }}
+          | {:error, :merchant_product_not_found | Ecto.Changeset.t()}
+  def track_outbound_click(attrs) do
+    with {:ok, merchant_product_id} <- normalize_merchant_product_id(attrs),
+         {:ok, destination} <- trusted_click_destination(merchant_product_id) do
+      attrs
+      |> persist_tracked_click(destination)
+      |> unwrap_transaction()
+    else
+      :error -> {:error, :merchant_product_not_found}
+      {:error, _reason} = error -> error
+    end
   end
 
   @spec redirect_destination(String.t()) :: {:ok, String.t()} | {:error, :not_found}
@@ -162,6 +192,110 @@ defmodule ProductCompare.CommerceAttribution do
         where: session.click_id == ^click_id and link.is_active == true,
         select: link.destination_url,
         limit: 1
+    )
+  end
+
+  defp normalize_merchant_product_id(attrs) do
+    attrs
+    |> Input.fetch_attr(:merchant_product_id)
+    |> Input.normalize_integer_id()
+  end
+
+  defp trusted_click_destination(merchant_product_id) do
+    case Repo.get(MerchantProduct, merchant_product_id) do
+      %MerchantProduct{} = merchant_product ->
+        {:ok, destination_from_merchant_product(merchant_product)}
+
+      nil ->
+        {:error, :merchant_product_not_found}
+    end
+  end
+
+  defp destination_from_merchant_product(merchant_product) do
+    case affiliate_link_for_merchant_product(merchant_product.id) do
+      %AffiliateLink{} = affiliate_link ->
+        %{
+          destination_url: affiliate_link.affiliate_url,
+          link_type: :affiliate,
+          merchant_id: merchant_product.merchant_id,
+          network: commerce_network(affiliate_link),
+          backfilled_from_affiliate_links: true
+        }
+
+      nil ->
+        %{
+          destination_url: merchant_product.url,
+          link_type: :non_affiliate,
+          merchant_id: merchant_product.merchant_id,
+          network: nil,
+          backfilled_from_affiliate_links: false
+        }
+    end
+  end
+
+  defp affiliate_link_for_merchant_product(merchant_product_id) do
+    AffiliateLink
+    |> Repo.get_by(merchant_product_id: merchant_product_id)
+    |> Repo.preload(:affiliate_network)
+  end
+
+  defp commerce_network(%AffiliateLink{affiliate_network: %{name: name}}) when is_binary(name) do
+    name
+    |> String.downcase()
+    |> String.trim()
+    |> then(&Map.get(@affiliate_network_names, &1))
+  end
+
+  defp commerce_network(_affiliate_link), do: nil
+
+  defp persist_tracked_click(attrs, destination) do
+    Repo.transaction(fn ->
+      with {:ok, commerce_link} <- upsert_commerce_link(commerce_link_attrs(destination)),
+           {:ok, click_session} <-
+             create_click_session(click_session_attrs(attrs, commerce_link.id)) do
+        %{
+          commerce_link: commerce_link,
+          click_session: click_session,
+          redirect_path: "/r/#{click_session.click_id}"
+        }
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  defp unwrap_transaction({:ok, tracked_click}), do: {:ok, tracked_click}
+  defp unwrap_transaction({:error, reason}), do: {:error, reason}
+
+  defp commerce_link_attrs(destination) do
+    %{
+      merchant_id: destination.merchant_id,
+      destination_url: destination.destination_url,
+      link_type: destination.link_type,
+      network: destination.network,
+      backfilled_from_affiliate_links: destination.backfilled_from_affiliate_links,
+      is_active: true
+    }
+  end
+
+  defp click_session_attrs(attrs, commerce_link_id) do
+    attrs
+    |> take_click_session_attrs()
+    |> Map.put(:commerce_link_id, commerce_link_id)
+    |> Map.put_new(:source_surface, :web)
+  end
+
+  defp take_click_session_attrs(attrs) do
+    Enum.reduce(
+      [:user_id, :anonymous_id, :source_surface, :referrer, :user_agent_hash, :ip_hash],
+      %{},
+      fn
+        field, acc ->
+          case Input.fetch_attr(attrs, field) do
+            nil -> acc
+            value -> Map.put(acc, field, value)
+          end
+      end
     )
   end
 

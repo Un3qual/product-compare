@@ -5,7 +5,8 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-29 after offer filter context verification
+- Last verified: 2026-07-08 after Commerce Offer Interaction focused offer
+  route verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -39,6 +40,45 @@
     22 tests, 0 failures.
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
+
+## Commerce Offer Interaction Batch
+
+- Status: done.
+- Owned paths:
+  - `assets/schema.graphql`
+  - `assets/src/routes/products/**`
+  - `assets/src/routes/offers/**`
+  - related product/offers route tests
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Scope:
+  - Product detail and `/offers` merchant actions now use the first-party
+    `trackCommerceClick` GraphQL mutation and submit only `merchantProductId`.
+  - `/offers` derives visible merchant quick filters from loaded offer rows,
+    labels the active merchant filter from the visible merchant name when
+    available, preserves `productId`, `activeOnly`, `first`, and `sort`, and
+    drops stale `after` cursors when applying a merchant filter.
+  - Unsafe offer rows remain filtered out by the existing safe URL gate; null
+    merchant rows keep their fallback merchant action label and do not create
+    merchant filter links.
+- Guardrails:
+  - No raw destination URL is accepted from the browser.
+  - eBay Browse fallback, ingestion dashboard/operator surfaces, live provider
+    credentials/application work, Tier-3 scraping, and CSV export remain out of
+    scope.
+- Evidence:
+  - RED:
+    `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx test/routes/offers/offer-discovery-loader.test.ts` -
+    14 expected failures for missing mutation-backed merchant actions and
+    missing row merchant quick filters.
+  - GREEN:
+    `cd assets && bun run relay` - completed and compiled 32 reader, 31
+    normalization, and 31 operation text documents.
+  - GREEN:
+    `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx test/routes/offers/offer-discovery-loader.test.ts` -
+    84 tests, 0 failures.
+  - Final:
+    `cd assets && bun run typecheck` - `tsc --noEmit` completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Completed Product-Facing Batch
 

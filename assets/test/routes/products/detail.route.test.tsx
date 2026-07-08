@@ -1,7 +1,7 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -15,14 +15,20 @@ import { ProductDetailRoute } from "../../../src/routes/products/detail";
 
 const {
   fetchRouteQueryMock,
+  commitCommerceClickMock,
+  graphqlMock,
   preloadRouteQueryMock,
   useLoaderDataMock,
+  useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
   fetchRouteQueryMock: vi.fn(),
+  commitCommerceClickMock: vi.fn(),
+  graphqlMock: vi.fn(),
   preloadRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
 }));
@@ -45,6 +51,8 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    graphql: graphqlMock,
+    useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
 });
@@ -61,6 +69,7 @@ vi.mock("react-router-dom", async () => {
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -147,10 +156,13 @@ const buildProductDetailLoaderArgs = ({
 
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();
+  commitCommerceClickMock.mockReset();
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
+  useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
+  mockedUseMutation.mockReturnValue([commitCommerceClickMock, false] as never);
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
 });
@@ -446,13 +458,60 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
-    "href",
-    "https://merchant.example.com/detail-product"
-  );
+  expect(screen.getByRole("button", { name: "Acme" })).toBeVisible();
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
+});
+
+test("product detail tracks merchant clicks with only the merchant product ID", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Acme" }));
+
+  expect(commitCommerceClickMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      variables: {
+        input: {
+          merchantProductId: "merchant-product-1"
+        }
+      }
+    })
+  );
+  expect(JSON.stringify(commitCommerceClickMock.mock.calls[0]?.[0]?.variables)).not.toContain(
+    "https://merchant.example.com/detail-product"
+  );
 });
 
 test("renders offers with valid urls and null merchants using a fallback label", () => {
@@ -487,10 +546,7 @@ test("renders offers with valid urls and null merchants using a fallback label",
   );
 
   expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
-    "href",
-    "https://merchant.example.com/detail-product"
-  );
+  expect(screen.getByRole("button", { name: "Visit offer" })).toBeVisible();
   expect(screen.getByText("179.00 USD")).toBeInTheDocument();
   expect(within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(
     "179.00 USD at Visit offer"
@@ -623,7 +679,7 @@ test("renders an offer snapshot from the visible active offer page", () => {
   expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
   expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
   expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
-  expect(within(offersList).getByRole("link", { name: "Bad Price Shop" })).toBeVisible();
+  expect(within(offersList).getByRole("button", { name: "Bad Price Shop" })).toBeVisible();
   expect(within(offersList).queryByText("not-a-price USD")).not.toBeInTheDocument();
 });
 
@@ -927,7 +983,7 @@ test("renders active coupon details for product offers", () => {
       </MemoryRouter>
     );
 
-    const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+    const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
 
     expect(offerItem).not.toBeNull();
     const offer = within(offerItem as HTMLElement);
@@ -1067,7 +1123,7 @@ test("renders offers when a merchant has no active coupons", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
   expect(within(offerItem as HTMLElement).getByText("199.99 USD")).toBeVisible();
@@ -1162,7 +1218,7 @@ test("renders active offer price history rows", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
@@ -1233,7 +1289,7 @@ test("renders empty price history state for active offers", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
@@ -1592,10 +1648,7 @@ test("renders an offer without a latest price", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
-    "href",
-    "https://merchant.example.com/detail-product"
-  );
+  expect(screen.getByRole("button", { name: "Acme" })).toBeVisible();
   expect(screen.queryByText("199.99 USD")).not.toBeInTheDocument();
 });
 
@@ -1664,7 +1717,7 @@ test.each([
   );
 
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: "Acme" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Acme" })).not.toBeInTheDocument();
 });
 
 test("renders an unavailable-offers message without collapsing the product detail", () => {

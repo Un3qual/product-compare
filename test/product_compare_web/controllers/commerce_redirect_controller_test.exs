@@ -35,6 +35,17 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       assert response(conn, 404) == "redirect not found"
     end
+
+    test "redirects tracked merchant product clicks through the first-party path", %{conn: conn} do
+      merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
+
+      {:ok, tracked_click} =
+        CommerceAttribution.track_outbound_click(%{merchant_product_id: merchant_product.id})
+
+      conn = get(conn, tracked_click.redirect_path)
+
+      assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
+    end
   end
 
   defp click_session_fixture(commerce_link) do
@@ -74,6 +85,25 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       })
 
     merchant
+  end
+
+  defp merchant_product_fixture(attrs) do
+    merchant = Map.get(attrs, :merchant, merchant_fixture())
+    suffix = System.unique_integer([:positive])
+    product = ProductCompare.Fixtures.SpecsFixtures.product_fixture()
+
+    params =
+      attrs
+      |> Map.drop([:merchant, :product])
+      |> Map.put_new(:merchant_id, merchant.id)
+      |> Map.put_new(:product_id, product.id)
+      |> Map.put_new(:url, "https://merchant.example.com/products/#{suffix}")
+      |> Map.put_new(:currency, "usd")
+      |> Map.put_new(:external_sku, "sku-#{suffix}")
+      |> Map.put_new(:is_active, true)
+
+    {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
+    merchant_product
   end
 
   defp unsafe_commerce_link_fixture(destination_url) do
