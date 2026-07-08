@@ -198,7 +198,7 @@ export function AuthField({
         {...stylex.props(styles.input)}
         autoComplete={autoComplete}
         aria-describedby={errorId}
-        aria-invalid={Boolean(error) || undefined}
+        aria-invalid={error ? true : undefined}
         id={name}
         name={name}
         required={required}
