@@ -260,6 +260,51 @@ defmodule ProductCompare.CommerceAttributionTest do
                CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
     end
 
+    test "preserves an existing commerce link network when a tracked affiliate network is unmapped" do
+      merchant = merchant_fixture()
+      destination_url = "https://affiliate.example.com/click/preserved-network"
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      {:ok, existing_link} =
+        CommerceAttribution.upsert_commerce_link(%{
+          merchant_id: merchant.id,
+          destination_url: destination_url,
+          link_type: :affiliate,
+          network: :impact,
+          is_active: true
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Unknown Network"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: destination_url
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert tracked_click.commerce_link.id == existing_link.id
+      assert tracked_click.commerce_link.network == :impact
+
+      assert {:ok, redirect_destination} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+
+      assert redirect_destination ==
+               "#{destination_url}?ClickId=#{tracked_click.click_session.click_id}"
+    end
+
     test "falls back to the merchant product URL when no affiliate link exists" do
       merchant = merchant_fixture()
 

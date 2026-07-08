@@ -346,7 +346,11 @@ defmodule ProductCompare.CommerceAttribution do
     destination
     |> commerce_link_attrs()
     |> Map.delete(:is_active)
+    |> drop_nil_tracked_network()
   end
+
+  defp drop_nil_tracked_network(%{network: nil} = attrs), do: Map.delete(attrs, :network)
+  defp drop_nil_tracked_network(attrs), do: attrs
 
   defp ensure_commerce_link_active(%CommerceLink{is_active: true}), do: :ok
 
