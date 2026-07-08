@@ -366,6 +366,26 @@ test("offer discovery resolves tracked redirects against the API origin", () => 
   ).toBe("http://localhost:4000/r/click-123?merchantProductId=merchant-product-1");
 });
 
+test("offer discovery rejects tracked redirects outside the API origin", () => {
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl(
+      "https://attacker.example/r/click-123",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toThrow("same origin");
+
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl(
+      "//attacker.example/r/click-123",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toThrow("same origin");
+
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl("javascript:alert(1)", "http://localhost:4000/api/graphql")
+  ).toThrow("same origin");
+});
+
 test("offer discovery blocks pending tracked merchant action re-clicks", () => {
   mockedUseMutation.mockReturnValue([commitCommerceClickMock, true] as never);
 

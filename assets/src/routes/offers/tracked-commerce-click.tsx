@@ -100,6 +100,11 @@ export function resolveTrackedCommerceRedirectUrl(
   graphQLEndpoint = resolveGraphQLEndpoint()
 ) {
   const endpointUrl = new URL(graphQLEndpoint);
+  const redirectUrl = new URL(redirectPath, endpointUrl.origin);
 
-  return new URL(redirectPath, endpointUrl.origin).toString();
+  if (redirectUrl.origin !== endpointUrl.origin) {
+    throw new Error("Tracked commerce redirect must resolve to the same origin");
+  }
+
+  return redirectUrl.toString();
 }

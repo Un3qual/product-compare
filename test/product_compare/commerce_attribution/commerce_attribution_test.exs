@@ -133,7 +133,20 @@ defmodule ProductCompare.CommerceAttributionTest do
             "http://2130706433/",
             "http://0x7f000001/",
             "http://017700000001/",
-            "http://127.1/"
+            "http://127.1/",
+            "http://１２７.０.０.１/",
+            "http://127。0。0。1/",
+            "http://127．0．0．1/",
+            "http://127｡0｡0｡1/"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
+    test "rejects http URLs with malformed explicit ports" do
+      for destination_url <- [
+            "https://affiliate.example.com:abc/click",
+            "https://affiliate.example.com:99999/click"
           ] do
         refute CommerceLink.valid_destination_url?(destination_url)
       end
@@ -401,6 +414,60 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert merchant_id == merchant.id
 
       assert {:ok, "https://merchant.example.com/direct-product"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "falls back to the merchant product URL when the affiliate URL has a malformed port" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com:abc/click"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               network: nil,
+               backfilled_from_affiliate_links: false
+             } = tracked_click.commerce_link
+    end
+
+    test "normalizes browser-accepted merchant product URLs before tracking" do
+      merchant_product =
+        merchant_product_fixture(%{
+          url: " https://merchant.example.com/path with spaces?q=a b "
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/path%20with%20spaces?q=a%20b",
+               link_type: :non_affiliate
+             } = tracked_click.commerce_link
+
+      assert {:ok, "https://merchant.example.com/path%20with%20spaces?q=a%20b"} =
                CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
     end
 

@@ -247,7 +247,7 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp merchant_product_destination(merchant_product) do
     %{
-      destination_url: merchant_product.url,
+      destination_url: normalize_browser_accepted_merchant_url(merchant_product.url),
       affiliate_program_id: nil,
       link_type: :non_affiliate,
       merchant_id: merchant_product.merchant_id,
@@ -255,6 +255,14 @@ defmodule ProductCompare.CommerceAttribution do
       backfilled_from_affiliate_links: false
     }
   end
+
+  defp normalize_browser_accepted_merchant_url(url) when is_binary(url) do
+    url
+    |> String.trim()
+    |> String.replace(" ", "%20")
+  end
+
+  defp normalize_browser_accepted_merchant_url(url), do: url
 
   defp affiliate_link_for_merchant_product(merchant_product_id) do
     AffiliateLink

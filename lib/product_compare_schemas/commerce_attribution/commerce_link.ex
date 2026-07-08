@@ -11,6 +11,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   @punycode_damp 700
   @punycode_initial_bias 72
   @punycode_initial_n 128
+  @idna_dot_separators [<<0x3002::utf8>>, <<0xFF0E::utf8>>, <<0xFF61::utf8>>]
 
   @type t :: %__MODULE__{}
 
@@ -71,13 +72,15 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   def valid_destination_url?(_url), do: false
 
   defp syntactic_destination_url?(url) when is_binary(url) do
-    case URI.parse(url) do
-      %URI{scheme: scheme, host: host}
-      when scheme in ["http", "https"] and is_binary(host) and host != "" ->
-        not String.match?(url, ~r/[[:space:]\x00-\x1F\x7F]/)
-
-      _url ->
-        false
+    with false <- String.match?(url, ~r/[[:space:]\x00-\x1F\x7F]/),
+         %URI{scheme: scheme, host: host, authority: authority} <- URI.parse(url),
+         true <- scheme in ["http", "https"],
+         true <- is_binary(host) and host != "",
+         true <- is_binary(authority),
+         true <- valid_http_authority?(authority) do
+      true
+    else
+      _invalid -> false
     end
   end
 
@@ -113,6 +116,8 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
     if String.contains?(hostname, ":") do
       {:ok, String.downcase(hostname)}
     else
+      hostname = normalize_idna_hostname(hostname)
+
       hostname
       |> String.split(".")
       |> Enum.reduce_while({:ok, []}, fn label, {:ok, labels} ->
@@ -129,6 +134,52 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   end
 
   defp canonical_hostname(_hostname), do: :error
+
+  defp normalize_idna_hostname(hostname) do
+    hostname
+    |> String.normalize(:nfkc)
+    |> replace_idna_dot_separators()
+  end
+
+  defp replace_idna_dot_separators(hostname) do
+    Enum.reduce(@idna_dot_separators, hostname, fn separator, normalized ->
+      String.replace(normalized, separator, ".")
+    end)
+  end
+
+  defp valid_http_authority?(authority) when is_binary(authority) do
+    authority
+    |> String.split("@")
+    |> List.last()
+    |> valid_authority_host_port?()
+  end
+
+  defp valid_authority_host_port?("[" <> rest) do
+    case String.split(rest, "]", parts: 2) do
+      [address, ""] -> address != ""
+      [address, ":" <> port] -> address != "" and valid_explicit_port?(port)
+      _invalid -> false
+    end
+  end
+
+  defp valid_authority_host_port?(host_port) do
+    case String.split(host_port, ":", parts: 2) do
+      [host] -> host != ""
+      [host, port] -> host != "" and valid_explicit_port?(port)
+    end
+  end
+
+  defp valid_explicit_port?(""), do: true
+
+  defp valid_explicit_port?(port) do
+    with true <- String.match?(port, ~r/^\d+$/),
+         {port_number, ""} <- Integer.parse(port),
+         true <- port_number in 0..65_535 do
+      true
+    else
+      _invalid -> false
+    end
+  end
 
   defp canonical_hostname_label(label) do
     label = String.downcase(label)
