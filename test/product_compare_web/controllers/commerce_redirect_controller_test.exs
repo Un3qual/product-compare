@@ -247,7 +247,11 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   defp merchant_product_fixture(attrs) do
     merchant = Map.get(attrs, :merchant, merchant_fixture())
     suffix = System.unique_integer([:positive])
-    product = ProductCompare.Fixtures.SpecsFixtures.product_fixture()
+
+    product =
+      Map.get_lazy(attrs, :product, fn ->
+        ProductCompare.Fixtures.SpecsFixtures.product_fixture()
+      end)
 
     params =
       attrs

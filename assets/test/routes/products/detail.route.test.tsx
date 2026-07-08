@@ -518,6 +518,52 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
   );
 });
 
+test("product detail blocks pending tracked merchant action re-clicks", () => {
+  mockedUseMutation.mockReturnValue([commitCommerceClickMock, true] as never);
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: {
+      status: "ready",
+      query: OFFERS_QUERY_DESCRIPTOR
+    }
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(
+    buildOffersData([
+      {
+        id: "merchant-product-1",
+        url: "https://merchant.example.com/detail-product",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Acme"
+        },
+        latestPrice: {
+          id: "price-1",
+          price: "199.99"
+        }
+      }
+    ])
+  );
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  const merchantLink = screen.getByRole("link", { name: "Acme" });
+  const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+  expect(merchantLink).toHaveAttribute("aria-disabled", "true");
+
+  fireEvent(merchantLink, clickEvent);
+
+  expect(clickEvent.defaultPrevented).toBe(true);
+  expect(commitCommerceClickMock).not.toHaveBeenCalled();
+});
+
 test("renders offers with valid urls and null merchants using a fallback label", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
