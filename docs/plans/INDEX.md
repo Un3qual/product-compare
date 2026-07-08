@@ -48,8 +48,11 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 Recent completed plan groups:
 
 - Parallel execution batch:
-  commerce offer interaction with first-party tracked outbound clicks and
-  `/offers` visible merchant quick filters, plus GraphQL connection contract
+  `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`,
+  `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`,
+  and `docs/work/backend-graphql-connection-contract-hardening.md` covered
+  commerce offer interaction with first-party tracked outbound clicks,
+  `/offers` visible merchant quick filters, and GraphQL connection contract
   hardening for invalid Relay page sizes.
 
 - Product-facing follow-up batch:
