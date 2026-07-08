@@ -64,7 +64,7 @@ export function TrackedCommerceClickAction({
   return (
     <>
       <a
-        aria-disabled={isPending ? "true" : undefined}
+        aria-disabled={isPending || undefined}
         href={trackedMerchantProductHref(merchantProductId)}
         onClick={isPending ? preventPendingNavigation : handleClick}
       >
