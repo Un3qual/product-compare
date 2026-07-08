@@ -431,9 +431,10 @@ Completion evidence remains under each assigned heading.
 - Next decision:
   - Further ingestion work remains deferred; the live queue is now empty after
     the product-facing follow-up batch completed.
-  - If ingestion is promoted again later, choose whether to expose these read
-    models through a dashboard contract, continue with another source-health
-    dashboard slice, or keep ingestion operator surfaces deferred.
+  - Dashboard-oriented ingestion work is deferred by product decision as of
+    2026-07-08, including exposing CJ read models through a dashboard contract,
+    continuing source-health dashboard slices, or creating ingestion operator
+    dashboard surfaces.
   - eBay Browse fallback is deferred by product decision as of 2026-07-08.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
@@ -442,6 +443,10 @@ Completion evidence remains under each assigned heading.
 - eBay Browse fallback connector is deferred by product decision as of
   2026-07-08. If reopened, it still requires CJ evidence showing the approved
   CJ account lacks usable product catalog scope.
+- Dashboard-oriented ingestion work is deferred by product decision as of
+  2026-07-08. Do not promote CJ read-model dashboard contracts, source-health
+  dashboard slices, or ingestion operator dashboard surfaces until that
+  decision is reversed.
 - CJ candidate CSV score export is rejected and should not be promoted.
 
 ## Completed Batch Verification Commands

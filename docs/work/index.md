@@ -138,7 +138,8 @@ Application submission, account-manager contact, Tier-3 scraping, credential
 persistence, and CSV export remain out of scope. CJ candidate CSV score export
 is rejected and should not be promoted. eBay Browse fallback is deferred by
 product decision as of 2026-07-08 and should not be promoted until that decision
-is reversed.
+is reversed. Ingestion dashboard and operator surfaces are also deferred by
+product decision as of 2026-07-08.
 
 ## Executor Prompts
 

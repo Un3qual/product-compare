@@ -65,6 +65,8 @@
   discovery, saved comparisons, and merchant discovery is complete. No live
   implementation batch is currently ready in `docs/work/index.md`.
 - eBay Browse fallback is deferred by product decision as of 2026-07-08.
+- Ingestion dashboard and operator surfaces are deferred by product decision as
+  of 2026-07-08.
 - CJ credential access, product-scope validation, quota observation,
   representative redacted sample evidence, and owner approval remain recorded
   for the manual connector path.
