@@ -37,6 +37,10 @@ type RenderableOffer = {
   originalIndex: number;
 };
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
+type VisibleMerchant = {
+  id: string;
+  name: string;
+};
 
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base"
@@ -226,41 +230,68 @@ function VisibleMerchantFilters({
   offers: ReadonlyArray<RenderableOffer>;
 }) {
   const merchants = visibleMerchants(offers);
-
-  if (merchants.length === 0) {
-    return null;
-  }
-
-  const activeMerchant = filters.merchantId
-    ? merchants.find((merchant) => merchant.id === filters.merchantId) ?? null
-    : null;
+  const activeMerchant = activeVisibleMerchant(filters.merchantId, merchants);
   const filterableMerchants = merchants.filter((merchant) => merchant.id !== filters.merchantId);
 
-  if (!activeMerchant && filterableMerchants.length === 0) {
+  if (isEmptyMerchantFilterSection(activeMerchant, filterableMerchants)) {
     return null;
   }
 
   return (
     <section aria-label="Merchant filters on this page">
-      {activeMerchant ? <p>{`Filtered to ${activeMerchant.name}`}</p> : null}
-      {filterableMerchants.length > 0 ? (
-        <ul>
-          {filterableMerchants.map((merchant) => (
-            <li key={merchant.id}>
-              <Link
-                to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}
-              >
-                {`Filter to ${merchant.name}`}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ActiveMerchantFilterSummary merchant={activeMerchant} />
+      <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
     </section>
   );
 }
 
-function visibleMerchants(offers: ReadonlyArray<RenderableOffer>) {
+function ActiveMerchantFilterSummary({ merchant }: { merchant: VisibleMerchant | null }) {
+  return merchant ? <p>{`Filtered to ${merchant.name}`}</p> : null;
+}
+
+function VisibleMerchantFilterLinks({
+  filters,
+  merchants
+}: {
+  filters: OfferDiscoveryFilters;
+  merchants: ReadonlyArray<VisibleMerchant>;
+}) {
+  if (merchants.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul>
+      {merchants.map((merchant) => (
+        <li key={merchant.id}>
+          <Link to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}>
+            {`Filter to ${merchant.name}`}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function activeVisibleMerchant(
+  merchantId: string | null,
+  merchants: ReadonlyArray<VisibleMerchant>
+) {
+  if (!merchantId) {
+    return null;
+  }
+
+  return merchants.find((merchant) => merchant.id === merchantId) ?? null;
+}
+
+function isEmptyMerchantFilterSection(
+  activeMerchant: VisibleMerchant | null,
+  filterableMerchants: ReadonlyArray<VisibleMerchant>
+) {
+  return !activeMerchant && filterableMerchants.length === 0;
+}
+
+function visibleMerchants(offers: ReadonlyArray<RenderableOffer>): VisibleMerchant[] {
   const merchants = new Map<string, string>();
 
   for (const { offer } of offers) {
