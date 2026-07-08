@@ -47,60 +47,35 @@ The product-facing follow-up batch is complete. It used existing frontend
 routes and GraphQL contracts, avoided CJ ingestion surfaces, and kept
 backend/schema work out of scope.
 
-The next explicitly requested parallel batch is active. It covers revenue
-readiness, shopper UX polish, and backend quality without reopening deferred
-eBay, ingestion dashboard/operator, live provider, credential, application
-submission, Tier-3 scraping, or CSV export work.
+The explicitly requested revenue readiness, shopper UX polish, and backend
+quality parallel batch is complete. It added first-party tracked commerce
+clicks, `/offers` visible merchant quick filters, and deterministic invalid
+Relay connection page-size errors without reopening deferred eBay, ingestion
+dashboard/operator, live provider, credential, application submission, Tier-3
+scraping, or CSV export work.
 
 ## Ready Work
 
-### Commerce Offer Interaction Batch
-
-Status: active
-Lane: Revenue readiness and shopper UX
-Owner: Codex commerce/offers worker
-Next action: Implement first-party tracked outbound commerce clicks for
-existing product/offer surfaces and make `/offers` merchant filtering
-discoverable from visible offer rows.
-Owned paths: `lib/product_compare/commerce_attribution.ex`,
-`lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`,
-`lib/product_compare_web/schema.ex`, commerce attribution and GraphQL tests,
-`assets/schema.graphql`, `assets/src/routes/products/**`,
-`assets/src/routes/offers/**`, related product/offers route tests,
-`docs/work/affiliate-revenue-attribution.md`, and
-`docs/work/frontend-offer-discovery-demo-parity.md`.
-Verification: focused commerce attribution/controller/GraphQL tests,
-`cd assets && bun run relay`, focused product/offers Vitest route tests,
-`cd assets && bun run typecheck`, and `git diff --check`.
-Exit condition: offer/product outbound actions use first-party
-`/r/:click_id` redirects without accepting raw browser-provided destinations,
-`/offers` supports visible merchant quick filters that preserve existing URL
-state and drop stale cursors, and lane docs record evidence.
-
-### GraphQL Connection Contract Hardening
-
-Status: active
-Lane: Backend quality
-Owner: Codex backend-quality worker
-Next action: Harden shared Relay connection pagination so invalid `first`
-values, especially negative integers, return a deterministic GraphQL error
-instead of silently falling back to the default page size while preserving
-default, max clamp, `first: 0`, and malformed cursor behavior.
-Owned paths: `lib/product_compare_web/graphql/connection.ex`, focused GraphQL
-connection tests and shipped connection-surface tests under
-`test/product_compare_web/graphql/**`, and
-`docs/work/backend-graphql-connection-contract-hardening.md`.
-Verification: focused connection and shipped connection-surface GraphQL tests,
-`mix typecheck`, and `git diff --check`.
-Exit condition: all shipped connection surfaces reject invalid page sizes
-consistently, existing cursor/default/clamp behavior still passes, and the lane
-doc records evidence.
+None.
 
 ## Blocked Work
 
 None.
 
 ## Just Completed
+
+The 2026-07-08 parallel execution batch completed these work items:
+
+- Revenue readiness and shopper UX: product detail and `/offers` merchant
+  actions now use a first-party `trackCommerceClick(input:)` GraphQL mutation
+  that accepts only `merchantProductId`, resolves destinations server-side, and
+  returns relative `/r/:click_id` redirect paths.
+- Offer discovery UX: `/offers` now exposes visible merchant quick filters from
+  loaded offer rows, preserves route-local filters, and drops stale cursors when
+  applying a merchant filter.
+- Backend quality: shared Relay connection pagination now rejects invalid
+  `first` values with deterministic `invalid first` GraphQL errors while
+  preserving default, clamp, `first: 0`, and malformed cursor behavior.
 
 The 2026-07-03 product-facing follow-up batch completed these five work items:
 
