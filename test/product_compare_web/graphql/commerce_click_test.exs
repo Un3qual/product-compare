@@ -40,6 +40,11 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
 
       assert Repo.aggregate(CommerceLink, :count, :id) == 1
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
+
+      assert %CommerceClickSession{merchant_product_id: merchant_product_id} =
+               Repo.one(CommerceClickSession)
+
+      assert merchant_product_id == merchant_product.id
     end
 
     test "rejects raw browser-provided destinations", %{conn: conn} do
@@ -115,6 +120,37 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
                        "code" => "INVALID_ORIGIN",
                        "field" => nil,
                        "message" => "cross-origin request rejected"
+                     }
+                   ]
+                 }
+               }
+             } = response
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects unsafe merchant product destinations without recording a click", %{conn: conn} do
+      merchant_product = merchant_product_fixture(%{url: "http://localhost/direct-product"})
+
+      response =
+        conn
+        |> put_req_header_same_origin()
+        |> graphql(track_commerce_click_mutation(), %{
+          "input" => %{
+            "merchantProductId" => relay_id(:merchant_product, merchant_product.id)
+          }
+        })
+
+      assert %{
+               "data" => %{
+                 "trackCommerceClick" => %{
+                   "redirectPath" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ARGUMENT",
+                       "field" => "destinationUrl",
+                       "message" => "must be a valid http/https URL"
                      }
                    ]
                  }

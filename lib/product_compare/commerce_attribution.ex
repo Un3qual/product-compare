@@ -54,6 +54,7 @@ defmodule ProductCompare.CommerceAttribution do
   ]
   @commerce_link_conflict_target {:unsafe_fragment,
                                   "(destination_url, COALESCE(affiliate_program_id, 0), merchant_id, link_type)"}
+  @click_id_query_keys MapSet.new(~w(ClickId clickId click_id subId subid sub_id))
 
   @spec upsert_commerce_link(map()) :: {:ok, CommerceLink.t()} | {:error, Ecto.Changeset.t()}
   def upsert_commerce_link(attrs) do
@@ -91,6 +92,7 @@ defmodule ProductCompare.CommerceAttribution do
     with {:ok, merchant_product_id} <- normalize_merchant_product_id(attrs),
          {:ok, destination} <- trusted_click_destination(merchant_product_id) do
       attrs
+      |> Map.put(:merchant_product_id, merchant_product_id)
       |> persist_tracked_click(destination)
       |> unwrap_transaction()
     else
@@ -102,8 +104,9 @@ defmodule ProductCompare.CommerceAttribution do
   @spec redirect_destination(String.t()) :: {:ok, String.t()} | {:error, :not_found}
   def redirect_destination(click_id) do
     with {:ok, cast_click_id} <- Ecto.UUID.cast(click_id),
-         destination_url when is_binary(destination_url) <-
+         destination when is_map(destination) <-
            lookup_redirect_destination(cast_click_id),
+         destination_url <- redirect_destination_url(destination),
          true <- CommerceLink.valid_destination_url?(destination_url) do
       {:ok, destination_url}
     else
@@ -191,7 +194,12 @@ defmodule ProductCompare.CommerceAttribution do
       from session in CommerceClickSession,
         join: link in assoc(session, :commerce_link),
         where: session.click_id == ^click_id and link.is_active == true,
-        select: link.destination_url,
+        select: %{
+          click_id: session.click_id,
+          destination_url: link.destination_url,
+          link_type: link.link_type,
+          network: link.network
+        },
         limit: 1
     )
   end
@@ -279,6 +287,41 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp commerce_network(_affiliate_link), do: nil
 
+  defp redirect_destination_url(%{
+         destination_url: destination_url,
+         link_type: :affiliate,
+         network: :impact,
+         click_id: click_id
+       }) do
+    append_public_click_id(destination_url, click_id)
+  end
+
+  defp redirect_destination_url(%{destination_url: destination_url}), do: destination_url
+
+  defp append_public_click_id(destination_url, click_id) do
+    uri = URI.parse(destination_url)
+    query = uri.query || ""
+
+    if has_click_id_query_param?(query) do
+      destination_url
+    else
+      %{uri | query: append_click_id_query_param(query, click_id)}
+      |> URI.to_string()
+    end
+  end
+
+  defp has_click_id_query_param?(query) do
+    query
+    |> URI.decode_query()
+    |> Map.keys()
+    |> Enum.any?(&MapSet.member?(@click_id_query_keys, &1))
+  end
+
+  defp append_click_id_query_param("", click_id), do: URI.encode_query(%{"ClickId" => click_id})
+
+  defp append_click_id_query_param(query, click_id),
+    do: query <> "&" <> URI.encode_query(%{"ClickId" => click_id})
+
   defp persist_tracked_click(attrs, destination) do
     Repo.transaction(fn ->
       with {:ok, commerce_link} <- upsert_commerce_link(commerce_link_attrs(destination)),
@@ -319,7 +362,15 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp take_click_session_attrs(attrs) do
     Enum.reduce(
-      [:user_id, :anonymous_id, :source_surface, :referrer, :user_agent_hash, :ip_hash],
+      [
+        :user_id,
+        :merchant_product_id,
+        :anonymous_id,
+        :source_surface,
+        :referrer,
+        :user_agent_hash,
+        :ip_hash
+      ],
       %{},
       fn
         field, acc ->
@@ -400,6 +451,8 @@ defmodule ProductCompare.CommerceAttribution do
     |> from(as: :session)
     |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
     |> maybe_join_click_conversions(filters)
+    |> maybe_join_click_session_merchant_product(filters)
+    |> maybe_join_click_conversion_merchant_product(filters)
     |> maybe_where_click_merchant(filters.merchant_id)
     |> maybe_where_click_product(filters.product_id)
     |> maybe_where_click_network(filters.network)
@@ -412,13 +465,26 @@ defmodule ProductCompare.CommerceAttribution do
   defp maybe_join_click_conversions(query, %{network: nil, product_id: nil}), do: query
 
   defp maybe_join_click_conversions(query, _filters) do
-    query
-    |> join(:left, [session: session], conversion in CommerceConversion,
+    join(query, :left, [session: session], conversion in CommerceConversion,
       as: :conversion,
       on: conversion.click_session_id == session.id
     )
-    |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
-      as: :merchant_product,
+  end
+
+  defp maybe_join_click_session_merchant_product(query, %{product_id: nil}), do: query
+
+  defp maybe_join_click_session_merchant_product(query, _filters) do
+    join(query, :left, [session: session], merchant_product in MerchantProduct,
+      as: :session_merchant_product,
+      on: merchant_product.id == session.merchant_product_id
+    )
+  end
+
+  defp maybe_join_click_conversion_merchant_product(query, %{product_id: nil}), do: query
+
+  defp maybe_join_click_conversion_merchant_product(query, _filters) do
+    join(query, :left, [conversion: conversion], merchant_product in MerchantProduct,
+      as: :conversion_merchant_product,
       on: merchant_product.id == conversion.merchant_product_id
     )
   end
@@ -489,8 +555,13 @@ defmodule ProductCompare.CommerceAttribution do
   defp maybe_where_click_product(query, product_id) do
     where(
       query,
-      [conversion: conversion, merchant_product: merchant_product],
-      conversion.product_id == ^product_id or merchant_product.product_id == ^product_id
+      [
+        conversion: conversion,
+        conversion_merchant_product: conversion_merchant_product,
+        session_merchant_product: session_merchant_product
+      ],
+      session_merchant_product.product_id == ^product_id or conversion.product_id == ^product_id or
+        conversion_merchant_product.product_id == ^product_id
     )
   end
 

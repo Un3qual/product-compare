@@ -15,6 +15,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     field :ip_hash, :string
 
     belongs_to :commerce_link, ProductCompareSchemas.CommerceAttribution.CommerceLink
+    belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct
     belongs_to :user, ProductCompareSchemas.Accounts.User
 
     timestamps()
@@ -26,6 +27,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     |> cast(attrs, [
       :click_id,
       :commerce_link_id,
+      :merchant_product_id,
       :user_id,
       :anonymous_id,
       :source_surface,
@@ -37,6 +39,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     |> validate_required([:click_id, :commerce_link_id, :source_surface])
     |> unique_constraint(:click_id)
     |> foreign_key_constraint(:commerce_link_id)
+    |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:user_id)
     |> check_constraint(:source_surface, name: :commerce_click_sessions_source_surface_check)
   end
