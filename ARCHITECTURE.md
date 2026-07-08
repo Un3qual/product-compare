@@ -61,8 +61,10 @@
   compare attribute metadata, and compare offer decision helpers.
 - The CJ read-model and weekly operator-runbook batch is complete and recorded
   in `docs/work/product-data-scraping.md`.
-- The next live queue batch is product-facing polish across catalog browse,
-  product detail, offer discovery, saved comparisons, and merchant discovery.
+- The product-facing polish batch across catalog browse, product detail, offer
+  discovery, saved comparisons, and merchant discovery is complete. No live
+  implementation batch is currently ready in `docs/work/index.md`.
+- eBay Browse fallback is deferred by product decision as of 2026-07-08.
 - CJ credential access, product-scope validation, quota observation,
   representative redacted sample evidence, and owner approval remain recorded
   for the manual connector path.

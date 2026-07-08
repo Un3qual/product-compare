@@ -32,11 +32,11 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
+| deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 
 ## Planned Follow-Up Groups
 
-- No planned follow-up groups are currently listed outside the blocked
+- No planned follow-up groups are currently listed outside the deferred
   candidate pool. Start at `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive

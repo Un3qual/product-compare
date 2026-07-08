@@ -434,12 +434,14 @@ Completion evidence remains under each assigned heading.
   - If ingestion is promoted again later, choose whether to expose these read
     models through a dashboard contract, continue with another source-health
     dashboard slice, or keep ingestion operator surfaces deferred.
+  - eBay Browse fallback is deferred by product decision as of 2026-07-08.
   - Do not choose CJ candidate CSV score export; that path is rejected.
 
 ## Deferred Follow-Up Plan Candidates
 
-- eBay Browse fallback connector remains blocked until CJ evidence shows the
-  approved CJ account lacks usable product catalog scope.
+- eBay Browse fallback connector is deferred by product decision as of
+  2026-07-08. If reopened, it still requires CJ evidence showing the approved
+  CJ account lacks usable product catalog scope.
 - CJ candidate CSV score export is rejected and should not be promoted.
 
 ## Completed Batch Verification Commands

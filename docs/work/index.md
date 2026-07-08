@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-03
+Updated: 2026-07-08
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -53,14 +53,7 @@ None.
 
 ## Blocked Work
 
-### eBay Browse Fallback Connector
-
-Status: blocked
-Lane: Product ingestion (`docs/work/product-data-scraping.md`)
-Blocker: CJ validation records that the approved CJ account lacks usable product
-catalog scope.
-Unblock condition: record CJ catalog-scope evidence or an explicit product
-decision to pursue the fallback connector.
+None.
 
 ## Just Completed
 
@@ -143,8 +136,9 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 
 Application submission, account-manager contact, Tier-3 scraping, credential
 persistence, and CSV export remain out of scope. CJ candidate CSV score export
-is rejected and should not be promoted. eBay Browse fallback remains blocked on
-CJ catalog-scope evidence.
+is rejected and should not be promoted. eBay Browse fallback is deferred by
+product decision as of 2026-07-08 and should not be promoted until that decision
+is reversed.
 
 ## Executor Prompts
 
