@@ -635,8 +635,6 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     end
 
     test "products rejects invalid first input", %{conn: conn} do
-      SpecsFixtures.product_fixture(%{slug: "catalog-invalid-first"})
-
       assert %{
                "data" => %{"products" => nil},
                "errors" => [%{"message" => "invalid first", "path" => ["products"]} | _]

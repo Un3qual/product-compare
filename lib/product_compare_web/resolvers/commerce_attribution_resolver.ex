@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   alias ProductCompareWeb.GraphQL.GlobalId
 
   @invalid_filters_error "invalid revenue summary filters"
+  @invalid_origin_message "cross-origin request rejected"
   @public_min_conversions 2
 
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
@@ -29,7 +30,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
 
   @spec track_commerce_click(any(), %{input: map()}, Absinthe.Resolution.t()) :: {:ok, map()}
   def track_commerce_click(_parent, %{input: input}, resolution) do
-    with {:ok, merchant_product_id} <- decode_merchant_product_id(input),
+    with :ok <- require_trusted_request_origin(resolution),
+         {:ok, merchant_product_id} <- decode_merchant_product_id(input),
          {:ok, tracked_click} <-
            CommerceAttribution.track_outbound_click(%{
              merchant_product_id: merchant_product_id,
@@ -38,6 +40,9 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
            }) do
       {:ok, %{redirect_path: tracked_click.redirect_path, errors: []}}
     else
+      {:error, :invalid_origin} ->
+        {:ok, commerce_click_error_payload("INVALID_ORIGIN", @invalid_origin_message)}
+
       {:error, :invalid_id} ->
         {:ok,
          commerce_click_error_payload(
@@ -100,6 +105,9 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   defp current_user_id(%{context: %{current_user: %{id: id}}}) when is_integer(id), do: id
   defp current_user_id(_resolution), do: nil
 
+  defp require_trusted_request_origin(%{context: %{trusted_request_origin?: true}}), do: :ok
+  defp require_trusted_request_origin(_resolution), do: {:error, :invalid_origin}
+
   defp graphql_summary(%{
          "filters" => filters,
          "metrics" => metrics,
@@ -132,7 +140,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
 
   defp graphql_summary(_summary), do: {:error, :invalid_summary}
 
-  defp commerce_click_error_payload(code, message, field) do
+  defp commerce_click_error_payload(code, message, field \\ nil) do
     %{
       redirect_path: nil,
       errors: [GraphQLErrors.camelized_mutation_error(code, message, field)]

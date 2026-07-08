@@ -202,7 +202,7 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp trusted_click_destination(merchant_product_id) do
-    case Repo.get(MerchantProduct, merchant_product_id) do
+    case Repo.get_by(MerchantProduct, id: merchant_product_id, is_active: true) do
       %MerchantProduct{} = merchant_product ->
         {:ok, destination_from_merchant_product(merchant_product)}
 
@@ -214,23 +214,35 @@ defmodule ProductCompare.CommerceAttribution do
   defp destination_from_merchant_product(merchant_product) do
     case affiliate_link_for_merchant_product(merchant_product.id) do
       %AffiliateLink{} = affiliate_link ->
-        %{
-          destination_url: affiliate_link.affiliate_url,
-          link_type: :affiliate,
-          merchant_id: merchant_product.merchant_id,
-          network: commerce_network(affiliate_link),
-          backfilled_from_affiliate_links: true
-        }
+        affiliate_destination_or_fallback(affiliate_link, merchant_product)
 
       nil ->
-        %{
-          destination_url: merchant_product.url,
-          link_type: :non_affiliate,
-          merchant_id: merchant_product.merchant_id,
-          network: nil,
-          backfilled_from_affiliate_links: false
-        }
+        merchant_product_destination(merchant_product)
     end
+  end
+
+  defp affiliate_destination_or_fallback(affiliate_link, merchant_product) do
+    if CommerceLink.valid_destination_url?(affiliate_link.affiliate_url) do
+      %{
+        destination_url: affiliate_link.affiliate_url,
+        link_type: :affiliate,
+        merchant_id: merchant_product.merchant_id,
+        network: commerce_network(affiliate_link),
+        backfilled_from_affiliate_links: true
+      }
+    else
+      merchant_product_destination(merchant_product)
+    end
+  end
+
+  defp merchant_product_destination(merchant_product) do
+    %{
+      destination_url: merchant_product.url,
+      link_type: :non_affiliate,
+      merchant_id: merchant_product.merchant_id,
+      network: nil,
+      backfilled_from_affiliate_links: false
+    }
   end
 
   defp affiliate_link_for_merchant_product(merchant_product_id) do

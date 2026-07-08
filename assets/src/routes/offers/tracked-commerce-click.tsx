@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useMutation } from "react-relay";
 import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
 import { commitRouteMutation } from "../relay-mutations";
@@ -10,9 +10,11 @@ import {
 import { trackCommerceClickMutation } from "./mutations/TrackCommerceClickMutation";
 
 export function TrackedCommerceClickAction({
+  href,
   label,
   merchantProductId
 }: {
+  href: string;
   label: string;
   merchantProductId: string;
 }) {
@@ -20,7 +22,12 @@ export function TrackedCommerceClickAction({
     useMutation<TrackCommerceClickMutation>(trackCommerceClickMutation);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function handleClick() {
+  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (!shouldTrackClick(event)) {
+      return;
+    }
+
+    event.preventDefault();
     setErrorMessage(null);
 
     commitRouteMutation(
@@ -57,10 +64,28 @@ export function TrackedCommerceClickAction({
 
   return (
     <>
-      <button disabled={isPending} onClick={handleClick} type="button">
+      <a
+        aria-disabled={isPending ? "true" : undefined}
+        href={href}
+        onClick={isPending ? preventPendingNavigation : handleClick}
+      >
         {label}
-      </button>
+      </a>
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
     </>
   );
+}
+
+function shouldTrackClick(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    event.button === 0 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey
+  );
+}
+
+function preventPendingNavigation(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
 }

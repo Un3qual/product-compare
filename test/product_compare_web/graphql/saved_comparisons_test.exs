@@ -73,13 +73,6 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
 
     test "mySavedComparisonSets rejects invalid first input", %{conn: conn} do
       user = AccountsFixtures.user_fixture()
-      product = SpecsFixtures.product_fixture(%{slug: "saved-invalid-first-product"})
-
-      assert {:ok, _saved_set} =
-               Catalog.create_saved_comparison_set(user.id, %{
-                 name: "Invalid first setup",
-                 product_ids: [product.id]
-               })
 
       conn =
         conn

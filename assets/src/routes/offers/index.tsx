@@ -154,7 +154,11 @@ function OfferListItem({
           isActive={offer.isActive}
           productName={offerProductName(offer.product)}
         />
-        <OfferMerchantAction merchantName={merchantName} merchantProductId={offer.id} />
+        <OfferMerchantAction
+          href={externalHttpUrlHref(offer.url)}
+          merchantName={merchantName}
+          merchantProductId={offer.id}
+        />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
         {highlightLabel ? <p>{highlightLabel}</p> : null}
@@ -191,23 +195,26 @@ function OfferListItemHeader({
 }
 
 function OfferMerchantAction({
+  href,
   merchantProductId,
   merchantName
 }: {
+  href: string | null;
   merchantProductId: string;
   merchantName: string;
 }) {
-  if (!merchantProductId) {
+  if (!href || !merchantProductId) {
     return null;
   }
 
   return (
-    <p>
+    <div>
       <TrackedCommerceClickAction
+        href={href}
         label={merchantName}
         merchantProductId={merchantProductId}
       />
-    </p>
+    </div>
   );
 }
 

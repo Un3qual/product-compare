@@ -14,7 +14,9 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
         merchant_product_fixture(%{url: "https://merchant.example.com/direct-product"})
 
       response =
-        graphql(conn, track_commerce_click_mutation(), %{
+        conn
+        |> put_req_header_same_origin()
+        |> graphql(track_commerce_click_mutation(), %{
           "input" => %{
             "merchantProductId" => relay_id(:merchant_product, merchant_product.id)
           }
@@ -66,7 +68,9 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
 
     test "returns typed payload errors for invalid merchant product IDs", %{conn: conn} do
       response =
-        graphql(conn, track_commerce_click_mutation(), %{
+        conn
+        |> put_req_header_same_origin()
+        |> graphql(track_commerce_click_mutation(), %{
           "input" => %{
             "merchantProductId" => relay_id(:product, 123)
           }
@@ -87,6 +91,37 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
                }
              } = response
 
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects untrusted request origins without recording a click", %{conn: conn} do
+      merchant_product = merchant_product_fixture()
+
+      response =
+        conn
+        |> put_req_header("origin", "https://evil.example.com")
+        |> graphql(track_commerce_click_mutation(), %{
+          "input" => %{
+            "merchantProductId" => relay_id(:merchant_product, merchant_product.id)
+          }
+        })
+
+      assert %{
+               "data" => %{
+                 "trackCommerceClick" => %{
+                   "redirectPath" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ORIGIN",
+                       "field" => nil,
+                       "message" => "cross-origin request rejected"
+                     }
+                   ]
+                 }
+               }
+             } = response
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
     end
   end
@@ -125,8 +160,8 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
   end
 
   defp merchant_product_fixture(attrs \\ %{}) do
-    merchant = Map.get(attrs, :merchant, merchant_fixture())
-    product = Map.get(attrs, :product, SpecsFixtures.product_fixture())
+    merchant = Map.get_lazy(attrs, :merchant, fn -> merchant_fixture() end)
+    product = Map.get_lazy(attrs, :product, fn -> SpecsFixtures.product_fixture() end)
     suffix = System.unique_integer([:positive])
 
     params =

@@ -196,6 +196,59 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
     end
 
+    test "falls back to the merchant product URL when the affiliate URL is unsafe" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "javascript:alert(1)"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               merchant_id: merchant_id,
+               network: nil,
+               backfilled_from_affiliate_links: false,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+
+      assert {:ok, "https://merchant.example.com/direct-product"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "rejects inactive merchant products without creating link or click records" do
+      merchant_product = merchant_product_fixture(%{is_active: false})
+
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
     test "rejects unknown merchant products without creating link or click records" do
       assert {:error, :merchant_product_not_found} =
                CommerceAttribution.track_outbound_click(%{merchant_product_id: 9_999_999})

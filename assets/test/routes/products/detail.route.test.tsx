@@ -458,7 +458,10 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Acme" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/detail-product"
+  );
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
@@ -498,7 +501,7 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
     </MemoryRouter>
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Acme" }));
+  fireEvent.click(screen.getByRole("link", { name: "Acme" }));
 
   expect(commitCommerceClickMock).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -546,7 +549,10 @@ test("renders offers with valid urls and null merchants using a fallback label",
   );
 
   expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Visit offer" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/detail-product"
+  );
   expect(screen.getByText("179.00 USD")).toBeInTheDocument();
   expect(within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(
     "179.00 USD at Visit offer"
@@ -679,7 +685,7 @@ test("renders an offer snapshot from the visible active offer page", () => {
   expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
   expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
   expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
-  expect(within(offersList).getByRole("button", { name: "Bad Price Shop" })).toBeVisible();
+  expect(within(offersList).getByRole("link", { name: "Bad Price Shop" })).toBeVisible();
   expect(within(offersList).queryByText("not-a-price USD")).not.toBeInTheDocument();
 });
 
@@ -983,7 +989,7 @@ test("renders active coupon details for product offers", () => {
       </MemoryRouter>
     );
 
-    const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
+    const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
     expect(offerItem).not.toBeNull();
     const offer = within(offerItem as HTMLElement);
@@ -1123,7 +1129,7 @@ test("renders offers when a merchant has no active coupons", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
   expect(within(offerItem as HTMLElement).getByText("199.99 USD")).toBeVisible();
@@ -1218,7 +1224,7 @@ test("renders active offer price history rows", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
@@ -1289,7 +1295,7 @@ test("renders empty price history state for active offers", () => {
     </MemoryRouter>
   );
 
-  const offerItem = screen.getByRole("button", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
@@ -1648,7 +1654,7 @@ test("renders an offer without a latest price", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Acme" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Acme" })).toBeVisible();
   expect(screen.queryByText("199.99 USD")).not.toBeInTheDocument();
 });
 
@@ -1717,7 +1723,7 @@ test.each([
   );
 
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Acme" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Acme" })).not.toBeInTheDocument();
 });
 
 test("renders an unavailable-offers message without collapsing the product detail", () => {
