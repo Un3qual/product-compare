@@ -173,6 +173,15 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
         |> get("/r/merchant-product?merchantProductId=not-a-relay-id")
 
       assert response(conn, 404) == "redirect not found"
+
+      assert Repo.aggregate(ProductCompareSchemas.CommerceAttribution.CommerceLink, :count, :id) ==
+               0
+
+      assert Repo.aggregate(
+               ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+               :count,
+               :id
+             ) == 0
     end
 
     test "returns 404 for inactive merchant product ids", %{conn: conn} do
@@ -184,6 +193,9 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
         |> get(tracked_merchant_product_path(merchant_product))
 
       assert response(conn, 404) == "redirect not found"
+
+      assert Repo.aggregate(ProductCompareSchemas.CommerceAttribution.CommerceLink, :count, :id) ==
+               0
 
       assert Repo.aggregate(
                ProductCompareSchemas.CommerceAttribution.CommerceClickSession,

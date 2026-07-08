@@ -13,8 +13,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   @spec from_list([term()], map()) :: {:ok, map()} | {:error, error_reason()}
   def from_list(items, args) when is_list(items) and is_map(args) do
-    with {:ok, first} <-
-           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size(),
+    with {:ok, first} <- normalize_first(args),
          {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       total_count = length(items)
 
@@ -49,8 +48,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, error_reason()}
   def from_query(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    with {:ok, first} <-
-           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size(),
+    with {:ok, first} <- normalize_first(args),
          {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       fetch_limit = first + 1
 
@@ -98,6 +96,10 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   defp edge_cursor(nil), do: nil
   defp edge_cursor(edge), do: edge.cursor
+
+  defp normalize_first(args) do
+    args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()
+  end
 
   defp normalize_page_size(nil), do: {:ok, @default_page_size}
 
