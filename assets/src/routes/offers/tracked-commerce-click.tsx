@@ -1,6 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { useMutation } from "react-relay";
 import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
+import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -44,7 +45,7 @@ export function TrackedCommerceClickAction({
             payload.errors.length === 0 &&
             !hasRouteGraphQLErrors(graphQLErrors)
           ) {
-            window.location.assign(payload.redirectPath);
+            window.location.assign(resolveTrackedCommerceRedirectUrl(payload.redirectPath));
             return;
           }
 
@@ -92,4 +93,13 @@ function trackedMerchantProductHref(merchantProductId: string) {
   const params = new URLSearchParams({ merchantProductId });
 
   return `/r/merchant-product?${params.toString()}`;
+}
+
+export function resolveTrackedCommerceRedirectUrl(
+  redirectPath: string,
+  graphQLEndpoint = resolveGraphQLEndpoint()
+) {
+  const endpointUrl = new URL(graphQLEndpoint);
+
+  return new URL(redirectPath, endpointUrl.origin).toString();
 }

@@ -4,6 +4,7 @@ import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { OfferDiscoveryRoute } from "../../../src/routes/offers/index";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click";
 
 const {
   commitCommerceClickMock,
@@ -353,6 +354,31 @@ test("offer discovery tracks merchant clicks with only the merchant product ID",
   expect(JSON.stringify(commitCommerceClickMock.mock.calls[0]?.[0]?.variables)).not.toContain(
     "https://merchant.example.com/detail-product"
   );
+});
+
+test("offer discovery resolves tracked redirects against the API origin", () => {
+  expect(
+    resolveTrackedCommerceRedirectUrl(
+      "/r/click-123?merchantProductId=merchant-product-1",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toBe("http://localhost:4000/r/click-123?merchantProductId=merchant-product-1");
+});
+
+test("offer discovery blocks pending tracked merchant action re-clicks", () => {
+  mockedUseMutation.mockReturnValue([commitCommerceClickMock, true] as never);
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Acme Market" });
+  const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+  expect(merchantLink).toHaveAttribute("aria-disabled", "true");
+
+  fireEvent(merchantLink, clickEvent);
+
+  expect(clickEvent.defaultPrevented).toBe(true);
+  expect(commitCommerceClickMock).not.toHaveBeenCalled();
 });
 
 test("offer discovery keeps active All offers rows on tracked merchant actions", () => {
