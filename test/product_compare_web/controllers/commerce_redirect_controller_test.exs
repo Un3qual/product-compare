@@ -107,23 +107,23 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
              )
     end
 
-    test "returns 404 for merchant product exits without first-party request evidence", %{
+    test "records and redirects copied merchant product exits without request origin", %{
       conn: conn
     } do
       merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
 
       conn = get(conn, tracked_merchant_product_path(merchant_product))
 
-      assert response(conn, 404) == "redirect not found"
+      assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
 
       assert Repo.aggregate(ProductCompareSchemas.CommerceAttribution.CommerceLink, :count, :id) ==
-               0
+               1
 
       assert Repo.aggregate(
                ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
                :count,
                :id
-             ) == 0
+             ) == 1
     end
 
     test "returns 404 for merchant product exits from untrusted origins", %{conn: conn} do

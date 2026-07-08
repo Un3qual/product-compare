@@ -92,7 +92,7 @@ function preventPendingNavigation(event: MouseEvent<HTMLAnchorElement>) {
 function trackedMerchantProductHref(merchantProductId: string) {
   const params = new URLSearchParams({ merchantProductId });
 
-  return `/r/merchant-product?${params.toString()}`;
+  return resolveTrackedCommerceRedirectUrl(`/r/merchant-product?${params.toString()}`);
 }
 
 export function resolveTrackedCommerceRedirectUrl(

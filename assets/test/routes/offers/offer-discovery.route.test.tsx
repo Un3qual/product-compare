@@ -57,6 +57,7 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+const API_ORIGIN = "http://localhost:4000";
 
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -286,7 +287,7 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByRole("heading", { name: "Detail Product" })).toBeVisible();
   expect(offerContent.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
     "href",
-    "/r/merchant-product?merchantProductId=merchant-product-1"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
   );
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
@@ -332,7 +333,7 @@ test("offer discovery keeps offer actions when merchant metadata is unavailable"
 
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    "/r/merchant-product?merchantProductId=merchant-product-without-merchant"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-without-merchant`
   );
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
 });
@@ -403,7 +404,7 @@ test("offer discovery keeps active All offers rows on tracked merchant actions",
   expect(screen.getByText("All offers")).toBeVisible();
   expect(merchantLink).toHaveAttribute(
     "href",
-    "/r/merchant-product?merchantProductId=merchant-product-active"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-active`
   );
 
   fireEvent.click(merchantLink);

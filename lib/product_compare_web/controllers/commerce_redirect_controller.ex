@@ -13,7 +13,7 @@ defmodule ProductCompareWeb.CommerceRedirectController do
   end
 
   def merchant_product(conn, %{"merchantProductId" => merchant_product_id}) do
-    with true <- RequireSameOrigin.trusted_request_origin?(conn),
+    with true <- trusted_or_direct_navigation?(conn),
          {:ok, merchant_product_id} <-
            GlobalId.decode_integer(merchant_product_id, :merchant_product),
          {:ok, tracked_click} <-
@@ -30,4 +30,11 @@ defmodule ProductCompareWeb.CommerceRedirectController do
   end
 
   def merchant_product(conn, _params), do: send_resp(conn, :not_found, "redirect not found")
+
+  defp trusted_or_direct_navigation?(conn) do
+    case RequireSameOrigin.request_origin(conn) do
+      nil -> true
+      _origin -> RequireSameOrigin.trusted_request_origin?(conn)
+    end
+  end
 end

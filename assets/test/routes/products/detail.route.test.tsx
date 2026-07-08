@@ -72,6 +72,7 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+const API_ORIGIN = "http://localhost:4000";
 
 const PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -460,7 +461,7 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
     "href",
-    "/r/merchant-product?merchantProductId=merchant-product-1"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
   );
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
@@ -551,7 +552,7 @@ test("renders offers with valid urls and null merchants using a fallback label",
   expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    "/r/merchant-product?merchantProductId=merchant-product-null-merchant"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-null-merchant`
   );
   expect(screen.getByText("179.00 USD")).toBeInTheDocument();
   expect(within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(

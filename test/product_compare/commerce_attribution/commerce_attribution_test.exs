@@ -143,6 +143,10 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert CommerceLink.valid_destination_url?("https://123.example.com/offer")
     end
 
+    test "accepts unicode IDN hostnames after canonicalizing labels" do
+      assert CommerceLink.valid_destination_url?("https://münich.example/offer")
+    end
+
     test "accepts browser-canonicalized public IPv4 host forms" do
       assert CommerceLink.valid_destination_url?("https://134744072/offer")
     end
