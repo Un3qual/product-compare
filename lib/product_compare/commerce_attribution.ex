@@ -231,9 +231,11 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp affiliate_destination_or_fallback(affiliate_link, merchant_product) do
-    if CommerceLink.valid_destination_url?(affiliate_link.affiliate_url) do
+    affiliate_url = normalize_browser_accepted_destination_url(affiliate_link.affiliate_url)
+
+    if CommerceLink.valid_destination_url?(affiliate_url) do
       %{
-        destination_url: affiliate_link.affiliate_url,
+        destination_url: affiliate_url,
         affiliate_program_id: affiliate_program_id(affiliate_link, merchant_product),
         link_type: :affiliate,
         merchant_id: merchant_product.merchant_id,
@@ -247,7 +249,7 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp merchant_product_destination(merchant_product) do
     %{
-      destination_url: normalize_browser_accepted_merchant_url(merchant_product.url),
+      destination_url: normalize_browser_accepted_destination_url(merchant_product.url),
       affiliate_program_id: nil,
       link_type: :non_affiliate,
       merchant_id: merchant_product.merchant_id,
@@ -256,13 +258,14 @@ defmodule ProductCompare.CommerceAttribution do
     }
   end
 
-  defp normalize_browser_accepted_merchant_url(url) when is_binary(url) do
+  defp normalize_browser_accepted_destination_url(url) when is_binary(url) do
     url
     |> String.trim()
+    |> String.replace("\\", "/")
     |> String.replace(" ", "%20")
   end
 
-  defp normalize_browser_accepted_merchant_url(url), do: url
+  defp normalize_browser_accepted_destination_url(url), do: url
 
   defp affiliate_link_for_merchant_product(merchant_product_id) do
     AffiliateLink
@@ -795,12 +798,53 @@ defmodule ProductCompare.CommerceAttribution do
 
         click_id ->
           case get_click_session_by_public_id(click_id) do
-            nil -> attrs
-            %CommerceClickSession{id: id} -> put_attr(attrs, :click_session_id, id)
+            nil ->
+              attrs
+
+            %CommerceClickSession{} = click_session ->
+              put_click_session_attribution_attrs(attrs, click_session)
           end
       end
     end
   end
+
+  defp put_click_session_attribution_attrs(attrs, click_session) do
+    click_session = Repo.preload(click_session, [:commerce_link, :merchant_product])
+
+    attrs
+    |> put_attr(:click_session_id, click_session.id)
+    |> put_attr_if_missing(:merchant_id, click_session_merchant_id(click_session))
+    |> put_attr_if_missing(
+      :affiliate_program_id,
+      click_session_affiliate_program_id(click_session)
+    )
+    |> put_attr_if_missing(:merchant_product_id, click_session.merchant_product_id)
+    |> put_attr_if_missing(:product_id, click_session_product_id(click_session))
+  end
+
+  defp click_session_merchant_id(%CommerceClickSession{commerce_link: %CommerceLink{} = link}),
+    do: link.merchant_id
+
+  defp click_session_merchant_id(%CommerceClickSession{
+         merchant_product: %MerchantProduct{} = product
+       }),
+       do: product.merchant_id
+
+  defp click_session_merchant_id(_click_session), do: nil
+
+  defp click_session_affiliate_program_id(%CommerceClickSession{
+         commerce_link: %CommerceLink{} = link
+       }),
+       do: link.affiliate_program_id
+
+  defp click_session_affiliate_program_id(_click_session), do: nil
+
+  defp click_session_product_id(%CommerceClickSession{
+         merchant_product: %MerchantProduct{} = product
+       }),
+       do: product.product_id
+
+  defp click_session_product_id(_click_session), do: nil
 
   defp get_click_session_by_public_id(click_id) do
     with {:ok, cast_click_id} <- Ecto.UUID.cast(click_id) do
@@ -831,6 +875,16 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
   defp put_attr(attrs, _key, _value), do: attrs
+
+  defp put_attr_if_missing(attrs, _key, nil), do: attrs
+
+  defp put_attr_if_missing(attrs, key, value) do
+    if attr_present?(attrs, key) do
+      attrs
+    else
+      put_attr(attrs, key, value)
+    end
+  end
 
   defp attr_present?(attrs, key), do: not is_nil(Input.fetch_attr(attrs, key))
 end

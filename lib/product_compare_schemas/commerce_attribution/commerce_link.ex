@@ -72,8 +72,10 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   def valid_destination_url?(_url), do: false
 
   defp syntactic_destination_url?(url) when is_binary(url) do
+    normalized_url = normalize_browser_http_url_for_parsing(url)
+
     with false <- String.match?(url, ~r/[[:space:]\x00-\x1F\x7F]/),
-         %URI{scheme: scheme, host: host, authority: authority} <- URI.parse(url),
+         %URI{scheme: scheme, host: host, authority: authority} <- URI.parse(normalized_url),
          true <- scheme in ["http", "https"],
          true <- is_binary(host) and host != "",
          true <- is_binary(authority),
@@ -88,8 +90,10 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
 
   @spec safe_destination_url?(term()) :: boolean()
   def safe_destination_url?(url) when is_binary(url) do
+    normalized_url = normalize_browser_http_url_for_parsing(url)
+
     with true <- syntactic_destination_url?(url),
-         %URI{host: host, userinfo: nil} <- URI.parse(url),
+         %URI{host: host, userinfo: nil} <- URI.parse(normalized_url),
          {:ok, host} <- canonical_hostname(host),
          true <- valid_hostname?(host),
          false <- localhost_hostname?(host),
@@ -135,8 +139,13 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
 
   defp canonical_hostname(_hostname), do: :error
 
+  defp normalize_browser_http_url_for_parsing(url) do
+    String.replace(url, "\\", "/")
+  end
+
   defp normalize_idna_hostname(hostname) do
     hostname
+    |> URI.decode()
     |> String.normalize(:nfkc)
     |> replace_idna_dot_separators()
   end

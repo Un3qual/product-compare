@@ -156,6 +156,15 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert CommerceLink.valid_destination_url?("https://123.example.com/offer")
     end
 
+    test "accepts browser-canonicalized public hostnames" do
+      assert CommerceLink.valid_destination_url?("https://%65xample.com/offer")
+      assert CommerceLink.valid_destination_url?("https://merchant.example.com\\deal")
+    end
+
+    test "rejects percent-encoded private hostnames after canonicalization" do
+      refute CommerceLink.valid_destination_url?("http://%31%32%37.0.0.1/offer")
+    end
+
     test "accepts unicode IDN hostnames after canonicalizing labels" do
       assert CommerceLink.valid_destination_url?("https://münich.example/offer")
     end
@@ -453,7 +462,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     test "normalizes browser-accepted merchant product URLs before tracking" do
       merchant_product =
         merchant_product_fixture(%{
-          url: " https://merchant.example.com/path with spaces?q=a b "
+          url: " https://merchant.example.com\\path with spaces?q=a b "
         })
 
       assert {:ok, tracked_click} =
@@ -649,6 +658,47 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.click_session_id == nil
       assert conversion.network_click_ref == "impact-subid-123"
       assert conversion.attribution_confidence == :unmatched
+    end
+
+    test "attributes ClickId-only conversions to the clicked merchant product" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: merchant_product.id,
+          anonymous_id: "anon-#{System.unique_integer([:positive])}",
+          source_surface: :web
+        })
+
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "ClickId" => click_session.click_id,
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "12.34",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+      assert conversion.click_session_id == click_session.id
+      assert conversion.public_click_id == click_session.click_id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.product_id == product.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.attribution_confidence == :high
+
+      assert %{
+               "metrics" => %{
+                 "commission_revenue" => "12.34",
+                 "conversions" => 1,
+                 "gross_order_value" => "129.99"
+               }
+             } = CommerceAttribution.product_revenue_summary(product.id, network: :impact)
     end
 
     test "ignores stale follow-up payloads with older reported timestamps" do
