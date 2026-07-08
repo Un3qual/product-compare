@@ -47,9 +47,54 @@ The product-facing follow-up batch is complete. It used existing frontend
 routes and GraphQL contracts, avoided CJ ingestion surfaces, and kept
 backend/schema work out of scope.
 
+The next explicitly requested parallel batch is active. It covers revenue
+readiness, shopper UX polish, and backend quality without reopening deferred
+eBay, ingestion dashboard/operator, live provider, credential, application
+submission, Tier-3 scraping, or CSV export work.
+
 ## Ready Work
 
-None.
+### Commerce Offer Interaction Batch
+
+Status: active
+Lane: Revenue readiness and shopper UX
+Owner: Codex commerce/offers worker
+Next action: Implement first-party tracked outbound commerce clicks for
+existing product/offer surfaces and make `/offers` merchant filtering
+discoverable from visible offer rows.
+Owned paths: `lib/product_compare/commerce_attribution.ex`,
+`lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`,
+`lib/product_compare_web/schema.ex`, commerce attribution and GraphQL tests,
+`assets/schema.graphql`, `assets/src/routes/products/**`,
+`assets/src/routes/offers/**`, related product/offers route tests,
+`docs/work/affiliate-revenue-attribution.md`, and
+`docs/work/frontend-offer-discovery-demo-parity.md`.
+Verification: focused commerce attribution/controller/GraphQL tests,
+`cd assets && bun run relay`, focused product/offers Vitest route tests,
+`cd assets && bun run typecheck`, and `git diff --check`.
+Exit condition: offer/product outbound actions use first-party
+`/r/:click_id` redirects without accepting raw browser-provided destinations,
+`/offers` supports visible merchant quick filters that preserve existing URL
+state and drop stale cursors, and lane docs record evidence.
+
+### GraphQL Connection Contract Hardening
+
+Status: active
+Lane: Backend quality
+Owner: Codex backend-quality worker
+Next action: Harden shared Relay connection pagination so invalid `first`
+values, especially negative integers, return a deterministic GraphQL error
+instead of silently falling back to the default page size while preserving
+default, max clamp, `first: 0`, and malformed cursor behavior.
+Owned paths: `lib/product_compare_web/graphql/connection.ex`, focused GraphQL
+connection tests and shipped connection-surface tests under
+`test/product_compare_web/graphql/**`, and
+`docs/work/backend-graphql-connection-contract-hardening.md`.
+Verification: focused connection and shipped connection-surface GraphQL tests,
+`mix typecheck`, and `git diff --check`.
+Exit condition: all shipped connection surfaces reject invalid page sizes
+consistently, existing cursor/default/clamp behavior still passes, and the lane
+doc records evidence.
 
 ## Blocked Work
 

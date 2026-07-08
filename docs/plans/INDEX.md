@@ -20,7 +20,10 @@ completed. The live queue has no ready rows.
 
 Active implementation plans:
 
-- None.
+- Commerce offer interaction batch: first-party tracked outbound commerce
+  clicks plus `/offers` visible merchant quick filters.
+- GraphQL connection contract hardening: deterministic errors for invalid
+  Relay connection page sizes.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
