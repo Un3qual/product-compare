@@ -64,6 +64,11 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                "data" => %{"merchants" => nil},
                "errors" => [%{"message" => "invalid cursor", "path" => ["merchants"]} | _]
              } = graphql(conn, merchants_query(), %{"first" => 1, "after" => "bad-cursor"})
+
+      assert %{
+               "data" => %{"merchants" => nil},
+               "errors" => [%{"message" => "invalid first", "path" => ["merchants"]} | _]
+             } = graphql(conn, merchants_query(), %{"first" => -1})
     end
 
     test "merchantProducts supports product/merchant/active filters and strict cursor handling",
@@ -212,6 +217,19 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
                    "after" => "bad-cursor"
+                 }
+               })
+
+      assert %{
+               "data" => %{"merchantProducts" => nil},
+               "errors" => [
+                 %{"message" => "invalid first", "path" => ["merchantProducts"]} | _
+               ]
+             } =
+               graphql(conn, merchant_products_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "first" => -1
                  }
                })
     end
@@ -381,6 +399,21 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  merchant_product_pricing_query(),
                  Map.put(variables, "historyAfter", "bad-cursor")
                )
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "invalid first",
+                   "path" => ["merchantProducts", "edges", 0, "node", "priceHistory"]
+                 }
+                 | _
+               ]
+             } =
+               graphql(
+                 conn,
+                 merchant_product_pricing_query(),
+                 Map.put(variables, "historyFirst", -1)
+               )
     end
 
     test "merchantProducts exposes public display active coupons for product offers", %{
@@ -519,6 +552,24 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       assert is_binary(percent_coupon_cursor)
       assert amount_coupon_cursor != percent_coupon_cursor
       assert amount_coupon.id != percent_coupon.id
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "invalid first",
+                   "path" => ["merchantProducts", "edges", 0, "node", "activeCoupons"]
+                 }
+                 | _
+               ]
+             } =
+               graphql(conn, merchant_product_active_coupons_query(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "activeOnly" => true,
+                   "first" => 1
+                 },
+                 "couponFirst" => -1
+               })
     end
 
     test "merchantProducts public display active coupons do not expose coupon node IDs", %{

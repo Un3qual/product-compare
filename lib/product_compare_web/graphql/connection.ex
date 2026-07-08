@@ -9,11 +9,13 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @max_page_size 100
   @cursor_prefix "cursor:"
 
-  @spec from_list([term()], map()) :: {:ok, map()} | {:error, :invalid_cursor}
-  def from_list(items, args) when is_list(items) and is_map(args) do
-    first = args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()
+  @type error_reason :: :invalid_cursor | :invalid_first
 
-    with {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
+  @spec from_list([term()], map()) :: {:ok, map()} | {:error, error_reason()}
+  def from_list(items, args) when is_list(items) and is_map(args) do
+    with {:ok, first} <-
+           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size(),
+         {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       total_count = length(items)
 
       page_items =
@@ -44,12 +46,12 @@ defmodule ProductCompareWeb.GraphQL.Connection do
     end
   end
 
-  @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, :invalid_cursor}
+  @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, error_reason()}
   def from_query(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    first = args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()
-
-    with {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
+    with {:ok, first} <-
+           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size(),
+         {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       fetch_limit = first + 1
 
       query_rows =
@@ -89,6 +91,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
       when is_map(args) and is_atom(repo) do
     case from_query(query, args, repo) do
       {:ok, connection} -> {:ok, connection}
+      {:error, :invalid_first} -> {:error, "invalid first"}
       {:error, :invalid_cursor} -> {:error, "invalid cursor"}
     end
   end
@@ -96,12 +99,12 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   defp edge_cursor(nil), do: nil
   defp edge_cursor(edge), do: edge.cursor
 
-  defp normalize_page_size(nil), do: @default_page_size
+  defp normalize_page_size(nil), do: {:ok, @default_page_size}
 
   defp normalize_page_size(value) when is_integer(value) and value >= 0,
-    do: min(value, @max_page_size)
+    do: {:ok, min(value, @max_page_size)}
 
-  defp normalize_page_size(_value), do: @default_page_size
+  defp normalize_page_size(_value), do: {:error, :invalid_first}
 
   defp encode_cursor(index), do: Base.encode64(@cursor_prefix <> Integer.to_string(index))
 

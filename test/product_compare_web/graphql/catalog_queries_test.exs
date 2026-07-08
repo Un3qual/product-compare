@@ -634,6 +634,15 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, products_query(), %{"after" => "not-a-valid-cursor"})
     end
 
+    test "products rejects invalid first input", %{conn: conn} do
+      SpecsFixtures.product_fixture(%{slug: "catalog-invalid-first"})
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [%{"message" => "invalid first", "path" => ["products"]} | _]
+             } = graphql(conn, products_query(), %{"first" => -1})
+    end
+
     test "products supports numeric attribute filters", %{conn: conn} do
       moderator = AccountsFixtures.user_fixture()
       {attribute, unit} = numeric_attribute_with_unit_fixture()

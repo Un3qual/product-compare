@@ -479,6 +479,32 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
              } = graphql(authed_conn, query, %{"after" => "not-a-valid-cursor"})
     end
 
+    test "myApiTokens rejects invalid first input", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:ok, %{plain_text_token: bootstrap_token}} =
+               Accounts.create_api_token(user.id, %{label: "bootstrap"})
+
+      authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
+
+      query = """
+      query InvalidFirst($first: Int) {
+        myApiTokens(first: $first) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }
+      """
+
+      assert %{
+               "data" => nil,
+               "errors" => [%{"message" => "invalid first", "path" => ["myApiTokens"]} | _]
+             } = graphql(authed_conn, query, %{"first" => -1})
+    end
+
     test "rotateApiToken revokes old token and returns replacement", %{conn: conn} do
       user = user_fixture()
 

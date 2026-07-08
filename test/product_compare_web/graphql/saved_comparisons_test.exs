@@ -71,6 +71,29 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
              } = graphql(conn, my_saved_comparison_sets_query(), %{"first" => 10})
     end
 
+    test "mySavedComparisonSets rejects invalid first input", %{conn: conn} do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-invalid-first-product"})
+
+      assert {:ok, _saved_set} =
+               Catalog.create_saved_comparison_set(user.id, %{
+                 name: "Invalid first setup",
+                 product_ids: [product.id]
+               })
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> put_req_header_same_origin()
+
+      assert %{
+               "data" => %{"mySavedComparisonSets" => nil},
+               "errors" => [
+                 %{"message" => "invalid first", "path" => ["mySavedComparisonSets"]} | _
+               ]
+             } = graphql(conn, my_saved_comparison_sets_query(), %{"first" => -1})
+    end
+
     test "createSavedComparisonSet creates a saved set from relay product ids", %{conn: conn} do
       user = AccountsFixtures.user_fixture()
       first_product = SpecsFixtures.product_fixture(%{slug: "saved-create-first"})
