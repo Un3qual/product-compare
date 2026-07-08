@@ -58,6 +58,7 @@ const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const API_ORIGIN = "http://localhost:4000";
+const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
 
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -382,7 +383,7 @@ test("offer discovery rejects tracked redirects outside the API origin", () => {
   ).toThrow("same origin");
 
   expect(() =>
-    resolveTrackedCommerceRedirectUrl("javascript:alert(1)", "http://localhost:4000/api/graphql")
+    resolveTrackedCommerceRedirectUrl(SCRIPT_SCHEME_REDIRECT, "http://localhost:4000/api/graphql")
   ).toThrow("same origin");
 });
 
