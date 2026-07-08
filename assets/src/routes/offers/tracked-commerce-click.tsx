@@ -10,11 +10,9 @@ import {
 import { trackCommerceClickMutation } from "./mutations/TrackCommerceClickMutation";
 
 export function TrackedCommerceClickAction({
-  href,
   label,
   merchantProductId
 }: {
-  href: string;
   label: string;
   merchantProductId: string;
 }) {
@@ -66,7 +64,7 @@ export function TrackedCommerceClickAction({
     <>
       <a
         aria-disabled={isPending ? "true" : undefined}
-        href={href}
+        href={trackedMerchantProductHref(merchantProductId)}
         onClick={isPending ? preventPendingNavigation : handleClick}
       >
         {label}
@@ -88,4 +86,10 @@ function shouldTrackClick(event: MouseEvent<HTMLAnchorElement>) {
 
 function preventPendingNavigation(event: MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
+}
+
+function trackedMerchantProductHref(merchantProductId: string) {
+  const params = new URLSearchParams({ merchantProductId });
+
+  return `/r/merchant-product?${params.toString()}`;
 }

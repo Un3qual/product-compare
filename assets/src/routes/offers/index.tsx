@@ -159,7 +159,6 @@ function OfferListItem({
           productName={offerProductName(offer.product)}
         />
         <OfferMerchantAction
-          href={externalHttpUrlHref(offer.url)}
           merchantName={merchantName}
           merchantProductId={offer.id}
         />
@@ -199,22 +198,19 @@ function OfferListItemHeader({
 }
 
 function OfferMerchantAction({
-  href,
   merchantProductId,
   merchantName
 }: {
-  href: string | null;
   merchantProductId: string;
   merchantName: string;
 }) {
-  if (!href || !merchantProductId) {
+  if (!merchantProductId) {
     return null;
   }
 
   return (
     <div>
       <TrackedCommerceClickAction
-        href={href}
         label={merchantName}
         merchantProductId={merchantProductId}
       />

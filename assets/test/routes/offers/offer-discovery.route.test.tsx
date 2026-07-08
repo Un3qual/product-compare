@@ -285,7 +285,7 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByRole("heading", { name: "Detail Product" })).toBeVisible();
   expect(offerContent.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
     "href",
-    "https://merchant.example.com/detail-product"
+    "/r/merchant-product?merchantProductId=merchant-product-1"
   );
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
@@ -331,7 +331,7 @@ test("offer discovery keeps offer actions when merchant metadata is unavailable"
 
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    "https://merchant.example.com/no-merchant-offer"
+    "/r/merchant-product?merchantProductId=merchant-product-without-merchant"
   );
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
 });

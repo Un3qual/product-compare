@@ -315,7 +315,6 @@ function ProductOffers({
         {offers.map((offer) => (
           <li key={offer.id}>
             <TrackedCommerceClickAction
-              href={offer.url}
               label={offer.merchantName}
               merchantProductId={offer.id}
             />

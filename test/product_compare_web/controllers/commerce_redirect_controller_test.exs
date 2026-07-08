@@ -48,6 +48,53 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
     end
   end
 
+  describe "GET /r/merchant-product" do
+    test "records and redirects merchant product exits from first-party links", %{conn: conn} do
+      merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
+
+      conn =
+        get(
+          conn,
+          "/r/merchant-product?merchantProductId=#{URI.encode_www_form(relay_id(:merchant_product, merchant_product.id))}"
+        )
+
+      assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
+
+      assert Repo.aggregate(ProductCompareSchemas.CommerceAttribution.CommerceLink, :count, :id) ==
+               1
+
+      assert Repo.aggregate(
+               ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+               :count,
+               :id
+             ) == 1
+    end
+
+    test "returns 404 for invalid merchant product ids", %{conn: conn} do
+      conn = get(conn, "/r/merchant-product?merchantProductId=not-a-relay-id")
+
+      assert response(conn, 404) == "redirect not found"
+    end
+
+    test "returns 404 for inactive merchant product ids", %{conn: conn} do
+      merchant_product = merchant_product_fixture(%{is_active: false})
+
+      conn =
+        get(
+          conn,
+          "/r/merchant-product?merchantProductId=#{URI.encode_www_form(relay_id(:merchant_product, merchant_product.id))}"
+        )
+
+      assert response(conn, 404) == "redirect not found"
+
+      assert Repo.aggregate(
+               ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+               :count,
+               :id
+             ) == 0
+    end
+  end
+
   defp click_session_fixture(commerce_link) do
     {:ok, click_session} =
       CommerceAttribution.create_click_session(%{
