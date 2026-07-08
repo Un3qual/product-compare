@@ -324,7 +324,8 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp persist_tracked_click(attrs, destination) do
     Repo.transaction(fn ->
-      with {:ok, commerce_link} <- upsert_commerce_link(commerce_link_attrs(destination)),
+      with {:ok, commerce_link} <- upsert_commerce_link(tracked_commerce_link_attrs(destination)),
+           :ok <- ensure_commerce_link_active(commerce_link),
            {:ok, click_session} <-
              create_click_session(click_session_attrs(attrs, commerce_link.id)) do
         %{
@@ -340,6 +341,17 @@ defmodule ProductCompare.CommerceAttribution do
 
   defp unwrap_transaction({:ok, tracked_click}), do: {:ok, tracked_click}
   defp unwrap_transaction({:error, reason}), do: {:error, reason}
+
+  defp tracked_commerce_link_attrs(destination) do
+    destination
+    |> commerce_link_attrs()
+    |> Map.delete(:is_active)
+  end
+
+  defp ensure_commerce_link_active(%CommerceLink{is_active: true}), do: :ok
+
+  defp ensure_commerce_link_active(%CommerceLink{is_active: false}),
+    do: {:error, :merchant_product_not_found}
 
   defp commerce_link_attrs(destination) do
     %{

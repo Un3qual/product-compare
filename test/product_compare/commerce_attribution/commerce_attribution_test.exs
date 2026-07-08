@@ -118,6 +118,16 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "CommerceLink.valid_destination_url?/1" do
+    test "rejects expanded loopback and mapped private IPv6 host forms" do
+      for destination_url <- [
+            "http://[0:0:0:0:0:0:0:1]/",
+            "http://[0:0:0:0:0:ffff:7f00:1]/",
+            "http://[0:0:0:0:0:ffff:a9fe:a9fe]/"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
     test "rejects browser-canonicalized private IPv4 host forms" do
       for destination_url <- [
             "http://2130706433/",
@@ -274,6 +284,35 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert tracked_click.click_session.merchant_product_id == merchant_product.id
       assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
+    end
+
+    test "treats existing disabled commerce links as unavailable" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/disabled-product"
+        })
+
+      disabled_link =
+        commerce_link_fixture(%{
+          merchant: merchant,
+          destination_url: merchant_product.url,
+          link_type: :non_affiliate,
+          network: nil,
+          is_active: false
+        })
+
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert Repo.get!(CommerceLink, disabled_link.id).is_active == false
+      assert Repo.aggregate(CommerceLink, :count, :id) == 1
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
     end
 
     test "falls back to the merchant product URL when the affiliate URL is unsafe" do

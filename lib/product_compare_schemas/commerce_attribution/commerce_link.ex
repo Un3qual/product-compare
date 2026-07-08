@@ -4,7 +4,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
   @networks [:impact, :awin, :rakuten, :cj, :amazon_associates]
   @link_types [:affiliate, :non_affiliate]
   @documentation_ipv4_ranges MapSet.new(["192.0.2", "198.51.100", "203.0.113"])
-  @reserved_ipv6_prefixes ["fc", "fd", "fe8", "fe9", "fea", "feb", "ff", "2001:db8"]
 
   @type t :: %__MODULE__{}
 
@@ -104,7 +103,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
 
   defp valid_hostname?(hostname) when is_binary(hostname) do
     if String.contains?(hostname, ":") do
-      true
+      match?({:ok, address} when tuple_size(address) == 8, parse_ip_address(hostname))
     else
       hostname
       |> String.split(".")
@@ -132,7 +131,26 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
 
     case parse_ipv4_address(hostname) do
       {:ok, address} -> reserved_ipv4_address?(address)
-      :error -> reserved_ipv6_address?(hostname)
+      :error -> parsed_reserved_ip_address?(hostname)
+    end
+  end
+
+  defp parse_ip_address(hostname) do
+    hostname =
+      hostname
+      |> String.trim_leading("[")
+      |> String.trim_trailing("]")
+
+    case :inet.parse_address(String.to_charlist(hostname)) do
+      {:ok, address} -> {:ok, address}
+      {:error, _reason} -> :error
+    end
+  end
+
+  defp parsed_reserved_ip_address?(hostname) do
+    case parse_ip_address(hostname) do
+      {:ok, address} -> reserved_ip_address?(address)
+      :error -> false
     end
   end
 
@@ -222,55 +240,22 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
       (first == 198 and second in [18, 19])
   end
 
-  defp reserved_ipv6_address?(hostname) do
-    with true <- String.contains?(hostname, ":"),
-         address = String.trim(hostname, "[]") do
-      case embedded_ipv4_address(address) do
-        {:ok, ipv4_address} ->
-          reserved_ipv4_address?(ipv4_address)
+  defp reserved_ip_address?({_, _, _, _} = address), do: reserved_ipv4_address?(address)
 
-        :error ->
-          address in ["::", "::1"] or
-            Enum.any?(@reserved_ipv6_prefixes, &String.starts_with?(address, &1))
-      end
-    else
-      _not_ipv6 -> false
-    end
+  defp reserved_ip_address?({0, 0, 0, 0, 0, 0, high_word, low_word}),
+    do: high_word_low_word_to_ipv4(high_word, low_word) |> reserved_ipv4_address?()
+
+  defp reserved_ip_address?({0, 0, 0, 0, 0, 0xFFFF, high_word, low_word}),
+    do: high_word_low_word_to_ipv4(high_word, low_word) |> reserved_ipv4_address?()
+
+  defp reserved_ip_address?({first, second, _, _, _, _, _, _}) do
+    first in 0xFC00..0xFDFF or
+      first in 0xFE80..0xFEBF or
+      first in 0xFF00..0xFFFF or
+      (first == 0x2001 and second == 0x0DB8)
   end
 
-  defp embedded_ipv4_address("::ffff:" <> suffix), do: embedded_ipv4_address_suffix(suffix)
-  defp embedded_ipv4_address("::" <> suffix), do: embedded_ipv4_address_suffix(suffix)
-  defp embedded_ipv4_address(_address), do: :error
-
-  defp embedded_ipv4_address_suffix(""), do: :error
-
-  defp embedded_ipv4_address_suffix(suffix) do
-    case parse_ipv4_address(suffix) do
-      {:ok, ipv4_address} ->
-        {:ok, ipv4_address}
-
-      :error ->
-        parse_ipv4_hex_words(suffix)
-    end
-  end
-
-  defp parse_ipv4_hex_words(suffix) do
-    with [high_word, low_word] <- String.split(suffix, ":"),
-         {:ok, high_word} <- parse_ipv6_hex_word(high_word),
-         {:ok, low_word} <- parse_ipv6_hex_word(low_word) do
-      {:ok, {div(high_word, 256), rem(high_word, 256), div(low_word, 256), rem(low_word, 256)}}
-    else
-      _invalid -> :error
-    end
-  end
-
-  defp parse_ipv6_hex_word(word) do
-    with true <- String.match?(word, ~r/^[0-9A-Fa-f]{1,4}$/),
-         {parsed_word, ""} <- Integer.parse(word, 16),
-         true <- parsed_word <= 0xFFFF do
-      {:ok, parsed_word}
-    else
-      _invalid -> :error
-    end
+  defp high_word_low_word_to_ipv4(high_word, low_word) do
+    {div(high_word, 256), rem(high_word, 256), div(low_word, 256), rem(low_word, 256)}
   end
 end
