@@ -5,8 +5,7 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-08 after Commerce Offer Interaction focused offer
-  route verification
+- Last verified: 2026-07-09 after selected-product label context verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -16,9 +15,9 @@
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
 
-## Product-Facing Curation Batch
+## Offer Discovery Product Label Context Evidence
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`.
 - Owned paths:
@@ -38,6 +37,34 @@
 - Exit condition: `/offers` renders readable selected-product context from the
   existing product node contract while preserving active-only, merchant,
   page-size, sort, reset, quick-filter, tracking, and pagination behavior.
+- Implemented:
+  - Extended the existing offer-discovery Relay query with
+    `selectedProduct: node(id: $productId)` and product name, slug, and brand
+    fields; no backend lookup field or second network request was added.
+  - The loader now passes the normalized product ID to both the existing
+    `merchantProducts(input:)` filter and the selected-product node lookup.
+  - Ready-state filter context shows the selected product name, brand, and an
+    encoded `/products/:slug` detail link even when the offer page is empty.
+  - Missing, non-product, loading, loader-error, and query-unavailable states
+    retain the raw product-ID summary as a resilient fallback.
+  - Existing active-only, merchant, page-size, sort, reset, visible merchant
+    filter, tracked commerce action, and pagination behavior remains covered by
+    the focused route suite.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+    failed with 10 expected failures for the missing dual product-ID variables,
+    readable context, empty-state context, and detail navigation.
+  - GREEN: the same focused command passed 54 tests after adding the node lookup
+    and readable summary.
+  - Loading-state RED: the route test failed once because moving the summary
+    behind Relay temporarily hid raw product context during suspension.
+  - Loading-state GREEN: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    - 44 tests, 0 failures after restoring the summary in the loading fallback.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+    - 55 tests, 0 failures.
+  - Final: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Current Usable Product Batch
 
