@@ -431,6 +431,10 @@ Completion evidence remains under each assigned heading.
 - Next decision:
   - Further ingestion work remains deferred; the live queue is now empty after
     the product-facing follow-up batch completed.
+  - Coordinator triage on 2026-07-08 found no promotable non-deferred ingestion
+    candidate. Keep the live queue on a `needs_decision` row until the product
+    decision either reverses the eBay/dashboard deferrals or selects a different
+    concrete product direction.
   - Dashboard-oriented ingestion work is deferred by product decision as of
     2026-07-08, including exposing CJ read models through a dashboard contract,
     continuing source-health dashboard slices, or creating ingestion operator

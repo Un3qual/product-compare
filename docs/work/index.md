@@ -58,6 +58,22 @@ scraping, or CSV export work.
 
 None.
 
+## Needs Decision Work
+
+Status: needs_decision
+Lane: coordinator / product-data-scraping
+Decision needed: choose the next product direction before starting another
+worker batch. The current catalog has no non-deferred implementation candidates:
+eBay Browse fallback and ingestion dashboard/operator surfaces are deferred by
+product decision as of 2026-07-08, and CJ candidate CSV score export is
+rejected.
+Owner: product/coordinator.
+Allowed docs: `docs/work/index.md`, the directly affected lane doc, and
+`docs/plans/INDEX.md` only if the decision creates or reprioritizes a concrete
+candidate.
+Exit condition: replace this decision row with exactly one `ready` row that
+names owned paths and verification, or leave the missing decision named.
+
 ## Blocked Work
 
 None.

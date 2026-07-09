@@ -18,6 +18,9 @@ batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
 completed. The live queue has no ready rows.
 
+The live queue now carries a coordinator-owned `needs_decision` row because the
+only catalog candidates are deferred by product decision or rejected.
+
 Active implementation plans:
 
 - None.
