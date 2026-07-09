@@ -34,6 +34,7 @@ type Mutation {
   createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
   revokeApiToken(tokenId: ID!): RevokeApiTokenPayload!
   rotateApiToken(tokenId: ID!, label: String, expiresAt: DateTime): CreateApiTokenPayload!
+  trackCommerceClick(input: TrackCommerceClickInput!): TrackCommerceClickPayload!
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
   upsertAffiliateProgram(input: UpsertAffiliateProgramInput!): UpsertAffiliateProgramPayload
   upsertAffiliateLink(input: UpsertAffiliateLinkInput!): UpsertAffiliateLinkPayload
@@ -413,6 +414,10 @@ input UpsertAffiliateNetworkInput {
   name: String!
 }
 
+input TrackCommerceClickInput {
+  merchantProductId: ID!
+}
+
 input UpsertAffiliateProgramInput {
   affiliateNetworkId: ID!
   merchantId: ID!
@@ -520,6 +525,11 @@ type CreateApiTokenPayload {
 
 type RevokeApiTokenPayload {
   apiToken: ApiToken
+  errors: [MutationError!]!
+}
+
+type TrackCommerceClickPayload {
+  redirectPath: String
   errors: [MutationError!]!
 }
 

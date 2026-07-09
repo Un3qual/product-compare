@@ -557,6 +557,22 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } = response
     end
 
+    test "activeCoupons rejects invalid first input", %{conn: conn} do
+      authed_conn = authed_conn(conn)
+      merchant = merchant_fixture()
+      merchant_id = relay_id(:merchant, merchant.id)
+
+      response =
+        graphql(authed_conn, active_coupons_query(), %{
+          "input" => %{"merchantId" => merchant_id, "first" => -1}
+        })
+
+      assert %{
+               "data" => %{"activeCoupons" => nil},
+               "errors" => [%{"message" => "invalid first", "path" => ["activeCoupons"]} | _]
+             } = response
+    end
+
     test "activeCoupons rejects raw merchant IDs", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()

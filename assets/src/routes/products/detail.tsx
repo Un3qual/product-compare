@@ -19,6 +19,7 @@ import {
 import { CompareSelectionTray } from "../compare/selection-tray";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
+import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -313,9 +314,10 @@ function ProductOffers({
       <ul aria-label="Active offer list">
         {offers.map((offer) => (
           <li key={offer.id}>
-            <a href={offer.url} target="_blank" rel="noopener noreferrer">
-              {offer.merchantName}
-            </a>
+            <TrackedCommerceClickAction
+              label={offer.merchantName}
+              merchantProductId={offer.id}
+            />
             {offer.priceText ? <p>{offer.priceText}</p> : null}
             <OfferPriceHistory
               merchantName={offer.merchantName}

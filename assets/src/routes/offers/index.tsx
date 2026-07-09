@@ -19,6 +19,7 @@ import {
   OfferDiscoveryFilterSummary
 } from "./filters";
 import { offerDiscoveryPath } from "./paths";
+import { TrackedCommerceClickAction } from "./tracked-commerce-click";
 
 type OfferConnection = NonNullable<
   OfferDiscoveryRouteQuery["response"]["merchantProducts"]
@@ -30,13 +31,16 @@ type CouponEdge = ActiveCouponsConnection["edges"][number];
 type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
 type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
 type RenderableOffer = {
-  href: string;
   latestPriceCurrency: string | null;
   latestPriceValue: number | null;
   offer: OfferNode;
   originalIndex: number;
 };
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
+type VisibleMerchant = {
+  id: string;
+  name: string;
+};
 
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base"
@@ -120,7 +124,6 @@ function OfferDiscoveryList({
             <OfferListItem
               key={renderableOffer.offer.id}
               offer={renderableOffer.offer}
-              offerHref={renderableOffer.href}
               highlightLabel={priceSortHighlightLabel(
                 filters.sort,
                 index,
@@ -131,6 +134,7 @@ function OfferDiscoveryList({
           ))}
         </ul>
       )}
+      <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={connection} filters={filters} />
     </>
   );
@@ -138,11 +142,9 @@ function OfferDiscoveryList({
 
 function OfferListItem({
   offer,
-  offerHref,
   highlightLabel
 }: {
   offer: OfferNode;
-  offerHref: string;
   highlightLabel: string | null;
 }) {
   const priceHistory = priceHistoryConnection(offer.priceHistory);
@@ -156,7 +158,12 @@ function OfferListItem({
           isActive={offer.isActive}
           productName={offerProductName(offer.product)}
         />
-        <OfferMerchantLink href={offerHref} merchantName={merchantName} />
+        <OfferMerchantAction
+          isActive={offer.isActive}
+          merchantName={merchantName}
+          merchantProductId={offer.id}
+          merchantUrl={offer.url}
+        />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
 
         {highlightLabel ? <p>{highlightLabel}</p> : null}
@@ -192,22 +199,120 @@ function OfferListItemHeader({
   );
 }
 
-function OfferMerchantLink({
-  href,
+function OfferMerchantAction({
+  isActive,
+  merchantProductId,
+  merchantUrl,
   merchantName
 }: {
-  href: string;
+  isActive: boolean;
+  merchantProductId: string;
+  merchantUrl: string;
   merchantName: string;
 }) {
-  if (!href) {
+  if (isActive && merchantProductId) {
+    return (
+      <div>
+        <TrackedCommerceClickAction
+          label={merchantName}
+          merchantProductId={merchantProductId}
+        />
+      </div>
+    );
+  }
+
+  const directMerchantHref = externalHttpUrlHref(merchantUrl);
+
+  if (!directMerchantHref) {
     return null;
   }
 
   return (
-    <p>
-      <a href={href}>{merchantName}</a>
-    </p>
+    <div>
+      <a href={directMerchantHref}>{merchantName}</a>
+    </div>
   );
+}
+
+function VisibleMerchantFilters({
+  filters,
+  offers
+}: {
+  filters: OfferDiscoveryFilters;
+  offers: ReadonlyArray<RenderableOffer>;
+}) {
+  const merchants = visibleMerchants(offers);
+  const activeMerchant = activeVisibleMerchant(filters.merchantId, merchants);
+  const filterableMerchants = merchants.filter((merchant) => merchant.id !== filters.merchantId);
+
+  if (isEmptyMerchantFilterSection(activeMerchant, filterableMerchants)) {
+    return null;
+  }
+
+  return (
+    <section aria-label="Merchant filters on this page">
+      <ActiveMerchantFilterSummary merchant={activeMerchant} />
+      <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
+    </section>
+  );
+}
+
+function ActiveMerchantFilterSummary({ merchant }: { merchant: VisibleMerchant | null }) {
+  return merchant ? <p>{`Filtered to ${merchant.name}`}</p> : null;
+}
+
+function VisibleMerchantFilterLinks({
+  filters,
+  merchants
+}: {
+  filters: OfferDiscoveryFilters;
+  merchants: ReadonlyArray<VisibleMerchant>;
+}) {
+  if (merchants.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul>
+      {merchants.map((merchant) => (
+        <li key={merchant.id}>
+          <Link to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}>
+            {`Filter to ${merchant.name}`}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function activeVisibleMerchant(
+  merchantId: string | null,
+  merchants: ReadonlyArray<VisibleMerchant>
+) {
+  if (!merchantId) {
+    return null;
+  }
+
+  return merchants.find((merchant) => merchant.id === merchantId) ?? null;
+}
+
+function isEmptyMerchantFilterSection(
+  activeMerchant: VisibleMerchant | null,
+  filterableMerchants: ReadonlyArray<VisibleMerchant>
+) {
+  return !activeMerchant && filterableMerchants.length === 0;
+}
+
+function visibleMerchants(offers: ReadonlyArray<RenderableOffer>): VisibleMerchant[] {
+  const merchants = new Map<string, string>();
+
+  for (const { offer } of offers) {
+    if (offer.merchant?.id && offer.merchant.name) {
+      merchants.set(offer.merchant.id, offer.merchant.name);
+    }
+  }
+
+  return Array.from(merchants, ([id, name]) => ({ id, name }));
 }
 
 function OfferMerchantDomain({ domain }: { domain: string | null }) {
@@ -371,12 +476,10 @@ function renderableOffers(connection: OfferConnection) {
   const offers: RenderableOffer[] = [];
 
   connection.edges.forEach(({ node: offer }, originalIndex) => {
-    const href = externalHttpUrlHref(offer.url);
     const latestPriceValue = numericLatestPrice(offer);
 
-    if (href) {
+    if (externalHttpUrlHref(offer.url)) {
       offers.push({
-        href,
         latestPriceCurrency: latestPriceValue === null ? null : offer.currency,
         latestPriceValue,
         offer,

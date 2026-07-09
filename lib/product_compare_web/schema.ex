@@ -212,6 +212,13 @@ defmodule ProductCompareWeb.Schema do
       resolve(&AuthResolver.rotate_api_token/3)
     end
 
+    @desc "Creates a first-party tracked outbound commerce click."
+    field :track_commerce_click, non_null(:track_commerce_click_payload) do
+      arg(:input, non_null(:track_commerce_click_input))
+
+      resolve(&CommerceAttributionResolver.track_commerce_click/3)
+    end
+
     @desc "Upserts an affiliate network by name."
     field :upsert_affiliate_network, :upsert_affiliate_network_payload do
       arg(:input, non_null(:upsert_affiliate_network_input))
@@ -264,6 +271,10 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :upsert_affiliate_network_input do
     field :name, non_null(:string)
+  end
+
+  input_object :track_commerce_click_input do
+    field :merchant_product_id, non_null(:id)
   end
 
   input_object :revenue_summary_input do
@@ -468,6 +479,11 @@ defmodule ProductCompareWeb.Schema do
 
   object :saved_comparison_set_payload do
     field :saved_comparison_set, :saved_comparison_set
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :track_commerce_click_payload do
+    field :redirect_path, :string
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 

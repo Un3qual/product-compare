@@ -32,11 +32,12 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
-| blocked | eBay Browse fallback connector | CJ validation records that the approved CJ account lacks usable product catalog scope. | Create the fallback plan from the CJ decision evidence rather than guessing before the blocker resolves. |
+| deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
+| deferred | Ingestion dashboard and operator surfaces | Product decision reverses the 2026-07-08 dashboard deferral and chooses one concrete non-secret read-only contract. | Do not promote CJ read-model dashboard contracts, source-health dashboard slices, or ingestion operator dashboard surfaces while deferred. |
 
 ## Planned Follow-Up Groups
 
-- No planned follow-up groups are currently listed outside the blocked
+- No planned follow-up groups are currently listed outside the deferred
   candidate pool. Start at `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive
@@ -45,6 +46,14 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Parallel execution batch:
+  `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`,
+  `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`,
+  and `docs/work/backend-graphql-connection-contract-hardening.md` covered
+  commerce offer interaction with first-party tracked outbound clicks,
+  `/offers` visible merchant quick filters, and GraphQL connection contract
+  hardening for invalid Relay page sizes.
 
 - Product-facing follow-up batch:
   `docs/plans/2026-07-02-catalog-product-card-spec-teasers-implementation-plan.md`,

@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-03
+Updated: 2026-07-08
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -47,22 +47,35 @@ The product-facing follow-up batch is complete. It used existing frontend
 routes and GraphQL contracts, avoided CJ ingestion surfaces, and kept
 backend/schema work out of scope.
 
+The explicitly requested revenue readiness, shopper UX polish, and backend
+quality parallel batch is complete. It added first-party tracked commerce
+clicks, `/offers` visible merchant quick filters, and deterministic invalid
+Relay connection page-size errors without reopening deferred eBay, ingestion
+dashboard/operator, live provider, credential, application submission, Tier-3
+scraping, or CSV export work.
+
 ## Ready Work
 
 None.
 
 ## Blocked Work
 
-### eBay Browse Fallback Connector
-
-Status: blocked
-Lane: Product ingestion (`docs/work/product-data-scraping.md`)
-Blocker: CJ validation records that the approved CJ account lacks usable product
-catalog scope.
-Unblock condition: record CJ catalog-scope evidence or an explicit product
-decision to pursue the fallback connector.
+None.
 
 ## Just Completed
+
+The 2026-07-08 parallel execution batch completed these work items:
+
+- Revenue readiness and shopper UX: product detail and `/offers` merchant
+  actions now use a first-party `trackCommerceClick(input:)` GraphQL mutation
+  that accepts only `merchantProductId`, resolves destinations server-side, and
+  returns relative `/r/:click_id` redirect paths.
+- Offer discovery UX: `/offers` now exposes visible merchant quick filters from
+  loaded offer rows, preserves route-local filters, and drops stale cursors when
+  applying a merchant filter.
+- Backend quality: shared Relay connection pagination now rejects invalid
+  `first` values with deterministic `invalid first` GraphQL errors while
+  preserving default, clamp, `first: 0`, and malformed cursor behavior.
 
 The 2026-07-03 product-facing follow-up batch completed these five work items:
 
@@ -143,8 +156,10 @@ The 2026-06-27 cross-project parallel batch completed these ten work items:
 
 Application submission, account-manager contact, Tier-3 scraping, credential
 persistence, and CSV export remain out of scope. CJ candidate CSV score export
-is rejected and should not be promoted. eBay Browse fallback remains blocked on
-CJ catalog-scope evidence.
+is rejected and should not be promoted. eBay Browse fallback is deferred by
+product decision as of 2026-07-08 and should not be promoted until that decision
+is reversed. Ingestion dashboard and operator surfaces are also deferred by
+product decision as of 2026-07-08.
 
 ## Executor Prompts
 

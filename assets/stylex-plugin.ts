@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import relayPlugin from "babel-plugin-relay";
 import stylexPlugin from "@stylexjs/babel-plugin";
 import react from "@vitejs/plugin-react";
 
@@ -9,6 +10,7 @@ export function reactWithStyleX() {
   return react({
     babel: {
       plugins: [
+        relayPlugin,
         [
           stylexPlugin,
           {

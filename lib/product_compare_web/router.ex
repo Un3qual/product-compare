@@ -31,6 +31,7 @@ defmodule ProductCompareWeb.Router do
   end
 
   scope "/", ProductCompareWeb do
+    get "/r/merchant-product", CommerceRedirectController, :merchant_product
     get "/r/:click_id", CommerceRedirectController, :show
   end
 

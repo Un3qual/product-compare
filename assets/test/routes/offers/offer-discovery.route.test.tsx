@@ -1,15 +1,22 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { OfferDiscoveryRoute } from "../../../src/routes/offers/index";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click";
 
 const {
+  commitCommerceClickMock,
+  graphqlMock,
+  useMutationMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
 } = vi.hoisted(() => ({
+  commitCommerceClickMock: vi.fn(),
+  graphqlMock: vi.fn(),
+  useMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
@@ -29,6 +36,8 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    graphql: graphqlMock,
+    useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
 });
@@ -45,8 +54,11 @@ vi.mock("../../../src/relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
+const API_ORIGIN = "http://localhost:4000";
+const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
 
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -68,9 +80,12 @@ const OFFER_DISCOVERY_QUERY_REF = {
 };
 
 beforeEach(() => {
+  commitCommerceClickMock.mockReset();
+  useMutationMock.mockReset();
   useLoaderDataMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
+  mockedUseMutation.mockReturnValue([commitCommerceClickMock, false] as never);
   OFFER_DISCOVERY_QUERY_REF.dispose.mockReset();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockedUseRoutePreloadedQuery.mockReturnValue(OFFER_DISCOVERY_QUERY_REF as never);
@@ -273,7 +288,7 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByRole("heading", { name: "Detail Product" })).toBeVisible();
   expect(offerContent.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
     "href",
-    "https://merchant.example.com/detail-product"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
   );
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
@@ -292,7 +307,7 @@ test("offer discovery renders ready offer rows", () => {
   );
 });
 
-test("offer discovery keeps offer links when merchant metadata is unavailable", () => {
+test("offer discovery keeps offer actions when merchant metadata is unavailable", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
@@ -319,9 +334,171 @@ test("offer discovery keeps offer links when merchant metadata is unavailable", 
 
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    "https://merchant.example.com/no-merchant-offer"
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-without-merchant`
   );
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
+});
+
+test("offer discovery tracks merchant clicks with only the merchant product ID", () => {
+  renderOfferDiscoveryRoute();
+
+  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+
+  expect(commitCommerceClickMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      variables: {
+        input: {
+          merchantProductId: "merchant-product-1"
+        }
+      }
+    })
+  );
+  expect(JSON.stringify(commitCommerceClickMock.mock.calls[0]?.[0]?.variables)).not.toContain(
+    "https://merchant.example.com/detail-product"
+  );
+});
+
+test("offer discovery resolves tracked redirects against the API origin", () => {
+  expect(
+    resolveTrackedCommerceRedirectUrl(
+      "/r/click-123?merchantProductId=merchant-product-1",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toBe("http://localhost:4000/r/click-123?merchantProductId=merchant-product-1");
+});
+
+test("offer discovery rejects tracked redirects outside the API origin", () => {
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl(
+      "https://attacker.example/r/click-123",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toThrow("same origin");
+
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl(
+      "//attacker.example/r/click-123",
+      "http://localhost:4000/api/graphql"
+    )
+  ).toThrow("same origin");
+
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl(SCRIPT_SCHEME_REDIRECT, "http://localhost:4000/api/graphql")
+  ).toThrow("same origin");
+});
+
+test("offer discovery blocks pending tracked merchant action re-clicks", () => {
+  mockedUseMutation.mockReturnValue([commitCommerceClickMock, true] as never);
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Acme Market" });
+  const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+  expect(merchantLink).toHaveAttribute("aria-disabled", "true");
+
+  fireEvent(merchantLink, clickEvent);
+
+  expect(clickEvent.defaultPrevented).toBe(true);
+  expect(commitCommerceClickMock).not.toHaveBeenCalled();
+});
+
+test("offer discovery keeps active All offers rows on tracked merchant actions", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ activeOnly: false }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-active",
+          url: "https://merchant.example.com/active-offer",
+          isActive: true,
+          merchant: buildMerchant("merchant-active", "Active Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Active Market" });
+
+  expect(screen.getByText("All offers")).toBeVisible();
+  expect(merchantLink).toHaveAttribute(
+    "href",
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-active`
+  );
+
+  fireEvent.click(merchantLink);
+
+  expect(commitCommerceClickMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      variables: {
+        input: {
+          merchantProductId: "merchant-product-active"
+        }
+      }
+    })
+  );
+});
+
+test("offer discovery renders inactive All offers rows as safe direct merchant links", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ activeOnly: false }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-inactive",
+          url: "https://merchant.example.com/inactive-offer",
+          isActive: false,
+          merchant: buildMerchant("merchant-inactive", "Inactive Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const merchantLink = screen.getByRole("link", { name: "Inactive Market" });
+
+  expect(screen.getByText("All offers")).toBeVisible();
+  expect(screen.getByText("Inactive")).toBeVisible();
+  expect(merchantLink).toHaveAttribute(
+    "href",
+    "https://merchant.example.com/inactive-offer"
+  );
+
+  merchantLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  fireEvent.click(merchantLink);
+
+  expect(commitCommerceClickMock).not.toHaveBeenCalled();
+});
+
+test("offer discovery renders tracked click errors without nested paragraph markup", () => {
+  commitCommerceClickMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        trackCommerceClick: {
+          redirectPath: null,
+          errors: [
+            {
+              code: "INVALID_ARGUMENT",
+              field: null,
+              message: "Offer unavailable."
+            }
+          ]
+        }
+      },
+      null
+    );
+  });
+
+  renderOfferDiscoveryRoute();
+  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+
+  const alert = screen.getByRole("alert");
+
+  expect(alert).toHaveTextContent("Offer unavailable.");
+  expect(alert.parentElement?.tagName).not.toBe("P");
 });
 
 test.each([
@@ -351,6 +528,141 @@ test.each([
 
   expect(screen.getByText("No offers match these filters.")).toBeVisible();
   expect(screen.queryByRole("link", { name: "Unsafe Market" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Filter to Unsafe Market" })).not.toBeInTheDocument();
+});
+
+test("offer discovery exposes row merchant filter actions that preserve filters and drop cursors", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      activeOnly: false,
+      after: "stale-cursor",
+      first: 12,
+      sort: "price_asc"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-acme",
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+        }),
+        buildOffer({
+          id: "merchant-product-value",
+          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("link", { name: "Filter to Acme Market" })).toHaveAttribute(
+    "href",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_asc"
+  );
+  expect(screen.getByRole("link", { name: "Filter to Value Mart" })).toHaveAttribute(
+    "href",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6Nzg5&activeOnly=false&first=12&sort=price_asc"
+  );
+});
+
+test("offer discovery de-duplicates visible merchant filters by merchant id", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-acme-1",
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+        }),
+        buildOffer({
+          id: "merchant-product-acme-2",
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+        }),
+        buildOffer({
+          id: "merchant-product-value",
+          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getAllByRole("link", { name: "Filter to Acme Market" })).toHaveLength(1);
+  expect(screen.getByRole("link", { name: "Filter to Value Mart" })).toBeVisible();
+});
+
+test("offer discovery omits merchant filters with missing display names", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-empty-name",
+          merchant: { ...buildMerchant("merchant-empty", "Empty Merchant"), name: "" }
+        }),
+        buildOffer({
+          id: "merchant-product-null-merchant",
+          merchant: null
+        }),
+        buildOffer({
+          id: "merchant-product-value",
+          merchant: buildMerchant("merchant-value", "Value Mart")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.queryByRole("link", { name: /^Filter to $/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Filter to Value Mart" })).toBeVisible();
+});
+
+test("offer discovery summarizes the active merchant filter with visible merchant names", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      merchantId: "TWVyY2hhbnQ6NDU2"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-acme",
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByText("Filtered to Acme Market")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Filter to Acme Market" })).not.toBeInTheDocument();
+});
+
+test("offer discovery keeps visible merchant actions when active merchant is absent", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      merchantId: "merchant-missing"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-acme",
+          merchant: buildMerchant("merchant-acme", "Acme Market")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.queryByText(/^Filtered to /)).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Filter to Acme Market" })).toBeVisible();
 });
 
 test("offer discovery sorts visible offers by ascending price and labels the first numeric result", () => {

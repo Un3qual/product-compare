@@ -1,12 +1,14 @@
 defmodule ProductCompare.CommerceAttributionTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ImpactAdapter
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
@@ -93,11 +95,88 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert "must be a valid http/https URL" in errors_on(changeset).destination_url
     end
+
+    test "rejects redirect destinations that are not public external URLs" do
+      merchant = merchant_fixture()
+
+      for destination_url <- [
+            "https://trusted.example@attacker.example/offer",
+            "http://localhost/offer",
+            "http://192.168.1.1/offer",
+            "http://[::ffff:192.168.1.1]/offer"
+          ] do
+        assert {:error, changeset} =
+                 CommerceAttribution.upsert_commerce_link(%{
+                   merchant_id: merchant.id,
+                   destination_url: destination_url,
+                   link_type: :affiliate
+                 })
+
+        assert "must be a valid http/https URL" in errors_on(changeset).destination_url
+      end
+    end
+  end
+
+  describe "CommerceLink.valid_destination_url?/1" do
+    test "rejects expanded loopback and mapped private IPv6 host forms" do
+      for destination_url <- [
+            "http://[0:0:0:0:0:0:0:1]/",
+            "http://[0:0:0:0:0:ffff:7f00:1]/",
+            "http://[0:0:0:0:0:ffff:a9fe:a9fe]/"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
+    test "rejects browser-canonicalized private IPv4 host forms" do
+      for destination_url <- [
+            "http://2130706433/",
+            "http://0x7f000001/",
+            "http://017700000001/",
+            "http://127.1/",
+            "http://１２７.０.０.１/",
+            "http://127。0。0。1/",
+            "http://127．0．0．1/",
+            "http://127｡0｡0｡1/"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
+    test "rejects http URLs with malformed explicit ports" do
+      for destination_url <- [
+            "https://affiliate.example.com:abc/click",
+            "https://affiliate.example.com:99999/click"
+          ] do
+        refute CommerceLink.valid_destination_url?(destination_url)
+      end
+    end
+
+    test "accepts public DNS hostnames with numeric labels" do
+      assert CommerceLink.valid_destination_url?("https://123.example.com/offer")
+    end
+
+    test "accepts browser-canonicalized public hostnames" do
+      assert CommerceLink.valid_destination_url?("https://%65xample.com/offer")
+      assert CommerceLink.valid_destination_url?("https://merchant.example.com\\deal")
+    end
+
+    test "rejects percent-encoded private hostnames after canonicalization" do
+      refute CommerceLink.valid_destination_url?("http://%31%32%37.0.0.1/offer")
+    end
+
+    test "accepts unicode IDN hostnames after canonicalizing labels" do
+      assert CommerceLink.valid_destination_url?("https://münich.example/offer")
+    end
+
+    test "accepts browser-canonicalized public IPv4 host forms" do
+      assert CommerceLink.valid_destination_url?("https://134744072/offer")
+    end
   end
 
   describe "click sessions" do
     test "records a public click id and resolves the redirect destination" do
-      commerce_link = commerce_link_fixture()
+      commerce_link = commerce_link_fixture(%{link_type: :non_affiliate, network: nil})
       click_id = Ecto.UUID.generate()
 
       {:ok, click_session} =
@@ -119,6 +198,331 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert {:error, :not_found} ==
                CommerceAttribution.redirect_destination(Ecto.UUID.generate())
+    end
+  end
+
+  describe "track_outbound_click/1" do
+    test "uses an existing affiliate link as the tracked redirect destination" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      affiliate_program =
+        affiliate_program_fixture(%{affiliate_network: affiliate_network, merchant: merchant})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com/click/merchant-product"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://affiliate.example.com/click/merchant-product",
+               affiliate_program_id: affiliate_program_id,
+               link_type: :affiliate,
+               merchant_id: merchant_id,
+               network: :impact,
+               backfilled_from_affiliate_links: true,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+      assert affiliate_program_id == affiliate_program.id
+      assert %CommerceClickSession{source_surface: :web} = tracked_click.click_session
+      assert tracked_click.click_session.merchant_product_id == merchant_product.id
+      assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
+
+      assert {:ok, redirect_destination} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+
+      assert redirect_destination ==
+               "https://affiliate.example.com/click/merchant-product?ClickId=#{tracked_click.click_session.click_id}"
+    end
+
+    test "preserves existing affiliate click id query parameters" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com/click/merchant-product?subId=feed-subid"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert {:ok, "https://affiliate.example.com/click/merchant-product?subId=feed-subid"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "preserves an existing commerce link network when a tracked affiliate network is unmapped" do
+      merchant = merchant_fixture()
+      destination_url = "https://affiliate.example.com/click/preserved-network"
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      {:ok, existing_link} =
+        CommerceAttribution.upsert_commerce_link(%{
+          merchant_id: merchant.id,
+          destination_url: destination_url,
+          link_type: :affiliate,
+          network: :impact,
+          is_active: true
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Unknown Network"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: destination_url
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert tracked_click.commerce_link.id == existing_link.id
+      assert tracked_click.commerce_link.network == :impact
+
+      assert {:ok, redirect_destination} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+
+      assert redirect_destination ==
+               "#{destination_url}?ClickId=#{tracked_click.click_session.click_id}"
+    end
+
+    test "falls back to the merchant product URL when no affiliate link exists" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               merchant_id: merchant_id,
+               network: nil,
+               backfilled_from_affiliate_links: false,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+      assert tracked_click.click_session.merchant_product_id == merchant_product.id
+      assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
+    end
+
+    test "treats existing disabled commerce links as unavailable" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/disabled-product"
+        })
+
+      disabled_link =
+        commerce_link_fixture(%{
+          merchant: merchant,
+          destination_url: merchant_product.url,
+          link_type: :non_affiliate,
+          network: nil,
+          is_active: false
+        })
+
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert Repo.get!(CommerceLink, disabled_link.id).is_active == false
+      assert Repo.aggregate(CommerceLink, :count, :id) == 1
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "falls back to the merchant product URL when the affiliate URL is unsafe" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "javascript:alert(1)"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               merchant_id: merchant_id,
+               network: nil,
+               backfilled_from_affiliate_links: false,
+               is_active: true
+             } = tracked_click.commerce_link
+
+      assert merchant_id == merchant.id
+
+      assert {:ok, "https://merchant.example.com/direct-product"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "falls back to the merchant product URL when the affiliate URL has a malformed port" do
+      merchant = merchant_fixture()
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          url: "https://merchant.example.com/direct-product"
+        })
+
+      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+
+      {:ok, _affiliate_link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: affiliate_network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com:abc/click"
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/direct-product",
+               link_type: :non_affiliate,
+               network: nil,
+               backfilled_from_affiliate_links: false
+             } = tracked_click.commerce_link
+    end
+
+    test "normalizes browser-accepted merchant product URLs before tracking" do
+      merchant_product =
+        merchant_product_fixture(%{
+          url: " https://merchant.example.com\\path with spaces?q=a b "
+        })
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert %CommerceLink{
+               destination_url: "https://merchant.example.com/path%20with%20spaces?q=a%20b",
+               link_type: :non_affiliate
+             } = tracked_click.commerce_link
+
+      assert {:ok, "https://merchant.example.com/path%20with%20spaces?q=a%20b"} =
+               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+    end
+
+    test "rejects inactive merchant products without creating link or click records" do
+      merchant_product = merchant_product_fixture(%{is_active: false})
+
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id,
+                 source_surface: :web
+               })
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects unknown merchant products without creating link or click records" do
+      assert {:error, :merchant_product_not_found} =
+               CommerceAttribution.track_outbound_click(%{merchant_product_id: 9_999_999})
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects unsafe stored merchant destinations without creating click records" do
+      for url <- [
+            "javascript:alert(1)",
+            "https://trusted.example@attacker.example/offer",
+            "http://localhost/offer",
+            "http://192.168.1.1/offer",
+            "http://[::ffff:192.168.1.1]/offer",
+            "http://[::127.0.0.1]/offer",
+            "https:/merchant.example/offer"
+          ] do
+        merchant_product = merchant_product_fixture(%{url: url})
+
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 CommerceAttribution.track_outbound_click(%{
+                   merchant_product_id: merchant_product.id
+                 })
+
+        assert "must be a valid http/https URL" in errors_on(changeset).destination_url
+      end
+
+      assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
     end
   end
 
@@ -254,6 +658,47 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.click_session_id == nil
       assert conversion.network_click_ref == "impact-subid-123"
       assert conversion.attribution_confidence == :unmatched
+    end
+
+    test "attributes ClickId-only conversions to the clicked merchant product" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: merchant_product.id,
+          anonymous_id: "anon-#{System.unique_integer([:positive])}",
+          source_surface: :web
+        })
+
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "ClickId" => click_session.click_id,
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "12.34",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+      assert conversion.click_session_id == click_session.id
+      assert conversion.public_click_id == click_session.click_id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.product_id == product.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.attribution_confidence == :high
+
+      assert %{
+               "metrics" => %{
+                 "commission_revenue" => "12.34",
+                 "conversions" => 1,
+                 "gross_order_value" => "129.99"
+               }
+             } = CommerceAttribution.product_revenue_summary(product.id, network: :impact)
     end
 
     test "ignores stale follow-up payloads with older reported timestamps" do
@@ -527,6 +972,27 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert %{"metrics" => ^expected_metrics} =
                CommerceAttribution.product_revenue_summary(product.id)
+    end
+
+    test "counts tracked merchant-product clicks before conversion attribution exists" do
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{product: product})
+
+      assert {:ok, tracked_click} =
+               CommerceAttribution.track_outbound_click(%{
+                 merchant_product_id: merchant_product.id
+               })
+
+      assert tracked_click.click_session.merchant_product_id == merchant_product.id
+
+      assert %{
+               "metrics" => %{
+                 "clicks" => 1,
+                 "conversions" => 0,
+                 "currency" => nil,
+                 "gross_order_value" => "0.00"
+               }
+             } = CommerceAttribution.product_revenue_summary(product.id)
     end
 
     test "requires a currency filter before aggregating mixed-currency money" do
@@ -842,6 +1308,33 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp affiliate_network_fixture(attrs \\ %{}) do
+    suffix = System.unique_integer([:positive])
+
+    {:ok, affiliate_network} =
+      attrs
+      |> Map.put_new(:name, "Affiliate Network #{suffix}")
+      |> Affiliate.upsert_network()
+
+    affiliate_network
+  end
+
+  defp affiliate_program_fixture(attrs) do
+    affiliate_network =
+      Map.get_lazy(attrs, :affiliate_network, fn -> affiliate_network_fixture() end)
+
+    merchant = Map.get_lazy(attrs, :merchant, fn -> merchant_fixture() end)
+
+    {:ok, affiliate_program} =
+      attrs
+      |> Map.drop([:affiliate_network, :merchant])
+      |> Map.put_new(:affiliate_network_id, affiliate_network.id)
+      |> Map.put_new(:merchant_id, merchant.id)
+      |> Affiliate.upsert_program()
+
+    affiliate_program
   end
 
   defp pacific_datetime(year, month, day, hour, minute, second) do
