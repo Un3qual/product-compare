@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done (persistent compare tray browse support)
+- Status: done (catalog search and sort)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-01 after persistent compare tray verification
+- Last verified: 2026-07-09 after catalog search and sort verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -23,9 +23,9 @@
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
-## Product-Facing Curation Batch
+## Catalog Search And Sort Evidence
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`.
 - Owned paths:
@@ -53,6 +53,35 @@
 - Exit condition: `/products` supports bounded text search and deterministic
   sorting through URL state, and existing filters, pagination, and compare
   selection links preserve search/sort state.
+- Implemented:
+  - Extended `ProductFiltersInput` with a trimmed, 100-character-bounded text
+    query and deterministic `ID_ASC`, `NAME_ASC`, `BRAND_NAME_ASC`, and
+    `NEWEST` sort modes.
+  - Catalog text search matches product name, slug, model number, description,
+    and brand name case-insensitively while composing with existing facets.
+  - Every sort mode includes stable product-key tie breakers for cursor
+    pagination.
+  - `/products` now parses `q` and `sort` URL state, renders native search and
+    sort controls, labels active search/sort state, and preserves both values
+    through filters, pagination, and compare-selection links.
+  - Refreshed the frontend schema snapshot and Relay artifacts for the expanded
+    product filter input.
+- Completed verification:
+  - RED: `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+    failed with 5 expected feature failures because `ProductFiltersInput` did
+    not expose `query` or `sort`.
+  - GREEN: `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+    - 31 tests, 0 failures.
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    failed with 6 expected failures for missing URL parsing, controls, summary
+    labels, and preserved search/sort links.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 52 tests, 0 failures.
+  - Final: `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+    - 34 tests, 0 failures.
+  - Final: `cd assets && bun run relay` - completed with exit 0.
+  - Final: `cd assets && bun run typecheck` - completed with exit 0.
+  - Final: `git diff --check` - completed with exit 0.
 
 ## Current Usable Product Batch
 

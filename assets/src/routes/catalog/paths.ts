@@ -38,6 +38,14 @@ export function catalogBrowseNextPagePath(
 }
 
 function appendCatalogFilterParams(params: URLSearchParams, filters: CatalogFilters) {
+  if (filters.query) {
+    params.set("q", filters.query);
+  }
+
+  if (filters.sort) {
+    params.set("sort", filters.sort);
+  }
+
   appendTypeFilterParams(params, filters);
   appendUseCaseFilterParams(params, filters);
   appendNumericFilterParams(params, filters);

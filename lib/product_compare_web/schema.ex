@@ -94,7 +94,7 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.product/3)
     end
 
-    @desc "Returns products ordered by primary key with cursor pagination."
+    @desc "Returns products in a deterministic requested order with cursor pagination."
     field :products, :product_connection do
       arg(:first, :integer)
       arg(:after, :string)
@@ -381,7 +381,16 @@ defmodule ProductCompareWeb.Schema do
     field :enum_option_id, non_null(:id)
   end
 
+  enum :product_sort do
+    value(:id_asc)
+    value(:name_asc)
+    value(:brand_name_asc)
+    value(:newest)
+  end
+
   input_object :product_filters_input do
+    field :query, :string
+    field :sort, :product_sort
     field :primary_type_taxon_id, :id
     field :include_type_descendants, :boolean
     field :numeric, list_of(non_null(:product_numeric_filter_input))

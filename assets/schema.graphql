@@ -464,12 +464,21 @@ input ProductEnumFilterInput {
 }
 
 input ProductFiltersInput {
+  query: String
+  sort: ProductSort
   primaryTypeTaxonId: ID
   includeTypeDescendants: Boolean
   numeric: [ProductNumericFilterInput!]
   booleans: [ProductBooleanFilterInput!]
   enums: [ProductEnumFilterInput!]
   useCaseTaxonIds: [ID!]
+}
+
+enum ProductSort {
+  ID_ASC
+  NAME_ASC
+  BRAND_NAME_ASC
+  NEWEST
 }
 
 input RevenueSummaryInput {

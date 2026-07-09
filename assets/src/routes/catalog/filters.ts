@@ -1,4 +1,6 @@
 export interface CatalogFilters {
+  query?: string;
+  sort?: CatalogProductSort;
   typeTaxonId?: string;
   includeTypeDescendants?: boolean;
   useCaseTaxonIds: string[];
@@ -6,6 +8,15 @@ export interface CatalogFilters {
   booleans: CatalogBooleanFilter[];
   enums: CatalogEnumFilter[];
 }
+
+export const CATALOG_PRODUCT_SORTS = [
+  "ID_ASC",
+  "NAME_ASC",
+  "BRAND_NAME_ASC",
+  "NEWEST"
+] as const;
+
+export type CatalogProductSort = (typeof CATALOG_PRODUCT_SORTS)[number];
 
 export interface CatalogNumericFilter {
   attributeId: string;
@@ -24,6 +35,8 @@ export interface CatalogEnumFilter {
 }
 
 export interface ProductFiltersInput {
+  query?: string;
+  sort?: CatalogProductSort;
   primaryTypeTaxonId?: string;
   includeTypeDescendants?: boolean;
   useCaseTaxonIds?: string[];
@@ -63,6 +76,18 @@ const ENUM_FILTER_PARAM_PATTERN = /^enum\.(.+)$/;
 const DECIMAL_FILTER_VALUE_PATTERN =
   /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 const MAX_DECIMAL_EXPONENT_SHIFT = 1_000;
+export const MAX_CATALOG_SEARCH_QUERY_LENGTH = 100;
+
+const CATALOG_PRODUCT_SORT_LABELS: Record<CatalogProductSort, string> = {
+  ID_ASC: "Catalog order",
+  NAME_ASC: "Product name",
+  BRAND_NAME_ASC: "Brand name",
+  NEWEST: "Newest"
+};
+
+export function catalogProductSortLabel(sort: CatalogProductSort) {
+  return CATALOG_PRODUCT_SORT_LABELS[sort];
+}
 
 interface DecimalFilterValueParts {
   sign: -1 | 1;
@@ -82,6 +107,8 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   const booleanFilters = new Map<string, CatalogBooleanFilter>();
   const enumFilters = new Map<string, CatalogEnumFilter>();
   const typeTaxonId = nonBlankParam(url, "typeTaxonId");
+  const query = catalogSearchQuery(url.searchParams.get("q"));
+  const sort = catalogProductSort(url.searchParams.get("sort"));
   const includeTypeDescendants = url.searchParams.get("includeTypeDescendants") === "1";
   const useCaseTaxonIds = nonBlankParams(url, "useCaseTaxonId");
 
@@ -98,6 +125,8 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   }
 
   return {
+    ...(query ? { query } : {}),
+    ...(sort ? { sort } : {}),
     ...(typeTaxonId ? { typeTaxonId } : {}),
     ...(typeTaxonId && includeTypeDescendants ? { includeTypeDescendants: true } : {}),
     useCaseTaxonIds,
@@ -174,7 +203,7 @@ function storeEnumFilter(
 export function catalogFiltersToProductFiltersInput(
   filters: CatalogFilters
 ): ProductFiltersInput | undefined {
-  if (!hasActiveCatalogFilters(filters)) {
+  if (!hasActiveCatalogFilters(filters) && !filters.sort) {
     return undefined;
   }
 
@@ -182,6 +211,8 @@ export function catalogFiltersToProductFiltersInput(
   const numericFilters = validCatalogNumericFilters(filters.numeric);
 
   return {
+    ...(filters.query ? { query: filters.query } : {}),
+    ...(filters.sort ? { sort: filters.sort } : {}),
     ...(filters.typeTaxonId ? { primaryTypeTaxonId: filters.typeTaxonId } : {}),
     ...(filters.typeTaxonId && filters.includeTypeDescendants
       ? { includeTypeDescendants: true }
@@ -205,6 +236,7 @@ export function uniqueCatalogEnumFilters(filters: readonly CatalogEnumFilter[]) 
 
 export function hasActiveCatalogFilters(filters: CatalogFilters) {
   return (
+    Boolean(filters.query) ||
     Boolean(filters.typeTaxonId) ||
     filters.useCaseTaxonIds.length > 0 ||
     validCatalogNumericFilters(filters.numeric).length > 0 ||
@@ -350,15 +382,29 @@ export function catalogFilterSummaryItems(
   metadata: CatalogFilterMetadata,
   filters: CatalogFilters
 ) {
-  return hasActiveCatalogFilters(filters)
-    ? [
-        ...typeFilterSummaryItems(metadata, filters),
-        ...selectedUseCaseSummaryItems(metadata),
-        ...numericFilterSummaryItems(metadata),
-        ...booleanFilterSummaryItems(metadata),
-        ...enumFilterSummaryItems(metadata)
-      ]
-    : [];
+  return [
+    ...(filters.query ? [`Search: "${filters.query}"`] : []),
+    ...(filters.sort ? [`Sort: ${catalogProductSortLabel(filters.sort)}`] : []),
+    ...typeFilterSummaryItems(metadata, filters),
+    ...selectedUseCaseSummaryItems(metadata),
+    ...numericFilterSummaryItems(metadata),
+    ...booleanFilterSummaryItems(metadata),
+    ...enumFilterSummaryItems(metadata)
+  ];
+}
+
+function catalogSearchQuery(rawValue: string | null) {
+  const value = rawValue?.trim() ?? "";
+
+  return value === "" ? null : value.slice(0, MAX_CATALOG_SEARCH_QUERY_LENGTH);
+}
+
+function catalogProductSort(rawValue: string | null): CatalogProductSort | null {
+  const value = rawValue?.trim() ?? "";
+
+  return CATALOG_PRODUCT_SORTS.includes(value as CatalogProductSort)
+    ? (value as CatalogProductSort)
+    : null;
 }
 
 function typeFilterSummaryItems(metadata: CatalogFilterMetadata, filters: CatalogFilters) {
