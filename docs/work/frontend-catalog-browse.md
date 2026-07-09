@@ -23,6 +23,37 @@
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
+## Product-Facing Curation Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`.
+- Owned paths:
+  - `lib/product_compare/catalog/filtering.ex`
+  - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+  - `lib/product_compare_web/schema.ex`
+  - `test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `assets/schema.graphql`
+  - `assets/src/routes/catalog/filters.ts`
+  - `assets/src/routes/catalog/loader.ts`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/filter-form.tsx`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
+  - `assets/src/__generated__/ProductFilterMetadataQuery.graphql.ts`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` supports bounded text search and deterministic
+  sorting through URL state, and existing filters, pagination, and compare
+  selection links preserve search/sort state.
+
 ## Current Usable Product Batch
 
 - Status: done.

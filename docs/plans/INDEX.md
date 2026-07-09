@@ -16,14 +16,16 @@ Start at `docs/work/index.md` for live dispatch status and ownership. The
 2026-06-29 usable-product batch, the product filtering and in-depth comparison
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
-completed. The live queue has no ready rows.
+completed. The live queue now has a product-facing curation batch with two
+ready rows.
 
-The live queue now carries a coordinator-owned `needs_decision` row because the
-only catalog candidates are deferred by product decision or rejected.
+The product-facing curation direction was selected on 2026-07-08. Deferred
+ingestion/eBay/operator candidates remain deferred or rejected.
 
 Active implementation plans:
 
-- None.
+- `docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`
+- `docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.

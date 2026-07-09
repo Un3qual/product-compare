@@ -54,25 +54,80 @@ Relay connection page-size errors without reopening deferred eBay, ingestion
 dashboard/operator, live provider, credential, application submission, Tier-3
 scraping, or CSV export work.
 
+The product-facing curation direction was selected on 2026-07-08. The next
+batch stays on shopper-facing catalog and offer-discovery surfaces, avoids
+deferred ingestion/eBay/operator work, and uses current app contracts as the
+source of truth.
+
 ## Ready Work
 
-None.
+Status: ready
+Lane: frontend catalog browse / backend catalog
+Active plan:
+`docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`
+Next action: add URL-backed text search and deterministic sort controls to
+`/products` while preserving existing filters, pagination, and compare slugs.
+Owned paths:
+
+- `lib/product_compare/catalog/filtering.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/schema.ex`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `assets/schema.graphql`
+- `assets/src/routes/catalog/filters.ts`
+- `assets/src/routes/catalog/loader.ts`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
+- `assets/src/__generated__/ProductFilterMetadataQuery.graphql.ts`
+- `docs/work/frontend-catalog-browse.md`
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: `/products` supports a bounded text query and explicit sort
+control through URL state, and all existing filter, pagination, and compare
+selection paths preserve that state correctly.
+
+Status: ready
+Lane: frontend offer discovery
+Active plan:
+`docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`
+Next action: show selected-product name, brand, and detail navigation on
+`/offers` instead of relying only on raw product IDs.
+Owned paths:
+
+- `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
+- `assets/src/routes/offers/loader.ts`
+- `assets/src/routes/offers/filters.tsx`
+- `assets/src/routes/offers/index.tsx`
+- `assets/test/routes/offers/offer-discovery-loader.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Verification:
+
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: `/offers` labels the selected product with product-readable
+context and keeps existing filters, sort, merchant quick filters, pagination,
+and commerce-click behavior intact.
 
 ## Needs Decision Work
 
-Status: needs_decision
-Lane: coordinator / product-data-scraping
-Decision needed: choose the next product direction before starting another
-worker batch. The current catalog has no non-deferred implementation candidates:
-eBay Browse fallback and ingestion dashboard/operator surfaces are deferred by
-product decision as of 2026-07-08, and CJ candidate CSV score export is
-rejected.
-Owner: product/coordinator.
-Allowed docs: `docs/work/index.md`, the directly affected lane doc, and
-`docs/plans/INDEX.md` only if the decision creates or reprioritizes a concrete
-candidate.
-Exit condition: replace this decision row with exactly one `ready` row that
-names owned paths and verification, or leave the missing decision named.
+None. Product-facing curation was selected on 2026-07-08.
 
 ## Blocked Work
 

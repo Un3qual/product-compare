@@ -16,6 +16,29 @@
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
 
+## Product-Facing Curation Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
+  - `assets/src/routes/offers/loader.ts`
+  - `assets/src/routes/offers/filters.tsx`
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery-loader.test.ts`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` renders readable selected-product context from the
+  existing product node contract while preserving active-only, merchant,
+  page-size, sort, reset, quick-filter, tracking, and pagination behavior.
+
 ## Current Usable Product Batch
 
 - Status: done.

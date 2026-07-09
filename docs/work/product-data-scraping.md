@@ -429,12 +429,11 @@ Completion evidence remains under each assigned heading.
     GraphQL/UI surfaces, credential persistence, or Tier-3 direct scraping in
     this batch.
 - Next decision:
-  - Further ingestion work remains deferred; the live queue is now empty after
-    the product-facing follow-up batch completed.
+  - Further ingestion work remains deferred while the live queue moves to the
+    2026-07-08 product-facing curation batch.
   - Coordinator triage on 2026-07-08 found no promotable non-deferred ingestion
-    candidate. Keep the live queue on a `needs_decision` row until the product
-    decision either reverses the eBay/dashboard deferrals or selects a different
-    concrete product direction.
+    candidate. Product-facing catalog and offer-discovery work was selected
+    instead of reversing the eBay/dashboard deferrals.
   - Dashboard-oriented ingestion work is deferred by product decision as of
     2026-07-08, including exposing CJ read models through a dashboard contract,
     continuing source-health dashboard slices, or creating ingestion operator
