@@ -17,13 +17,18 @@ import {
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/selection-tray";
-import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
+import { decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
 import {
   formatCouponAvailabilityCount,
   formatOfferCount
 } from "../offer-formatting";
+import {
+  buildOfferSnapshotSummary,
+  type OfferSnapshotSelectors,
+  type OfferSnapshotSummary
+} from "../offer-snapshot";
 import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
@@ -316,7 +321,9 @@ function ProductOffers({
 
   return (
     <>
-      <OfferSnapshot summary={buildOfferSnapshotSummary(offers)} />
+      <OfferSnapshot
+        summary={buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS)}
+      />
       <ul aria-label="Active offer list">
         {offers.map((offer) => (
           <li key={offer.id}>
@@ -372,19 +379,22 @@ type VisibleProductOffer = {
   priceHistoryHasMore: boolean;
 };
 
+const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
+  currency: (offer) => offer.currency,
+  hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
+  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
+};
+
 type PriceObservation = {
   dateTime: string;
   label: string;
 };
 
-type OfferSnapshotSummary = {
-  visibleOfferCount: number;
-  lowestVisiblePriceText: string | null;
-  couponAvailabilityCount: number;
-  missingPriceCount: number;
-};
-
-function OfferSnapshot({ summary }: { summary: OfferSnapshotSummary }) {
+function OfferSnapshot({
+  summary
+}: {
+  summary: OfferSnapshotSummary<VisibleProductOffer>;
+}) {
   const titleId = useId();
 
   return (
@@ -397,7 +407,7 @@ function OfferSnapshot({ summary }: { summary: OfferSnapshotSummary }) {
         </div>
         <div>
           <dt>Lowest visible price</dt>
-          <dd>{summary.lowestVisiblePriceText ?? "No visible prices"}</dd>
+          <dd>{lowestVisiblePriceText(summary) ?? "No visible prices"}</dd>
         </div>
         <div>
           <dt>Coupon availability</dt>
@@ -412,46 +422,20 @@ function OfferSnapshot({ summary }: { summary: OfferSnapshotSummary }) {
   );
 }
 
-function buildOfferSnapshotSummary(
-  offers: ReadonlyArray<VisibleProductOffer>
-): OfferSnapshotSummary {
-  const visiblePricedOffers = offers.filter(hasVisiblePrice);
-  const lowestPricedOffer =
-    visiblePricedOffers.length > 0 && canComparePrices(visiblePricedOffers)
-      ? visiblePricedOffers.reduce((lowestOffer, offer) =>
-          offer.numericPrice < lowestOffer.numericPrice ? offer : lowestOffer
-        )
-      : null;
-
-  return {
-    visibleOfferCount: offers.length,
-    lowestVisiblePriceText: lowestVisiblePriceText(lowestPricedOffer, visiblePricedOffers),
-    couponAvailabilityCount: offers.filter(
-      (offer) => offer.coupons.length > 0 || offer.couponsHasMore
-    ).length,
-    missingPriceCount: offers.filter((offer) => !hasVisiblePrice(offer)).length
-  };
-}
-
 function hasVisiblePrice(
   offer: VisibleProductOffer
 ): offer is VisibleProductOffer & { currency: string; numericPrice: number; priceText: string } {
   return offer.numericPrice !== null && offer.priceText !== null && offer.currency !== null;
 }
 
-function canComparePrices(offers: ReadonlyArray<VisibleProductOffer & { currency: string }>) {
-  return canComparePriceCurrencies(offers.map((offer) => offer.currency));
-}
-
 function lowestVisiblePriceText(
-  lowestPricedOffer:
-    | (VisibleProductOffer & { currency: string; numericPrice: number; priceText: string })
-    | null,
-  visiblePricedOffers: ReadonlyArray<VisibleProductOffer & { currency: string }>
+  summary: OfferSnapshotSummary<VisibleProductOffer>
 ) {
-  if (visiblePricedOffers.length > 0 && !canComparePrices(visiblePricedOffers)) {
+  if (summary.priceState === "mixed") {
     return "Multiple currencies";
   }
+
+  const lowestPricedOffer = summary.lowestPricedOffer;
 
   return lowestPricedOffer?.priceText
     ? `${lowestPricedOffer.priceText} at ${lowestPricedOffer.merchantName}`

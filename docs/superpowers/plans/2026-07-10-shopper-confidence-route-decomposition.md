@@ -33,7 +33,7 @@
 - Consumes: route-owned visible offer arrays and selector callbacks for currency, coupon availability, and numeric price.
 - Produces: `OfferSnapshotSelectors<T>`, `OfferSnapshotPriceState`, `OfferSnapshotSummary<T>`, and `buildOfferSnapshotSummary<T>()` from `assets/src/routes/offer-snapshot.ts`.
 
-- [ ] **Step 1: Write the failing shared-aggregator tests**
+- [x] **Step 1: Write the failing shared-aggregator tests**
 
 Create `assets/test/routes/offer-snapshot.test.ts`:
 
@@ -91,7 +91,7 @@ test("refuses comparison across visible currencies", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify RED**
+- [x] **Step 2: Run the test to verify RED**
 
 Run:
 
@@ -102,7 +102,7 @@ bun run test -- test/routes/offer-snapshot.test.ts
 
 Expected: FAIL because `../../src/routes/offer-snapshot` does not exist.
 
-- [ ] **Step 3: Implement the pure aggregator**
+- [x] **Step 3: Implement the pure aggregator**
 
 Create `assets/src/routes/offer-snapshot.ts`:
 
@@ -164,7 +164,7 @@ export function buildOfferSnapshotSummary<T>(
 }
 ```
 
-- [ ] **Step 4: Run the pure test to verify GREEN**
+- [x] **Step 4: Run the pure test to verify GREEN**
 
 Run:
 
@@ -175,7 +175,7 @@ bun run test -- test/routes/offer-snapshot.test.ts
 
 Expected: PASS with 3 tests.
 
-- [ ] **Step 5: Migrate offer discovery to the shared summary**
+- [x] **Step 5: Migrate offer discovery to the shared summary**
 
 In `assets/src/routes/offers/index.tsx`, import the shared API:
 
@@ -259,7 +259,7 @@ Delete `VisibleOfferSnapshotSummary`, `PricedRenderableOffer`,
 `comparableLowestPriceText`. Keep `hasVisibleCoupons` because the selector uses
 it.
 
-- [ ] **Step 6: Migrate product detail to the shared summary**
+- [x] **Step 6: Migrate product detail to the shared summary**
 
 In `assets/src/routes/products/detail.tsx`, import the shared API:
 
@@ -342,7 +342,7 @@ two-argument `lowestVisiblePriceText`. Keep `hasVisiblePrice`; the selector uses
 it. Delete `canComparePrices` because the shared aggregator replaces both of
 its current callers.
 
-- [ ] **Step 7: Verify both route integrations**
+- [x] **Step 7: Verify both route integrations**
 
 Run:
 
@@ -355,7 +355,7 @@ bun run typecheck
 Expected: PASS with the pure suite plus all offer-discovery and product-detail
 route tests; TypeScript exits 0.
 
-- [ ] **Step 8: Mark Task 1 complete and commit**
+- [x] **Step 8: Mark Task 1 complete and commit**
 
 Check Task 1 boxes in this plan, then run:
 

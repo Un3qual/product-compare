@@ -14,6 +14,11 @@ import {
   formatOfferCount
 } from "../offer-formatting";
 import {
+  buildOfferSnapshotSummary,
+  type OfferSnapshotSelectors,
+  type OfferSnapshotSummary
+} from "../offer-snapshot";
+import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
   type OfferDiscoveryLoaderData,
@@ -42,25 +47,19 @@ type RenderableOffer = {
   offer: OfferNode;
   originalIndex: number;
 };
-type PricedRenderableOffer = RenderableOffer & {
-  latestPriceValue: number;
-};
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 type VisibleMerchant = {
   id: string;
   name: string;
 };
-type VisibleOfferSnapshotSummary = {
-  couponAvailabilityCount: number;
-  hasMixedPriceCurrencies: boolean;
-  lowestVisiblePriceText: string | null;
-  missingLatestPriceCount: number;
-  visibleOfferCount: number;
-};
-
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base"
 });
+const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
+  currency: (offer) => offer.latestPriceCurrency,
+  hasCoupons: hasVisibleCoupons,
+  numericPrice: (offer) => offer.latestPriceValue
+};
 
 export function OfferDiscoveryRoute() {
   const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
@@ -162,7 +161,9 @@ function OfferDiscoveryList({
         <p>No offers match these filters.</p>
       ) : (
         <>
-          <VisibleOfferSnapshot summary={buildVisibleOfferSnapshot(offers)} />
+          <VisibleOfferSnapshot
+            summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
+          />
           <ul aria-label="Offers">
             {offers.map((renderableOffer, index) => (
               <OfferListItem
@@ -185,7 +186,11 @@ function OfferDiscoveryList({
   );
 }
 
-function VisibleOfferSnapshot({ summary }: { summary: VisibleOfferSnapshotSummary }) {
+function VisibleOfferSnapshot({
+  summary
+}: {
+  summary: OfferSnapshotSummary<RenderableOffer>;
+}) {
   return (
     <section aria-label="Visible offer snapshot">
       <h2>Visible offer snapshot</h2>
@@ -204,45 +209,11 @@ function VisibleOfferSnapshot({ summary }: { summary: VisibleOfferSnapshotSummar
         </div>
         <div>
           <dt>Missing latest price</dt>
-          <dd>{formatOfferCount(summary.missingLatestPriceCount)}</dd>
+          <dd>{formatOfferCount(summary.missingPriceCount)}</dd>
         </div>
       </dl>
     </section>
   );
-}
-
-function buildVisibleOfferSnapshot(
-  offers: ReadonlyArray<RenderableOffer>
-): VisibleOfferSnapshotSummary {
-  let couponAvailabilityCount = 0;
-  let lowestPricedOffer: PricedRenderableOffer | null = null;
-  let missingLatestPriceCount = 0;
-  const priceCurrencies = new Set<string | null>();
-
-  for (const offer of offers) {
-    couponAvailabilityCount += hasVisibleCoupons(offer) ? 1 : 0;
-
-    if (!hasLatestPrice(offer)) {
-      missingLatestPriceCount += 1;
-      continue;
-    }
-
-    priceCurrencies.add(offer.latestPriceCurrency);
-    lowestPricedOffer = lowerPricedOffer(lowestPricedOffer, offer);
-  }
-
-  const hasMixedPriceCurrencies = priceCurrencies.size > 1;
-
-  return {
-    couponAvailabilityCount,
-    hasMixedPriceCurrencies,
-    lowestVisiblePriceText: comparableLowestPriceText(
-      lowestPricedOffer,
-      hasMixedPriceCurrencies
-    ),
-    missingLatestPriceCount,
-    visibleOfferCount: offers.length
-  };
 }
 
 function hasVisibleCoupons({ offer }: RenderableOffer) {
@@ -251,41 +222,19 @@ function hasVisibleCoupons({ offer }: RenderableOffer) {
   return activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage;
 }
 
-function hasLatestPrice(offer: RenderableOffer): offer is PricedRenderableOffer {
-  return offer.latestPriceValue !== null;
-}
-
-function lowerPricedOffer(
-  current: PricedRenderableOffer | null,
-  candidate: PricedRenderableOffer
-) {
-  if (!current || candidate.latestPriceValue < current.latestPriceValue) {
-    return candidate;
-  }
-
-  return current;
-}
-
-function comparableLowestPriceText(
-  lowestPricedOffer: PricedRenderableOffer | null,
-  hasMixedPriceCurrencies: boolean
-) {
-  if (!lowestPricedOffer || hasMixedPriceCurrencies) {
-    return null;
-  }
-
-  return priceLabel(
-    lowestPricedOffer.offer.latestPrice?.price,
-    lowestPricedOffer.offer.currency
-  );
-}
-
-function visibleLowestPriceLabel(summary: VisibleOfferSnapshotSummary) {
-  if (summary.hasMixedPriceCurrencies) {
+function visibleLowestPriceLabel(summary: OfferSnapshotSummary<RenderableOffer>) {
+  if (summary.priceState === "mixed") {
     return "Not comparable across currencies";
   }
 
-  return summary.lowestVisiblePriceText ?? "No visible prices";
+  const lowestPricedOffer = summary.lowestPricedOffer;
+
+  return lowestPricedOffer
+    ? priceLabel(
+        lowestPricedOffer.offer.latestPrice?.price,
+        lowestPricedOffer.offer.currency
+      )
+    : "No visible prices";
 }
 
 function OfferListItem({
