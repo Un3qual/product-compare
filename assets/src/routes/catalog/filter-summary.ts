@@ -27,51 +27,70 @@ export function catalogFiltersWithout(
 
   switch (removal.kind) {
     case "query":
-      return { ...copied, query: undefined };
+      return removeQueryFilter(copied);
     case "sort":
-      return { ...copied, sort: undefined };
+      return removeSortFilter(copied);
     case "type":
-      return {
-        ...copied,
-        typeTaxonId: undefined,
-        includeTypeDescendants: undefined
-      };
+      return removeTypeFilter(copied);
     case "useCase":
-      return {
-        ...copied,
-        useCaseTaxonIds: copied.useCaseTaxonIds.filter(
-          (taxonId) => taxonId !== removal.taxonId
-        )
-      };
+      return removeUseCaseFilter(copied, removal.taxonId);
     case "numeric":
-      return {
-        ...copied,
-        numeric: copied.numeric.filter(
-          (filter) => filter.attributeId !== removal.attributeId
-        )
-      };
+      return removeNumericFilter(copied, removal.attributeId);
     case "boolean":
-      return {
-        ...copied,
-        booleans: copied.booleans.filter(
-          (filter) => filter.attributeId !== removal.attributeId
-        )
-      };
+      return removeBooleanFilter(copied, removal.attributeId);
     case "enum":
-      return {
-        ...copied,
-        enums: copied.enums.filter(
-          (filter) => filter.attributeId !== removal.attributeId
-        )
-      };
-    default: {
-      const unsupportedRemoval: never = removal;
-
-      throw new Error(
-        `Unsupported catalog filter removal: ${JSON.stringify(unsupportedRemoval)}`
-      );
-    }
+      return removeEnumFilter(copied, removal.attributeId);
+    default:
+      return unsupportedCatalogFilterRemoval(removal);
   }
+}
+
+function removeQueryFilter(filters: CatalogFilters): CatalogFilters {
+  return { ...filters, query: undefined };
+}
+
+function removeSortFilter(filters: CatalogFilters): CatalogFilters {
+  return { ...filters, sort: undefined };
+}
+
+function removeTypeFilter(filters: CatalogFilters): CatalogFilters {
+  return {
+    ...filters,
+    typeTaxonId: undefined,
+    includeTypeDescendants: undefined
+  };
+}
+
+function removeUseCaseFilter(filters: CatalogFilters, taxonId: string): CatalogFilters {
+  return {
+    ...filters,
+    useCaseTaxonIds: filters.useCaseTaxonIds.filter((candidateId) => candidateId !== taxonId)
+  };
+}
+
+function removeNumericFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
+  return {
+    ...filters,
+    numeric: filters.numeric.filter((filter) => filter.attributeId !== attributeId)
+  };
+}
+
+function removeBooleanFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
+  return {
+    ...filters,
+    booleans: filters.booleans.filter((filter) => filter.attributeId !== attributeId)
+  };
+}
+
+function removeEnumFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
+  return {
+    ...filters,
+    enums: filters.enums.filter((filter) => filter.attributeId !== attributeId)
+  };
+}
+
+function unsupportedCatalogFilterRemoval(removal: never): never {
+  throw new Error(`Unsupported catalog filter removal: ${JSON.stringify(removal)}`);
 }
 
 function copyCatalogFilters(filters: CatalogFilters): CatalogFilters {

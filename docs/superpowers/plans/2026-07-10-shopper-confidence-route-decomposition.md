@@ -23,6 +23,7 @@
 ### Task 1: Shared Offer Snapshot Aggregation
 
 **Files:**
+
 - Create: `assets/src/routes/offer-snapshot.ts`
 - Create: `assets/test/routes/offer-snapshot.test.ts`
 - Modify: `assets/src/routes/offers/index.tsx:39-59,147-289`
@@ -30,6 +31,7 @@
 - Modify: `docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md`
 
 **Interfaces:**
+
 - Consumes: route-owned visible offer arrays and selector callbacks for currency, coupon availability, and numeric price.
 - Produces: `OfferSnapshotSelectors<T>`, `OfferSnapshotPriceState`, `OfferSnapshotSummary<T>`, and `buildOfferSnapshotSummary<T>()` from `assets/src/routes/offer-snapshot.ts`.
 
@@ -371,6 +373,7 @@ Expected: one behavior-preserving shared-offer-policy commit.
 ### Task 2: Catalog Filter Summary and Removal Module
 
 **Files:**
+
 - Create: `assets/src/routes/catalog/filter-summary.ts`
 - Create: `assets/test/routes/catalog/filter-summary.test.ts`
 - Modify: `assets/src/routes/catalog/filters.ts:39-68,390-577`
@@ -378,6 +381,7 @@ Expected: one behavior-preserving shared-offer-policy commit.
 - Modify: `docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md`
 
 **Interfaces:**
+
 - Consumes: `CatalogFilters`, `CatalogFilterMetadata`, and `catalogProductSortLabel` from `filters.ts`.
 - Produces: `CatalogFilterRemoval`, `CatalogFilterSummaryItem`, `catalogFilterSummaryItems()`, and `catalogFiltersWithout()` from `filter-summary.ts`.
 
@@ -764,6 +768,7 @@ Expected: one catalog summary/removal boundary commit.
 ### Task 3: Catalog Result-Status Policy
 
 **Files:**
+
 - Create: `assets/src/routes/catalog/result-status.ts`
 - Create: `assets/test/routes/catalog/result-status.test.ts`
 - Modify: `assets/src/routes/catalog/browse.tsx:20-30,107-206`
@@ -771,6 +776,7 @@ Expected: one catalog summary/removal boundary commit.
 - Modify: `docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md`
 
 **Interfaces:**
+
 - Consumes: result count, active-filter state, and whether any product rows are visible.
 - Produces: `CatalogResultStatus` and `catalogResultStatus()` from `result-status.ts`.
 
@@ -966,6 +972,7 @@ Expected: one result-status policy commit.
 ### Task 4: Direct DateTime Contract and Type Reuse
 
 **Files:**
+
 - Create: `assets/test/routes/graphql-datetime.test.ts`
 - Modify: `assets/src/routes/graphql-datetime.ts:1-113`
 - Modify: `assets/src/routes/offers/index.tsx:9-15,805-833`
@@ -973,6 +980,7 @@ Expected: one result-status policy commit.
 - Modify: `docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md`
 
 **Interfaces:**
+
 - Consumes: existing `graphQLDateTimeContext()` and `GraphQLDateTimeContext`.
 - Produces: `graphQLDateTimeLabel()` for label-only consumers and a direct table-driven parser contract.
 
@@ -1106,10 +1114,12 @@ Expected: one direct DateTime contract and type-reuse commit.
 ### Task 5: Aggregate Verification and Stacked PR Publication
 
 **Files:**
+
 - Modify: `docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md`
 - Temporary: `/private/tmp/shopper-confidence-route-decomposition-pr.md`
 
 **Interfaces:**
+
 - Consumes: completed Tasks 1-4 and their focused verification evidence.
 - Produces: a clean pushed branch and a ready stacked PR targeting `codex/shopper-decision-confidence`.
 
@@ -1227,5 +1237,4 @@ gh pr view --json number,url,state,isDraft,baseRefName,headRefName,headRefOid
 Expected: the ready stacked PR remains OPEN and its head OID matches local
 `HEAD` after the final documentation commit.
 
-Published as ready stacked PR #78:
-https://github.com/Un3qual/product-compare/pull/78
+Published as ready stacked [PR #78](https://github.com/Un3qual/product-compare/pull/78).
