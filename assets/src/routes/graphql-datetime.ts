@@ -3,6 +3,20 @@ export type GraphQLDateTimeContext = {
   label: string;
 };
 
+type GraphQLDateTimeParts = {
+  day: number;
+  dayText: string;
+  hour: number;
+  minute: number;
+  month: number;
+  monthText: string;
+  offsetHour: number;
+  offsetMinute: number;
+  second: number;
+  year: number;
+  yearText: string;
+};
+
 const GRAPHQL_DATE_TIME_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-](\d{2}):(\d{2}))$/;
 
@@ -11,42 +25,79 @@ export function graphQLDateTimeContext(value: unknown): GraphQLDateTimeContext |
     return null;
   }
 
+  const parts = graphQLDateTimeParts(value);
+
+  if (!parts || !isValidGraphQLDateTime(value, parts)) {
+    return null;
+  }
+
+  return {
+    dateTime: value,
+    label: `${parts.yearText}-${parts.monthText}-${parts.dayText}`
+  };
+}
+
+function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
   const match = GRAPHQL_DATE_TIME_PATTERN.exec(value);
 
   if (!match) {
     return null;
   }
 
-  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offsetHourText, offsetMinuteText] =
-    match;
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  const second = Number(secondText);
-  const offsetHour = offsetHourText ? Number(offsetHourText) : 0;
-  const offsetMinute = offsetMinuteText ? Number(offsetMinuteText) : 0;
-
-  if (
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > daysInMonth(year, month) ||
-    hour > 23 ||
-    minute > 59 ||
-    second > 59 ||
-    offsetHour > 23 ||
-    offsetMinute > 59 ||
-    Number.isNaN(new Date(value).getTime())
-  ) {
-    return null;
-  }
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+    offsetHourText,
+    offsetMinuteText
+  ] = match;
 
   return {
-    dateTime: value,
-    label: `${yearText}-${monthText}-${dayText}`
+    day: Number(dayText),
+    dayText,
+    hour: Number(hourText),
+    minute: Number(minuteText),
+    month: Number(monthText),
+    monthText,
+    offsetHour: Number(offsetHourText ?? 0),
+    offsetMinute: Number(offsetMinuteText ?? 0),
+    second: Number(secondText),
+    year: Number(yearText),
+    yearText
   };
+}
+
+function isValidGraphQLDateTime(value: string, parts: GraphQLDateTimeParts) {
+  return (
+    isValidCalendarDate(parts) &&
+    isValidTime(parts) &&
+    isValidOffset(parts) &&
+    !Number.isNaN(new Date(value).getTime())
+  );
+}
+
+function isValidCalendarDate({ day, month, year }: GraphQLDateTimeParts) {
+  return isWithinRange(month, 1, 12) && isWithinRange(day, 1, daysInMonth(year, month));
+}
+
+function isValidTime({ hour, minute, second }: GraphQLDateTimeParts) {
+  return (
+    isWithinRange(hour, 0, 23) &&
+    isWithinRange(minute, 0, 59) &&
+    isWithinRange(second, 0, 59)
+  );
+}
+
+function isValidOffset({ offsetHour, offsetMinute }: GraphQLDateTimeParts) {
+  return isWithinRange(offsetHour, 0, 23) && isWithinRange(offsetMinute, 0, 59);
+}
+
+function isWithinRange(value: number, minimum: number, maximum: number) {
+  return value >= minimum && value <= maximum;
 }
 
 function daysInMonth(year: number, month: number) {

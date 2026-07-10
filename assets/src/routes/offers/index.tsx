@@ -42,6 +42,9 @@ type RenderableOffer = {
   offer: OfferNode;
   originalIndex: number;
 };
+type PricedRenderableOffer = RenderableOffer & {
+  latestPriceValue: number;
+};
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 type VisibleMerchant = {
   id: string;
@@ -212,30 +215,20 @@ function buildVisibleOfferSnapshot(
   offers: ReadonlyArray<RenderableOffer>
 ): VisibleOfferSnapshotSummary {
   let couponAvailabilityCount = 0;
-  let lowestPricedOffer: RenderableOffer | null = null;
+  let lowestPricedOffer: PricedRenderableOffer | null = null;
   let missingLatestPriceCount = 0;
   const priceCurrencies = new Set<string | null>();
 
   for (const offer of offers) {
-    const activeCoupons = couponConnection(offer.offer.activeCoupons);
+    couponAvailabilityCount += hasVisibleCoupons(offer) ? 1 : 0;
 
-    if (activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage) {
-      couponAvailabilityCount += 1;
-    }
-
-    if (offer.latestPriceValue === null) {
+    if (!hasLatestPrice(offer)) {
       missingLatestPriceCount += 1;
       continue;
     }
 
     priceCurrencies.add(offer.latestPriceCurrency);
-
-    if (
-      !lowestPricedOffer ||
-      offer.latestPriceValue < (lowestPricedOffer.latestPriceValue ?? Number.POSITIVE_INFINITY)
-    ) {
-      lowestPricedOffer = offer;
-    }
+    lowestPricedOffer = lowerPricedOffer(lowestPricedOffer, offer);
   }
 
   const hasMixedPriceCurrencies = priceCurrencies.size > 1;
@@ -243,16 +236,48 @@ function buildVisibleOfferSnapshot(
   return {
     couponAvailabilityCount,
     hasMixedPriceCurrencies,
-    lowestVisiblePriceText:
-      lowestPricedOffer && !hasMixedPriceCurrencies
-        ? priceLabel(
-            lowestPricedOffer.offer.latestPrice?.price,
-            lowestPricedOffer.offer.currency
-          )
-        : null,
+    lowestVisiblePriceText: comparableLowestPriceText(
+      lowestPricedOffer,
+      hasMixedPriceCurrencies
+    ),
     missingLatestPriceCount,
     visibleOfferCount: offers.length
   };
+}
+
+function hasVisibleCoupons({ offer }: RenderableOffer) {
+  const activeCoupons = couponConnection(offer.activeCoupons);
+
+  return activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage;
+}
+
+function hasLatestPrice(offer: RenderableOffer): offer is PricedRenderableOffer {
+  return offer.latestPriceValue !== null;
+}
+
+function lowerPricedOffer(
+  current: PricedRenderableOffer | null,
+  candidate: PricedRenderableOffer
+) {
+  if (!current || candidate.latestPriceValue < current.latestPriceValue) {
+    return candidate;
+  }
+
+  return current;
+}
+
+function comparableLowestPriceText(
+  lowestPricedOffer: PricedRenderableOffer | null,
+  hasMixedPriceCurrencies: boolean
+) {
+  if (!lowestPricedOffer || hasMixedPriceCurrencies) {
+    return null;
+  }
+
+  return priceLabel(
+    lowestPricedOffer.offer.latestPrice?.price,
+    lowestPricedOffer.offer.currency
+  );
 }
 
 function visibleLowestPriceLabel(summary: VisibleOfferSnapshotSummary) {
