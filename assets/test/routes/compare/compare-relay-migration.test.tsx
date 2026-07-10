@@ -141,6 +141,11 @@ const compareRouteQueryDescriptor = {
   }
 };
 
+const compareRouteQueryRef = {
+  dispose: vi.fn(),
+  variables: compareRouteQueryDescriptor.__relayQuery.variables
+};
+
 function buildCombinedCompareQuery() {
   return {
     data: {
@@ -213,7 +218,7 @@ beforeEach(() => {
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 
-test("compare loader preloads selected product detail queries through Relay", async () => {
+test("compare loader preloads the batched comparison query through Relay", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
@@ -228,10 +233,6 @@ test("compare loader preloads selected product detail queries through Relay", as
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     query: compareRouteQueryDescriptor,
-    productQueries: [
-      { __relayQuery: { variables: { slug: DETAIL_PRODUCT.slug } } },
-      { __relayQuery: { variables: { slug: SECOND_PRODUCT.slug } } }
-    ],
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
@@ -270,7 +271,7 @@ test("compare loader preloads selected product detail queries through Relay", as
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
-test("compare route renders compared product cards from Relay route queries", () => {
+test("compare route renders compared product cards from batched loader summaries", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockRouteQueryRefs();
   mockProductQueries();
@@ -285,36 +286,28 @@ test("compare route renders compared product cards from Relay route queries", ()
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    detailProductQueryDescriptor
+    compareRouteQueryDescriptor
   );
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    secondProductQueryDescriptor
-  );
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
-test("compare route falls back to loader summaries when Relay detail rendering fails", () => {
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
+test("compare route does not require per-product Relay detail reads", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockRouteQueryRefs();
   mockedUsePreloadedQuery.mockImplementation(() => {
-    throw new Error("Relay detail read failed");
+    throw new Error("Per-product Relay detail reads are not allowed");
   });
 
-  try {
-    render(
-      <MemoryRouter>
-        <CompareRoute />
-      </MemoryRouter>
-    );
+  render(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Comparison details unavailable.");
-    expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
 test("compare route saves the current selection through a Relay mutation", async () => {
@@ -500,7 +493,7 @@ function buildReadyLoaderData() {
     status: "ready" as const,
     specMode: "shared" as const,
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-    productQueries: [detailProductQueryDescriptor, secondProductQueryDescriptor],
+    query: compareRouteQueryDescriptor,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
@@ -528,12 +521,8 @@ function buildReadyLoaderData() {
 
 function mockRouteQueryRefs() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
-    if (descriptor === detailProductQueryDescriptor) {
-      return detailProductQueryRef;
-    }
-
-    if (descriptor === secondProductQueryDescriptor) {
-      return secondProductQueryRef;
+    if (descriptor === compareRouteQueryDescriptor) {
+      return compareRouteQueryRef;
     }
 
     throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);

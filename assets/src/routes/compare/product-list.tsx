@@ -1,9 +1,4 @@
 import { Link } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import productDetailRouteQuery, {
-  type ProductDetailRouteQuery
-} from "../../__generated__/ProductDetailRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ProductAttributeList } from "../products/product-attribute-list";
 import type {
   CompareProductSummary,
@@ -41,11 +36,10 @@ export function CompareProductList({
         specMode={loaderData.specMode}
       />
       <ul>
-        {loaderData.productQueries.map((productQuery, index) => (
+        {loaderData.products.map((product, index) => (
           <CompareProductCard
-            key={loaderData.slugs[index] ?? productQuery.__relayQuery.operationName}
-            productQuery={productQuery}
-            summary={loaderData.products[index]}
+            key={product.id}
+            product={product}
             selectedSlugs={loaderData.slugs}
             selectedIndex={index}
             specMode={loaderData.specMode}
@@ -384,37 +378,25 @@ export function CompareProductSummaryList({ products }: { products: CompareProdu
 }
 
 function CompareProductCard({
-  productQuery,
+  product,
   selectedSlugs,
   selectedIndex,
-  specMode,
-  summary
+  specMode
 }: {
-  productQuery: Extract<CompareRouteLoaderData, { status: "ready" }>["productQueries"][number];
+  product: CompareProductSummary;
   selectedSlugs: readonly string[];
   selectedIndex: number;
   specMode: CompareSpecMode;
-  summary: CompareProductSummary | undefined;
 }) {
-  const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
-    productDetailRouteQuery,
-    productQuery
-  );
-  const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
-  const product = data.product;
   const removePath = buildComparePathAfterRemovingSlugIndex(selectedSlugs, selectedIndex, {
     specMode
   });
-
-  if (!product) {
-    return null;
-  }
 
   return (
     <li>
       <article>
         <h2>{product.name}</h2>
-        <p>{compareProductBrandName(product, summary)}</p>
+        <p>{product.brandName ?? "Unknown brand"}</p>
         <p>{product.slug}</p>
         <CompareProductDescription description={product.description} />
         <ProductAttributeList
@@ -425,13 +407,6 @@ function CompareProductCard({
       </article>
     </li>
   );
-}
-
-function compareProductBrandName(
-  product: NonNullable<ProductDetailRouteQuery["response"]["product"]>,
-  summary: CompareProductSummary | undefined
-) {
-  return product.brand?.name ?? summary?.brandName ?? "Unknown brand";
 }
 
 function CompareProductDescription({ description }: { description: string | null | undefined }) {

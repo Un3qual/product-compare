@@ -2,7 +2,9 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
+import { RouteLoaderGraphQLError } from "../../relay/environment";
 import {
+  cacheRouteQueryData,
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
   type RelayRouteQueryDescriptor
@@ -35,16 +37,17 @@ export async function productDetailLoader({
   }
 
   const environment = getRelayEnvironmentFromRouterContext(context);
+  const variables: ProductDetailRouteQuery["variables"] = {
+    slug,
+    offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
+    offersAfter
+  };
 
   try {
     const productRouteQuery = await fetchRouteQuery<ProductDetailRouteQuery>(
       environment,
       productDetailRouteQuery,
-      {
-        slug,
-        offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
-        offersAfter
-      },
+      variables,
       { signal: request.signal }
     );
 
@@ -61,6 +64,20 @@ export async function productDetailLoader({
       productQuery: productRouteQuery.descriptor
     };
   } catch (error) {
+    const partialData = partialProductData(error);
+
+    if (partialData) {
+      return {
+        status: "ready",
+        productQuery: cacheRouteQueryData<ProductDetailRouteQuery>(
+          environment,
+          productDetailRouteQuery,
+          variables,
+          partialData
+        )
+      };
+    }
+
     return recoverRouteLoaderError<ProductDetailLoaderData>(
       error,
       "Failed to preload product detail route query.",
@@ -73,4 +90,20 @@ export async function productDetailLoader({
 
 function offersAfterFromUrl(url: URL): string | null {
   return url.searchParams.get("offersAfter");
+}
+
+function partialProductData(error: unknown): ProductDetailRouteQuery["response"] | null {
+  if (!(error instanceof RouteLoaderGraphQLError)) {
+    return null;
+  }
+
+  const response = error.response;
+
+  if (Array.isArray(response) || !("data" in response)) {
+    return null;
+  }
+
+  const data = response.data as ProductDetailRouteQuery["response"] | null | undefined;
+
+  return data?.product ? data : null;
 }

@@ -2,7 +2,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
-import { createRelayEnvironment } from "../../../src/relay/environment";
+import {
+  createRelayEnvironment,
+  RouteLoaderGraphQLError
+} from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
@@ -17,6 +20,7 @@ const {
   fetchRouteQueryMock,
   commitCommerceClickMock,
   graphqlMock,
+  loadQueryMock,
   preloadRouteQueryMock,
   useLoaderDataMock,
   useMutationMock,
@@ -26,6 +30,7 @@ const {
   fetchRouteQueryMock: vi.fn(),
   commitCommerceClickMock: vi.fn(),
   graphqlMock: vi.fn(),
+  loadQueryMock: vi.fn(),
   preloadRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
@@ -52,6 +57,7 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     graphql: graphqlMock,
+    loadQuery: loadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -158,12 +164,14 @@ const buildProductDetailLoaderArgs = ({
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();
   commitCommerceClickMock.mockReset();
+  loadQueryMock.mockReset();
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   mockedUseMutation.mockReturnValue([commitCommerceClickMock, false] as never);
+  loadQueryMock.mockReturnValue({ dispose: vi.fn() });
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
 });
@@ -349,6 +357,45 @@ test("product detail loader marks a failed combined product-and-offers request u
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("product detail loader preserves product data when only nested offers fail", async () => {
+  const environment = createRelayEnvironment();
+  const commitPayloadSpy = vi.spyOn(environment, "commitPayload");
+  const partialResponse = {
+    data: {
+      product: {
+        ...DETAIL_PRODUCT,
+        merchantProducts: null
+      }
+    },
+    errors: [
+      {
+        message: "Offers unavailable",
+        path: ["product", "merchantProducts"]
+      }
+    ]
+  };
+
+  mockedFetchRouteQuery.mockRejectedValue(new RouteLoaderGraphQLError(partialResponse));
+
+  await expect(
+    productDetailLoader(buildProductDetailLoaderArgs({ environment }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    productQuery: {
+      __relayQuery: {
+        operationName: "ProductDetailRouteQuery",
+        variables: {
+          slug: DETAIL_PRODUCT.slug,
+          offerFirst: 6,
+          offersAfter: null
+        }
+      }
+    }
+  });
+
+  expect(commitPayloadSpy).toHaveBeenCalledWith(expect.anything(), partialResponse.data);
 });
 
 test("product detail loader rethrows aborted product preloads", async () => {

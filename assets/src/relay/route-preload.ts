@@ -2,7 +2,14 @@ import { useEffect, useMemo } from "react";
 import type { GraphQLTaggedNode } from "react-relay";
 import { useRelayEnvironment, type PreloadedQuery } from "react-relay";
 import { createContext, RouterContextProvider } from "react-router-dom";
-import { getRequest, type CacheConfig, type Environment, type OperationType } from "relay-runtime";
+import {
+  createOperationDescriptor,
+  getRequest,
+  type CacheConfig,
+  type Environment,
+  type OperationType,
+  type PayloadData
+} from "relay-runtime";
 import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
 
 const ROUTE_QUERY_REF_CACHE_LIMIT = 50;
@@ -71,6 +78,25 @@ export async function preloadRouteQuery<TQuery extends OperationType>(
   options: PreloadRouteQueryOptions = {}
 ): Promise<RelayRouteQueryDescriptor<TQuery["variables"]>> {
   const { descriptor } = await fetchRouteQuery<TQuery>(environment, query, variables, options);
+
+  return descriptor;
+}
+
+export function cacheRouteQueryData<TQuery extends OperationType>(
+  environment: Environment,
+  query: GraphQLTaggedNode,
+  variables: TQuery["variables"],
+  data: TQuery["response"]
+) {
+  const operation = createOperationDescriptor(getRequest(query), variables);
+  environment.commitPayload(operation, data as PayloadData);
+
+  const descriptor = createRouteQueryDescriptor<TQuery>(query, variables);
+  const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
+    fetchPolicy: "store-only"
+  });
+
+  setRouteQueryRef(environment, descriptor, queryRef);
 
   return descriptor;
 }

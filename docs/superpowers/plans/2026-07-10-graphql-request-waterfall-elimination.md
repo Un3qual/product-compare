@@ -24,6 +24,7 @@
 ### Task 1: Add ordered comparison products and product-scoped offers
 
 **Files:**
+
 - Modify: `lib/product_compare/catalog.ex`
 - Modify: `lib/product_compare_web/schema.ex`
 - Modify: `lib/product_compare_web/resolvers/catalog_resolver.ex`
@@ -32,6 +33,7 @@
 - Test: `test/product_compare_web/graphql/pricing_queries_test.exs`
 
 **Interfaces:**
+
 - Produces: `Catalog.list_products_by_slugs/1 :: [Product.t() | nil]`.
 - Produces: GraphQL `comparisonProducts(slugs: [String!]!): [Product]!` with ordered nullable entries.
 - Produces: GraphQL `Product.merchantProducts(first:, after:, merchantId:, activeOnly:)` using the parent product ID.
@@ -190,6 +192,7 @@ git commit -m "feat: add comparison route graphql contracts"
 ### Task 2: Consolidate the comparison route into one initial query
 
 **Files:**
+
 - Create: `assets/src/routes/compare/queries/CompareRouteQuery.ts`
 - Modify: `assets/src/routes/compare/loader.ts`
 - Modify: `assets/src/routes/compare/index.tsx`
@@ -203,6 +206,7 @@ git commit -m "feat: add comparison route graphql contracts"
 - Test: `assets/test/routes/compare/compare-relay-migration.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `comparisonProducts` and nested `Product.merchantProducts` from Task 1.
 - Produces: ready loader data with one `query: RelayRouteQueryDescriptor<CompareRouteQuery["variables"]>`.
 - Preserves: `products`, `offerContexts`, ordered slugs, spec mode, picker pagination, and comparison mutations.
@@ -327,6 +331,7 @@ git commit -m "perf: collapse comparison graphql requests"
 ### Task 3: Consolidate product detail and catalog route queries
 
 **Files:**
+
 - Modify: `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
 - Delete: `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`
 - Modify: `assets/src/routes/products/loader.ts`
@@ -343,6 +348,7 @@ git commit -m "perf: collapse comparison graphql requests"
 - Test: `assets/test/routes/catalog/browse.route.test.tsx`
 
 **Interfaces:**
+
 - Consumes: nested `Product.merchantProducts` from Task 1.
 - Produces: one product-detail query descriptor with nested offers.
 - Produces: one catalog query descriptor containing products and filter metadata.
@@ -413,6 +419,7 @@ git commit -m "perf: combine product route graphql data"
 ### Task 4: Replace eager cursor exhaustion with one-page navigation
 
 **Files:**
+
 - Modify: `assets/src/routes/compare/saved-data.ts`
 - Modify: `assets/src/routes/compare/saved.tsx`
 - Modify: `assets/src/routes/account/api-tokens/loader.ts`
@@ -423,6 +430,7 @@ git commit -m "perf: combine product route graphql data"
 - Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 
 **Interfaces:**
+
 - Produces: saved-comparison loader data with `savedSetQuery`, `hasNextPage`, `endCursor`, and `after`.
 - Produces: API-token loader data with `tokenQuery`, `hasNextPage`, `endCursor`, and `after`.
 - Produces: first/next URL helpers that preserve status where applicable.
@@ -512,10 +520,12 @@ git commit -m "perf: stop eager route pagination"
 ### Task 5: Verify the complete batch and close the live lane
 
 **Files:**
+
 - Modify: `docs/work/frontend-graphql-request-waterfalls.md`
 - Modify: `docs/work/index.md`
 
 **Interfaces:**
+
 - Consumes: all implementation milestones.
 - Produces: current completion evidence and an empty active queue with the below-target explanation preserved.
 
@@ -577,4 +587,3 @@ git diff HEAD~5..HEAD --stat
 ```
 
 Expected: milestone commits are present and the worktree is clean.
-

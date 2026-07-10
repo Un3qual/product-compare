@@ -253,6 +253,47 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOff
   numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
 };
 
+type ProductOfferNode = NonNullable<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
+>["edges"][number]["node"];
+
+function buildVisibleProductOffer(node: ProductOfferNode): VisibleProductOffer | null {
+  const safeUrl = normalizeOfferUrl(node.url);
+
+  if (!safeUrl) {
+    return null;
+  }
+
+  return {
+    id: node.id,
+    currency: normalizedCurrency(node.currency),
+    merchantName: productOfferMerchantName(node.merchant),
+    url: safeUrl,
+    priceText: formatPriceText(node.latestPrice?.price, node.currency),
+    numericPrice: decimalStringToNumber(node.latestPrice?.price),
+    priceObservation: buildPriceObservation(node.latestPrice?.observedAt),
+    ...buildVisibleCouponSummary(node.activeCoupons),
+    ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency)
+  };
+}
+
+function buildVisibleCouponSummary(activeCoupons: ProductOfferNode["activeCoupons"]) {
+  return {
+    coupons: buildCouponRows(activeCoupons?.edges ?? []),
+    couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false
+  };
+}
+
+function buildVisiblePriceHistorySummary(
+  priceHistory: ProductOfferNode["priceHistory"],
+  currency: string
+) {
+  return {
+    priceHistory: buildPriceHistoryRows(priceHistory?.edges ?? [], currency),
+    priceHistoryHasMore: priceHistory?.pageInfo.hasNextPage ?? false
+  };
+}
+
 function ProductOffers({
   connection,
   productSlug,
@@ -269,27 +310,9 @@ function ProductOffers({
   }
 
   const offers = connection.edges.flatMap(({ node }) => {
-    const safeUrl = normalizeOfferUrl(node.url);
+    const offer = buildVisibleProductOffer(node);
 
-    if (!safeUrl) {
-      return [];
-    }
-
-    return [
-      {
-        id: node.id,
-        currency: normalizedCurrency(node.currency),
-        merchantName: productOfferMerchantName(node.merchant),
-        url: safeUrl,
-        priceText: formatPriceText(node.latestPrice?.price, node.currency),
-        numericPrice: decimalStringToNumber(node.latestPrice?.price),
-        priceObservation: buildPriceObservation(node.latestPrice?.observedAt),
-        coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
-        couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
-        priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
-        priceHistoryHasMore: node.priceHistory?.pageInfo.hasNextPage ?? false
-      }
-    ];
+    return offer ? [offer] : [];
   });
   const paginationLinks =
     offersAfter || (connection.pageInfo.hasNextPage && connection.pageInfo.endCursor) ? (
@@ -360,10 +383,6 @@ function ProductOffers({
     </>
   );
 }
-
-type ProductOfferNode = NonNullable<
-  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
->["edges"][number]["node"];
 
 function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
   return merchant?.name ?? "Visit offer";

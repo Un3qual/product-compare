@@ -4,8 +4,12 @@ import type { GraphQLTaggedNode } from "react-relay";
 import { RelayEnvironmentProvider } from "react-relay";
 import { RouterContextProvider } from "react-router-dom";
 import { createRelayEnvironment } from "../../src/relay/environment";
+import productDetailRouteQuery, {
+  type ProductDetailRouteQuery
+} from "../../src/__generated__/ProductDetailRouteQuery.graphql";
 import { fetchAppQuery, loadAppQuery } from "../../src/relay/load-query";
 import {
+  cacheRouteQueryData,
   createRelayRouterContext,
   fetchRouteQuery,
   getRoutePreloadedQuery,
@@ -145,6 +149,48 @@ test("fetchRouteQuery returns fetched data with the serializable descriptor and 
   fetchedQuery.dispose();
 
   expect(queryRef.dispose).toHaveBeenCalledTimes(1);
+});
+
+test("cacheRouteQueryData normalizes partial data and retains a store-only query ref", () => {
+  const environment = createRelayEnvironment();
+  const commitPayloadSpy = vi.spyOn(environment, "commitPayload");
+  const variables: ProductDetailRouteQuery["variables"] = {
+    slug: "detail-product",
+    offerFirst: 6,
+    offersAfter: null
+  };
+  const data: ProductDetailRouteQuery["response"] = {
+    product: null
+  };
+  const queryRef = { dispose: vi.fn(), variables };
+
+  vi.mocked(loadAppQuery).mockReturnValue(queryRef as never);
+
+  const descriptor = cacheRouteQueryData<ProductDetailRouteQuery>(
+    environment,
+    productDetailRouteQuery,
+    variables,
+    data
+  );
+
+  expect(commitPayloadSpy).toHaveBeenCalledWith(expect.anything(), data);
+  expect(loadAppQuery).toHaveBeenCalledWith(
+    environment,
+    productDetailRouteQuery,
+    variables,
+    { fetchPolicy: "store-only" }
+  );
+
+  vi.mocked(loadAppQuery).mockClear();
+
+  const preloadedQuery = getRoutePreloadedQuery(
+    environment,
+    productDetailRouteQuery,
+    descriptor
+  );
+
+  expect(preloadedQuery.variables).toBe(queryRef.variables);
+  expect(loadAppQuery).not.toHaveBeenCalled();
 });
 
 test("getRoutePreloadedQuery reuses a query reference already loaded for the descriptor", async () => {

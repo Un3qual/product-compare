@@ -40,7 +40,7 @@ Reduce the audited shopper and account routes to one GraphQL request for initial
 - `cd assets && bun run relay` generated 30 reader, 29 normalization, and 29
   operation-text artifacts.
 - `cd assets && bun run build` completed both client and SSR production builds.
-- `cd assets && bun run check` passed TypeScript and all 594 frontend tests.
+- `cd assets && bun run check` passed TypeScript and all 598 frontend tests.
 - `mix test` passed all 624 backend tests.
 - `mix typecheck` passed.
 - `mix format --check-formatted` passed.
@@ -50,10 +50,11 @@ Reduce the audited shopper and account routes to one GraphQL request for initial
 
 - `/compare` now loads selected products, their initial active-offer context,
   and the initial product-picker page through one `CompareRouteQuery` request.
-  Store-only product descriptors preserve the existing card boundaries without
-  issuing additional requests.
+  Product cards render from the ordered batched loader summaries, so they do
+  not depend on synthetic store-only `product(slug:)` descriptors.
 - `/products/:slug` now loads product details and the requested active-offer
-  page through one route query.
+  page through one route query. If only nested offer resolution fails, usable
+  product data remains visible with the local offers-unavailable fallback.
 - `/products` now loads products and filter metadata through one route query;
   the separate filter-metadata operation was removed.
 - `/compare/saved` and `/account/api-tokens` now fetch one cursor page per

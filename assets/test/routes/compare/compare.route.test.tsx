@@ -267,6 +267,41 @@ const savedComparisonsQueryDescriptor = (variables: { first: number; after?: str
 
 const SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR = savedComparisonsQueryDescriptor({ first: 20 });
 
+const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
+
+function buildOfferContextConnection({
+  hasNextPage = false,
+  offers
+}: {
+  hasNextPage?: boolean;
+  offers: CompareOfferTestNode[];
+}) {
+  return {
+    edges: offers.map((node, index) => ({
+      cursor: `offer-cursor-${index + 1}`,
+      node: {
+        activeCoupons: {
+          edges: node.activeCoupons?.edges ?? [],
+          pageInfo: {
+            hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
+          }
+        },
+        priceHistory: {
+          edges: node.priceHistory?.edges ?? [],
+          pageInfo: {
+            hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
+          }
+        },
+        ...node
+      }
+    })),
+    pageInfo: {
+      endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
+      hasNextPage
+    }
+  };
+}
+
 const buildFetchedProductQuery = (
   product: CompareTestProduct | null,
   descriptor:
@@ -294,39 +329,6 @@ const buildFetchedProductQuery = (
   },
   descriptor,
   dispose: vi.fn()
-});
-
-const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
-
-const buildOfferContextConnection = ({
-  hasNextPage = false,
-  offers
-}: {
-  hasNextPage?: boolean;
-  offers: CompareOfferTestNode[];
-}) => ({
-  edges: offers.map((node, index) => ({
-    cursor: `offer-cursor-${index + 1}`,
-    node: {
-      activeCoupons: {
-        edges: node.activeCoupons?.edges ?? [],
-        pageInfo: {
-          hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
-        }
-      },
-      priceHistory: {
-        edges: node.priceHistory?.edges ?? [],
-        pageInfo: {
-          hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
-        }
-      },
-      ...node
-    }
-  })),
-  pageInfo: {
-    endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
-    hasNextPage
-  }
 });
 
 const buildFetchedCompareRouteQuery = ({
@@ -466,7 +468,6 @@ const buildReadyCompareLoaderData = (
   specMode: "shared" as const,
   slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
   query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-  productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
   offerContexts: buildDefaultOfferContexts(),
   products: [
     buildProductSummary(DETAIL_PRODUCT),
@@ -594,20 +595,6 @@ test("compare loader requests selected product details and preserves URL order",
     specMode: "shared",
     slugs: ["detail-product", "second-product"],
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-    productQueries: [
-      {
-        __relayQuery: {
-          operationName: "ProductDetailRouteQuery",
-          variables: { slug: DETAIL_PRODUCT.slug }
-        }
-      },
-      {
-        __relayQuery: {
-          operationName: "ProductDetailRouteQuery",
-          variables: { slug: SECOND_PRODUCT.slug }
-        }
-      }
-    ],
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
@@ -630,6 +617,28 @@ test("compare loader requests selected product details and preserves URL order",
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader restores requested slug order when response order diverges", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+  );
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({ products: [SECOND_PRODUCT, DETAIL_PRODUCT] })
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+    products: [
+      { id: DETAIL_PRODUCT.id, slug: DETAIL_PRODUCT.slug },
+      { id: SECOND_PRODUCT.id, slug: SECOND_PRODUCT.slug }
+    ]
+  });
 });
 
 test("compare loader preserves typed attribute metadata for compare rows", async () => {
@@ -1346,7 +1355,6 @@ test("product picker resets pagination before rendering a changed selected set",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id)
     },
@@ -1405,7 +1413,6 @@ test("product picker resets pagination before rendering a changed selected set",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
@@ -1591,48 +1598,77 @@ test("ready compare page keeps specs visible when one offer context is unavailab
 });
 
 test("ready compare cards render product attributes", () => {
-  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...DETAIL_PRODUCT,
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
           currentAttributes: [
             {
               code: "refresh-rate",
               displayName: "Refresh rate",
-              dataType: "numeric",
               valueText: "144 Hz"
             }
           ]
-        }
-      };
-    }
-
-    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...SECOND_PRODUCT,
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
           currentAttributes: [
             {
               code: "refresh-rate",
               displayName: "Refresh rate",
-              dataType: "numeric",
               valueText: "165 Hz"
             }
           ]
         }
-      };
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  expect(screen.getAllByText("144 Hz")).toHaveLength(2);
+  expect(screen.getAllByText("165 Hz")).toHaveLength(2);
+  expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
+});
+
+test("ready compare cards render from batched loader data without synthetic product reads", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: [
+            {
+              code: "refresh-rate",
+              displayName: "Refresh rate",
+              valueText: "144 Hz"
+            }
+          ]
+        },
+        buildProductSummary(SECOND_PRODUCT)
+      ]
+    })
+  );
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === COMPARE_ROUTE_QUERY_DESCRIPTOR) {
+      return COMPARE_ROUTE_QUERY_REF;
     }
 
-    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+    throw new Error(`Unexpected synthetic product descriptor: ${JSON.stringify(descriptor)}`);
+  });
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Compare cards must not issue store-only product reads");
   });
 
   renderCompareRoute();
 
-  expect(screen.getByText("144 Hz")).toBeVisible();
-  expect(screen.getByText("165 Hz")).toBeVisible();
-  expect(screen.getAllByText("Refresh rate")).toHaveLength(2);
+  expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
+  expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
+  expect(screen.getByText("Refresh rate")).toBeInTheDocument();
+  expect(screen.getByText("144 Hz")).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
 test("ready compare page aligns shared product attributes in a matrix", () => {
@@ -2007,11 +2043,6 @@ test("ready compare page preserves specification mode in remove links", () => {
     buildReadyCompareLoaderData({
       specMode: "differences",
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      productQueries: [
-        DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-        SECOND_PRODUCT_QUERY_DESCRIPTOR,
-        THIRD_PRODUCT_QUERY_DESCRIPTOR
-      ],
       products: [
         buildProductSummary(DETAIL_PRODUCT),
         buildProductSummary(SECOND_PRODUCT),
@@ -2409,11 +2440,6 @@ test("ready compare page renders a selected-product tray with ordered remove lin
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2461,7 +2487,6 @@ test("ready compare page handles an empty selected-product tray defensively", ()
     status: "ready",
     specMode: "shared",
     slugs: [],
-    productQueries: [],
     products: []
   });
 
@@ -2508,11 +2533,6 @@ test("ready compare cards include a remove link for the first selected product",
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2533,11 +2553,6 @@ test("ready compare cards include a remove link for a middle selected product", 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2558,11 +2573,6 @@ test("ready compare cards include a remove link for the last selected product", 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2583,7 +2593,6 @@ test("ready compare card remove link clears all selected slugs when only one is 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
   });
 
@@ -2700,7 +2709,6 @@ test("compare route clears stale save feedback when selected products change", a
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
   });
 

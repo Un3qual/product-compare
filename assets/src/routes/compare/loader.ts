@@ -1,8 +1,4 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { getRequest } from "relay-runtime";
-import productDetailRouteQuery, {
-  type ProductDetailRouteQuery
-} from "../../__generated__/ProductDetailRouteQuery.graphql";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import {
   fetchRouteQuery,
@@ -86,7 +82,6 @@ export type CompareRouteLoaderData =
       specMode: CompareSpecMode;
       slugs: string[];
       query: RelayRouteQueryDescriptor<CompareRouteQuery["variables"]>;
-      productQueries: Array<RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>>;
       offerContexts: CompareOfferContextsByProductId;
       products: CompareProductSummary[];
     };
@@ -133,7 +128,10 @@ export async function compareLoader({
       },
       { signal: request.signal }
     );
-    const products = fetchedQuery.data.comparisonProducts;
+    const products = orderProductsByRequestedSlugs(
+      slugs,
+      fetchedQuery.data.comparisonProducts
+    );
 
     if (products.some((product) => !product)) {
       fetchedQuery.dispose();
@@ -152,7 +150,6 @@ export async function compareLoader({
       specMode,
       slugs,
       query: fetchedQuery.descriptor,
-      productQueries: slugs.map(productDetailQueryDescriptor),
       offerContexts: summarizeOfferContexts(presentProducts),
       products: presentProducts.map(summarizeProduct)
     };
@@ -189,22 +186,15 @@ function parseSelectedSlugs(requestUrl: string) {
   return Array.from(selected);
 }
 
-function productDetailQueryDescriptor(
-  slug: string
-): RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]> {
-  const request = getRequest(productDetailRouteQuery);
+function orderProductsByRequestedSlugs(
+  slugs: readonly string[],
+  products: ReadonlyArray<CompareProduct>
+) {
+  const productsBySlug = new Map(
+    products.filter(isPresentProduct).map((product) => [product.slug, product])
+  );
 
-  return {
-    __relayQuery: {
-      operationName: request.params.name,
-      text: request.params.text,
-      variables: {
-        slug,
-        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-        offersAfter: null
-      }
-    }
-  };
+  return slugs.map((slug) => productsBySlug.get(slug) ?? null);
 }
 
 function summarizeProduct(product: PresentCompareProduct): CompareProductSummary {

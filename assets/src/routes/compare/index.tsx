@@ -223,7 +223,7 @@ export function CompareRoute() {
           specMode={loaderData.specMode}
         />
         <ResettableErrorBoundary
-          resetToken={loaderData.productQueries}
+          resetToken={loaderData.query}
           fallback={
             <>
               <p role="alert">Comparison details unavailable.</p>

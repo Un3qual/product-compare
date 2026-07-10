@@ -109,10 +109,12 @@ combines selected products, initial offer context, and picker data into one
 request; product detail combines product and offer data; and catalog combines
 products with filter metadata. Saved comparisons and API tokens now fetch one
 cursor page per navigation with explicit first/next links instead of eagerly
-following every cursor. Relay generation, client and SSR production builds,
-all 594 frontend tests, all 624 backend tests, backend type checks, formatting,
-and diff checks passed. The lane doc records the request-site audit and focused
-verification evidence.
+following every cursor. Review follow-up removed synthetic compare-card reads,
+made selected-product ordering defensive, and preserves usable product detail
+when only nested offers fail. Relay generation, client and SSR production
+builds, all 598 frontend tests, all 624 backend tests, backend type checks,
+formatting, and diff checks passed. The lane doc records the request-site audit
+and focused verification evidence.
 
 The 2026-07-09 shopper decision-confidence batch completed catalog result
 guidance: `/products` now shows the complete metadata-backed result count and
