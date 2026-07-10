@@ -249,6 +249,26 @@ function OffersUnavailableFallback() {
   );
 }
 
+type VisibleProductOffer = {
+  currency: string | null;
+  id: string;
+  merchantName: string;
+  url: string;
+  priceText: string | null;
+  numericPrice: number | null;
+  priceObservation: GraphQLDateTimeContext | null;
+  coupons: ReturnType<typeof buildCouponRows>;
+  couponsHasMore: boolean;
+  priceHistory: ReturnType<typeof buildPriceHistoryRows>;
+  priceHistoryHasMore: boolean;
+};
+
+const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
+  currency: (offer) => offer.currency,
+  hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
+  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
+};
+
 function ProductOffers({
   query,
   productSlug,
@@ -368,26 +388,6 @@ type ProductOfferNode =
 function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
   return merchant?.name ?? "Visit offer";
 }
-
-type VisibleProductOffer = {
-  currency: string | null;
-  id: string;
-  merchantName: string;
-  url: string;
-  priceText: string | null;
-  numericPrice: number | null;
-  priceObservation: GraphQLDateTimeContext | null;
-  coupons: ReturnType<typeof buildCouponRows>;
-  couponsHasMore: boolean;
-  priceHistory: ReturnType<typeof buildPriceHistoryRows>;
-  priceHistoryHasMore: boolean;
-};
-
-const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
-  currency: (offer) => offer.currency,
-  hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
-  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
-};
 
 function OfferSnapshot({
   summary

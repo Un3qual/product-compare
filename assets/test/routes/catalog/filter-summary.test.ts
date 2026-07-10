@@ -81,3 +81,13 @@ test.each<[CatalogFilterRemoval, Partial<CatalogFilters>]>([
 ])("applies removal intent %#", (removal, expected) => {
   expect(catalogFiltersWithout(filters, removal)).toMatchObject(expected);
 });
+
+test("rejects an unsupported removal intent", () => {
+  const unsupportedRemoval = {
+    kind: "unsupported"
+  } as unknown as CatalogFilterRemoval;
+
+  expect(() => catalogFiltersWithout(filters, unsupportedRemoval)).toThrow(
+    "Unsupported catalog filter removal"
+  );
+});

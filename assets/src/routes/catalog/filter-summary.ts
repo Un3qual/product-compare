@@ -64,6 +64,13 @@ export function catalogFiltersWithout(
           (filter) => filter.attributeId !== removal.attributeId
         )
       };
+    default: {
+      const unsupportedRemoval: never = removal;
+
+      throw new Error(
+        `Unsupported catalog filter removal: ${JSON.stringify(unsupportedRemoval)}`
+      );
+    }
   }
 }
 
