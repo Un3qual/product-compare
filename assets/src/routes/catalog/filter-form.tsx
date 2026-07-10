@@ -4,7 +4,6 @@ import type { ProductFilterMetadataQuery } from "../../__generated__/ProductFilt
 import {
   CATALOG_PRODUCT_SORTS,
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
-  catalogFilterSummaryItems,
   catalogProductSortLabel,
   type CatalogBooleanFilter,
   type CatalogEnumFilter,
@@ -12,6 +11,10 @@ import {
   type CatalogFilters,
   type CatalogNumericFilter
 } from "./filters";
+import {
+  catalogFiltersWithout,
+  catalogFilterSummaryItems
+} from "./filter-summary";
 import { catalogBrowseFirstPagePath } from "./paths";
 
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
@@ -418,36 +421,26 @@ export function CatalogActiveFilterSummary({
 
   return (
     <section aria-label="Applied product filters">
-      {summaryItems.length > 0 ? (
-        <ul aria-label="Active filters">
-          {summaryItems.map((item) => (
-            <li key={item.key}>
-              <Link
-                to={catalogBrowseFirstPagePath(
-                  item.remainingFilters,
-                  pageSize,
-                  compareSlugs
-                )}
-              >
-                Remove {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ul aria-label="Active filters">
+        {summaryItems.map((item) => (
+          <li key={item.key}>
+            <Link
+              to={catalogBrowseFirstPagePath(
+                catalogFiltersWithout(filters, item.removal),
+                pageSize,
+                compareSlugs
+              )}
+            >
+              Remove {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
       <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize, compareSlugs)}>
         Clear filters
       </Link>
     </section>
   );
-}
-
-export function CatalogResultGuidance({ resultCount }: { resultCount: number }) {
-  if (resultCount <= 0) {
-    return <p>No matching products</p>;
-  }
-
-  return <p>{resultCount === 1 ? "1 matching product" : `${resultCount} matching products`}</p>;
 }
 
 function selectedNumericFilter(filters: readonly CatalogNumericFilter[], attributeId: string) {

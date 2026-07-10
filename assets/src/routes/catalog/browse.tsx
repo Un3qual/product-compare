@@ -21,17 +21,14 @@ import {
   hasActiveCatalogFilters,
   type CatalogFilters
 } from "./filters";
-import {
-  CatalogActiveFilterSummary,
-  CatalogFilterForm,
-  CatalogResultGuidance
-} from "./filter-form";
+import { CatalogActiveFilterSummary, CatalogFilterForm } from "./filter-form";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   catalogBrowseFirstPagePath,
   catalogBrowseNextPagePath,
   catalogBrowseSearchWithNormalizedSort
 } from "./paths";
+import { catalogResultStatus } from "./result-status";
 
 type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
 
@@ -119,7 +116,11 @@ function BrowseProducts({
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
-  const hasFilteredEmptyState = hasActiveFilters && filterMetadata.resultCount === 0;
+  const resultStatus = catalogResultStatus({
+    hasActiveFilters,
+    hasVisibleProducts: products.length > 0,
+    resultCount: filterMetadata.resultCount
+  });
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const nextProductsPath =
     data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
@@ -168,7 +169,7 @@ function BrowseProducts({
     ) : null;
   const filterControls = (
     <>
-      <CatalogResultGuidance resultCount={filterMetadata.resultCount} />
+      <p>{resultStatus.guidance}</p>
       <CatalogFilterForm
         compareSlugs={selectedCompareSlugs}
         key={filterFormKey}
@@ -190,11 +191,7 @@ function BrowseProducts({
       <section>
         {selectionTray}
         {filterControls}
-        <p>
-          {hasFilteredEmptyState
-            ? "No products match these filters."
-            : "No products available yet."}
-        </p>
+        {resultStatus.emptyMessage ? <p>{resultStatus.emptyMessage}</p> : null}
         {paginationLinks}
       </section>
     );

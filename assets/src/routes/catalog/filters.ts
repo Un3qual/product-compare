@@ -51,12 +51,6 @@ export interface CatalogFilterOptionMetadata {
   selected: boolean;
 }
 
-export interface CatalogFilterSummaryItem {
-  key: string;
-  label: string;
-  remainingFilters: CatalogFilters;
-}
-
 export interface CatalogFilterMetadata {
   typeOptions: readonly CatalogFilterOptionMetadata[];
   useCaseOptions: readonly CatalogFilterOptionMetadata[];
@@ -387,51 +381,6 @@ function compareAbsoluteDecimalFilterValues(
   return leftFraction > rightFraction ? 1 : -1;
 }
 
-export function catalogFilterSummaryItems(
-  metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
-): CatalogFilterSummaryItem[] {
-  return [
-    ...(filters.query
-      ? [
-          {
-            key: "query",
-            label: `Search: "${filters.query}"`,
-            remainingFilters: copyCatalogFilters(filters, { query: undefined })
-          }
-        ]
-      : []),
-    ...(filters.sort
-      ? [
-          {
-            key: "sort",
-            label: `Sort: ${catalogProductSortLabel(filters.sort)}`,
-            remainingFilters: copyCatalogFilters(filters, { sort: undefined })
-          }
-        ]
-      : []),
-    ...typeFilterSummaryItems(metadata, filters),
-    ...selectedUseCaseSummaryItems(metadata, filters),
-    ...numericFilterSummaryItems(metadata, filters),
-    ...booleanFilterSummaryItems(metadata, filters),
-    ...enumFilterSummaryItems(metadata, filters)
-  ];
-}
-
-function copyCatalogFilters(
-  filters: CatalogFilters,
-  overrides: Partial<CatalogFilters>
-): CatalogFilters {
-  return {
-    ...filters,
-    useCaseTaxonIds: [...filters.useCaseTaxonIds],
-    numeric: [...filters.numeric],
-    booleans: [...filters.booleans],
-    enums: [...filters.enums],
-    ...overrides
-  };
-}
-
 function catalogSearchQuery(rawValue: string | null) {
   const value = rawValue?.trim() ?? "";
 
@@ -448,132 +397,6 @@ function catalogProductSort(rawValue: string | null): CatalogProductSort | null 
   return CATALOG_PRODUCT_SORTS.includes(value as CatalogProductSort)
     ? (value as CatalogProductSort)
     : null;
-}
-
-function typeFilterSummaryItems(metadata: CatalogFilterMetadata, filters: CatalogFilters) {
-  const selectedType = metadata.typeOptions.find((option) => option.selected);
-
-  if (!selectedType) {
-    return [];
-  }
-
-  return [
-    {
-      key: "type",
-      label: filters.includeTypeDescendants
-        ? `Type: ${selectedType.label} and descendants`
-        : `Type: ${selectedType.label}`,
-      remainingFilters: copyCatalogFilters(filters, {
-        typeTaxonId: undefined,
-        includeTypeDescendants: undefined
-      })
-    }
-  ];
-}
-
-function selectedUseCaseSummaryItems(
-  metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
-): CatalogFilterSummaryItem[] {
-  return metadata.useCaseOptions
-    .filter((option) => option.selected)
-    .map((option) => ({
-      key: `use-case:${option.id}`,
-      label: `Use case: ${option.label}`,
-      remainingFilters: copyCatalogFilters(filters, {
-        useCaseTaxonIds: filters.useCaseTaxonIds.filter((id) => id !== option.id)
-      })
-    }));
-}
-
-function numericFilterSummaryItems(
-  metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
-): CatalogFilterSummaryItem[] {
-  return metadata.numericFilters.flatMap((filter) => {
-    const rangeSummary = numericFilterSummary(filter);
-
-    return rangeSummary
-      ? [
-          {
-            key: `numeric:${filter.attributeId}`,
-            label: `${filter.displayName}: ${rangeSummary}`,
-            remainingFilters: copyCatalogFilters(filters, {
-              numeric: filters.numeric.filter(
-                (selectedFilter) => selectedFilter.attributeId !== filter.attributeId
-              )
-            })
-          }
-        ]
-      : [];
-  });
-}
-
-function booleanFilterSummaryItems(
-  metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
-): CatalogFilterSummaryItem[] {
-  return metadata.booleanFilters.flatMap((filter) =>
-    typeof filter.selectedValue === "boolean"
-      ? [
-          {
-            key: `boolean:${filter.attributeId}`,
-            label: `${filter.displayName}: ${filter.selectedValue ? "Yes" : "No"}`,
-            remainingFilters: copyCatalogFilters(filters, {
-              booleans: filters.booleans.filter(
-                (selectedFilter) => selectedFilter.attributeId !== filter.attributeId
-              )
-            })
-          }
-        ]
-      : []
-  );
-}
-
-function enumFilterSummaryItems(
-  metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
-): CatalogFilterSummaryItem[] {
-  return metadata.enumFilters.flatMap((filter) =>
-    filter.options
-      .filter((option) => option.selected)
-      .map((option) => ({
-        key: `enum:${filter.attributeId}:${option.id}`,
-        label: `${filter.displayName}: ${option.label}`,
-        remainingFilters: copyCatalogFilters(filters, {
-          enums: filters.enums.filter(
-            (selectedFilter) => selectedFilter.attributeId !== filter.attributeId
-          )
-        })
-      }))
-  );
-}
-
-function numericFilterSummary(filter: CatalogFilterMetadata["numericFilters"][number]) {
-  const min = formatNumericValue(filter.selectedMin, filter.unitSymbol);
-  const max = formatNumericValue(filter.selectedMax, filter.unitSymbol);
-
-  if (min && max) {
-    return `${min} to ${max}`;
-  }
-
-  if (min) {
-    return `at least ${min}`;
-  }
-
-  if (max) {
-    return `up to ${max}`;
-  }
-
-  return null;
-}
-
-function formatNumericValue(value: string | null | undefined, unitSymbol: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  return unitSymbol ? `${value} ${unitSymbol}` : value;
 }
 
 function nonBlankParam(url: URL, name: string) {

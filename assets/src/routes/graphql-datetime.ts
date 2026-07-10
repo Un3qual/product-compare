@@ -37,6 +37,10 @@ export function graphQLDateTimeContext(value: unknown): GraphQLDateTimeContext |
   };
 }
 
+export function graphQLDateTimeLabel(value: unknown) {
+  return graphQLDateTimeContext(value)?.label ?? null;
+}
+
 function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
   const match = GRAPHQL_DATE_TIME_PATTERN.exec(value);
 
