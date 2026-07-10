@@ -8,22 +8,23 @@ For the operating rules, prompt templates, and handoff format, read
 ## Queue Rules
 
 - A worker should execute only rows with `Status: ready`.
-- The target is three to five `ready` rows whenever validated work exists.
-- When fewer than three remain at a dispatch boundary, the coordinator
-  replenishes the complete slate in one pass.
-- A below-target slate must name the decision, blocker, or shortage of validated
-  candidates preventing replenishment.
-- More than five `ready` rows requires an explicitly requested larger execution
-  batch.
+- At least three complete `ready` implementation rows must exist at every stable
+  dispatch boundary.
+- Three is the replenishment floor, not a target or maximum. Promote every
+  useful, currently validated candidate whose ownership and prerequisites make
+  it executable.
+- Before a claim would leave fewer than three other ready rows, the coordinator
+  validates and promotes more work in the same dispatch update.
+- Before removing completed or blocked work, preserve truthful lane evidence
+  and ensure the committed queue still satisfies the floor.
 - `needs_decision` rows are coordinator work: resolve the decision, then promote
-  enough source-backed work to restore the rolling slate, or leave the missing
-  decision named.
+  every useful source-backed candidate made executable by it.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
-- Workers claim the highest-ranked compatible `ready` row and leave other
-  executable rows available.
-- Dependent, deferred, rejected, blocked, and unverified work cannot be used as
-  queue-depth filler.
+- Workers claim the highest-ranked compatible `ready` row only when three other
+  ready rows will remain.
+- Dependent, deferred, rejected, blocked, speculative, stale, and unverified
+  work cannot be used as queue-depth filler.
 - `active` rows are already owned by a named worker or branch. Do not start a
   second worker on them unless the coordinator reassigns the row.
 - Completed lanes do not stay in this queue. Their history remains in the lane
@@ -257,10 +258,12 @@ Start at docs/work/index.md.
 Read docs/work/operating-model.md.
 Process the highest-ranked non-ready row when a decision or blocker exists.
 Otherwise curate source-backed candidates from docs/plans/INDEX.md and the directly affected lane docs.
-When fewer than three ready rows remain, replenish the slate to three to five ready rows in one pass.
+Before a stable boundary would leave fewer than three ready rows, validate new implementation candidates from current product, code, test, architecture, and lane evidence.
+Three is the floor, not a cap; promote every additional useful validated row found in the same pass.
 Validate every promoted row's owned paths, verification, prerequisites, and exit condition.
 Update only the live queue plus the directly affected lane or plan docs.
-End with three to five ready rows, or every valid row plus a clearly named reason the slate is smaller.
+End with at least three complete ready implementation rows and keep every additional useful validated row.
+Run mix work_queue.validate before committing the dispatch update.
 ```
 
 Worker:
@@ -269,12 +272,13 @@ Worker:
 Start at docs/work/index.md.
 
 Read docs/work/operating-model.md.
-Execute only the highest-ranked row whose Status is ready and that does not conflict with an active row.
+Claim the highest-ranked compatible ready row only when three other ready rows will remain.
 Leave other ready rows unchanged.
 Open only that row's Work Doc, linked active plan if any, Target Paths, and immediate tests.
 Update the lane work doc as the batch changes.
 Do not edit coordinator-owned docs unless the ready row names them as Target Paths.
 Stop if the row is blocked, stale, or needs a decision.
+If the claim guard is not satisfied, stop and hand off to the coordinator for replenishment.
 ```
 
 ## Completed Work
