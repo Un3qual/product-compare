@@ -72,13 +72,116 @@ That product-facing curation batch is complete. Catalog search and sorting plus
 offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
+Shopper decision confidence was selected as the next product-facing direction
+on 2026-07-09. Four source-backed rows are ready: catalog result guidance,
+offer observation and coupon validity, product-detail price observation, and a
+visible-page offer snapshot. The batch uses current app data and does not reopen
+deferred ingestion, eBay, operator, credential, scraping, or CSV export work.
+
 ## Ready Work
 
-None.
+Status: ready
+Lane: frontend catalog browse
+Active plan:
+`docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`
+Next action: show the complete matching-product count and add scoped removal
+links for every active `/products` filter while preserving unrelated filters,
+page size, and compare slugs.
+Owned paths:
+
+- `assets/src/routes/catalog/filters.ts`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-browse.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: `/products` shows the metadata-backed complete result count,
+and each active filter can be removed without losing unrelated state or
+preserving a stale cursor.
+
+Status: ready
+Lane: frontend offer discovery
+Active plan:
+`docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
+Next action: render supported offer-check, latest-price observation, and coupon
+validity dates from current GraphQL fields without inventing freshness labels.
+Owned paths:
+
+- `assets/schema.graphql`
+- `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
+- `assets/src/routes/offers/index.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Verification:
+
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: visible `/offers` rows show only supported observation and
+coupon-validity dates, and missing or malformed dates retain existing content
+without unsupported freshness claims.
+
+Status: ready
+Lane: frontend product detail
+Active plan:
+`docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`
+Next action: show the observation date for each supported latest price on
+`/products/:slug` while leaving prices visible when a date is unavailable.
+Owned paths:
+
+- `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`
+- `assets/src/routes/products/detail.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/src/__generated__/ProductOffersRouteQuery.graphql.ts`
+- `docs/work/frontend-product-detail.md`
+
+Verification:
+
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: visible product-detail latest prices show supported observation
+dates, and missing or malformed dates do not hide prices or regress the route.
+
+Status: ready
+Lane: frontend offer discovery
+Active plan:
+`docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
+Next action: summarize the renderable `/offers` page with visible counts and a
+single-currency lowest-price signal that fails closed for mixed currencies.
+Owned paths:
+
+- `assets/src/routes/offers/index.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: `/offers` shows a clearly page-local snapshot that matches
+renderable rows, avoids cross-currency price comparisons, and preserves current
+offer-list behavior. This row cannot execute concurrently with the higher-ranked
+offer observation row because their owned paths overlap.
 
 ## Needs Decision Work
 
-None. Product-facing curation was selected on 2026-07-08.
+None. Shopper decision confidence was selected on 2026-07-09.
 
 ## Blocked Work
 

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done (catalog search and sort)
+- Status: ready (catalog result guidance and removable filters)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after catalog search and sort verification
@@ -17,11 +17,33 @@
 - Planned faceted filtering follow-up:
   - `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
   - `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`
+- Current ready plan:
+  - `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes a `/products` route with SSR-safe rendering.
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Ready Shopper Decision Confidence Batch
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/catalog/filters.ts`
+  - `assets/src/routes/catalog/paths.ts`
+  - `assets/src/routes/catalog/filter-form.tsx`
+  - `assets/src/routes/catalog/browse.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/products` shows the complete metadata-backed result count
+  and scoped filter-removal links that preserve unrelated filter, page-size,
+  and compare state while dropping stale cursors.
 
 ## Catalog Search And Sort Evidence
 

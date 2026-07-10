@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (shopper decision confidence, serialized offer rows)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after selected-product label context verification
@@ -12,8 +12,50 @@
   - `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
+- Current ready plans:
+  - `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
+  - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Ready Shopper Decision Confidence Batches
+
+### Offer Observation And Coupon Validity
+
+- Status: ready; higher-ranked offer-discovery row.
+- Plan:
+  `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`.
+- Owned paths:
+  - `assets/schema.graphql`
+  - `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: visible offers show supported offer, price, and coupon date
+  context without freshness thresholds or regressions.
+
+### Visible Offer Snapshot
+
+- Status: ready; path-conflicts with the higher-ranked offer row and must wait
+  while that row is active.
+- Plan:
+  `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` shows a page-local snapshot derived only from
+  renderable rows and never compares numeric prices across currencies.
 
 ## Offer Discovery Product Label Context Evidence
 
