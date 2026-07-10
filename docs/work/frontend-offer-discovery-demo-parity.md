@@ -2,18 +2,93 @@
 
 ## Snapshot
 
-- Status: done
+- Status: done (shopper decision confidence)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after selected-product label context verification
+- Last verified: 2026-07-09 after observation, coupon-validity, and visible-snapshot verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
+- Recently completed shopper decision-confidence plan:
+  - `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
+- Recently completed visible-snapshot plan:
+  - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Ready Shopper Decision Confidence Batches
+
+### Offer Observation And Coupon Validity Evidence
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`.
+- Owned paths:
+  - `assets/schema.graphql`
+  - `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: visible offers show supported offer, price, and coupon date
+  context without freshness thresholds or regressions.
+- Implemented:
+  - Refreshed the frontend SDL and Relay operation for the backend's existing
+    nullable `MerchantProduct.lastSeenAt` field.
+  - Visible offer rows render semantic `Offer checked` and `Price observed`
+    calendar dates only for valid timestamps.
+  - Coupon rows render semantic `Valid through` dates only for valid `validTo`
+    values; missing or malformed dates keep all existing offer, price, coupon,
+    history, merchant, filter, pagination, and tracked-click content.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    - 46 tests, 1 expected failure and 45 passes because observation/validity
+      time elements were missing.
+  - GREEN: the same focused command - 46 tests, 0 failures.
+  - `cd assets && bun run relay` - compiled 32 reader, 31 normalization, and 31
+    operation text documents.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
+### Visible Offer Snapshot
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/offers/index.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: `/offers` shows a page-local snapshot derived only from
+  renderable rows and never compares numeric prices across currencies.
+- Implemented:
+  - `/offers` renders a named `Visible offer snapshot` before the offer list
+    whenever at least one safe, renderable row exists.
+  - The snapshot derives visible offer count, lowest comparable visible price,
+    visible coupon availability, and missing latest-price count in one pass over
+    the already loaded renderable rows.
+  - Mixed currencies render `Not comparable across currencies`; pages with no
+    numeric prices render `No visible prices`; empty and unsafe-only pages omit
+    the snapshot.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    - 49 tests, 3 expected failures and 46 passes because the snapshot region
+      was missing.
+  - GREEN: the same focused command - 49 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Offer Discovery Product Label Context Evidence
 

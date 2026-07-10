@@ -19,6 +19,11 @@ import {
 import { CompareSelectionTray } from "../compare/selection-tray";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
+import { graphQLDateTimeContext } from "../graphql-datetime";
+import {
+  formatCouponAvailabilityCount,
+  formatOfferCount
+} from "../offer-formatting";
 import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
@@ -269,6 +274,7 @@ function ProductOffers({
         url: safeUrl,
         priceText: formatPriceText(node.latestPrice?.price, node.currency),
         numericPrice: decimalStringToNumber(node.latestPrice?.price),
+        priceObservation: buildPriceObservation(node.latestPrice?.observedAt),
         coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
         couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
         priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
@@ -319,6 +325,14 @@ function ProductOffers({
               merchantProductId={offer.id}
             />
             {offer.priceText ? <p>{offer.priceText}</p> : null}
+            {offer.priceObservation ? (
+              <p>
+                Price observed{" "}
+                <time dateTime={offer.priceObservation.dateTime}>
+                  {offer.priceObservation.label}
+                </time>
+              </p>
+            ) : null}
             <OfferPriceHistory
               merchantName={offer.merchantName}
               historyRows={offer.priceHistory}
@@ -351,10 +365,16 @@ type VisibleProductOffer = {
   url: string;
   priceText: string | null;
   numericPrice: number | null;
+  priceObservation: PriceObservation | null;
   coupons: ReturnType<typeof buildCouponRows>;
   couponsHasMore: boolean;
   priceHistory: ReturnType<typeof buildPriceHistoryRows>;
   priceHistoryHasMore: boolean;
+};
+
+type PriceObservation = {
+  dateTime: string;
+  label: string;
 };
 
 type OfferSnapshotSummary = {
@@ -628,19 +648,11 @@ function normalizedCurrency(currency: unknown) {
 }
 
 function formatObservedDate(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
-  }
+  return graphQLDateTimeContext(value)?.label ?? null;
+}
 
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:[T\s]|$)/.exec(value);
-
-  return sourceDate?.[1] ?? parsed.toISOString().slice(0, 10);
+function buildPriceObservation(value: unknown): PriceObservation | null {
+  return graphQLDateTimeContext(value);
 }
 
 function formatCouponDiscountText(discountType: string, discountValue: unknown, currency: unknown) {
@@ -687,14 +699,6 @@ function formatFiniteNumberText(value: unknown) {
   }
 
   return decimalStringToNumber(trimmedValue) !== null ? trimmedValue : null;
-}
-
-function formatCouponAvailabilityCount(count: number) {
-  return `${formatOfferCount(count)} with coupons`;
-}
-
-function formatOfferCount(count: number) {
-  return `${count} ${count === 1 ? "offer" : "offers"}`;
 }
 
 function normalizeOfferUrl(rawUrl: unknown): string | null {

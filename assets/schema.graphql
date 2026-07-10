@@ -280,6 +280,7 @@ type MerchantProduct implements Node {
   externalSku: String
   url: String!
   currency: String!
+  lastSeenAt: DateTime
   isActive: Boolean!
   merchant: Merchant
   product: Product

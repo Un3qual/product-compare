@@ -302,8 +302,18 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
   expect(offerContent.getByText("199.99 USD")).toBeVisible();
+  const offerCheckedAt = offerContent.getByText("2026-06-02", { selector: "time" });
+  const priceObservedAt = offerContent.getByText("2026-06-01", { selector: "time" });
+  const couponValidTo = offerContent.getByText("2026-06-30", { selector: "time" });
+
+  expect(offerCheckedAt).toHaveAttribute("datetime", "2026-06-02T12:00:00Z");
+  expect(offerCheckedAt.parentElement).toHaveTextContent("Offer checked 2026-06-02");
+  expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
+  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(offerContent.getByText("SAVE20")).toBeVisible();
   expect(offerContent.getByText("20.00 USD")).toBeVisible();
+  expect(couponValidTo).toHaveAttribute("datetime", "2026-06-30T23:59:59Z");
+  expect(couponValidTo.parentElement).toHaveTextContent("Valid through 2026-06-30");
   expect(offerContent.getByText("2026-05-30")).toBeVisible();
   expect(offerContent.getByText("189.99 USD")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
@@ -314,6 +324,50 @@ test("offer discovery renders ready offer rows", () => {
     expect.anything(),
     OFFER_DISCOVERY_QUERY_REF
   );
+});
+
+test("offer discovery omits unsafe observation and coupon validity claims", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          lastSeenAt: 1_717_326_000_000,
+          latestPrice: {
+            id: "price-invalid-date",
+            price: "199.99",
+            observedAt: "2026-02-30T00:00:00Z"
+          },
+          activeCoupons: buildCouponConnection([
+            {
+              cursor: "coupon-invalid-date",
+              node: {
+                code: "SAVE20",
+                description: "Save on the detail product.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: "June 30 2026",
+                terms: "Online orders only."
+              }
+            }
+          ])
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const offer = screen.getByRole("heading", { name: "Detail Product" }).closest("li");
+
+  expect(offer).not.toBeNull();
+  const offerContent = within(offer as HTMLElement);
+
+  expect(offerContent.getByText("199.99 USD")).toBeVisible();
+  expect(offerContent.getByText("SAVE20")).toBeVisible();
+  expect(offerContent.queryByText(/^Offer checked/)).not.toBeInTheDocument();
+  expect(offerContent.queryByText(/^Price observed/)).not.toBeInTheDocument();
+  expect(offerContent.queryByText(/^Valid through/)).not.toBeInTheDocument();
 });
 
 test("offer discovery keeps offer actions when merchant metadata is unavailable", () => {
@@ -538,6 +592,7 @@ test.each([
   expect(screen.getByText("No offers match these filters.")).toBeVisible();
   expect(screen.queryByRole("link", { name: "Unsafe Market" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Filter to Unsafe Market" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("offer discovery exposes row merchant filter actions that preserve filters and drop cursors", () => {
@@ -799,6 +854,119 @@ test("offer discovery sorts visible offers by merchant name without price labels
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
 });
 
+test("offer discovery summarizes the visible single-currency offer page", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-expensive",
+          product: buildProduct("product-expensive", "Expensive Product"),
+          merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
+          latestPrice: buildLatestPrice("price-expensive", "299.00")
+        }),
+        buildOffer({
+          id: "merchant-product-budget",
+          product: buildProduct("product-budget", "Budget Product"),
+          merchant: buildMerchant("merchant-budget", "Alpha Market"),
+          latestPrice: buildLatestPrice("price-budget", "129.00"),
+          activeCoupons: buildCouponConnection([
+            {
+              cursor: "coupon-budget",
+              node: {
+                code: "SAVE10",
+                description: "Save on the budget offer.",
+                discountType: "PERCENT",
+                discountValue: "10",
+                currency: null,
+                validTo: null,
+                terms: null
+              }
+            }
+          ])
+        }),
+        buildOffer({
+          id: "merchant-product-no-price-1",
+          product: buildProduct("product-no-price-1", "No Price Product One"),
+          merchant: buildMerchant("merchant-no-price-1", "No Price Market One"),
+          latestPrice: null
+        }),
+        buildOffer({
+          id: "merchant-product-no-price-2",
+          product: buildProduct("product-no-price-2", "No Price Product Two"),
+          merchant: buildMerchant("merchant-no-price-2", "No Price Market Two"),
+          latestPrice: null
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+  const offersList = screen.getByRole("list", { name: "Offers" });
+
+  expect(
+    within(snapshot).getByRole("heading", { level: 2, name: "Visible offer snapshot" })
+  ).toBeVisible();
+  expect(
+    snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(within(snapshot).getByText("Visible offers on this page")).toBeVisible();
+  expect(within(snapshot).getByText("4")).toBeVisible();
+  expect(within(snapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(snapshot).getByText("129.00 USD")).toBeVisible();
+  expect(within(snapshot).getByText("Visible coupon availability")).toBeVisible();
+  expect(within(snapshot).getByText("1 offer with coupons")).toBeVisible();
+  expect(within(snapshot).getByText("Missing latest price")).toBeVisible();
+  expect(within(snapshot).getByText("2 offers")).toBeVisible();
+});
+
+test("offer discovery refuses a lowest-price claim for mixed currencies", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-usd-snapshot",
+          currency: "USD",
+          latestPrice: buildLatestPrice("price-usd-snapshot", "199.00")
+        }),
+        buildOffer({
+          id: "merchant-product-eur-snapshot",
+          currency: "EUR",
+          latestPrice: buildLatestPrice("price-eur-snapshot", "149.00")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+
+  expect(within(snapshot).getByText("Not comparable across currencies")).toBeVisible();
+  expect(within(snapshot).queryByText("149.00 EUR")).not.toBeInTheDocument();
+});
+
+test("offer discovery reports no visible prices when every renderable row lacks one", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-no-price-snapshot",
+          latestPrice: null
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+
+  expect(within(snapshot).getByText("No visible prices")).toBeVisible();
+  expect(within(snapshot).getByText("1 offer")).toBeVisible();
+});
+
 test("offer discovery renders inactive filter state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -881,6 +1049,7 @@ test("offer discovery renders an empty state", () => {
     "href",
     "/products/detail-product"
   );
+  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("offer discovery falls back to the raw product id when the selected product is missing", () => {
@@ -1040,7 +1209,7 @@ function renderOfferDiscoveryRoute() {
 }
 
 function offerHeadings() {
-  return screen
+  return within(screen.getByRole("list", { name: "Offers" }))
     .getAllByRole("heading", { level: 2 })
     .map((heading) => heading.textContent);
 }
@@ -1068,6 +1237,7 @@ function buildOffer(overrides: Partial<OfferNode> = {}): OfferNode {
     id: "merchant-product-1",
     url: "https://merchant.example.com/detail-product",
     currency: "USD",
+    lastSeenAt: "2026-06-02T12:00:00Z",
     isActive: true,
     merchant: buildMerchant("merchant-1", "Acme Market"),
     product: buildProduct("product-1", "Detail Product"),
@@ -1115,6 +1285,7 @@ function buildOfferDiscoveryData({
       id: "merchant-product-1",
       url: "https://merchant.example.com/detail-product",
       currency: "USD",
+      lastSeenAt: "2026-06-02T12:00:00Z",
       isActive: true,
       merchant: {
         id: "merchant-1",
@@ -1141,7 +1312,7 @@ function buildOfferDiscoveryData({
               discountType: "AMOUNT",
               discountValue: "20.00",
               currency: "USD",
-              validTo: null,
+              validTo: "2026-06-30T23:59:59Z",
               terms: "Online orders only."
             }
           }
@@ -1228,6 +1399,7 @@ type OfferNode = {
   id: string;
   url: string;
   currency: string;
+  lastSeenAt?: unknown;
   isActive: boolean;
   merchant: {
     id: string;
@@ -1242,7 +1414,7 @@ type OfferNode = {
   latestPrice: {
     id: string;
     price: string;
-    observedAt: string | null;
+    observedAt: unknown;
   } | null;
   activeCoupons: CouponConnection;
   priceHistory: PriceHistoryConnection;
@@ -1257,7 +1429,7 @@ type CouponConnection = {
       discountType: string | null;
       discountValue: string | number | null;
       currency: string | null;
-      validTo: string | null;
+      validTo: unknown;
       terms: string | null;
     };
   }>;
@@ -1271,7 +1443,7 @@ type PriceHistoryConnection = {
     node: {
       id: string;
       price: string | number | null;
-      observedAt: string | null;
+      observedAt: unknown;
     };
   }>;
   pageInfo: {

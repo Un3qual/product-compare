@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done (persistent compare tray detail support)
+- Status: done (price observation context)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-01 after persistent compare tray verification
+- Last verified: 2026-07-09 after product price-observation verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -14,11 +14,50 @@
   - `docs/plans/2026-03-17-frontend-product-detail-baseline-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-product-detail-offer-pagination-implementation-plan.md`
+- Recently completed shopper decision-confidence plan:
+  - `docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes an SSR-safe `/products/:slug` route.
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Product Detail Price Observation Evidence
+
+- Status: done.
+- Plan:
+  `docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`.
+- Owned paths:
+  - `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`
+  - `assets/src/routes/products/detail.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `assets/src/__generated__/ProductOffersRouteQuery.graphql.ts`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: visible latest prices show their supported observation date,
+  while missing or malformed dates leave the existing price and route behavior
+  intact.
+- Implemented:
+  - `ProductOffersRouteQuery` now selects `latestPrice.observedAt` beside the
+    existing latest price.
+  - Visible latest-price rows render semantic `Price observed` calendar dates
+    only for valid timestamps.
+  - Missing or malformed timestamps omit the date claim without hiding the
+    merchant action, latest price, snapshot, coupon, history, pagination, or
+    compare behavior.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+    - 45 tests, 1 expected failure and 44 passes because the observation time
+      element was missing.
+  - GREEN: the same focused command - 45 tests, 0 failures.
+  - `cd assets && bun run relay` - compiled 32 reader, 31 normalization, and 31
+    operation text documents.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Current Usable Product Batch
 

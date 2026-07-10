@@ -8,6 +8,11 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
+import { graphQLDateTimeContext } from "../graphql-datetime";
+import {
+  formatCouponAvailabilityCount,
+  formatOfferCount
+} from "../offer-formatting";
 import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
@@ -37,10 +42,20 @@ type RenderableOffer = {
   offer: OfferNode;
   originalIndex: number;
 };
+type PricedRenderableOffer = RenderableOffer & {
+  latestPriceValue: number;
+};
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 type VisibleMerchant = {
   id: string;
   name: string;
+};
+type VisibleOfferSnapshotSummary = {
+  couponAvailabilityCount: number;
+  hasMixedPriceCurrencies: boolean;
+  lowestVisiblePriceText: string | null;
+  missingLatestPriceCount: number;
+  visibleOfferCount: number;
 };
 
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
@@ -146,25 +161,131 @@ function OfferDiscoveryList({
       {offers.length === 0 ? (
         <p>No offers match these filters.</p>
       ) : (
-        <ul aria-label="Offers">
-          {offers.map((renderableOffer, index) => (
-            <OfferListItem
-              key={renderableOffer.offer.id}
-              offer={renderableOffer.offer}
-              highlightLabel={priceSortHighlightLabel(
-                filters.sort,
-                index,
-                renderableOffer,
-                canComparePrices
-              )}
-            />
-          ))}
-        </ul>
+        <>
+          <VisibleOfferSnapshot summary={buildVisibleOfferSnapshot(offers)} />
+          <ul aria-label="Offers">
+            {offers.map((renderableOffer, index) => (
+              <OfferListItem
+                key={renderableOffer.offer.id}
+                offer={renderableOffer.offer}
+                highlightLabel={priceSortHighlightLabel(
+                  filters.sort,
+                  index,
+                  renderableOffer,
+                  canComparePrices
+                )}
+              />
+            ))}
+          </ul>
+        </>
       )}
       <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={connection} filters={filters} />
     </>
   );
+}
+
+function VisibleOfferSnapshot({ summary }: { summary: VisibleOfferSnapshotSummary }) {
+  return (
+    <section aria-label="Visible offer snapshot">
+      <h2>Visible offer snapshot</h2>
+      <dl>
+        <div>
+          <dt>Visible offers on this page</dt>
+          <dd>{summary.visibleOfferCount}</dd>
+        </div>
+        <div>
+          <dt>Lowest visible price</dt>
+          <dd>{visibleLowestPriceLabel(summary)}</dd>
+        </div>
+        <div>
+          <dt>Visible coupon availability</dt>
+          <dd>{formatCouponAvailabilityCount(summary.couponAvailabilityCount)}</dd>
+        </div>
+        <div>
+          <dt>Missing latest price</dt>
+          <dd>{formatOfferCount(summary.missingLatestPriceCount)}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function buildVisibleOfferSnapshot(
+  offers: ReadonlyArray<RenderableOffer>
+): VisibleOfferSnapshotSummary {
+  let couponAvailabilityCount = 0;
+  let lowestPricedOffer: PricedRenderableOffer | null = null;
+  let missingLatestPriceCount = 0;
+  const priceCurrencies = new Set<string | null>();
+
+  for (const offer of offers) {
+    couponAvailabilityCount += hasVisibleCoupons(offer) ? 1 : 0;
+
+    if (!hasLatestPrice(offer)) {
+      missingLatestPriceCount += 1;
+      continue;
+    }
+
+    priceCurrencies.add(offer.latestPriceCurrency);
+    lowestPricedOffer = lowerPricedOffer(lowestPricedOffer, offer);
+  }
+
+  const hasMixedPriceCurrencies = priceCurrencies.size > 1;
+
+  return {
+    couponAvailabilityCount,
+    hasMixedPriceCurrencies,
+    lowestVisiblePriceText: comparableLowestPriceText(
+      lowestPricedOffer,
+      hasMixedPriceCurrencies
+    ),
+    missingLatestPriceCount,
+    visibleOfferCount: offers.length
+  };
+}
+
+function hasVisibleCoupons({ offer }: RenderableOffer) {
+  const activeCoupons = couponConnection(offer.activeCoupons);
+
+  return activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage;
+}
+
+function hasLatestPrice(offer: RenderableOffer): offer is PricedRenderableOffer {
+  return offer.latestPriceValue !== null;
+}
+
+function lowerPricedOffer(
+  current: PricedRenderableOffer | null,
+  candidate: PricedRenderableOffer
+) {
+  if (!current || candidate.latestPriceValue < current.latestPriceValue) {
+    return candidate;
+  }
+
+  return current;
+}
+
+function comparableLowestPriceText(
+  lowestPricedOffer: PricedRenderableOffer | null,
+  hasMixedPriceCurrencies: boolean
+) {
+  if (!lowestPricedOffer || hasMixedPriceCurrencies) {
+    return null;
+  }
+
+  return priceLabel(
+    lowestPricedOffer.offer.latestPrice?.price,
+    lowestPricedOffer.offer.currency
+  );
+}
+
+function visibleLowestPriceLabel(summary: VisibleOfferSnapshotSummary) {
+  if (summary.hasMixedPriceCurrencies) {
+    return "Not comparable across currencies";
+  }
+
+  return summary.lowestVisiblePriceText ?? "No visible prices";
 }
 
 function OfferListItem({
@@ -192,6 +313,7 @@ function OfferListItem({
           merchantUrl={offer.url}
         />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+        <OfferObservationContext offer={offer} />
 
         {highlightLabel ? <p>{highlightLabel}</p> : null}
         <p>{offerLatestPriceLabel(offer)}</p>
@@ -350,6 +472,30 @@ function OfferMerchantDomain({ domain }: { domain: string | null }) {
   return <p>{domain}</p>;
 }
 
+function OfferObservationContext({ offer }: { offer: OfferNode }) {
+  const offerCheckedAt = graphQLDateTimeContext(offer.lastSeenAt);
+  const priceObservedAt = graphQLDateTimeContext(offer.latestPrice?.observedAt);
+
+  if (!offerCheckedAt && !priceObservedAt) {
+    return null;
+  }
+
+  return (
+    <>
+      {offerCheckedAt ? (
+        <p>
+          Offer checked <time dateTime={offerCheckedAt.dateTime}>{offerCheckedAt.label}</time>
+        </p>
+      ) : null}
+      {priceObservedAt ? (
+        <p>
+          Price observed <time dateTime={priceObservedAt.dateTime}>{priceObservedAt.label}</time>
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function offerProductName(product: OfferNode["product"]) {
   return product?.name ?? "Unknown product";
 }
@@ -438,12 +584,18 @@ function CouponSummary({
       <ul aria-label={`${merchantName} active coupons`}>
         {couponEdges.map(({ cursor, node: coupon }) => {
           const couponDiscountLabel = discountLabel(coupon);
+          const couponValidTo = graphQLDateTimeContext(coupon.validTo);
 
           return (
             <li key={cursor}>
               <strong>{coupon.code}</strong>
               {coupon.description ? <p>{coupon.description}</p> : null}
               {couponDiscountLabel ? <p>{couponDiscountLabel}</p> : null}
+              {couponValidTo ? (
+                <p>
+                  Valid through <time dateTime={couponValidTo.dateTime}>{couponValidTo.label}</time>
+                </p>
+              ) : null}
               {coupon.terms ? <p>{coupon.terms}</p> : null}
             </li>
           );
@@ -674,18 +826,8 @@ function priceHistoryRow(
   };
 }
 
-function dateLabel(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return value.slice(0, 10);
+function dateLabel(value: unknown) {
+  return graphQLDateTimeContext(value)?.label ?? null;
 }
 
 function discountLabel(coupon: CouponNode) {

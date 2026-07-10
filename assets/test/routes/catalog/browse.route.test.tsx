@@ -1242,15 +1242,30 @@ test("omits the default catalog sort until an explicit sort is selected", () => 
   expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
 });
 
-test("renders selected catalog filters with an active summary and clear link", () => {
+test.each([
+  { resultCount: 0, label: "No matching products" },
+  { resultCount: 1, label: "1 matching product" },
+  { resultCount: 3, label: "3 matching products" }
+])("renders complete catalog result guidance for $resultCount matches", ({ resultCount, label }) => {
   renderBrowseRouteWithRelayData({
+    metadataData: buildProductFilterMetadataResponse({ resultCount })
+  });
+
+  expect(screen.getByText(label)).toBeInTheDocument();
+});
+
+test("renders selected catalog filters with scoped removal and clear links", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: [
+      "/products?first=24&q=oled&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=stale-cursor&slug=detail-product&slug=second-product"
+    ],
     loaderData: readyBrowseLoaderData({
       filters: {
         query: "oled",
         sort: "BRAND_NAME_ASC",
         typeTaxonId: "type-laptops",
         includeTypeDescendants: true,
-        useCaseTaxonIds: ["use-gaming"],
+        useCaseTaxonIds: ["use-gaming", "use-office"],
         numeric: [
           {
             attributeId: "attr-refresh",
@@ -1279,7 +1294,7 @@ test("renders selected catalog filters with an active summary and clear link", (
           sort: "BRAND_NAME_ASC",
           primaryTypeTaxonId: "type-laptops",
           includeTypeDescendants: true,
-          useCaseTaxonIds: ["use-gaming"],
+          useCaseTaxonIds: ["use-gaming", "use-office"],
           numeric: [
             {
               attributeId: "attr-refresh",
@@ -1307,7 +1322,7 @@ test("renders selected catalog filters with an active summary and clear link", (
           sort: "BRAND_NAME_ASC",
           primaryTypeTaxonId: "type-laptops",
           includeTypeDescendants: true,
-          useCaseTaxonIds: ["use-gaming"],
+          useCaseTaxonIds: ["use-gaming", "use-office"],
           numeric: [
             {
               attributeId: "attr-refresh",
@@ -1330,7 +1345,7 @@ test("renders selected catalog filters with an active summary and clear link", (
         }
       })
     }),
-    metadataData: buildProductFilterMetadataResponse({ selected: true })
+    metadataData: buildProductFilterMetadataResponse({ resultCount: 7, selected: true })
   });
 
   const filterForm = screen.getByRole("form", { name: "Filter products" });
@@ -1356,16 +1371,42 @@ test("renders selected catalog filters with an active summary and clear link", (
 
   const summary = screen.getByRole("list", { name: "Active filters" });
 
-  expect(within(summary).getByText('Search: "oled"')).toBeInTheDocument();
-  expect(within(summary).getByText("Sort: Brand name")).toBeInTheDocument();
-  expect(within(summary).getByText("Type: Laptops and descendants")).toBeInTheDocument();
-  expect(within(summary).getByText("Use case: Gaming")).toBeInTheDocument();
-  expect(within(summary).getByText("Refresh Rate: 120 Hz to 240 Hz")).toBeInTheDocument();
-  expect(within(summary).getByText("Wireless: Yes")).toBeInTheDocument();
-  expect(within(summary).getByText("Color: Red")).toBeInTheDocument();
+  expect(screen.getByText("7 matching products")).toBeInTheDocument();
+  expect(within(summary).getByRole("link", { name: 'Remove Search: "oled"' })).toHaveAttribute(
+    "href",
+    "/products?first=24&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(within(summary).getByRole("link", { name: "Remove Sort: Brand name" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(
+    within(summary).getByRole("link", { name: "Remove Type: Laptops and descendants" })
+  ).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=BRAND_NAME_ASC&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(within(summary).getByRole("link", { name: "Remove Use case: Gaming" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(
+    within(summary).getByRole("link", { name: "Remove Refresh Rate: 120 Hz to 240 Hz" })
+  ).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(within(summary).getByRole("link", { name: "Remove Wireless: Yes" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&enum.attr-color=enum-red&slug=detail-product&slug=second-product"
+  );
+  expect(within(summary).getByRole("link", { name: "Remove Color: Red" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=BRAND_NAME_ASC&typeTaxonId=type-laptops&includeTypeDescendants=1&useCaseTaxonId=use-gaming&useCaseTaxonId=use-office&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&slug=detail-product&slug=second-product"
+  );
   expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
     "href",
-    "/products?first=24"
+    "/products?first=24&slug=detail-product&slug=second-product"
   );
 });
 

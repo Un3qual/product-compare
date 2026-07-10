@@ -21,6 +21,7 @@ export const offerDiscoveryRouteQuery = graphql`
           id
           url
           currency
+          lastSeenAt
           isActive
           merchant {
             id

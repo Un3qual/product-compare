@@ -72,19 +72,52 @@ That product-facing curation batch is complete. Catalog search and sorting plus
 offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
+Shopper decision confidence was selected and completed on 2026-07-09. Catalog
+result guidance, offer observation and coupon validity, product-detail price
+observation, and the visible-page offer snapshot all have green completion
+evidence in their lane docs. No additional validated candidate is available;
+the remaining catalogued work is deferred or rejected and cannot be used as
+queue filler.
+
 ## Ready Work
 
-None.
+None. The approved four-row shopper decision-confidence batch is complete, and
+the plan catalog contains no additional validated candidate outside deferred or
+rejected work.
 
 ## Needs Decision Work
 
-None. Product-facing curation was selected on 2026-07-08.
+None. Shopper decision confidence was selected on 2026-07-09.
 
 ## Blocked Work
 
 None.
 
 ## Just Completed
+
+The 2026-07-09 shopper decision-confidence batch completed catalog result
+guidance: `/products` now shows the complete metadata-backed result count and
+scoped active-filter removal links that preserve unrelated filters, page size,
+and compare selections while dropping stale cursors. Focused verification
+passed 58 tests plus TypeScript and diff checks.
+
+The same batch completed offer observation and coupon validity context:
+`/offers` now shows supported offer-check, latest-price observation, and coupon
+expiration dates with semantic time markup while omitting missing or malformed
+date claims. Relay generation, 46 focused tests, TypeScript, and diff checks
+passed.
+
+The same batch completed product-detail price observation context:
+`/products/:slug` now shows supported latest-price observation dates while
+leaving prices and existing offer behavior intact for missing or malformed
+timestamps. Relay generation, 45 focused tests, TypeScript, and diff checks
+passed.
+
+The same batch completed the visible offer snapshot: `/offers` now summarizes
+the safe, renderable page with visible counts and a single-currency lowest-price
+signal, refuses mixed-currency comparisons, and omits the summary for empty or
+unsafe-only pages. Focused verification passed 49 tests plus TypeScript and diff
+checks.
 
 The 2026-07-08 product-facing curation batch completed these work items:
 
