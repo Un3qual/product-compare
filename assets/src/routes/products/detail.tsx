@@ -19,7 +19,11 @@ import {
 import { CompareSelectionTray } from "../compare/selection-tray";
 import { decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
-import { graphQLDateTimeContext } from "../graphql-datetime";
+import {
+  graphQLDateTimeContext,
+  graphQLDateTimeLabel,
+  type GraphQLDateTimeContext
+} from "../graphql-datetime";
 import {
   formatCouponAvailabilityCount,
   formatOfferCount
@@ -372,7 +376,7 @@ type VisibleProductOffer = {
   url: string;
   priceText: string | null;
   numericPrice: number | null;
-  priceObservation: PriceObservation | null;
+  priceObservation: GraphQLDateTimeContext | null;
   coupons: ReturnType<typeof buildCouponRows>;
   couponsHasMore: boolean;
   priceHistory: ReturnType<typeof buildPriceHistoryRows>;
@@ -383,11 +387,6 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOff
   currency: (offer) => offer.currency,
   hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
   numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
-};
-
-type PriceObservation = {
-  dateTime: string;
-  label: string;
 };
 
 function OfferSnapshot({
@@ -587,7 +586,7 @@ function buildPriceHistoryRows(
   currency: unknown
 ) {
   return edges.flatMap(({ node }) => {
-    const observedDate = formatObservedDate(node.observedAt);
+    const observedDate = graphQLDateTimeLabel(node.observedAt);
     const priceText = formatPriceText(node.price, currency);
 
     if (!observedDate || !priceText || typeof node.observedAt !== "string") {
@@ -631,11 +630,7 @@ function normalizedCurrency(currency: unknown) {
   return trimmedCurrency === "" ? null : trimmedCurrency;
 }
 
-function formatObservedDate(value: unknown) {
-  return graphQLDateTimeContext(value)?.label ?? null;
-}
-
-function buildPriceObservation(value: unknown): PriceObservation | null {
+function buildPriceObservation(value: unknown): GraphQLDateTimeContext | null {
   return graphQLDateTimeContext(value);
 }
 
@@ -662,7 +657,7 @@ function formatCouponDiscountText(discountType: string, discountValue: unknown, 
 }
 
 function formatCouponValidToText(validTo: unknown) {
-  const dateText = formatObservedDate(validTo);
+  const dateText = graphQLDateTimeLabel(validTo);
 
   return dateText ? `Valid through ${dateText}` : null;
 }

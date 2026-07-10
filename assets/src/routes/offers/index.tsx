@@ -8,7 +8,10 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
-import { graphQLDateTimeContext } from "../graphql-datetime";
+import {
+  graphQLDateTimeContext,
+  graphQLDateTimeLabel
+} from "../graphql-datetime";
 import {
   formatCouponAvailabilityCount,
   formatOfferCount
@@ -761,7 +764,7 @@ function priceHistoryRow(
   currency: string
 ): PriceHistoryRow | null {
   const price = priceLabel(pricePoint.price, currency);
-  const observedDate = dateLabel(pricePoint.observedAt);
+  const observedDate = graphQLDateTimeLabel(pricePoint.observedAt);
 
   if (!price || !observedDate) {
     return null;
@@ -773,10 +776,6 @@ function priceHistoryRow(
     observedDate,
     price
   };
-}
-
-function dateLabel(value: unknown) {
-  return graphQLDateTimeContext(value)?.label ?? null;
 }
 
 function discountLabel(coupon: CouponNode) {

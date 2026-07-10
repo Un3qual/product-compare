@@ -976,7 +976,7 @@ Expected: one result-status policy commit.
 - Consumes: existing `graphQLDateTimeContext()` and `GraphQLDateTimeContext`.
 - Produces: `graphQLDateTimeLabel()` for label-only consumers and a direct table-driven parser contract.
 
-- [ ] **Step 1: Write the failing direct DateTime tests**
+- [x] **Step 1: Write the failing direct DateTime tests**
 
 Create `assets/test/routes/graphql-datetime.test.ts`:
 
@@ -1010,7 +1010,7 @@ test.each([
 });
 ```
 
-- [ ] **Step 2: Run the test to verify RED**
+- [x] **Step 2: Run the test to verify RED**
 
 Run:
 
@@ -1021,7 +1021,7 @@ bun run test -- test/routes/graphql-datetime.test.ts
 
 Expected: FAIL because `graphQLDateTimeLabel` is not exported.
 
-- [ ] **Step 3: Add the label-only API**
+- [x] **Step 3: Add the label-only API**
 
 In `assets/src/routes/graphql-datetime.ts`, add:
 
@@ -1031,7 +1031,7 @@ export function graphQLDateTimeLabel(value: unknown) {
 }
 ```
 
-- [ ] **Step 4: Verify the direct DateTime test is GREEN**
+- [x] **Step 4: Verify the direct DateTime test is GREEN**
 
 Run:
 
@@ -1042,7 +1042,7 @@ bun run test -- test/routes/graphql-datetime.test.ts
 
 Expected: PASS with 11 cases.
 
-- [ ] **Step 5: Remove route-local DateTime wrappers and duplicate type**
+- [x] **Step 5: Remove route-local DateTime wrappers and duplicate type**
 
 In `assets/src/routes/offers/index.tsx`, import both helpers:
 
@@ -1077,7 +1077,7 @@ function buildPriceObservation(value: unknown): GraphQLDateTimeContext | null {
 }
 ```
 
-- [ ] **Step 6: Verify DateTime route integration**
+- [x] **Step 6: Verify DateTime route integration**
 
 Run:
 
@@ -1090,7 +1090,7 @@ bun run typecheck
 Expected: PASS with direct parser coverage and all existing timestamp rendering
 assertions unchanged; TypeScript exits 0.
 
-- [ ] **Step 7: Mark Task 4 complete and commit**
+- [x] **Step 7: Mark Task 4 complete and commit**
 
 Check Task 4 boxes in this plan, then run:
 
