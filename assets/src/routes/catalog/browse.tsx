@@ -4,9 +4,6 @@ import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
-import productFilterMetadataQuery, {
-  type ProductFilterMetadataQuery
-} from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
@@ -57,7 +54,6 @@ export function BrowseRoute() {
           <Suspense fallback={<p role="status">Loading catalog...</p>}>
             <BrowseProducts
               filters={loaderData.filters}
-              metadataQuery={loaderData.metadataQuery}
               pageSize={loaderData.pageSize}
               query={loaderData.query}
             />
@@ -79,12 +75,10 @@ function BrowseProductsErrorFallback() {
 
 function BrowseProducts({
   filters,
-  metadataQuery,
   pageSize,
   query
 }: {
   filters: Extract<BrowseProductsLoaderData, { status: "ready" }>["filters"];
-  metadataQuery: Extract<BrowseProductsLoaderData, { status: "ready" }>["metadataQuery"];
   pageSize: Extract<BrowseProductsLoaderData, { status: "ready" }>["pageSize"];
   query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
 }) {
@@ -92,16 +86,8 @@ function BrowseProducts({
     browseProductsRouteQuery,
     query
   );
-  const metadataQueryRef = useRoutePreloadedQuery<ProductFilterMetadataQuery>(
-    productFilterMetadataQuery,
-    metadataQuery
-  );
   const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
-  const metadataData = usePreloadedQuery<ProductFilterMetadataQuery>(
-    productFilterMetadataQuery,
-    metadataQueryRef
-  );
-  const filterMetadata = metadataData.productFilterMetadata;
+  const filterMetadata = data.productFilterMetadata;
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = data.products.edges.map(({ node }) => node);
   const location = useLocation();

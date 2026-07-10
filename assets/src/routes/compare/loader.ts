@@ -198,7 +198,11 @@ function productDetailQueryDescriptor(
     __relayQuery: {
       operationName: request.params.name,
       text: request.params.text,
-      variables: { slug }
+      variables: {
+        slug,
+        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
+        offersAfter: null
+      }
     }
   };
 }

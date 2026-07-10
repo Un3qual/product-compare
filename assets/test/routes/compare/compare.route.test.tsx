@@ -204,7 +204,7 @@ const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DETAIL_PRODUCT.slug }
+    variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 
@@ -212,7 +212,7 @@ const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: SECOND_PRODUCT.slug }
+    variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 
@@ -220,7 +220,7 @@ const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: THIRD_PRODUCT.slug }
+    variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 

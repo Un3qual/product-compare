@@ -4,9 +4,6 @@ import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
-import productOffersRouteQuery, {
-  type ProductOffersRouteQuery
-} from "../../__generated__/ProductOffersRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
@@ -57,18 +54,16 @@ export function ProductDetailRoute() {
       fallback={<ProductUnavailableFallback />}
     >
       <Suspense fallback={<p role="status">Loading product...</p>}>
-        <ProductDetail productQuery={loaderData.productQuery} offers={loaderData.offers} />
+        <ProductDetail productQuery={loaderData.productQuery} />
       </Suspense>
     </ResettableErrorBoundary>
   );
 }
 
 function ProductDetail({
-  productQuery,
-  offers
+  productQuery
 }: {
   productQuery: Extract<ProductDetailLoaderData, { status: "ready" }>["productQuery"];
-  offers: Extract<ProductDetailLoaderData, { status: "ready" }>["offers"];
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
     productDetailRouteQuery,
@@ -120,23 +115,12 @@ function ProductDetail({
       <ProductSpecifications attributes={product.currentAttributes} />
       <section>
         <h2>Active offers</h2>
-        {offers.status === "error" ? (
-          <OffersUnavailableFallback />
-        ) : (
-          <ResettableErrorBoundary
-            resetToken={offers.query}
-            fallback={<OffersUnavailableFallback />}
-          >
-            <Suspense fallback={<p role="status">Loading offers...</p>}>
-              <ProductOffers
-                query={offers.query}
-                productSlug={product.slug}
-                offersAfter={offers.query.__relayQuery.variables.after ?? null}
-                selectedCompareSlugs={selectedCompareSlugs}
-              />
-            </Suspense>
-          </ResettableErrorBoundary>
-        )}
+        <ProductOffers
+          connection={product.merchantProducts}
+          productSlug={product.slug}
+          offersAfter={new URLSearchParams(location.search).get("offersAfter")}
+          selectedCompareSlugs={selectedCompareSlugs}
+        />
       </section>
     </section>
   );
@@ -270,25 +254,21 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOff
 };
 
 function ProductOffers({
-  query,
+  connection,
   productSlug,
   offersAfter,
   selectedCompareSlugs
 }: {
-  query: Extract<
-    Extract<ProductDetailLoaderData, { status: "ready" }>["offers"],
-    { status: "ready" }
-  >["query"];
+  connection: NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"];
   productSlug: string;
   offersAfter: string | null;
   selectedCompareSlugs: readonly string[];
 }) {
-  const queryRef = useRoutePreloadedQuery<ProductOffersRouteQuery>(
-    productOffersRouteQuery,
-    query
-  );
-  const data = usePreloadedQuery<ProductOffersRouteQuery>(productOffersRouteQuery, queryRef);
-  const offers = data.merchantProducts.edges.flatMap(({ node }) => {
+  if (!connection) {
+    return <OffersUnavailableFallback />;
+  }
+
+  const offers = connection.edges.flatMap(({ node }) => {
     const safeUrl = normalizeOfferUrl(node.url);
 
     if (!safeUrl) {
@@ -312,19 +292,18 @@ function ProductOffers({
     ];
   });
   const paginationLinks =
-    offersAfter || (data.merchantProducts.pageInfo.hasNextPage && data.merchantProducts.pageInfo.endCursor) ? (
+    offersAfter || (connection.pageInfo.hasNextPage && connection.pageInfo.endCursor) ? (
       <nav aria-label="Active offer pages">
         {offersAfter ? (
           <Link to={productOffersPath(productSlug, null, selectedCompareSlugs)}>
             First offers
           </Link>
         ) : null}
-        {data.merchantProducts.pageInfo.hasNextPage &&
-        data.merchantProducts.pageInfo.endCursor ? (
+        {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
           <Link
             to={productOffersPath(
               productSlug,
-              data.merchantProducts.pageInfo.endCursor,
+              connection.pageInfo.endCursor,
               selectedCompareSlugs
             )}
           >
@@ -382,8 +361,9 @@ function ProductOffers({
   );
 }
 
-type ProductOfferNode =
-  ProductOffersRouteQuery["response"]["merchantProducts"]["edges"][number]["node"];
+type ProductOfferNode = NonNullable<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
+>["edges"][number]["node"];
 
 function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
   return merchant?.name ?? "Visit offer";

@@ -2,9 +2,6 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
-import productFilterMetadataQuery, {
-  type ProductFilterMetadataQuery
-} from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -27,7 +24,6 @@ export type BrowseProductsLoaderData =
       filters: CatalogFilters;
       pageSize: BrowseProductsPageSize;
       query: RelayRouteQueryDescriptor<BrowseProductsRouteQuery["variables"]>;
-      metadataQuery: RelayRouteQueryDescriptor<ProductFilterMetadataQuery["variables"]>;
     }
   | {
       status: "error";
@@ -45,7 +41,6 @@ export async function browseLoader({
   const variables: BrowseProductsRouteQuery["variables"] = {
     first: pageSize
   };
-  const metadataVariables: ProductFilterMetadataQuery["variables"] = {};
   const after = nonBlankParam(requestUrl, "after");
 
   if (after) {
@@ -54,45 +49,21 @@ export async function browseLoader({
 
   if (productFiltersInput) {
     variables.filters = productFiltersInput;
-    metadataVariables.filters = productFiltersInput;
   }
 
   try {
-    const [queryResult, metadataQueryResult] = await Promise.allSettled([
-      fetchRouteQuery<BrowseProductsRouteQuery>(
-        environment,
-        browseProductsRouteQuery,
-        variables,
-        { signal: request.signal }
-      ),
-      fetchRouteQuery<ProductFilterMetadataQuery>(
-        environment,
-        productFilterMetadataQuery,
-        metadataVariables,
-        { signal: request.signal }
-      )
-    ]);
-
-    if (queryResult.status === "rejected") {
-      if (metadataQueryResult.status === "fulfilled") {
-        metadataQueryResult.value.dispose();
-      }
-
-      throw queryResult.reason;
-    }
-
-    if (metadataQueryResult.status === "rejected") {
-      queryResult.value.dispose();
-
-      throw metadataQueryResult.reason;
-    }
+    const queryResult = await fetchRouteQuery<BrowseProductsRouteQuery>(
+      environment,
+      browseProductsRouteQuery,
+      variables,
+      { signal: request.signal }
+    );
 
     return {
       status: "ready",
       filters,
       pageSize,
-      query: queryResult.value.descriptor,
-      metadataQuery: metadataQueryResult.value.descriptor
+      query: queryResult.descriptor
     };
   } catch (error) {
     return recoverRouteLoaderError<BrowseProductsLoaderData>(

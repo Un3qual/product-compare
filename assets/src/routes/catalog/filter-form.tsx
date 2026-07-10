@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { ProductFilterMetadataQuery } from "../../__generated__/ProductFilterMetadataQuery.graphql";
+import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import {
   CATALOG_PRODUCT_SORTS,
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
@@ -18,7 +18,7 @@ import {
 import { catalogBrowseFirstPagePath } from "./paths";
 
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
-type ProductFilterMetadata = ProductFilterMetadataQuery["response"]["productFilterMetadata"];
+type ProductFilterMetadata = BrowseProductsRouteQuery["response"]["productFilterMetadata"];
 
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],

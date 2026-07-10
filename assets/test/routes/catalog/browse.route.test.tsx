@@ -7,7 +7,6 @@ import { createRelayEnvironment } from "../../../src/relay/environment";
 import browseProductsRouteQueryArtifact, {
   type BrowseProductsRouteQuery
 } from "../../../src/__generated__/BrowseProductsRouteQuery.graphql";
-import type { ProductFilterMetadataQuery } from "../../../src/__generated__/ProductFilterMetadataQuery.graphql";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
@@ -62,7 +61,6 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const browseQueryDescriptor = browseQueryDescriptorFromVariables();
-const filterMetadataQueryDescriptor = filterMetadataQueryDescriptorFromVariables();
 const emptyCatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
@@ -110,12 +108,12 @@ function browseQueryDescriptorFromVariables(
 }
 
 function filterMetadataQueryDescriptorFromVariables(
-  variables: ProductFilterMetadataQuery["variables"] = {}
+  variables: { filters?: BrowseProductsRouteQuery["variables"]["filters"] } = {}
 ) {
   return {
     __relayQuery: {
       operationName: "ProductFilterMetadataQuery",
-      text: "query ProductFilterMetadataQuery($filters: ProductFiltersInput) { productFilterMetadata(filters: $filters) { resultCount } }",
+      text: "",
       variables
     }
   };
@@ -134,19 +132,17 @@ function fetchedRouteQueryResult<TDescriptor>(
 
 function mockSuccessfulBrowseLoaderFetches({
   productDescriptor = browseQueryDescriptor,
-  metadataDescriptor = filterMetadataQueryDescriptor
+  metadataDescriptor: _metadataDescriptor
 }: {
   productDescriptor?: ReturnType<typeof browseQueryDescriptorFromVariables>;
   metadataDescriptor?: ReturnType<typeof filterMetadataQueryDescriptorFromVariables>;
 } = {}) {
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(fetchedRouteQueryResult(productDescriptor))
-    .mockResolvedValueOnce(fetchedRouteQueryResult(metadataDescriptor));
+  mockedFetchRouteQuery.mockResolvedValueOnce(fetchedRouteQueryResult(productDescriptor));
 }
 
 function readyBrowseLoaderData({
   filters = emptyCatalogFilters,
-  metadataQuery = filterMetadataQueryDescriptor,
+  metadataQuery: _metadataQuery,
   pageSize = 12,
   query = browseQueryDescriptor
 }: {
@@ -159,8 +155,7 @@ function readyBrowseLoaderData({
     status: "ready",
     filters,
     pageSize,
-    query,
-    metadataQuery
+    query
   };
 }
 
@@ -233,7 +228,8 @@ function buildBrowseProductsResponse({
       endCursor,
       hasNextPage,
       products
-    })
+    }),
+    ...buildProductFilterMetadataResponse({ resultCount: products.length })
   };
 }
 
@@ -331,7 +327,6 @@ function buildProductFilterMetadataResponse({
 function mockBrowseRouteRelayData({
   loaderData = readyBrowseLoaderData(),
   metadataData = buildProductFilterMetadataResponse(),
-  metadataQueryRef,
   productData = buildBrowseProductsResponse({
     products: [
       {
@@ -344,8 +339,7 @@ function mockBrowseRouteRelayData({
   productQueryRef
 }: {
   loaderData?: ReturnType<typeof readyBrowseLoaderData>;
-  metadataData?: ProductFilterMetadataQuery["response"];
-  metadataQueryRef?: MockRouteQueryRef;
+  metadataData?: Pick<BrowseProductsRouteQuery["response"], "productFilterMetadata">;
   productData?: BrowseProductsRouteQuery["response"];
   productQueryRef?: MockRouteQueryRef;
 } = {}) {
@@ -353,21 +347,14 @@ function mockBrowseRouteRelayData({
     dispose: vi.fn(),
     variables: loaderData.query.__relayQuery.variables
   };
-  const resolvedMetadataQueryRef = metadataQueryRef ?? {
-    dispose: vi.fn(),
-    variables: loaderData.metadataQuery.__relayQuery.variables
-  };
-
   mockedUseLoaderData.mockReturnValue(loaderData);
-  mockedUseRoutePreloadedQuery
-    .mockReturnValueOnce(resolvedProductQueryRef)
-    .mockReturnValueOnce(resolvedMetadataQueryRef);
-  mockedUsePreloadedQuery
-    .mockReturnValueOnce(productData)
-    .mockReturnValueOnce(metadataData);
+  mockedUseRoutePreloadedQuery.mockReturnValueOnce(resolvedProductQueryRef);
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    ...productData,
+    ...metadataData
+  });
 
   return {
-    metadataQueryRef: resolvedMetadataQueryRef,
     productQueryRef: resolvedProductQueryRef
   };
 }
@@ -427,6 +414,7 @@ test("browse loader preloads and returns the Relay browse route query", async ()
     { first: 12 },
     { signal: request.signal }
   );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader defaults to a page size of 12 when first is omitted", async () => {
@@ -603,13 +591,7 @@ test("browse loader passes URL filters to the product and metadata queries", asy
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader bounds search text and drops unsupported sort values", async () => {
@@ -639,13 +621,7 @@ test("browse loader bounds search text and drops unsupported sort values", async
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader normalizes the default catalog sort from the URL", async () => {
@@ -665,13 +641,7 @@ test("browse loader normalizes the default catalog sort from the URL", async () 
     { first: 12 },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    {},
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader drops blank numeric bounds and malformed boolean filter values", async () => {
@@ -713,13 +683,7 @@ test("browse loader drops blank numeric bounds and malformed boolean filter valu
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader drops malformed decimal numeric bounds", async () => {
@@ -759,13 +723,7 @@ test("browse loader drops malformed decimal numeric bounds", async () => {
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader keeps backend-accepted decimal numeric bound forms", async () => {
@@ -812,13 +770,7 @@ test("browse loader keeps backend-accepted decimal numeric bound forms", async (
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader drops numeric ranges whose minimum is greater than their maximum", async () => {
@@ -855,13 +807,7 @@ test("browse loader drops numeric ranges whose minimum is greater than their max
     { first: 12, filters: expectedFilters },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { filters: expectedFilters },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("browse loader marks the catalog unavailable when Relay preload fails", async () => {
@@ -878,56 +824,6 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
       browseLoader(buildBrowseLoaderArgs({ environment }))
     ).resolves.toEqual({ status: "error" });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
-      error: preloadError
-    });
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
-});
-
-test("browse loader disposes the product query when metadata preload fails", async () => {
-  const environment = createRelayEnvironment();
-  const preloadError = new Error("metadata preload failed");
-  const disposeProductRouteQuery = vi.fn();
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(fetchedRouteQueryResult(browseQueryDescriptor, disposeProductRouteQuery))
-    .mockRejectedValueOnce(preloadError);
-
-  try {
-    await expect(
-      browseLoader(buildBrowseLoaderArgs({ environment }))
-    ).resolves.toEqual({ status: "error" });
-
-    expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
-      error: preloadError
-    });
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
-});
-
-test("browse loader disposes the metadata query when product preload fails", async () => {
-  const environment = createRelayEnvironment();
-  const preloadError = new Error("product preload failed");
-  const disposeMetadataRouteQuery = vi.fn();
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-  mockedFetchRouteQuery
-    .mockRejectedValueOnce(preloadError)
-    .mockResolvedValueOnce(
-      fetchedRouteQueryResult(filterMetadataQueryDescriptor, disposeMetadataRouteQuery)
-    );
-
-  try {
-    await expect(
-      browseLoader(buildBrowseLoaderArgs({ environment }))
-    ).resolves.toEqual({ status: "error" });
-
-    expect(disposeMetadataRouteQuery).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError
     });
@@ -1045,6 +941,7 @@ test("renders browse products from the Relay route query", () => {
   mockBrowseRouteRelayData({
     productQueryRef: queryRef,
     productData: {
+      ...buildProductFilterMetadataResponse(),
       products: {
         edges: [
           {
@@ -1565,18 +1462,14 @@ test("preserves in-progress filter control state when compare selection changes"
   const typeSelect = within(filterForm).getByRole("combobox", { name: "Product type" });
 
   fireEvent.change(typeSelect, { target: { value: "type-laptops" } });
-  mockedUseRoutePreloadedQuery
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
-      variables: loaderData.query.__relayQuery.variables
-    })
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
-      variables: loaderData.metadataQuery.__relayQuery.variables
-    });
-  mockedUsePreloadedQuery
-    .mockReturnValueOnce(productData)
-    .mockReturnValueOnce(metadataData);
+  mockedUseRoutePreloadedQuery.mockReturnValueOnce({
+    dispose: vi.fn(),
+    variables: loaderData.query.__relayQuery.variables
+  });
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    ...productData,
+    ...metadataData
+  });
   fireEvent.click(screen.getByRole("link", { name: "Add Catalog First to compare" }));
 
   const updatedFilterForm = screen.getByRole(
@@ -1756,21 +1649,17 @@ test("refreshes filter controls when loader filters clear on the same browse rou
     })
     .mockReturnValueOnce({
       dispose: vi.fn(),
-      variables: activeLoaderData.metadataQuery.__relayQuery.variables
-    })
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
       variables: clearedLoaderData.query.__relayQuery.variables
-    })
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
-      variables: clearedLoaderData.metadataQuery.__relayQuery.variables
     });
   mockedUsePreloadedQuery
-    .mockReturnValueOnce(buildBrowseProductsResponse())
-    .mockReturnValueOnce(buildProductFilterMetadataResponse({ selected: true }))
-    .mockReturnValueOnce(buildBrowseProductsResponse())
-    .mockReturnValueOnce(buildProductFilterMetadataResponse());
+    .mockReturnValueOnce({
+      ...buildBrowseProductsResponse(),
+      ...buildProductFilterMetadataResponse({ selected: true })
+    })
+    .mockReturnValueOnce({
+      ...buildBrowseProductsResponse(),
+      ...buildProductFilterMetadataResponse()
+    });
 
   const view = render(
     <MemoryRouter initialEntries={["/products?first=24&typeTaxonId=type-laptops"]}>
@@ -2372,14 +2261,8 @@ test("resets the local unavailable state when fresh loader data arrives", async 
     expect(screen.getByRole("alert")).toHaveTextContent("Catalog unavailable.");
 
     mockedUseLoaderData.mockReturnValue(readyBrowseLoaderData({ query: retryDescriptor }));
-    mockedUseRoutePreloadedQuery
-      .mockReturnValueOnce(recoveredQueryRef)
-      .mockReturnValueOnce({
-        dispose: vi.fn(),
-        variables: filterMetadataQueryDescriptor.__relayQuery.variables
-      });
-    mockedUsePreloadedQuery
-      .mockReturnValueOnce({
+    mockedUseRoutePreloadedQuery.mockReturnValueOnce(recoveredQueryRef);
+    mockedUsePreloadedQuery.mockReturnValueOnce({
         products: {
           edges: [
             {
@@ -2400,9 +2283,9 @@ test("resets the local unavailable state when fresh loader data arrives", async 
             hasNextPage: false,
             endCursor: null
           }
-        }
-      })
-      .mockReturnValueOnce(buildProductFilterMetadataResponse());
+        },
+        ...buildProductFilterMetadataResponse()
+      });
 
     view.rerender(
       <MemoryRouter initialEntries={["/products"]}>
@@ -2431,6 +2314,7 @@ test("resets the local unavailable state when fresh loader data arrives", async 
 test("renders an empty-state message when the Relay query returns no products", () => {
   mockBrowseRouteRelayData({
     productData: {
+      ...buildProductFilterMetadataResponse(),
       products: {
         edges: [],
         pageInfo: {
@@ -2537,6 +2421,7 @@ test("renders the recoverable empty-state message when a cursor page is empty bu
 test("keeps a next-page recovery link when an empty result has a next cursor", () => {
   mockBrowseRouteRelayData({
     productData: {
+      ...buildProductFilterMetadataResponse(),
       products: {
         edges: [],
         pageInfo: {
@@ -2576,6 +2461,7 @@ test("keeps a first-page recovery link when a cursor page returns no products", 
     }),
     productQueryRef: queryRef,
     productData: {
+      ...buildProductFilterMetadataResponse(),
       products: {
         edges: [],
         pageInfo: {
