@@ -1113,7 +1113,7 @@ Expected: one direct DateTime contract and type-reuse commit.
 - Consumes: completed Tasks 1-4 and their focused verification evidence.
 - Produces: a clean pushed branch and a ready stacked PR targeting `codex/shopper-decision-confidence`.
 
-- [ ] **Step 1: Run every focused suite together**
+- [x] **Step 1: Run every focused suite together**
 
 Run:
 
@@ -1124,7 +1124,7 @@ bun run test -- test/routes/offer-snapshot.test.ts test/routes/catalog/filter-su
 
 Expected: PASS with all seven test files and zero failures.
 
-- [ ] **Step 2: Run the full frontend gate**
+- [x] **Step 2: Run the full frontend gate**
 
 Run:
 
@@ -1135,7 +1135,7 @@ bun run check
 
 Expected: TypeScript and every Vitest unit file pass with zero failures.
 
-- [ ] **Step 3: Verify stacked scope and cleanliness**
+- [x] **Step 3: Verify stacked scope and cleanliness**
 
 Run:
 
@@ -1149,10 +1149,17 @@ Expected: whitespace check exits 0; the diff contains only the design, plan,
 shared policy modules, focused tests, and touched route migrations; the worktree
 is clean after the final plan-status commit.
 
-- [ ] **Step 4: Mark Task 5 complete and commit plan evidence**
+- [x] **Step 4: Record aggregate verification evidence**
 
-Check every remaining box in this plan and add exact focused/full test counts to
-this section, then run:
+Verification completed on 2026-07-10:
+
+- focused suites: 7 files, 182 tests, 0 failures;
+- full frontend gate: TypeScript clean, 45 files, 595 tests, 0 failures;
+- `git diff --check codex/shopper-decision-confidence...HEAD`: pass;
+- stacked scope: 15 files limited to the design, plan, shared policy modules,
+  focused tests, and touched route migrations.
+
+Commit this evidence before publication:
 
 ```bash
 git add docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md
@@ -1204,3 +1211,18 @@ gh pr view --json number,url,state,isDraft,baseRefName,headRefName,headRefOid
 
 Expected: an OPEN, non-draft PR whose base is
 `codex/shopper-decision-confidence` and whose head OID matches local `HEAD`.
+
+- [ ] **Step 7: Record publication and synchronize the PR head**
+
+After Step 6 succeeds, check Steps 5-7, append the PR number and URL to this
+section, then run:
+
+```bash
+git add docs/superpowers/plans/2026-07-10-shopper-confidence-route-decomposition.md
+git commit -m "docs: record stacked refactor publication"
+git push
+gh pr view --json number,url,state,isDraft,baseRefName,headRefName,headRefOid
+```
+
+Expected: the ready stacked PR remains OPEN and its head OID matches local
+`HEAD` after the final documentation commit.
