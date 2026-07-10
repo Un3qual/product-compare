@@ -1203,6 +1203,19 @@ test("renders metadata-backed catalog filter controls", () => {
   expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
 });
 
+test("omits the default catalog sort until an explicit sort is selected", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+
+  fireEvent.change(sortSelect, { target: { value: "NEWEST" } });
+
+  expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
+});
+
 test("renders selected catalog filters with an active summary and clear link", () => {
   renderBrowseRouteWithRelayData({
     loaderData: readyBrowseLoaderData({

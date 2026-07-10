@@ -92,10 +92,18 @@ function SearchField({ query }: { query?: string }) {
 }
 
 function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
+  const [selectedSort, setSelectedSort] = useState(sort ?? "ID_ASC");
+
   return (
     <label>
       Sort products
-      <select name="sort" defaultValue={sort ?? "ID_ASC"}>
+      <select
+        name={selectedSort === "ID_ASC" ? undefined : "sort"}
+        value={selectedSort}
+        onChange={(event) =>
+          setSelectedSort(event.currentTarget.value as NonNullable<CatalogFilters["sort"]>)
+        }
+      >
         {CATALOG_PRODUCT_SORTS.map((value) => (
           <option key={value} value={value}>
             {catalogProductSortLabel(value)}
