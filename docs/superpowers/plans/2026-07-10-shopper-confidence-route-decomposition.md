@@ -1168,7 +1168,7 @@ git commit -m "docs: record shopper decomposition verification"
 
 Expected: one final evidence commit with no product-code changes.
 
-- [ ] **Step 5: Push the stacked branch**
+- [x] **Step 5: Push the stacked branch**
 
 Run:
 
@@ -1178,7 +1178,7 @@ git push -u origin codex/shopper-confidence-route-decomposition
 
 Expected: remote branch created with tracking configured.
 
-- [ ] **Step 6: Open and verify the ready stacked PR**
+- [x] **Step 6: Open and verify the ready stacked PR**
 
 Create `/private/tmp/shopper-confidence-route-decomposition-pr.md` with:
 
@@ -1212,7 +1212,7 @@ gh pr view --json number,url,state,isDraft,baseRefName,headRefName,headRefOid
 Expected: an OPEN, non-draft PR whose base is
 `codex/shopper-decision-confidence` and whose head OID matches local `HEAD`.
 
-- [ ] **Step 7: Record publication and synchronize the PR head**
+- [x] **Step 7: Record publication and synchronize the PR head**
 
 After Step 6 succeeds, check Steps 5-7, append the PR number and URL to this
 section, then run:
@@ -1226,3 +1226,6 @@ gh pr view --json number,url,state,isDraft,baseRefName,headRefName,headRefOid
 
 Expected: the ready stacked PR remains OPEN and its head OID matches local
 `HEAD` after the final documentation commit.
+
+Published as ready stacked PR #78:
+https://github.com/Un3qual/product-compare/pull/78
