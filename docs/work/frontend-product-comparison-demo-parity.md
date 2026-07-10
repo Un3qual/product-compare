@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done (persistent compare tray implemented)
+- Status: ready (relative loaded price signal; prior batches complete)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-01 after persistent compare tray verification
@@ -16,6 +16,26 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Ready Relative Loaded Price Follow-Up
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`.
+- Verified gap: the current decision summary displays each product's best loaded
+  price but does not identify a safe lowest value across selected products.
+- Owned paths:
+  - `assets/src/routes/compare/decision-summary.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|lowest loaded price|not comparable"`
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: the decision summary identifies the safe lowest loaded price
+  for comparable same-currency values and declines mixed, missing, malformed, or
+  unavailable comparisons.
 
 ## Batch Status
 

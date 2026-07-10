@@ -76,20 +76,96 @@ lane work docs dated 2026-07-09.
 Shopper decision confidence was selected and completed on 2026-07-09. Catalog
 result guidance, offer observation and coupon validity, product-detail price
 observation, and the visible-page offer snapshot all have green completion
-evidence in their lane docs. No additional validated candidate is available;
-the remaining catalogued work is deferred or rejected and cannot be used as
-queue filler.
+evidence in their lane docs.
 
 On 2026-07-10, the user-reported GraphQL request-waterfall batch completed.
 Comparison, product detail, and catalog now use one initial route-data request,
 while saved comparisons and API tokens use explicit one-page-at-a-time cursor
-navigation. No other validated candidate is available, so the ready slate
-remains below target rather than being filled with deferred or rejected work.
+navigation.
+
+On 2026-07-10, the continuously replenished queue policy replaced the prior
+empty-slate exception. Current route and test inspection validated four
+product-facing batches: shopper-focused home content, viewer-aware navigation,
+a safe relative loaded-price signal, and saved-comparison product labels.
 
 ## Ready Work
 
-None. The plan catalog contains no additional validated candidate outside
-deferred or rejected work.
+### 1. Shopper-Focused Home Content
+
+Status: ready
+Lane: Frontend shopper home
+Plan: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
+Next action: Replace technical implementation-status copy with a shopper-oriented browse, compare, and offer-review journey using the existing root route.
+Owned paths:
+- `assets/src/routes/root.tsx`
+- `assets/test/routes/root.route.test.tsx`
+- `docs/work/frontend-shopper-home-navigation.md`
+Prerequisites:
+- Existing root viewer preload and current route set remain unchanged.
+Verification:
+- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: The root page communicates the shopper journey and prioritizes browse, compare, and offer review with green focused tests.
+
+### 2. Viewer-Aware Navigation
+
+Status: ready
+Lane: Frontend shopper home
+Plan: `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
+Next action: Keep public shopper routes visible to guests and show saved and account-oriented destinations only when the existing root viewer is authenticated.
+Owned paths:
+- `assets/src/routes/root.tsx`
+- `assets/test/routes/root.route.test.tsx`
+- `docs/work/frontend-shopper-home-navigation.md`
+Prerequisites:
+- No code prerequisite; serialize this row when the other root-route row is active because their owned paths overlap.
+Verification:
+- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: Guest and authenticated root states expose the correct public, account, and auth destinations without changing direct-route authorization.
+
+### 3. Compare Relative Loaded Price Signal
+
+Status: ready
+Lane: Frontend product comparison demo parity
+Plan: `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
+Next action: Add a decision-summary row that identifies the safe lowest already-loaded same-currency price and declines unsafe comparisons.
+Owned paths:
+- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+Prerequisites:
+- Existing compare offer contexts continue to expose `bestCurrentPrice` without query or loader changes.
+Verification:
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|lowest loaded price|not comparable"`
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: The decision summary identifies comparable lowest loaded prices and explicitly declines mixed, missing, malformed, or unavailable comparisons.
+
+### 4. Saved Comparison Product Labels
+
+Status: ready
+Lane: Frontend saved comparisons
+Plan: `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
+Next action: Query and render saved product names in stored order while preserving slug-based reopen order and current route behavior.
+Owned paths:
+- `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`
+- `assets/src/routes/compare/saved-data.ts`
+- `assets/src/routes/compare/saved.tsx`
+- `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-saved-comparisons-ui.md`
+Prerequisites:
+- The current GraphQL Product type and local schema snapshot continue to expose non-null `name` and `slug` fields.
+Verification:
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+Exit condition: Saved comparison cards display ordered product names and reopen the exact stored slug order with existing auth, pagination, filtering, sorting, and delete behavior intact.
 
 ## Active Work
 
