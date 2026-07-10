@@ -94,6 +94,13 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.product/3)
     end
 
+    @desc "Returns one product or null for each requested comparison slug, in requested order."
+    field :comparison_products, non_null(list_of(:product)) do
+      arg(:slugs, non_null(list_of(non_null(:string))))
+
+      resolve(&CatalogResolver.comparison_products/3)
+    end
+
     @desc "Returns products in a deterministic requested order with cursor pagination."
     field :products, :product_connection do
       arg(:first, :integer)
@@ -888,6 +895,15 @@ defmodule ProductCompareWeb.Schema do
 
     field :current_attributes, non_null(list_of(non_null(:product_attribute_value))) do
       resolve(&CatalogResolver.current_attributes/3)
+    end
+
+    field :merchant_products, :merchant_product_connection do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:merchant_id, :id)
+      arg(:active_only, :boolean)
+
+      resolve(&PricingResolver.product_merchant_products/3)
     end
   end
 

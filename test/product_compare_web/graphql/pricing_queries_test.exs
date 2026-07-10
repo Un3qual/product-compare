@@ -234,6 +234,76 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                })
     end
 
+    test "product merchantProducts scopes offers to its parent and preserves pagination", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-product"})
+      other_product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-other-product"})
+      merchant = merchant_fixture(%{name: unique_name("Nested Merchant")})
+
+      first_offer =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: true})
+
+      second_offer =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: true})
+
+      _inactive_offer =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: false})
+
+      _other_offer =
+        merchant_product_fixture(%{merchant: merchant, product: other_product, is_active: true})
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "merchantProducts" => %{
+                     "edges" => [
+                       %{
+                         "cursor" => first_cursor,
+                         "node" => %{
+                           "id" => first_id,
+                           "productId" => product_id,
+                           "isActive" => true
+                         }
+                       }
+                     ],
+                     "pageInfo" => %{"hasNextPage" => true}
+                   }
+                 }
+               }
+             } =
+               graphql(conn, product_merchant_products_query(), %{
+                 "slug" => product.slug,
+                 "first" => 1,
+                 "activeOnly" => true
+               })
+
+      assert first_id == relay_id(:merchant_product, first_offer.id)
+      assert product_id == relay_id(:product, product.id)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "merchantProducts" => %{
+                     "edges" => [
+                       %{"node" => %{"id" => second_id, "isActive" => true}}
+                     ],
+                     "pageInfo" => %{"hasNextPage" => false}
+                   }
+                 }
+               }
+             } =
+               graphql(conn, product_merchant_products_query(), %{
+                 "slug" => product.slug,
+                 "first" => 1,
+                 "after" => first_cursor,
+                 "activeOnly" => true
+               })
+
+      assert second_id == relay_id(:merchant_product, second_offer.id)
+    end
+
     test "merchantProducts rejects raw integer IDs", %{conn: conn, test: test_name} do
       product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-product"})
       merchant = merchant_fixture(%{name: unique_name("Merchant"), domain: unique_domain("m")})
@@ -775,6 +845,36 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           hasPreviousPage
           startCursor
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp product_merchant_products_query do
+    """
+    query ProductMerchantProducts(
+      $slug: String!
+      $first: Int!
+      $after: String
+      $activeOnly: Boolean
+    ) {
+      product(slug: $slug) {
+        merchantProducts(first: $first, after: $after, activeOnly: $activeOnly) {
+          edges {
+            cursor
+            node {
+              id
+              productId
+              isActive
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
         }
       }
     }
