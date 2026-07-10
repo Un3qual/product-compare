@@ -5,9 +5,8 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** ready. This offer-discovery row must not execute concurrently with
-the offer observation and coupon validity row because both own the same route,
-test, and lane doc.
+**Status:** completed on 2026-07-09. Completion evidence lives in
+`docs/work/frontend-offer-discovery-demo-parity.md`.
 
 **Goal:** Summarize the visible `/offers` page with counts and a safe comparable
 lowest-price signal derived from the rows the shopper can actually use.
@@ -47,19 +46,19 @@ schema field, or persisted state.
 
 ## Batches
 
-- [ ] **1. Add failing snapshot coverage.** Cover a single-currency page,
+- [x] **1. Add failing snapshot coverage.** Cover a single-currency page,
   mixed currencies, missing prices, coupon availability, unsafe rows excluded
   by the existing gate, and the empty-page omission.
-- [ ] **2. Add the pure summary builder.** Derive all metrics from
+- [x] **2. Add the pure summary builder.** Derive all metrics from
   `RenderableOffer` rows and current price/coupon helpers without changing sort
   order or Relay data.
-- [ ] **3. Render the accessible summary.** Add a named `Visible offer snapshot`
+- [x] **3. Render the accessible summary.** Add a named `Visible offer snapshot`
   region before the list with explicitly visible/page-local metric labels and
   the defined comparable-price fallbacks.
-- [ ] **4. Verify and record completion.** Run the focused offer route suite and
+- [x] **4. Verify and record completion.** Run the focused offer route suite and
   TypeScript, then replace the ready snapshot section in the offer-discovery
   lane doc with red/green evidence.
-- [ ] **5. Commit the milestone.** Commit UI, tests, and lane evidence together
+- [x] **5. Commit the milestone.** Commit UI, tests, and lane evidence together
   with `feat: add visible offer snapshot`.
 
 ## Verification

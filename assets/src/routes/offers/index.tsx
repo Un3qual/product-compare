@@ -42,6 +42,13 @@ type VisibleMerchant = {
   id: string;
   name: string;
 };
+type VisibleOfferSnapshotSummary = {
+  couponAvailabilityCount: number;
+  hasMixedPriceCurrencies: boolean;
+  lowestVisiblePriceText: string | null;
+  missingLatestPriceCount: number;
+  visibleOfferCount: number;
+};
 
 const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base"
@@ -146,25 +153,117 @@ function OfferDiscoveryList({
       {offers.length === 0 ? (
         <p>No offers match these filters.</p>
       ) : (
-        <ul aria-label="Offers">
-          {offers.map((renderableOffer, index) => (
-            <OfferListItem
-              key={renderableOffer.offer.id}
-              offer={renderableOffer.offer}
-              highlightLabel={priceSortHighlightLabel(
-                filters.sort,
-                index,
-                renderableOffer,
-                canComparePrices
-              )}
-            />
-          ))}
-        </ul>
+        <>
+          <VisibleOfferSnapshot summary={buildVisibleOfferSnapshot(offers)} />
+          <ul aria-label="Offers">
+            {offers.map((renderableOffer, index) => (
+              <OfferListItem
+                key={renderableOffer.offer.id}
+                offer={renderableOffer.offer}
+                highlightLabel={priceSortHighlightLabel(
+                  filters.sort,
+                  index,
+                  renderableOffer,
+                  canComparePrices
+                )}
+              />
+            ))}
+          </ul>
+        </>
       )}
       <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={connection} filters={filters} />
     </>
   );
+}
+
+function VisibleOfferSnapshot({ summary }: { summary: VisibleOfferSnapshotSummary }) {
+  return (
+    <section aria-label="Visible offer snapshot">
+      <h3>Visible offer snapshot</h3>
+      <dl>
+        <div>
+          <dt>Visible offers on this page</dt>
+          <dd>{summary.visibleOfferCount}</dd>
+        </div>
+        <div>
+          <dt>Lowest visible price</dt>
+          <dd>{visibleLowestPriceLabel(summary)}</dd>
+        </div>
+        <div>
+          <dt>Visible coupon availability</dt>
+          <dd>{formatCouponAvailabilityCount(summary.couponAvailabilityCount)}</dd>
+        </div>
+        <div>
+          <dt>Missing latest price</dt>
+          <dd>{formatOfferCount(summary.missingLatestPriceCount)}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+function buildVisibleOfferSnapshot(
+  offers: ReadonlyArray<RenderableOffer>
+): VisibleOfferSnapshotSummary {
+  let couponAvailabilityCount = 0;
+  let lowestPricedOffer: RenderableOffer | null = null;
+  let missingLatestPriceCount = 0;
+  const priceCurrencies = new Set<string | null>();
+
+  for (const offer of offers) {
+    const activeCoupons = couponConnection(offer.offer.activeCoupons);
+
+    if (activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage) {
+      couponAvailabilityCount += 1;
+    }
+
+    if (offer.latestPriceValue === null) {
+      missingLatestPriceCount += 1;
+      continue;
+    }
+
+    priceCurrencies.add(offer.latestPriceCurrency);
+
+    if (
+      !lowestPricedOffer ||
+      offer.latestPriceValue < (lowestPricedOffer.latestPriceValue ?? Number.POSITIVE_INFINITY)
+    ) {
+      lowestPricedOffer = offer;
+    }
+  }
+
+  const hasMixedPriceCurrencies = priceCurrencies.size > 1;
+
+  return {
+    couponAvailabilityCount,
+    hasMixedPriceCurrencies,
+    lowestVisiblePriceText:
+      lowestPricedOffer && !hasMixedPriceCurrencies
+        ? priceLabel(
+            lowestPricedOffer.offer.latestPrice?.price,
+            lowestPricedOffer.offer.currency
+          )
+        : null,
+    missingLatestPriceCount,
+    visibleOfferCount: offers.length
+  };
+}
+
+function visibleLowestPriceLabel(summary: VisibleOfferSnapshotSummary) {
+  if (summary.hasMixedPriceCurrencies) {
+    return "Not comparable across currencies";
+  }
+
+  return summary.lowestVisiblePriceText ?? "No visible prices";
+}
+
+function formatCouponAvailabilityCount(count: number) {
+  return `${formatOfferCount(count)} with coupons`;
+}
+
+function formatOfferCount(count: number) {
+  return `${count} ${count === 1 ? "offer" : "offers"}`;
 }
 
 function OfferListItem({

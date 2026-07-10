@@ -72,37 +72,18 @@ That product-facing curation batch is complete. Catalog search and sorting plus
 offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
-Shopper decision confidence was selected as the next product-facing direction
-on 2026-07-09. Catalog result guidance, offer observation and coupon validity,
-and product-detail price observation are complete. The visible-page offer
-snapshot is the final validated row. The below-target slate contains every
-validated row in the approved batch; other catalogued work is deferred or
-rejected and cannot be used as filler.
+Shopper decision confidence was selected and completed on 2026-07-09. Catalog
+result guidance, offer observation and coupon validity, product-detail price
+observation, and the visible-page offer snapshot all have green completion
+evidence in their lane docs. No additional validated candidate is available;
+the remaining catalogued work is deferred or rejected and cannot be used as
+queue filler.
 
 ## Ready Work
 
-Status: ready
-Lane: frontend offer discovery
-Active plan:
-`docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
-Next action: summarize the renderable `/offers` page with visible counts and a
-single-currency lowest-price signal that fails closed for mixed currencies.
-Owned paths:
-
-- `assets/src/routes/offers/index.tsx`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: `/offers` shows a clearly page-local snapshot that matches
-renderable rows, avoids cross-currency price comparisons, and preserves current
-offer-list behavior. The earlier ownership conflict is cleared because the
-offer observation row is complete.
+None. The approved four-row shopper decision-confidence batch is complete, and
+the plan catalog contains no additional validated candidate outside deferred or
+rejected work.
 
 ## Needs Decision Work
 
@@ -131,6 +112,12 @@ The same batch completed product-detail price observation context:
 leaving prices and existing offer behavior intact for missing or malformed
 timestamps. Relay generation, 45 focused tests, TypeScript, and diff checks
 passed.
+
+The same batch completed the visible offer snapshot: `/offers` now summarizes
+the safe, renderable page with visible counts and a single-currency lowest-price
+signal, refuses mixed-currency comparisons, and omits the summary for empty or
+unsafe-only pages. Focused verification passed 49 tests plus TypeScript and diff
+checks.
 
 The 2026-07-08 product-facing curation batch completed these work items:
 

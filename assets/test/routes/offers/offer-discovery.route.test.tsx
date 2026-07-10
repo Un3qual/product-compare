@@ -358,11 +358,16 @@ test("offer discovery omits unsupported observation and coupon validity claims",
 
   renderOfferDiscoveryRoute();
 
-  expect(screen.getByText("199.99 USD")).toBeVisible();
-  expect(screen.getByText("SAVE20")).toBeVisible();
-  expect(screen.queryByText(/^Offer checked/)).not.toBeInTheDocument();
-  expect(screen.queryByText(/^Price observed/)).not.toBeInTheDocument();
-  expect(screen.queryByText(/^Valid through/)).not.toBeInTheDocument();
+  const offer = screen.getByRole("heading", { name: "Detail Product" }).closest("li");
+
+  expect(offer).not.toBeNull();
+  const offerContent = within(offer as HTMLElement);
+
+  expect(offerContent.getByText("199.99 USD")).toBeVisible();
+  expect(offerContent.getByText("SAVE20")).toBeVisible();
+  expect(offerContent.queryByText(/^Offer checked/)).not.toBeInTheDocument();
+  expect(offerContent.queryByText(/^Price observed/)).not.toBeInTheDocument();
+  expect(offerContent.queryByText(/^Valid through/)).not.toBeInTheDocument();
 });
 
 test("offer discovery keeps offer actions when merchant metadata is unavailable", () => {
@@ -587,6 +592,7 @@ test.each([
   expect(screen.getByText("No offers match these filters.")).toBeVisible();
   expect(screen.queryByRole("link", { name: "Unsafe Market" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Filter to Unsafe Market" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("offer discovery exposes row merchant filter actions that preserve filters and drop cursors", () => {
@@ -848,6 +854,116 @@ test("offer discovery sorts visible offers by merchant name without price labels
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
 });
 
+test("offer discovery summarizes the visible single-currency offer page", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-expensive",
+          product: buildProduct("product-expensive", "Expensive Product"),
+          merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
+          latestPrice: buildLatestPrice("price-expensive", "299.00")
+        }),
+        buildOffer({
+          id: "merchant-product-budget",
+          product: buildProduct("product-budget", "Budget Product"),
+          merchant: buildMerchant("merchant-budget", "Alpha Market"),
+          latestPrice: buildLatestPrice("price-budget", "129.00"),
+          activeCoupons: buildCouponConnection([
+            {
+              cursor: "coupon-budget",
+              node: {
+                code: "SAVE10",
+                description: "Save on the budget offer.",
+                discountType: "PERCENT",
+                discountValue: "10",
+                currency: null,
+                validTo: null,
+                terms: null
+              }
+            }
+          ])
+        }),
+        buildOffer({
+          id: "merchant-product-no-price-1",
+          product: buildProduct("product-no-price-1", "No Price Product One"),
+          merchant: buildMerchant("merchant-no-price-1", "No Price Market One"),
+          latestPrice: null
+        }),
+        buildOffer({
+          id: "merchant-product-no-price-2",
+          product: buildProduct("product-no-price-2", "No Price Product Two"),
+          merchant: buildMerchant("merchant-no-price-2", "No Price Market Two"),
+          latestPrice: null
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+  const offersList = screen.getByRole("list", { name: "Offers" });
+
+  expect(
+    snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(within(snapshot).getByText("Visible offers on this page")).toBeVisible();
+  expect(within(snapshot).getByText("4")).toBeVisible();
+  expect(within(snapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(snapshot).getByText("129.00 USD")).toBeVisible();
+  expect(within(snapshot).getByText("Visible coupon availability")).toBeVisible();
+  expect(within(snapshot).getByText("1 offer with coupons")).toBeVisible();
+  expect(within(snapshot).getByText("Missing latest price")).toBeVisible();
+  expect(within(snapshot).getByText("2 offers")).toBeVisible();
+});
+
+test("offer discovery refuses a lowest-price claim for mixed currencies", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-usd-snapshot",
+          currency: "USD",
+          latestPrice: buildLatestPrice("price-usd-snapshot", "199.00")
+        }),
+        buildOffer({
+          id: "merchant-product-eur-snapshot",
+          currency: "EUR",
+          latestPrice: buildLatestPrice("price-eur-snapshot", "149.00")
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+
+  expect(within(snapshot).getByText("Not comparable across currencies")).toBeVisible();
+  expect(within(snapshot).queryByText("149.00 EUR")).not.toBeInTheDocument();
+});
+
+test("offer discovery reports no visible prices when every renderable row lacks one", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          id: "merchant-product-no-price-snapshot",
+          latestPrice: null
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+
+  expect(within(snapshot).getByText("No visible prices")).toBeVisible();
+  expect(within(snapshot).getByText("1 offer")).toBeVisible();
+});
+
 test("offer discovery renders inactive filter state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -930,6 +1046,7 @@ test("offer discovery renders an empty state", () => {
     "href",
     "/products/detail-product"
   );
+  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("offer discovery falls back to the raw product id when the selected product is missing", () => {

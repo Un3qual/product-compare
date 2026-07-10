@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (visible offer snapshot)
+- Status: done (shopper decision confidence)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after selected-product label context verification
@@ -14,7 +14,7 @@
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
 - Recently completed shopper decision-confidence plan:
   - `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
-- Current ready plan:
+- Recently completed visible-snapshot plan:
   - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
@@ -60,8 +60,7 @@
 
 ### Visible Offer Snapshot
 
-- Status: ready; the earlier path conflict is cleared because the observation
-  row is complete.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`.
 - Owned paths:
@@ -74,6 +73,22 @@
   - `git diff --check`
 - Exit condition: `/offers` shows a page-local snapshot derived only from
   renderable rows and never compares numeric prices across currencies.
+- Implemented:
+  - `/offers` renders a named `Visible offer snapshot` before the offer list
+    whenever at least one safe, renderable row exists.
+  - The snapshot derives visible offer count, lowest comparable visible price,
+    visible coupon availability, and missing latest-price count in one pass over
+    the already loaded renderable rows.
+  - Mixed currencies render `Not comparable across currencies`; pages with no
+    numeric prices render `No visible prices`; empty and unsafe-only pages omit
+    the snapshot.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    - 49 tests, 3 expected failures and 46 passes because the snapshot region
+      was missing.
+  - GREEN: the same focused command - 49 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Offer Discovery Product Label Context Evidence
 
