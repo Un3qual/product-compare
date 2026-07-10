@@ -443,14 +443,6 @@ export function CatalogActiveFilterSummary({
   );
 }
 
-export function CatalogResultGuidance({ resultCount }: { resultCount: number }) {
-  if (resultCount <= 0) {
-    return <p>No matching products</p>;
-  }
-
-  return <p>{resultCount === 1 ? "1 matching product" : `${resultCount} matching products`}</p>;
-}
-
 function selectedNumericFilter(filters: readonly CatalogNumericFilter[], attributeId: string) {
   return filters.find((filter) => filter.attributeId === attributeId);
 }

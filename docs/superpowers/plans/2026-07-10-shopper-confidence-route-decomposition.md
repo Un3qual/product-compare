@@ -774,7 +774,7 @@ Expected: one catalog summary/removal boundary commit.
 - Consumes: result count, active-filter state, and whether any product rows are visible.
 - Produces: `CatalogResultStatus` and `catalogResultStatus()` from `result-status.ts`.
 
-- [ ] **Step 1: Write the failing result-status tests**
+- [x] **Step 1: Write the failing result-status tests**
 
 Create `assets/test/routes/catalog/result-status.test.ts`:
 
@@ -794,6 +794,13 @@ test.each([
     }
   },
   {
+    input: { hasActiveFilters: true, hasVisibleProducts: false, resultCount: 3 },
+    expected: {
+      guidance: "3 matching products",
+      emptyMessage: "No products available yet."
+    }
+  },
+  {
     input: { hasActiveFilters: true, hasVisibleProducts: true, resultCount: 1 },
     expected: { guidance: "1 matching product", emptyMessage: null }
   },
@@ -806,7 +813,7 @@ test.each([
 });
 ```
 
-- [ ] **Step 2: Run the test to verify RED**
+- [x] **Step 2: Run the test to verify RED**
 
 Run:
 
@@ -817,7 +824,7 @@ bun run test -- test/routes/catalog/result-status.test.ts
 
 Expected: FAIL because `catalog/result-status.ts` does not exist.
 
-- [ ] **Step 3: Implement the result-status policy**
+- [x] **Step 3: Implement the result-status policy**
 
 Create `assets/src/routes/catalog/result-status.ts`:
 
@@ -836,24 +843,40 @@ export function catalogResultStatus({
   hasVisibleProducts: boolean;
   resultCount: number;
 }): CatalogResultStatus {
-  const guidance =
-    resultCount <= 0
-      ? "No matching products"
-      : resultCount === 1
-        ? "1 matching product"
-        : `${resultCount} matching products`;
+  return {
+    emptyMessage: catalogEmptyMessage(
+      hasActiveFilters,
+      hasVisibleProducts,
+      resultCount
+    ),
+    guidance: catalogResultGuidance(resultCount)
+  };
+}
 
-  const emptyMessage = hasVisibleProducts
-    ? null
-    : hasActiveFilters
-      ? "No products match these filters."
-      : "No products available yet.";
+function catalogResultGuidance(resultCount: number) {
+  if (resultCount <= 0) {
+    return "No matching products";
+  }
 
-  return { emptyMessage, guidance };
+  return resultCount === 1 ? "1 matching product" : `${resultCount} matching products`;
+}
+
+function catalogEmptyMessage(
+  hasActiveFilters: boolean,
+  hasVisibleProducts: boolean,
+  resultCount: number
+) {
+  if (hasVisibleProducts) {
+    return null;
+  }
+
+  return hasActiveFilters && resultCount <= 0
+    ? "No products match these filters."
+    : "No products available yet.";
 }
 ```
 
-- [ ] **Step 4: Verify the pure result-status test is GREEN**
+- [x] **Step 4: Verify the pure result-status test is GREEN**
 
 Run:
 
@@ -862,9 +885,9 @@ cd assets
 bun run test -- test/routes/catalog/result-status.test.ts
 ```
 
-Expected: PASS with 4 cases.
+Expected: PASS with 5 cases.
 
-- [ ] **Step 5: Migrate browse rendering without changing DOM order**
+- [x] **Step 5: Migrate browse rendering without changing DOM order**
 
 In `assets/src/routes/catalog/browse.tsx`, import `catalogResultStatus`, remove
 `CatalogResultGuidance`, and derive the status once:
@@ -914,7 +937,7 @@ if (products.length === 0) {
 Delete `CatalogResultGuidance` from `filter-form.tsx` and remove
 `hasFilteredEmptyState` from `browse.tsx`.
 
-- [ ] **Step 6: Verify catalog status integration**
+- [x] **Step 6: Verify catalog status integration**
 
 Run:
 
@@ -927,7 +950,7 @@ bun run typecheck
 Expected: PASS with existing result-count and empty-state wording unchanged;
 TypeScript exits 0.
 
-- [ ] **Step 7: Mark Task 3 complete and commit**
+- [x] **Step 7: Mark Task 3 complete and commit**
 
 Check Task 3 boxes in this plan, then run:
 
