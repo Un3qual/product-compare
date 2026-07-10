@@ -16,15 +16,14 @@ Start at `docs/work/index.md` for live dispatch status and ownership. The
 2026-06-29 usable-product batch, the product filtering and in-depth comparison
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
-completed. The 2026-07-08 product-facing curation batch and catalog result
-guidance are also complete, and the live queue now has three shopper
-decision-confidence rows.
+completed. The 2026-07-08 product-facing curation batch, catalog result
+guidance, and offer observation context are also complete. The live queue now
+has the two remaining validated shopper decision-confidence rows.
 
 Shopper decision confidence was selected on 2026-07-09. Deferred
 ingestion/eBay/operator candidates remain deferred or rejected. The active
 implementation plans are:
 
-- `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
 - `docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`
 - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 
@@ -43,9 +42,10 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- No planned follow-up groups are currently listed outside the three live ready
-  rows and the deferred candidate pool. Start at `docs/work/index.md` for live
-  dispatch status.
+- No planned follow-up groups are currently listed outside the two live ready
+  rows and the deferred candidate pool. The below-target slate contains every
+  validated row; deferred and rejected work is not queue filler. Start at
+  `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive
 

@@ -302,8 +302,18 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
   expect(offerContent.getByText("199.99 USD")).toBeVisible();
+  const offerCheckedAt = offerContent.getByText("2026-06-02", { selector: "time" });
+  const priceObservedAt = offerContent.getByText("2026-06-01", { selector: "time" });
+  const couponValidTo = offerContent.getByText("2026-06-30", { selector: "time" });
+
+  expect(offerCheckedAt).toHaveAttribute("datetime", "2026-06-02T12:00:00Z");
+  expect(offerCheckedAt.parentElement).toHaveTextContent("Offer checked 2026-06-02");
+  expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
+  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(offerContent.getByText("SAVE20")).toBeVisible();
   expect(offerContent.getByText("20.00 USD")).toBeVisible();
+  expect(couponValidTo).toHaveAttribute("datetime", "2026-06-30T23:59:59Z");
+  expect(couponValidTo.parentElement).toHaveTextContent("Valid through 2026-06-30");
   expect(offerContent.getByText("2026-05-30")).toBeVisible();
   expect(offerContent.getByText("189.99 USD")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
@@ -314,6 +324,45 @@ test("offer discovery renders ready offer rows", () => {
     expect.anything(),
     OFFER_DISCOVERY_QUERY_REF
   );
+});
+
+test("offer discovery omits unsupported observation and coupon validity claims", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      offers: [
+        buildOffer({
+          lastSeenAt: null,
+          latestPrice: {
+            id: "price-invalid-date",
+            price: "199.99",
+            observedAt: "not-a-date"
+          },
+          activeCoupons: buildCouponConnection([
+            {
+              cursor: "coupon-invalid-date",
+              node: {
+                code: "SAVE20",
+                description: "Save on the detail product.",
+                discountType: "AMOUNT",
+                discountValue: "20.00",
+                currency: "USD",
+                validTo: "not-a-date",
+                terms: "Online orders only."
+              }
+            }
+          ])
+        })
+      ]
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByText("199.99 USD")).toBeVisible();
+  expect(screen.getByText("SAVE20")).toBeVisible();
+  expect(screen.queryByText(/^Offer checked/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^Price observed/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^Valid through/)).not.toBeInTheDocument();
 });
 
 test("offer discovery keeps offer actions when merchant metadata is unavailable", () => {
@@ -1068,6 +1117,7 @@ function buildOffer(overrides: Partial<OfferNode> = {}): OfferNode {
     id: "merchant-product-1",
     url: "https://merchant.example.com/detail-product",
     currency: "USD",
+    lastSeenAt: "2026-06-02T12:00:00Z",
     isActive: true,
     merchant: buildMerchant("merchant-1", "Acme Market"),
     product: buildProduct("product-1", "Detail Product"),
@@ -1115,6 +1165,7 @@ function buildOfferDiscoveryData({
       id: "merchant-product-1",
       url: "https://merchant.example.com/detail-product",
       currency: "USD",
+      lastSeenAt: "2026-06-02T12:00:00Z",
       isActive: true,
       merchant: {
         id: "merchant-1",
@@ -1141,7 +1192,7 @@ function buildOfferDiscoveryData({
               discountType: "AMOUNT",
               discountValue: "20.00",
               currency: "USD",
-              validTo: null,
+              validTo: "2026-06-30T23:59:59Z",
               terms: "Online orders only."
             }
           }
@@ -1228,6 +1279,7 @@ type OfferNode = {
   id: string;
   url: string;
   currency: string;
+  lastSeenAt?: string | null;
   isActive: boolean;
   merchant: {
     id: string;

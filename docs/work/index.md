@@ -73,39 +73,13 @@ offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
 Shopper decision confidence was selected as the next product-facing direction
-on 2026-07-09. Catalog result guidance is complete; three source-backed rows
-remain ready for offer observation and coupon validity, product-detail price
-observation, and a visible-page offer snapshot. The batch uses current app data
-and does not reopen deferred ingestion, eBay, operator, credential, scraping,
-or CSV export work.
+on 2026-07-09. Catalog result guidance plus offer observation and coupon
+validity are complete. The two remaining validated rows cover product-detail
+price observation and a visible-page offer snapshot. The below-target slate
+contains every validated row in the approved batch; other catalogued work is
+deferred or rejected and cannot be used as filler.
 
 ## Ready Work
-
-Status: ready
-Lane: frontend offer discovery
-Active plan:
-`docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
-Next action: render supported offer-check, latest-price observation, and coupon
-validity dates from current GraphQL fields without inventing freshness labels.
-Owned paths:
-
-- `assets/schema.graphql`
-- `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
-- `assets/src/routes/offers/index.tsx`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Verification:
-
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: visible `/offers` rows show only supported observation and
-coupon-validity dates, and missing or malformed dates retain existing content
-without unsupported freshness claims.
 
 Status: ready
 Lane: frontend product detail
@@ -151,8 +125,8 @@ Verification:
 
 Exit condition: `/offers` shows a clearly page-local snapshot that matches
 renderable rows, avoids cross-currency price comparisons, and preserves current
-offer-list behavior. This row cannot execute concurrently with the higher-ranked
-offer observation row because their owned paths overlap.
+offer-list behavior. The earlier ownership conflict is cleared because the
+offer observation row is complete.
 
 ## Needs Decision Work
 
@@ -169,6 +143,12 @@ guidance: `/products` now shows the complete metadata-backed result count and
 scoped active-filter removal links that preserve unrelated filters, page size,
 and compare selections while dropping stale cursors. Focused verification
 passed 58 tests plus TypeScript and diff checks.
+
+The same batch completed offer observation and coupon validity context:
+`/offers` now shows supported offer-check, latest-price observation, and coupon
+expiration dates with semantic time markup while omitting missing or malformed
+date claims. Relay generation, 46 focused tests, TypeScript, and diff checks
+passed.
 
 The 2026-07-08 product-facing curation batch completed these work items:
 

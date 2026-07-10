@@ -192,6 +192,7 @@ function OfferListItem({
           merchantUrl={offer.url}
         />
         <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+        <OfferObservationContext offer={offer} />
 
         {highlightLabel ? <p>{highlightLabel}</p> : null}
         <p>{offerLatestPriceLabel(offer)}</p>
@@ -350,6 +351,30 @@ function OfferMerchantDomain({ domain }: { domain: string | null }) {
   return <p>{domain}</p>;
 }
 
+function OfferObservationContext({ offer }: { offer: OfferNode }) {
+  const offerCheckedAt = dateContext(offer.lastSeenAt);
+  const priceObservedAt = dateContext(offer.latestPrice?.observedAt);
+
+  if (!offerCheckedAt && !priceObservedAt) {
+    return null;
+  }
+
+  return (
+    <>
+      {offerCheckedAt ? (
+        <p>
+          Offer checked <time dateTime={offerCheckedAt.dateTime}>{offerCheckedAt.label}</time>
+        </p>
+      ) : null}
+      {priceObservedAt ? (
+        <p>
+          Price observed <time dateTime={priceObservedAt.dateTime}>{priceObservedAt.label}</time>
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function offerProductName(product: OfferNode["product"]) {
   return product?.name ?? "Unknown product";
 }
@@ -438,12 +463,18 @@ function CouponSummary({
       <ul aria-label={`${merchantName} active coupons`}>
         {couponEdges.map(({ cursor, node: coupon }) => {
           const couponDiscountLabel = discountLabel(coupon);
+          const couponValidTo = dateContext(coupon.validTo);
 
           return (
             <li key={cursor}>
               <strong>{coupon.code}</strong>
               {coupon.description ? <p>{coupon.description}</p> : null}
               {couponDiscountLabel ? <p>{couponDiscountLabel}</p> : null}
+              {couponValidTo ? (
+                <p>
+                  Valid through <time dateTime={couponValidTo.dateTime}>{couponValidTo.label}</time>
+                </p>
+              ) : null}
               {coupon.terms ? <p>{coupon.terms}</p> : null}
             </li>
           );
@@ -686,6 +717,12 @@ function dateLabel(value: string | null | undefined) {
   }
 
   return value.slice(0, 10);
+}
+
+function dateContext(value: string | null | undefined) {
+  const label = dateLabel(value);
+
+  return value && label ? { dateTime: value, label } : null;
 }
 
 function discountLabel(coupon: CouponNode) {

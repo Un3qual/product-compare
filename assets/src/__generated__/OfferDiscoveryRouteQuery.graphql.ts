@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4ab66c7fc9d5b86b45e6028b6823da56>>
+ * @generated SignedSource<<55c2ec32e0b6bb258257f0967a555e55>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -46,6 +46,7 @@ export type OfferDiscoveryRouteQuery$data = {
         readonly currency: string;
         readonly id: string;
         readonly isActive: boolean;
+        readonly lastSeenAt: any | null | undefined;
         readonly latestPrice: {
           readonly id: string;
           readonly observedAt: any;
@@ -253,6 +254,13 @@ v12 = {
               "storageKey": null
             },
             (v8/*: any*/),
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "lastSeenAt",
+              "storageKey": null
+            },
             {
               "alias": null,
               "args": null,
@@ -530,16 +538,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "30ca03ef306f446828a88fba9351f23b",
+    "cacheID": "028027667f3b830ee162abc6298db47a",
     "id": null,
     "metadata": {},
     "name": "OfferDiscoveryRouteQuery",
     "operationKind": "query",
-    "text": "query OfferDiscoveryRouteQuery(\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(input: $input) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        isActive\n        merchant {\n          id\n          name\n          domain\n        }\n        product {\n          id\n          name\n          slug\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n}\n"
+    "text": "query OfferDiscoveryRouteQuery(\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(input: $input) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        lastSeenAt\n        isActive\n        merchant {\n          id\n          name\n          domain\n        }\n        product {\n          id\n          name\n          slug\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "cf295e1c5b6aeea3addbdd4e6455e6e2";
+(node as any).hash = "bb1a8a89d7f5c01075a8d4341e0d56ed";
 
 export default node;

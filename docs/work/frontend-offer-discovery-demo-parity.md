@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (shopper decision confidence, serialized offer rows)
+- Status: ready (visible offer snapshot)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after selected-product label context verification
@@ -12,17 +12,18 @@
   - `docs/plans/2026-06-29-offer-discovery-product-context-implementation-plan.md`
 - Recently completed implementation plan:
   - `docs/plans/2026-06-27-project-offer-discovery-filter-controls-implementation-plan.md`
-- Current ready plans:
+- Recently completed shopper decision-confidence plan:
   - `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`
+- Current ready plan:
   - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
 
 ## Ready Shopper Decision Confidence Batches
 
-### Offer Observation And Coupon Validity
+### Offer Observation And Coupon Validity Evidence
 
-- Status: ready; higher-ranked offer-discovery row.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-09-offer-observation-and-coupon-validity-implementation-plan.md`.
 - Owned paths:
@@ -39,11 +40,28 @@
   - `git diff --check`
 - Exit condition: visible offers show supported offer, price, and coupon date
   context without freshness thresholds or regressions.
+- Implemented:
+  - Refreshed the frontend SDL and Relay operation for the backend's existing
+    nullable `MerchantProduct.lastSeenAt` field.
+  - Visible offer rows render semantic `Offer checked` and `Price observed`
+    calendar dates only for valid timestamps.
+  - Coupon rows render semantic `Valid through` dates only for valid `validTo`
+    values; missing or malformed dates keep all existing offer, price, coupon,
+    history, merchant, filter, pagination, and tracked-click content.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    - 46 tests, 1 expected failure and 45 passes because observation/validity
+      time elements were missing.
+  - GREEN: the same focused command - 46 tests, 0 failures.
+  - `cd assets && bun run relay` - compiled 32 reader, 31 normalization, and 31
+    operation text documents.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ### Visible Offer Snapshot
 
-- Status: ready; path-conflicts with the higher-ranked offer row and must wait
-  while that row is active.
+- Status: ready; the earlier path conflict is cleared because the observation
+  row is complete.
 - Plan:
   `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`.
 - Owned paths:
