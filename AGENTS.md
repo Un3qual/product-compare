@@ -9,7 +9,17 @@
 - Treat `docs/work/*.md` as lane context and lane-local status evidence, not as a second queue.
 - Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links one as the active plan for a `ready` row.
 - Treat `docs/plans/NOW.md` as a compatibility pointer back to `docs/work/index.md`, not as a separate ledger.
-- If no `ready` row exists, do not search historical plans for work. Report or resolve the highest-ranked `needs_decision` or `blocked` row instead.
+- Maintain a rolling slate of three to five `ready` rows whenever validated work
+  exists.
+- At each dispatch boundary, if fewer than three `ready` rows remain, the
+  coordinator replenishes the slate in one pass from source-backed candidates
+  or records the decision, blocker, or candidate shortage that prevents it.
+- More than five `ready` rows requires an explicitly requested larger execution
+  batch; never create filler work to meet the target.
+- Coordinators may use `docs/plans/INDEX.md` as the candidate pool only during
+  replenishment; workers must not treat it as a second queue.
+- A worker claims the highest-ranked `ready` row that does not conflict with an
+  active row. Other executable rows remain `ready`.
 - Verify the selected batch against the codebase before assuming it is still unimplemented.
 - Update the relevant `docs/work/*.md` file when lane-local batch status or blockers change.
 - In parallel mode, a worker may edit only files in its row's `Target Paths` plus its lane work doc.

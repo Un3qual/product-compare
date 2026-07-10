@@ -8,13 +8,22 @@ For the operating rules, prompt templates, and handoff format, read
 ## Queue Rules
 
 - A worker should execute only rows with `Status: ready`.
-- If no `ready` row exists, do not scan historical plans looking for work.
-- `needs_decision` rows are coordinator work: make one decision, then promote exactly
-  one concrete `ready` row or one explicitly requested parallel batch of independent
-  ready rows, remove the decision row so the selected `blocked` row becomes
-  highest-ranked, or leave the missing decision named.
+- The target is three to five `ready` rows whenever validated work exists.
+- When fewer than three remain at a dispatch boundary, the coordinator
+  replenishes the complete slate in one pass.
+- A below-target slate must name the decision, blocker, or shortage of validated
+  candidates preventing replenishment.
+- More than five `ready` rows requires an explicitly requested larger execution
+  batch.
+- `needs_decision` rows are coordinator work: resolve the decision, then promote
+  enough source-backed work to restore the rolling slate, or leave the missing
+  decision named.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
+- Workers claim the highest-ranked compatible `ready` row and leave other
+  executable rows available.
+- Dependent, deferred, rejected, blocked, and unverified work cannot be used as
+  queue-depth filler.
 - `active` rows are already owned by a named worker or branch. Do not start a
   second worker on them unless the coordinator reassigns the row.
 - Completed lanes do not stay in this queue. Their history remains in the lane
@@ -192,10 +201,12 @@ Coordinator:
 Start at docs/work/index.md.
 
 Read docs/work/operating-model.md.
-Process the highest-ranked non-ready row.
-Make exactly one decision or unblock exactly one blocker.
+Process the highest-ranked non-ready row when a decision or blocker exists.
+Otherwise curate source-backed candidates from docs/plans/INDEX.md and the directly affected lane docs.
+When fewer than three ready rows remain, replenish the slate to three to five ready rows in one pass.
+Validate every promoted row's owned paths, verification, prerequisites, and exit condition.
 Update only the live queue plus the directly affected lane or plan docs.
-End with either one ready row or a clearly named blocker.
+End with three to five ready rows, or every valid row plus a clearly named reason the slate is smaller.
 ```
 
 Worker:
@@ -204,7 +215,8 @@ Worker:
 Start at docs/work/index.md.
 
 Read docs/work/operating-model.md.
-Execute only the highest-ranked row whose Status is ready.
+Execute only the highest-ranked row whose Status is ready and that does not conflict with an active row.
+Leave other ready rows unchanged.
 Open only that row's Work Doc, linked active plan if any, Target Paths, and immediate tests.
 Update the lane work doc as the batch changes.
 Do not edit coordinator-owned docs unless the ready row names them as Target Paths.
