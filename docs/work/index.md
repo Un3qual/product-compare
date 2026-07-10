@@ -73,38 +73,13 @@ offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
 Shopper decision confidence was selected as the next product-facing direction
-on 2026-07-09. Four source-backed rows are ready: catalog result guidance,
-offer observation and coupon validity, product-detail price observation, and a
-visible-page offer snapshot. The batch uses current app data and does not reopen
-deferred ingestion, eBay, operator, credential, scraping, or CSV export work.
+on 2026-07-09. Catalog result guidance is complete; three source-backed rows
+remain ready for offer observation and coupon validity, product-detail price
+observation, and a visible-page offer snapshot. The batch uses current app data
+and does not reopen deferred ingestion, eBay, operator, credential, scraping,
+or CSV export work.
 
 ## Ready Work
-
-Status: ready
-Lane: frontend catalog browse
-Active plan:
-`docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`
-Next action: show the complete matching-product count and add scoped removal
-links for every active `/products` filter while preserving unrelated filters,
-page size, and compare slugs.
-Owned paths:
-
-- `assets/src/routes/catalog/filters.ts`
-- `assets/src/routes/catalog/paths.ts`
-- `assets/src/routes/catalog/filter-form.tsx`
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-browse.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: `/products` shows the metadata-backed complete result count,
-and each active filter can be removed without losing unrelated state or
-preserving a stale cursor.
 
 Status: ready
 Lane: frontend offer discovery
@@ -188,6 +163,12 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-09 shopper decision-confidence batch completed catalog result
+guidance: `/products` now shows the complete metadata-backed result count and
+scoped active-filter removal links that preserve unrelated filters, page size,
+and compare selections while dropping stale cursors. Focused verification
+passed 58 tests plus TypeScript and diff checks.
 
 The 2026-07-08 product-facing curation batch completed these work items:
 

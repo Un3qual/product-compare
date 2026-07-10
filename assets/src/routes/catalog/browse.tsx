@@ -21,7 +21,11 @@ import {
   hasActiveCatalogFilters,
   type CatalogFilters
 } from "./filters";
-import { CatalogActiveFilterSummary, CatalogFilterForm } from "./filter-form";
+import {
+  CatalogActiveFilterSummary,
+  CatalogFilterForm,
+  CatalogResultGuidance
+} from "./filter-form";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   catalogBrowseFirstPagePath,
@@ -164,6 +168,7 @@ function BrowseProducts({
     ) : null;
   const filterControls = (
     <>
+      <CatalogResultGuidance resultCount={filterMetadata.resultCount} />
       <CatalogFilterForm
         compareSlugs={selectedCompareSlugs}
         key={filterFormKey}

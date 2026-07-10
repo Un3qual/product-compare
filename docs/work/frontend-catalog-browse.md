@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (catalog result guidance and removable filters)
+- Status: done (catalog result guidance and removable filters)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after catalog search and sort verification
@@ -17,7 +17,7 @@
 - Planned faceted filtering follow-up:
   - `docs/plans/2026-06-30-product-filter-metadata-and-facets-implementation-plan.md`
   - `docs/plans/2026-06-30-catalog-faceted-filtering-ui-implementation-plan.md`
-- Current ready plan:
+- Recently completed shopper decision-confidence plan:
   - `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`
 - Definition of done:
   - The Bun frontend exposes a `/products` route with SSR-safe rendering.
@@ -25,9 +25,9 @@
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
-## Ready Shopper Decision Confidence Batch
+## Catalog Result Guidance And Removable Filters Evidence
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`.
 - Owned paths:
@@ -44,6 +44,20 @@
 - Exit condition: `/products` shows the complete metadata-backed result count
   and scoped filter-removal links that preserve unrelated filter, page-size,
   and compare state while dropping stale cursors.
+- Implemented:
+  - `/products` shows `No matching products`, `1 matching product`, or a plural
+    match count from `productFilterMetadata.resultCount` on populated and empty
+    pages.
+  - Active search, sort, type, use-case, numeric, boolean, and enum summaries
+    now expose scoped removal links through the existing first-page serializer.
+  - Removal keeps unrelated normalized filters, page size, and repeated compare
+    slugs while omitting stale `after` cursors.
+- Completed verification:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    - 58 tests, 4 expected failures and 54 passes for missing count/removal UI.
+  - GREEN: the same focused command - 58 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Catalog Search And Sort Evidence
 

@@ -421,7 +421,17 @@ export function CatalogActiveFilterSummary({
       {summaryItems.length > 0 ? (
         <ul aria-label="Active filters">
           {summaryItems.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item.key}>
+              <Link
+                to={catalogBrowseFirstPagePath(
+                  item.remainingFilters,
+                  pageSize,
+                  compareSlugs
+                )}
+              >
+                Remove {item.label}
+              </Link>
+            </li>
           ))}
         </ul>
       ) : null}
@@ -430,6 +440,14 @@ export function CatalogActiveFilterSummary({
       </Link>
     </section>
   );
+}
+
+export function CatalogResultGuidance({ resultCount }: { resultCount: number }) {
+  if (resultCount <= 0) {
+    return <p>No matching products</p>;
+  }
+
+  return <p>{resultCount === 1 ? "1 matching product" : `${resultCount} matching products`}</p>;
 }
 
 function selectedNumericFilter(filters: readonly CatalogNumericFilter[], attributeId: string) {

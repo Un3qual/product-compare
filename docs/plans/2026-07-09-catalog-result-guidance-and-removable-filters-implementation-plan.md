@@ -5,8 +5,8 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** ready. This is the highest-ranked row in the shopper decision
-confidence queue.
+**Status:** completed on 2026-07-09. Completion evidence lives in
+`docs/work/frontend-catalog-browse.md`.
 
 **Goal:** Show the complete filtered product count and let shoppers remove one
 active catalog filter without losing unrelated filter, page-size, or compare
@@ -51,23 +51,23 @@ existing catalog path serializer.
 
 ## Batches
 
-- [ ] **1. Add failing route coverage.** Cover zero, one, and plural matching
+- [x] **1. Add failing route coverage.** Cover zero, one, and plural matching
   result counts plus removal hrefs for search, non-default sort, type with
   descendants, one of multiple use cases, numeric bounds, boolean, and enum
   filters. Assert unrelated filters, `first`, and repeated `slug` values remain
   while `after` is absent.
-- [ ] **2. Add structured removal state.** Replace string-only summary items in
+- [x] **2. Add structured removal state.** Replace string-only summary items in
   `filters.ts` with stable keyed items and exact remaining-filter copies. Keep
   filter normalization and unique enum semantics unchanged.
-- [ ] **3. Render result guidance and removal links.** Show
+- [x] **3. Render result guidance and removal links.** Show
   `No matching products`, `1 matching product`, or `<n> matching products` from
   metadata and label links as `Remove <summary label>`. Retain `Clear filters`
   as the all-at-once action.
-- [ ] **4. Verify and record completion.** Run the focused route suite and
+- [x] **4. Verify and record completion.** Run the focused route suite and
   TypeScript check, then replace the ready section in
   `docs/work/frontend-catalog-browse.md` with red/green evidence and the final
   behavior summary.
-- [ ] **5. Commit the milestone.** Commit code, tests, generated behavior, and
+- [x] **5. Commit the milestone.** Commit code, tests, generated behavior, and
   lane evidence together with `feat: add catalog result guidance`.
 
 ## Verification
