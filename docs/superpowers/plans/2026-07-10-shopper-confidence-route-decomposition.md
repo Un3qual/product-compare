@@ -381,7 +381,7 @@ Expected: one behavior-preserving shared-offer-policy commit.
 - Consumes: `CatalogFilters`, `CatalogFilterMetadata`, and `catalogProductSortLabel` from `filters.ts`.
 - Produces: `CatalogFilterRemoval`, `CatalogFilterSummaryItem`, `catalogFilterSummaryItems()`, and `catalogFiltersWithout()` from `filter-summary.ts`.
 
-- [ ] **Step 1: Write failing summary/removal tests**
+- [x] **Step 1: Write failing summary/removal tests**
 
 Create `assets/test/routes/catalog/filter-summary.test.ts`:
 
@@ -471,7 +471,7 @@ test.each<[CatalogFilterRemoval, Partial<CatalogFilters>]>([
 });
 ```
 
-- [ ] **Step 2: Run the test to verify RED**
+- [x] **Step 2: Run the test to verify RED**
 
 Run:
 
@@ -482,7 +482,7 @@ bun run test -- test/routes/catalog/filter-summary.test.ts
 
 Expected: FAIL because `catalog/filter-summary.ts` does not exist.
 
-- [ ] **Step 3: Implement typed removal policy**
+- [x] **Step 3: Implement typed removal policy**
 
 Create `assets/src/routes/catalog/filter-summary.ts` using the complete exports,
 removal implementation, and label helpers below:
@@ -689,7 +689,7 @@ function formatNumericValue(
 }
 ```
 
-- [ ] **Step 4: Verify the pure catalog test is GREEN**
+- [x] **Step 4: Verify the pure catalog test is GREEN**
 
 Run:
 
@@ -700,7 +700,7 @@ bun run test -- test/routes/catalog/filter-summary.test.ts
 
 Expected: PASS with 8 tests.
 
-- [ ] **Step 5: Migrate the catalog filter component**
+- [x] **Step 5: Migrate the catalog filter component**
 
 In `assets/src/routes/catalog/filter-form.tsx`, import from the new module:
 
@@ -735,7 +735,7 @@ Keep the early return for zero summary items and remove the now-redundant
 `summaryItems.length > 0` JSX conditional. Delete the summary item type and all
 summary/removal helper implementations from `filters.ts`.
 
-- [ ] **Step 6: Verify catalog integration**
+- [x] **Step 6: Verify catalog integration**
 
 Run:
 
@@ -748,7 +748,7 @@ bun run typecheck
 Expected: PASS with the pure summary suite plus the complete catalog route
 suite; TypeScript exits 0.
 
-- [ ] **Step 7: Mark Task 2 complete and commit**
+- [x] **Step 7: Mark Task 2 complete and commit**
 
 Check Task 2 boxes in this plan, then run:
 
