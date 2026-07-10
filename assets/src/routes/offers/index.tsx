@@ -10,6 +10,10 @@ import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-val
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
 import {
+  formatCouponAvailabilityCount,
+  formatOfferCount
+} from "../offer-formatting";
+import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
   type OfferDiscoveryLoaderData,
@@ -257,14 +261,6 @@ function visibleLowestPriceLabel(summary: VisibleOfferSnapshotSummary) {
   }
 
   return summary.lowestVisiblePriceText ?? "No visible prices";
-}
-
-function formatCouponAvailabilityCount(count: number) {
-  return `${formatOfferCount(count)} with coupons`;
-}
-
-function formatOfferCount(count: number) {
-  return `${count} ${count === 1 ? "offer" : "offers"}`;
 }
 
 function OfferListItem({

@@ -20,6 +20,10 @@ import { CompareSelectionTray } from "../compare/selection-tray";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
+import {
+  formatCouponAvailabilityCount,
+  formatOfferCount
+} from "../offer-formatting";
 import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
@@ -695,14 +699,6 @@ function formatFiniteNumberText(value: unknown) {
   }
 
   return decimalStringToNumber(trimmedValue) !== null ? trimmedValue : null;
-}
-
-function formatCouponAvailabilityCount(count: number) {
-  return `${formatOfferCount(count)} with coupons`;
-}
-
-function formatOfferCount(count: number) {
-  return `${count} ${count === 1 ? "offer" : "offers"}`;
 }
 
 function normalizeOfferUrl(rawUrl: unknown): string | null {
