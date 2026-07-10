@@ -551,9 +551,11 @@ test("browse loader forwards the requested pagination cursor", async () => {
 test("browse loader passes URL filters to the product and metadata queries", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/products?typeTaxonId=relay-type-taxons%2Fdisplay&includeTypeDescendants=1&useCaseTaxonId=relay-use-case-gaming&useCaseTaxonId=relay-use-case-office&numeric.relay-attribute-price.min=10.50&numeric.relay-attribute-price.max=99.99&numeric.relay-attribute-weight.max=4.5&boolean.relay-attribute-wireless=true&enum.relay-attribute-color=relay-enum-red&enum.relay-attribute-color=relay-enum-blue"
+    "https://app.example.com/products?q=%20OLED%20&sort=BRAND_NAME_ASC&typeTaxonId=relay-type-taxons%2Fdisplay&includeTypeDescendants=1&useCaseTaxonId=relay-use-case-gaming&useCaseTaxonId=relay-use-case-office&numeric.relay-attribute-price.min=10.50&numeric.relay-attribute-price.max=99.99&numeric.relay-attribute-weight.max=4.5&boolean.relay-attribute-wireless=true&enum.relay-attribute-color=relay-enum-red&enum.relay-attribute-color=relay-enum-blue"
   );
   const expectedFilters = {
+    query: "OLED",
+    sort: "BRAND_NAME_ASC" as const,
     primaryTypeTaxonId: "relay-type-taxons/display",
     includeTypeDescendants: true,
     useCaseTaxonIds: ["relay-use-case-gaming", "relay-use-case-office"],
@@ -606,6 +608,68 @@ test("browse loader passes URL filters to the product and metadata queries", asy
     environment,
     expect.anything(),
     { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader bounds search text and drops unsupported sort values", async () => {
+  const environment = createRelayEnvironment();
+  const boundedQuery = "a".repeat(100);
+  const request = new Request(
+    `https://app.example.com/products?q=${"a".repeat(120)}&sort=POPULARITY`
+  );
+  const expectedFilters = { query: boundedQuery };
+
+  mockSuccessfulBrowseLoaderFetches({
+    productDescriptor: browseQueryDescriptorFromVariables({
+      first: 12,
+      filters: expectedFilters
+    }),
+    metadataDescriptor: filterMetadataQueryDescriptorFromVariables({
+      filters: expectedFilters
+    })
+  });
+
+  await browseLoader(buildBrowseLoaderArgs({ environment, request }));
+
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { filters: expectedFilters },
+    { signal: request.signal }
+  );
+});
+
+test("browse loader normalizes the default catalog sort from the URL", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?sort=ID_ASC");
+
+  mockSuccessfulBrowseLoaderFetches();
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual(readyBrowseLoaderData());
+
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    {},
     { signal: request.signal }
   );
 });
@@ -1150,6 +1214,10 @@ test("renders metadata-backed catalog filter controls", () => {
 
   const filterForm = screen.getByRole("form", { name: "Filter products" });
 
+  expect(within(filterForm).getByRole("searchbox", { name: "Search products" })).toHaveValue("");
+  expect(within(filterForm).getByRole("combobox", { name: "Sort products" })).toHaveValue(
+    "ID_ASC"
+  );
   expect(within(filterForm).getByRole("combobox", { name: "Product type" })).toHaveValue("");
   expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).not.toBeChecked();
   expect(within(filterForm).getByRole("checkbox", { name: "Include subcategories" })).toBeDisabled();
@@ -1161,10 +1229,25 @@ test("renders metadata-backed catalog filter controls", () => {
   expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
 });
 
+test("omits the default catalog sort until an explicit sort is selected", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+
+  fireEvent.change(sortSelect, { target: { value: "NEWEST" } });
+
+  expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
+});
+
 test("renders selected catalog filters with an active summary and clear link", () => {
   renderBrowseRouteWithRelayData({
     loaderData: readyBrowseLoaderData({
       filters: {
+        query: "oled",
+        sort: "BRAND_NAME_ASC",
         typeTaxonId: "type-laptops",
         includeTypeDescendants: true,
         useCaseTaxonIds: ["use-gaming"],
@@ -1192,6 +1275,8 @@ test("renders selected catalog filters with an active summary and clear link", (
       query: browseQueryDescriptorFromVariables({
         first: 24,
         filters: {
+          query: "oled",
+          sort: "BRAND_NAME_ASC",
           primaryTypeTaxonId: "type-laptops",
           includeTypeDescendants: true,
           useCaseTaxonIds: ["use-gaming"],
@@ -1218,6 +1303,8 @@ test("renders selected catalog filters with an active summary and clear link", (
       }),
       metadataQuery: filterMetadataQueryDescriptorFromVariables({
         filters: {
+          query: "oled",
+          sort: "BRAND_NAME_ASC",
           primaryTypeTaxonId: "type-laptops",
           includeTypeDescendants: true,
           useCaseTaxonIds: ["use-gaming"],
@@ -1248,6 +1335,12 @@ test("renders selected catalog filters with an active summary and clear link", (
 
   const filterForm = screen.getByRole("form", { name: "Filter products" });
 
+  expect(within(filterForm).getByRole("searchbox", { name: "Search products" })).toHaveValue(
+    "oled"
+  );
+  expect(within(filterForm).getByRole("combobox", { name: "Sort products" })).toHaveValue(
+    "BRAND_NAME_ASC"
+  );
   expect(within(filterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
     "type-laptops"
   );
@@ -1263,6 +1356,8 @@ test("renders selected catalog filters with an active summary and clear link", (
 
   const summary = screen.getByRole("list", { name: "Active filters" });
 
+  expect(within(summary).getByText('Search: "oled"')).toBeInTheDocument();
+  expect(within(summary).getByText("Sort: Brand name")).toBeInTheDocument();
   expect(within(summary).getByText("Type: Laptops and descendants")).toBeInTheDocument();
   expect(within(summary).getByText("Use case: Gaming")).toBeInTheDocument();
   expect(within(summary).getByText("Refresh Rate: 120 Hz to 240 Hz")).toBeInTheDocument();
@@ -1330,6 +1425,30 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
     "detail-product",
     "second-product"
   ]);
+});
+
+test("omits the default catalog sort from rendered compare links", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?sort=ID_ASC&slug=selected-product"],
+    productData: buildBrowseProductsResponse({
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        }
+      ]
+    })
+  });
+
+  expect(screen.queryByText("Sort: Catalog order")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "Remove selected-product from selection" })
+  ).toHaveAttribute("href", "/products");
+  expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
+    "href",
+    "/products?slug=selected-product&slug=catalog-first"
+  );
 });
 
 test("clamps URL-driven compare selections before rendering browse controls", () => {
@@ -1701,6 +1820,73 @@ test("serializes only one enum option per enum attribute in browse paths", () =>
     )
   ).toBe(
     "/products?first=24&enum.attr-color=enum-blue&enum.attr-size=enum-large&after=cursor-next-page"
+  );
+});
+
+test("preserves search, sort, pagination, and compare selection in browse paths", () => {
+  expect(
+    catalogBrowseNextPagePath(
+      {
+        query: "oled display",
+        sort: "BRAND_NAME_ASC",
+        useCaseTaxonIds: [],
+        numeric: [],
+        booleans: [],
+        enums: []
+      },
+      24,
+      "cursor-next-page",
+      ["first-product", "second-product"]
+    )
+  ).toBe(
+    "/products?first=24&q=oled+display&sort=BRAND_NAME_ASC&after=cursor-next-page&slug=first-product&slug=second-product"
+  );
+});
+
+test("preserves search and sort through rendered pagination and compare links", () => {
+  const activeFilters = {
+    query: "oled",
+    sort: "NEWEST",
+    useCaseTaxonIds: [],
+    numeric: [],
+    booleans: [],
+    enums: []
+  };
+  const productFiltersInput = { query: "oled", sort: "NEWEST" as const };
+
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?first=24&q=oled&sort=NEWEST&slug=selected-product"],
+    loaderData: readyBrowseLoaderData({
+      filters: activeFilters,
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24,
+        filters: productFiltersInput
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: productFiltersInput
+      })
+    }),
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        }
+      ]
+    })
+  });
+
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=NEWEST&after=cursor-next-page&slug=selected-product"
+  );
+  expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&sort=NEWEST&slug=selected-product&slug=catalog-first"
   );
 });
 

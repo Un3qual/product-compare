@@ -14,6 +14,15 @@ const SORT_OPTIONS: Array<{ label: string; value: OfferDiscoverySort }> = [
   { label: "Merchant name", value: "merchant_name" }
 ];
 
+export interface OfferDiscoveryProductContext {
+  brand: {
+    name: string;
+  } | null;
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
   return (
     <form
@@ -84,17 +93,30 @@ function offerDiscoveryFilterFormKey(filters: OfferDiscoveryFilters) {
   ]);
 }
 
-export function OfferDiscoveryFilterSummary({ filters }: { filters: OfferDiscoveryFilters }) {
+export function OfferDiscoveryFilterSummary({
+  filters,
+  selectedProduct = null
+}: {
+  filters: OfferDiscoveryFilters;
+  selectedProduct?: OfferDiscoveryProductContext | null;
+}) {
   return (
     <section aria-label="Active offer filters">
       <dl>
-        {offerDiscoveryFilterSummaryItems(filters).map(({ label, value }) => (
+        {offerDiscoveryFilterSummaryItems(filters, selectedProduct).map(({ label, value }) => (
           <Fragment key={label}>
             <dt>{label}</dt>
             <dd>{value}</dd>
           </Fragment>
         ))}
       </dl>
+      {selectedProduct ? (
+        <p>
+          <Link to={`/products/${encodeURIComponent(selectedProduct.slug)}`}>
+            View product details
+          </Link>
+        </p>
+      ) : null}
       {hasNonDefaultOfferFilters(filters) ? (
         <p>
           <Link to={offerDiscoveryResetPath(filters)}>Reset filters</Link>
@@ -109,12 +131,12 @@ export function OfferDiscoveryFilterSummary({ filters }: { filters: OfferDiscove
   );
 }
 
-function offerDiscoveryFilterSummaryItems(filters: OfferDiscoveryFilters) {
+function offerDiscoveryFilterSummaryItems(
+  filters: OfferDiscoveryFilters,
+  selectedProduct: OfferDiscoveryProductContext | null
+) {
   return [
-    {
-      label: "Product ID",
-      value: filters.productId ?? "Not selected"
-    },
+    ...selectedProductSummaryItems(filters, selectedProduct),
     ...(filters.merchantId
       ? [
           {
@@ -135,6 +157,35 @@ function offerDiscoveryFilterSummaryItems(filters: OfferDiscoveryFilters) {
       label: "Sort",
       value: offerDiscoverySortLabel(filters.sort)
     }
+  ];
+}
+
+function selectedProductSummaryItems(
+  filters: OfferDiscoveryFilters,
+  selectedProduct: OfferDiscoveryProductContext | null
+) {
+  if (!selectedProduct) {
+    return [
+      {
+        label: "Product ID",
+        value: filters.productId ?? "Not selected"
+      }
+    ];
+  }
+
+  return [
+    {
+      label: "Product",
+      value: selectedProduct.name
+    },
+    ...(selectedProduct.brand
+      ? [
+          {
+            label: "Brand",
+            value: selectedProduct.brand.name
+          }
+        ]
+      : [])
   ];
 }
 

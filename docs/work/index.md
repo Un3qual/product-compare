@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-08
+Updated: 2026-07-09
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -54,15 +54,38 @@ Relay connection page-size errors without reopening deferred eBay, ingestion
 dashboard/operator, live provider, credential, application submission, Tier-3
 scraping, or CSV export work.
 
+The product-facing curation direction was selected on 2026-07-08. The next
+batch stays on shopper-facing catalog and offer-discovery surfaces, avoids
+deferred ingestion/eBay/operator work, and uses current app contracts as the
+source of truth.
+
+That product-facing curation batch is complete. Catalog search and sorting plus
+offer-discovery product label context have green completion evidence in their
+lane work docs dated 2026-07-09.
+
 ## Ready Work
 
 None.
+
+## Needs Decision Work
+
+None. Product-facing curation was selected on 2026-07-08.
 
 ## Blocked Work
 
 None.
 
 ## Just Completed
+
+The 2026-07-08 product-facing curation batch completed these work items:
+
+- Catalog browse and backend catalog: `/products` now supports bounded text
+  search and deterministic sorting through URL state while preserving filters,
+  pagination, and compare selections.
+- Offer discovery: `/offers` now shows selected-product name, optional brand,
+  and detail navigation while preserving existing filter and offer behavior.
+- Both lane work docs record green focused tests, Relay generation where
+  applicable, TypeScript verification, and clean diff checks dated 2026-07-09.
 
 The 2026-07-08 parallel execution batch completed these work items:
 

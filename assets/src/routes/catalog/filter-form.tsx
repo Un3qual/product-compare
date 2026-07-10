@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { ProductFilterMetadataQuery } from "../../__generated__/ProductFilterMetadataQuery.graphql";
 import {
+  CATALOG_PRODUCT_SORTS,
+  MAX_CATALOG_SEARCH_QUERY_LENGTH,
   catalogFilterSummaryItems,
-  hasActiveCatalogFilters,
+  catalogProductSortLabel,
   type CatalogBooleanFilter,
   type CatalogEnumFilter,
   type CatalogFilterMetadata,
@@ -52,6 +54,8 @@ export function CatalogFilterForm({
 
   return (
     <form method="get" action="/products" aria-label="Filter products">
+      <SearchField query={filters.query} />
+      <SortField sort={filters.sort} />
       <PageSizeField pageSize={pageSize} />
       <CompareSlugFields compareSlugs={compareSlugs} />
       <ProductTypeField
@@ -70,6 +74,43 @@ export function CatalogFilterForm({
       <EnumFiltersFieldset filters={filters} metadata={metadata} />
       <button type="submit">Apply filters</button>
     </form>
+  );
+}
+
+function SearchField({ query }: { query?: string }) {
+  return (
+    <label>
+      Search products
+      <input
+        type="search"
+        name="q"
+        defaultValue={query ?? ""}
+        maxLength={MAX_CATALOG_SEARCH_QUERY_LENGTH}
+      />
+    </label>
+  );
+}
+
+function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
+  const [selectedSort, setSelectedSort] = useState(sort ?? "ID_ASC");
+
+  return (
+    <label>
+      Sort products
+      <select
+        name={selectedSort === "ID_ASC" ? undefined : "sort"}
+        value={selectedSort}
+        onChange={(event) =>
+          setSelectedSort(event.currentTarget.value as NonNullable<CatalogFilters["sort"]>)
+        }
+      >
+        {CATALOG_PRODUCT_SORTS.map((value) => (
+          <option key={value} value={value}>
+            {catalogProductSortLabel(value)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -369,11 +410,11 @@ export function CatalogActiveFilterSummary({
   metadata: CatalogFilterMetadata;
   pageSize: number;
 }) {
-  if (!hasActiveCatalogFilters(filters)) {
+  const summaryItems = catalogFilterSummaryItems(metadata, filters);
+
+  if (summaryItems.length === 0) {
     return null;
   }
-
-  const summaryItems = catalogFilterSummaryItems(metadata, filters);
 
   return (
     <section aria-label="Applied product filters">

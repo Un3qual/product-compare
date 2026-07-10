@@ -20,7 +20,7 @@ vi.mock("../../../src/relay/route-preload", async () => {
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
 const OFFER_DISCOVERY_QUERY_TEXT =
-  "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!) { merchantProducts(input: $input) { edges { node { id } } } }";
+  "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(input: $input) { edges { node { id } } } }";
 
 const PRODUCT_ID = "UHJvZHVjdDoxMjM=";
 const MERCHANT_ID = "TWVyY2hhbnQ6NDU2";
@@ -84,6 +84,7 @@ test("offerDiscoveryLoader preloads active offers for a product by default", asy
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: true,
         first: 6,
@@ -132,6 +133,7 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: false,
         after: "cursor-1",
@@ -180,6 +182,7 @@ test("offerDiscoveryLoader preserves inactive-only filter and page-size", async 
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: false,
         first: 12,
@@ -226,6 +229,7 @@ test("offerDiscoveryLoader normalizes blank cursor values", async () => {
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: true,
         first: 12,
@@ -305,6 +309,7 @@ test("offerDiscoveryLoader normalizes sort without changing GraphQL input", asyn
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: true,
         first: 6,
@@ -384,6 +389,7 @@ test("offerDiscoveryLoader drops malformed page-size params", async () => {
     environment,
     expect.anything(),
     {
+      productId: PRODUCT_ID,
       input: {
         activeOnly: true,
         first: 6,
@@ -481,7 +487,10 @@ function offerDiscoveryQueryDescriptor(variables: {
     __relayQuery: {
       operationName: "OfferDiscoveryRouteQuery",
       text: OFFER_DISCOVERY_QUERY_TEXT,
-      variables
+      variables: {
+        ...variables,
+        productId: variables.input.productId
+      }
     }
   };
 }

@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
@@ -641,6 +642,251 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, products_query(), %{"first" => -1})
     end
 
+    test "products searches product and brand text fields case-insensitively", %{conn: conn} do
+      {:ok, brand} = Catalog.upsert_brand(%{name: "Northstar Displays"})
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          brand_id: brand.id,
+          name: "Aurora Gaming Monitor",
+          slug: "aurora-gaming-monitor",
+          model_number: "AGM-270",
+          description: "A fast OLED panel for competitive play."
+        })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Unrelated Office Display",
+        slug: "unrelated-office-display",
+        model_number: "OFF-100",
+        description: "A basic productivity panel."
+      })
+
+      for query <- ["AURORA", "gaming-monitor", "agm-270", "competitive", "northSTAR"] do
+        assert %{
+                 "data" => %{
+                   "products" => %{
+                     "edges" => [%{"node" => %{"id" => product_id}}]
+                   }
+                 }
+               } = graphql(conn, products_query(), %{"filters" => %{"query" => query}})
+
+        assert product_id == relay_id(:product, product.id)
+      end
+    end
+
+    test "products treats LIKE metacharacters as literal search text", %{conn: conn} do
+      percent_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog Save 50% Off",
+          slug: "catalog-literal-percent"
+        })
+
+      underscore_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog 27_inch Display",
+          slug: "catalog-literal-underscore"
+        })
+
+      backslash_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog C:\\Display",
+          slug: "catalog-literal-backslash"
+        })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog Save 500 Off",
+        slug: "catalog-percent-wildcard-decoy"
+      })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog 27Xinch Display",
+        slug: "catalog-underscore-wildcard-decoy"
+      })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog C:Display",
+        slug: "catalog-backslash-escape-decoy"
+      })
+
+      for {query, product} <- [
+            {"50% Off", percent_product},
+            {"27_inch", underscore_product},
+            {"C:\\Display", backslash_product}
+          ] do
+        assert %{
+                 "data" => %{
+                   "products" => %{
+                     "edges" => [%{"node" => %{"id" => product_id}}]
+                   }
+                 }
+               } = graphql(conn, products_query(), %{"filters" => %{"query" => query}})
+
+        assert product_id == relay_id(:product, product.id)
+      end
+    end
+
+    test "products combines text search with existing catalog filters", %{conn: conn} do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("search-monitor"),
+          name: "Monitor"
+        })
+
+      laptop_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("search-laptop"),
+          name: "Laptop"
+        })
+
+      matching_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora Monitor",
+          slug: "aurora-monitor-search-match",
+          primary_type_taxon: monitor_taxon
+        })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Aurora Laptop",
+        slug: "aurora-laptop-search-non-match",
+        primary_type_taxon: laptop_taxon
+      })
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [%{"node" => %{"id" => product_id}}]
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{
+                   "query" => "aurora",
+                   "primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)
+                 }
+               })
+
+      assert product_id == relay_id(:product, matching_product.id)
+    end
+
+    test "products normalizes blank search and rejects invalid or oversized search", %{conn: conn} do
+      product = SpecsFixtures.product_fixture(%{slug: "catalog-blank-search"})
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [%{"node" => %{"id" => product_id}}]
+                 }
+               }
+             } = graphql(conn, products_query(), %{"filters" => %{"query" => "  \t  "}})
+
+      assert product_id == relay_id(:product, product.id)
+
+      assert {:error, "invalid search query"} =
+               CatalogResolver.products(nil, %{"filters" => %{"query" => 123}}, %{})
+
+      assert %{
+               "data" => %{"products" => nil},
+               "errors" => [
+                 %{"message" => "search query is too long", "path" => ["products"]} | _
+               ]
+             } =
+               graphql(conn, products_query(), %{
+                 "filters" => %{"query" => String.duplicate("a", 101)}
+               })
+    end
+
+    test "products supports deterministic name, brand, and newest sort modes", %{conn: conn} do
+      {:ok, alpha_brand} = Catalog.upsert_brand(%{name: "Alpha Brand"})
+      {:ok, beta_brand} = Catalog.upsert_brand(%{name: "Beta Brand"})
+      {:ok, zulu_brand} = Catalog.upsert_brand(%{name: "Zulu Brand"})
+
+      oldest =
+        SpecsFixtures.product_fixture(%{
+          brand_id: beta_brand.id,
+          name: "Zulu Product",
+          slug: "catalog-sort-oldest"
+        })
+        |> Ecto.Changeset.change(inserted_at: ~U[2026-01-01 00:00:00.000000Z])
+        |> Repo.update!()
+
+      middle =
+        SpecsFixtures.product_fixture(%{
+          brand_id: zulu_brand.id,
+          name: "Alpha Product",
+          slug: "catalog-sort-middle"
+        })
+        |> Ecto.Changeset.change(inserted_at: ~U[2026-01-02 00:00:00.000000Z])
+        |> Repo.update!()
+
+      newest =
+        SpecsFixtures.product_fixture(%{
+          brand_id: alpha_brand.id,
+          name: "Middle Product",
+          slug: "catalog-sort-newest"
+        })
+        |> Ecto.Changeset.change(inserted_at: ~U[2026-01-03 00:00:00.000000Z])
+        |> Repo.update!()
+
+      assert product_slugs(conn, "NAME_ASC") == [middle.slug, newest.slug, oldest.slug]
+      assert product_slugs(conn, "BRAND_NAME_ASC") == [newest.slug, oldest.slug, middle.slug]
+      assert product_slugs(conn, "NEWEST") == [newest.slug, middle.slug, oldest.slug]
+      assert product_slugs(conn, "ID_ASC") == [oldest.slug, middle.slug, newest.slug]
+    end
+
+    test "products keeps cursor pagination stable when sorted values are tied", %{conn: conn} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Same Product Name",
+          slug: "catalog-sort-tie-first"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Same Product Name",
+          slug: "catalog-sort-tie-second"
+        })
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{
+                       "cursor" => cursor,
+                       "node" => %{"id" => first_product_id}
+                     }
+                   ],
+                   "pageInfo" => %{"hasNextPage" => true}
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "first" => 1,
+                 "filters" => %{"sort" => "NAME_ASC"}
+               })
+
+      assert first_product_id == relay_id(:product, first_product.id)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [%{"node" => %{"id" => second_product_id}}],
+                   "pageInfo" => %{"hasNextPage" => false, "hasPreviousPage" => true}
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "first" => 1,
+                 "after" => cursor,
+                 "filters" => %{"sort" => "NAME_ASC"}
+               })
+
+      assert second_product_id == relay_id(:product, second_product.id)
+    end
+
     test "products supports numeric attribute filters", %{conn: conn} do
       moderator = AccountsFixtures.user_fixture()
       {attribute, unit} = numeric_attribute_with_unit_fixture()
@@ -1069,6 +1315,18 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       }
     }
     """
+  end
+
+  defp product_slugs(conn, sort) do
+    %{
+      "data" => %{
+        "products" => %{
+          "edges" => edges
+        }
+      }
+    } = graphql(conn, products_query(), %{"filters" => %{"sort" => sort}})
+
+    Enum.map(edges, &get_in(&1, ["node", "slug"]))
   end
 
   defp product_query do

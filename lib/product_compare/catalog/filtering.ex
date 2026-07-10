@@ -6,6 +6,7 @@ defmodule ProductCompare.Catalog.Filtering do
   import Ecto.Query
 
   alias ProductCompare.Input
+  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -35,12 +36,72 @@ defmodule ProductCompare.Catalog.Filtering do
   def apply_filters_except(base_query \\ Product, filters, omitted_group) do
     base_query
     |> from(as: :product)
+    |> maybe_apply_text_search(filters)
     |> maybe_apply_primary_type_filter(filters, omitted_group)
     |> apply_numeric_filters(filters_for_group(filters, :numeric, omitted_group))
     |> apply_bool_filters(filters_for_group(filters, :booleans, omitted_group))
     |> apply_enum_filters(filters_for_group(filters, :enums, omitted_group))
     |> maybe_apply_use_case_filter(filters, omitted_group)
-    |> order_by([product: p], asc: p.id)
+    |> apply_sort(Map.get(filters, :sort))
+  end
+
+  defp maybe_apply_text_search(query, filters) do
+    case Map.get(filters, :query) do
+      value when is_binary(value) and value != "" ->
+        pattern = "%#{escape_like_pattern(value)}%"
+
+        query
+        |> ensure_brand_join()
+        |> where(
+          [product: product, brand: brand],
+          ilike(product.name, ^pattern) or
+            ilike(product.slug, ^pattern) or
+            ilike(product.model_number, ^pattern) or
+            ilike(product.description, ^pattern) or
+            ilike(brand.name, ^pattern)
+        )
+
+      _other ->
+        query
+    end
+  end
+
+  defp escape_like_pattern(value) do
+    value
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
+
+  defp apply_sort(query, :name_asc),
+    do: order_by(query, [product: product], asc: product.name, asc: product.id)
+
+  defp apply_sort(query, :brand_name_asc) do
+    query
+    |> ensure_brand_join()
+    |> order_by(
+      [product: product, brand: brand],
+      asc: brand.name,
+      asc: product.name,
+      asc: product.id
+    )
+  end
+
+  defp apply_sort(query, :newest),
+    do: order_by(query, [product: product], desc: product.inserted_at, desc: product.id)
+
+  defp apply_sort(query, _sort),
+    do: order_by(query, [product: product], asc: product.id)
+
+  defp ensure_brand_join(query) do
+    if has_named_binding?(query, :brand) do
+      query
+    else
+      join(query, :left, [product: product], brand in Brand,
+        on: brand.id == product.brand_id,
+        as: :brand
+      )
+    end
   end
 
   defp maybe_apply_primary_type_filter(query, _filters, :primary_type), do: query

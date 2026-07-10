@@ -16,7 +16,8 @@ import {
 } from "./loader";
 import {
   OfferDiscoveryFilterForm,
-  OfferDiscoveryFilterSummary
+  OfferDiscoveryFilterSummary,
+  type OfferDiscoveryProductContext
 } from "./filters";
 import { offerDiscoveryPath } from "./paths";
 import { TrackedCommerceClickAction } from "./tracked-commerce-click";
@@ -56,18 +57,20 @@ export function OfferDiscoveryRoute() {
       </header>
 
       <OfferDiscoveryFilterForm filters={loaderData.filters} />
-      <OfferDiscoveryFilterSummary filters={loaderData.filters} />
 
       {loaderData.status === "missingProduct" ? (
-        <MissingProductState />
+        <>
+          <OfferDiscoveryFilterSummary filters={loaderData.filters} />
+          <MissingProductState />
+        </>
       ) : loaderData.status === "error" ? (
-        <OfferDiscoveryUnavailableFallback />
+        <OfferDiscoveryQueryFallback filters={loaderData.filters} />
       ) : (
         <ResettableErrorBoundary
-          fallback={<OfferDiscoveryUnavailableFallback />}
+          fallback={<OfferDiscoveryQueryFallback filters={loaderData.filters} />}
           resetToken={loaderData.query}
         >
-          <Suspense fallback={<p role="status">Loading offers...</p>}>
+          <Suspense fallback={<OfferDiscoveryLoadingFallback filters={loaderData.filters} />}>
             <OfferDiscoveryPanel
               filters={loaderData.filters}
               query={loaderData.query}
@@ -94,12 +97,36 @@ function OfferDiscoveryPanel({
     offerDiscoveryRouteQuery,
     queryRef
   );
+  const selectedProduct = selectedProductContext(data.selectedProduct);
 
-  if (!data.merchantProducts) {
-    return <OfferDiscoveryUnavailableFallback />;
+  return (
+    <>
+      <OfferDiscoveryFilterSummary
+        filters={filters}
+        selectedProduct={selectedProduct}
+      />
+      {data.merchantProducts ? (
+        <OfferDiscoveryList connection={data.merchantProducts} filters={filters} />
+      ) : (
+        <OfferDiscoveryUnavailableFallback />
+      )}
+    </>
+  );
+}
+
+function selectedProductContext(
+  node: OfferDiscoveryRouteQuery["response"]["selectedProduct"]
+): OfferDiscoveryProductContext | null {
+  if (!node || node.__typename !== "Product") {
+    return null;
   }
 
-  return <OfferDiscoveryList connection={data.merchantProducts} filters={filters} />;
+  return {
+    brand: node.brand,
+    id: node.id,
+    name: node.name,
+    slug: node.slug
+  };
 }
 
 function OfferDiscoveryList({
@@ -469,6 +496,24 @@ function OfferDiscoveryUnavailableFallback() {
     <section role="alert">
       <p>Offers unavailable.</p>
     </section>
+  );
+}
+
+function OfferDiscoveryQueryFallback({ filters }: { filters: OfferDiscoveryFilters }) {
+  return (
+    <>
+      <OfferDiscoveryFilterSummary filters={filters} />
+      <OfferDiscoveryUnavailableFallback />
+    </>
+  );
+}
+
+function OfferDiscoveryLoadingFallback({ filters }: { filters: OfferDiscoveryFilters }) {
+  return (
+    <>
+      <OfferDiscoveryFilterSummary filters={filters} />
+      <p role="status">Loading offers...</p>
+    </>
   );
 }
 

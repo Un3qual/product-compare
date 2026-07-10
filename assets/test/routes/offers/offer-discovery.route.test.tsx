@@ -63,8 +63,9 @@ const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "OfferDiscoveryRouteQuery",
-    text: "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!) { merchantProducts(input: $input) { edges { node { id } } } }",
+    text: "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(input: $input) { edges { node { id } } } }",
     variables: {
+      productId: "UHJvZHVjdDoxMjM=",
       input: {
         activeOnly: true,
         first: 6,
@@ -189,8 +190,16 @@ test("offer discovery summarizes active filters", () => {
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(within(filterSummary).getByText("Product")).toBeVisible();
+  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
+  expect(within(filterSummary).getByText("Brand")).toBeVisible();
+  expect(within(filterSummary).getByText("Example Brand")).toBeVisible();
+  expect(within(filterSummary).getByRole("link", { name: "View product details" })).toHaveAttribute(
+    "href",
+    "/products/detail-product"
+  );
+  expect(within(filterSummary).queryByText("Product ID")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("UHJvZHVjdDoxMjM=")).not.toBeInTheDocument();
   expect(within(filterSummary).getByText("Merchant ID")).toBeVisible();
   expect(within(filterSummary).getByText("TWVyY2hhbnQ6NDU2")).toBeVisible();
   expect(within(filterSummary).getByText("Offer status")).toBeVisible();
@@ -208,8 +217,8 @@ test("offer discovery omits merchant summary actions when no merchant filter is 
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
+  expect(within(filterSummary).getByText("Example Brand")).toBeVisible();
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(within(filterSummary).getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
@@ -866,6 +875,71 @@ test("offer discovery renders an empty state", () => {
   renderOfferDiscoveryRoute();
 
   expect(screen.getByText("No offers match these filters.")).toBeVisible();
+  expect(screen.getByText("Detail Product")).toBeVisible();
+  expect(screen.getByText("Example Brand")).toBeVisible();
+  expect(screen.getByRole("link", { name: "View product details" })).toHaveAttribute(
+    "href",
+    "/products/detail-product"
+  );
+});
+
+test("offer discovery falls back to the raw product id when the selected product is missing", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({ selectedProduct: null })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(
+    within(filterSummary).queryByRole("link", { name: "View product details" })
+  ).not.toBeInTheDocument();
+});
+
+test("offer discovery falls back to the raw product id for non-product nodes", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({ selectedProduct: { __typename: "Brand" } })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+});
+
+test("offer discovery omits brand context when the selected product has no brand", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({ selectedProduct: buildSelectedProduct({ brand: null }) })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product")).toBeVisible();
+  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
+  expect(within(filterSummary).queryByText("Brand")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("Example Brand")).not.toBeInTheDocument();
+});
+
+test("offer discovery encodes selected product slugs in detail navigation", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      selectedProduct: buildSelectedProduct({ slug: "reserved/product?variant=1" })
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("link", { name: "View product details" })).toHaveAttribute(
+    "href",
+    "/products/reserved%2Fproduct%3Fvariant%3D1"
+  );
 });
 
 test("offer discovery renders next-page and first-page links", () => {
@@ -924,6 +998,21 @@ test("offer discovery renders the loader error state", () => {
   expect(within(filterSummary).getByText("Default order")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+});
+
+test("offer discovery keeps raw product context visible while the query loads", () => {
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Promise<never>(() => undefined);
+  });
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("status")).toHaveTextContent("Loading offers...");
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
+  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
 });
 
 test("offer discovery renders the query unavailable state", () => {
@@ -1020,6 +1109,7 @@ function buildOfferDiscoveryData({
   endCursor = "cursor-1",
   hasNextPage = false,
   hasPreviousPage = false,
+  selectedProduct = buildSelectedProduct(),
   offers = [
     {
       id: "merchant-product-1",
@@ -1082,9 +1172,11 @@ function buildOfferDiscoveryData({
   hasNextPage?: boolean;
   hasPreviousPage?: boolean;
   offers?: Array<OfferNode>;
+  selectedProduct?: SelectedProductNode;
   startCursor?: string | null;
 } = {}) {
   return {
+    selectedProduct,
     merchantProducts: {
       edges: offers.map((node, index) => ({
         cursor: `cursor-${index + 1}`,
@@ -1099,6 +1191,38 @@ function buildOfferDiscoveryData({
     }
   };
 }
+
+function buildSelectedProduct(
+  overrides: Partial<Extract<SelectedProductNode, { __typename: "Product" }>> = {}
+): Extract<SelectedProductNode, { __typename: "Product" }> {
+  return {
+    __typename: "Product",
+    id: "UHJvZHVjdDoxMjM=",
+    name: "Detail Product",
+    slug: "detail-product",
+    brand: {
+      id: "QnJhbmQ6MTIz",
+      name: "Example Brand"
+    },
+    ...overrides
+  };
+}
+
+type SelectedProductNode =
+  | {
+      __typename: "Product";
+      id: string;
+      name: string;
+      slug: string;
+      brand: {
+        id: string;
+        name: string;
+      } | null;
+    }
+  | {
+      __typename: string;
+    }
+  | null;
 
 type OfferNode = {
   id: string;

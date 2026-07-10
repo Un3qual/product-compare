@@ -65,7 +65,10 @@ export async function offerDiscoveryLoader({
       query: await preloadRouteQuery<OfferDiscoveryRouteQuery>(
         environment,
         offerDiscoveryRouteQuery,
-        { input: offerDiscoveryInputFromFilters(filters) },
+        {
+          input: offerDiscoveryInputFromFilters(filters),
+          productId: filters.productId
+        },
         { signal: request.signal }
       )
     };

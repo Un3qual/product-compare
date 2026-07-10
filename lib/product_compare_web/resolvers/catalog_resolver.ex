@@ -17,6 +17,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
   @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
+  @max_search_query_length 100
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, resolution) do
@@ -192,7 +193,9 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp normalize_filters(nil), do: {:ok, %{}}
 
   defp normalize_filters(filters) when is_map(filters) do
-    with {:ok, primary_type_taxon_id} <-
+    with {:ok, query} <- normalize_search_query(Input.fetch_value(filters, :query)),
+         {:ok, sort} <- normalize_product_sort(Input.fetch_value(filters, :sort)),
+         {:ok, primary_type_taxon_id} <-
            Input.decode_optional_integer_id(
              Input.fetch_value(filters, :primary_type_taxon_id),
              :taxon,
@@ -223,6 +226,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
           enums: enum_filters,
           use_case_taxon_ids: use_case_taxon_ids
         }
+        |> Input.put_present(:query, query)
+        |> Input.put_present(:sort, sort)
         |> Input.put_present(:primary_type_taxon_id, primary_type_taxon_id)
 
       {:ok, normalized_filters}
@@ -230,6 +235,38 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   defp normalize_filters(_filters), do: {:error, "invalid filters"}
+
+  defp normalize_search_query(nil), do: {:ok, nil}
+
+  defp normalize_search_query(value) when is_binary(value) do
+    query = String.trim(value)
+
+    cond do
+      query == "" -> {:ok, nil}
+      String.length(query) > @max_search_query_length -> {:error, "search query is too long"}
+      true -> {:ok, query}
+    end
+  end
+
+  defp normalize_search_query(_value), do: {:error, "invalid search query"}
+
+  defp normalize_product_sort(nil), do: {:ok, nil}
+
+  defp normalize_product_sort(sort)
+       when sort in [:id_asc, :name_asc, :brand_name_asc, :newest],
+       do: {:ok, sort}
+
+  defp normalize_product_sort(sort) when is_binary(sort) do
+    case sort |> String.trim() |> String.upcase() do
+      "ID_ASC" -> {:ok, :id_asc}
+      "NAME_ASC" -> {:ok, :name_asc}
+      "BRAND_NAME_ASC" -> {:ok, :brand_name_asc}
+      "NEWEST" -> {:ok, :newest}
+      _invalid -> {:error, "invalid product sort"}
+    end
+  end
+
+  defp normalize_product_sort(_sort), do: {:error, "invalid product sort"}
 
   @spec normalize_numeric_filters(any()) :: {:ok, [map()]} | {:error, String.t()}
   defp normalize_numeric_filters(filters) when is_list(filters) do
