@@ -37,7 +37,9 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
       environment,
       productDetailRouteQuery,
       {
-        slug: "detail-product"
+        slug: "detail-product",
+        offerFirst: 6,
+        offersAfter: null
       },
       {
         networkCacheConfig: {
@@ -53,7 +55,9 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
       environment,
       productDetailRouteQuery,
       {
-        slug: "detail-product"
+        slug: "detail-product",
+        offerFirst: 6,
+        offersAfter: null
       },
       {
         networkCacheConfig: {
@@ -75,7 +79,7 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
 
   expect(fetchGraphQL).toHaveBeenCalledWith(
     expect.stringContaining("query ProductDetailRouteQuery"),
-    { slug: "detail-product" },
+    { slug: "detail-product", offerFirst: 6, offersAfter: null },
     expect.objectContaining({
       signal
     })
@@ -111,7 +115,9 @@ test("Relay environment preserves default GraphQL error handling outside route-l
   });
 
   await fetchQuery(environment, productDetailRouteQuery, {
-    slug: "detail-product"
+    slug: "detail-product",
+    offerFirst: 6,
+    offersAfter: null
   }).toPromise();
 
   const ssrContext = fetchGraphQLMock.mock.calls[0]?.[2];
@@ -135,7 +141,9 @@ test("Relay environment preserves an explicit SSR signal outside route-loader re
   });
 
   await fetchQuery(environment, productDetailRouteQuery, {
-    slug: "detail-product"
+    slug: "detail-product",
+    offerFirst: 6,
+    offersAfter: null
   }).toPromise();
 
   const ssrContext = fetchGraphQLMock.mock.calls[0]?.[2];

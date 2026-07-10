@@ -1,6 +1,6 @@
 # Frontend GraphQL Request Waterfalls
 
-Status: active
+Status: complete
 
 ## Goal
 
@@ -32,15 +32,37 @@ Reduce the audited shopper and account routes to one GraphQL request for initial
 
 ## Verification
 
-- Focused GraphQL contract tests.
-- Focused frontend route and loader tests.
-- `cd assets && bun run relay`.
-- `cd assets && bun run check`.
-- `mix test`.
-- `mix typecheck`.
-- `git diff --check`.
+- `mix test test/product_compare_web/graphql` passed 43 tests while the
+  comparison-products and nested-offers contracts were introduced.
+- Focused compare, catalog, product-detail, saved-comparison, and API-token
+  suites passed throughout the implementation; the final focused pagination
+  run passed 171 tests.
+- `cd assets && bun run relay` generated 30 reader, 29 normalization, and 29
+  operation-text artifacts.
+- `cd assets && bun run build` completed both client and SSR production builds.
+- `cd assets && bun run check` passed TypeScript and all 594 frontend tests.
+- `mix test` passed all 624 backend tests.
+- `mix typecheck` passed.
+- `mix format --check-formatted` passed.
+- `git diff --check` passed.
+
+## Completion Evidence
+
+- `/compare` now loads selected products, their initial active-offer context,
+  and the initial product-picker page through one `CompareRouteQuery` request.
+  Store-only product descriptors preserve the existing card boundaries without
+  issuing additional requests.
+- `/products/:slug` now loads product details and the requested active-offer
+  page through one route query.
+- `/products` now loads products and filter metadata through one route query;
+  the separate filter-metadata operation was removed.
+- `/compare/saved` and `/account/api-tokens` now fetch one cursor page per
+  navigation and expose first/next-page links instead of exhausting every page
+  in sequential loader loops.
+- A final request-site audit found no route loader with more than one GraphQL
+  preload and no remaining eager GraphQL pagination loop. Subsequent requests
+  are user-triggered pagination or mutations.
 
 ## Exit Condition
 
 Comparison, product detail, and catalog each issue one initial route-data GraphQL request; saved comparisons and API tokens fetch no more than one cursor page per navigation; focused and broad verification pass; and completion evidence is recorded here and in the live index.
-

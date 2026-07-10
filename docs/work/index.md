@@ -31,7 +31,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-09
+Updated: 2026-07-10
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -79,27 +79,20 @@ evidence in their lane docs. No additional validated candidate is available;
 the remaining catalogued work is deferred or rejected and cannot be used as
 queue filler.
 
-On 2026-07-10, a user-reported GraphQL request-waterfall audit produced one
-validated cross-stack performance batch. It is active below. No other validated
-candidate is available, so the ready slate remains below target rather than
-being filled with deferred or rejected work.
+On 2026-07-10, the user-reported GraphQL request-waterfall batch completed.
+Comparison, product detail, and catalog now use one initial route-data request,
+while saved comparisons and API tokens use explicit one-page-at-a-time cursor
+navigation. No other validated candidate is available, so the ready slate
+remains below target rather than being filled with deferred or rejected work.
 
 ## Ready Work
 
-None. The only newly validated batch is already active, and the plan catalog
-contains no additional validated candidate outside deferred or rejected work.
+None. The plan catalog contains no additional validated candidate outside
+deferred or rejected work.
 
 ## Active Work
 
-### GraphQL request waterfall elimination
-
-Status: active
-Lane: Frontend GraphQL route data with supporting backend schema contracts
-Owner: current Codex worker
-Next action: Implement the approved design with failing request-count and pagination tests first.
-Owned paths: `lib/product_compare/catalog.ex`, `lib/product_compare/pricing.ex`, `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/catalog_resolver.ex`, `lib/product_compare_web/resolvers/pricing_resolver.ex`, `test/product_compare_web/graphql/**`, `assets/schema.graphql`, `assets/src/routes/compare/**`, `assets/src/routes/products/**`, `assets/src/routes/catalog/**`, `assets/src/routes/account/api-tokens/**`, `assets/src/__generated__/**`, matching frontend tests, and `docs/work/frontend-graphql-request-waterfalls.md`
-Verification: Focused GraphQL and frontend tests; Relay generation; `cd assets && bun run check`; `mix test`; `mix typecheck`; `git diff --check`
-Exit condition: The three combined-data routes make one initial GraphQL request each, eager pagination is removed from saved comparisons and API tokens, verification passes, and the lane is closed with evidence.
+None.
 
 ## Needs Decision Work
 
@@ -110,6 +103,16 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-10 GraphQL request-waterfall batch is complete. `/compare` now
+combines selected products, initial offer context, and picker data into one
+request; product detail combines product and offer data; and catalog combines
+products with filter metadata. Saved comparisons and API tokens now fetch one
+cursor page per navigation with explicit first/next links instead of eagerly
+following every cursor. Relay generation, client and SSR production builds,
+all 594 frontend tests, all 624 backend tests, backend type checks, formatting,
+and diff checks passed. The lane doc records the request-site audit and focused
+verification evidence.
 
 The 2026-07-09 shopper decision-confidence batch completed catalog result
 guidance: `/products` now shows the complete metadata-backed result count and
