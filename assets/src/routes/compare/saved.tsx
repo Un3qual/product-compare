@@ -136,6 +136,7 @@ export function SavedComparisonsRoute() {
               <option value="product-count-asc">Product count low-to-high</option>
             </select>
           </label>
+          <p>Filtering and sorting apply to the visible page.</p>
         </>
       )}
       {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
@@ -149,8 +150,44 @@ export function SavedComparisonsRoute() {
           savedSets={viewState.savedSets}
         />
       ) : null}
+      {loaderData.status !== "unauthorized" ? (
+        <SavedComparisonsPagination
+          after={loaderData.after ?? null}
+          endCursor={loaderData.endCursor ?? null}
+          hasNextPage={loaderData.hasNextPage ?? false}
+        />
+      ) : null}
     </CompareShell>
   );
+}
+
+function SavedComparisonsPagination({
+  after,
+  endCursor,
+  hasNextPage
+}: {
+  after: string | null;
+  endCursor: string | null;
+  hasNextPage: boolean;
+}) {
+  if (!after && !(hasNextPage && endCursor)) {
+    return null;
+  }
+
+  return (
+    <nav aria-label="Saved comparison pages">
+      {after ? <Link to="/compare/saved">First page</Link> : null}{" "}
+      {hasNextPage && endCursor ? (
+        <Link to={savedComparisonsPagePath(endCursor)}>Next page</Link>
+      ) : null}
+    </nav>
+  );
+}
+
+function savedComparisonsPagePath(after: string) {
+  const searchParams = new URLSearchParams({ after });
+
+  return `/compare/saved?${searchParams.toString()}`;
 }
 
 function SavedComparisonSetQueryRetainers({

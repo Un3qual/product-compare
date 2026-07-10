@@ -2,7 +2,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
-import { createRelayEnvironment } from "../../../src/relay/environment";
+import {
+  createRelayEnvironment,
+  RouteLoaderGraphQLError
+} from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
@@ -17,6 +20,7 @@ const {
   fetchRouteQueryMock,
   commitCommerceClickMock,
   graphqlMock,
+  loadQueryMock,
   preloadRouteQueryMock,
   useLoaderDataMock,
   useMutationMock,
@@ -26,6 +30,7 @@ const {
   fetchRouteQueryMock: vi.fn(),
   commitCommerceClickMock: vi.fn(),
   graphqlMock: vi.fn(),
+  loadQueryMock: vi.fn(),
   preloadRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
@@ -52,6 +57,7 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     graphql: graphqlMock,
+    loadQuery: loadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -158,12 +164,14 @@ const buildProductDetailLoaderArgs = ({
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();
   commitCommerceClickMock.mockReset();
+  loadQueryMock.mockReset();
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   mockedUseMutation.mockReturnValue([commitCommerceClickMock, false] as never);
+  loadQueryMock.mockReturnValue({ dispose: vi.fn() });
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
 });
@@ -174,36 +182,33 @@ test("product detail loader preloads product detail and active offers through Re
 
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
-      product: DETAIL_PRODUCT
+      product: {
+        ...DETAIL_PRODUCT,
+        merchantProducts: {
+          edges: [],
+          pageInfo: { endCursor: null, hasNextPage: false }
+        }
+      }
     },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
     dispose: vi.fn()
   });
-  mockedPreloadRouteQuery.mockResolvedValue(OFFERS_QUERY_DESCRIPTOR);
 
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR,
-    offers: {
-      status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+    productQuery: PRODUCT_QUERY_DESCRIPTOR
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { slug: "detail-product" },
+    { slug: "detail-product", offerFirst: 6, offersAfter: null },
     { signal: request.signal }
   );
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 6 },
-    { signal: request.signal }
-  );
+  expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("product detail loader forwards offersAfter to offers query pagination", async () => {
@@ -211,8 +216,6 @@ test("product detail loader forwards offersAfter to offers query pagination", as
   const request = new Request(
     "https://app.example.com/products/detail-product?offersAfter=cursor%2Bnext%2Ftoken"
   );
-  const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor+next/token");
-
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
       product: DETAIL_PRODUCT
@@ -220,25 +223,21 @@ test("product detail loader forwards offersAfter to offers query pagination", as
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
     dispose: vi.fn()
   });
-  mockedPreloadRouteQuery.mockResolvedValue(offersDescriptorWithAfter);
-
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR,
-    offers: {
-      status: "ready",
-      query: offersDescriptorWithAfter
-    }
+    productQuery: PRODUCT_QUERY_DESCRIPTOR
   });
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 6, after: "cursor+next/token" },
+    { slug: DETAIL_PRODUCT.slug, offerFirst: 6, offersAfter: "cursor+next/token" },
     { signal: request.signal }
   );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+  expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
 });
 
 test("product detail loader preserves opaque offersAfter cursor characters", async () => {
@@ -247,8 +246,6 @@ test("product detail loader preserves opaque offersAfter cursor characters", asy
     "https://app.example.com/products/detail-product?offersAfter=%2Babc%2Ftoken%20"
   );
   const opaqueCursor = "+abc/token ";
-  const offersDescriptorWithOpaqueCursor = makeOffersQueryDescriptor(opaqueCursor);
-
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
       product: DETAIL_PRODUCT
@@ -256,25 +253,21 @@ test("product detail loader preserves opaque offersAfter cursor characters", asy
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
     dispose: vi.fn()
   });
-  mockedPreloadRouteQuery.mockResolvedValue(offersDescriptorWithOpaqueCursor);
-
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR,
-    offers: {
-      status: "ready",
-      query: offersDescriptorWithOpaqueCursor
-    }
+    productQuery: PRODUCT_QUERY_DESCRIPTOR
   });
 
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledWith(
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 6, after: opaqueCursor },
+    { slug: DETAIL_PRODUCT.slug, offerFirst: 6, offersAfter: opaqueCursor },
     { signal: request.signal }
   );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+  expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
 });
 
 test("product detail loader marks null products as not found", async () => {
@@ -343,37 +336,66 @@ test("product detail loader marks failed product preloads as unavailable", async
   }
 });
 
-test("product detail loader keeps product detail ready when offers fail", async () => {
+test("product detail loader marks a failed combined product-and-offers request unavailable", async () => {
   const environment = createRelayEnvironment();
   const offersError = new Error("Network request failed: offers boom");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  mockedFetchRouteQuery.mockResolvedValue({
-    data: {
-      product: DETAIL_PRODUCT
-    },
-    descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
-  });
-  mockedPreloadRouteQuery.mockRejectedValue(offersError);
+  mockedFetchRouteQuery.mockRejectedValue(offersError);
 
   try {
     await expect(
       productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).resolves.toEqual({
-      status: "ready",
-      productQuery: PRODUCT_QUERY_DESCRIPTOR,
-      offers: {
-        status: "error"
-      }
+      status: "error"
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload product offers route query.", {
-      error: offersError
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Failed to preload product detail route query.",
+      { error: offersError }
+    );
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("product detail loader preserves product data when only nested offers fail", async () => {
+  const environment = createRelayEnvironment();
+  const commitPayloadSpy = vi.spyOn(environment, "commitPayload");
+  const partialResponse = {
+    data: {
+      product: {
+        ...DETAIL_PRODUCT,
+        merchantProducts: null
+      }
+    },
+    errors: [
+      {
+        message: "Offers unavailable",
+        path: ["product", "merchantProducts"]
+      }
+    ]
+  };
+
+  mockedFetchRouteQuery.mockRejectedValue(new RouteLoaderGraphQLError(partialResponse));
+
+  await expect(
+    productDetailLoader(buildProductDetailLoaderArgs({ environment }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    productQuery: {
+      __relayQuery: {
+        operationName: "ProductDetailRouteQuery",
+        variables: {
+          slug: DETAIL_PRODUCT.slug,
+          offerFirst: 6,
+          offersAfter: null
+        }
+      }
+    }
+  });
+
+  expect(commitPayloadSpy).toHaveBeenCalledWith(expect.anything(), partialResponse.data);
 });
 
 test("product detail loader rethrows aborted product preloads", async () => {
@@ -388,33 +410,6 @@ test("product detail loader rethrows aborted product preloads", async () => {
       productDetailLoader(buildProductDetailLoaderArgs({ environment }))
     ).rejects.toBe(abortError);
 
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
-});
-
-test("product detail loader disposes product query when offers preload aborts", async () => {
-  const environment = createRelayEnvironment();
-  const abortError = new DOMException("The operation was aborted.", "AbortError");
-  const disposeProductRouteQuery = vi.fn();
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-  mockedFetchRouteQuery.mockResolvedValue({
-    data: {
-      product: DETAIL_PRODUCT
-    },
-    descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: disposeProductRouteQuery
-  });
-  mockedPreloadRouteQuery.mockRejectedValue(abortError);
-
-  try {
-    await expect(
-      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
-    ).rejects.toBe(abortError);
-
-    expect(disposeProductRouteQuery).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   } finally {
     consoleErrorSpy.mockRestore();
@@ -470,7 +465,7 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test.each([
@@ -972,7 +967,7 @@ test("renders next and first offer page links from URL-driven offersAfter state"
   );
 
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/products/detail-product?offersAfter=cursor%2Fnext%2Bvalue"]}>
       <ProductDetailRoute />
     </MemoryRouter>
   );
@@ -1851,9 +1846,7 @@ test("renders an unavailable-offers message without collapsing the product detai
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
-test("renders a local unavailable-offers message when the Relay offers query errors", () => {
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
+test("renders a local unavailable-offers message when combined offer data is missing", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -1865,19 +1858,14 @@ test("renders a local unavailable-offers message when the Relay offers query err
   mockRouteQueryRefs();
   mockProductAndOffersQueries(new Error("Relay offers read failed"));
 
-  try {
-    render(
-      <MemoryRouter>
-        <ProductDetailRoute />
-      </MemoryRouter>
-    );
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
 
-    expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
+  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
 });
 
 test("renders a not-found message when the product detail loader misses", () => {
@@ -1929,8 +1917,20 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
 function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRODUCT) {
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
     if (queryRef === productQueryRef) {
+      if (offersResult instanceof Error) {
+        return {
+          product: {
+            ...product,
+            merchantProducts: null
+          }
+        };
+      }
+
       return {
-        product
+        product: {
+          ...product,
+          merchantProducts: (offersResult as { merchantProducts?: unknown }).merchantProducts ?? null
+        }
       };
     }
 

@@ -1,22 +1,17 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import type { Environment } from "relay-runtime";
-import productDetailRouteQuery, {
-  type ProductDetailRouteQuery
-} from "../../__generated__/ProductDetailRouteQuery.graphql";
-import compareOfferContextQuery, {
-  type CompareOfferContextQuery
-} from "../../__generated__/CompareOfferContextQuery.graphql";
+import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { decimalStringToNumber } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
+import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export const MAX_COMPARE_PRODUCTS = 3;
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
+const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 
@@ -86,15 +81,15 @@ export type CompareRouteLoaderData =
       status: "ready";
       specMode: CompareSpecMode;
       slugs: string[];
-      productQueries: Array<RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>>;
+      query: RelayRouteQueryDescriptor<CompareRouteQuery["variables"]>;
       offerContexts: CompareOfferContextsByProductId;
       products: CompareProductSummary[];
     };
 
-type FetchedCompareProductQuery = FetchedRelayRouteQuery<ProductDetailRouteQuery>;
-type FetchedCompareOfferContextQuery = FetchedRelayRouteQuery<CompareOfferContextQuery>;
-type CompareOfferContextNode =
-  CompareOfferContextQuery["response"]["merchantProducts"]["edges"][number]["node"];
+type CompareProduct = CompareRouteQuery["response"]["comparisonProducts"][number];
+type PresentCompareProduct = NonNullable<CompareProduct>;
+type CompareOfferConnection = NonNullable<PresentCompareProduct["merchantProducts"]>;
+type CompareOfferContextNode = CompareOfferConnection["edges"][number]["node"];
 
 export async function compareLoader({
   context,
@@ -120,59 +115,47 @@ export async function compareLoader({
   }
 
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const productResults = await Promise.allSettled(
-    slugs.map((slug) =>
-      fetchRouteQuery<ProductDetailRouteQuery>(
-        environment,
-        productDetailRouteQuery,
-        { slug },
-        { signal: request.signal }
-      )
-    )
-  );
-  const fetchedProductQueries = productResults
-    .filter(isFulfilled)
-    .map((result) => result.value);
-  const rejectedResult = productResults.find(isRejected);
-
-  if (rejectedResult) {
-    disposeFetchedProductQueries(fetchedProductQueries);
-    throw normalizeRouteLoaderThrownError(rejectedResult.reason, "Product fetch failed");
-  }
-
-  const products = fetchedProductQueries.map(({ data }) => data.product);
-
-  if (products.some((product) => !product)) {
-    disposeFetchedProductQueries(fetchedProductQueries);
-
-    return {
-      status: "not_found",
-      specMode,
-      slugs
-    };
-  }
-  const presentProducts = products.filter(isPresentProduct);
-  let offerContexts: CompareOfferContextsByProductId;
 
   try {
-    offerContexts = await fetchOfferContextsByProductId(
+    const fetchedQuery = await fetchRouteQuery<CompareRouteQuery>(
       environment,
-      presentProducts,
-      request.signal
+      compareRouteQuery,
+      {
+        slugs,
+        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
+        pickerFirst: COMPARE_PRODUCT_PICKER_PAGE_SIZE,
+        pickerAfter: null
+      },
+      { signal: request.signal }
     );
-  } catch (error) {
-    disposeFetchedProductQueries(fetchedProductQueries);
-    throw error;
-  }
+    const products = orderProductsByRequestedSlugs(
+      slugs,
+      fetchedQuery.data.comparisonProducts
+    );
 
-  return {
-    status: "ready",
-    specMode,
-    slugs,
-    productQueries: fetchedProductQueries.map((query) => query.descriptor),
-    offerContexts,
-    products: presentProducts.map(summarizeProduct)
-  };
+    if (products.some((product) => !product)) {
+      fetchedQuery.dispose();
+
+      return {
+        status: "not_found",
+        specMode,
+        slugs
+      };
+    }
+
+    const presentProducts = products.filter(isPresentProduct);
+
+    return {
+      status: "ready",
+      specMode,
+      slugs,
+      query: fetchedQuery.descriptor,
+      offerContexts: summarizeOfferContexts(presentProducts),
+      products: presentProducts.map(summarizeProduct)
+    };
+  } catch (error) {
+    throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
+  }
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
@@ -203,9 +186,18 @@ function parseSelectedSlugs(requestUrl: string) {
   return Array.from(selected);
 }
 
-function summarizeProduct(
-  product: NonNullable<ProductDetailRouteQuery["response"]["product"]>
-): CompareProductSummary {
+function orderProductsByRequestedSlugs(
+  slugs: readonly string[],
+  products: ReadonlyArray<CompareProduct>
+) {
+  const productsBySlug = new Map(
+    products.filter(isPresentProduct).map((product) => [product.slug, product])
+  );
+
+  return slugs.map((slug) => productsBySlug.get(slug) ?? null);
+}
+
+function summarizeProduct(product: PresentCompareProduct): CompareProductSummary {
   return {
     id: product.id,
     name: product.name,
@@ -228,89 +220,30 @@ function summarizeProduct(
   };
 }
 
-async function fetchOfferContextsByProductId(
-  environment: Environment,
-  products: Array<NonNullable<ProductDetailRouteQuery["response"]["product"]>>,
-  signal: AbortSignal
-): Promise<CompareOfferContextsByProductId> {
-  const offerContextResults = await Promise.allSettled(
-    products.map((product) => fetchOfferContextPages(environment, product.id, signal))
-  );
-  const abortedResult = offerContextResults.find(
-    (result) => result.status === "rejected" && isRouteAbortRejection(result.reason, signal)
-  );
+function summarizeOfferContexts(products: PresentCompareProduct[]) {
   const offerContexts: CompareOfferContextsByProductId = {};
 
-  if (abortedResult?.status === "rejected") {
-    disposeFulfilledOfferContextQueries(offerContextResults);
-    throw abortedResult.reason;
+  for (const product of products) {
+    offerContexts[product.id] = product.merchantProducts
+      ? summarizeOfferContext(product.id, product.merchantProducts)
+      : summarizeUnavailableOfferContext(product.id);
   }
-
-  products.forEach((product, index) => {
-    const result = offerContextResults[index];
-
-    if (!result || result.status === "rejected") {
-      offerContexts[product.id] = summarizeUnavailableOfferContext(product.id);
-      return;
-    }
-
-    try {
-      offerContexts[product.id] = summarizeOfferContextQueries(product.id, result.value);
-    } catch {
-      offerContexts[product.id] = summarizeUnavailableOfferContext(product.id);
-    } finally {
-      disposeFetchedOfferContextQueries(result.value);
-    }
-  });
 
   return offerContexts;
 }
 
-async function fetchOfferContextPages(
-  environment: Environment,
+function summarizeOfferContext(
   productId: string,
-  signal: AbortSignal
-): Promise<FetchedCompareOfferContextQuery[]> {
-  const pages: FetchedCompareOfferContextQuery[] = [];
-
-  try {
-    const page: FetchedCompareOfferContextQuery = await fetchRouteQuery<CompareOfferContextQuery>(
-      environment,
-      compareOfferContextQuery,
-      {
-        after: null,
-        first: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-        productId
-      },
-      { signal }
-    );
-    pages.push(page);
-  } catch (error) {
-    disposeFetchedOfferContextQueries(pages);
-    throw error;
-  }
-
-  return pages;
-}
-
-function summarizeOfferContextQueries(
-  productId: string,
-  queries: FetchedCompareOfferContextQuery[]
+  connection: CompareOfferConnection
 ): CompareAvailableOfferContextSummary {
-  const offerNodes = queries.flatMap((query) =>
-    query.data.merchantProducts.edges.map(({ node }) => node)
-  );
-  const latestPriceObservedAt = mostRecentObservedAt(offerNodes);
-  const lastQuery = queries[queries.length - 1];
-  const lastPageInfo = lastQuery?.data.merchantProducts.pageInfo;
-  const hasMoreActiveOffers = lastPageInfo?.hasNextPage ?? false;
-  const bestCurrentPrice = hasMoreActiveOffers ? null : lowestCurrentPrice(offerNodes);
+  const offerNodes = connection.edges.map(({ node }) => node);
+  const hasMoreActiveOffers = connection.pageInfo.hasNextPage;
 
   return {
     status: "available",
     productId,
     activeOfferCount: offerNodes.length,
-    bestCurrentPrice,
+    bestCurrentPrice: hasMoreActiveOffers ? null : lowestCurrentPrice(offerNodes),
     hasLoadedCoupons: offerNodes.some(
       (offer) => (offer.activeCoupons?.edges.length ?? 0) > 0
     ),
@@ -318,7 +251,7 @@ function summarizeOfferContextQueries(
     hasMoreCoupons: offerNodes.some(
       (offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false
     ),
-    latestPriceObservedAt
+    latestPriceObservedAt: mostRecentObservedAt(offerNodes)
   };
 }
 
@@ -327,35 +260,6 @@ function summarizeUnavailableOfferContext(productId: string): CompareUnavailable
     status: "unavailable",
     productId
   };
-}
-
-function disposeFetchedOfferContextQueries(queries: FetchedCompareOfferContextQuery[]) {
-  for (const query of queries) {
-    query.dispose();
-  }
-}
-
-function disposeFulfilledOfferContextQueries(
-  results: Array<PromiseSettledResult<FetchedCompareOfferContextQuery[]>>
-) {
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      disposeFetchedOfferContextQueries(result.value);
-    }
-  }
-}
-
-function isRouteAbortRejection(reason: unknown, signal: AbortSignal) {
-  return signal.aborted || isAbortError(reason);
-}
-
-function isAbortError(reason: unknown) {
-  return (
-    typeof reason === "object" &&
-    reason !== null &&
-    "name" in reason &&
-    (reason as { name?: unknown }).name === "AbortError"
-  );
 }
 
 function lowestCurrentPrice(
@@ -408,9 +312,7 @@ function currentPriceCandidate(
   };
 }
 
-function mostRecentObservedAt(
-  offerNodes: CompareOfferContextNode[]
-) {
+function mostRecentObservedAt(offerNodes: CompareOfferContextNode[]) {
   const observedAtValues = offerNodes.flatMap((offer) => [
     offer.latestPrice?.observedAt,
     ...(offer.priceHistory?.edges.map(({ node }) => node.observedAt) ?? [])
@@ -438,22 +340,6 @@ function mostRecentObservedAt(
   return mostRecent;
 }
 
-function disposeFetchedProductQueries(productQueries: FetchedCompareProductQuery[]) {
-  for (const productQuery of productQueries) {
-    productQuery.dispose();
-  }
-}
-
-function isPresentProduct(
-  product: ProductDetailRouteQuery["response"]["product"]
-): product is NonNullable<ProductDetailRouteQuery["response"]["product"]> {
+function isPresentProduct(product: CompareProduct): product is PresentCompareProduct {
   return Boolean(product);
-}
-
-function isFulfilled<T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> {
-  return result.status === "fulfilled";
-}
-
-function isRejected<T>(result: PromiseSettledResult<T>): result is PromiseRejectedResult {
-  return result.status === "rejected";
 }

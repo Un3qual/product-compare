@@ -390,10 +390,54 @@ export function ApiTokensRoute() {
               tokens={viewState.tokens}
             />
           ) : null}
+          <ApiTokenPagination
+            after={loaderData.after ?? null}
+            endCursor={loaderData.endCursor ?? null}
+            hasNextPage={loaderData.hasNextPage ?? false}
+            tokenStatus={loaderData.tokenStatus}
+          />
         </>
       )}
     </section>
   );
+}
+
+function ApiTokenPagination({
+  after,
+  endCursor,
+  hasNextPage,
+  tokenStatus
+}: {
+  after: string | null;
+  endCursor: string | null;
+  hasNextPage: boolean;
+  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
+}) {
+  if (!after && !(hasNextPage && endCursor)) {
+    return null;
+  }
+
+  return (
+    <nav aria-label="API token pages">
+      {after ? <Link to={apiTokenPagePath(tokenStatus, null)}>First page</Link> : null}{" "}
+      {hasNextPage && endCursor ? (
+        <Link to={apiTokenPagePath(tokenStatus, endCursor)}>Next page</Link>
+      ) : null}
+    </nav>
+  );
+}
+
+function apiTokenPagePath(
+  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"],
+  after: string | null
+) {
+  const searchParams = new URLSearchParams({ status: tokenStatus });
+
+  if (after) {
+    searchParams.set("after", after);
+  }
+
+  return `/account/api-tokens?${searchParams.toString()}`;
 }
 
 function RelayApiTokenList({

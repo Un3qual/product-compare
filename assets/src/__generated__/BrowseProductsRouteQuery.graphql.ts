@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<bae81d455b2b7ab25b0ea12f8445b17e>>
+ * @generated SignedSource<<5369145934f583975b3068e639afc8cf>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -39,6 +39,53 @@ export type BrowseProductsRouteQuery$variables = {
   first: number;
 };
 export type BrowseProductsRouteQuery$data = {
+  readonly productFilterMetadata: {
+    readonly booleanFilters: ReadonlyArray<{
+      readonly attributeId: string;
+      readonly code: string;
+      readonly displayName: string;
+      readonly falseCount: number;
+      readonly selectedValue: boolean | null | undefined;
+      readonly trueCount: number;
+    }>;
+    readonly enumFilters: ReadonlyArray<{
+      readonly attributeId: string;
+      readonly code: string;
+      readonly displayName: string;
+      readonly options: ReadonlyArray<{
+        readonly count: number;
+        readonly disabled: boolean;
+        readonly id: string;
+        readonly label: string;
+        readonly selected: boolean;
+      }>;
+    }>;
+    readonly numericFilters: ReadonlyArray<{
+      readonly attributeId: string;
+      readonly code: string;
+      readonly displayName: string;
+      readonly max: any | null | undefined;
+      readonly min: any | null | undefined;
+      readonly selectedMax: any | null | undefined;
+      readonly selectedMin: any | null | undefined;
+      readonly unitSymbol: string | null | undefined;
+    }>;
+    readonly resultCount: number;
+    readonly typeOptions: ReadonlyArray<{
+      readonly count: number;
+      readonly disabled: boolean;
+      readonly id: string;
+      readonly label: string;
+      readonly selected: boolean;
+    }>;
+    readonly useCaseOptions: ReadonlyArray<{
+      readonly count: number;
+      readonly disabled: boolean;
+      readonly id: string;
+      readonly label: string;
+      readonly selected: boolean;
+    }>;
+  };
   readonly products: {
     readonly edges: ReadonlyArray<{
       readonly cursor: string;
@@ -86,20 +133,77 @@ v2 = {
   "name": "first"
 },
 v3 = {
+  "kind": "Variable",
+  "name": "filters",
+  "variableName": "filters"
+},
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v4 = {
+v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v5 = [
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "code",
+  "storageKey": null
+},
+v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "displayName",
+  "storageKey": null
+},
+v8 = [
+  (v4/*: any*/),
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "label",
+    "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "count",
+    "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "selected",
+    "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "disabled",
+    "storageKey": null
+  }
+],
+v9 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "attributeId",
+  "storageKey": null
+},
+v10 = [
   {
     "alias": null,
     "args": [
@@ -108,11 +212,7 @@ v5 = [
         "name": "after",
         "variableName": "after"
       },
-      {
-        "kind": "Variable",
-        "name": "filters",
-        "variableName": "filters"
-      },
+      (v3/*: any*/),
       {
         "kind": "Variable",
         "name": "first",
@@ -147,8 +247,8 @@ v5 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v3/*: any*/),
               (v4/*: any*/),
+              (v5/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -164,8 +264,8 @@ v5 = [
                 "name": "brand",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
-                  (v4/*: any*/)
+                  (v4/*: any*/),
+                  (v5/*: any*/)
                 ],
                 "storageKey": null
               },
@@ -177,20 +277,8 @@ v5 = [
                 "name": "currentAttributes",
                 "plural": true,
                 "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "code",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "displayName",
-                    "storageKey": null
-                  },
+                  (v6/*: any*/),
+                  (v7/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -241,6 +329,154 @@ v5 = [
       }
     ],
     "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": [
+      (v3/*: any*/)
+    ],
+    "concreteType": "ProductFilterMetadata",
+    "kind": "LinkedField",
+    "name": "productFilterMetadata",
+    "plural": false,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "resultCount",
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductFilterOption",
+        "kind": "LinkedField",
+        "name": "typeOptions",
+        "plural": true,
+        "selections": (v8/*: any*/),
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductFilterOption",
+        "kind": "LinkedField",
+        "name": "useCaseOptions",
+        "plural": true,
+        "selections": (v8/*: any*/),
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductNumericFilterMetadata",
+        "kind": "LinkedField",
+        "name": "numericFilters",
+        "plural": true,
+        "selections": [
+          (v9/*: any*/),
+          (v6/*: any*/),
+          (v7/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "unitSymbol",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "min",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "max",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "selectedMin",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "selectedMax",
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductBooleanFilterMetadata",
+        "kind": "LinkedField",
+        "name": "booleanFilters",
+        "plural": true,
+        "selections": [
+          (v9/*: any*/),
+          (v6/*: any*/),
+          (v7/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "trueCount",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "falseCount",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "selectedValue",
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ProductEnumFilterMetadata",
+        "kind": "LinkedField",
+        "name": "enumFilters",
+        "plural": true,
+        "selections": [
+          (v9/*: any*/),
+          (v6/*: any*/),
+          (v7/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "ProductFilterOption",
+            "kind": "LinkedField",
+            "name": "options",
+            "plural": true,
+            "selections": (v8/*: any*/),
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
+    ],
+    "storageKey": null
   }
 ];
 return {
@@ -253,7 +489,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "BrowseProductsRouteQuery",
-    "selections": (v5/*: any*/),
+    "selections": (v10/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -266,19 +502,19 @@ return {
     ],
     "kind": "Operation",
     "name": "BrowseProductsRouteQuery",
-    "selections": (v5/*: any*/)
+    "selections": (v10/*: any*/)
   },
   "params": {
-    "cacheID": "71396ef3a0dee1ba77f1cd153ca68ae7",
+    "cacheID": "4466edb85c9ca41d574205bf66e96083",
     "id": null,
     "metadata": {},
     "name": "BrowseProductsRouteQuery",
     "operationKind": "query",
-    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        currentAttributes {\n          code\n          displayName\n          valueText\n          sortOrder\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query BrowseProductsRouteQuery(\n  $first: Int!\n  $after: String\n  $filters: ProductFiltersInput\n) {\n  products(first: $first, after: $after, filters: $filters) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        currentAttributes {\n          code\n          displayName\n          valueText\n          sortOrder\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n  productFilterMetadata(filters: $filters) {\n    resultCount\n    typeOptions {\n      id\n      label\n      count\n      selected\n      disabled\n    }\n    useCaseOptions {\n      id\n      label\n      count\n      selected\n      disabled\n    }\n    numericFilters {\n      attributeId\n      code\n      displayName\n      unitSymbol\n      min\n      max\n      selectedMin\n      selectedMax\n    }\n    booleanFilters {\n      attributeId\n      code\n      displayName\n      trueCount\n      falseCount\n      selectedValue\n    }\n    enumFilters {\n      attributeId\n      code\n      displayName\n      options {\n        id\n        label\n        count\n        selected\n        disabled\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "505713db801527641776b9d0a3f4bf3f";
+(node as any).hash = "b909f3fcc8c7dc7386b109e207861173";
 
 export default node;

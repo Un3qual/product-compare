@@ -211,6 +211,29 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
 });
 
+test("API token route renders first and next page links while preserving status", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "active",
+    after: "cursor-current",
+    hasNextPage: true,
+    endCursor: "cursor-next"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+
+  expect(screen.getByRole("link", { name: "First page" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=active"
+  );
+  expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=active&after=cursor-next"
+  );
+});
+
 test("API token route hides rotation controls for expired tokens", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

@@ -93,6 +93,54 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, product_query(), %{"slug" => "non-existent-slug"})
     end
 
+    test "comparisonProducts preserves requested order and missing positions", %{conn: conn} do
+      first =
+        SpecsFixtures.product_fixture(%{
+          slug: unique_code("comparison-first"),
+          name: "Comparison First"
+        })
+
+      second =
+        SpecsFixtures.product_fixture(%{
+          slug: unique_code("comparison-second"),
+          name: "Comparison Second"
+        })
+
+      assert %{
+               "data" => %{
+                 "comparisonProducts" => [
+                   %{"id" => second_id, "slug" => second_slug},
+                   nil,
+                   %{"id" => first_id, "slug" => first_slug}
+                 ]
+               }
+             } =
+               graphql(conn, comparison_products_query(), %{
+                 "slugs" => [second.slug, "missing-comparison-product", first.slug]
+               })
+
+      assert second_id == relay_id(:product, second.id)
+      assert second_slug == second.slug
+      assert first_id == relay_id(:product, first.id)
+      assert first_slug == first.slug
+    end
+
+    test "comparisonProducts rejects invalid comparison selections", %{conn: conn} do
+      invalid_selections = [
+        {[], "comparison slugs must contain between 1 and 3 values"},
+        {["one", "two", "three", "four"], "comparison slugs must contain between 1 and 3 values"},
+        {["one", ""], "comparison slugs must be unique non-blank strings"},
+        {["one", " one "], "comparison slugs must be unique non-blank strings"}
+      ]
+
+      Enum.each(invalid_selections, fn {slugs, expected_message} ->
+        assert %{
+                 "data" => nil,
+                 "errors" => [%{"message" => ^expected_message, "path" => ["comparisonProducts"]}]
+               } = graphql(conn, comparison_products_query(), %{"slugs" => slugs})
+      end)
+    end
+
     test "product exposes selected current attributes", %{conn: conn} do
       moderator = AccountsFixtures.user_fixture()
       product = SpecsFixtures.product_fixture(%{slug: "attribute-demo-monitor"})
@@ -1342,6 +1390,18 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
           id
           name
         }
+      }
+    }
+    """
+  end
+
+  defp comparison_products_query do
+    """
+    query ComparisonProducts($slugs: [String!]!) {
+      comparisonProducts(slugs: $slugs) {
+        id
+        slug
+        name
       }
     }
     """

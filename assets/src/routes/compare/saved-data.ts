@@ -7,7 +7,6 @@ import { RouteLoaderGraphQLError } from "../../relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { isRouteRecord } from "../route-errors";
@@ -27,6 +26,9 @@ export type SavedComparisonsRouteLoaderData =
       status: "ready" | "empty";
       savedSetQueries: SavedComparisonSetQueryDescriptor[];
       savedSets: SavedComparisonSetSummary[];
+      after?: string | null;
+      hasNextPage?: boolean;
+      endCursor?: string | null;
     }
   | {
       status: "unauthorized";
@@ -35,7 +37,6 @@ export type SavedComparisonsRouteLoaderData =
     };
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
-const SAVED_COMPARISON_SETS_MAX_PAGES = 50;
 const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
 const SAVED_COMPARISONS_PARSE_ERROR = "Failed to parse saved comparison sets response";
 
@@ -44,48 +45,36 @@ export async function savedComparisonsLoader({
   request
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const fetchedPages: Array<FetchedRelayRouteQuery<SavedComparisonsRouteQuery>> = [];
-  const savedSetQueries: SavedComparisonSetQueryDescriptor[] = [];
-  const savedSets: SavedComparisonSetSummary[] = [];
-  let after: string | undefined;
-  let pageCount = 0;
+  const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
+  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null = null;
 
   try {
-    while (true) {
-      throwIfAborted(request.signal);
+    throwIfAborted(request.signal);
+    fetchedPage = await fetchRouteQuery<SavedComparisonsRouteQuery>(
+      environment,
+      savedComparisonsRouteQuery,
+      after === null
+        ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
+        : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
+      { signal: request.signal }
+    );
+    throwIfAborted(request.signal);
+    const page = summarizeSavedComparisonSetsPage(fetchedPage.data);
 
-      if (pageCount >= SAVED_COMPARISON_SETS_MAX_PAGES) {
-        throw new Error("Saved comparison sets pagination limit exceeded");
-      }
-
-      pageCount += 1;
-      const fetchedPage = await fetchRouteQuery<SavedComparisonsRouteQuery>(
-        environment,
-        savedComparisonsRouteQuery,
-        after === undefined
-          ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
-          : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
-        { signal: request.signal }
-      );
-      fetchedPages.push(fetchedPage);
-      savedSetQueries.push(fetchedPage.descriptor);
-
-      const page = summarizeSavedComparisonSetsPage(fetchedPage.data);
-
-      savedSets.push(...page.savedSets);
-
-      if (!page.hasNextPage) {
-        break;
-      }
-
-      if (!page.endCursor || page.endCursor === after) {
-        throw new Error("Invalid pagination cursor");
-      }
-
-      after = page.endCursor;
+    if (page.hasNextPage && (!page.endCursor || page.endCursor === after)) {
+      throw new Error("Invalid pagination cursor");
     }
+
+    return {
+      status: page.savedSets.length === 0 ? "empty" : "ready",
+      savedSetQueries: [fetchedPage.descriptor],
+      savedSets: page.savedSets,
+      after,
+      hasNextPage: page.hasNextPage,
+      endCursor: page.endCursor
+    };
   } catch (error) {
-    disposeFetchedSavedComparisonPages(fetchedPages);
+    fetchedPage?.dispose();
 
     if (isUnauthorizedSavedComparisonsError(error)) {
       return {
@@ -98,11 +87,12 @@ export async function savedComparisonsLoader({
     throw error;
   }
 
-  return {
-    status: savedSets.length === 0 ? "empty" : "ready",
-    savedSetQueries,
-    savedSets
-  };
+}
+
+function nonBlankSearchParam(value: string | null) {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
 }
 
 function throwIfAborted(signal?: AbortSignal) {
@@ -198,14 +188,6 @@ function summarizeSavedComparisonItem(item: unknown): { position: number; slug: 
 
 function throwSavedComparisonsParseError(): never {
   throw new Error(SAVED_COMPARISONS_PARSE_ERROR);
-}
-
-function disposeFetchedSavedComparisonPages(
-  fetchedPages: Array<FetchedRelayRouteQuery<SavedComparisonsRouteQuery>>
-) {
-  for (const fetchedPage of fetchedPages) {
-    fetchedPage.dispose();
-  }
 }
 
 export function isUnauthorizedSavedComparisonsError(error: unknown) {

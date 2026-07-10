@@ -4,9 +4,6 @@ import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
-import productOffersRouteQuery, {
-  type ProductOffersRouteQuery
-} from "../../__generated__/ProductOffersRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
@@ -57,18 +54,16 @@ export function ProductDetailRoute() {
       fallback={<ProductUnavailableFallback />}
     >
       <Suspense fallback={<p role="status">Loading product...</p>}>
-        <ProductDetail productQuery={loaderData.productQuery} offers={loaderData.offers} />
+        <ProductDetail productQuery={loaderData.productQuery} />
       </Suspense>
     </ResettableErrorBoundary>
   );
 }
 
 function ProductDetail({
-  productQuery,
-  offers
+  productQuery
 }: {
   productQuery: Extract<ProductDetailLoaderData, { status: "ready" }>["productQuery"];
-  offers: Extract<ProductDetailLoaderData, { status: "ready" }>["offers"];
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
     productDetailRouteQuery,
@@ -120,23 +115,12 @@ function ProductDetail({
       <ProductSpecifications attributes={product.currentAttributes} />
       <section>
         <h2>Active offers</h2>
-        {offers.status === "error" ? (
-          <OffersUnavailableFallback />
-        ) : (
-          <ResettableErrorBoundary
-            resetToken={offers.query}
-            fallback={<OffersUnavailableFallback />}
-          >
-            <Suspense fallback={<p role="status">Loading offers...</p>}>
-              <ProductOffers
-                query={offers.query}
-                productSlug={product.slug}
-                offersAfter={offers.query.__relayQuery.variables.after ?? null}
-                selectedCompareSlugs={selectedCompareSlugs}
-              />
-            </Suspense>
-          </ResettableErrorBoundary>
-        )}
+        <ProductOffers
+          connection={product.merchantProducts}
+          productSlug={product.slug}
+          offersAfter={new URLSearchParams(location.search).get("offersAfter")}
+          selectedCompareSlugs={selectedCompareSlugs}
+        />
       </section>
     </section>
   );
@@ -269,62 +253,80 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOff
   numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
 };
 
+type ProductOfferNode = NonNullable<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
+>["edges"][number]["node"];
+
+function buildVisibleProductOffer(node: ProductOfferNode): VisibleProductOffer | null {
+  const safeUrl = normalizeOfferUrl(node.url);
+
+  if (!safeUrl) {
+    return null;
+  }
+
+  return {
+    id: node.id,
+    currency: normalizedCurrency(node.currency),
+    merchantName: productOfferMerchantName(node.merchant),
+    url: safeUrl,
+    priceText: formatPriceText(node.latestPrice?.price, node.currency),
+    numericPrice: decimalStringToNumber(node.latestPrice?.price),
+    priceObservation: buildPriceObservation(node.latestPrice?.observedAt),
+    ...buildVisibleCouponSummary(node.activeCoupons),
+    ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency)
+  };
+}
+
+function buildVisibleCouponSummary(activeCoupons: ProductOfferNode["activeCoupons"]) {
+  return {
+    coupons: buildCouponRows(activeCoupons?.edges ?? []),
+    couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false
+  };
+}
+
+function buildVisiblePriceHistorySummary(
+  priceHistory: ProductOfferNode["priceHistory"],
+  currency: string
+) {
+  return {
+    priceHistory: buildPriceHistoryRows(priceHistory?.edges ?? [], currency),
+    priceHistoryHasMore: priceHistory?.pageInfo.hasNextPage ?? false
+  };
+}
+
 function ProductOffers({
-  query,
+  connection,
   productSlug,
   offersAfter,
   selectedCompareSlugs
 }: {
-  query: Extract<
-    Extract<ProductDetailLoaderData, { status: "ready" }>["offers"],
-    { status: "ready" }
-  >["query"];
+  connection: NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"];
   productSlug: string;
   offersAfter: string | null;
   selectedCompareSlugs: readonly string[];
 }) {
-  const queryRef = useRoutePreloadedQuery<ProductOffersRouteQuery>(
-    productOffersRouteQuery,
-    query
-  );
-  const data = usePreloadedQuery<ProductOffersRouteQuery>(productOffersRouteQuery, queryRef);
-  const offers = data.merchantProducts.edges.flatMap(({ node }) => {
-    const safeUrl = normalizeOfferUrl(node.url);
+  if (!connection) {
+    return <OffersUnavailableFallback />;
+  }
 
-    if (!safeUrl) {
-      return [];
-    }
+  const offers = connection.edges.flatMap(({ node }) => {
+    const offer = buildVisibleProductOffer(node);
 
-    return [
-      {
-        id: node.id,
-        currency: normalizedCurrency(node.currency),
-        merchantName: productOfferMerchantName(node.merchant),
-        url: safeUrl,
-        priceText: formatPriceText(node.latestPrice?.price, node.currency),
-        numericPrice: decimalStringToNumber(node.latestPrice?.price),
-        priceObservation: buildPriceObservation(node.latestPrice?.observedAt),
-        coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
-        couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
-        priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
-        priceHistoryHasMore: node.priceHistory?.pageInfo.hasNextPage ?? false
-      }
-    ];
+    return offer ? [offer] : [];
   });
   const paginationLinks =
-    offersAfter || (data.merchantProducts.pageInfo.hasNextPage && data.merchantProducts.pageInfo.endCursor) ? (
+    offersAfter || (connection.pageInfo.hasNextPage && connection.pageInfo.endCursor) ? (
       <nav aria-label="Active offer pages">
         {offersAfter ? (
           <Link to={productOffersPath(productSlug, null, selectedCompareSlugs)}>
             First offers
           </Link>
         ) : null}
-        {data.merchantProducts.pageInfo.hasNextPage &&
-        data.merchantProducts.pageInfo.endCursor ? (
+        {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
           <Link
             to={productOffersPath(
               productSlug,
-              data.merchantProducts.pageInfo.endCursor,
+              connection.pageInfo.endCursor,
               selectedCompareSlugs
             )}
           >
@@ -381,9 +383,6 @@ function ProductOffers({
     </>
   );
 }
-
-type ProductOfferNode =
-  ProductOffersRouteQuery["response"]["merchantProducts"]["edges"][number]["node"];
 
 function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
   return merchant?.name ?? "Visit offer";

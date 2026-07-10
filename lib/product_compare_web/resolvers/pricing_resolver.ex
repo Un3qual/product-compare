@@ -25,6 +25,32 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     end
   end
 
+  @spec product_merchant_products(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def product_merchant_products(%{id: product_id}, args, _resolution)
+      when is_integer(product_id) do
+    with {:ok, merchant_id} <-
+           Input.decode_optional_integer_id(
+             Input.fetch_value(args || %{}, :merchant_id),
+             :merchant,
+             "merchant"
+           ) do
+      attrs = %{
+        product_id: product_id,
+        merchant_id: merchant_id,
+        active_only: Input.fetch_value(args || %{}, :active_only, false),
+        first: Input.fetch_value(args || %{}, :first),
+        after: Input.fetch_value(args || %{}, :after)
+      }
+
+      query = Pricing.list_merchant_products_query(attrs)
+      Connection.from_query_result(query, Input.connection_args(attrs), Repo)
+    end
+  end
+
+  def product_merchant_products(_product, _args, _resolution),
+    do: {:error, "invalid product id"}
+
   @spec latest_price(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Pricing.PricePoint.t() | nil}
   def latest_price(%{id: merchant_product_id}, _args, %{context: %{loader: loader}})

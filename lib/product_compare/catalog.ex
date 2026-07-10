@@ -97,6 +97,17 @@ defmodule ProductCompare.Catalog do
     Repo.get_by(Product, slug: slug)
   end
 
+  @spec list_products_by_slugs([String.t()]) :: [Product.t() | nil]
+  def list_products_by_slugs(slugs) when is_list(slugs) do
+    products_by_slug =
+      Product
+      |> where([product], product.slug in ^slugs)
+      |> Repo.all()
+      |> Map.new(&{&1.slug, &1})
+
+    Enum.map(slugs, &Map.get(products_by_slug, &1))
+  end
+
   @spec create_saved_comparison_set(pos_integer(), %{
           name: String.t(),
           product_ids: [pos_integer()]

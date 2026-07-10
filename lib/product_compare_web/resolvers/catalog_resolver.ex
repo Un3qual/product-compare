@@ -17,12 +17,23 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
   @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
+  @max_comparison_products 3
   @max_search_query_length 100
 
   @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
   def product(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
     {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}
+  end
+
+  @spec comparison_products(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, [Product.t() | nil]} | {:error, String.t()}
+  def comparison_products(_parent, args, resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
+    with {:ok, slugs} <- normalize_comparison_slugs(Input.fetch_list_value(args || %{}, :slugs)) do
+      {:ok, Catalog.list_products_by_slugs(slugs)}
+    end
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
@@ -190,6 +201,25 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     do: {:ok, saved_comparison_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
 
   @spec normalize_filters(map() | nil) :: {:ok, map()} | {:error, String.t()}
+  defp normalize_comparison_slugs(slugs)
+       when is_list(slugs) and length(slugs) in 1..@max_comparison_products do
+    normalized_slugs =
+      Enum.map(slugs, fn
+        slug when is_binary(slug) -> String.trim(slug)
+        _value -> nil
+      end)
+
+    if Enum.all?(normalized_slugs, &(is_binary(&1) and &1 != "")) and
+         Enum.uniq(normalized_slugs) == normalized_slugs do
+      {:ok, normalized_slugs}
+    else
+      {:error, "comparison slugs must be unique non-blank strings"}
+    end
+  end
+
+  defp normalize_comparison_slugs(_slugs),
+    do: {:error, "comparison slugs must contain between 1 and 3 values"}
+
   defp normalize_filters(nil), do: {:ok, %{}}
 
   defp normalize_filters(filters) when is_map(filters) do

@@ -1,8 +1,13 @@
 import { graphql } from "react-relay";
 
-export const productDetailRouteQuery = graphql`
-  query ProductDetailRouteQuery($slug: String!, $offerFirst: Int!, $offersAfter: String) {
-    product(slug: $slug) {
+export const compareRouteQuery = graphql`
+  query CompareRouteQuery(
+    $slugs: [String!]!
+    $offerFirst: Int!
+    $pickerFirst: Int!
+    $pickerAfter: String
+  ) {
+    comparisonProducts(slugs: $slugs) {
       id
       name
       slug
@@ -25,16 +30,15 @@ export const productDetailRouteQuery = graphql`
         enumOptionId
         unitSymbol
       }
-      merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {
+      merchantProducts(first: $offerFirst, activeOnly: true) {
         edges {
-          cursor
           node {
             id
-            url
             currency
             merchant {
               id
               name
+              domain
             }
             latestPrice {
               id
@@ -43,15 +47,12 @@ export const productDetailRouteQuery = graphql`
             }
             activeCoupons(first: 2) {
               edges {
-                cursor
                 node {
                   code
-                  description
                   discountType
                   discountValue
                   currency
                   validTo
-                  terms
                 }
               }
               pageInfo {
@@ -76,6 +77,23 @@ export const productDetailRouteQuery = graphql`
           endCursor
           hasNextPage
         }
+      }
+    }
+    products(first: $pickerFirst, after: $pickerAfter) {
+      edges {
+        node {
+          id
+          name
+          slug
+          brand {
+            id
+            name
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }

@@ -31,7 +31,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-09
+Updated: 2026-07-10
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -79,11 +79,20 @@ evidence in their lane docs. No additional validated candidate is available;
 the remaining catalogued work is deferred or rejected and cannot be used as
 queue filler.
 
+On 2026-07-10, the user-reported GraphQL request-waterfall batch completed.
+Comparison, product detail, and catalog now use one initial route-data request,
+while saved comparisons and API tokens use explicit one-page-at-a-time cursor
+navigation. No other validated candidate is available, so the ready slate
+remains below target rather than being filled with deferred or rejected work.
+
 ## Ready Work
 
-None. The approved four-row shopper decision-confidence batch is complete, and
-the plan catalog contains no additional validated candidate outside deferred or
-rejected work.
+None. The plan catalog contains no additional validated candidate outside
+deferred or rejected work.
+
+## Active Work
+
+None.
 
 ## Needs Decision Work
 
@@ -94,6 +103,18 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-10 GraphQL request-waterfall batch is complete. `/compare` now
+combines selected products, initial offer context, and picker data into one
+request; product detail combines product and offer data; and catalog combines
+products with filter metadata. Saved comparisons and API tokens now fetch one
+cursor page per navigation with explicit first/next links instead of eagerly
+following every cursor. Review follow-up removed synthetic compare-card reads,
+made selected-product ordering defensive, and preserves usable product detail
+when only nested offers fail. Relay generation, client and SSR production
+builds, all 598 frontend tests, all 624 backend tests, backend type checks,
+formatting, and diff checks passed. The lane doc records the request-site audit
+and focused verification evidence.
 
 The 2026-07-09 shopper decision-confidence batch completed catalog result
 guidance: `/products` now shows the complete metadata-backed result count and

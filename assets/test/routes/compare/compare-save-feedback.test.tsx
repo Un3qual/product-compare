@@ -108,32 +108,64 @@ const deskChairQueryRef = {
   variables: deskChairQueryDescriptor.__relayQuery.variables
 };
 
+const deskLampCompareQueryDescriptor = {
+  __relayQuery: {
+    operationName: "CompareRouteQuery",
+    text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
+    variables: { slugs: [DESK_LAMP.slug] }
+  }
+};
+
+const deskChairCompareQueryDescriptor = {
+  __relayQuery: {
+    operationName: "CompareRouteQuery",
+    text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
+    variables: { slugs: [DESK_CHAIR.slug] }
+  }
+};
+
+const deskLampCompareQueryRef = {
+  dispose: vi.fn(),
+  variables: deskLampCompareQueryDescriptor.__relayQuery.variables
+};
+
+const deskChairCompareQueryRef = {
+  dispose: vi.fn(),
+  variables: deskChairCompareQueryDescriptor.__relayQuery.variables
+};
+
 const READY_LOADER_DATA = {
   status: "ready",
+  specMode: "shared",
   slugs: [DESK_LAMP.slug],
-  productQueries: [deskLampQueryDescriptor],
+  query: deskLampCompareQueryDescriptor,
+  offerContexts: {},
   products: [
     {
       id: DESK_LAMP.id,
       name: DESK_LAMP.name,
       slug: DESK_LAMP.slug,
       description: DESK_LAMP.description,
-      brandName: DESK_LAMP.brand.name
+      brandName: DESK_LAMP.brand.name,
+      currentAttributes: []
     }
   ]
 } as const;
 
 const SECOND_READY_LOADER_DATA = {
   status: "ready",
+  specMode: "shared",
   slugs: [DESK_CHAIR.slug],
-  productQueries: [deskChairQueryDescriptor],
+  query: deskChairCompareQueryDescriptor,
+  offerContexts: {},
   products: [
     {
       id: DESK_CHAIR.id,
       name: DESK_CHAIR.name,
       slug: DESK_CHAIR.slug,
       description: DESK_CHAIR.description,
-      brandName: DESK_CHAIR.brand.name
+      brandName: DESK_CHAIR.brand.name,
+      currentAttributes: []
     }
   ]
 } as const;
@@ -393,12 +425,12 @@ test("compare route enables saving a new selection while the previous Relay muta
 
 function mockRouteQueryRefs() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
-    if (descriptor === deskLampQueryDescriptor) {
-      return deskLampQueryRef;
+    if (descriptor === deskLampCompareQueryDescriptor) {
+      return deskLampCompareQueryRef;
     }
 
-    if (descriptor === deskChairQueryDescriptor) {
-      return deskChairQueryRef;
+    if (descriptor === deskChairCompareQueryDescriptor) {
+      return deskChairCompareQueryRef;
     }
 
     throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);

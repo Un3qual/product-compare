@@ -204,7 +204,7 @@ const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DETAIL_PRODUCT.slug }
+    variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 
@@ -212,7 +212,7 @@ const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: SECOND_PRODUCT.slug }
+    variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 
@@ -220,7 +220,7 @@ const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: THIRD_PRODUCT.slug }
+    variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null }
   }
 };
 
@@ -239,6 +239,24 @@ const THIRD_PRODUCT_QUERY_REF = {
   variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
 };
 
+const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
+  __relayQuery: {
+    operationName: "CompareRouteQuery",
+    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!, $pickerFirst: Int!, $pickerAfter: String) { comparisonProducts(slugs: $slugs) { id } products(first: $pickerFirst, after: $pickerAfter) { edges { node { id } } } }",
+    variables: {
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+      offerFirst: 3,
+      pickerFirst: 24,
+      pickerAfter: null
+    }
+  }
+};
+
+const COMPARE_ROUTE_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables
+};
+
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
     operationName: "SavedComparisonsRouteQuery",
@@ -249,6 +267,41 @@ const savedComparisonsQueryDescriptor = (variables: { first: number; after?: str
 
 const SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR = savedComparisonsQueryDescriptor({ first: 20 });
 
+const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
+
+function buildOfferContextConnection({
+  hasNextPage = false,
+  offers
+}: {
+  hasNextPage?: boolean;
+  offers: CompareOfferTestNode[];
+}) {
+  return {
+    edges: offers.map((node, index) => ({
+      cursor: `offer-cursor-${index + 1}`,
+      node: {
+        activeCoupons: {
+          edges: node.activeCoupons?.edges ?? [],
+          pageInfo: {
+            hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
+          }
+        },
+        priceHistory: {
+          edges: node.priceHistory?.edges ?? [],
+          pageInfo: {
+            hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
+          }
+        },
+        ...node
+      }
+    })),
+    pageInfo: {
+      endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
+      hasNextPage
+    }
+  };
+}
+
 const buildFetchedProductQuery = (
   product: CompareTestProduct | null,
   descriptor:
@@ -257,62 +310,54 @@ const buildFetchedProductQuery = (
     | typeof THIRD_PRODUCT_QUERY_DESCRIPTOR
 ) => ({
   data: {
-    product
+    product,
+    comparisonProducts: [
+      product
+        ? {
+            ...product,
+            merchantProducts: buildOfferContextConnection({ offers: [] })
+          }
+        : null
+    ],
+    products: {
+      edges: [],
+      pageInfo: {
+        endCursor: null,
+        hasNextPage: false
+      }
+    }
   },
   descriptor,
   dispose: vi.fn()
 });
 
-const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
-
-const buildOfferContextDescriptor = (productId: string, after: string | null = null) => ({
-  __relayQuery: {
-    operationName: "CompareOfferContextQuery",
-    text: "query CompareOfferContextQuery($productId: ID!, $first: Int!, $after: String) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first, after: $after }) { edges { node { id } } } }",
-    variables: { productId, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after }
-  }
-});
-
-const buildOfferContextConnection = ({
-  hasNextPage = false,
-  offers
+const buildFetchedCompareRouteQuery = ({
+  products,
+  offerConnections = new Map<string, ReturnType<typeof buildOfferContextConnection> | null>()
 }: {
-  hasNextPage?: boolean;
-  offers: CompareOfferTestNode[];
+  products: Array<CompareTestProduct | null>;
+  offerConnections?: Map<string, ReturnType<typeof buildOfferContextConnection> | null>;
 }) => ({
-  edges: offers.map((node, index) => ({
-    cursor: `offer-cursor-${index + 1}`,
-    node: {
-      activeCoupons: {
-        edges: node.activeCoupons?.edges ?? [],
-        pageInfo: {
-          hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
-        }
-      },
-      priceHistory: {
-        edges: node.priceHistory?.edges ?? [],
-        pageInfo: {
-          hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
-        }
-      },
-      ...node
-    }
-  })),
-  pageInfo: {
-    endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
-    hasNextPage
-  }
-});
-
-const buildFetchedOfferContextQuery = (
-  productId: string,
-  merchantProducts: ReturnType<typeof buildOfferContextConnection>,
-  after: string | null = null
-) => ({
   data: {
-    merchantProducts
+    comparisonProducts: products.map((product) =>
+      product
+        ? {
+            ...product,
+            merchantProducts: offerConnections.has(product.id)
+              ? offerConnections.get(product.id)
+              : buildOfferContextConnection({ offers: [] })
+          }
+        : null
+    ),
+    products: {
+      edges: [],
+      pageInfo: {
+        endCursor: null,
+        hasNextPage: false
+      }
+    }
   },
-  descriptor: buildOfferContextDescriptor(productId, after),
+  descriptor: COMPARE_ROUTE_QUERY_DESCRIPTOR,
   dispose: vi.fn()
 });
 
@@ -422,7 +467,7 @@ const buildReadyCompareLoaderData = (
   status: "ready" as const,
   specMode: "shared" as const,
   slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-  productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+  query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
   offerContexts: buildDefaultOfferContexts(),
   products: [
     buildProductSummary(DETAIL_PRODUCT),
@@ -539,29 +584,17 @@ test("compare loader requests selected product details and preserves URL order",
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
 
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(
-        DETAIL_PRODUCT.id,
-        buildOfferContextConnection({ offers: [] })
-      )
-    )
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(
-        SECOND_PRODUCT.id,
-        buildOfferContextConnection({ offers: [] })
-      )
-    );
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] })
+  );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
+  ).resolves.toMatchObject({
     status: "ready",
     specMode: "shared",
     slugs: ["detail-product", "second-product"],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
@@ -572,34 +605,40 @@ test("compare loader requests selected product details and preserves URL order",
     ]
   });
 
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    1,
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { slug: "detail-product" },
+    {
+      slugs: ["detail-product", "second-product"],
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
+      pickerFirst: 24,
+      pickerAfter: null
+    },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { slug: "second-product" },
-    { signal: request.signal }
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader restores requested slug order when response order diverges", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    3,
-    environment,
-    expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({ products: [SECOND_PRODUCT, DETAIL_PRODUCT] })
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    4,
-    environment,
-    expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
-  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+    products: [
+      { id: DETAIL_PRODUCT.id, slug: DETAIL_PRODUCT.slug },
+      { id: SECOND_PRODUCT.id, slug: SECOND_PRODUCT.slug }
+    ]
+  });
 });
 
 test("compare loader preserves typed attribute metadata for compare rows", async () => {
@@ -627,11 +666,6 @@ test("compare loader preserves typed attribute metadata for compare rows", async
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
     buildFetchedProductQuery(productWithMetadata, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
-  ).mockResolvedValueOnce(
-    buildFetchedOfferContextQuery(
-      productWithMetadata.id,
-      buildOfferContextConnection({ offers: [] })
-    )
   );
 
   await expect(
@@ -802,11 +836,15 @@ test("compare loader summarizes bounded offer-context pages without treating inc
     ]
   });
 
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
-    .mockResolvedValueOnce(buildFetchedOfferContextQuery(SECOND_PRODUCT.id, secondOffers));
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT, SECOND_PRODUCT],
+      offerConnections: new Map([
+        [DETAIL_PRODUCT.id, detailOffers],
+        [SECOND_PRODUCT.id, secondOffers]
+      ])
+    })
+  );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -839,69 +877,33 @@ test("compare loader summarizes bounded offer-context pages without treating inc
       }
     }
   });
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    3,
-    environment,
-    expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    4,
-    environment,
-    expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(4);
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare loader does not paginate offer context past the first page", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare?slug=detail-product");
-  let offerPageCount = 0;
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockImplementation((_environment, _query, variables) => {
-      offerPageCount += 1;
-
-      if (offerPageCount > 1) {
-        throw new Error("offer context should not request additional pages");
+  const connection = buildOfferContextConnection({
+    hasNextPage: true,
+    offers: [
+      {
+        id: "merchant-product-1",
+        currency: "USD",
+        merchant: {
+          id: "merchant-1",
+          name: "Merchant 1"
+        },
+        latestPrice: null
       }
+    ]
+  });
 
-      const { after } = variables as { after: string | null };
-      const connection = buildOfferContextConnection({
-        hasNextPage: true,
-        offers: [
-          {
-            id: `merchant-product-${offerPageCount}`,
-            currency: "USD",
-            merchant: {
-              id: `merchant-${offerPageCount}`,
-              name: `Merchant ${offerPageCount}`
-            },
-            latestPrice: null
-          }
-        ]
-      });
-
-      expect(after).toBeNull();
-
-      return Promise.resolve(
-        buildFetchedOfferContextQuery(
-          DETAIL_PRODUCT.id,
-          {
-            ...connection,
-            pageInfo: {
-              ...connection.pageInfo,
-              endCursor: `offer-context-page-${offerPageCount}`
-            }
-          },
-          after
-        )
-      );
-    });
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT],
+      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]])
+    })
+  );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -915,19 +917,20 @@ test("compare loader does not paginate offer context past the first page", async
       }
     }
   });
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(2);
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare loader does not choose a best current price across mixed currencies", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare?slug=detail-product");
 
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(
-        DETAIL_PRODUCT.id,
-        buildOfferContextConnection({
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT],
+      offerConnections: new Map([
+        [
+          DETAIL_PRODUCT.id,
+          buildOfferContextConnection({
           offers: [
             {
               id: "merchant-product-usd",
@@ -956,9 +959,11 @@ test("compare loader does not choose a best current price across mixed currencie
               }
             }
           ]
-        })
-      )
-    );
+          })
+        ]
+      ])
+    })
+  );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
@@ -1004,17 +1009,20 @@ test("compare loader keeps product specs when one offer-context query fails", as
     ]
   });
 
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedOfferContextQuery(DETAIL_PRODUCT.id, detailOffers))
-    .mockRejectedValueOnce(new Error("offer query failed"));
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT, SECOND_PRODUCT],
+      offerConnections: new Map([
+        [DETAIL_PRODUCT.id, detailOffers],
+        [SECOND_PRODUCT.id, null]
+      ])
+    })
+  );
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).resolves.toMatchObject({
     status: "ready",
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT)
@@ -1028,30 +1036,20 @@ test("compare loader keeps product specs when one offer-context query fails", as
   });
 });
 
-test("compare loader rethrows aborted offer-context fetches", async () => {
+test("compare loader rethrows an aborted combined request", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
   const abortError = new DOMException("The operation was aborted.", "AbortError");
-  const fetchedDetailOffers = buildFetchedOfferContextQuery(
-    DETAIL_PRODUCT.id,
-    buildOfferContextConnection({ offers: [] })
-  );
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(fetchedDetailOffers)
-    .mockRejectedValueOnce(abortError);
+  mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).rejects.toBe(abortError);
-  expect(fetchedDetailOffers.dispose).toHaveBeenCalledTimes(1);
 });
 
-test("compare loader rethrows offer-context failures when the route signal is aborted", async () => {
+test("compare loader rethrows combined request failures when the route signal is aborted", async () => {
   const controller = new AbortController();
   const environment = createRelayEnvironment();
   const request = buildAbortableRequest(
@@ -1061,76 +1059,45 @@ test("compare loader rethrows offer-context failures when the route signal is ab
   const abortedFetchError = new Error("route request was aborted");
 
   controller.abort();
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockRejectedValueOnce(abortedFetchError);
+  mockedFetchRouteQuery.mockRejectedValueOnce(abortedFetchError);
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
   ).rejects.toBe(abortedFetchError);
 });
 
-test("compare loader forwards the route abort signal to each Relay preload", async () => {
+test("compare loader forwards the route abort signal to the combined Relay preload", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(buildFetchedProductQuery(SECOND_PRODUCT, SECOND_PRODUCT_QUERY_DESCRIPTOR))
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(
-        DETAIL_PRODUCT.id,
-        buildOfferContextConnection({ offers: [] })
-      )
-    )
-    .mockResolvedValueOnce(
-      buildFetchedOfferContextQuery(
-        SECOND_PRODUCT.id,
-        buildOfferContextConnection({ offers: [] })
-      )
-    );
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] })
+  );
 
   await compareLoader(buildCompareLoaderArgs({ environment, request }));
 
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    1,
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { slug: "detail-product" },
+    {
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
+      pickerFirst: 24,
+      pickerAfter: null
+    },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { slug: "second-product" },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    3,
-    environment,
-    expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    4,
-    environment,
-    expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE, after: null },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare loader returns not_found when any selected product is missing", async () => {
   const environment = createRelayEnvironment();
-  const firstProductQuery = buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR);
-  const missingProductQuery = buildFetchedProductQuery(null, SECOND_PRODUCT_QUERY_DESCRIPTOR);
+  const combinedQuery = buildFetchedCompareRouteQuery({
+    products: [DETAIL_PRODUCT, null]
+  });
 
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(firstProductQuery)
-    .mockResolvedValueOnce(missingProductQuery);
+  mockedFetchRouteQuery.mockResolvedValueOnce(combinedQuery);
 
   await expect(
     compareLoader(
@@ -1146,20 +1113,12 @@ test("compare loader returns not_found when any selected product is missing", as
     specMode: "shared",
     slugs: ["detail-product", "missing-product"]
   });
-  expect(firstProductQuery.dispose).toHaveBeenCalledTimes(1);
-  expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
+  expect(combinedQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
-test("compare loader throws when any selected product request fails", async () => {
+test("compare loader throws when the combined request fails", async () => {
   const environment = createRelayEnvironment();
-  const fetchedProductQuery = buildFetchedProductQuery(
-    DETAIL_PRODUCT,
-    DETAIL_PRODUCT_QUERY_DESCRIPTOR
-  );
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(fetchedProductQuery)
-    .mockRejectedValueOnce(new Error("Network request failed: boom"));
+  mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
     compareLoader(
@@ -1171,7 +1130,6 @@ test("compare loader throws when any selected product request fails", async () =
       })
     )
   ).rejects.toThrow("Network request failed: boom");
-  expect(fetchedProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("compare loader rethrows AbortError-like rejected reasons without wrapping", async () => {
@@ -1212,23 +1170,13 @@ test("compare loader wraps non-error rejected reasons with the original cause", 
   }
 
   expect(caughtError).toBeInstanceOf(Error);
-  expect((caughtError as Error).message).toBe("Product fetch failed");
+  expect((caughtError as Error).message).toBe("Comparison fetch failed");
   expect((caughtError as Error & { cause?: unknown }).cause).toBe(rejectionReason);
 });
 
-test("compare loader throws when a rejected request is mixed with a missing product", async () => {
+test("compare loader gives combined request failures precedence over missing-product handling", async () => {
   const environment = createRelayEnvironment();
-  const missingProductQuery = {
-    data: {
-      product: null
-    },
-    descriptor: DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
-  };
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(missingProductQuery)
-    .mockRejectedValueOnce(new Error("Network request failed: boom"));
+  mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Network request failed: boom"));
 
   await expect(
     compareLoader(
@@ -1240,7 +1188,6 @@ test("compare loader throws when a rejected request is mixed with a missing prod
       })
     )
   ).rejects.toThrow("Network request failed: boom");
-  expect(missingProductQuery.dispose).toHaveBeenCalledTimes(1);
 });
 
 test("empty compare page lets users choose products without editing the URL", () => {
@@ -1407,7 +1354,7 @@ test("product picker resets pagination before rendering a changed selected set",
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
+    query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id)
     },
@@ -1465,7 +1412,7 @@ test("product picker resets pagination before rendering a changed selected set",
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR, SECOND_PRODUCT_QUERY_DESCRIPTOR],
+    query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
@@ -1651,48 +1598,77 @@ test("ready compare page keeps specs visible when one offer context is unavailab
 });
 
 test("ready compare cards render product attributes", () => {
-  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
-  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...DETAIL_PRODUCT,
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
           currentAttributes: [
             {
               code: "refresh-rate",
               displayName: "Refresh rate",
-              dataType: "numeric",
               valueText: "144 Hz"
             }
           ]
-        }
-      };
-    }
-
-    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...SECOND_PRODUCT,
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
           currentAttributes: [
             {
               code: "refresh-rate",
               displayName: "Refresh rate",
-              dataType: "numeric",
               valueText: "165 Hz"
             }
           ]
         }
-      };
+      ]
+    })
+  );
+
+  renderCompareRoute();
+
+  expect(screen.getAllByText("144 Hz")).toHaveLength(2);
+  expect(screen.getAllByText("165 Hz")).toHaveLength(2);
+  expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
+});
+
+test("ready compare cards render from batched loader data without synthetic product reads", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: [
+            {
+              code: "refresh-rate",
+              displayName: "Refresh rate",
+              valueText: "144 Hz"
+            }
+          ]
+        },
+        buildProductSummary(SECOND_PRODUCT)
+      ]
+    })
+  );
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === COMPARE_ROUTE_QUERY_DESCRIPTOR) {
+      return COMPARE_ROUTE_QUERY_REF;
     }
 
-    throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+    throw new Error(`Unexpected synthetic product descriptor: ${JSON.stringify(descriptor)}`);
+  });
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Compare cards must not issue store-only product reads");
   });
 
   renderCompareRoute();
 
-  expect(screen.getByText("144 Hz")).toBeVisible();
-  expect(screen.getByText("165 Hz")).toBeVisible();
-  expect(screen.getAllByText("Refresh rate")).toHaveLength(2);
+  expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
+  expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
+  expect(screen.getByText("Refresh rate")).toBeInTheDocument();
+  expect(screen.getByText("144 Hz")).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
+  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
 test("ready compare page aligns shared product attributes in a matrix", () => {
@@ -2067,11 +2043,6 @@ test("ready compare page preserves specification mode in remove links", () => {
     buildReadyCompareLoaderData({
       specMode: "differences",
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      productQueries: [
-        DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-        SECOND_PRODUCT_QUERY_DESCRIPTOR,
-        THIRD_PRODUCT_QUERY_DESCRIPTOR
-      ],
       products: [
         buildProductSummary(DETAIL_PRODUCT),
         buildProductSummary(SECOND_PRODUCT),
@@ -2469,11 +2440,6 @@ test("ready compare page renders a selected-product tray with ordered remove lin
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2521,7 +2487,6 @@ test("ready compare page handles an empty selected-product tray defensively", ()
     status: "ready",
     specMode: "shared",
     slugs: [],
-    productQueries: [],
     products: []
   });
 
@@ -2568,11 +2533,6 @@ test("ready compare cards include a remove link for the first selected product",
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2593,11 +2553,6 @@ test("ready compare cards include a remove link for a middle selected product", 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2618,11 +2573,6 @@ test("ready compare cards include a remove link for the last selected product", 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    productQueries: [
-      DETAIL_PRODUCT_QUERY_DESCRIPTOR,
-      SECOND_PRODUCT_QUERY_DESCRIPTOR,
-      THIRD_PRODUCT_QUERY_DESCRIPTOR
-    ],
     products: [
       buildProductSummary(DETAIL_PRODUCT),
       buildProductSummary(SECOND_PRODUCT),
@@ -2643,7 +2593,6 @@ test("ready compare card remove link clears all selected slugs when only one is 
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
   });
 
@@ -2760,7 +2709,6 @@ test("compare route clears stale save feedback when selected products change", a
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug],
-    productQueries: [DETAIL_PRODUCT_QUERY_DESCRIPTOR],
     products: [buildProductSummary(DETAIL_PRODUCT)]
   });
 
@@ -2843,7 +2791,10 @@ test("saved comparisons loader requests the current user's sets and forwards the
         name: "Desk setup",
         slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
       }
-    ]
+    ],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
@@ -2854,13 +2805,10 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 });
 
-test("saved comparisons loader follows pagination cursors until all saved sets are loaded", async () => {
+test("saved comparisons loader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
-  const secondPageDescriptor = savedComparisonsQueryDescriptor({ first: 20, after: "cursor-1" });
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(
+  mockedFetchRouteQuery.mockResolvedValueOnce(
       buildFetchedSavedComparisonPage(
         buildSavedComparisonPage({
           endCursor: "cursor-1",
@@ -2874,40 +2822,23 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
           ]
         })
       )
-    )
-    .mockResolvedValueOnce(
-      buildFetchedSavedComparisonPage(
-        buildSavedComparisonPage({
-          endCursor: "cursor-2",
-          savedSets: [
-            {
-              id: "saved-set-2",
-              name: "Office setup",
-              slugs: [SECOND_PRODUCT.slug]
-            }
-          ]
-        }),
-        secondPageDescriptor
-      )
     );
 
   await expect(
     savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR, secondPageDescriptor],
+    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
     savedSets: [
       {
         id: "saved-set-1",
         name: "Desk setup",
         slugs: [DETAIL_PRODUCT.slug]
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        slugs: [SECOND_PRODUCT.slug]
       }
-    ]
+    ],
+    after: null,
+    hasNextPage: true,
+    endCursor: "cursor-1"
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
@@ -2917,13 +2848,7 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
     { first: 20 },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { first: 20, after: "cursor-1" },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("saved comparisons loader returns unauthorized status when GraphQL returns UNAUTHENTICATED", async () => {
@@ -3486,43 +3411,6 @@ test("saved comparisons loader throws when page metadata cannot be parsed", asyn
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
-test("saved comparisons loader throws when page cap is reached before pagination completes", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  // Simulate a response where hasNextPage is always true so the loader hits the cap.
-  // We use mockImplementation to return the same paginated response for each call.
-  let callCount = 0;
-
-  mockedFetchRouteQuery.mockImplementation(() => {
-    callCount += 1;
-
-    return Promise.resolve({
-      data: buildSavedComparisonPage({
-        endCursor: `cursor-${callCount}`,
-        hasNextPage: true,
-        savedSets: [
-          {
-            id: `saved-set-${callCount}`,
-            name: `Set ${callCount}`,
-            slugs: [DETAIL_PRODUCT.slug]
-          }
-        ]
-      }),
-      descriptor: savedComparisonsQueryDescriptor(
-        callCount === 1 ? { first: 20 } : { first: 20, after: `cursor-${callCount - 1}` }
-      ),
-      dispose: vi.fn()
-    });
-  });
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
-  ).rejects.toThrow("Saved comparison sets pagination limit exceeded");
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(50);
-});
-
 test("saved comparisons loader returns empty status for zero saved sets with no truncation", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
@@ -3542,7 +3430,10 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
   expect(result).toEqual({
     status: "empty",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: []
+    savedSets: [],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
   });
 });
 
@@ -3601,6 +3492,10 @@ function renderCompareRoute() {
 
 function mockCompareRouteQueries() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === COMPARE_ROUTE_QUERY_DESCRIPTOR) {
+      return COMPARE_ROUTE_QUERY_REF;
+    }
+
     if (descriptor === DETAIL_PRODUCT_QUERY_DESCRIPTOR) {
       return DETAIL_PRODUCT_QUERY_REF;
     }
@@ -3617,6 +3512,10 @@ function mockCompareRouteQueries() {
   });
 
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] }).data;
+    }
+
     if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
       return {
         product: DETAIL_PRODUCT
@@ -3641,7 +3540,7 @@ function mockCompareRouteQueries() {
 
 test("saved comparisons loader throws when pagination cursor does not advance", async () => {
   const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
+  const request = new Request("https://app.example.com/compare/saved?after=cursor-1");
   const secondPageDescriptor = savedComparisonsQueryDescriptor({ first: 20, after: "cursor-1" });
 
   mockedFetchRouteQuery
