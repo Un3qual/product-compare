@@ -128,10 +128,33 @@ const secondProductQueryRef = {
   variables: secondProductQueryDescriptor.__relayQuery.variables
 };
 
-function buildEmptyOfferContextQuery(productId: string) {
+const compareRouteQueryDescriptor = {
+  __relayQuery: {
+    operationName: "CompareRouteQuery",
+    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!, $pickerFirst: Int!, $pickerAfter: String) { comparisonProducts(slugs: $slugs) { id } }",
+    variables: {
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+      offerFirst: 3,
+      pickerFirst: 24,
+      pickerAfter: null
+    }
+  }
+};
+
+function buildCombinedCompareQuery() {
   return {
     data: {
-      merchantProducts: {
+      comparisonProducts: [DETAIL_PRODUCT, SECOND_PRODUCT].map((product) => ({
+        ...product,
+        merchantProducts: {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false,
+            endCursor: null
+          }
+        }
+      })),
+      products: {
         edges: [],
         pageInfo: {
           hasNextPage: false,
@@ -139,16 +162,7 @@ function buildEmptyOfferContextQuery(productId: string) {
         }
       }
     },
-    descriptor: {
-      __relayQuery: {
-        operationName: "CompareOfferContextQuery",
-        text:
-          "query CompareOfferContextQuery($productId: ID!, $first: Int!, $after: String) { " +
-          "merchantProducts(productId: $productId, first: $first, after: $after) { " +
-          "edges { node { id } } } }",
-        variables: { productId, first: 3, after: null }
-      }
-    },
+    descriptor: compareRouteQueryDescriptor,
     dispose: vi.fn()
   };
 }
@@ -205,34 +219,19 @@ test("compare loader preloads selected product detail queries through Relay", as
     "https://app.example.com/compare?slug=detail-product&slug=second-product"
   );
 
-  mockedFetchGraphQL
-    .mockResolvedValueOnce({ data: { product: DETAIL_PRODUCT } })
-    .mockResolvedValueOnce({ data: { product: SECOND_PRODUCT } });
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce({
-      data: {
-        product: DETAIL_PRODUCT
-      },
-      descriptor: detailProductQueryDescriptor,
-      dispose: vi.fn()
-    })
-    .mockResolvedValueOnce({
-      data: {
-        product: SECOND_PRODUCT
-      },
-      descriptor: secondProductQueryDescriptor,
-      dispose: vi.fn()
-    })
-    .mockResolvedValueOnce(buildEmptyOfferContextQuery(DETAIL_PRODUCT.id))
-    .mockResolvedValueOnce(buildEmptyOfferContextQuery(SECOND_PRODUCT.id));
+  mockedFetchRouteQuery.mockResolvedValueOnce(buildCombinedCompareQuery());
 
   await expect(
     compareLoader(buildCompareLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
+  ).resolves.toMatchObject({
     status: "ready",
     specMode: "shared",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-    productQueries: [detailProductQueryDescriptor, secondProductQueryDescriptor],
+    query: compareRouteQueryDescriptor,
+    productQueries: [
+      { __relayQuery: { variables: { slug: DETAIL_PRODUCT.slug } } },
+      { __relayQuery: { variables: { slug: SECOND_PRODUCT.slug } } }
+    ],
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
@@ -257,34 +256,18 @@ test("compare loader preloads selected product detail queries through Relay", as
     ]
   });
 
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    1,
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { slug: DETAIL_PRODUCT.slug },
+    {
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+      offerFirst: 3,
+      pickerFirst: 24,
+      pickerAfter: null
+    },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { slug: SECOND_PRODUCT.slug },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    3,
-    environment,
-    expect.anything(),
-    { productId: DETAIL_PRODUCT.id, first: 3, after: null },
-    { signal: request.signal }
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    4,
-    environment,
-    expect.anything(),
-    { productId: SECOND_PRODUCT.id, first: 3, after: null },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare route renders compared product cards from Relay route queries", () => {

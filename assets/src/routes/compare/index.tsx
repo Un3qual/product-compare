@@ -4,7 +4,9 @@ import { useMutation } from "react-relay";
 import createSavedComparisonSetMutation, {
   type CreateSavedComparisonSetMutation
 } from "../../__generated__/CreateSavedComparisonSetMutation.graphql";
+import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -28,6 +30,7 @@ import {
   buildComparePathFromSlugs
 } from "./paths";
 import { CompareSelectionTray } from "./selection-tray";
+import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{
   label: string;
@@ -194,6 +197,7 @@ export function CompareRoute() {
         }
         title="Compare products"
       >
+        {loaderData.query ? <CompareRouteQueryRetainer query={loaderData.query} /> : null}
         <p aria-label="Save comparison status" aria-live="polite" role="status">
           {activeSaveFeedback.message ?? ""}
         </p>
@@ -258,6 +262,16 @@ export function CompareRoute() {
       ) : null}
     </CompareShell>
   );
+}
+
+function CompareRouteQueryRetainer({
+  query
+}: {
+  query: Extract<CompareRouteLoaderData, { status: "ready" }>["query"];
+}) {
+  useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, query);
+
+  return null;
 }
 
 function CompareSpecModeControls({

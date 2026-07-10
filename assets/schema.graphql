@@ -12,6 +12,7 @@ type Query {
   node(id: ID!): Node
   sourceArtifact(id: ID!): SourceArtifact
   product(slug: String!): Product
+  comparisonProducts(slugs: [String!]!): [Product]!
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
   productFilterMetadata(filters: ProductFiltersInput): ProductFilterMetadata!
   merchants(first: Int, after: String): MerchantConnection
@@ -101,6 +102,7 @@ type Product implements Node {
   description: String
   brand: Brand!
   currentAttributes: [ProductAttributeValue!]!
+  merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
 }
 
 type ProductAttributeValue {
