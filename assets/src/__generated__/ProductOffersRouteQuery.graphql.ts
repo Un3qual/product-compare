@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<80c08971bf4cc47300e8a20309b73d2f>>
+ * @generated SignedSource<<9dfb9332c0a309b292fdc00220924412>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -41,6 +41,7 @@ export type ProductOffersRouteQuery$data = {
         readonly id: string;
         readonly latestPrice: {
           readonly id: string;
+          readonly observedAt: any;
           readonly price: any;
         } | null | undefined;
         readonly merchant: {
@@ -110,13 +111,23 @@ v5 = {
   "name": "currency",
   "storageKey": null
 },
-v6 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "price",
-  "storageKey": null
-},
+v6 = [
+  (v4/*: any*/),
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "price",
+    "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "observedAt",
+    "storageKey": null
+  }
+],
 v7 = {
   "alias": null,
   "args": null,
@@ -224,10 +235,7 @@ v9 = [
                 "kind": "LinkedField",
                 "name": "latestPrice",
                 "plural": false,
-                "selections": [
-                  (v4/*: any*/),
-                  (v6/*: any*/)
-                ],
+                "selections": (v6/*: any*/),
                 "storageKey": null
               },
               {
@@ -343,17 +351,7 @@ v9 = [
                         "kind": "LinkedField",
                         "name": "node",
                         "plural": false,
-                        "selections": [
-                          (v4/*: any*/),
-                          (v6/*: any*/),
-                          {
-                            "alias": null,
-                            "args": null,
-                            "kind": "ScalarField",
-                            "name": "observedAt",
-                            "storageKey": null
-                          }
-                        ],
+                        "selections": (v6/*: any*/),
                         "storageKey": null
                       }
                     ],
@@ -418,16 +416,16 @@ return {
     "selections": (v9/*: any*/)
   },
   "params": {
-    "cacheID": "c1a4730611bdf50b2cd367d680534eb2",
+    "cacheID": "419f815f87cf11b2bace9ddabc087e57",
     "id": null,
     "metadata": {},
     "name": "ProductOffersRouteQuery",
     "operationKind": "query",
-    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ProductOffersRouteQuery(\n  $productId: ID!\n  $first: Int!\n  $after: String\n) {\n  merchantProducts(input: {productId: $productId, activeOnly: true, first: $first, after: $after}) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        merchant {\n          id\n          name\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "44b6d01b38739abc6f002ee28dc1e30d";
+(node as any).hash = "07a51ac524139dd40dac7455cab66bf6";
 
 export default node;

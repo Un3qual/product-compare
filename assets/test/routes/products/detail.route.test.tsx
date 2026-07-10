@@ -443,7 +443,8 @@ test("renders product detail and active offers from Relay route queries", () => 
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
+          observedAt: "2026-06-01T00:00:00Z"
         }
       }
     ])
@@ -464,9 +465,55 @@ test("renders product detail and active offers from Relay route queries", () => 
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
   );
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
+  const priceObservedAt = screen.getByText("2026-06-01", { selector: "time" });
+
+  expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
+  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
+
+test.each([null, "not-a-date"])(
+  "keeps product-detail prices visible without an unsupported observation claim for %s",
+  (observedAt) => {
+    mockedUseLoaderData.mockReturnValue({
+      status: "ready",
+      productQuery: PRODUCT_QUERY_DESCRIPTOR,
+      offers: {
+        status: "ready",
+        query: OFFERS_QUERY_DESCRIPTOR
+      }
+    });
+    mockRouteQueryRefs();
+    mockProductAndOffersQueries(
+      buildOffersData([
+        {
+          id: "merchant-product-unsupported-observation",
+          url: "https://merchant.example.com/detail-product",
+          currency: "USD",
+          merchant: {
+            id: "merchant-1",
+            name: "Acme"
+          },
+          latestPrice: {
+            id: "price-unsupported-observation",
+            price: "199.99",
+            observedAt
+          }
+        }
+      ])
+    );
+
+    render(
+      <MemoryRouter>
+        <ProductDetailRoute />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("199.99 USD")).toBeVisible();
+    expect(screen.queryByText(/^Price observed/)).not.toBeInTheDocument();
+  }
+);
 
 test("product detail tracks merchant clicks with only the merchant product ID", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -1914,6 +1961,7 @@ function buildOffersData(
     latestPrice: {
       id: string;
       price: string;
+      observedAt?: string | null;
     } | null;
     activeCoupons?: {
       edges: Array<{

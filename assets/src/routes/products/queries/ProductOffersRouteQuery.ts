@@ -16,6 +16,7 @@ export const productOffersRouteQuery = graphql`
           latestPrice {
             id
             price
+            observedAt
           }
           activeCoupons(first: 2) {
             edges {

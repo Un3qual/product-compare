@@ -73,37 +73,13 @@ offer-discovery product label context have green completion evidence in their
 lane work docs dated 2026-07-09.
 
 Shopper decision confidence was selected as the next product-facing direction
-on 2026-07-09. Catalog result guidance plus offer observation and coupon
-validity are complete. The two remaining validated rows cover product-detail
-price observation and a visible-page offer snapshot. The below-target slate
-contains every validated row in the approved batch; other catalogued work is
-deferred or rejected and cannot be used as filler.
+on 2026-07-09. Catalog result guidance, offer observation and coupon validity,
+and product-detail price observation are complete. The visible-page offer
+snapshot is the final validated row. The below-target slate contains every
+validated row in the approved batch; other catalogued work is deferred or
+rejected and cannot be used as filler.
 
 ## Ready Work
-
-Status: ready
-Lane: frontend product detail
-Active plan:
-`docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`
-Next action: show the observation date for each supported latest price on
-`/products/:slug` while leaving prices visible when a date is unavailable.
-Owned paths:
-
-- `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`
-- `assets/src/routes/products/detail.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `assets/src/__generated__/ProductOffersRouteQuery.graphql.ts`
-- `docs/work/frontend-product-detail.md`
-
-Verification:
-
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: visible product-detail latest prices show supported observation
-dates, and missing or malformed dates do not hide prices or regress the route.
 
 Status: ready
 Lane: frontend offer discovery
@@ -148,6 +124,12 @@ The same batch completed offer observation and coupon validity context:
 `/offers` now shows supported offer-check, latest-price observation, and coupon
 expiration dates with semantic time markup while omitting missing or malformed
 date claims. Relay generation, 46 focused tests, TypeScript, and diff checks
+passed.
+
+The same batch completed product-detail price observation context:
+`/products/:slug` now shows supported latest-price observation dates while
+leaving prices and existing offer behavior intact for missing or malformed
+timestamps. Relay generation, 45 focused tests, TypeScript, and diff checks
 passed.
 
 The 2026-07-08 product-facing curation batch completed these work items:

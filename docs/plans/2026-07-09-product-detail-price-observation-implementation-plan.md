@@ -5,8 +5,8 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** ready. This is the product-detail row in the shopper decision
-confidence queue.
+**Status:** completed on 2026-07-09. Completion evidence lives in
+`docs/work/frontend-product-detail.md`.
 
 **Goal:** Show the observation date for each visible latest price on
 `/products/:slug`.
@@ -46,18 +46,18 @@ depend on `MerchantProduct.lastSeenAt`.
 
 ## Batches
 
-- [ ] **1. Add failing query and route coverage.** Assert the Relay query
+- [x] **1. Add failing query and route coverage.** Assert the Relay query
   includes `observedAt`, then cover valid, missing, and malformed timestamps
   while confirming latest price and offer actions remain visible.
-- [ ] **2. Extend and generate the query.** Select `observedAt` and run Relay to
+- [x] **2. Extend and generate the query.** Select `observedAt` and run Relay to
   refresh the generated product-offers artifact.
-- [ ] **3. Render price observation context.** Reuse the route's existing safe
+- [x] **3. Render price observation context.** Reuse the route's existing safe
   observed-date formatting and semantic time markup; do not derive relative
   freshness.
-- [ ] **4. Verify and record completion.** Run Relay, the focused detail suite,
+- [x] **4. Verify and record completion.** Run Relay, the focused detail suite,
   and TypeScript, then replace the ready section in the product-detail lane doc
   with red/green evidence.
-- [ ] **5. Commit the milestone.** Commit query, generated artifact, UI, tests,
+- [x] **5. Commit the milestone.** Commit query, generated artifact, UI, tests,
   and lane evidence together with `feat: add product price observation dates`.
 
 ## Verification
