@@ -23,7 +23,11 @@ import {
 } from "./filters";
 import { CatalogActiveFilterSummary, CatalogFilterForm } from "./filter-form";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
-import { catalogBrowseFirstPagePath, catalogBrowseNextPagePath } from "./paths";
+import {
+  catalogBrowseFirstPagePath,
+  catalogBrowseNextPagePath,
+  catalogBrowseSearchWithNormalizedSort
+} from "./paths";
 
 type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
 
@@ -104,6 +108,10 @@ function BrowseProducts({
     maxProducts: MAX_COMPARE_PRODUCTS
   });
   const currentBrowsePathname = browseRoutePathname(location.pathname);
+  const currentCompareSearch = catalogBrowseSearchWithNormalizedSort(
+    location.search,
+    activeFilters.sort
+  );
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
@@ -147,7 +155,7 @@ function BrowseProducts({
         removePathForIndex={(index) =>
           buildCurrentRoutePathWithCompareSlugs(
             currentBrowsePathname,
-            location.search,
+            currentCompareSearch,
             selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
           )
         }
@@ -196,7 +204,7 @@ function BrowseProducts({
           <li key={product.id}>
             <BrowseProductCard
               currentPathname={currentBrowsePathname}
-              currentSearch={location.search}
+              currentSearch={currentCompareSearch}
               product={product}
               selectedCompareSlugs={selectedCompareSlugs}
             />

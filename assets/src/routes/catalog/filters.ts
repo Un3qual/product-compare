@@ -402,6 +402,10 @@ function catalogSearchQuery(rawValue: string | null) {
 function catalogProductSort(rawValue: string | null): CatalogProductSort | null {
   const value = rawValue?.trim() ?? "";
 
+  if (value === "ID_ASC") {
+    return null;
+  }
+
   return CATALOG_PRODUCT_SORTS.includes(value as CatalogProductSort)
     ? (value as CatalogProductSort)
     : null;

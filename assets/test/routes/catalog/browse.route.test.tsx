@@ -648,6 +648,32 @@ test("browse loader bounds search text and drops unsupported sort values", async
   );
 });
 
+test("browse loader normalizes the default catalog sort from the URL", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products?sort=ID_ASC");
+
+  mockSuccessfulBrowseLoaderFetches();
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual(readyBrowseLoaderData());
+
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 12 },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    {},
+    { signal: request.signal }
+  );
+});
+
 test("browse loader drops blank numeric bounds and malformed boolean filter values", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
@@ -1399,6 +1425,30 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
     "detail-product",
     "second-product"
   ]);
+});
+
+test("omits the default catalog sort from rendered compare links", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?sort=ID_ASC&slug=selected-product"],
+    productData: buildBrowseProductsResponse({
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        }
+      ]
+    })
+  });
+
+  expect(screen.queryByText("Sort: Catalog order")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "Remove selected-product from selection" })
+  ).toHaveAttribute("href", "/products");
+  expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
+    "href",
+    "/products?slug=selected-product&slug=catalog-first"
+  );
 });
 
 test("clamps URL-driven compare selections before rendering browse controls", () => {

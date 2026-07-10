@@ -37,6 +37,21 @@ export function catalogBrowseNextPagePath(
   return catalogBrowsePath(filters, first, after, compareSlugs);
 }
 
+export function catalogBrowseSearchWithNormalizedSort(
+  search: string,
+  sort: CatalogFilters["sort"]
+) {
+  const params = new URLSearchParams(search);
+
+  params.delete("sort");
+
+  if (sort) {
+    params.set("sort", sort);
+  }
+
+  return params.toString();
+}
+
 function appendCatalogFilterParams(params: URLSearchParams, filters: CatalogFilters) {
   if (filters.query) {
     params.set("q", filters.query);
