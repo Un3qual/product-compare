@@ -685,6 +685,32 @@ test("saved comparisons route filters Relay-backed saved set pages", () => {
   expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
 });
 
+test("saved comparisons route renders first and next page links", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
+    savedSets: [{ id: "saved-set-1", name: "Desk setup", slugs: ["desk"] }],
+    after: "cursor-current",
+    hasNextPage: true,
+    endCursor: "cursor-next"
+  });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "First page" })).toHaveAttribute(
+    "href",
+    "/compare/saved"
+  );
+  expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
+    "href",
+    "/compare/saved?after=cursor-next"
+  );
+});
+
 test("saved comparisons route sorts combined loader saved sets while retaining loaded page queries", () => {
   const firstPageSavedSets = [
     {

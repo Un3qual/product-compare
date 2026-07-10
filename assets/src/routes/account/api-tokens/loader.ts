@@ -7,7 +7,6 @@ import { RouteLoaderGraphQLError } from "../../../relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type FetchedRelayRouteQuery,
   type RelayRouteQueryDescriptor
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
@@ -34,6 +33,9 @@ export type ApiTokensRouteLoaderData =
       tokenQueries: ApiTokenQueryDescriptor[];
       tokens: ApiTokenSummary[];
       tokenStatus: ApiTokenStatus;
+      after?: string | null;
+      hasNextPage?: boolean;
+      endCursor?: string | null;
     }
   | {
       status: "unauthorized";
@@ -45,7 +47,6 @@ export type ApiTokensRouteLoaderData =
 type ApiTokenStatusVariable = NonNullable<ApiTokensRouteQuery["variables"]["status"]>;
 
 export const API_TOKENS_PAGE_SIZE = 20;
-const API_TOKENS_MAX_PAGES = 50;
 const API_TOKENS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
 const API_TOKENS_PARSE_ERROR = "Failed to parse API tokens response";
 const API_TOKEN_STATUS_VARIABLES: Record<ApiTokenStatus, ApiTokenStatusVariable> = {
@@ -59,47 +60,37 @@ export async function apiTokensLoader({
   request
 }: LoaderFunctionArgs): Promise<ApiTokensRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const tokenStatus = parseApiTokenStatus(new URL(request.url).searchParams.get("status"));
-  const fetchedPages: Array<FetchedRelayRouteQuery<ApiTokensRouteQuery>> = [];
-  const tokenQueries: ApiTokenQueryDescriptor[] = [];
-  const tokens: ApiTokenSummary[] = [];
-  let after: string | undefined;
-  let pageCount = 0;
+  const searchParams = new URL(request.url).searchParams;
+  const tokenStatus = parseApiTokenStatus(searchParams.get("status"));
+  const after = nonBlankSearchParam(searchParams.get("after"));
+  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<ApiTokensRouteQuery>>> | null = null;
 
   try {
-    while (true) {
-      throwIfAborted(request.signal);
+    throwIfAborted(request.signal);
+    fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
+      environment,
+      apiTokensRouteQuery,
+      apiTokensQueryVariables(tokenStatus, after ?? undefined),
+      { signal: request.signal }
+    );
+    throwIfAborted(request.signal);
+    const page = summarizeApiTokensPage(fetchedPage.data);
 
-      if (pageCount >= API_TOKENS_MAX_PAGES) {
-        throw new Error("API tokens pagination limit exceeded");
-      }
-
-      pageCount += 1;
-      const fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
-        environment,
-        apiTokensRouteQuery,
-        apiTokensQueryVariables(tokenStatus, after),
-        { signal: request.signal }
-      );
-
-      fetchedPages.push(fetchedPage);
-      tokenQueries.push(fetchedPage.descriptor);
-
-      const page = summarizeApiTokensPage(fetchedPage.data);
-      tokens.push(...page.tokens);
-
-      if (!page.hasNextPage) {
-        break;
-      }
-
-      if (!page.endCursor || page.endCursor === after) {
-        throw new Error("Invalid pagination cursor");
-      }
-
-      after = page.endCursor;
+    if (page.hasNextPage && (!page.endCursor || page.endCursor === after)) {
+      throw new Error("Invalid pagination cursor");
     }
+
+    return {
+      status: page.tokens.length === 0 ? "empty" : "ready",
+      tokenQueries: [fetchedPage.descriptor],
+      tokens: page.tokens,
+      tokenStatus,
+      after,
+      hasNextPage: page.hasNextPage,
+      endCursor: page.endCursor
+    };
   } catch (error) {
-    disposeFetchedApiTokenPages(fetchedPages);
+    fetchedPage?.dispose();
 
     if (isUnauthorizedApiTokensError(error)) {
       return {
@@ -113,12 +104,12 @@ export async function apiTokensLoader({
     throw error;
   }
 
-  return {
-    status: tokens.length === 0 ? "empty" : "ready",
-    tokenQueries,
-    tokens,
-    tokenStatus
-  };
+}
+
+function nonBlankSearchParam(value: string | null) {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
 }
 
 function apiTokensQueryVariables(
@@ -238,14 +229,6 @@ function summarizeApiToken(node: unknown): ApiTokenSummary {
 
 function throwApiTokensParseError(): never {
   throw new Error(API_TOKENS_PARSE_ERROR);
-}
-
-function disposeFetchedApiTokenPages(
-  fetchedPages: Array<FetchedRelayRouteQuery<ApiTokensRouteQuery>>
-) {
-  for (const fetchedPage of fetchedPages) {
-    fetchedPage.dispose();
-  }
 }
 
 export function isUnauthorizedApiTokensError(error: unknown) {

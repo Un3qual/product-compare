@@ -91,18 +91,11 @@ test("apiTokensLoader returns unauthorized state for myApiTokens UNAUTHENTICATED
   );
 });
 
-test("apiTokensLoader summarizes paginated token records in connection order", async () => {
+test("apiTokensLoader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/account/api-tokens?status=revoked");
   const firstPageDescriptor = apiTokensQueryDescriptor({ first: 20, status: "REVOKED" });
-  const secondPageDescriptor = apiTokensQueryDescriptor({
-    first: 20,
-    after: "cursor-1",
-    status: "REVOKED"
-  });
-
-  fetchRouteQueryMock
-    .mockResolvedValueOnce(
+  fetchRouteQueryMock.mockResolvedValueOnce(
       buildFetchedApiTokenPage(
         buildApiTokenPage({
           endCursor: "cursor-1",
@@ -111,24 +104,18 @@ test("apiTokensLoader summarizes paginated token records in connection order", a
         }),
         firstPageDescriptor
       )
-    )
-    .mockResolvedValueOnce(
-      buildFetchedApiTokenPage(
-        buildApiTokenPage({
-          endCursor: "cursor-2",
-          tokens: [REVOKED_TOKEN_NODE]
-        }),
-        secondPageDescriptor
-      )
     );
 
   await expect(
     apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    tokenQueries: [firstPageDescriptor, secondPageDescriptor],
-    tokens: [TOKEN_NODE, REVOKED_TOKEN_NODE],
-    tokenStatus: "revoked"
+    tokenQueries: [firstPageDescriptor],
+    tokens: [TOKEN_NODE],
+    tokenStatus: "revoked",
+    after: null,
+    hasNextPage: true,
+    endCursor: "cursor-1"
   });
 
   expect(fetchRouteQueryMock).toHaveBeenNthCalledWith(
@@ -138,13 +125,7 @@ test("apiTokensLoader summarizes paginated token records in connection order", a
     { first: 20, status: "REVOKED" },
     { signal: request.signal }
   );
-  expect(fetchRouteQueryMock).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { first: 20, after: "cursor-1", status: "REVOKED" },
-    { signal: request.signal }
-  );
+  expect(fetchRouteQueryMock).toHaveBeenCalledTimes(1);
 });
 
 test("apiTokensLoader rejects invalid pagination cursors", async () => {

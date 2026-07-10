@@ -401,7 +401,10 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
         name: "Relay saved set",
         slugs: [DETAIL_PRODUCT.slug]
       }
-    ]
+    ],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(

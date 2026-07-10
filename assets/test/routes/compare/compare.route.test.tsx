@@ -2783,7 +2783,10 @@ test("saved comparisons loader requests the current user's sets and forwards the
         name: "Desk setup",
         slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
       }
-    ]
+    ],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
@@ -2794,13 +2797,10 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 });
 
-test("saved comparisons loader follows pagination cursors until all saved sets are loaded", async () => {
+test("saved comparisons loader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
-  const secondPageDescriptor = savedComparisonsQueryDescriptor({ first: 20, after: "cursor-1" });
-
-  mockedFetchRouteQuery
-    .mockResolvedValueOnce(
+  mockedFetchRouteQuery.mockResolvedValueOnce(
       buildFetchedSavedComparisonPage(
         buildSavedComparisonPage({
           endCursor: "cursor-1",
@@ -2814,40 +2814,23 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
           ]
         })
       )
-    )
-    .mockResolvedValueOnce(
-      buildFetchedSavedComparisonPage(
-        buildSavedComparisonPage({
-          endCursor: "cursor-2",
-          savedSets: [
-            {
-              id: "saved-set-2",
-              name: "Office setup",
-              slugs: [SECOND_PRODUCT.slug]
-            }
-          ]
-        }),
-        secondPageDescriptor
-      )
     );
 
   await expect(
     savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
   ).resolves.toEqual({
     status: "ready",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR, secondPageDescriptor],
+    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
     savedSets: [
       {
         id: "saved-set-1",
         name: "Desk setup",
         slugs: [DETAIL_PRODUCT.slug]
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        slugs: [SECOND_PRODUCT.slug]
       }
-    ]
+    ],
+    after: null,
+    hasNextPage: true,
+    endCursor: "cursor-1"
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
@@ -2857,13 +2840,7 @@ test("saved comparisons loader follows pagination cursors until all saved sets a
     { first: 20 },
     { signal: request.signal }
   );
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    2,
-    environment,
-    expect.anything(),
-    { first: 20, after: "cursor-1" },
-    { signal: request.signal }
-  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
 test("saved comparisons loader returns unauthorized status when GraphQL returns UNAUTHENTICATED", async () => {
@@ -3426,43 +3403,6 @@ test("saved comparisons loader throws when page metadata cannot be parsed", asyn
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
-test("saved comparisons loader throws when page cap is reached before pagination completes", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  // Simulate a response where hasNextPage is always true so the loader hits the cap.
-  // We use mockImplementation to return the same paginated response for each call.
-  let callCount = 0;
-
-  mockedFetchRouteQuery.mockImplementation(() => {
-    callCount += 1;
-
-    return Promise.resolve({
-      data: buildSavedComparisonPage({
-        endCursor: `cursor-${callCount}`,
-        hasNextPage: true,
-        savedSets: [
-          {
-            id: `saved-set-${callCount}`,
-            name: `Set ${callCount}`,
-            slugs: [DETAIL_PRODUCT.slug]
-          }
-        ]
-      }),
-      descriptor: savedComparisonsQueryDescriptor(
-        callCount === 1 ? { first: 20 } : { first: 20, after: `cursor-${callCount - 1}` }
-      ),
-      dispose: vi.fn()
-    });
-  });
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
-  ).rejects.toThrow("Saved comparison sets pagination limit exceeded");
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(50);
-});
-
 test("saved comparisons loader returns empty status for zero saved sets with no truncation", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
@@ -3482,7 +3422,10 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
   expect(result).toEqual({
     status: "empty",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: []
+    savedSets: [],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
   });
 });
 
@@ -3589,7 +3532,7 @@ function mockCompareRouteQueries() {
 
 test("saved comparisons loader throws when pagination cursor does not advance", async () => {
   const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
+  const request = new Request("https://app.example.com/compare/saved?after=cursor-1");
   const secondPageDescriptor = savedComparisonsQueryDescriptor({ first: 20, after: "cursor-1" });
 
   mockedFetchRouteQuery
