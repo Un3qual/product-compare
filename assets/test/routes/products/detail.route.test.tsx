@@ -473,7 +473,13 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), OFFERS_QUERY_DESCRIPTOR);
 });
 
-test.each([null, "not-a-date"])(
+test.each([
+  null,
+  "not-a-date",
+  "2026-02-30T00:00:00Z",
+  "June 1 2026",
+  1_717_326_000_000
+])(
   "keeps product-detail prices visible without an unsupported observation claim for %s",
   (observedAt) => {
     mockedUseLoaderData.mockReturnValue({
@@ -1961,7 +1967,7 @@ function buildOffersData(
     latestPrice: {
       id: string;
       price: string;
-      observedAt?: string | null;
+      observedAt?: unknown;
     } | null;
     activeCoupons?: {
       edges: Array<{
@@ -1972,7 +1978,7 @@ function buildOffersData(
           discountType: string | null;
           discountValue: string | number | null;
           currency: string | null;
-          validTo: string | null;
+          validTo: unknown;
           terms: string | null;
         };
       }>;
@@ -1985,7 +1991,7 @@ function buildOffersData(
         node: {
           id: string;
           price: string | number | null;
-          observedAt: string | null;
+          observedAt: unknown;
         };
       }>;
       pageInfo: {

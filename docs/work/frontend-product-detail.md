@@ -5,7 +5,7 @@
 - Status: done (price observation context)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-01 after persistent compare tray verification
+- Last verified: 2026-07-09 after product price-observation verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:

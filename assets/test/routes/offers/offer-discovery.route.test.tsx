@@ -326,16 +326,16 @@ test("offer discovery renders ready offer rows", () => {
   );
 });
 
-test("offer discovery omits unsupported observation and coupon validity claims", () => {
+test("offer discovery omits unsafe observation and coupon validity claims", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
-          lastSeenAt: null,
+          lastSeenAt: 1_717_326_000_000,
           latestPrice: {
             id: "price-invalid-date",
             price: "199.99",
-            observedAt: "not-a-date"
+            observedAt: "2026-02-30T00:00:00Z"
           },
           activeCoupons: buildCouponConnection([
             {
@@ -346,7 +346,7 @@ test("offer discovery omits unsupported observation and coupon validity claims",
                 discountType: "AMOUNT",
                 discountValue: "20.00",
                 currency: "USD",
-                validTo: "not-a-date",
+                validTo: "June 30 2026",
                 terms: "Online orders only."
               }
             }
@@ -906,6 +906,9 @@ test("offer discovery summarizes the visible single-currency offer page", () => 
   const offersList = screen.getByRole("list", { name: "Offers" });
 
   expect(
+    within(snapshot).getByRole("heading", { level: 2, name: "Visible offer snapshot" })
+  ).toBeVisible();
+  expect(
     snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
   ).toBeTruthy();
   expect(within(snapshot).getByText("Visible offers on this page")).toBeVisible();
@@ -1206,7 +1209,7 @@ function renderOfferDiscoveryRoute() {
 }
 
 function offerHeadings() {
-  return screen
+  return within(screen.getByRole("list", { name: "Offers" }))
     .getAllByRole("heading", { level: 2 })
     .map((heading) => heading.textContent);
 }
@@ -1396,7 +1399,7 @@ type OfferNode = {
   id: string;
   url: string;
   currency: string;
-  lastSeenAt?: string | null;
+  lastSeenAt?: unknown;
   isActive: boolean;
   merchant: {
     id: string;
@@ -1411,7 +1414,7 @@ type OfferNode = {
   latestPrice: {
     id: string;
     price: string;
-    observedAt: string | null;
+    observedAt: unknown;
   } | null;
   activeCoupons: CouponConnection;
   priceHistory: PriceHistoryConnection;
@@ -1426,7 +1429,7 @@ type CouponConnection = {
       discountType: string | null;
       discountValue: string | number | null;
       currency: string | null;
-      validTo: string | null;
+      validTo: unknown;
       terms: string | null;
     };
   }>;
@@ -1440,7 +1443,7 @@ type PriceHistoryConnection = {
     node: {
       id: string;
       price: string | number | null;
-      observedAt: string | null;
+      observedAt: unknown;
     };
   }>;
   pageInfo: {

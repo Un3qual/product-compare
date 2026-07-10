@@ -8,6 +8,7 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
+import { graphQLDateTimeContext } from "../graphql-datetime";
 import {
   offerDiscoveryLoader,
   type OfferDiscoveryFilters,
@@ -180,7 +181,7 @@ function OfferDiscoveryList({
 function VisibleOfferSnapshot({ summary }: { summary: VisibleOfferSnapshotSummary }) {
   return (
     <section aria-label="Visible offer snapshot">
-      <h3>Visible offer snapshot</h3>
+      <h2>Visible offer snapshot</h2>
       <dl>
         <div>
           <dt>Visible offers on this page</dt>
@@ -451,8 +452,8 @@ function OfferMerchantDomain({ domain }: { domain: string | null }) {
 }
 
 function OfferObservationContext({ offer }: { offer: OfferNode }) {
-  const offerCheckedAt = dateContext(offer.lastSeenAt);
-  const priceObservedAt = dateContext(offer.latestPrice?.observedAt);
+  const offerCheckedAt = graphQLDateTimeContext(offer.lastSeenAt);
+  const priceObservedAt = graphQLDateTimeContext(offer.latestPrice?.observedAt);
 
   if (!offerCheckedAt && !priceObservedAt) {
     return null;
@@ -562,7 +563,7 @@ function CouponSummary({
       <ul aria-label={`${merchantName} active coupons`}>
         {couponEdges.map(({ cursor, node: coupon }) => {
           const couponDiscountLabel = discountLabel(coupon);
-          const couponValidTo = dateContext(coupon.validTo);
+          const couponValidTo = graphQLDateTimeContext(coupon.validTo);
 
           return (
             <li key={cursor}>
@@ -804,24 +805,8 @@ function priceHistoryRow(
   };
 }
 
-function dateLabel(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return value.slice(0, 10);
-}
-
-function dateContext(value: string | null | undefined) {
-  const label = dateLabel(value);
-
-  return value && label ? { dateTime: value, label } : null;
+function dateLabel(value: unknown) {
+  return graphQLDateTimeContext(value)?.label ?? null;
 }
 
 function discountLabel(coupon: CouponNode) {

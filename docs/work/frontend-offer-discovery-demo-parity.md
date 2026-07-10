@@ -5,7 +5,7 @@
 - Status: done (shopper decision confidence)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after selected-product label context verification
+- Last verified: 2026-07-09 after observation, coupon-validity, and visible-snapshot verification
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:

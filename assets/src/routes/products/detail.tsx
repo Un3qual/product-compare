@@ -19,6 +19,7 @@ import {
 import { CompareSelectionTray } from "../compare/selection-tray";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
+import { graphQLDateTimeContext } from "../graphql-datetime";
 import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
@@ -643,25 +644,11 @@ function normalizedCurrency(currency: unknown) {
 }
 
 function formatObservedDate(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:[T\s]|$)/.exec(value);
-
-  return sourceDate?.[1] ?? parsed.toISOString().slice(0, 10);
+  return graphQLDateTimeContext(value)?.label ?? null;
 }
 
 function buildPriceObservation(value: unknown): PriceObservation | null {
-  const label = formatObservedDate(value);
-
-  return typeof value === "string" && label ? { dateTime: value, label } : null;
+  return graphQLDateTimeContext(value);
 }
 
 function formatCouponDiscountText(discountType: string, discountValue: unknown, currency: unknown) {

@@ -5,7 +5,7 @@
 - Status: done (catalog result guidance and removable filters)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after catalog search and sort verification
+- Last verified: 2026-07-09 after shopper decision-confidence aggregate verification
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
