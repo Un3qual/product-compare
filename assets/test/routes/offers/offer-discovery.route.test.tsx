@@ -912,6 +912,21 @@ test("offer discovery falls back to the raw product id for non-product nodes", (
   expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
 });
 
+test("offer discovery omits brand context when the selected product has no brand", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({ selectedProduct: buildSelectedProduct({ brand: null }) })
+  );
+
+  renderOfferDiscoveryRoute();
+
+  const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
+
+  expect(within(filterSummary).getByText("Product")).toBeVisible();
+  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
+  expect(within(filterSummary).queryByText("Brand")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("Example Brand")).not.toBeInTheDocument();
+});
+
 test("offer discovery encodes selected product slugs in detail navigation", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
@@ -1202,7 +1217,7 @@ type SelectedProductNode =
       brand: {
         id: string;
         name: string;
-      };
+      } | null;
     }
   | {
       __typename: string;

@@ -48,7 +48,7 @@ defmodule ProductCompare.Catalog.Filtering do
   defp maybe_apply_text_search(query, filters) do
     case Map.get(filters, :query) do
       value when is_binary(value) and value != "" ->
-        pattern = "%#{value}%"
+        pattern = "%#{escape_like_pattern(value)}%"
 
         query
         |> ensure_brand_join()
@@ -64,6 +64,13 @@ defmodule ProductCompare.Catalog.Filtering do
       _other ->
         query
     end
+  end
+
+  defp escape_like_pattern(value) do
+    value
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
   end
 
   defp apply_sort(query, :name_asc),

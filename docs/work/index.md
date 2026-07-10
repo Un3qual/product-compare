@@ -22,7 +22,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-08
+Updated: 2026-07-09
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -59,71 +59,13 @@ batch stays on shopper-facing catalog and offer-discovery surfaces, avoids
 deferred ingestion/eBay/operator work, and uses current app contracts as the
 source of truth.
 
+That product-facing curation batch is complete. Catalog search and sorting plus
+offer-discovery product label context have green completion evidence in their
+lane work docs dated 2026-07-09.
+
 ## Ready Work
 
-Status: ready
-Lane: frontend catalog browse / backend catalog
-Active plan:
-`docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`
-Next action: add URL-backed text search and deterministic sort controls to
-`/products` while preserving existing filters, pagination, and compare slugs.
-Owned paths:
-
-- `lib/product_compare/catalog/filtering.ex`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `lib/product_compare_web/schema.ex`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `assets/schema.graphql`
-- `assets/src/routes/catalog/filters.ts`
-- `assets/src/routes/catalog/loader.ts`
-- `assets/src/routes/catalog/paths.ts`
-- `assets/src/routes/catalog/filter-form.tsx`
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
-- `assets/src/__generated__/ProductFilterMetadataQuery.graphql.ts`
-- `docs/work/frontend-catalog-browse.md`
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/catalog_queries_test.exs`
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: `/products` supports a bounded text query and explicit sort
-control through URL state, and all existing filter, pagination, and compare
-selection paths preserve that state correctly.
-
-Status: ready
-Lane: frontend offer discovery
-Active plan:
-`docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`
-Next action: show selected-product name, brand, and detail navigation on
-`/offers` instead of relying only on raw product IDs.
-Owned paths:
-
-- `assets/src/routes/offers/queries/OfferDiscoveryRouteQuery.ts`
-- `assets/src/routes/offers/loader.ts`
-- `assets/src/routes/offers/filters.tsx`
-- `assets/src/routes/offers/index.tsx`
-- `assets/test/routes/offers/offer-discovery-loader.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `assets/src/__generated__/OfferDiscoveryRouteQuery.graphql.ts`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Verification:
-
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-loader.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: `/offers` labels the selected product with product-readable
-context and keeps existing filters, sort, merchant quick filters, pagination,
-and commerce-click behavior intact.
+None.
 
 ## Needs Decision Work
 
@@ -134,6 +76,16 @@ None. Product-facing curation was selected on 2026-07-08.
 None.
 
 ## Just Completed
+
+The 2026-07-08 product-facing curation batch completed these work items:
+
+- Catalog browse and backend catalog: `/products` now supports bounded text
+  search and deterministic sorting through URL state while preserving filters,
+  pagination, and compare selections.
+- Offer discovery: `/offers` now shows selected-product name, optional brand,
+  and detail navigation while preserving existing filter and offer behavior.
+- Both lane work docs record green focused tests, Relay generation where
+  applicable, TypeScript verification, and clean diff checks dated 2026-07-09.
 
 The 2026-07-08 parallel execution batch completed these work items:
 

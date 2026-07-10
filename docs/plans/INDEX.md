@@ -16,16 +16,13 @@ Start at `docs/work/index.md` for live dispatch status and ownership. The
 2026-06-29 usable-product batch, the product filtering and in-depth comparison
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
-completed. The live queue now has a product-facing curation batch with two
-ready rows.
+completed. The 2026-07-08 product-facing curation batch is also complete, and
+the live queue has no ready rows.
 
 The product-facing curation direction was selected on 2026-07-08. Deferred
 ingestion/eBay/operator candidates remain deferred or rejected.
 
-Active implementation plans:
-
-- `docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md`
-- `docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`
+There are no active implementation plans.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -51,6 +48,10 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Product-facing curation batch:
+  `docs/plans/2026-07-08-catalog-search-and-sort-implementation-plan.md` and
+  `docs/plans/2026-07-08-offer-discovery-product-label-context-implementation-plan.md`.
 
 - Parallel execution batch:
   `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`,

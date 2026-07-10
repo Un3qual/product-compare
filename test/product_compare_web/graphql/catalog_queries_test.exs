@@ -674,6 +674,57 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       end
     end
 
+    test "products treats LIKE metacharacters as literal search text", %{conn: conn} do
+      percent_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog Save 50% Off",
+          slug: "catalog-literal-percent"
+        })
+
+      underscore_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog 27_inch Display",
+          slug: "catalog-literal-underscore"
+        })
+
+      backslash_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Catalog C:\\Display",
+          slug: "catalog-literal-backslash"
+        })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog Save 500 Off",
+        slug: "catalog-percent-wildcard-decoy"
+      })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog 27Xinch Display",
+        slug: "catalog-underscore-wildcard-decoy"
+      })
+
+      SpecsFixtures.product_fixture(%{
+        name: "Catalog C:Display",
+        slug: "catalog-backslash-escape-decoy"
+      })
+
+      for {query, product} <- [
+            {"50% Off", percent_product},
+            {"27_inch", underscore_product},
+            {"C:\\Display", backslash_product}
+          ] do
+        assert %{
+                 "data" => %{
+                   "products" => %{
+                     "edges" => [%{"node" => %{"id" => product_id}}]
+                   }
+                 }
+               } = graphql(conn, products_query(), %{"filters" => %{"query" => query}})
+
+        assert product_id == relay_id(:product, product.id)
+      end
+    end
+
     test "products combines text search with existing catalog filters", %{conn: conn} do
       type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
 
