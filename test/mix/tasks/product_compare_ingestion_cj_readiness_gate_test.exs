@@ -13,7 +13,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
 
-  @cj_env_vars ~w(CJ_API_TOKEN CJ_ACCOUNT_ID)
+  @cj_env_vars ~w(
+    CJ_API_TOKEN
+    CJ_ACCOUNT_ID
+    CJ_FEED_DISCOVERY_SCHEDULE_ENABLED
+    CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED
+  )
 
   setup do
     Repo.delete_all(MerchantFeedCandidate)
@@ -87,12 +92,66 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       output = capture_io(fn -> CjReadinessGate.run([]) end)
 
       assert output ==
-               "provider=cj ready=true credentials_ready=true missing_required= discovery_fresh=true import_fresh=true candidate_count=2 min_candidates=1 shortlisted_count=1 min_shortlisted=0\n"
+               "provider=cj ready=true credentials_ready=true missing_required= discovery_fresh=true import_fresh=true candidate_count=2 min_candidates=1 shortlisted_count=1 min_shortlisted=0 require_scheduled=false feed_discovery_schedule_enabled=false product_import_schedule_enabled=false schedules_ready=false\n"
 
       refute output =~ "secret-token"
       refute output =~ "1234567"
       refute output =~ "provider-payload"
       refute output =~ "aff_sub"
+    end
+
+    test "preserves manual readiness when schedules are not required" do
+      seed_ready_cj_state!()
+
+      output = capture_io(fn -> CjReadinessGate.run([]) end)
+
+      assert output =~ "ready=true"
+      assert output =~ "require_scheduled=false"
+      assert output =~ "feed_discovery_schedule_enabled=false"
+      assert output =~ "product_import_schedule_enabled=false"
+      assert output =~ "schedules_ready=false"
+    end
+
+    test "requires both schedules when scheduled operation is requested" do
+      seed_ready_cj_state!()
+      System.put_env("CJ_FEED_DISCOVERY_SCHEDULE_ENABLED", "true")
+
+      output = capture_io(fn -> CjReadinessGate.run(["--require-scheduled"]) end)
+
+      assert output =~ "ready=false"
+      assert output =~ "require_scheduled=true"
+      assert output =~ "feed_discovery_schedule_enabled=true"
+      assert output =~ "product_import_schedule_enabled=false"
+      assert output =~ "schedules_ready=false"
+    end
+
+    test "accepts runtime truthy values when both schedules are required" do
+      seed_ready_cj_state!()
+      System.put_env("CJ_FEED_DISCOVERY_SCHEDULE_ENABLED", "ON")
+      System.put_env("CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED", "yes")
+
+      output = capture_io(fn -> CjReadinessGate.run(["--require-scheduled"]) end)
+
+      assert output =~ "ready=true"
+      assert output =~ "require_scheduled=true"
+      assert output =~ "feed_discovery_schedule_enabled=true"
+      assert output =~ "product_import_schedule_enabled=true"
+      assert output =~ "schedules_ready=true"
+    end
+
+    test "enforces scheduled readiness through the existing require-ready switch" do
+      seed_ready_cj_state!()
+
+      output =
+        capture_io(fn ->
+          assert_raise Mix.Error, "CJ ingestion is not ready", fn ->
+            CjReadinessGate.run(["--require-scheduled", "--require-ready"])
+          end
+        end)
+
+      assert output =~ "ready=false"
+      assert output =~ "require_scheduled=true"
+      assert output =~ "schedules_ready=false"
     end
 
     test "fails readiness when discovery freshness is stale" do
@@ -243,6 +302,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       )
     )
     |> Repo.insert!()
+  end
+
+  defp seed_ready_cj_state! do
+    System.put_env("CJ_API_TOKEN", "secret-token")
+    System.put_env("CJ_ACCOUNT_ID", "1234567")
+    source = source_fixture()
+
+    insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(1)})
+    insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
+    insert_candidate!(source)
+
+    source
   end
 
   defp insert_run!(source, attrs) do
