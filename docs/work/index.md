@@ -167,26 +167,18 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Authentication Routes
+### 1. Radix UI Polish Full Verification
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Apply the shared Radix form and feedback foundation across login,
-logout, registration, password recovery/reset, and email verification.
+Next action: Run complete frontend behavior, Relay contract, type, client/SSR
+build, queue, and diff verification; then close the UI polish lane.
 Owned paths:
 
-- `assets/src/routes/auth/form-shell.tsx`
-- `assets/src/routes/auth/login.tsx`
-- `assets/src/routes/auth/logout.tsx`
-- `assets/src/routes/auth/register.tsx`
-- `assets/src/routes/auth/forgot-password.tsx`
-- `assets/src/routes/auth/reset-password.tsx`
-- `assets/src/routes/auth/verify-email.tsx`
-- `assets/test/routes/auth/form-shell.test.tsx`
-- `assets/test/routes/auth/session.route.test.tsx`
-- `assets/test/routes/auth/recovery.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
 
 Prerequisites:
 
@@ -194,14 +186,16 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/auth/form-shell.test.tsx test/routes/auth/session.route.test.tsx test/routes/auth/recovery.route.test.tsx`
+- `cd assets && bun run test:unit`
+- `cd assets && bun run relay`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: Every authentication route uses one narrow Radix-backed form
-composition with consistent fields, actions, feedback, and recovery links
-while preserving all session and recovery behavior.
+Exit condition: The complete frontend suite, generated contracts, types,
+client/SSR builds, and work queue are green; the lane is closed with the three
+unrelated ready rows preserved.
 
 ## Needs Decision Work
 

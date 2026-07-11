@@ -9,6 +9,7 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
         description="Use the shared auth shell."
         errors={[{ code: "INVALID_ARGUMENT", field: null, message: "Request failed." }]}
         footerLinks={[{ label: "Create account", to: "/auth/register" }]}
+        successMessage="Request completed."
         title="Sign in"
       >
         <form>
@@ -21,6 +22,7 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
 
   expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
   expect(screen.getByLabelText("Email")).toHaveAttribute("aria-describedby", "email-error");
+  expect(screen.getByLabelText("Email")).toHaveClass("rt-TextFieldInput");
   expect(screen.getByText("Email is required.")).toHaveAttribute("id", "email-error");
   expect(screen.getByRole("button", { name: "Sign in" })).toHaveAttribute(
     "data-slot",
@@ -31,4 +33,8 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
     "button"
   );
   expect(screen.getByRole("alert")).toHaveTextContent("Request failed.");
+  expect(screen.getByRole("alert")).toHaveClass("rt-CalloutRoot");
+  expect(screen.getByRole("status")).toHaveTextContent("Request completed.");
+  expect(screen.getByRole("status")).toHaveClass("rt-CalloutRoot");
+  expect(screen.getByRole("region", { name: "Sign in" })).toBeInTheDocument();
 });

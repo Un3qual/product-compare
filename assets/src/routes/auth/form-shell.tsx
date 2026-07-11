@@ -1,4 +1,5 @@
-import { useMemo, type PropsWithChildren } from "react";
+import { useId, useMemo, type ComponentProps, type PropsWithChildren } from "react";
+import { Callout, TextField } from "@radix-ui/themes";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
@@ -15,13 +16,15 @@ const styles = stylex.create({
     paddingInline: "1.5rem"
   },
   panel: {
+    backgroundColor: tokens.surfaceRaised,
     borderColor: tokens.border,
     borderRadius: "1rem",
     borderStyle: "solid",
     borderWidth: "1px",
     display: "grid",
     gap: "1rem",
-    padding: "1.5rem"
+    padding: "clamp(1.25rem, 4vw, 2rem)",
+    boxShadow: "0 1rem 3rem color-mix(in srgb, var(--gray-12) 8%, transparent)"
   },
   headingGroup: {
     display: "grid",
@@ -44,39 +47,9 @@ const styles = stylex.create({
     display: "grid",
     gap: "0.4rem"
   },
-  input: {
-    borderColor: tokens.border,
-    borderRadius: "0.75rem",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    font: "inherit",
-    paddingBlock: "0.75rem",
-    paddingInline: "0.875rem"
-  },
-  button: {
-    backgroundColor: tokens.text,
-    borderRadius: "999px",
-    borderStyle: "none",
-    color: tokens.surface,
-    cursor: "pointer",
-    font: "inherit",
-    fontWeight: 600,
-    paddingBlock: "0.85rem",
-    paddingInline: "1.25rem"
-  },
-  buttonDisabled: {
-    cursor: "progress",
-    opacity: 0.7
-  },
   errorList: {
-    borderColor: "#f3c2c2",
-    borderRadius: "0.75rem",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    color: "#7d1f1f",
     margin: 0,
-    paddingBlock: "0.75rem",
-    paddingInline: "1rem"
+    paddingInlineStart: "1.1rem"
   },
   footer: {
     display: "flex",
@@ -88,15 +61,9 @@ const styles = stylex.create({
     fontWeight: 600,
     textDecoration: "underline"
   },
-  success: {
-    borderColor: "#c5e7cb",
-    borderRadius: "0.75rem",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    color: "#1f5d2e",
-    margin: 0,
-    paddingBlock: "0.75rem",
-    paddingInline: "1rem"
+  submit: {
+    justifyContent: "center",
+    width: "100%"
   }
 });
 
@@ -127,6 +94,7 @@ export function AuthFormShell({
   successMessage,
   title
 }: AuthFormShellProps) {
+  const titleId = useId();
   const fieldNameSet = useMemo(() => new Set(fieldNames), [fieldNames]);
   const visibleErrors = errors.filter((error: MutationError) => {
     const field = error.field;
@@ -135,27 +103,31 @@ export function AuthFormShell({
   });
 
   return (
-    <section {...stylex.props(styles.section)}>
+    <section aria-labelledby={titleId} {...stylex.props(styles.section)}>
       <div {...stylex.props(styles.panel)}>
         <header {...stylex.props(styles.headingGroup)}>
-          <h1 {...stylex.props(styles.title)}>{title}</h1>
+          <h1 id={titleId} {...stylex.props(styles.title)}>{title}</h1>
           <p {...stylex.props(styles.copy)}>{description}</p>
         </header>
 
         {visibleErrors.length > 0 ? (
-          <ul {...stylex.props(styles.errorList)} aria-live="assertive" role="alert">
-            {visibleErrors.map((error) => (
-              <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
-                {error.message}
-              </li>
-            ))}
-          </ul>
+          <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
+            <Callout.Text>
+              <ul {...stylex.props(styles.errorList)}>
+                {visibleErrors.map((error) => (
+                  <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
+                    {error.message}
+                  </li>
+                ))}
+              </ul>
+            </Callout.Text>
+          </Callout.Root>
         ) : null}
 
         {successMessage ? (
-          <p {...stylex.props(styles.success)} aria-live="polite" role="status">
-            {successMessage}
-          </p>
+          <Callout.Root aria-live="polite" color="green" role="status" variant="surface">
+            <Callout.Text>{successMessage}</Callout.Text>
+          </Callout.Root>
         ) : null}
 
         <Slot {...stylex.props(styles.form)}>{children}</Slot>
@@ -163,7 +135,7 @@ export function AuthFormShell({
         {footerLinks.length > 0 ? (
           <footer {...stylex.props(styles.footer)}>
             {footerLinks.map((link) => (
-              <Button key={link.to} asChild {...stylex.props(styles.link)}>
+              <Button key={link.to} asChild variant="ghost" {...stylex.props(styles.link)}>
                 <Link to={link.to}>{link.label}</Link>
               </Button>
             ))}
@@ -187,15 +159,14 @@ export function AuthField({
   label: string;
   name: string;
   required?: boolean;
-  type?: string;
+  type?: ComponentProps<typeof TextField.Root>["type"];
 }) {
   const errorId = error ? `${name}-error` : undefined;
 
   return (
     <div {...stylex.props(styles.field)}>
       <Label htmlFor={name}>{label}</Label>
-      <input
-        {...stylex.props(styles.input)}
+      <TextField.Root
         autoComplete={autoComplete}
         aria-describedby={errorId}
         aria-invalid={error ? true : undefined}
@@ -219,8 +190,9 @@ export function AuthSubmitButton({
 }: PropsWithChildren<{ disabled?: boolean }>) {
   return (
     <Button
-      {...stylex.props(styles.button, disabled && styles.buttonDisabled)}
+      {...stylex.props(styles.submit)}
       disabled={disabled}
+      size="3"
       type="submit"
     >
       {children}

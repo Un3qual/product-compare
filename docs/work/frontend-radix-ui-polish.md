@@ -209,9 +209,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 7: Authentication Routes
+## Batch 7: Authentication Routes
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/routes/auth/form-shell.tsx`
@@ -236,6 +236,36 @@ Verification:
 Exit condition: every authentication route uses one narrow Radix-backed form
 composition with consistent fields, actions, feedback, and recovery links
 while preserving all session and recovery behavior.
+
+Completion evidence:
+
+- RED: the shared auth-shell test failed because fields were native inputs,
+  feedback was custom markup, and the shell had no labeled page region.
+- GREEN: the focused auth suites passed 3 files and 30 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 8: Full Verification And Closeout
+
+Status: active
+Owned paths:
+
+- `docs/work/frontend-radix-ui-polish.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+
+Verification:
+
+- `cd assets && bun run test:unit`
+- `cd assets && bun run relay`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: the complete frontend suite, generated contracts, types,
+client/SSR builds, and work queue are green; the lane is closed with the three
+unrelated ready rows preserved.
 
 ## Dependent Batches
 
