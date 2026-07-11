@@ -177,15 +177,13 @@ function FormGlobalErrors({ errors }: { errors: MutationError[] }) {
 
   return (
     <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
-      <Callout.Text>
-        <ul {...props(styles.errorList)}>
-          {errors.map((error) => (
-            <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
-              {error.message}
-            </li>
-          ))}
-        </ul>
-      </Callout.Text>
+      <ul {...props(styles.errorList)}>
+        {errors.map((error) => (
+          <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
+            {error.message}
+          </li>
+        ))}
+      </ul>
     </Callout.Root>
   );
 }

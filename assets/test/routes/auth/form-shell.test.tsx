@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "../../../src/routes/auth/AuthFormShell";
 
@@ -40,4 +41,21 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
   expect(screen.getByRole("complementary", { name: "Account context" })).toHaveTextContent(
     "Keep your shopping decisions connected."
   );
+});
+
+test("auth global error lists render as valid server markup outside paragraph text", () => {
+  const markup = renderToString(
+    <MemoryRouter>
+      <AuthFormShell
+        description="Recover access."
+        errors={[{ code: "INVALID_ARGUMENT", field: null, message: "Reset token is required." }]}
+        title="Reset password"
+      >
+        <form />
+      </AuthFormShell>
+    </MemoryRouter>
+  );
+
+  expect(markup).toContain("<ul");
+  expect(markup).not.toMatch(/<p[^>]*>\s*<ul/);
 });
