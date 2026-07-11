@@ -1,8 +1,8 @@
 import { useId, type PropsWithChildren, type ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   page: {
     display: "grid",
     gap: "1.75rem",
@@ -84,24 +84,24 @@ export function PageShell({
   return (
     <section
       aria-labelledby={titleId}
-      {...stylex.props(
+      {...props(
         styles.page,
         width === "reading" ? styles.readingWidth : styles.appWidth
       )}
     >
-      <header {...stylex.props(styles.header)}>
-        <div {...stylex.props(styles.heading)}>
-          {eyebrow ? <p {...stylex.props(styles.eyebrow)}>{eyebrow}</p> : null}
-          <h1 id={titleId} {...stylex.props(styles.title)}>
+      <header {...props(styles.header)}>
+        <div {...props(styles.heading)}>
+          {eyebrow ? <p {...props(styles.eyebrow)}>{eyebrow}</p> : null}
+          <h1 id={titleId} {...props(styles.title)}>
             {title}
           </h1>
           {description ? (
-            <div {...stylex.props(styles.description)}>{description}</div>
+            <div {...props(styles.description)}>{description}</div>
           ) : null}
         </div>
-        {actions ? <div {...stylex.props(styles.actions)}>{actions}</div> : null}
+        {actions ? <div {...props(styles.actions)}>{actions}</div> : null}
       </header>
-      <div {...stylex.props(styles.content)}>{children}</div>
+      <div {...props(styles.content)}>{children}</div>
     </section>
   );
 }

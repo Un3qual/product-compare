@@ -1,5 +1,5 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createApiTokenMutation, {
@@ -41,7 +41,7 @@ const STATUS_FILTERS = [
   { label: "Revoked", status: "revoked" }
 ] as const;
 
-const styles = stylex.create({
+const styles = create({
   createForm: {
     backgroundColor: tokens.surfaceMuted,
     borderRadius: "var(--radius-4)",
@@ -334,7 +334,7 @@ export function ApiTokensRoute() {
             </ul>
           </nav>
 
-          <form aria-label="Create API token" onSubmit={handleCreate} {...stylex.props(styles.createForm)}>
+          <form aria-label="Create API token" onSubmit={handleCreate} {...props(styles.createForm)}>
             <h2>Create API token</h2>
             <label>
               Label
@@ -504,7 +504,7 @@ function RelayApiTokenList({
   tokenQueries: ApiTokenQueryDescriptor[];
 }) {
   return (
-    <ul aria-label="API tokens" {...stylex.props(styles.list)}>
+    <ul aria-label="API tokens" {...props(styles.list)}>
       {localTokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
@@ -600,7 +600,7 @@ function ApiTokenList({
   tokens: ApiTokenSummary[];
 }) {
   return (
-    <ul aria-label="API tokens" {...stylex.props(styles.list)}>
+    <ul aria-label="API tokens" {...props(styles.list)}>
       {tokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
@@ -644,9 +644,9 @@ function ApiTokenListItem({
   }
 
   return (
-    <li {...stylex.props(styles.item)}>
-      <article {...stylex.props(styles.token)}>
-        <h2 {...stylex.props(styles.tokenTitle)}>{displayLabel}</h2>
+    <li {...props(styles.item)}>
+      <article {...props(styles.token)}>
+        <h2 {...props(styles.tokenTitle)}>{displayLabel}</h2>
         <ApiTokenDetails token={token} />
         <ApiTokenRowErrors revokeError={revokeError} rotateError={rotateError} />
         <ApiTokenActions
@@ -736,7 +736,7 @@ function ApiTokenActions({
   return (
     <>
       {tokenActive ? (
-        <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit} {...stylex.props(styles.rotateForm)}>
+        <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit} {...props(styles.rotateForm)}>
           <label>
             {`Replacement label for ${displayLabel}`}
             <TextField autoComplete="off" name="label" type="text" />

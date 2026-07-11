@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
 import { TextField } from "../../ui/primitives/text-field";
@@ -35,7 +35,7 @@ const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   enums: []
 };
 
-const styles = stylex.create({
+const styles = create({
   form: {
     backgroundColor: "var(--pc-surface-muted)",
     borderColor: "var(--pc-border-quiet)",
@@ -51,10 +51,6 @@ const styles = stylex.create({
     display: "grid",
     gap: "0.8rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))"
-  },
-  advancedHeader: {
-    display: "flex",
-    justifyContent: "space-between"
   },
   advanced: {
     display: "grid",
@@ -101,9 +97,9 @@ export function CatalogFilterForm({
       method="get"
       action="/products"
       aria-label="Filter products"
-      {...stylex.props(styles.form)}
+      {...props(styles.form)}
     >
-      <div {...stylex.props(styles.primary)}>
+      <div {...props(styles.primary)}>
         <SearchField query={filters.query} />
         <SortField sort={filters.sort} />
         <PageSizeField pageSize={pageSize} />
@@ -120,19 +116,17 @@ export function CatalogFilterForm({
         />
       </div>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-        <div {...stylex.props(styles.advancedHeader)}>
-          <CollapsibleTrigger asChild>
-            <Button variant="soft">Advanced filters</Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent {...stylex.props(styles.advanced)}>
+        <CollapsibleTrigger asChild>
+          <Button variant="soft">Advanced filters</Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent {...props(styles.advanced)}>
           <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
           <NumericFiltersFieldset filters={filters} metadata={metadata} />
           <BooleanFiltersFieldset filters={filters} metadata={metadata} />
           <EnumFiltersFieldset filters={filters} metadata={metadata} />
         </CollapsibleContent>
       </Collapsible>
-      <div {...stylex.props(styles.actions)}>
+      <div {...props(styles.actions)}>
         <Button type="submit">Apply filters</Button>
       </div>
     </form>

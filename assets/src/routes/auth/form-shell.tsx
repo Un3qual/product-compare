@@ -1,6 +1,6 @@
 import { useId, useMemo, type ComponentProps, type PropsWithChildren } from "react";
 import { Callout } from "@radix-ui/themes";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
 import { Button } from "../../ui/primitives/button";
@@ -9,7 +9,7 @@ import { Slot } from "../../ui/primitives/slot";
 import { TextField } from "../../ui/primitives/text-field";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   section: {
     marginInline: "auto",
     maxWidth: "32rem",
@@ -104,17 +104,17 @@ export function AuthFormShell({
   });
 
   return (
-    <section aria-labelledby={titleId} {...stylex.props(styles.section)}>
-      <div {...stylex.props(styles.panel)}>
-        <header {...stylex.props(styles.headingGroup)}>
-          <h1 id={titleId} {...stylex.props(styles.title)}>{title}</h1>
-          <p {...stylex.props(styles.copy)}>{description}</p>
+    <section aria-labelledby={titleId} {...props(styles.section)}>
+      <div {...props(styles.panel)}>
+        <header {...props(styles.headingGroup)}>
+          <h1 id={titleId} {...props(styles.title)}>{title}</h1>
+          <p {...props(styles.copy)}>{description}</p>
         </header>
 
         {visibleErrors.length > 0 ? (
           <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
             <Callout.Text>
-              <ul {...stylex.props(styles.errorList)}>
+              <ul {...props(styles.errorList)}>
                 {visibleErrors.map((error) => (
                   <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
                     {error.message}
@@ -131,12 +131,12 @@ export function AuthFormShell({
           </Callout.Root>
         ) : null}
 
-        <Slot {...stylex.props(styles.form)}>{children}</Slot>
+        <Slot {...props(styles.form)}>{children}</Slot>
 
         {footerLinks.length > 0 ? (
-          <footer {...stylex.props(styles.footer)}>
+          <footer {...props(styles.footer)}>
             {footerLinks.map((link) => (
-              <Button key={link.to} asChild variant="ghost" {...stylex.props(styles.link)}>
+              <Button key={link.to} asChild variant="ghost" {...props(styles.link)}>
                 <Link to={link.to}>{link.label}</Link>
               </Button>
             ))}
@@ -165,7 +165,7 @@ export function AuthField({
   const errorId = error ? `${name}-error` : undefined;
 
   return (
-    <div {...stylex.props(styles.field)}>
+    <div {...props(styles.field)}>
       <Label htmlFor={name}>{label}</Label>
       <TextField
         autoComplete={autoComplete}
@@ -177,7 +177,7 @@ export function AuthField({
         type={type}
       />
       {error ? (
-        <span id={errorId} {...stylex.props(styles.copy)} aria-live="polite">
+        <span id={errorId} {...props(styles.copy)} aria-live="polite">
           {error}
         </span>
       ) : null}
@@ -191,7 +191,7 @@ export function AuthSubmitButton({
 }: PropsWithChildren<{ disabled?: boolean }>) {
   return (
     <Button
-      {...stylex.props(styles.submit)}
+      {...props(styles.submit)}
       disabled={disabled}
       size="3"
       type="submit"

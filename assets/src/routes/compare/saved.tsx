@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import deleteSavedComparisonSetMutation, {
@@ -35,7 +35,7 @@ type SavedComparisonSortMode =
   | "product-count-desc"
   | "product-count-asc";
 
-const styles = stylex.create({
+const styles = create({
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -159,7 +159,7 @@ export function SavedComparisonsRoute() {
           <Link to="/auth/login">Sign in to view saved comparisons</Link>
         </Button>
       ) : (
-        <div {...stylex.props(styles.controls)}>
+        <div {...props(styles.controls)}>
           <label>
             Filter saved comparisons
             <TextField
@@ -183,7 +183,7 @@ export function SavedComparisonsRoute() {
               <option value="product-count-asc">Product count low-to-high</option>
             </select>
           </label>
-          <p {...stylex.props(styles.controlNote)}>
+          <p {...props(styles.controlNote)}>
             Filtering and sorting apply to the visible page.
           </p>
         </div>
@@ -324,9 +324,9 @@ function SavedComparisonSetItem({
   const savedProductCount = formatSavedProductCount(savedSet.products.length);
 
   return (
-    <article {...stylex.props(styles.savedSet)}>
-      <h2 {...stylex.props(styles.title)}>{savedSet.name}</h2>
-      <p {...stylex.props(styles.metadata)}>{savedProductCount} in this saved comparison</p>
+    <article {...props(styles.savedSet)}>
+      <h2 {...props(styles.title)}>{savedSet.name}</h2>
+      <p {...props(styles.metadata)}>{savedProductCount} in this saved comparison</p>
       <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
       <SavedComparisonSetActions
         deletePending={deletePending}
@@ -347,7 +347,7 @@ function SavedComparisonSetActions({
   savedSet: SavedComparisonSetSummary;
 }) {
   return (
-    <fieldset {...stylex.props(styles.actions)}>
+    <fieldset {...props(styles.actions)}>
       <legend>Actions for {savedSet.name}</legend>
       <Button asChild variant="soft">
         <Link to={buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug))}>

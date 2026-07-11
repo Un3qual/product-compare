@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
@@ -37,7 +37,7 @@ type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges
 
 const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
 
-const styles = stylex.create({
+const styles = create({
   product: {
     display: "grid",
     gap: "0.8rem"
@@ -272,16 +272,16 @@ function BrowseProductCard({
   selectedCompareSlugs: readonly string[];
 }) {
   return (
-    <article aria-label={product.name} {...stylex.props(styles.product)}>
-      <h2 {...stylex.props(styles.productHeading)}>{product.name}</h2>
-      <div {...stylex.props(styles.metadata)}>
-        <p {...stylex.props(styles.metadataItem)}>{product.brand.name}</p>
-        <p {...stylex.props(styles.metadataItem)}>{product.slug}</p>
+    <article aria-label={product.name} {...props(styles.product)}>
+      <h2 {...props(styles.productHeading)}>{product.name}</h2>
+      <div {...props(styles.metadata)}>
+        <p {...props(styles.metadataItem)}>{product.brand.name}</p>
+        <p {...props(styles.metadataItem)}>{product.slug}</p>
       </div>
       <SpecificationHighlights attributes={product.currentAttributes} />
       <ul
         aria-label={`Decision actions for ${product.name}`}
-        {...stylex.props(styles.actionList)}
+        {...props(styles.actionList)}
       >
         <li>
           <Link to={browseProductDetailPath(product.slug, selectedCompareSlugs)}>
@@ -322,9 +322,9 @@ function SpecificationHighlights({
   }
 
   return (
-    <section {...stylex.props(styles.highlights)}>
-      <h3 {...stylex.props(styles.highlightsTitle)}>Specification highlights</h3>
-      <ul aria-label="Specification highlights" {...stylex.props(styles.highlightsList)}>
+    <section {...props(styles.highlights)}>
+      <h3 {...props(styles.highlightsTitle)}>Specification highlights</h3>
+      <ul aria-label="Specification highlights" {...props(styles.highlightsList)}>
         {highlights.map((attribute) => (
           <li key={attribute.code}>
             {attribute.displayName}: {attribute.valueText}

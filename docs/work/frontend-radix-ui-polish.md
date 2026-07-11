@@ -311,6 +311,38 @@ Review verification:
 - GREEN: `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
 - GREEN: `git diff --check` exited 0.
 
+### Automated Review Follow-up
+
+Status: done
+
+The PR review sweep included unresolved, duplicate, and outside-diff bot
+findings. The follow-up now:
+
+- uses named StyleX and Radix Tabs imports throughout the polished UI surface;
+- keeps product attribute styles and theme imports ahead of component use;
+- uses a Radix Themes horizontal `ScrollArea` for the comparison matrix instead
+  of a focusable section with redundant landmark attributes;
+- exposes compared-product actions as named navigation landmarks;
+- preserves loader-backed URL navigation when comparison tabs are clicked;
+- removes unused router imports and reduces the catalog filter JSX depth; and
+- fixes all outside-diff Markdown list-spacing annotations in the implementation
+  plan.
+
+Automated review verification:
+
+- RED: focused comparison tests exposed the missing Radix scroll viewport and
+  named product-action landmarks.
+- GREEN: the focused comparison tests passed 3 tests, including a regression
+  test proving tab clicks update loader-backed URL state.
+- GREEN: `cd assets && bun run test:unit` passed 46 files and 632 tests.
+- GREEN: `cd assets && bun run relay` compiled 30 reader documents, 29
+  normalization documents, and 29 operation texts with no generated diff.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+- GREEN: `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
+- GREEN: `git diff --check` exited 0.
+
 ## Dependent Batches
 
 1. Shared application shell and home.

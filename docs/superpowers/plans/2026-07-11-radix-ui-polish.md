@@ -63,11 +63,13 @@
 ### Task 1: Curate and Claim the UI Foundation Row
 
 **Files:**
+
 - Create: `docs/work/frontend-radix-ui-polish.md`
 - Modify: `docs/work/index.md`
 - Modify: `docs/plans/INDEX.md`
 
 **Interfaces:**
+
 - Consumes: approved design at `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md` and this plan.
 - Produces: one claimed UI-foundation row under `Active Work` whose owned paths cover Task 2, with the later route milestones recorded as dependent lane batches rather than queue filler.
 
@@ -183,6 +185,7 @@ git commit -m "docs: dispatch Radix UI polish foundation"
 ### Task 2: Establish Radix Theme, Tokens, and Shared Page Patterns
 
 **Files:**
+
 - Modify: `assets/package.json`
 - Modify: `assets/bun.lock`
 - Modify: `assets/src/ui/theme/theme.css`
@@ -202,6 +205,7 @@ git commit -m "docs: dispatch Radix UI polish foundation"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: Radix Themes `Theme`, `Button`, `Badge`, and `Callout`; Radix Collapsible primitives; current StyleX compilation.
 - Produces: `PageShell`, `SectionHeading`, `FeedbackState`, `DataList`, `DataListItem`, `Pagination`, `StatusBadge`, and a Radix-backed `Button` with the existing `ButtonProps` export.
 
@@ -398,6 +402,7 @@ git commit -m "feat: establish Radix UI foundation"
 ### Task 3: Polish the Application Shell and Home
 
 **Files:**
+
 - Modify: `assets/src/ui/components/layout/app-shell.tsx`
 - Modify: `assets/src/routes/root.tsx`
 - Modify: `assets/test/ui/app-shell.test.tsx`
@@ -406,6 +411,7 @@ git commit -m "feat: establish Radix UI foundation"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: `PageShell`, semantic tokens, Radix-backed `Button`, and existing viewer-aware destination arrays.
 - Produces: responsive primary shell, active destination styling through `NavLink`, and expressive home shopper paths without changing route availability.
 
@@ -452,6 +458,7 @@ git commit -m "feat: polish application shell and home"
 ### Task 4: Polish Catalog Browse and Product Detail
 
 **Files:**
+
 - Modify: `assets/src/routes/catalog/browse.tsx`
 - Modify: `assets/src/routes/catalog/filter-form.tsx`
 - Modify: `assets/src/routes/products/detail.tsx`
@@ -462,6 +469,7 @@ git commit -m "feat: polish application shell and home"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: `PageShell`, `SectionHeading`, `FeedbackState`, `DataList`, `Pagination`, `StatusBadge`, Radix form controls, and Radix Collapsible.
 - Produces: grouped catalog controls, readable product rows, aligned specification groups, and stable product decision actions.
 
@@ -516,6 +524,7 @@ git commit -m "feat: polish catalog and product detail UI"
 ### Task 5: Polish Merchant and Offer Discovery
 
 **Files:**
+
 - Modify: `assets/src/routes/merchants/index.tsx`
 - Modify: `assets/src/routes/offers/index.tsx`
 - Modify: `assets/src/routes/offers/filters.tsx`
@@ -526,6 +535,7 @@ git commit -m "feat: polish catalog and product detail UI"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: page, data-list, feedback, status, pagination, and Radix form patterns.
 - Produces: compact merchant rows, readable offer rows, semantic price/coupon/activity emphasis, and coherent visible-page snapshot metrics.
 
@@ -576,6 +586,7 @@ git commit -m "feat: polish merchant and offer discovery UI"
 ### Task 6: Polish Comparison and Saved Comparisons
 
 **Files:**
+
 - Modify: `assets/src/routes/compare/compare-shell.tsx`
 - Modify: `assets/src/routes/compare/index.tsx`
 - Modify: `assets/src/routes/compare/product-list.tsx`
@@ -590,6 +601,7 @@ git commit -m "feat: polish merchant and offer discovery UI"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: shared page, feedback, status, data-list, pagination, Radix Tabs, form controls, and buttons.
 - Produces: accessible specification-mode tabs, horizontally scrollable comparison table, readable selection tray, and structured saved-set rows.
 
@@ -644,6 +656,7 @@ git commit -m "feat: polish comparison workspace UI"
 ### Task 7: Polish Operational Routes
 
 **Files:**
+
 - Modify: `assets/src/routes/affiliate/setup/index.tsx`
 - Modify: `assets/src/routes/commerce/revenue/index.tsx`
 - Modify: `assets/src/routes/ingestion/feed-candidates/index.tsx`
@@ -656,6 +669,7 @@ git commit -m "feat: polish comparison workspace UI"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: shared page, section, feedback, data-list, status, pagination, and Radix form controls.
 - Produces: compact operational forms and data rows with explicit status and action zones.
 
@@ -715,6 +729,7 @@ git commit -m "feat: polish operational frontend UI"
 ### Task 8: Polish All Authentication Routes
 
 **Files:**
+
 - Modify: `assets/src/routes/auth/form-shell.tsx`
 - Modify: `assets/src/routes/auth/login.tsx`
 - Modify: `assets/src/routes/auth/logout.tsx`
@@ -729,6 +744,7 @@ git commit -m "feat: polish operational frontend UI"
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 
 **Interfaces:**
+
 - Consumes: Radix Theme, TextField, Button, Link, Callout, and shared semantic tokens.
 - Produces: one narrow accessible auth composition used by login, logout, registration, password recovery/reset, and email verification.
 
@@ -779,11 +795,13 @@ git commit -m "feat: polish authentication UI"
 ### Task 9: Run Full Verification and Close the UI Milestone
 
 **Files:**
+
 - Modify: `docs/work/frontend-radix-ui-polish.md`
 - Modify: `docs/work/index.md`
 - Modify: `docs/plans/INDEX.md`
 
 **Interfaces:**
+
 - Consumes: all completed UI milestones.
 - Produces: complete verification evidence, a closed lane, and a dispatch index that still contains at least three ready implementation rows.
 

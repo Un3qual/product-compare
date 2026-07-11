@@ -1,8 +1,7 @@
-import * as stylex from "@stylexjs/stylex";
+import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import type { ButtonProps } from "@radix-ui/themes";
 import { usePreloadedQuery } from "react-relay";
 import {
-  Link,
   NavLink,
   Outlet,
   useLoaderData,
@@ -19,7 +18,7 @@ import { Button } from "../ui/primitives/button";
 import { AppProviders } from "../ui/providers/app-providers";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 
-const styles = stylex.create({
+const styles = create({
   actionGroups: {
     display: "grid",
     gap: "2rem"
@@ -135,13 +134,13 @@ function RootLayoutShell({ viewer }: RootOutletContext) {
     <AppProviders>
       <AppShell
         navigation={
-          <div {...stylex.props(styles.navigation)}>
-            <Button asChild {...stylex.props(styles.title)}>
+          <div {...props(styles.navigation)}>
+            <Button asChild {...props(styles.title)}>
               <NavLink end to="/">
                 Product Compare
               </NavLink>
             </Button>
-            <div {...stylex.props(styles.navigationLinks)}>
+            <div {...props(styles.navigationLinks)}>
               <DestinationLinks destinations={PUBLIC_DESTINATIONS} variant="ghost" />
               {viewer ? (
                 <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
@@ -167,11 +166,11 @@ export function RootRoute() {
       title="Product Compare"
       width="reading"
     >
-      <div aria-label="Home actions" role="group" {...stylex.props(styles.actionGroups)}>
-        <div aria-label="Shopper actions" role="group" {...stylex.props(styles.actions)}>
-          <ul aria-label="Shopper paths" {...stylex.props(styles.shopperPaths)}>
+      <div aria-label="Home actions" role="group" {...props(styles.actionGroups)}>
+        <div aria-label="Shopper actions" role="group" {...props(styles.actions)}>
+          <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
             {SHOPPER_DESTINATIONS.map(({ label, to }) => (
-              <li key={to} {...stylex.props(styles.shopperPath)}>
+              <li key={to} {...props(styles.shopperPath)}>
                 <DestinationLink
                   label={label}
                   style={styles.shopperLink}
@@ -185,7 +184,7 @@ export function RootRoute() {
         <div
           aria-label="More Product Compare actions"
           role="group"
-          {...stylex.props(styles.actions, styles.secondaryActions)}
+          {...props(styles.actions, styles.secondaryActions)}
         >
           <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} variant="soft" />
           {viewer ? (
@@ -219,7 +218,7 @@ function DestinationLink({
 }: {
   end?: boolean;
   label: string;
-  style?: stylex.StyleXStyles;
+  style?: StyleXStyles;
   to: string;
   variant?: ButtonProps["variant"];
 }) {
@@ -230,7 +229,7 @@ function DestinationLink({
       asChild
       data-active={String(isActive)}
       variant={isActive ? "soft" : variant}
-      {...stylex.props(styles.link, style)}
+      {...props(styles.link, style)}
     >
       <NavLink end={end} to={to}>
         {label}
@@ -242,7 +241,7 @@ function DestinationLink({
 function AuthLinks({ viewer }: { viewer: RootViewer | null }) {
   if (viewer) {
     return (
-      <Button asChild {...stylex.props(styles.link)}>
+      <Button asChild {...props(styles.link)}>
         <NavLink to="/auth/logout">Sign out</NavLink>
       </Button>
     );
@@ -250,10 +249,10 @@ function AuthLinks({ viewer }: { viewer: RootViewer | null }) {
 
   return (
     <>
-      <Button asChild {...stylex.props(styles.link)}>
+      <Button asChild {...props(styles.link)}>
         <NavLink to="/auth/login">Sign in</NavLink>
       </Button>
-      <Button asChild {...stylex.props(styles.link)}>
+      <Button asChild {...props(styles.link)}>
         <NavLink to="/auth/register">Create account</NavLink>
       </Button>
     </>

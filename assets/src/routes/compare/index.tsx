@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode, useEffect, useRef, useState } from "react";
-import * as Tabs from "@radix-ui/react-tabs";
-import * as stylex from "@stylexjs/stylex";
+import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as TabsTrigger } from "@radix-ui/react-tabs";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import createSavedComparisonSetMutation, {
@@ -46,7 +46,7 @@ const COMPARE_SPEC_MODE_OPTIONS: Array<{
   { label: "All specs", mode: "all" }
 ];
 
-const styles = stylex.create({
+const styles = create({
   tabList: {
     borderBlockEndColor: tokens.borderQuiet,
     borderBlockEndStyle: "solid",
@@ -320,36 +320,36 @@ function CompareSpecModeControls({
   specMode: CompareSpecMode;
 }) {
   return (
-    <Tabs.Root value={specMode}>
-      <Tabs.List aria-label="Specification views" {...stylex.props(styles.tabList)}>
+    <TabsRoot value={specMode}>
+      <TabsList aria-label="Specification views" {...props(styles.tabList)}>
         {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
-          <Tabs.Trigger asChild key={option.mode} value={option.mode}>
+          <TabsTrigger asChild key={option.mode} value={option.mode}>
             <Link
               aria-current={specMode === option.mode ? "page" : undefined}
               to={buildComparePathFromSlugs(selectedSlugs, {
                 specMode: option.mode
               })}
-              {...stylex.props(
+              {...props(
                 styles.tab,
                 specMode === option.mode ? styles.tabActive : null
               )}
             >
               {option.label}
             </Link>
-          </Tabs.Trigger>
+          </TabsTrigger>
         ))}
-      </Tabs.List>
+      </TabsList>
       {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
-        <Tabs.Content
+        <TabsContent
           forceMount
           hidden={option.mode !== specMode}
           key={option.mode}
           value={option.mode}
         >
           {option.mode === specMode ? children : null}
-        </Tabs.Content>
+        </TabsContent>
       ))}
-    </Tabs.Root>
+    </TabsRoot>
   );
 }
 

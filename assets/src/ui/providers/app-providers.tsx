@@ -2,11 +2,11 @@ import { DirectionProvider } from "@radix-ui/react-direction";
 import { Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
 import type { PropsWithChildren } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import "../theme/theme.css";
 import { tokens } from "../theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   root: {
     backgroundColor: tokens.surface,
     color: tokens.text,
@@ -25,7 +25,7 @@ export function AppProviders({ children }: PropsWithChildren) {
         radius="medium"
         scaling="100%"
       >
-        <div {...stylex.props(styles.root)} data-theme="default">
+        <div {...props(styles.root)} data-theme="default">
           {children}
         </div>
       </Theme>

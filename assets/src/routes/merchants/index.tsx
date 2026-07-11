@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import merchantDirectoryRouteQuery, {
@@ -25,7 +25,7 @@ type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
 >;
 
-const styles = stylex.create({
+const styles = create({
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -87,7 +87,7 @@ function MerchantDirectoryControls({
   pagination: MerchantDirectoryPagination;
 }) {
   return (
-    <form action="/merchants" method="get" {...stylex.props(styles.controls)}>
+    <form action="/merchants" method="get" {...props(styles.controls)}>
       <label>
         Page size
         <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
@@ -156,9 +156,9 @@ function MerchantDirectoryList({
               }
               key={merchant.id}
             >
-              <div {...stylex.props(styles.merchant)}>
-                <h2 {...stylex.props(styles.name)}>{merchant.name}</h2>
-                <p {...stylex.props(styles.domain)}>{merchant.domain}</p>
+              <div {...props(styles.merchant)}>
+                <h2 {...props(styles.name)}>{merchant.name}</h2>
+                <p {...props(styles.domain)}>{merchant.domain}</p>
               </div>
             </DataListItem>
           );

@@ -7,6 +7,7 @@ import {
 import {
   MemoryRouter,
   useLoaderData,
+  useLocation,
   useRouteError
 } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
@@ -2174,6 +2175,25 @@ test("ready compare page renders specification mode tabs with stable URL state",
   expect(document.getElementById(activePanelId!)).not.toHaveAttribute("hidden");
 });
 
+test("specification mode tab clicks navigate to loader-backed URL state", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  render(
+    <MemoryRouter
+      initialEntries={["/compare?slug=detail-product&slug=second-product"]}
+    >
+      <CompareRoute />
+      <LocationProbe />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("tab", { name: "Differences" }));
+
+  expect(screen.getByTestId("location-probe")).toHaveTextContent(
+    "/compare?slug=detail-product&slug=second-product&specs=differences"
+  );
+});
+
 test("ready compare page preserves specification mode in product-picker append links", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
@@ -3232,7 +3252,16 @@ test("comparison matrix remains a table inside a named horizontal workspace", ()
   const workspace = screen.getByRole("region", { name: "Specification comparison" });
 
   expect(within(workspace).getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
-  expect(workspace).toHaveAttribute("tabindex", "0");
+  expect(workspace.querySelector(".rt-ScrollAreaViewport")).toBeInTheDocument();
+});
+
+test("compared product actions use named navigation landmarks", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("navigation", { name: "Actions for Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("navigation", { name: "Actions for Second Product" })).toBeInTheDocument();
 });
 
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
@@ -3773,6 +3802,17 @@ function renderCompareRoute() {
     <MemoryRouter>
       <CompareRoute />
     </MemoryRouter>
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+
+  return (
+    <span data-testid="location-probe">
+      {location.pathname}
+      {location.search}
+    </span>
   );
 }
 

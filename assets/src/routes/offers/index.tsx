@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import offerDiscoveryRouteQuery, {
@@ -72,7 +72,7 @@ const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
   numericPrice: (offer) => offer.latestPriceValue
 };
 
-const styles = stylex.create({
+const styles = create({
   snapshot: {
     backgroundColor: tokens.surfaceMuted,
     borderRadius: "var(--radius-4)",
@@ -269,26 +269,26 @@ function VisibleOfferSnapshot({
   summary: OfferSnapshotSummary<RenderableOffer>;
 }) {
   return (
-    <section aria-label="Visible offer snapshot" {...stylex.props(styles.snapshot)}>
-      <h2 {...stylex.props(styles.snapshotTitle)}>Visible offer snapshot</h2>
-      <dl {...stylex.props(styles.metrics)}>
-        <div {...stylex.props(styles.metric)}>
-          <dt {...stylex.props(styles.metricLabel)}>Visible offers on this page</dt>
-          <dd {...stylex.props(styles.metricValue)}>{summary.visibleOfferCount}</dd>
+    <section aria-label="Visible offer snapshot" {...props(styles.snapshot)}>
+      <h2 {...props(styles.snapshotTitle)}>Visible offer snapshot</h2>
+      <dl {...props(styles.metrics)}>
+        <div {...props(styles.metric)}>
+          <dt {...props(styles.metricLabel)}>Visible offers on this page</dt>
+          <dd {...props(styles.metricValue)}>{summary.visibleOfferCount}</dd>
         </div>
-        <div {...stylex.props(styles.metric)}>
-          <dt {...stylex.props(styles.metricLabel)}>Lowest visible price</dt>
-          <dd {...stylex.props(styles.metricValue)}>{visibleLowestPriceLabel(summary)}</dd>
+        <div {...props(styles.metric)}>
+          <dt {...props(styles.metricLabel)}>Lowest visible price</dt>
+          <dd {...props(styles.metricValue)}>{visibleLowestPriceLabel(summary)}</dd>
         </div>
-        <div {...stylex.props(styles.metric)}>
-          <dt {...stylex.props(styles.metricLabel)}>Visible coupon availability</dt>
-          <dd {...stylex.props(styles.metricValue)}>
+        <div {...props(styles.metric)}>
+          <dt {...props(styles.metricLabel)}>Visible coupon availability</dt>
+          <dd {...props(styles.metricValue)}>
             {formatCouponAvailabilityCount(summary.couponAvailabilityCount)}
           </dd>
         </div>
-        <div {...stylex.props(styles.metric)}>
-          <dt {...stylex.props(styles.metricLabel)}>Missing latest price</dt>
-          <dd {...stylex.props(styles.metricValue)}>
+        <div {...props(styles.metric)}>
+          <dt {...props(styles.metricLabel)}>Missing latest price</dt>
+          <dd {...props(styles.metricValue)}>
             {formatOfferCount(summary.missingPriceCount)}
           </dd>
         </div>
@@ -330,7 +330,7 @@ function OfferListItem({
   const merchantName = offerMerchantName(offer.merchant);
 
   return (
-    <article {...stylex.props(styles.offer)}>
+    <article {...props(styles.offer)}>
       <OfferListItemHeader
         isActive={offer.isActive}
         productName={offerProductName(offer.product)}
@@ -345,7 +345,7 @@ function OfferListItem({
       <OfferObservationContext offer={offer} />
 
       {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
-      <p {...stylex.props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
+      <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
 
       <PriceHistorySummary
         hasMore={priceHistory.pageInfo.hasNextPage}
@@ -369,8 +369,8 @@ function OfferListItemHeader({
   productName: string;
 }) {
   return (
-    <header {...stylex.props(styles.offerHeader)}>
-      <h2 {...stylex.props(styles.offerTitle)}>{productName}</h2>
+    <header {...props(styles.offerHeader)}>
+      <h2 {...props(styles.offerTitle)}>{productName}</h2>
       <StatusBadge tone={isActive ? "positive" : "neutral"}>
         {offerStatusLabel(isActive)}
       </StatusBadge>
@@ -431,7 +431,7 @@ function VisibleMerchantFilters({
   return (
     <section
       aria-label="Merchant filters on this page"
-      {...stylex.props(styles.filterSection)}
+      {...props(styles.filterSection)}
     >
       <ActiveMerchantFilterSummary merchant={activeMerchant} />
       <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
@@ -502,7 +502,7 @@ function OfferMerchantDomain({ domain }: { domain: string | null }) {
     return null;
   }
 
-  return <p {...stylex.props(styles.muted)}>{domain}</p>;
+  return <p {...props(styles.muted)}>{domain}</p>;
 }
 
 function OfferObservationContext({ offer }: { offer: OfferNode }) {

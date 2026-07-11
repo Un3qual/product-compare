@@ -1,8 +1,8 @@
 import { Callout } from "@radix-ui/themes";
 import type { ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 
-const styles = stylex.create({
+const styles = create({
   root: {
     alignItems: "start"
   },
@@ -45,18 +45,18 @@ export function FeedbackState({
 
   return (
     <Callout.Root
-      {...stylex.props(styles.root)}
+      {...props(styles.root)}
       color={colors[kind]}
       data-feedback-kind={kind}
       role={role}
       size="2"
       variant="surface"
     >
-      <Callout.Text {...stylex.props(styles.body)}>
-        <span {...stylex.props(styles.title)}>{title}</span>
+      <Callout.Text {...props(styles.body)}>
+        <span {...props(styles.title)}>{title}</span>
         {description ? <span>{description}</span> : null}
       </Callout.Text>
-      {action ? <div {...stylex.props(styles.action)}>{action}</div> : null}
+      {action ? <div {...props(styles.action)}>{action}</div> : null}
     </Callout.Root>
   );
 }

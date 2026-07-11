@@ -1,8 +1,8 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   list: {
     borderBlockStartColor: tokens.borderQuiet,
     borderBlockStartStyle: "solid",
@@ -44,7 +44,7 @@ export function DataList({
   label
 }: PropsWithChildren<{ label: string }>) {
   return (
-    <ul aria-label={label} {...stylex.props(styles.list)}>
+    <ul aria-label={label} {...props(styles.list)}>
       {children}
     </ul>
   );
@@ -55,10 +55,10 @@ export function DataListItem({
   children
 }: PropsWithChildren<{ actions?: ReactNode }>) {
   return (
-    <li data-slot="data-list-item" {...stylex.props(styles.item)}>
-      <div {...stylex.props(styles.body)}>{children}</div>
+    <li data-slot="data-list-item" {...props(styles.item)}>
+      <div {...props(styles.body)}>{children}</div>
       {actions ? (
-        <div data-slot="data-list-actions" {...stylex.props(styles.actions)}>
+        <div data-slot="data-list-actions" {...props(styles.actions)}>
           {actions}
         </div>
       ) : null}

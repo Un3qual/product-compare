@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useLazyLoadQuery } from "react-relay";
 import compareProductPickerQuery, {
@@ -15,7 +15,7 @@ import { buildComparePathFromSlugs } from "./paths";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
-const styles = stylex.create({
+const styles = create({
   picker: {
     display: "grid",
     gap: "1rem"
@@ -103,8 +103,8 @@ function CompareProductPicker({
   }
 
   return (
-    <section {...stylex.props(styles.picker)}>
-      <h2 {...stylex.props(styles.title)}>{heading}</h2>
+    <section {...props(styles.picker)}>
+      <h2 {...props(styles.title)}>{heading}</h2>
       <CompareProductPickerOptions
         availableProducts={availableProducts}
         specMode={specMode}
@@ -160,9 +160,9 @@ function CompareProductPickerOptions({
           }
           key={product.id}
         >
-          <div {...stylex.props(styles.option)}>
-            <h3 {...stylex.props(styles.optionTitle)}>{product.name}</h3>
-            <p {...stylex.props(styles.metadata)}>{product.brand.name}</p>
+          <div {...props(styles.option)}>
+            <h3 {...props(styles.optionTitle)}>{product.name}</h3>
+            <p {...props(styles.metadata)}>{product.brand.name}</p>
           </div>
         </DataListItem>
       ))}

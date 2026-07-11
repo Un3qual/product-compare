@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
 import { TextField } from "../../ui/primitives/text-field";
@@ -18,7 +18,7 @@ const SORT_OPTIONS: Array<{ label: string; value: OfferDiscoverySort }> = [
   { label: "Merchant name", value: "merchant_name" }
 ];
 
-const styles = stylex.create({
+const styles = create({
   form: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -70,7 +70,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       aria-label="Offer discovery filters"
       key={offerDiscoveryFilterFormKey(filters)}
       method="get"
-      {...stylex.props(styles.form)}
+      {...props(styles.form)}
     >
       <label>
         Product ID
@@ -142,16 +142,16 @@ export function OfferDiscoveryFilterSummary({
   selectedProduct?: OfferDiscoveryProductContext | null;
 }) {
   return (
-    <section aria-label="Active offer filters" {...stylex.props(styles.summary)}>
-      <dl {...stylex.props(styles.summaryList)}>
+    <section aria-label="Active offer filters" {...props(styles.summary)}>
+      <dl {...props(styles.summaryList)}>
         {offerDiscoveryFilterSummaryItems(filters, selectedProduct).map(({ label, value }) => (
           <Fragment key={label}>
             <dt>{label}</dt>
-            <dd {...stylex.props(styles.summaryValue)}>{value}</dd>
+            <dd {...props(styles.summaryValue)}>{value}</dd>
           </Fragment>
         ))}
       </dl>
-      <div {...stylex.props(styles.actions)}>
+      <div {...props(styles.actions)}>
         {selectedProduct ? (
           <Link to={`/products/${encodeURIComponent(selectedProduct.slug)}`}>
             View product details

@@ -1,10 +1,10 @@
 import { useId } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   tray: {
     backgroundColor: tokens.surfaceMuted,
     borderColor: tokens.borderQuiet,
@@ -71,11 +71,11 @@ export function CompareSelectionTray({
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId} {...stylex.props(styles.tray)}>
-      <div {...stylex.props(styles.header)}>
+    <section aria-labelledby={titleId} {...props(styles.tray)}>
+      <div {...props(styles.header)}>
         <div>
-          <h2 id={titleId} {...stylex.props(styles.title)}>{title}</h2>
-          <p aria-live="polite" role="status" {...stylex.props(styles.status)}>
+          <h2 id={titleId} {...props(styles.title)}>{title}</h2>
+          <p aria-live="polite" role="status" {...props(styles.status)}>
             {selectedSlugs.length} of {maxProducts} products selected.
           </p>
         </div>
@@ -85,12 +85,12 @@ export function CompareSelectionTray({
           </Button>
         ) : null}
       </div>
-      <ul {...stylex.props(styles.list)}>
+      <ul {...props(styles.list)}>
         {selectedSlugs.map((slug, index) => {
           const label = items.find((item) => item.slug === slug)?.label ?? slug;
 
           return (
-            <li key={slug} {...stylex.props(styles.item)}>
+            <li key={slug} {...props(styles.item)}>
               <span>{label}</span>{" "}
               <Button asChild size="1" variant="ghost">
                 <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>

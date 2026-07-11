@@ -1,5 +1,5 @@
 import { Suspense, useId } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
@@ -41,7 +41,7 @@ import {
   type ProductAttributeListItem
 } from "./product-attribute-list";
 
-const styles = stylex.create({
+const styles = create({
   description: {
     display: "grid",
     gap: "0.35rem"
@@ -116,12 +116,12 @@ function ProductDetail({
   return (
     <PageShell
       description={
-        <div {...stylex.props(styles.description)}>
-          <p {...stylex.props(styles.descriptionText)}>
+        <div {...props(styles.description)}>
+          <p {...props(styles.descriptionText)}>
             {product.brand?.name ?? "Unknown brand"}
           </p>
           {product.description ? (
-            <p {...stylex.props(styles.descriptionText)}>{product.description}</p>
+            <p {...props(styles.descriptionText)}>{product.description}</p>
           ) : null}
         </div>
       }
@@ -157,9 +157,9 @@ function ProductDetail({
       <ProductSpecifications attributes={product.currentAttributes} />
       <section
         aria-labelledby={offersTitleId}
-        {...stylex.props(styles.section)}
+        {...props(styles.section)}
       >
-        <h2 id={offersTitleId} {...stylex.props(styles.sectionTitle)}>
+        <h2 id={offersTitleId} {...props(styles.sectionTitle)}>
           Active offers
         </h2>
         <ProductOffers
@@ -187,7 +187,7 @@ function ProductDecisionActions({
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId} {...stylex.props(styles.actions)}>
+    <section aria-labelledby={titleId} {...props(styles.actions)}>
       <h2 id={titleId}>Next steps</h2>
       <ul>
         <DetailCompareAction
@@ -248,8 +248,8 @@ function ProductSpecifications({
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId} {...stylex.props(styles.section)}>
-      <h2 id={titleId} {...stylex.props(styles.sectionTitle)}>
+    <section aria-labelledby={titleId} {...props(styles.section)}>
+      <h2 id={titleId} {...props(styles.sectionTitle)}>
         Specifications
       </h2>
       <ProductAttributeList

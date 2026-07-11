@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   root: {
     display: "grid",
     gap: "0.35rem"
@@ -29,10 +29,10 @@ export function SectionHeading({
   title: ReactNode;
 }) {
   return (
-    <header {...stylex.props(styles.root)}>
-      <h2 {...stylex.props(styles.title)}>{title}</h2>
+    <header {...props(styles.root)}>
+      <h2 {...props(styles.title)}>{title}</h2>
       {description ? (
-        <div {...stylex.props(styles.description)}>{description}</div>
+        <div {...props(styles.description)}>{description}</div>
       ) : null}
     </header>
   );

@@ -1,6 +1,6 @@
 import { Suspense, useState } from "react";
-import * as stylex from "@stylexjs/stylex";
-import { Link, useLoaderData, useRevalidator } from "react-router-dom";
+import { create, props } from "@stylexjs/stylex";
+import { useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
@@ -38,7 +38,7 @@ const reviewedAtFormatter = new Intl.DateTimeFormat("en-US", {
   timeStyle: "short"
 });
 
-const styles = stylex.create({
+const styles = create({
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -125,7 +125,7 @@ function FeedCandidatesControls({
       action="/ingestion/feed-candidates"
       key={`${pagination.first}:${reviewStatusParam}:${sortParam}`}
       method="get"
-      {...stylex.props(styles.controls)}
+      {...props(styles.controls)}
     >
       <input name="first" type="hidden" value={pagination.first} />
       <label>
@@ -260,21 +260,21 @@ function FeedCandidatesList({
 
   return (
     <>
-      <dl aria-label="CJ feed candidate review summary" {...stylex.props(styles.summary)}>
-        <div {...stylex.props(styles.summaryItem)}>
+      <dl aria-label="CJ feed candidate review summary" {...props(styles.summary)}>
+        <div {...props(styles.summaryItem)}>
           <dt>Pending</dt>
           <dd>{reviewCounts.pending}</dd>
         </div>
-        <div {...stylex.props(styles.summaryItem)}>
+        <div {...props(styles.summaryItem)}>
           <dt>Shortlisted</dt>
           <dd>{reviewCounts.shortlisted}</dd>
         </div>
-        <div {...stylex.props(styles.summaryItem)}>
+        <div {...props(styles.summaryItem)}>
           <dt>Dismissed</dt>
           <dd>{reviewCounts.dismissed}</dd>
         </div>
       </dl>
-      <ul aria-label="CJ feed candidates" {...stylex.props(styles.list)}>
+      <ul aria-label="CJ feed candidates" {...props(styles.list)}>
         {candidates.map((candidate) => (
           <FeedCandidateListItem
             candidate={candidate}
@@ -325,7 +325,7 @@ function FeedCandidateListItem({
   const fitReasons = candidateFitReasons(candidate);
 
   return (
-    <li {...stylex.props(styles.item)}>
+    <li {...props(styles.item)}>
       <h2>{candidateName}</h2>
       <p>{candidate.feedName ?? "Unnamed feed"}</p>
       <p>{formatProductCount(candidate.productCount)}</p>
@@ -369,7 +369,7 @@ function FeedCandidateListItem({
           value={reviewNoteValue}
         />
       </label>
-      <div {...stylex.props(styles.actions)}>
+      <div {...props(styles.actions)}>
         <Button
           aria-label={`Shortlist ${candidateName}`}
           disabled={isReviewInFlight}

@@ -1,9 +1,9 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Separator } from "../../primitives/separator";
 import { tokens } from "../../theme/tokens.stylex";
 
-const styles = stylex.create({
+const styles = create({
   shell: {
     backgroundColor: tokens.surface,
     minHeight: "100vh"
@@ -41,12 +41,12 @@ export function AppShell({
   navigation
 }: PropsWithChildren<{ navigation?: ReactNode }>) {
   return (
-    <div data-slot="app-shell" {...stylex.props(styles.shell)}>
-      <nav {...stylex.props(styles.nav)} aria-label="Primary">
-        <div {...stylex.props(styles.navContent)}>{navigation ?? "Product Compare"}</div>
+    <div data-slot="app-shell" {...props(styles.shell)}>
+      <nav {...props(styles.nav)} aria-label="Primary">
+        <div {...props(styles.navContent)}>{navigation ?? "Product Compare"}</div>
       </nav>
-      <Separator {...stylex.props(styles.separator)} />
-      <main {...stylex.props(styles.main)}>{children}</main>
+      <Separator {...props(styles.separator)} />
+      <main {...props(styles.main)}>{children}</main>
     </div>
   );
 }

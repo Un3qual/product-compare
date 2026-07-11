@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
@@ -20,7 +20,7 @@ type RevenueSummaryMetric = {
   value: string;
 };
 
-const styles = stylex.create({
+const styles = create({
   filters: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -92,7 +92,7 @@ function RevenueSummaryFilterForm({
   filters: RevenueSummaryLoaderData["filters"];
 }) {
   return (
-    <form method="get" aria-label="Revenue filters" {...stylex.props(styles.filters)}>
+    <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
       <label>
         Network
         <TextField
@@ -207,11 +207,11 @@ function RevenueSummaryMetrics({ summary }: { summary: RevenueSummary }) {
           match the current filters.
         </p>
       ) : null}
-      <dl {...stylex.props(styles.metrics)}>
+      <dl {...props(styles.metrics)}>
         {metrics.map((metric) => (
-          <div key={metric.label} {...stylex.props(styles.metric)}>
+          <div key={metric.label} {...props(styles.metric)}>
             <dt>{metric.label}</dt>
-            <dd {...stylex.props(styles.metricValue)}>{metric.value}</dd>
+            <dd {...props(styles.metricValue)}>{metric.value}</dd>
           </div>
         ))}
       </dl>

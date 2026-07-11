@@ -1,5 +1,5 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createCouponMutation, {
@@ -62,7 +62,7 @@ type AffiliateSetupMerchantConnection = NonNullable<
   AffiliateSetupRouteQuery["response"]["merchants"]
 >;
 
-const styles = stylex.create({
+const styles = create({
   form: {
     backgroundColor: tokens.surfaceMuted,
     borderColor: tokens.borderQuiet,
@@ -295,7 +295,7 @@ function AffiliateSetupPanel({
 
   return (
     <>
-      <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit} {...stylex.props(styles.form)}>
+      <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit} {...props(styles.form)}>
         <h2>Network</h2>
         <label>
           Network name
@@ -316,7 +316,7 @@ function AffiliateSetupPanel({
       {merchantChoices.length === 0 ? (
         <p role="status">No merchants available for affiliate setup yet.</p>
       ) : (
-        <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit} {...stylex.props(styles.form)}>
+        <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit} {...props(styles.form)}>
           <h2>Program</h2>
           {selectedMerchantSummary ? (
             <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
@@ -367,7 +367,7 @@ function AffiliateSetupPanel({
         </form>
       )}
 
-      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit} {...stylex.props(styles.form)}>
+      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit} {...props(styles.form)}>
         <h2>Link</h2>
         {selectedMerchantSummary ? (
           <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
@@ -405,7 +405,7 @@ function AffiliateSetupPanel({
       </form>
 
       {merchantChoices.length === 0 ? null : (
-        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit} {...stylex.props(styles.form)}>
+        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit} {...props(styles.form)}>
           <h2>Coupon</h2>
           {selectedMerchantSummary ? (
             <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>

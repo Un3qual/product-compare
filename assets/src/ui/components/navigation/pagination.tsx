@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Button } from "../../primitives/button";
 
-const styles = stylex.create({
+const styles = create({
   root: {
     alignItems: "center",
     display: "flex",
@@ -31,7 +31,7 @@ export function Pagination({
   }
 
   return (
-    <nav aria-label={label} {...stylex.props(styles.root)}>
+    <nav aria-label={label} {...props(styles.root)}>
       {firstHref ? (
         <Button asChild variant="soft">
           <Link to={firstHref}>{firstLabel}</Link>

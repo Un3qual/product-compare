@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
@@ -45,7 +45,7 @@ type ComparablePrice = {
   value: string;
 };
 
-const styles = stylex.create({
+const styles = create({
   section: {
     display: "grid",
     gap: "0.85rem"
@@ -80,10 +80,10 @@ export function DecisionSummary({
   }
 
   return (
-    <section {...stylex.props(styles.section)}>
-      <h2 {...stylex.props(styles.title)}>Decision summary</h2>
-      <div {...stylex.props(styles.tableWrap)}>
-        <table aria-label="Decision summary" {...stylex.props(styles.table)}>
+    <section {...props(styles.section)}>
+      <h2 {...props(styles.title)}>Decision summary</h2>
+      <div {...props(styles.tableWrap)}>
+        <table aria-label="Decision summary" {...props(styles.table)}>
           <DecisionSummaryHeader products={products} />
           <tbody>
             <DecisionSummaryMetricRows offerContexts={offerContexts} products={products} />
