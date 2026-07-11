@@ -73,9 +73,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 3: Catalog Browse And Product Detail
+## Batch 3: Catalog Browse And Product Detail
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/routes/catalog/browse.tsx`
@@ -96,6 +96,39 @@ Verification:
 Exit condition: catalog controls, product rows, detail specifications, decision
 actions, and offer context are visibly grouped and readable without changing
 filter, compare-selection, or pagination behavior.
+
+Completion evidence:
+
+- RED: focused catalog and product-detail tests failed because the labeled page,
+  product list, advanced-filter disclosure, and specification/offer regions did
+  not exist.
+- GREEN: the focused suites passed 2 files and 104 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 4: Merchant And Offer Discovery
+
+Status: active
+Owned paths:
+
+- `assets/src/routes/merchants/index.tsx`
+- `assets/src/routes/offers/index.tsx`
+- `assets/src/routes/offers/filters.tsx`
+- `assets/src/routes/offers/tracked-commerce-click.tsx`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: merchant and offer discovery use compact divided rows, visible
+status and price hierarchy, coherent summary metrics, and shared pagination
+without changing safe-link, tracking, sorting, or filter behavior.
 
 ## Dependent Batches
 

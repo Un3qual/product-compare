@@ -1,5 +1,12 @@
 import { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { Button } from "../../ui/primitives/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "../../ui/primitives/collapsible";
 import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import {
   CATALOG_PRODUCT_SORTS,
@@ -27,6 +34,38 @@ const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   enums: []
 };
 
+const styles = stylex.create({
+  form: {
+    backgroundColor: "var(--pc-surface-muted)",
+    borderColor: "var(--pc-border-quiet)",
+    borderRadius: "var(--radius-4)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "grid",
+    gap: "1rem",
+    padding: "1rem"
+  },
+  primary: {
+    alignItems: "end",
+    display: "grid",
+    gap: "0.8rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))"
+  },
+  advancedHeader: {
+    display: "flex",
+    justifyContent: "space-between"
+  },
+  advanced: {
+    display: "grid",
+    gap: "1rem",
+    paddingBlockStart: "0.5rem"
+  },
+  actions: {
+    display: "flex",
+    justifyContent: "end"
+  }
+});
+
 export function CatalogFilterForm({
   compareSlugs = [],
   filters,
@@ -42,6 +81,7 @@ export function CatalogFilterForm({
   const [includeTypeDescendants, setIncludeTypeDescendants] = useState(
     Boolean(filters.typeTaxonId && filters.includeTypeDescendants)
   );
+  const [advancedOpen, setAdvancedOpen] = useState(true);
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     const hadSelectedTypeTaxon = selectedTypeTaxonId !== "";
@@ -56,26 +96,44 @@ export function CatalogFilterForm({
   }
 
   return (
-    <form method="get" action="/products" aria-label="Filter products">
-      <SearchField query={filters.query} />
-      <SortField sort={filters.sort} />
-      <PageSizeField pageSize={pageSize} />
-      <CompareSlugFields compareSlugs={compareSlugs} />
-      <ProductTypeField
-        metadata={metadata}
-        selectedTypeTaxonId={selectedTypeTaxonId}
-        onTypeTaxonIdChange={handleTypeTaxonIdChange}
-      />
-      <IncludeDescendantsCheckbox
-        includeTypeDescendants={includeTypeDescendants}
-        selectedTypeTaxonId={selectedTypeTaxonId}
-        onIncludeTypeDescendantsChange={setIncludeTypeDescendants}
-      />
-      <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
-      <NumericFiltersFieldset filters={filters} metadata={metadata} />
-      <BooleanFiltersFieldset filters={filters} metadata={metadata} />
-      <EnumFiltersFieldset filters={filters} metadata={metadata} />
-      <button type="submit">Apply filters</button>
+    <form
+      method="get"
+      action="/products"
+      aria-label="Filter products"
+      {...stylex.props(styles.form)}
+    >
+      <div {...stylex.props(styles.primary)}>
+        <SearchField query={filters.query} />
+        <SortField sort={filters.sort} />
+        <PageSizeField pageSize={pageSize} />
+        <CompareSlugFields compareSlugs={compareSlugs} />
+        <ProductTypeField
+          metadata={metadata}
+          selectedTypeTaxonId={selectedTypeTaxonId}
+          onTypeTaxonIdChange={handleTypeTaxonIdChange}
+        />
+        <IncludeDescendantsCheckbox
+          includeTypeDescendants={includeTypeDescendants}
+          selectedTypeTaxonId={selectedTypeTaxonId}
+          onIncludeTypeDescendantsChange={setIncludeTypeDescendants}
+        />
+      </div>
+      <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+        <div {...stylex.props(styles.advancedHeader)}>
+          <CollapsibleTrigger asChild>
+            <Button variant="soft">Advanced filters</Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent {...stylex.props(styles.advanced)}>
+          <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
+          <NumericFiltersFieldset filters={filters} metadata={metadata} />
+          <BooleanFiltersFieldset filters={filters} metadata={metadata} />
+          <EnumFiltersFieldset filters={filters} metadata={metadata} />
+        </CollapsibleContent>
+      </Collapsible>
+      <div {...stylex.props(styles.actions)}>
+        <Button type="submit">Apply filters</Button>
+      </div>
     </form>
   );
 }

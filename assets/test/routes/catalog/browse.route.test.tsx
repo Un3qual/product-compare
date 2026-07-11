@@ -986,6 +986,12 @@ test("renders browse products from the Relay route query", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("list", { name: "Products" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true"
+  );
   expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("12");
   expect(screen.getByRole("link", { name: "View details for Catalog First" })).toHaveAttribute(
     "href",
@@ -1010,6 +1016,11 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("article", { name: "Catalog First" })).getByRole("list", {
+      name: "Decision actions for Catalog First"
+    })
+  ).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
 });

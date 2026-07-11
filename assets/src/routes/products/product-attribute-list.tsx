@@ -30,10 +30,10 @@ export function ProductAttributeList({
   }
 
   return (
-    <div>
+    <div {...stylex.props(styles.groups)}>
       {groupedAttributes.map((group) => (
-        <section key={group.label}>
-          <h3>{group.label}</h3>
+        <section key={group.label} {...stylex.props(styles.group)}>
+          <h3 {...stylex.props(styles.groupTitle)}>{group.label}</h3>
           <AttributeDefinitionList attributes={group.attributes} />
         </section>
       ))}
@@ -50,11 +50,11 @@ function AttributeDefinitionList({
   attributes: ReadonlyArray<ProductAttributeListItem>;
 }) {
   return (
-    <dl>
+    <dl {...stylex.props(styles.list)}>
       {attributes.map((attribute) => (
-        <div key={attribute.code}>
-          <dt>{attribute.displayName}</dt>
-          <dd>{attribute.valueText}</dd>
+        <div key={attribute.code} {...stylex.props(styles.row)}>
+          <dt {...stylex.props(styles.term)}>{attribute.displayName}</dt>
+          <dd {...stylex.props(styles.value)}>{attribute.valueText}</dd>
         </div>
       ))}
     </dl>
@@ -107,3 +107,45 @@ function normalizedGroupLabel(groupLabel: string | null | undefined) {
 function normalizedGroupLabelKey(groupLabel: string) {
   return groupLabel.toLowerCase();
 }
+import * as stylex from "@stylexjs/stylex";
+import { tokens } from "../../ui/theme/tokens.stylex";
+
+const styles = stylex.create({
+  groups: {
+    display: "grid",
+    gap: "1.5rem"
+  },
+  group: {
+    display: "grid",
+    gap: "0.75rem"
+  },
+  groupTitle: {
+    color: tokens.textSecondary,
+    fontSize: "0.85rem",
+    letterSpacing: "0.06em",
+    margin: 0,
+    textTransform: "uppercase"
+  },
+  list: {
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
+    margin: 0
+  },
+  row: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
+    display: "grid",
+    gap: "0.75rem",
+    gridTemplateColumns: "minmax(10rem, 0.8fr) minmax(0, 1.2fr)",
+    paddingBlock: "0.75rem"
+  },
+  term: {
+    color: tokens.textSecondary,
+    fontWeight: 600
+  },
+  value: {
+    margin: 0
+  }
+});

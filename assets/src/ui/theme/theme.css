@@ -60,6 +60,52 @@ a {
   text-underline-offset: 0.18em;
 }
 
+[data-theme="default"] :where(input, select, textarea) {
+  background: var(--pc-surface-raised);
+  border: 1px solid var(--pc-border-standard);
+  border-radius: var(--radius-3);
+  color: var(--pc-text-primary);
+  font: inherit;
+  min-height: var(--pc-control-height);
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+
+[data-theme="default"] :where(label) {
+  color: var(--pc-text-secondary);
+  display: grid;
+  font-size: 0.9rem;
+  font-weight: 600;
+  gap: 0.35rem;
+}
+
+[data-theme="default"] :where(label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+  align-items: center;
+  display: flex;
+  font-weight: 500;
+}
+
+[data-theme="default"] :where(input[type="checkbox"], input[type="radio"]) {
+  min-height: auto;
+  width: auto;
+}
+
+[data-theme="default"] fieldset {
+  border: 1px solid var(--pc-border-quiet);
+  border-radius: var(--radius-3);
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+[data-theme="default"] legend {
+  color: var(--pc-text-primary);
+  font-weight: 700;
+  padding-inline: 0.25rem;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: 3px;

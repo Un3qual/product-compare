@@ -452,6 +452,9 @@ test("renders product detail and active offers from Relay route queries", () => 
   );
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();

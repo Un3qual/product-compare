@@ -167,21 +167,21 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Catalog Browse And Product Detail
+### 1. Merchant And Offer Discovery
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Apply the shared Radix foundation to catalog filters, product
-results, product detail, specifications, and active-offer context.
+Next action: Apply the shared Radix foundation to merchant and offer filters,
+summary metrics, discovery rows, statuses, prices, and pagination.
 Owned paths:
 
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/src/routes/catalog/filter-form.tsx`
-- `assets/src/routes/products/detail.tsx`
-- `assets/src/routes/products/product-attribute-list.tsx`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/src/routes/merchants/index.tsx`
+- `assets/src/routes/offers/index.tsx`
+- `assets/src/routes/offers/filters.tsx`
+- `assets/src/routes/offers/tracked-commerce-click.tsx`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
@@ -190,14 +190,14 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: Catalog controls, product rows, detail specifications, decision
-actions, and offer context are visibly grouped and readable without changing
-filter, compare-selection, or pagination behavior.
+Exit condition: Merchant and offer discovery use compact divided rows, visible
+status and price hierarchy, coherent summary metrics, and shared pagination
+without changing safe-link, tracking, sorting, or filter behavior.
 
 ## Needs Decision Work
 

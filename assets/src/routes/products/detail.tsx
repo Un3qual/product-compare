@@ -1,4 +1,5 @@
 import { Suspense, useId } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
@@ -6,6 +7,9 @@ import productDetailRouteQuery, {
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../ui/components/layout/page-shell";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
 import {
   buildComparePathFromSlugs,
@@ -36,6 +40,33 @@ import {
   ProductAttributeList,
   type ProductAttributeListItem
 } from "./product-attribute-list";
+
+const styles = stylex.create({
+  description: {
+    display: "grid",
+    gap: "0.35rem"
+  },
+  descriptionText: {
+    margin: 0
+  },
+  section: {
+    display: "grid",
+    gap: "1rem"
+  },
+  sectionTitle: {
+    fontSize: "1.4rem",
+    letterSpacing: "-0.025em",
+    margin: 0
+  },
+  actions: {
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--radius-4)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    padding: "1rem"
+  }
+});
 
 export function ProductDetailRoute() {
   const loaderData = useLoaderData<typeof productDetailLoader>() as ProductDetailLoaderData;
@@ -71,6 +102,7 @@ function ProductDetail({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const location = useLocation();
+  const offersTitleId = useId();
   const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
     maxProducts: MAX_COMPARE_PRODUCTS
   });
@@ -82,10 +114,20 @@ function ProductDetail({
   const { product } = data;
 
   return (
-    <section>
-      <h1>{product.name}</h1>
-      <p>{product.brand?.name ?? "Unknown brand"}</p>
-      {product.description ? <p>{product.description}</p> : null}
+    <PageShell
+      description={
+        <div {...stylex.props(styles.description)}>
+          <p {...stylex.props(styles.descriptionText)}>
+            {product.brand?.name ?? "Unknown brand"}
+          </p>
+          {product.description ? (
+            <p {...stylex.props(styles.descriptionText)}>{product.description}</p>
+          ) : null}
+        </div>
+      }
+      eyebrow="Product detail"
+      title={product.name}
+    >
       {selectedCompareSlugs.length > 0 ? (
         <CompareSelectionTray
           items={[
@@ -113,8 +155,13 @@ function ProductDetail({
         selectedCompareSlugs={selectedCompareSlugs}
       />
       <ProductSpecifications attributes={product.currentAttributes} />
-      <section>
-        <h2>Active offers</h2>
+      <section
+        aria-labelledby={offersTitleId}
+        {...stylex.props(styles.section)}
+      >
+        <h2 id={offersTitleId} {...stylex.props(styles.sectionTitle)}>
+          Active offers
+        </h2>
         <ProductOffers
           connection={product.merchantProducts}
           productSlug={product.slug}
@@ -122,7 +169,7 @@ function ProductDetail({
           selectedCompareSlugs={selectedCompareSlugs}
         />
       </section>
-    </section>
+    </PageShell>
   );
 }
 
@@ -140,7 +187,7 @@ function ProductDecisionActions({
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId}>
+    <section aria-labelledby={titleId} {...stylex.props(styles.actions)}>
       <h2 id={titleId}>Next steps</h2>
       <ul>
         <DetailCompareAction
@@ -198,9 +245,13 @@ function ProductSpecifications({
 }: {
   attributes: ReadonlyArray<ProductAttributeListItem>;
 }) {
+  const titleId = useId();
+
   return (
-    <section>
-      <h2>Specifications</h2>
+    <section aria-labelledby={titleId} {...stylex.props(styles.section)}>
+      <h2 id={titleId} {...stylex.props(styles.sectionTitle)}>
+        Specifications
+      </h2>
       <ProductAttributeList
         attributes={attributes}
         emptyMessage="No product attributes available yet."
@@ -211,25 +262,23 @@ function ProductSpecifications({
 
 function ProductUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Product unavailable.</p>
-    </section>
+    <PageShell title="Product unavailable" width="reading">
+      <FeedbackState kind="error" title="Product unavailable." />
+    </PageShell>
   );
 }
 
 function ProductNotFoundFallback() {
   return (
-    <section>
-      <p>Product not found.</p>
-    </section>
+    <PageShell title="Product not found" width="reading">
+      <FeedbackState kind="empty" title="Product not found." />
+    </PageShell>
   );
 }
 
 function OffersUnavailableFallback() {
   return (
-    <div role="alert">
-      <p>Offers unavailable.</p>
-    </div>
+    <FeedbackState kind="error" title="Offers unavailable." />
   );
 }
 

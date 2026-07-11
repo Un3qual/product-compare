@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
@@ -7,6 +8,11 @@ import browseProductsRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../ui/components/layout/page-shell";
+import { Pagination } from "../../ui/components/navigation/pagination";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -31,6 +37,54 @@ type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges
 
 const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
 
+const styles = stylex.create({
+  product: {
+    display: "grid",
+    gap: "0.8rem"
+  },
+  productHeading: {
+    fontSize: "1.35rem",
+    letterSpacing: "-0.02em",
+    margin: 0
+  },
+  metadata: {
+    color: tokens.textSecondary,
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.45rem 1rem"
+  },
+  metadataItem: {
+    margin: 0
+  },
+  actionList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.6rem 1rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  highlights: {
+    display: "grid",
+    gap: "0.45rem"
+  },
+  highlightsTitle: {
+    color: tokens.textSecondary,
+    fontSize: "0.8rem",
+    letterSpacing: "0.06em",
+    margin: 0,
+    textTransform: "uppercase"
+  },
+  highlightsList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.45rem 1.25rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  }
+});
+
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
@@ -42,8 +96,11 @@ export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
 
   return (
-    <section>
-      <h1>Browse products</h1>
+    <PageShell
+      description="Filter the catalog, scan the useful differences, and keep products in reach for comparison."
+      eyebrow="Product catalog"
+      title="Browse products"
+    >
       {loaderData.status === "error" ? (
         <BrowseProductsErrorFallback />
       ) : (
@@ -60,16 +117,17 @@ export function BrowseRoute() {
           </Suspense>
         </ResettableErrorBoundary>
       )}
-    </section>
+    </PageShell>
   );
 }
 
 function BrowseProductsErrorFallback() {
   return (
-    <div role="alert">
-      <p>Catalog unavailable.</p>
-      <p>Please refresh the page or try again later.</p>
-    </div>
+    <FeedbackState
+      description="Please refresh the page or try again later."
+      kind="error"
+      title="Catalog unavailable."
+    />
   );
 }
 
@@ -117,23 +175,19 @@ function BrowseProducts({
           selectedCompareSlugs
         )
       : null;
-  const paginationLinks =
-    currentAfter || nextProductsPath ? (
-      <nav aria-label="Browse product pages">
-        {currentAfter ? (
-          <Link
-            to={catalogBrowseFirstPagePath(
-              activeFilters,
-              currentPageSize,
-              selectedCompareSlugs
-            )}
-          >
-            First products
-          </Link>
-        ) : null}
-        {nextProductsPath ? <Link to={nextProductsPath}>Next products</Link> : null}
-      </nav>
-    ) : null;
+  const paginationLinks = (
+    <Pagination
+      firstHref={
+        currentAfter
+          ? catalogBrowseFirstPagePath(activeFilters, currentPageSize, selectedCompareSlugs)
+          : null
+      }
+      firstLabel="First products"
+      label="Browse product pages"
+      nextHref={nextProductsPath}
+      nextLabel="Next products"
+    />
+  );
   const selectionTray =
     selectedCompareSlugs.length > 0 ? (
       <CompareSelectionTray
@@ -177,7 +231,9 @@ function BrowseProducts({
       <section>
         {selectionTray}
         {filterControls}
-        {resultStatus.emptyMessage ? <p>{resultStatus.emptyMessage}</p> : null}
+        {resultStatus.emptyMessage ? (
+          <FeedbackState kind="empty" title={resultStatus.emptyMessage} />
+        ) : null}
         {paginationLinks}
       </section>
     );
@@ -187,18 +243,18 @@ function BrowseProducts({
     <>
       {selectionTray}
       {filterControls}
-      <ul>
+      <DataList label="Products">
         {products.map((product) => (
-          <li key={product.id}>
+          <DataListItem key={product.id}>
             <BrowseProductCard
               currentPathname={currentBrowsePathname}
               currentSearch={currentCompareSearch}
               product={product}
               selectedCompareSlugs={selectedCompareSlugs}
             />
-          </li>
+          </DataListItem>
         ))}
-      </ul>
+      </DataList>
       {paginationLinks}
     </>
   );
@@ -216,12 +272,17 @@ function BrowseProductCard({
   selectedCompareSlugs: readonly string[];
 }) {
   return (
-    <article aria-label={product.name}>
-      <h2>{product.name}</h2>
-      <p>{product.slug}</p>
-      <p>{product.brand.name}</p>
+    <article aria-label={product.name} {...stylex.props(styles.product)}>
+      <h2 {...stylex.props(styles.productHeading)}>{product.name}</h2>
+      <div {...stylex.props(styles.metadata)}>
+        <p {...stylex.props(styles.metadataItem)}>{product.brand.name}</p>
+        <p {...stylex.props(styles.metadataItem)}>{product.slug}</p>
+      </div>
       <SpecificationHighlights attributes={product.currentAttributes} />
-      <ul aria-label={`Decision actions for ${product.name}`}>
+      <ul
+        aria-label={`Decision actions for ${product.name}`}
+        {...stylex.props(styles.actionList)}
+      >
         <li>
           <Link to={browseProductDetailPath(product.slug, selectedCompareSlugs)}>
             View details for {product.name}
@@ -261,9 +322,9 @@ function SpecificationHighlights({
   }
 
   return (
-    <section>
-      <h3>Specification highlights</h3>
-      <ul aria-label="Specification highlights">
+    <section {...stylex.props(styles.highlights)}>
+      <h3 {...stylex.props(styles.highlightsTitle)}>Specification highlights</h3>
+      <ul aria-label="Specification highlights" {...stylex.props(styles.highlightsList)}>
         {highlights.map((attribute) => (
           <li key={attribute.code}>
             {attribute.displayName}: {attribute.valueText}
