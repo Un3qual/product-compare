@@ -8,8 +8,11 @@ import offerDiscoveryRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { StatusBadge } from "../../ui/components/status/StatusBadge";
 import { Button } from "../../ui/primitives/Button";
@@ -73,39 +76,9 @@ const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
 };
 
 const styles = create({
-  snapshot: {
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
-    display: "grid",
-    gap: "1rem",
-    padding: "1.25rem"
-  },
-  snapshotTitle: {
-    fontSize: "1rem",
-    margin: 0
-  },
-  metrics: {
-    display: "grid",
-    gap: "0.75rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
-    margin: 0
-  },
-  metric: {
-    display: "grid",
-    gap: "0.3rem"
-  },
-  metricLabel: {
-    color: tokens.textSecondary,
-    fontSize: "0.8rem"
-  },
-  metricValue: {
-    fontSize: "1.05rem",
-    fontWeight: 700,
-    margin: 0
-  },
   offer: {
     display: "grid",
-    gap: "0.7rem"
+    gap: "1rem"
   },
   offerHeader: {
     alignItems: "center",
@@ -132,6 +105,39 @@ const styles = create({
   filterSection: {
     display: "grid",
     gap: "0.75rem"
+  },
+  offerDecision: {
+    alignItems: "start",
+    display: "grid",
+    gap: "1rem 2rem",
+    gridTemplateColumns: {
+      default: "minmax(0, 1fr) minmax(9rem, auto)",
+      "@media (max-width: 42rem)": "minmax(0, 1fr)"
+    }
+  },
+  merchantContext: {
+    display: "grid",
+    gap: "0.55rem"
+  },
+  priceContext: {
+    display: "grid",
+    gap: "0.55rem",
+    justifyItems: {
+      default: "end",
+      "@media (max-width: 42rem)": "start"
+    }
+  },
+  supportingDetail: {
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: {
+      default: "repeat(2, minmax(0, 1fr))",
+      "@media (max-width: 42rem)": "minmax(0, 1fr)"
+    },
+    paddingBlockStart: "1rem"
   }
 });
 
@@ -144,28 +150,38 @@ export function OfferDiscoveryRoute() {
       eyebrow="Offer discovery"
       title="Offers"
     >
-      <OfferDiscoveryFilterForm filters={loaderData.filters} />
-
-      {loaderData.status === "missingProduct" ? (
-        <>
-          <OfferDiscoveryFilterSummary filters={loaderData.filters} />
-          <MissingProductState />
-        </>
-      ) : loaderData.status === "error" ? (
-        <OfferDiscoveryQueryFallback filters={loaderData.filters} />
-      ) : (
-        <ResettableErrorBoundary
-          fallback={<OfferDiscoveryQueryFallback filters={loaderData.filters} />}
-          resetToken={loaderData.query}
-        >
-          <Suspense fallback={<OfferDiscoveryLoadingFallback filters={loaderData.filters} />}>
-            <OfferDiscoveryPanel
-              filters={loaderData.filters}
-              query={loaderData.query}
-            />
-          </Suspense>
-        </ResettableErrorBoundary>
-      )}
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Scope the product, merchant, availability, and ordering of the visible offers."
+            label="Offer controls"
+          >
+            <OfferDiscoveryFilterForm filters={loaderData.filters} />
+          </ContextRail>
+        }
+        label="Offer results"
+      >
+        {loaderData.status === "missingProduct" ? (
+          <>
+            <OfferDiscoveryFilterSummary filters={loaderData.filters} />
+            <MissingProductState />
+          </>
+        ) : loaderData.status === "error" ? (
+          <OfferDiscoveryQueryFallback filters={loaderData.filters} />
+        ) : (
+          <ResettableErrorBoundary
+            fallback={<OfferDiscoveryQueryFallback filters={loaderData.filters} />}
+            resetToken={loaderData.query}
+          >
+            <Suspense fallback={<OfferDiscoveryLoadingFallback filters={loaderData.filters} />}>
+              <OfferDiscoveryPanel
+                filters={loaderData.filters}
+                query={loaderData.query}
+              />
+            </Suspense>
+          </ResettableErrorBoundary>
+        )}
+      </WorkspaceLayout>
     </PageShell>
   );
 }
@@ -287,31 +303,18 @@ function VisibleOfferSnapshot({
   summary: OfferSnapshotSummary<RenderableOffer>;
 }) {
   return (
-    <section aria-label="Visible offer snapshot" {...props(styles.snapshot)}>
-      <h2 {...props(styles.snapshotTitle)}>Visible offer snapshot</h2>
-      <dl {...props(styles.metrics)}>
-        <div {...props(styles.metric)}>
-          <dt {...props(styles.metricLabel)}>Visible offers on this page</dt>
-          <dd {...props(styles.metricValue)}>{summary.visibleOfferCount}</dd>
-        </div>
-        <div {...props(styles.metric)}>
-          <dt {...props(styles.metricLabel)}>Lowest visible price</dt>
-          <dd {...props(styles.metricValue)}>{visibleLowestPriceLabel(summary)}</dd>
-        </div>
-        <div {...props(styles.metric)}>
-          <dt {...props(styles.metricLabel)}>Visible coupon availability</dt>
-          <dd {...props(styles.metricValue)}>
-            {formatCouponAvailabilityCount(summary.couponAvailabilityCount)}
-          </dd>
-        </div>
-        <div {...props(styles.metric)}>
-          <dt {...props(styles.metricLabel)}>Missing latest price</dt>
-          <dd {...props(styles.metricValue)}>
-            {formatOfferCount(summary.missingPriceCount)}
-          </dd>
-        </div>
-      </dl>
-    </section>
+    <SummaryStrip
+      items={[
+        { label: "Visible offers on this page", value: summary.visibleOfferCount },
+        { label: "Lowest visible price", value: visibleLowestPriceLabel(summary) },
+        {
+          label: "Visible coupon availability",
+          value: formatCouponAvailabilityCount(summary.couponAvailabilityCount)
+        },
+        { label: "Missing latest price", value: formatOfferCount(summary.missingPriceCount) }
+      ]}
+      label="Visible offer snapshot"
+    />
   );
 }
 
@@ -353,28 +356,34 @@ function OfferListItem({
         isActive={offer.isActive}
         productName={offerProductName(offer.product)}
       />
-      <OfferMerchantAction
-        isActive={offer.isActive}
-        merchantName={merchantName}
-        merchantProductId={offer.id}
-        merchantUrl={offer.url}
-      />
-      <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
-      <OfferObservationContext offer={offer} />
-
-      {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
-      <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
-
-      <PriceHistorySummary
-        hasMore={priceHistory.pageInfo.hasNextPage}
-        merchantName={offerSummaryMerchantName(offer.merchant)}
-        rows={offerPriceHistoryRows(priceHistory, offer.currency)}
-      />
-      <CouponSummary
-        couponEdges={activeCoupons.edges}
-        hasMore={activeCoupons.pageInfo.hasNextPage}
-        merchantName={offerSummaryMerchantName(offer.merchant)}
-      />
+      <div {...props(styles.offerDecision)}>
+        <section aria-label="Merchant and availability" {...props(styles.merchantContext)}>
+          <OfferMerchantAction
+            isActive={offer.isActive}
+            merchantName={merchantName}
+            merchantProductId={offer.id}
+            merchantUrl={offer.url}
+          />
+          <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+          <OfferObservationContext offer={offer} />
+        </section>
+        <section aria-label="Current price" {...props(styles.priceContext)}>
+          {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
+          <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
+        </section>
+      </div>
+      <div {...props(styles.supportingDetail)}>
+        <PriceHistorySummary
+          hasMore={priceHistory.pageInfo.hasNextPage}
+          merchantName={offerSummaryMerchantName(offer.merchant)}
+          rows={offerPriceHistoryRows(priceHistory, offer.currency)}
+        />
+        <CouponSummary
+          couponEdges={activeCoupons.edges}
+          hasMore={activeCoupons.pageInfo.hasNextPage}
+          merchantName={offerSummaryMerchantName(offer.merchant)}
+        />
+      </div>
     </article>
   );
 }

@@ -67,6 +67,32 @@ Verification:
 - GREEN: `cd assets && bun run build` completed client and SSR production
   builds; the existing large-chunk advisory remains non-blocking.
 
+### Milestone 2: Shopper Discovery Workspaces
+
+Status: done
+
+- Home shopper paths now pair the three primary destinations with concise task
+  orientation while account and operational actions remain secondary.
+- Catalog results occupy the primary workspace; the sticky catalog rail holds
+  essential controls, guidance, and removable active-filter chips. Advanced
+  filters start collapsed unless advanced filter state is active.
+- Merchant results occupy the primary workspace with page controls in a
+  dedicated context rail and an explicit visible-page result heading.
+- Offer results occupy the primary workspace with filters in a context rail,
+  a shared summary strip, and aligned merchant, current-price, history, and
+  coupon regions inside each offer row.
+
+Verification:
+
+- RED: the focused route suites reported missing catalog, merchant, and offer
+  workspace landmarks, missing contextual rails, expanded default advanced
+  controls, and absent shopper-path orientation copy.
+- GREEN: the home, catalog, merchant, and offer suites passed 4 files and 137
+  tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+
 ## Batch 1: Radix Theme And Shared UI Foundation
 
 Status: done

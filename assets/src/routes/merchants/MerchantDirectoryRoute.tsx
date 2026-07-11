@@ -9,7 +9,10 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
+import { SectionHeading } from "../../ui/components/layout/SectionHeading";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
@@ -27,13 +30,10 @@ type MerchantDirectoryConnection = NonNullable<
 
 const styles = create({
   controls: {
-    alignItems: "end",
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
-    display: "flex",
-    flexWrap: "wrap",
+    alignItems: "stretch",
+    display: "grid",
     gap: "0.75rem",
-    padding: "1rem"
+    gridTemplateColumns: "minmax(0, 1fr)"
   },
   merchant: {
     display: "grid",
@@ -74,8 +74,17 @@ function MerchantDirectoryContent({
   loaderData: Extract<MerchantDirectoryLoaderData, { status: "ready" }>;
 }) {
   return (
-    <>
-      <MerchantDirectoryControls pagination={loaderData.pagination} />
+    <WorkspaceLayout
+      context={
+        <ContextRail
+          description="Adjust how many merchants appear in the current result page."
+          label="Merchant controls"
+        >
+          <MerchantDirectoryControls pagination={loaderData.pagination} />
+        </ContextRail>
+      }
+      label="Merchant results"
+    >
       <ResettableErrorBoundary
         fallback={<MerchantDirectoryUnavailableFallback />}
         resetToken={loaderData.query}
@@ -87,7 +96,7 @@ function MerchantDirectoryContent({
           />
         </Suspense>
       </ResettableErrorBoundary>
-    </>
+    </WorkspaceLayout>
   );
 }
 
@@ -149,6 +158,10 @@ function MerchantDirectoryList({
 
   return (
     <>
+      <SectionHeading
+        description="Seller identity and website access stay aligned for quick scanning."
+        title={`${merchants.length} merchants on this page`}
+      />
       <DataList label="Merchants">
         {merchants.map((merchant) => (
           <MerchantListItem key={merchant.id} merchant={merchant} />

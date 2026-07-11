@@ -98,6 +98,9 @@ test("merchant directory renders merchant names and domains", () => {
 test("merchant directory normalizes domain-only website links to HTTPS", () => {
   renderMerchantDirectoryRoute();
 
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+
   expect(getMerchantListItem("Acme Market")).toHaveTextContent("acme.example");
   const websiteLink = within(getMerchantListItem("Acme Market")).getByRole("link", {
     name: "Visit merchant website"

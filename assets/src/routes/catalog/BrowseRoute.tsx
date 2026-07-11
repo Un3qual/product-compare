@@ -10,7 +10,9 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import {
@@ -207,9 +209,8 @@ function BrowseProducts({
         selectedSlugs={selectedCompareSlugs}
       />
     ) : null;
-  const filterControls = (
-    <>
-      <p>{resultStatus.guidance}</p>
+  const catalogControls = (
+    <ContextRail description={resultStatus.guidance} label="Catalog controls">
       <CatalogFilterForm
         compareSlugs={selectedCompareSlugs}
         key={filterFormKey}
@@ -223,26 +224,24 @@ function BrowseProducts({
         metadata={filterMetadata}
         pageSize={currentPageSize}
       />
-    </>
+    </ContextRail>
   );
 
   if (products.length === 0) {
     return (
-      <section>
+      <WorkspaceLayout context={catalogControls} label="Catalog results">
         {selectionTray}
-        {filterControls}
         {resultStatus.emptyMessage ? (
           <FeedbackState kind="empty" title={resultStatus.emptyMessage} />
         ) : null}
         {paginationLinks}
-      </section>
+      </WorkspaceLayout>
     );
   }
 
   return (
-    <>
+    <WorkspaceLayout context={catalogControls} label="Catalog results">
       {selectionTray}
-      {filterControls}
       <DataList label="Products">
         {products.map((product) => (
           <DataListItem key={product.id}>
@@ -256,7 +255,7 @@ function BrowseProducts({
         ))}
       </DataList>
       {paginationLinks}
-    </>
+    </WorkspaceLayout>
   );
 }
 

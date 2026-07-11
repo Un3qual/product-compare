@@ -20,13 +20,9 @@ const SORT_OPTIONS: Array<{ label: string; value: OfferDiscoverySort }> = [
 
 const styles = create({
   form: {
-    alignItems: "end",
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
     display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
-    padding: "1.25rem"
+    gap: "0.85rem",
+    gridTemplateColumns: "minmax(0, 1fr)"
   },
   summary: {
     borderBlockEndColor: tokens.borderQuiet,

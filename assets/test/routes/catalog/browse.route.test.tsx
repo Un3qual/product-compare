@@ -987,10 +987,12 @@ test("renders browse products from the Relay route query", () => {
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Catalog results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Catalog controls" })).toBeInTheDocument();
   expect(screen.getByRole("list", { name: "Products" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
     "aria-expanded",
-    "true"
+    "false"
   );
   expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("12");
   expect(screen.getByRole("link", { name: "View details for Catalog First" })).toHaveAttribute(
@@ -1121,6 +1123,8 @@ test("renders metadata-backed catalog filter controls", () => {
   renderBrowseRouteWithRelayData();
 
   const filterForm = screen.getByRole("form", { name: "Filter products" });
+
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
 
   expect(within(filterForm).getByRole("searchbox", { name: "Search products" })).toHaveValue("");
   expect(within(filterForm).getByRole("combobox", { name: "Sort products" })).toHaveValue(
@@ -1729,6 +1733,8 @@ test("refreshes filter controls when loader filters clear on the same browse rou
 
   const clearedFilterForm = screen.getByRole("form", { name: "Filter products" });
 
+  fireEvent.click(within(clearedFilterForm).getByRole("button", { name: "Advanced filters" }));
+
   expect(within(clearedFilterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
     ""
   );
@@ -1751,6 +1757,9 @@ test("submits only one selected enum option per enum facet", () => {
   renderBrowseRouteWithRelayData();
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
+
   const colorGroup = within(filterForm).getByRole("group", { name: "Color" });
   const redOption = within(colorGroup).getByRole("radio", { name: "Red (2)" });
   const blueOption = within(colorGroup).getByRole("radio", { name: "Blue (1)" });

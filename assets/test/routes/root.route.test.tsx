@@ -319,6 +319,9 @@ test("root route focuses the home content on the shopper journey", async () => {
     "href",
     "/offers"
   );
+  expect(within(shopperActions).getByText(/narrow by what matters/i)).toBeInTheDocument();
+  expect(within(shopperActions).getByText(/meaningful differences side by side/i)).toBeInTheDocument();
+  expect(within(shopperActions).getByText(/current prices, availability, and coupons/i)).toBeInTheDocument();
 });
 
 test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {

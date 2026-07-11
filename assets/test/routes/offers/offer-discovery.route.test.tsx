@@ -161,6 +161,9 @@ test("offer discovery renders filter controls with existing filter values", () =
 
   renderOfferDiscoveryRoute();
 
+  expect(screen.getByRole("region", { name: "Offer results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Offer controls" })).toBeInTheDocument();
+
   const filterForm = screen.getByRole("form", { name: "Offer discovery filters" });
 
   expect(filterForm).toHaveAttribute("action", "/offers");

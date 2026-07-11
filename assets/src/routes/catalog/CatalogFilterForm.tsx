@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { ActiveFilterChips } from "../../ui/components/filters/ActiveFilterChips";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import {
@@ -37,20 +38,14 @@ const EMPTY_CATALOG_FILTERS: CatalogFilters = {
 
 const styles = create({
   form: {
-    backgroundColor: "var(--pc-surface-muted)",
-    borderColor: "var(--pc-border-quiet)",
-    borderRadius: "var(--radius-4)",
-    borderStyle: "solid",
-    borderWidth: "1px",
     display: "grid",
     gap: "1rem",
-    padding: "1rem"
+    minWidth: 0
   },
   primary: {
-    alignItems: "end",
     display: "grid",
     gap: "0.8rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))"
+    gridTemplateColumns: "minmax(0, 1fr)"
   },
   advanced: {
     display: "grid",
@@ -78,7 +73,7 @@ export function CatalogFilterForm({
   const [includeTypeDescendants, setIncludeTypeDescendants] = useState(
     Boolean(filters.typeTaxonId && filters.includeTypeDescendants)
   );
-  const [advancedOpen, setAdvancedOpen] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(() => hasAdvancedFilters(filters));
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     const hadSelectedTypeTaxon = selectedTypeTaxonId !== "";
@@ -478,25 +473,37 @@ export function CatalogActiveFilterSummary({
 
   return (
     <section aria-label="Applied product filters">
-      <ul aria-label="Active filters">
-        {summaryItems.map((item) => (
-          <li key={item.key}>
+      <ActiveFilterChips
+        items={summaryItems.map((item) => ({
+          key: item.key,
+          label: item.label,
+          removeControl: (
             <Link
+              aria-label={`Remove ${item.label}`}
               to={catalogBrowseFirstPagePath(
                 catalogFiltersWithout(filters, item.removal),
                 pageSize,
                 compareSlugs
               )}
             >
-              Remove {item.label}
+              Remove
             </Link>
-          </li>
-        ))}
-      </ul>
+          )
+        }))}
+      />
       <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize, compareSlugs)}>
         Clear filters
       </Link>
     </section>
+  );
+}
+
+function hasAdvancedFilters(filters: CatalogFilters) {
+  return (
+    filters.useCaseTaxonIds.length > 0 ||
+    filters.numeric.length > 0 ||
+    filters.booleans.length > 0 ||
+    filters.enums.length > 0
   );
 }
 

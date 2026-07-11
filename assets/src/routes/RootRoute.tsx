@@ -41,12 +41,21 @@ const styles = create({
     padding: 0
   },
   shopperPath: {
-    display: "flex"
+    backgroundColor: "var(--pc-surface-muted)",
+    borderBlockStart: "2px solid var(--pc-border-emphasized)",
+    display: "grid",
+    gap: "0.75rem",
+    padding: "1rem"
   },
   shopperLink: {
     justifyContent: "center",
     minHeight: "3rem",
     width: "100%"
+  },
+  shopperDescription: {
+    color: "var(--pc-text-secondary)",
+    lineHeight: 1.5,
+    margin: 0
   },
   secondaryActions: {
     borderBlockStart: "1px solid var(--pc-border-quiet)",
@@ -81,6 +90,10 @@ type Destination = {
   to: string;
 };
 
+type ShopperDestination = Destination & {
+  description: string;
+};
+
 const PUBLIC_DESTINATIONS = [
   { label: "Browse products", to: "/products" },
   { label: "Merchants", to: "/merchants" },
@@ -96,10 +109,22 @@ const AUTHENTICATED_DESTINATIONS = [
 ] as const satisfies readonly Destination[];
 
 const SHOPPER_DESTINATIONS = [
-  { label: "Browse products", to: "/products" },
-  { label: "Compare products", to: "/compare" },
-  { label: "Review offers", to: "/offers" }
-] as const satisfies readonly Destination[];
+  {
+    description: "Explore the catalog and narrow by what matters.",
+    label: "Browse products",
+    to: "/products"
+  },
+  {
+    description: "Line up the meaningful differences side by side.",
+    label: "Compare products",
+    to: "/compare"
+  },
+  {
+    description: "Check current prices, availability, and coupons.",
+    label: "Review offers",
+    to: "/offers"
+  }
+] as const satisfies readonly ShopperDestination[];
 
 const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
   ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to)
@@ -189,7 +214,7 @@ function ShopperActions() {
   return (
     <nav aria-label="Shopper actions" {...props(styles.actions)}>
       <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
-        {SHOPPER_DESTINATIONS.map(({ label, to }) => (
+        {SHOPPER_DESTINATIONS.map(({ description, label, to }) => (
           <li key={to} {...props(styles.shopperPath)}>
             <DestinationLink
               label={label}
@@ -197,6 +222,7 @@ function ShopperActions() {
               to={to}
               variant="solid"
             />
+            <p {...props(styles.shopperDescription)}>{description}</p>
           </li>
         ))}
       </ul>
