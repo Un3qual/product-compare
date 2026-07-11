@@ -1,5 +1,8 @@
 import { Fragment } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,
   type OfferDiscoverySort,
@@ -13,6 +16,42 @@ const SORT_OPTIONS: Array<{ label: string; value: OfferDiscoverySort }> = [
   { label: "Price: high to low", value: "price_desc" },
   { label: "Merchant name", value: "merchant_name" }
 ];
+
+const styles = stylex.create({
+  form: {
+    alignItems: "end",
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
+    padding: "1.25rem"
+  },
+  summary: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
+    display: "grid",
+    gap: "0.75rem",
+    paddingBlockEnd: "1rem"
+  },
+  summaryList: {
+    display: "grid",
+    gap: "0.5rem 1.5rem",
+    gridTemplateColumns: "max-content minmax(0, 1fr)",
+    margin: 0
+  },
+  summaryValue: {
+    color: tokens.textSecondary,
+    margin: 0
+  },
+  actions: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "1rem"
+  }
+});
 
 export interface OfferDiscoveryProductContext {
   brand: {
@@ -30,6 +69,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       aria-label="Offer discovery filters"
       key={offerDiscoveryFilterFormKey(filters)}
       method="get"
+      {...stylex.props(styles.form)}
     >
       <label>
         Product ID
@@ -78,7 +118,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
           ))}
         </select>
       </label>
-      <button type="submit">Apply filters</button>
+      <Button type="submit">Apply filters</Button>
     </form>
   );
 }
@@ -101,32 +141,28 @@ export function OfferDiscoveryFilterSummary({
   selectedProduct?: OfferDiscoveryProductContext | null;
 }) {
   return (
-    <section aria-label="Active offer filters">
-      <dl>
+    <section aria-label="Active offer filters" {...stylex.props(styles.summary)}>
+      <dl {...stylex.props(styles.summaryList)}>
         {offerDiscoveryFilterSummaryItems(filters, selectedProduct).map(({ label, value }) => (
           <Fragment key={label}>
             <dt>{label}</dt>
-            <dd>{value}</dd>
+            <dd {...stylex.props(styles.summaryValue)}>{value}</dd>
           </Fragment>
         ))}
       </dl>
-      {selectedProduct ? (
-        <p>
+      <div {...stylex.props(styles.actions)}>
+        {selectedProduct ? (
           <Link to={`/products/${encodeURIComponent(selectedProduct.slug)}`}>
             View product details
           </Link>
-        </p>
-      ) : null}
-      {hasNonDefaultOfferFilters(filters) ? (
-        <p>
+        ) : null}
+        {hasNonDefaultOfferFilters(filters) ? (
           <Link to={offerDiscoveryResetPath(filters)}>Reset filters</Link>
-        </p>
-      ) : null}
-      {filters.merchantId ? (
-        <p>
+        ) : null}
+        {filters.merchantId ? (
           <Link to={clearMerchantFilterPath(filters)}>Clear merchant filter</Link>
-        </p>
-      ) : null}
+        ) : null}
+      </div>
     </section>
   );
 }

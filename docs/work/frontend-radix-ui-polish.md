@@ -106,9 +106,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 4: Merchant And Offer Discovery
+## Batch 4: Merchant And Offer Discovery
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/routes/merchants/index.tsx`
@@ -129,6 +129,42 @@ Verification:
 Exit condition: merchant and offer discovery use compact divided rows, visible
 status and price hierarchy, coherent summary metrics, and shared pagination
 without changing safe-link, tracking, sorting, or filter behavior.
+
+Completion evidence:
+
+- RED: focused discovery tests failed on the absent labeled merchant and offer
+  page regions, Radix-backed pagination action, and offer status badge.
+- GREEN: the focused merchant and offer suites passed 2 files and 70 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 5: Comparison And Saved Comparisons
+
+Status: active
+Owned paths:
+
+- `assets/src/routes/compare/compare-shell.tsx`
+- `assets/src/routes/compare/index.tsx`
+- `assets/src/routes/compare/product-list.tsx`
+- `assets/src/routes/compare/product-picker.tsx`
+- `assets/src/routes/compare/selection-tray.tsx`
+- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/src/routes/compare/saved.tsx`
+- `assets/src/routes/compare/error-boundary.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: comparison mode navigation uses accessible Radix tabs, the
+comparison matrix remains a readable table in a horizontal scroll region, and
+the selection tray and saved-set rows expose clear context and scoped actions.
 
 ## Dependent Batches
 

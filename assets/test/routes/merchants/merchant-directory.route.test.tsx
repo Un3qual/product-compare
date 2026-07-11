@@ -78,6 +78,7 @@ test("merchant directory renders merchant names and domains", () => {
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Merchants" })).toBeInTheDocument();
   const merchantList = screen.getByRole("list", { name: "Merchants" });
 
   expect(within(merchantList).getByText("Acme Market")).toBeInTheDocument();
@@ -274,6 +275,10 @@ test("merchant directory renders next-page navigation when available", () => {
   expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
     "href",
     "/merchants?first=35&after=next-cursor"
+  );
+  expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
+    "data-slot",
+    "button"
   );
 });
 

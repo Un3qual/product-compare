@@ -2,6 +2,7 @@ import { useState, type MouseEvent } from "react";
 import { useMutation } from "react-relay";
 import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
 import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
+import { Button } from "../../ui/primitives/button";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -63,13 +64,15 @@ export function TrackedCommerceClickAction({
 
   return (
     <>
-      <a
-        aria-disabled={isPending || undefined}
-        href={trackedMerchantProductHref(merchantProductId)}
-        onClick={isPending ? preventPendingNavigation : handleClick}
-      >
-        {label}
-      </a>
+      <Button asChild variant="solid">
+        <a
+          aria-disabled={isPending || undefined}
+          href={trackedMerchantProductHref(merchantProductId)}
+          onClick={isPending ? preventPendingNavigation : handleClick}
+        >
+          {label}
+        </a>
+      </Button>
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
     </>
   );

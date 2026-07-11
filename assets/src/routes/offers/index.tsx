@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import offerDiscoveryRouteQuery, {
@@ -6,6 +7,13 @@ import offerDiscoveryRouteQuery, {
 } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../ui/components/layout/page-shell";
+import { Pagination } from "../../ui/components/navigation/pagination";
+import { StatusBadge } from "../../ui/components/status/status-badge";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import {
@@ -64,15 +72,78 @@ const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
   numericPrice: (offer) => offer.latestPriceValue
 };
 
+const styles = stylex.create({
+  snapshot: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "grid",
+    gap: "1rem",
+    padding: "1.25rem"
+  },
+  snapshotTitle: {
+    fontSize: "1rem",
+    margin: 0
+  },
+  metrics: {
+    display: "grid",
+    gap: "0.75rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
+    margin: 0
+  },
+  metric: {
+    display: "grid",
+    gap: "0.3rem"
+  },
+  metricLabel: {
+    color: tokens.textSecondary,
+    fontSize: "0.8rem"
+  },
+  metricValue: {
+    fontSize: "1.05rem",
+    fontWeight: 700,
+    margin: 0
+  },
+  offer: {
+    display: "grid",
+    gap: "0.7rem"
+  },
+  offerHeader: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.75rem",
+    justifyContent: "space-between"
+  },
+  offerTitle: {
+    fontSize: "1.2rem",
+    letterSpacing: "-0.02em",
+    margin: 0
+  },
+  price: {
+    color: tokens.text,
+    fontSize: "1.35rem",
+    fontWeight: 750,
+    margin: 0
+  },
+  muted: {
+    color: tokens.textSecondary,
+    margin: 0
+  },
+  filterSection: {
+    display: "grid",
+    gap: "0.75rem"
+  }
+});
+
 export function OfferDiscoveryRoute() {
   const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
 
   return (
-    <section>
-      <header>
-        <h1>Offers</h1>
-      </header>
-
+    <PageShell
+      description="Review current merchant prices, availability, recent observations, and coupon context for a selected product."
+      eyebrow="Offer discovery"
+      title="Offers"
+    >
       <OfferDiscoveryFilterForm filters={loaderData.filters} />
 
       {loaderData.status === "missingProduct" ? (
@@ -95,7 +166,7 @@ export function OfferDiscoveryRoute() {
           </Suspense>
         </ResettableErrorBoundary>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -159,28 +230,31 @@ function OfferDiscoveryList({
 
   return (
     <>
-      <p>{filters.activeOnly ? "Active offers" : "All offers"}</p>
+      <StatusBadge tone={filters.activeOnly ? "positive" : "neutral"}>
+        {filters.activeOnly ? "Active offers" : "All offers"}
+      </StatusBadge>
       {offers.length === 0 ? (
-        <p>No offers match these filters.</p>
+        <FeedbackState kind="empty" title="No offers match these filters." />
       ) : (
         <>
           <VisibleOfferSnapshot
             summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
           />
-          <ul aria-label="Offers">
+          <DataList label="Offers">
             {offers.map((renderableOffer, index) => (
-              <OfferListItem
-                key={renderableOffer.offer.id}
-                offer={renderableOffer.offer}
-                highlightLabel={priceSortHighlightLabel(
-                  filters.sort,
-                  index,
-                  renderableOffer,
-                  canComparePrices
-                )}
-              />
+              <DataListItem key={renderableOffer.offer.id}>
+                <OfferListItem
+                  offer={renderableOffer.offer}
+                  highlightLabel={priceSortHighlightLabel(
+                    filters.sort,
+                    index,
+                    renderableOffer,
+                    canComparePrices
+                  )}
+                />
+              </DataListItem>
             ))}
-          </ul>
+          </DataList>
         </>
       )}
       <VisibleMerchantFilters filters={filters} offers={offers} />
@@ -195,24 +269,28 @@ function VisibleOfferSnapshot({
   summary: OfferSnapshotSummary<RenderableOffer>;
 }) {
   return (
-    <section aria-label="Visible offer snapshot">
-      <h2>Visible offer snapshot</h2>
-      <dl>
-        <div>
-          <dt>Visible offers on this page</dt>
-          <dd>{summary.visibleOfferCount}</dd>
+    <section aria-label="Visible offer snapshot" {...stylex.props(styles.snapshot)}>
+      <h2 {...stylex.props(styles.snapshotTitle)}>Visible offer snapshot</h2>
+      <dl {...stylex.props(styles.metrics)}>
+        <div {...stylex.props(styles.metric)}>
+          <dt {...stylex.props(styles.metricLabel)}>Visible offers on this page</dt>
+          <dd {...stylex.props(styles.metricValue)}>{summary.visibleOfferCount}</dd>
         </div>
-        <div>
-          <dt>Lowest visible price</dt>
-          <dd>{visibleLowestPriceLabel(summary)}</dd>
+        <div {...stylex.props(styles.metric)}>
+          <dt {...stylex.props(styles.metricLabel)}>Lowest visible price</dt>
+          <dd {...stylex.props(styles.metricValue)}>{visibleLowestPriceLabel(summary)}</dd>
         </div>
-        <div>
-          <dt>Visible coupon availability</dt>
-          <dd>{formatCouponAvailabilityCount(summary.couponAvailabilityCount)}</dd>
+        <div {...stylex.props(styles.metric)}>
+          <dt {...stylex.props(styles.metricLabel)}>Visible coupon availability</dt>
+          <dd {...stylex.props(styles.metricValue)}>
+            {formatCouponAvailabilityCount(summary.couponAvailabilityCount)}
+          </dd>
         </div>
-        <div>
-          <dt>Missing latest price</dt>
-          <dd>{formatOfferCount(summary.missingPriceCount)}</dd>
+        <div {...stylex.props(styles.metric)}>
+          <dt {...stylex.props(styles.metricLabel)}>Missing latest price</dt>
+          <dd {...stylex.props(styles.metricValue)}>
+            {formatOfferCount(summary.missingPriceCount)}
+          </dd>
         </div>
       </dl>
     </section>
@@ -252,36 +330,34 @@ function OfferListItem({
   const merchantName = offerMerchantName(offer.merchant);
 
   return (
-    <li>
-      <article>
-        <OfferListItemHeader
-          isActive={offer.isActive}
-          productName={offerProductName(offer.product)}
-        />
-        <OfferMerchantAction
-          isActive={offer.isActive}
-          merchantName={merchantName}
-          merchantProductId={offer.id}
-          merchantUrl={offer.url}
-        />
-        <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
-        <OfferObservationContext offer={offer} />
+    <article {...stylex.props(styles.offer)}>
+      <OfferListItemHeader
+        isActive={offer.isActive}
+        productName={offerProductName(offer.product)}
+      />
+      <OfferMerchantAction
+        isActive={offer.isActive}
+        merchantName={merchantName}
+        merchantProductId={offer.id}
+        merchantUrl={offer.url}
+      />
+      <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+      <OfferObservationContext offer={offer} />
 
-        {highlightLabel ? <p>{highlightLabel}</p> : null}
-        <p>{offerLatestPriceLabel(offer)}</p>
+      {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
+      <p {...stylex.props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
 
-        <PriceHistorySummary
-          hasMore={priceHistory.pageInfo.hasNextPage}
-          merchantName={offerSummaryMerchantName(offer.merchant)}
-          rows={offerPriceHistoryRows(priceHistory, offer.currency)}
-        />
-        <CouponSummary
-          couponEdges={activeCoupons.edges}
-          hasMore={activeCoupons.pageInfo.hasNextPage}
-          merchantName={offerSummaryMerchantName(offer.merchant)}
-        />
-      </article>
-    </li>
+      <PriceHistorySummary
+        hasMore={priceHistory.pageInfo.hasNextPage}
+        merchantName={offerSummaryMerchantName(offer.merchant)}
+        rows={offerPriceHistoryRows(priceHistory, offer.currency)}
+      />
+      <CouponSummary
+        couponEdges={activeCoupons.edges}
+        hasMore={activeCoupons.pageInfo.hasNextPage}
+        merchantName={offerSummaryMerchantName(offer.merchant)}
+      />
+    </article>
   );
 }
 
@@ -293,9 +369,11 @@ function OfferListItemHeader({
   productName: string;
 }) {
   return (
-    <header>
-      <h2>{productName}</h2>
-      <p>{offerStatusLabel(isActive)}</p>
+    <header {...stylex.props(styles.offerHeader)}>
+      <h2 {...stylex.props(styles.offerTitle)}>{productName}</h2>
+      <StatusBadge tone={isActive ? "positive" : "neutral"}>
+        {offerStatusLabel(isActive)}
+      </StatusBadge>
     </header>
   );
 }
@@ -351,7 +429,10 @@ function VisibleMerchantFilters({
   }
 
   return (
-    <section aria-label="Merchant filters on this page">
+    <section
+      aria-label="Merchant filters on this page"
+      {...stylex.props(styles.filterSection)}
+    >
       <ActiveMerchantFilterSummary merchant={activeMerchant} />
       <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
     </section>
@@ -421,7 +502,7 @@ function OfferMerchantDomain({ domain }: { domain: string | null }) {
     return null;
   }
 
-  return <p>{domain}</p>;
+  return <p {...stylex.props(styles.muted)}>{domain}</p>;
 }
 
 function OfferObservationContext({ offer }: { offer: OfferNode }) {
@@ -566,40 +647,42 @@ function OfferPagination({
   filters: OfferDiscoveryFilters;
 }) {
   return (
-    <>
-      {connection.pageInfo.hasPreviousPage && filters.after ? (
-        <p>
-          <Link to={offerDiscoveryPath(filters, null)}>First offers</Link>
-        </p>
-      ) : null}
-      {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
-        <p>
-          <Link to={offerDiscoveryPath(filters, connection.pageInfo.endCursor)}>
-            Next offers
-          </Link>
-        </p>
-      ) : null}
-    </>
+    <Pagination
+      firstHref={
+        connection.pageInfo.hasPreviousPage && filters.after
+          ? offerDiscoveryPath(filters, null)
+          : null
+      }
+      firstLabel="First offers"
+      label="Offer pages"
+      nextHref={
+        connection.pageInfo.hasNextPage && connection.pageInfo.endCursor
+          ? offerDiscoveryPath(filters, connection.pageInfo.endCursor)
+          : null
+      }
+      nextLabel="Next offers"
+    />
   );
 }
 
 function MissingProductState() {
   return (
-    <section>
-      <p>Start from browse products to choose a product.</p>
-      <p>Choose a product to review its current merchant offers.</p>
-      <p>
-        <Link to="/products">Browse products</Link>
-      </p>
-    </section>
+    <FeedbackState
+      action={
+        <Button asChild variant="solid">
+          <Link to="/products">Browse products</Link>
+        </Button>
+      }
+      description="Choose a product to review its current merchant offers."
+      kind="empty"
+      title="Start from browse products to choose a product."
+    />
   );
 }
 
 function OfferDiscoveryUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Offers unavailable.</p>
-    </section>
+    <FeedbackState kind="error" title="Offers unavailable." />
   );
 }
 
@@ -616,7 +699,7 @@ function OfferDiscoveryLoadingFallback({ filters }: { filters: OfferDiscoveryFil
   return (
     <>
       <OfferDiscoveryFilterSummary filters={filters} />
-      <p role="status">Loading offers...</p>
+      <FeedbackState kind="loading" title="Loading offers..." />
     </>
   );
 }

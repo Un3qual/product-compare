@@ -1,11 +1,18 @@
 import { Suspense } from "react";
-import { Link, useLoaderData } from "react-router-dom";
+import * as stylex from "@stylexjs/stylex";
+import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import merchantDirectoryRouteQuery, {
   type MerchantDirectoryRouteQuery
 } from "../../__generated__/MerchantDirectoryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../ui/components/layout/page-shell";
+import { Pagination } from "../../ui/components/navigation/pagination";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalWebsiteHref } from "../external-links";
 import {
   merchantDirectoryLoader,
@@ -18,15 +25,40 @@ type MerchantDirectoryConnection = NonNullable<
   MerchantDirectoryRouteQuery["response"]["merchants"]
 >;
 
+const styles = stylex.create({
+  controls: {
+    alignItems: "end",
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.75rem",
+    padding: "1rem"
+  },
+  merchant: {
+    display: "grid",
+    gap: "0.45rem"
+  },
+  name: {
+    fontSize: "1.25rem",
+    letterSpacing: "-0.02em",
+    margin: 0
+  },
+  domain: {
+    color: tokens.textSecondary,
+    margin: 0
+  }
+});
+
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
 
   return (
-    <section>
-      <header>
-        <h1>Merchants</h1>
-      </header>
-
+    <PageShell
+      description="Browse the merchants represented in current product and offer data."
+      eyebrow="Seller directory"
+      title="Merchants"
+    >
       {loaderData.status === "error" ? (
         <MerchantDirectoryUnavailableFallback />
       ) : (
@@ -45,7 +77,7 @@ export function MerchantDirectoryRoute() {
           </ResettableErrorBoundary>
         </>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -55,7 +87,7 @@ function MerchantDirectoryControls({
   pagination: MerchantDirectoryPagination;
 }) {
   return (
-    <form action="/merchants" method="get">
+    <form action="/merchants" method="get" {...stylex.props(styles.controls)}>
       <label>
         Page size
         <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
@@ -64,7 +96,7 @@ function MerchantDirectoryControls({
           <option value="50">50</option>
         </select>
       </label>
-      <button type="submit">Apply</button>
+      <Button type="submit">Apply</Button>
     </form>
   );
 }
@@ -102,50 +134,57 @@ function MerchantDirectoryList({
   const merchants = connection.edges.map(({ node }) => node);
 
   if (merchants.length === 0) {
-    return <p>No merchants available yet.</p>;
+    return <FeedbackState kind="empty" title="No merchants available yet." />;
   }
 
   return (
     <>
-      <ul aria-label="Merchants">
+      <DataList label="Merchants">
         {merchants.map((merchant) => {
           const websiteHref = externalWebsiteHref(merchant.domain);
 
           return (
-            <li key={merchant.id}>
-              <h2>{merchant.name}</h2>
-              <p>{merchant.domain}</p>
-              {websiteHref ? (
-                <p>
-                  <a href={websiteHref} target="_blank" rel="noopener noreferrer">
-                    Visit merchant website
-                  </a>
-                </p>
-              ) : null}
-            </li>
+            <DataListItem
+              actions={
+                websiteHref ? (
+                  <Button asChild variant="soft">
+                    <a href={websiteHref} target="_blank" rel="noopener noreferrer">
+                      Visit merchant website
+                    </a>
+                  </Button>
+                ) : null
+              }
+              key={merchant.id}
+            >
+              <div {...stylex.props(styles.merchant)}>
+                <h2 {...stylex.props(styles.name)}>{merchant.name}</h2>
+                <p {...stylex.props(styles.domain)}>{merchant.domain}</p>
+              </div>
+            </DataListItem>
           );
         })}
-      </ul>
-      {connection.pageInfo.hasPreviousPage && pagination.after ? (
-        <p>
-          <Link to={merchantDirectoryPagePath(pagination)}>First merchants</Link>
-        </p>
-      ) : null}
-      {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
-        <p>
-          <Link to={merchantDirectoryPagePath(pagination, connection.pageInfo.endCursor)}>
-            Next merchants
-          </Link>
-        </p>
-      ) : null}
+      </DataList>
+      <Pagination
+        firstHref={
+          connection.pageInfo.hasPreviousPage && pagination.after
+            ? merchantDirectoryPagePath(pagination)
+            : null
+        }
+        firstLabel="First merchants"
+        label="Merchant pages"
+        nextHref={
+          connection.pageInfo.hasNextPage && connection.pageInfo.endCursor
+            ? merchantDirectoryPagePath(pagination, connection.pageInfo.endCursor)
+            : null
+        }
+        nextLabel="Next merchants"
+      />
     </>
   );
 }
 
 function MerchantDirectoryUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Merchant directory unavailable.</p>
-    </section>
+    <FeedbackState kind="error" title="Merchant directory unavailable." />
   );
 }

@@ -167,21 +167,25 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Merchant And Offer Discovery
+### 1. Comparison And Saved Comparisons
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Apply the shared Radix foundation to merchant and offer filters,
-summary metrics, discovery rows, statuses, prices, and pagination.
+Next action: Apply the shared Radix foundation to comparison mode navigation,
+the matrix workspace, selection tray, product actions, and saved-set rows.
 Owned paths:
 
-- `assets/src/routes/merchants/index.tsx`
-- `assets/src/routes/offers/index.tsx`
-- `assets/src/routes/offers/filters.tsx`
-- `assets/src/routes/offers/tracked-commerce-click.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `assets/src/routes/compare/compare-shell.tsx`
+- `assets/src/routes/compare/index.tsx`
+- `assets/src/routes/compare/product-list.tsx`
+- `assets/src/routes/compare/product-picker.tsx`
+- `assets/src/routes/compare/selection-tray.tsx`
+- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/src/routes/compare/saved.tsx`
+- `assets/src/routes/compare/error-boundary.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
@@ -190,14 +194,14 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: Merchant and offer discovery use compact divided rows, visible
-status and price hierarchy, coherent summary metrics, and shared pagination
-without changing safe-link, tracking, sorting, or filter behavior.
+Exit condition: Comparison mode navigation uses accessible Radix tabs, the
+comparison matrix remains a readable table in a horizontal scroll region, and
+the selection tray and saved-set rows expose clear context and scoped actions.
 
 ## Needs Decision Work
 
