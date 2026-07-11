@@ -419,6 +419,18 @@ const buildProductSummary = (product: CompareTestProduct) => ({
   }))
 });
 
+const buildSavedProducts = (slugs: string[]) =>
+  slugs.map((slug) => ({
+    name:
+      [DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT].find((product) => product.slug === slug)
+        ?.name ??
+      slug
+        .split("-")
+        .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+        .join(" "),
+    slug
+  }));
+
 const buildSavedComparisonPage = ({
   endCursor = null,
   hasNextPage = false,
@@ -429,7 +441,10 @@ const buildSavedComparisonPage = ({
   savedSets: Array<{
     id: string;
     name: string;
-    slugs: string[];
+    products: Array<{
+      name: string;
+      slug: string;
+    }>;
   }>;
 }) => ({
   mySavedComparisonSets: {
@@ -437,11 +452,9 @@ const buildSavedComparisonPage = ({
       node: {
         id: savedSet.id,
         name: savedSet.name,
-        items: savedSet.slugs.map((slug, index) => ({
+        items: savedSet.products.map((product, index) => ({
           position: index + 1,
-          product: {
-            slug
-          }
+          product
         }))
       }
     })),
@@ -2908,7 +2921,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
           {
             id: "saved-set-1",
             name: "Desk setup",
-            slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+            products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
           }
         ]
       })
@@ -2924,7 +2937,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ],
     after: null,
@@ -2940,6 +2953,56 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 });
 
+test("saved comparison loader keeps product labels in stored position order", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedSavedComparisonPage({
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Desk setup",
+              items: [
+                {
+                  position: 2,
+                  product: { name: "Standing Desk", slug: "desk" }
+                },
+                {
+                  position: 1,
+                  product: { name: "Desk Chair", slug: "chair" }
+                }
+              ]
+            }
+          }
+        ],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    })
+  );
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        products: [
+          { name: "Desk Chair", slug: "chair" },
+          { name: "Standing Desk", slug: "desk" }
+        ]
+      }
+    ],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
+  });
+});
+
 test("saved comparisons loader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
@@ -2952,7 +3015,7 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
             {
               id: "saved-set-1",
               name: "Desk setup",
-              slugs: [DETAIL_PRODUCT.slug]
+              products: buildSavedProducts([DETAIL_PRODUCT.slug])
             }
           ]
         })
@@ -2968,7 +3031,7 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ],
     after: null,
@@ -3045,12 +3108,12 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3087,7 +3150,7 @@ test("compare route exposes a named region for the compare shell", () => {
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    savedSets: [{ id: "saved-set-1", name: "Desk setup", slugs: ["desk", "chair"] }]
+    savedSets: [{ id: "saved-set-1", name: "Desk setup", products: buildSavedProducts(["desk", "chair"]) }]
   });
 
   render(
@@ -3111,12 +3174,12 @@ test("saved comparisons route removes a deleted set from the list", async () => 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3158,7 +3221,7 @@ test("saved comparisons route keeps the set visible when delete fails and clears
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3213,7 +3276,7 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3259,12 +3322,12 @@ test("saved comparisons route applies overlapping delete responses against the l
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3315,12 +3378,12 @@ test("saved comparisons route keeps later delete rows pending until their own re
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3591,7 +3654,7 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
           {
             id: "saved-set-1",
             name: "Desk setup",
-            slugs: [DETAIL_PRODUCT.slug]
+            products: buildSavedProducts([DETAIL_PRODUCT.slug])
           }
         ]
       }),
@@ -3688,7 +3751,7 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-1",
               name: "Set 1",
-              slugs: [DETAIL_PRODUCT.slug]
+              products: buildSavedProducts([DETAIL_PRODUCT.slug])
             }
           ]
         })
@@ -3703,7 +3766,7 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-2",
               name: "Set 2",
-              slugs: [SECOND_PRODUCT.slug]
+              products: buildSavedProducts([SECOND_PRODUCT.slug])
             }
           ]
         }),

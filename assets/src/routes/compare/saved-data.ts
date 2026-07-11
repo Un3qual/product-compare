@@ -14,7 +14,10 @@ import { isRouteRecord } from "../route-errors";
 export interface SavedComparisonSetSummary {
   id: string;
   name: string;
-  slugs: string[];
+  products: Array<{
+    name: string;
+    slug: string;
+  }>;
 }
 
 export type SavedComparisonSetQueryDescriptor = RelayRouteQueryDescriptor<
@@ -158,14 +161,16 @@ function summarizeSavedComparisonSet(node: unknown): SavedComparisonSetSummary {
   return {
     id: node.id,
     name: node.name,
-    slugs: node.items
+    products: node.items
       .map(summarizeSavedComparisonItem)
       .sort((left, right) => left.position - right.position)
-      .map((item) => item.slug)
+      .map(({ name, slug }) => ({ name, slug }))
   };
 }
 
-function summarizeSavedComparisonItem(item: unknown): { position: number; slug: string } {
+function summarizeSavedComparisonItem(
+  item: unknown
+): { name: string; position: number; slug: string } {
   if (
     !isRouteRecord(item) ||
     typeof item.position !== "number" ||
@@ -174,13 +179,14 @@ function summarizeSavedComparisonItem(item: unknown): { position: number; slug: 
     throwSavedComparisonsParseError();
   }
 
-  const slug = item.product.slug;
+  const { name, slug } = item.product;
 
-  if (typeof slug !== "string") {
+  if (typeof name !== "string" || typeof slug !== "string") {
     throwSavedComparisonsParseError();
   }
 
   return {
+    name,
     position: item.position,
     slug
   };

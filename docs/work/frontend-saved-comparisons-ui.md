@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (saved product labels; prior batches complete)
+- Status: done (saved product labels)
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-06-29 after saved-comparisons return-flow verification
@@ -24,9 +24,9 @@
   - Saved sets can be reopened into `/compare` using repeated `slug` query params and deleted from the UI.
   - Focused frontend tests cover save, list, reopen, and delete states without reopening unrelated route work.
 
-## Ready Saved Product Labels Follow-Up
+## Saved Product Labels Follow-Up Evidence
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`.
 - Verified gap: `SavedComparisonsRouteQuery` selects product slugs but not names,
@@ -48,6 +48,18 @@
 - Exit condition: saved comparison cards display ordered product names and
   reopen the exact stored slug order with current auth, pagination, filtering,
   sorting, and delete behavior intact.
+- RED: the focused loader/card run failed with 2 expected cases because route
+  data exposed only `slugs` and cards rendered `chair, desk` instead of product
+  names.
+- GREEN:
+  - Relay generation completed with 30 reader, 29 normalization, and 29
+    operation documents;
+  - compare, saved-route state, and saved-loader auth suites passed 126 tests;
+  - `cd assets && bun run typecheck` exited 0;
+  - `git diff --check` exited 0.
+- Route summaries now retain ordered `{name, slug}` products, filters match set
+  names plus product names or slugs, counts and sorting use the product list,
+  cards render names, and reopen URLs still use stored slug order.
 
 ## Current Usable Product Batch
 
@@ -66,7 +78,7 @@
   return paths clear while preserving existing auth and delete behavior.
 - Completed implementation:
   - Saved-set cards now show singular/plural product counts derived from the
-    saved slug list.
+    saved product list.
   - Reopen and delete controls remain on each card, with scoped action grouping
     while preserving the existing reopen URL and delete mutation behavior.
   - Empty and filtered no-match states now link back to product browsing and a
