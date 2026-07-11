@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
+import { TextField } from "../../ui/primitives/text-field";
 import {
   Collapsible,
   CollapsibleContent,
@@ -142,7 +143,7 @@ function SearchField({ query }: { query?: string }) {
   return (
     <label>
       Search products
-      <input
+      <TextField
         type="search"
         name="q"
         defaultValue={query ?? ""}
@@ -323,7 +324,7 @@ function NumericFilterFields({
     <div>
       <label>
         {filter.displayName} minimum
-        <input
+        <TextField
           inputMode="decimal"
           name={`numeric.${filter.attributeId}.min`}
           defaultValue={minValue}
@@ -331,7 +332,7 @@ function NumericFilterFields({
       </label>
       <label>
         {filter.displayName} maximum
-        <input
+        <TextField
           inputMode="decimal"
           name={`numeric.${filter.attributeId}.max`}
           defaultValue={maxValue}

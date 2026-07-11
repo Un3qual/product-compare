@@ -61,7 +61,7 @@ test("Pagination exposes one navigation landmark", () => {
 test("DataList preserves list semantics for dense rows", () => {
   render(
     <DataList label="Products">
-      <DataListItem>
+      <DataListItem actions={<button type="button">Compare</button>}>
         <span>Camera</span>
       </DataListItem>
     </DataList>
@@ -69,7 +69,14 @@ test("DataList preserves list semantics for dense rows", () => {
 
   const list = screen.getByRole("list", { name: "Products" });
 
-  expect(within(list).getByRole("listitem")).toHaveTextContent("Camera");
+  const item = within(list).getByRole("listitem");
+
+  expect(item).toHaveTextContent("Camera");
+  expect(item).toHaveAttribute("data-slot", "data-list-item");
+  expect(within(item).getByRole("button", { name: "Compare" }).parentElement).toHaveAttribute(
+    "data-slot",
+    "data-list-actions"
+  );
 });
 
 test("StatusBadge renders its status text through Radix Badge", () => {

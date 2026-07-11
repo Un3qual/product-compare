@@ -1,6 +1,6 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { CompareShell } from "./compare-shell";
+import { PageShell } from "../../ui/components/layout/page-shell";
 
 type RouteErrorBoundaryProps = {
   resourceName?: string;
@@ -49,13 +49,13 @@ export function RouteErrorBoundary({
   }
 
   return (
-    <CompareShell title={title}>
+    <PageShell eyebrow="Page unavailable" title={title}>
       <FeedbackState
         description={retryGuidance}
         kind="error"
         title={errorMessage}
       />
-    </CompareShell>
+    </PageShell>
   );
 }
 

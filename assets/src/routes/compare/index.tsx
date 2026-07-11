@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, type ReactNode, useEffect, useRef, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
@@ -253,20 +253,21 @@ export function CompareRoute() {
         <CompareSpecModeControls
           selectedSlugs={loaderData.slugs}
           specMode={loaderData.specMode}
-        />
-        <ResettableErrorBoundary
-          resetToken={loaderData.query}
-          fallback={
-            <>
-              <FeedbackState kind="error" title="Comparison details unavailable." />
-              <CompareProductSummaryList products={loaderData.products} />
-            </>
-          }
         >
-          <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
-            <CompareProductList loaderData={loaderData} />
-          </Suspense>
-        </ResettableErrorBoundary>
+          <ResettableErrorBoundary
+            resetToken={loaderData.query}
+            fallback={
+              <>
+                <FeedbackState kind="error" title="Comparison details unavailable." />
+                <CompareProductSummaryList products={loaderData.products} />
+              </>
+            }
+          >
+            <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
+              <CompareProductList loaderData={loaderData} />
+            </Suspense>
+          </ResettableErrorBoundary>
+        </CompareSpecModeControls>
         {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
           <CompareProductPickerBoundary
             heading="Add another product"
@@ -310,9 +311,11 @@ function CompareRouteQueryRetainer({
 }
 
 function CompareSpecModeControls({
+  children,
   selectedSlugs,
   specMode
 }: {
+  children: ReactNode;
   selectedSlugs: readonly string[];
   specMode: CompareSpecMode;
 }) {
@@ -336,6 +339,16 @@ function CompareSpecModeControls({
           </Tabs.Trigger>
         ))}
       </Tabs.List>
+      {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
+        <Tabs.Content
+          forceMount
+          hidden={option.mode !== specMode}
+          key={option.mode}
+          value={option.mode}
+        >
+          {option.mode === specMode ? children : null}
+        </Tabs.Content>
+      ))}
     </Tabs.Root>
   );
 }

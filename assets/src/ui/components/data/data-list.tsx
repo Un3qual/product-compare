@@ -18,7 +18,10 @@ const styles = stylex.create({
     borderBlockEndWidth: "1px",
     display: "grid",
     gap: "1rem",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gridTemplateColumns: {
+      default: "minmax(0, 1fr) auto",
+      "@media (max-width: 40rem)": "minmax(0, 1fr)"
+    },
     paddingBlock: "1.25rem"
   },
   body: {
@@ -29,7 +32,10 @@ const styles = stylex.create({
     display: "flex",
     flexWrap: "wrap",
     gap: "0.6rem",
-    justifyContent: "end"
+    justifyContent: {
+      default: "end",
+      "@media (max-width: 40rem)": "start"
+    }
   }
 });
 
@@ -49,9 +55,13 @@ export function DataListItem({
   children
 }: PropsWithChildren<{ actions?: ReactNode }>) {
   return (
-    <li {...stylex.props(styles.item)}>
+    <li data-slot="data-list-item" {...stylex.props(styles.item)}>
       <div {...stylex.props(styles.body)}>{children}</div>
-      {actions ? <div {...stylex.props(styles.actions)}>{actions}</div> : null}
+      {actions ? (
+        <div data-slot="data-list-actions" {...stylex.props(styles.actions)}>
+          {actions}
+        </div>
+      ) : null}
     </li>
   );
 }

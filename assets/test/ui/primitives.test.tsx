@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { Button, Label, Separator } from "../../src/ui/primitives/index";
+import { TextField } from "../../src/ui/primitives/text-field";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,6 +42,16 @@ test("Button defaults to a native button while using Radix Themes", () => {
   expect(button).toHaveAttribute("type", "button");
   expect(button).toHaveAttribute("data-slot", "button");
   expect(button).toHaveClass("rt-BaseButton");
+});
+
+test("TextField renders a named Radix input", () => {
+  render(<TextField aria-label="Search products" name="q" type="search" />);
+
+  const input = screen.getByRole("searchbox", { name: "Search products" });
+
+  expect(input).toHaveAttribute("name", "q");
+  expect(input).toHaveAttribute("data-slot", "text-field");
+  expect(input).toHaveClass("rt-TextFieldInput");
 });
 
 test("Separator renders the expected accessibility role and orientation", () => {

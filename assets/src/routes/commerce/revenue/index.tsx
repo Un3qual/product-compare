@@ -10,6 +10,7 @@ import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundar
 import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
 import { PageShell } from "../../../ui/components/layout/page-shell";
 import { Button } from "../../../ui/primitives/button";
+import { TextField } from "../../../ui/primitives/text-field";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { revenueSummaryLoader, type RevenueSummaryLoaderData } from "./loader";
 
@@ -94,7 +95,7 @@ function RevenueSummaryFilterForm({
     <form method="get" aria-label="Revenue filters" {...stylex.props(styles.filters)}>
       <label>
         Network
-        <input
+        <TextField
           autoComplete="off"
           defaultValue={filters.network ?? ""}
           name="network"
@@ -103,7 +104,7 @@ function RevenueSummaryFilterForm({
       </label>
       <label>
         Currency
-        <input
+        <TextField
           autoComplete="off"
           defaultValue={filters.currency ?? ""}
           maxLength={3}

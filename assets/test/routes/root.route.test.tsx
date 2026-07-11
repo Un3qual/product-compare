@@ -97,7 +97,7 @@ beforeEach(() => {
   } as never);
 });
 
-function renderRootRoute(loaderData: RootLoaderData) {
+function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
   const router = createMemoryRouter(
     [
       {
@@ -108,6 +108,10 @@ function renderRootRoute(loaderData: RootLoaderData) {
           {
             index: true,
             element: <RootRoute />
+          },
+          {
+            path: "*",
+            element: <div>Nested route</div>
           }
         ]
       }
@@ -118,7 +122,7 @@ function renderRootRoute(loaderData: RootLoaderData) {
           root: loaderData
         }
       },
-      initialEntries: ["/"]
+      initialEntries: [initialEntry]
     }
   );
 
@@ -203,6 +207,23 @@ test("root layout renders authenticated auth links in the primary navigation", a
   expect(
     within(primaryNavigation).queryByRole("link", { name: "Create account" })
   ).not.toBeInTheDocument();
+});
+
+test("root layout identifies one exact active destination on saved comparisons", async () => {
+  renderRootRoute(authenticatedLoaderData, "/compare/saved");
+
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const compareLink = within(primaryNavigation).getByRole("link", {
+    name: "Compare products"
+  });
+  const savedLink = within(primaryNavigation).getByRole("link", {
+    name: "Saved comparisons"
+  });
+
+  expect(compareLink).not.toHaveAttribute("aria-current");
+  expect(compareLink).toHaveAttribute("data-active", "false");
+  expect(savedLink).toHaveAttribute("aria-current", "page");
+  expect(savedLink).toHaveAttribute("data-active", "true");
 });
 
 test("root layout reads authenticated viewer state from the preloaded root query", async () => {

@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { TextField } from "@radix-ui/themes";
 import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
@@ -14,6 +13,7 @@ import { DataList, DataListItem } from "../../ui/components/data/data-list";
 import { FeedbackState } from "../../ui/components/feedback/feedback-state";
 import { Pagination } from "../../ui/components/navigation/pagination";
 import { Button } from "../../ui/primitives/button";
+import { TextField } from "../../ui/primitives/text-field";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -162,7 +162,7 @@ export function SavedComparisonsRoute() {
         <div {...stylex.props(styles.controls)}>
           <label>
             Filter saved comparisons
-            <TextField.Root
+            <TextField
               onChange={(event) => {
                 setFilterText(event.target.value);
               }}

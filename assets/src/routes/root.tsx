@@ -1,7 +1,14 @@
 import * as stylex from "@stylexjs/stylex";
 import type { ButtonProps } from "@radix-ui/themes";
 import { usePreloadedQuery } from "react-relay";
-import { Link, NavLink, Outlet, useLoaderData, useOutletContext } from "react-router-dom";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLoaderData,
+  useMatch,
+  useOutletContext
+} from "react-router-dom";
 import rootViewerRouteQuery, {
   type RootViewerRouteQuery
 } from "../__generated__/RootViewerRouteQuery.graphql";
@@ -70,6 +77,7 @@ type RootOutletContext = {
 };
 
 type Destination = {
+  end?: boolean;
   label: string;
   to: string;
 };
@@ -78,7 +86,7 @@ const PUBLIC_DESTINATIONS = [
   { label: "Browse products", to: "/products" },
   { label: "Merchants", to: "/merchants" },
   { label: "Offers", to: "/offers" },
-  { label: "Compare products", to: "/compare" }
+  { end: true, label: "Compare products", to: "/compare" }
 ] as const satisfies readonly Destination[];
 
 const AUTHENTICATED_DESTINATIONS = [
@@ -197,25 +205,36 @@ function DestinationLinks({
   destinations: readonly Destination[];
   variant?: ButtonProps["variant"];
 }) {
-  return destinations.map(({ label, to }) => (
-    <DestinationLink key={to} label={label} to={to} variant={variant} />
+  return destinations.map(({ end, label, to }) => (
+    <DestinationLink end={end} key={to} label={label} to={to} variant={variant} />
   ));
 }
 
 function DestinationLink({
+  end = false,
   label,
   style,
   to,
   variant = "ghost"
 }: {
+  end?: boolean;
   label: string;
   style?: stylex.StyleXStyles;
   to: string;
   variant?: ButtonProps["variant"];
 }) {
+  const isActive = Boolean(useMatch({ end, path: to }));
+
   return (
-    <Button asChild variant={variant} {...stylex.props(styles.link, style)}>
-      <NavLink to={to}>{label}</NavLink>
+    <Button
+      asChild
+      data-active={String(isActive)}
+      variant={isActive ? "soft" : variant}
+      {...stylex.props(styles.link, style)}
+    >
+      <NavLink end={end} to={to}>
+        {label}
+      </NavLink>
     </Button>
   );
 }

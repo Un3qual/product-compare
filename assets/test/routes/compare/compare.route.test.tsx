@@ -2159,6 +2159,19 @@ test("ready compare page renders specification mode tabs with stable URL state",
     "href",
     "/compare?slug=detail-product&slug=second-product&specs=all"
   );
+
+  for (const tab of screen.getAllByRole("tab")) {
+    const panelId = tab.getAttribute("aria-controls");
+
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId!)).toHaveAttribute("role", "tabpanel");
+  }
+
+  const activePanelId = screen
+    .getByRole("tab", { name: "Differences" })
+    .getAttribute("aria-controls");
+
+  expect(document.getElementById(activePanelId!)).not.toHaveAttribute("hidden");
 });
 
 test("ready compare page preserves specification mode in product-picker append links", () => {
@@ -2794,6 +2807,10 @@ test("compare error boundary supports route-specific resource copy", () => {
     "A network error occurred while loading the revenue report."
   );
   expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
+  expect(screen.queryByText("Decision workspace")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/compare the product details and offer signals/i)
+  ).not.toBeInTheDocument();
 });
 
 test("compare route saves the current ready-state selection", async () => {

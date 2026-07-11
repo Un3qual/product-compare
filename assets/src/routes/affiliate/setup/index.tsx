@@ -22,6 +22,7 @@ import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundar
 import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
 import { PageShell } from "../../../ui/components/layout/page-shell";
 import { Button } from "../../../ui/primitives/button";
+import { TextField } from "../../../ui/primitives/text-field";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import {
@@ -298,7 +299,7 @@ function AffiliateSetupPanel({
         <h2>Network</h2>
         <label>
           Network name
-          <input autoComplete="off" name="networkName" type="text" />
+          <TextField autoComplete="off" name="networkName" type="text" />
         </label>
         <Button disabled={networkPending} type="submit">
           Save network
@@ -322,7 +323,7 @@ function AffiliateSetupPanel({
           ) : null}
           <label>
             Affiliate network ID
-            <input
+            <TextField
               autoComplete="off"
               name="affiliateNetworkId"
               onChange={(event) => setAffiliateNetworkId(event.currentTarget.value)}
@@ -346,11 +347,11 @@ function AffiliateSetupPanel({
           </label>
           <label>
             Program code
-            <input autoComplete="off" name="programCode" type="text" />
+            <TextField autoComplete="off" name="programCode" type="text" />
           </label>
           <label>
             Program status
-            <input autoComplete="off" name="programStatus" type="text" />
+            <TextField autoComplete="off" name="programStatus" type="text" />
           </label>
           <Button disabled={programPending} type="submit">
             Save program
@@ -373,19 +374,19 @@ function AffiliateSetupPanel({
         ) : null}
         <label>
           Merchant product ID
-          <input autoComplete="off" name="merchantProductId" type="text" />
+          <TextField autoComplete="off" name="merchantProductId" type="text" />
         </label>
         <label>
           Link affiliate network ID
-          <input autoComplete="off" name="linkAffiliateNetworkId" type="text" />
+          <TextField autoComplete="off" name="linkAffiliateNetworkId" type="text" />
         </label>
         <label>
           Original URL
-          <input autoComplete="off" name="originalUrl" type="url" />
+          <TextField autoComplete="off" name="originalUrl" type="url" />
         </label>
         <label>
           Affiliate URL
-          <input autoComplete="off" name="affiliateUrl" type="url" />
+          <TextField autoComplete="off" name="affiliateUrl" type="url" />
         </label>
         <label>
           Last verified at
@@ -425,15 +426,15 @@ function AffiliateSetupPanel({
           </label>
           <label>
             Coupon affiliate network ID
-            <input autoComplete="off" name="couponAffiliateNetworkId" type="text" />
+            <TextField autoComplete="off" name="couponAffiliateNetworkId" type="text" />
           </label>
           <label>
             Coupon code
-            <input autoComplete="off" name="couponCode" type="text" />
+            <TextField autoComplete="off" name="couponCode" type="text" />
           </label>
           <label>
             Description
-            <input autoComplete="off" name="couponDescription" type="text" />
+            <TextField autoComplete="off" name="couponDescription" type="text" />
           </label>
           <label>
             Discount type
@@ -446,11 +447,11 @@ function AffiliateSetupPanel({
           </label>
           <label>
             Discount value
-            <input autoComplete="off" name="discountValue" type="text" />
+            <TextField autoComplete="off" name="discountValue" type="text" />
           </label>
           <label>
             Currency
-            <input autoComplete="off" maxLength={3} name="currency" type="text" />
+            <TextField autoComplete="off" maxLength={3} name="currency" type="text" />
           </label>
           <label>
             Valid from
@@ -462,7 +463,7 @@ function AffiliateSetupPanel({
           </label>
           <label>
             Terms
-            <input autoComplete="off" name="terms" type="text" />
+            <TextField autoComplete="off" name="terms" type="text" />
           </label>
           <Button disabled={couponPending} type="submit">
             Create coupon

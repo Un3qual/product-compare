@@ -1,11 +1,12 @@
 import { useId, useMemo, type ComponentProps, type PropsWithChildren } from "react";
-import { Callout, TextField } from "@radix-ui/themes";
+import { Callout } from "@radix-ui/themes";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
 import { Button } from "../../ui/primitives/button";
 import { Label } from "../../ui/primitives/label";
 import { Slot } from "../../ui/primitives/slot";
+import { TextField } from "../../ui/primitives/text-field";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = stylex.create({
@@ -159,14 +160,14 @@ export function AuthField({
   label: string;
   name: string;
   required?: boolean;
-  type?: ComponentProps<typeof TextField.Root>["type"];
+  type?: ComponentProps<typeof TextField>["type"];
 }) {
   const errorId = error ? `${name}-error` : undefined;
 
   return (
     <div {...stylex.props(styles.field)}>
       <Label htmlFor={name}>{label}</Label>
-      <TextField.Root
+      <TextField
         autoComplete={autoComplete}
         aria-describedby={errorId}
         aria-invalid={error ? true : undefined}

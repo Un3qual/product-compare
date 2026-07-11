@@ -20,6 +20,7 @@ import { PageShell } from "../../../ui/components/layout/page-shell";
 import { Pagination } from "../../../ui/components/navigation/pagination";
 import { StatusBadge } from "../../../ui/components/status/status-badge";
 import { Button } from "../../../ui/primitives/button";
+import { TextField } from "../../../ui/primitives/text-field";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
@@ -337,7 +338,7 @@ export function ApiTokensRoute() {
             <h2>Create API token</h2>
             <label>
               Label
-              <input autoComplete="off" name="label" type="text" />
+              <TextField autoComplete="off" name="label" type="text" />
             </label>
             <label>
               Expires at
@@ -738,7 +739,7 @@ function ApiTokenActions({
         <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit} {...stylex.props(styles.rotateForm)}>
           <label>
             {`Replacement label for ${displayLabel}`}
-            <input autoComplete="off" name="label" type="text" />
+            <TextField autoComplete="off" name="label" type="text" />
           </label>
           <label>
             {`Replacement expiry for ${displayLabel}`}

@@ -278,6 +278,39 @@ Completion evidence:
 - `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
 - `git diff --check` exited 0.
 
+## Review Follow-up
+
+Status: done
+
+Independent review found no critical issues and identified five important
+follow-ups. The implementation now:
+
+- routes ordinary text, search, URL, and decimal fields through one reusable
+  Radix Themes `TextField` primitive while retaining native controls where
+  date, number, select, checkbox, radio, hidden-input, or FormData behavior is
+  materially useful;
+- renders a real Radix tab panel for every compare specification tab;
+- collapses shared data-list action columns below 40rem;
+- uses neutral page framing for shared route errors; and
+- applies exact, visibly styled active navigation so saved comparisons no
+  longer also marks the compare destination active.
+
+Review verification:
+
+- RED: four focused suites reported the missing text-field primitive, tab
+  panels, neutral error framing, responsive data-list hooks, and exact active
+  navigation.
+- GREEN: the same focused suites passed 4 files and 120 tests.
+- GREEN: all impacted route suites passed 10 files and 236 tests.
+- GREEN: `cd assets && bun run relay` compiled 30 reader documents, 29
+  normalization documents, and 29 operation texts with no generated diff.
+- GREEN: `cd assets && bun run test:unit` passed 46 files and 630 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+- GREEN: `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
+- GREEN: `git diff --check` exited 0.
+
 ## Dependent Batches
 
 1. Shared application shell and home.

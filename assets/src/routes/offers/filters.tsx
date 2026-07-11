@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
+import { TextField } from "../../ui/primitives/text-field";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,
@@ -73,7 +74,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
     >
       <label>
         Product ID
-        <input
+        <TextField
           autoComplete="off"
           defaultValue={filters.productId ?? ""}
           name="productId"
@@ -82,7 +83,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       </label>
       <label>
         Merchant ID
-        <input
+        <TextField
           autoComplete="off"
           defaultValue={filters.merchantId ?? ""}
           name="merchantId"
