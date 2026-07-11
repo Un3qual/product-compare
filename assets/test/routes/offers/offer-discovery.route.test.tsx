@@ -2,9 +2,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { OfferDiscoveryRoute } from "../../../src/routes/offers/index";
+import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
-import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/TrackedCommerceClickAction";
 
 const {
   commitCommerceClickMock,

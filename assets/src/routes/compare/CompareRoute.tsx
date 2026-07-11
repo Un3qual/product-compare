@@ -7,10 +7,10 @@ import createSavedComparisonSetMutation, {
   type CreateSavedComparisonSetMutation
 } from "../../__generated__/CreateSavedComparisonSetMutation.graphql";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { Button } from "../../ui/primitives/button";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -18,7 +18,7 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
-import { CompareShell } from "./compare-shell";
+import { CompareShell } from "./CompareShell";
 import {
   compareLoader,
   MAX_COMPARE_PRODUCTS,
@@ -28,13 +28,13 @@ import {
 import {
   CompareProductList,
   CompareProductSummaryList
-} from "./product-list";
-import { CompareProductPickerBoundary } from "./product-picker";
+} from "./CompareProductList";
+import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
 import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
 } from "./paths";
-import { CompareSelectionTray } from "./selection-tray";
+import { CompareSelectionTray } from "./CompareSelectionTray";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{

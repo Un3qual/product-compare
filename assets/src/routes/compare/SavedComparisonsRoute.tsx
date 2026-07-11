@@ -9,11 +9,11 @@ import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { Pagination } from "../../ui/components/navigation/pagination";
-import { Button } from "../../ui/primitives/button";
-import { TextField } from "../../ui/primitives/text-field";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { Pagination } from "../../ui/components/navigation/Pagination";
+import { Button } from "../../ui/primitives/Button";
+import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -27,7 +27,7 @@ import type {
   SavedComparisonSetSummary,
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
-import { CompareShell } from "./compare-shell";
+import { CompareShell } from "./CompareShell";
 
 type SavedComparisonSortMode =
   | "current"

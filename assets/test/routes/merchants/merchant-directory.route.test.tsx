@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { MerchantDirectoryRoute } from "../../../src/routes/merchants/index";
+import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 
 const {

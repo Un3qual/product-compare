@@ -1,11 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { DataList, DataListItem } from "../../src/ui/components/data/data-list";
-import { FeedbackState } from "../../src/ui/components/feedback/feedback-state";
-import { PageShell } from "../../src/ui/components/layout/page-shell";
-import { SectionHeading } from "../../src/ui/components/layout/section-heading";
-import { Pagination } from "../../src/ui/components/navigation/pagination";
-import { StatusBadge } from "../../src/ui/components/status/status-badge";
+import { DataList, DataListItem } from "../../src/ui/components/data/DataList";
+import { FeedbackState } from "../../src/ui/components/feedback/FeedbackState";
+import { PageShell } from "../../src/ui/components/layout/PageShell";
+import { SectionHeading } from "../../src/ui/components/layout/SectionHeading";
+import { Pagination } from "../../src/ui/components/navigation/Pagination";
+import { StatusBadge } from "../../src/ui/components/status/StatusBadge";
 
 test("PageShell connects its title and keeps actions in the header", () => {
   render(

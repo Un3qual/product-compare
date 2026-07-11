@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { Button, Label, Separator } from "../../src/ui/primitives/index";
-import { TextField } from "../../src/ui/primitives/text-field";
+import { TextField } from "../../src/ui/primitives/TextField";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
-} from "../../src/ui/primitives/collapsible";
+} from "../../src/ui/primitives/Collapsible";
 
 test("Label associates auth fields with their inputs", () => {
   render(

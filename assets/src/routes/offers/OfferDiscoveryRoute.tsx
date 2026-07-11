@@ -6,13 +6,13 @@ import offerDiscoveryRouteQuery, {
   type OfferDiscoveryRouteQuery
 } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../ui/components/layout/page-shell";
-import { Pagination } from "../../ui/components/navigation/pagination";
-import { StatusBadge } from "../../ui/components/status/status-badge";
-import { Button } from "../../ui/primitives/button";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../ui/components/layout/PageShell";
+import { Pagination } from "../../ui/components/navigation/Pagination";
+import { StatusBadge } from "../../ui/components/status/StatusBadge";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
@@ -39,9 +39,9 @@ import {
   OfferDiscoveryFilterForm,
   OfferDiscoveryFilterSummary,
   type OfferDiscoveryProductContext
-} from "./filters";
+} from "./OfferDiscoveryFilterForm";
 import { offerDiscoveryPath } from "./paths";
-import { TrackedCommerceClickAction } from "./tracked-commerce-click";
+import { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";
 
 type OfferConnection = NonNullable<
   OfferDiscoveryRouteQuery["response"]["merchantProducts"]

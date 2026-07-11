@@ -13,7 +13,7 @@ import {
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
 const successMessage =
   "If an account exists for that email, reset instructions are on the way.";

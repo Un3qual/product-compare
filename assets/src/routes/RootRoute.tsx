@@ -12,10 +12,10 @@ import rootViewerRouteQuery, {
   type RootViewerRouteQuery
 } from "../__generated__/RootViewerRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../relay/route-preload";
-import { AppShell } from "../ui/components/layout/app-shell";
-import { PageShell } from "../ui/components/layout/page-shell";
-import { Button } from "../ui/primitives/button";
-import { AppProviders } from "../ui/providers/app-providers";
+import { AppShell } from "../ui/components/layout/AppShell";
+import { PageShell } from "../ui/components/layout/PageShell";
+import { Button } from "../ui/primitives/Button";
+import { AppProviders } from "../ui/providers/AppProviders";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 
 const styles = create({

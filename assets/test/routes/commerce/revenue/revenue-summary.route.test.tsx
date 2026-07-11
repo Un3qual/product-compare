@@ -5,7 +5,7 @@ import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import {
   RevenueSummaryRoute,
   buildRevenueDatePresetLinks
-} from "../../../../src/routes/commerce/revenue/index";
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
 
 const {

@@ -9,12 +9,12 @@ import {
   RouterProvider,
   Routes
 } from "react-router-dom";
-import { ForgotPasswordRoute } from "../../../src/routes/auth/forgot-password";
-import { ResetPasswordRoute } from "../../../src/routes/auth/reset-password";
+import { ForgotPasswordRoute } from "../../../src/routes/auth/ForgotPasswordRoute";
+import { ResetPasswordRoute } from "../../../src/routes/auth/ResetPasswordRoute";
 import {
   resetVerifyEmailRequestCache,
   VerifyEmailRoute
-} from "../../../src/routes/auth/verify-email";
+} from "../../../src/routes/auth/VerifyEmailRoute";
 
 const { commitMutationMock, useMutationMock } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),

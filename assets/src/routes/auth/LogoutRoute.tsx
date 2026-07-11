@@ -12,7 +12,7 @@ import {
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { clearRootViewer } from "./viewer-store";
 
 export function LogoutRoute() {

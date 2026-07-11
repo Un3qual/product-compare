@@ -6,9 +6,9 @@ import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../ui/components/layout/page-shell";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../ui/components/layout/PageShell";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
 import {
@@ -17,7 +17,7 @@ import {
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
-import { CompareSelectionTray } from "../compare/selection-tray";
+import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import {
@@ -34,12 +34,12 @@ import {
   type OfferSnapshotSelectors,
   type OfferSnapshotSummary
 } from "../offer-snapshot";
-import { TrackedCommerceClickAction } from "../offers/tracked-commerce-click";
+import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
   type ProductAttributeListItem
-} from "./product-attribute-list";
+} from "./ProductAttributeList";
 
 const styles = create({
   description: {

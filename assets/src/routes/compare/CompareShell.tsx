@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { PageShell } from "../../ui/components/layout/page-shell";
+import { PageShell } from "../../ui/components/layout/PageShell";
 
 export interface CompareShellProps extends PropsWithChildren {
   actions?: ReactNode;

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "../../../src/routes/auth/form-shell";
+import { AuthField, AuthFormShell, AuthSubmitButton } from "../../../src/routes/auth/AuthFormShell";
 
 test("auth form shell uses shared primitives for labels, actions, and footer links", () => {
   render(

@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "../../ui/primitives/button";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = create({

@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { commitLocalUpdate } from "relay-runtime";
 import { useMutation, useRelayEnvironment } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { LoginRoute } from "../../../src/routes/auth/login";
-import { LogoutRoute } from "../../../src/routes/auth/logout";
-import { RegisterRoute } from "../../../src/routes/auth/register";
+import { LoginRoute } from "../../../src/routes/auth/LoginRoute";
+import { LogoutRoute } from "../../../src/routes/auth/LogoutRoute";
+import { RegisterRoute } from "../../../src/routes/auth/RegisterRoute";
 
 const navigateMock = vi.fn();
 const {

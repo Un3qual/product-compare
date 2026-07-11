@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@radix-ui/themes";
 import { create, props } from "@stylexjs/stylex";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { Button } from "../../ui/primitives/button";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { ProductAttributeList } from "../products/product-attribute-list";
+import { ProductAttributeList } from "../products/ProductAttributeList";
 import type {
   CompareProductSummary,
   CompareRouteLoaderData,
   CompareSpecMode
 } from "./loader";
-import { DecisionSummary } from "./decision-summary";
+import { DecisionSummary } from "./DecisionSummary";
 import { buildComparePathAfterRemovingSlugIndex } from "./paths";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";

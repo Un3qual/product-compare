@@ -3,10 +3,10 @@ import { Callout } from "@radix-ui/themes";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
-import { Button } from "../../ui/primitives/button";
-import { Label } from "../../ui/primitives/label";
-import { Slot } from "../../ui/primitives/slot";
-import { TextField } from "../../ui/primitives/text-field";
+import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
+import { Slot } from "../../ui/primitives/Slot";
+import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = create({

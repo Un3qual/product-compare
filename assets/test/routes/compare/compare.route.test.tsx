@@ -21,15 +21,15 @@ import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
 } from "../../../src/routes/compare/saved-data";
-import { RouteErrorBoundary } from "../../../src/routes/compare/error-boundary";
-import { CompareRoute } from "../../../src/routes/compare/index";
+import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
+import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch
 } from "../../../src/routes/compare/paths";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/saved";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
 import {
   buildAbortableRequest,
   buildCompareLoaderArgs,

@@ -15,7 +15,7 @@ import {
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
 const missingTokenError = invalidTokenMutationError("This reset link is missing or invalid.");
 

@@ -101,7 +101,7 @@ Plan: `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan
 Next action: Explain that the relative-price signal compares only already-loaded offers without changing its calculation.
 Owned paths:
 
-- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
@@ -125,7 +125,7 @@ Plan: `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-pl
 Next action: Add a case-insensitive local name filter over products already loaded in the compare picker.
 Owned paths:
 
-- `assets/src/routes/compare/product-picker.tsx`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
@@ -149,7 +149,7 @@ Plan: `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-pl
 Next action: Add a case-insensitive local merchant-name filter clearly scoped to the currently visible page.
 Owned paths:
 
-- `assets/src/routes/merchants/index.tsx`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
 - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - `docs/work/frontend-merchant-discovery-demo-parity.md`
 

@@ -17,7 +17,7 @@ do not mistake a bounded loaded-offer signal for a market-wide price claim.
 
 ## Owned Paths
 
-- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 

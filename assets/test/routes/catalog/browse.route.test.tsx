@@ -14,7 +14,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { browseLoader } from "../../../src/routes/catalog/loader";
-import { BrowseRoute } from "../../../src/routes/catalog/browse";
+import { BrowseRoute } from "../../../src/routes/catalog/BrowseRoute";
 import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
 
 const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =

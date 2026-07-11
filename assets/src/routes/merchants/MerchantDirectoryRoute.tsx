@@ -6,12 +6,12 @@ import merchantDirectoryRouteQuery, {
   type MerchantDirectoryRouteQuery
 } from "../../__generated__/MerchantDirectoryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../ui/components/layout/page-shell";
-import { Pagination } from "../../ui/components/navigation/pagination";
-import { Button } from "../../ui/primitives/button";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../ui/components/layout/PageShell";
+import { Pagination } from "../../ui/components/navigation/Pagination";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalWebsiteHref } from "../external-links";
 import {

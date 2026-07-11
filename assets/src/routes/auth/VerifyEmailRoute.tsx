@@ -13,7 +13,7 @@ import {
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthFormShell } from "./form-shell";
+import { AuthFormShell } from "./AuthFormShell";
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
 type VerifyEmailCommit = MutationCommitFn<VerifyEmailMutation>;

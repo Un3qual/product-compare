@@ -1,6 +1,6 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../ui/components/layout/page-shell";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../ui/components/layout/PageShell";
 
 type RouteErrorBoundaryProps = {
   resourceName?: string;

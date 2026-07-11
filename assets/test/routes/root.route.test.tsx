@@ -9,7 +9,7 @@ import {
   useRoutePreloadedQuery
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
-import { RootLayout, RootRoute } from "../../src/routes/root";
+import { RootLayout, RootRoute } from "../../src/routes/RootRoute";
 import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(

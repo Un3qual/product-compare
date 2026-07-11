@@ -1,8 +1,8 @@
 import { Fragment } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "../../ui/primitives/button";
-import { TextField } from "../../ui/primitives/text-field";
+import { Button } from "../../ui/primitives/Button";
+import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,

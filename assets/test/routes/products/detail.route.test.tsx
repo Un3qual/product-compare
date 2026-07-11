@@ -14,7 +14,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
-import { ProductDetailRoute } from "../../../src/routes/products/detail";
+import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
 
 const {
   fetchRouteQueryMock,

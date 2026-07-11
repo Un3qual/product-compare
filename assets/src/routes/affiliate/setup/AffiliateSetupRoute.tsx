@@ -18,11 +18,11 @@ import affiliateSetupRouteQuery, {
   type AffiliateSetupRouteQuery
 } from "../../../__generated__/AffiliateSetupRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
-import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../../ui/components/layout/page-shell";
-import { Button } from "../../../ui/primitives/button";
-import { TextField } from "../../../ui/primitives/text-field";
+import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
+import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../../ui/components/layout/PageShell";
+import { Button } from "../../../ui/primitives/Button";
+import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import {

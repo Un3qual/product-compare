@@ -29,13 +29,13 @@
 
 ### New shared files
 
-- `assets/src/ui/components/layout/page-shell.tsx`: route-level title, description, actions, and width composition.
-- `assets/src/ui/components/layout/section-heading.tsx`: consistent section titles and supporting copy.
-- `assets/src/ui/components/feedback/feedback-state.tsx`: Radix Callout-based loading, empty, success, warning, and error treatments.
-- `assets/src/ui/components/data/data-list.tsx`: semantic list reset, divided rows, metadata, and action-zone layout.
-- `assets/src/ui/components/navigation/pagination.tsx`: shared accessible pagination action group.
-- `assets/src/ui/components/status/status-badge.tsx`: semantic Product Compare status mapped to Radix Badge colors.
-- `assets/src/ui/primitives/collapsible.tsx`: thin `@radix-ui/react-collapsible` export with Product Compare data slots.
+- `assets/src/ui/components/layout/PageShell.tsx`: route-level title, description, actions, and width composition.
+- `assets/src/ui/components/layout/SectionHeading.tsx`: consistent section titles and supporting copy.
+- `assets/src/ui/components/feedback/FeedbackState.tsx`: Radix Callout-based loading, empty, success, warning, and error treatments.
+- `assets/src/ui/components/data/DataList.tsx`: semantic list reset, divided rows, metadata, and action-zone layout.
+- `assets/src/ui/components/navigation/Pagination.tsx`: shared accessible pagination action group.
+- `assets/src/ui/components/status/StatusBadge.tsx`: semantic Product Compare status mapped to Radix Badge colors.
+- `assets/src/ui/primitives/Collapsible.tsx`: thin `@radix-ui/react-collapsible` export with Product Compare data slots.
 - `assets/test/ui/page-patterns.test.tsx`: behavior and accessibility coverage for the shared page, feedback, data-list, pagination, and status patterns.
 - `docs/work/frontend-radix-ui-polish.md`: lane-local ownership, milestone state, and verification evidence.
 
@@ -44,19 +44,19 @@
 - `assets/package.json`, `assets/bun.lock`: add `@radix-ui/themes` and `@radix-ui/react-collapsible`.
 - `assets/src/ui/theme/theme.css`: Radix theme import, semantic CSS aliases, base document styles, focus/motion rules.
 - `assets/src/ui/theme/tokens.stylex.ts`: StyleX mappings for the semantic color, spacing, typography, radius, and layout aliases.
-- `assets/src/ui/providers/app-providers.tsx`: compose `DirectionProvider` and Radix `Theme`.
-- `assets/src/ui/primitives/button.tsx`: make the shared button a thin Radix Themes wrapper while preserving `asChild`, native button defaults, and `data-slot`.
-- `assets/src/ui/components/layout/app-shell.tsx`: responsive shell canvas and navigation frame.
-- `assets/src/routes/root.tsx`: active navigation and expressive home composition.
-- `assets/src/routes/auth/form-shell.tsx`: focused auth layout using Radix fields, button, and callouts.
+- `assets/src/ui/providers/AppProviders.tsx`: compose `DirectionProvider` and Radix `Theme`.
+- `assets/src/ui/primitives/Button.tsx`: make the shared button a thin Radix Themes wrapper while preserving `asChild`, native button defaults, and `data-slot`.
+- `assets/src/ui/components/layout/AppShell.tsx`: responsive shell canvas and navigation frame.
+- `assets/src/routes/RootRoute.tsx`: active navigation and expressive home composition.
+- `assets/src/routes/auth/AuthFormShell.tsx`: focused auth layout using Radix fields, button, and callouts.
 
 ### Route-family files
 
-- Shopper catalog: `assets/src/routes/catalog/browse.tsx`, `assets/src/routes/catalog/filter-form.tsx`, `assets/src/routes/products/detail.tsx`, `assets/src/routes/products/product-attribute-list.tsx`.
-- Merchant and offer discovery: `assets/src/routes/merchants/index.tsx`, `assets/src/routes/offers/index.tsx`, `assets/src/routes/offers/filters.tsx`, `assets/src/routes/offers/tracked-commerce-click.tsx`.
-- Comparison: `assets/src/routes/compare/compare-shell.tsx`, `assets/src/routes/compare/index.tsx`, `assets/src/routes/compare/product-list.tsx`, `assets/src/routes/compare/product-picker.tsx`, `assets/src/routes/compare/selection-tray.tsx`, `assets/src/routes/compare/decision-summary.tsx`, `assets/src/routes/compare/saved.tsx`, `assets/src/routes/compare/error-boundary.tsx`.
-- Operational: `assets/src/routes/affiliate/setup/index.tsx`, `assets/src/routes/commerce/revenue/index.tsx`, `assets/src/routes/ingestion/feed-candidates/index.tsx`, `assets/src/routes/account/api-tokens/index.tsx`.
-- Authentication: `assets/src/routes/auth/login.tsx`, `assets/src/routes/auth/logout.tsx`, `assets/src/routes/auth/register.tsx`, `assets/src/routes/auth/forgot-password.tsx`, `assets/src/routes/auth/reset-password.tsx`, `assets/src/routes/auth/verify-email.tsx`.
+- Shopper catalog: `assets/src/routes/catalog/BrowseRoute.tsx`, `assets/src/routes/catalog/CatalogFilterForm.tsx`, `assets/src/routes/products/ProductDetailRoute.tsx`, `assets/src/routes/products/ProductAttributeList.tsx`.
+- Merchant and offer discovery: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`, `assets/src/routes/offers/OfferDiscoveryRoute.tsx`, `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`, `assets/src/routes/offers/TrackedCommerceClickAction.tsx`.
+- Comparison: `assets/src/routes/compare/CompareShell.tsx`, `assets/src/routes/compare/CompareRoute.tsx`, `assets/src/routes/compare/CompareProductList.tsx`, `assets/src/routes/compare/CompareProductPickerBoundary.tsx`, `assets/src/routes/compare/CompareSelectionTray.tsx`, `assets/src/routes/compare/DecisionSummary.tsx`, `assets/src/routes/compare/SavedComparisonsRoute.tsx`, `assets/src/routes/compare/RouteErrorBoundary.tsx`.
+- Operational: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`, `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`, `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`, `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`.
+- Authentication: `assets/src/routes/auth/LoginRoute.tsx`, `assets/src/routes/auth/LogoutRoute.tsx`, `assets/src/routes/auth/RegisterRoute.tsx`, `assets/src/routes/auth/ForgotPasswordRoute.tsx`, `assets/src/routes/auth/ResetPasswordRoute.tsx`, `assets/src/routes/auth/VerifyEmailRoute.tsx`.
 
 ---
 
@@ -190,15 +190,15 @@ git commit -m "docs: dispatch Radix UI polish foundation"
 - Modify: `assets/bun.lock`
 - Modify: `assets/src/ui/theme/theme.css`
 - Modify: `assets/src/ui/theme/tokens.stylex.ts`
-- Modify: `assets/src/ui/providers/app-providers.tsx`
-- Modify: `assets/src/ui/primitives/button.tsx`
-- Create: `assets/src/ui/primitives/collapsible.tsx`
-- Create: `assets/src/ui/components/layout/page-shell.tsx`
-- Create: `assets/src/ui/components/layout/section-heading.tsx`
-- Create: `assets/src/ui/components/feedback/feedback-state.tsx`
-- Create: `assets/src/ui/components/data/data-list.tsx`
-- Create: `assets/src/ui/components/navigation/pagination.tsx`
-- Create: `assets/src/ui/components/status/status-badge.tsx`
+- Modify: `assets/src/ui/providers/AppProviders.tsx`
+- Modify: `assets/src/ui/primitives/Button.tsx`
+- Create: `assets/src/ui/primitives/Collapsible.tsx`
+- Create: `assets/src/ui/components/layout/PageShell.tsx`
+- Create: `assets/src/ui/components/layout/SectionHeading.tsx`
+- Create: `assets/src/ui/components/feedback/FeedbackState.tsx`
+- Create: `assets/src/ui/components/data/DataList.tsx`
+- Create: `assets/src/ui/components/navigation/Pagination.tsx`
+- Create: `assets/src/ui/components/status/StatusBadge.tsx`
 - Modify: `assets/test/ui/app-providers.test.tsx`
 - Modify: `assets/test/ui/primitives.test.tsx`
 - Create: `assets/test/ui/page-patterns.test.tsx`
@@ -403,8 +403,8 @@ git commit -m "feat: establish Radix UI foundation"
 
 **Files:**
 
-- Modify: `assets/src/ui/components/layout/app-shell.tsx`
-- Modify: `assets/src/routes/root.tsx`
+- Modify: `assets/src/ui/components/layout/AppShell.tsx`
+- Modify: `assets/src/routes/RootRoute.tsx`
 - Modify: `assets/test/ui/app-shell.test.tsx`
 - Modify: `assets/test/routes/root.route.test.tsx`
 - Modify: `docs/work/index.md`
@@ -449,7 +449,7 @@ Expected: focused tests, TypeScript, and both builds pass.
 - [ ] **Step 6: Record evidence and commit**
 
 ```bash
-git add assets/src/ui/components/layout/app-shell.tsx assets/src/routes/root.tsx assets/test/ui/app-shell.test.tsx assets/test/routes/root.route.test.tsx docs/work/index.md docs/work/frontend-radix-ui-polish.md
+git add assets/src/ui/components/layout/AppShell.tsx assets/src/routes/RootRoute.tsx assets/test/ui/app-shell.test.tsx assets/test/routes/root.route.test.tsx docs/work/index.md docs/work/frontend-radix-ui-polish.md
 git commit -m "feat: polish application shell and home"
 ```
 
@@ -459,10 +459,10 @@ git commit -m "feat: polish application shell and home"
 
 **Files:**
 
-- Modify: `assets/src/routes/catalog/browse.tsx`
-- Modify: `assets/src/routes/catalog/filter-form.tsx`
-- Modify: `assets/src/routes/products/detail.tsx`
-- Modify: `assets/src/routes/products/product-attribute-list.tsx`
+- Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Modify: `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- Modify: `assets/src/routes/products/ProductDetailRoute.tsx`
+- Modify: `assets/src/routes/products/ProductAttributeList.tsx`
 - Modify: `assets/test/routes/catalog/browse.route.test.tsx`
 - Modify: `assets/test/routes/products/detail.route.test.tsx`
 - Modify: `docs/work/index.md`
@@ -525,10 +525,10 @@ git commit -m "feat: polish catalog and product detail UI"
 
 **Files:**
 
-- Modify: `assets/src/routes/merchants/index.tsx`
-- Modify: `assets/src/routes/offers/index.tsx`
-- Modify: `assets/src/routes/offers/filters.tsx`
-- Modify: `assets/src/routes/offers/tracked-commerce-click.tsx`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- Modify: `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
+- Modify: `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+- Modify: `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
 - Modify: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - Modify: `assets/test/routes/offers/offer-discovery.route.test.tsx`
 - Modify: `docs/work/index.md`
@@ -587,14 +587,14 @@ git commit -m "feat: polish merchant and offer discovery UI"
 
 **Files:**
 
-- Modify: `assets/src/routes/compare/compare-shell.tsx`
-- Modify: `assets/src/routes/compare/index.tsx`
-- Modify: `assets/src/routes/compare/product-list.tsx`
-- Modify: `assets/src/routes/compare/product-picker.tsx`
-- Modify: `assets/src/routes/compare/selection-tray.tsx`
-- Modify: `assets/src/routes/compare/decision-summary.tsx`
-- Modify: `assets/src/routes/compare/saved.tsx`
-- Modify: `assets/src/routes/compare/error-boundary.tsx`
+- Modify: `assets/src/routes/compare/CompareShell.tsx`
+- Modify: `assets/src/routes/compare/CompareRoute.tsx`
+- Modify: `assets/src/routes/compare/CompareProductList.tsx`
+- Modify: `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- Modify: `assets/src/routes/compare/CompareSelectionTray.tsx`
+- Modify: `assets/src/routes/compare/DecisionSummary.tsx`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Modify: `assets/src/routes/compare/RouteErrorBoundary.tsx`
 - Modify: `assets/test/routes/compare/compare.route.test.tsx`
 - Modify: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - Modify: `docs/work/index.md`
@@ -657,10 +657,10 @@ git commit -m "feat: polish comparison workspace UI"
 
 **Files:**
 
-- Modify: `assets/src/routes/affiliate/setup/index.tsx`
-- Modify: `assets/src/routes/commerce/revenue/index.tsx`
-- Modify: `assets/src/routes/ingestion/feed-candidates/index.tsx`
-- Modify: `assets/src/routes/account/api-tokens/index.tsx`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- Modify: `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
 - Modify: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - Modify: `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
 - Modify: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
@@ -730,13 +730,13 @@ git commit -m "feat: polish operational frontend UI"
 
 **Files:**
 
-- Modify: `assets/src/routes/auth/form-shell.tsx`
-- Modify: `assets/src/routes/auth/login.tsx`
-- Modify: `assets/src/routes/auth/logout.tsx`
-- Modify: `assets/src/routes/auth/register.tsx`
-- Modify: `assets/src/routes/auth/forgot-password.tsx`
-- Modify: `assets/src/routes/auth/reset-password.tsx`
-- Modify: `assets/src/routes/auth/verify-email.tsx`
+- Modify: `assets/src/routes/auth/AuthFormShell.tsx`
+- Modify: `assets/src/routes/auth/LoginRoute.tsx`
+- Modify: `assets/src/routes/auth/LogoutRoute.tsx`
+- Modify: `assets/src/routes/auth/RegisterRoute.tsx`
+- Modify: `assets/src/routes/auth/ForgotPasswordRoute.tsx`
+- Modify: `assets/src/routes/auth/ResetPasswordRoute.tsx`
+- Modify: `assets/src/routes/auth/VerifyEmailRoute.tsx`
 - Modify: `assets/test/routes/auth/form-shell.test.tsx`
 - Modify: `assets/test/routes/auth/session.route.test.tsx`
 - Modify: `assets/test/routes/auth/recovery.route.test.tsx`

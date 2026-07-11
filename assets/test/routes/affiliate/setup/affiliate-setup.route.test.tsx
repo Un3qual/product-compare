@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/index";
+import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
 import type { AffiliateSetupLoaderData } from "../../../../src/routes/affiliate/setup/loader";
 
 const {

@@ -7,9 +7,9 @@ import {
   fetchRouteQuery,
   useRoutePreloadedQuery
 } from "../../../src/relay/route-preload";
-import { CompareRoute } from "../../../src/routes/compare/index";
+import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 import { compareLoader } from "../../../src/routes/compare/loader";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/saved";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
 import { savedComparisonsLoader } from "../../../src/routes/compare/saved-data";
 import {
   buildCompareLoaderArgs,

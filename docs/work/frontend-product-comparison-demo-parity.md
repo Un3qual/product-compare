@@ -25,7 +25,7 @@
 - Verified gap: the current decision summary displays each product's best loaded
   price but does not identify a safe lowest value across selected products.
 - Owned paths:
-  - `assets/src/routes/compare/decision-summary.tsx`
+  - `assets/src/routes/compare/DecisionSummary.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `docs/work/frontend-product-comparison-demo-parity.md`
 - Verification:
@@ -82,12 +82,12 @@
   `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`.
 - Owned paths:
   - `assets/src/routes/compare/paths.ts`
-  - `assets/src/routes/compare/selection-tray.tsx`
-  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/CompareSelectionTray.tsx`
+  - `assets/src/routes/compare/CompareRoute.tsx`
   - `assets/src/routes/catalog/paths.ts`
-  - `assets/src/routes/catalog/filter-form.tsx`
-  - `assets/src/routes/catalog/browse.tsx`
-  - `assets/src/routes/products/detail.tsx`
+  - `assets/src/routes/catalog/CatalogFilterForm.tsx`
+  - `assets/src/routes/catalog/BrowseRoute.tsx`
+  - `assets/src/routes/products/ProductDetailRoute.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `assets/test/routes/catalog/browse.route.test.tsx`
   - `assets/test/routes/products/detail.route.test.tsx`
@@ -98,7 +98,7 @@
   - Added shared compare URL helpers that parse, dedupe, append, cap, and
     rewrite repeated `slug` params while preserving route-local search params.
   - Extracted the selected-products tray into
-    `assets/src/routes/compare/selection-tray.tsx` with an `Open comparison`
+    `assets/src/routes/compare/CompareSelectionTray.tsx` with an `Open comparison`
     link, slug fallback labels, and route-supplied remove links.
   - `/products` and `/products/:slug` now render the shared tray from URL
     state, preserve repeated compare slugs through local add/remove links, and
@@ -118,7 +118,7 @@
 - Status: done.
 - Plan: `docs/plans/2026-06-29-compare-selection-tray-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/CompareRoute.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `docs/work/frontend-product-comparison-demo-parity.md`
 - Verification:
@@ -196,7 +196,7 @@
 - Status: done.
 - Plan: `docs/plans/2026-06-27-project-compare-selection-controls-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/compare/index.tsx`
+  - `assets/src/routes/compare/CompareRoute.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `docs/work/frontend-product-comparison-demo-parity.md`
 - Verification:
@@ -222,12 +222,12 @@ Next action: Add a persistent compare tray across `/products` and `/products/:sl
 Owned paths:
 
 - `assets/src/routes/compare/paths.ts`
-- `assets/src/routes/compare/selection-tray.tsx`
-- `assets/src/routes/compare/index.tsx`
+- `assets/src/routes/compare/CompareSelectionTray.tsx`
+- `assets/src/routes/compare/CompareRoute.tsx`
 - `assets/src/routes/catalog/paths.ts`
-- `assets/src/routes/catalog/filter-form.tsx`
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/src/routes/products/detail.tsx`
+- `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `assets/test/routes/catalog/browse.route.test.tsx`
 - `assets/test/routes/products/detail.route.test.tsx`
@@ -248,8 +248,8 @@ Exit condition: Browse and detail pages expose a persistent compare tray/action 
 - Owned paths:
   - `assets/src/routes/compare/queries/CompareOfferContextQuery.ts`
   - `assets/src/routes/compare/loader.ts`
-  - `assets/src/routes/compare/index.tsx`
-  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/src/routes/compare/CompareRoute.tsx`
+  - `assets/src/routes/compare/CompareProductList.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `assets/schema.graphql`
   - `assets/src/__generated__/**`
@@ -283,10 +283,10 @@ Exit condition: Browse and detail pages expose a persistent compare tray/action 
   - `lib/product_compare_web/schema.ex`
   - `lib/product_compare_web/resolvers/catalog_resolver.ex`
   - `test/product_compare_web/graphql/catalog_queries_test.exs`
-  - `assets/src/routes/products/product-attribute-list.tsx`
+  - `assets/src/routes/products/ProductAttributeList.tsx`
   - `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`
   - `assets/src/routes/compare/loader.ts`
-  - `assets/src/routes/compare/product-list.tsx`
+  - `assets/src/routes/compare/CompareProductList.tsx`
   - `assets/test/routes/products/detail.route.test.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `assets/schema.graphql`
@@ -328,9 +328,9 @@ Exit condition: Browse and detail pages expose a persistent compare tray/action 
 - Owned paths:
   - `assets/src/routes/compare/loader.ts`
   - `assets/src/routes/compare/paths.ts`
-  - `assets/src/routes/compare/index.tsx`
-  - `assets/src/routes/compare/product-list.tsx`
-  - `assets/src/routes/compare/product-picker.tsx`
+  - `assets/src/routes/compare/CompareRoute.tsx`
+  - `assets/src/routes/compare/CompareProductList.tsx`
+  - `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `docs/work/frontend-product-comparison-demo-parity.md`
 - Verification:

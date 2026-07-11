@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { AppShell } from "../../src/ui/components/layout/app-shell";
+import { AppShell } from "../../src/ui/components/layout/AppShell";
 
 test("renders primary nav landmarks with a shared shell separator", () => {
   render(

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
-import { Button } from "../../primitives/button";
+import { Button } from "../../primitives/Button";
 
 const styles = create({
   root: {

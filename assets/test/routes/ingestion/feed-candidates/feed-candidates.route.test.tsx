@@ -6,7 +6,7 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../../src/relay/route-preload";
 import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
-import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/index";
+import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidatesRoute";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
 const {

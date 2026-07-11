@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { AppProviders } from "../../src/ui/providers/app-providers";
+import { AppProviders } from "../../src/ui/providers/AppProviders";
 
 test("renders theme wrapper with compiled style props", () => {
   const html = renderToStaticMarkup(

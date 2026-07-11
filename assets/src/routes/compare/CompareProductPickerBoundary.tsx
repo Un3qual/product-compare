@@ -5,10 +5,10 @@ import { useLazyLoadQuery } from "react-relay";
 import compareProductPickerQuery, {
   type CompareProductPickerQuery
 } from "../../__generated__/CompareProductPickerQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { Button } from "../../ui/primitives/button";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 import { buildComparePathFromSlugs } from "./paths";

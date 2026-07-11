@@ -6,12 +6,12 @@ import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
-import { DataList, DataListItem } from "../../ui/components/data/data-list";
-import { FeedbackState } from "../../ui/components/feedback/feedback-state";
-import { PageShell } from "../../ui/components/layout/page-shell";
-import { Pagination } from "../../ui/components/navigation/pagination";
+import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { PageShell } from "../../ui/components/layout/PageShell";
+import { Pagination } from "../../ui/components/navigation/Pagination";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
@@ -19,12 +19,12 @@ import {
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch
 } from "../compare/paths";
-import { CompareSelectionTray } from "../compare/selection-tray";
+import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import {
   hasActiveCatalogFilters,
   type CatalogFilters
 } from "./filters";
-import { CatalogActiveFilterSummary, CatalogFilterForm } from "./filter-form";
+import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterForm";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   catalogBrowseFirstPagePath,

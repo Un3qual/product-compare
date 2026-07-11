@@ -2,7 +2,9 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
-import loginMutation, { type LoginMutation } from "../../__generated__/LoginMutation.graphql";
+import registerMutation, {
+  type RegisterMutation
+} from "../../__generated__/RegisterMutation.graphql";
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -11,14 +13,14 @@ import {
   resolveSessionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "./form-shell";
+import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { setRootViewer } from "./viewer-store";
 
-export function LoginRoute() {
+export function RegisterRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
-  const [commitLogin, isSubmitting] = useMutation<LoginMutation>(loginMutation);
+  const [commitRegister, isSubmitting] = useMutation<RegisterMutation>(registerMutation);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +31,11 @@ export function LoginRoute() {
     const password = routeFormValue(formData, "password");
 
     commitRouteMutation(
-      commitLogin,
+      commitRegister,
       {
         variables: { email, password },
         onCompleted(response, graphQLErrors) {
-          const result = resolveSessionMutationResult(response?.login, graphQLErrors);
+          const result = resolveSessionMutationResult(response?.register, graphQLErrors);
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);
@@ -55,14 +57,14 @@ export function LoginRoute() {
 
   return (
     <AuthFormShell
-      description="Use your email and password to continue through the GraphQL auth flow."
+      description="Create an email/password account and let Phoenix establish the browser session."
       errors={errors}
       fieldNames={["email", "password"]}
       footerLinks={[
-        { label: "Create account", to: "/auth/register" },
+        { label: "Sign in instead", to: "/auth/login" },
         { label: "Forgot password?", to: "/auth/forgot-password" }
       ]}
-      title="Sign in"
+      title="Create your account"
     >
       <form onSubmit={handleSubmit}>
         <AuthField
@@ -73,13 +75,13 @@ export function LoginRoute() {
           type="email"
         />
         <AuthField
-          autoComplete="current-password"
+          autoComplete="new-password"
           error={findMutationError(errors, "password")}
           label="Password"
           name="password"
           type="password"
         />
-        <AuthSubmitButton disabled={isSubmitting}>Sign in</AuthSubmitButton>
+        <AuthSubmitButton disabled={isSubmitting}>Create account</AuthSubmitButton>
       </form>
     </AuthFormShell>
   );

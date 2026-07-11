@@ -48,8 +48,8 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/ui/components/layout/app-shell.tsx`
-- `assets/src/routes/root.tsx`
+- `assets/src/ui/components/layout/AppShell.tsx`
+- `assets/src/routes/RootRoute.tsx`
 - `assets/test/ui/app-shell.test.tsx`
 - `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
@@ -78,10 +78,10 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/routes/catalog/browse.tsx`
-- `assets/src/routes/catalog/filter-form.tsx`
-- `assets/src/routes/products/detail.tsx`
-- `assets/src/routes/products/product-attribute-list.tsx`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/src/routes/products/ProductAttributeList.tsx`
 - `assets/test/routes/catalog/browse.route.test.tsx`
 - `assets/test/routes/products/detail.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
@@ -111,10 +111,10 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/routes/merchants/index.tsx`
-- `assets/src/routes/offers/index.tsx`
-- `assets/src/routes/offers/filters.tsx`
-- `assets/src/routes/offers/tracked-commerce-click.tsx`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
+- `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+- `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
 - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - `assets/test/routes/offers/offer-discovery.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
@@ -143,14 +143,14 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/routes/compare/compare-shell.tsx`
-- `assets/src/routes/compare/index.tsx`
-- `assets/src/routes/compare/product-list.tsx`
-- `assets/src/routes/compare/product-picker.tsx`
-- `assets/src/routes/compare/selection-tray.tsx`
-- `assets/src/routes/compare/decision-summary.tsx`
-- `assets/src/routes/compare/saved.tsx`
-- `assets/src/routes/compare/error-boundary.tsx`
+- `assets/src/routes/compare/CompareShell.tsx`
+- `assets/src/routes/compare/CompareRoute.tsx`
+- `assets/src/routes/compare/CompareProductList.tsx`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- `assets/src/routes/compare/CompareSelectionTray.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/src/routes/compare/RouteErrorBoundary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
@@ -180,10 +180,10 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/routes/affiliate/setup/index.tsx`
-- `assets/src/routes/commerce/revenue/index.tsx`
-- `assets/src/routes/ingestion/feed-candidates/index.tsx`
-- `assets/src/routes/account/api-tokens/index.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
 - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
 - `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
@@ -214,13 +214,13 @@ Completion evidence:
 Status: done
 Owned paths:
 
-- `assets/src/routes/auth/form-shell.tsx`
-- `assets/src/routes/auth/login.tsx`
-- `assets/src/routes/auth/logout.tsx`
-- `assets/src/routes/auth/register.tsx`
-- `assets/src/routes/auth/forgot-password.tsx`
-- `assets/src/routes/auth/reset-password.tsx`
-- `assets/src/routes/auth/verify-email.tsx`
+- `assets/src/routes/auth/AuthFormShell.tsx`
+- `assets/src/routes/auth/LoginRoute.tsx`
+- `assets/src/routes/auth/LogoutRoute.tsx`
+- `assets/src/routes/auth/RegisterRoute.tsx`
+- `assets/src/routes/auth/ForgotPasswordRoute.tsx`
+- `assets/src/routes/auth/ResetPasswordRoute.tsx`
+- `assets/src/routes/auth/VerifyEmailRoute.tsx`
 - `assets/test/routes/auth/form-shell.test.tsx`
 - `assets/test/routes/auth/session.route.test.tsx`
 - `assets/test/routes/auth/recovery.route.test.tsx`
@@ -346,6 +346,30 @@ Automated review verification:
   builds; the existing large-chunk advisory remains non-blocking.
 - GREEN: `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
 - GREEN: `git diff --check` exited 0.
+
+### Component Filename Follow-up
+
+Status: done
+
+- All 43 React component source files use PascalCase filenames matching their
+  primary exported component. Non-component entrypoints such as
+  `entry.client.tsx`, `entry.server.tsx`, and `router.tsx` retain their
+  conventional names.
+- Route registration, internal imports, tests, the active Radix plan, and the
+  live queue now reference the PascalCase component paths.
+
+Filename verification:
+
+- A TypeScript AST audit confirmed that every component filename matches one
+  of its exported PascalCase components.
+- A case-sensitive relative-import audit found no casing mismatches.
+- `cd assets && bun run relay` compiled 30 reader documents, 29 normalization
+  documents, and 29 operation texts with no generated diff.
+- `cd assets && bun run test:unit` passed 46 files and 633 tests.
+- `cd assets && bun run typecheck` exited 0.
+- `cd assets && bun run build` completed client and SSR production builds; the
+  existing large-chunk advisory remains non-blocking.
+- `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
 
 ## Dependent Batches
 

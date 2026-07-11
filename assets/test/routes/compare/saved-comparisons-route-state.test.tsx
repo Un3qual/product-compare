@@ -3,7 +3,7 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
+import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/SavedComparisonsRoute";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";

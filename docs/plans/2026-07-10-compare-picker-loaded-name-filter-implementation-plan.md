@@ -18,7 +18,7 @@ construction remain unchanged.
 
 ## Owned Paths
 
-- `assets/src/routes/compare/product-picker.tsx`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
