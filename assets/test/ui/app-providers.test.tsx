@@ -9,6 +9,8 @@ test("renders theme wrapper with compiled style props", () => {
   );
 
   expect(html).toContain('data-theme="default"');
+  expect(html).toContain('class="radix-themes');
+  expect(html).toContain('data-accent-color="indigo"');
   expect(html).toContain('class="');
   expect(html).not.toContain('style=');
 });

@@ -1,5 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { Button, Label, Separator } from "../../src/ui/primitives/index";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "../../src/ui/primitives/collapsible";
 
 test("Label associates auth fields with their inputs", () => {
   render(
@@ -28,6 +33,16 @@ test("Button preserves link semantics when composed through the slot wrapper", (
   ).not.toBeInTheDocument();
 });
 
+test("Button defaults to a native button while using Radix Themes", () => {
+  render(<Button>Apply</Button>);
+
+  const button = screen.getByRole("button", { name: "Apply" });
+
+  expect(button).toHaveAttribute("type", "button");
+  expect(button).toHaveAttribute("data-slot", "button");
+  expect(button).toHaveClass("rt-BaseButton");
+});
+
 test("Separator renders the expected accessibility role and orientation", () => {
   render(<Separator aria-label="Section divider" orientation="vertical" />);
 
@@ -35,4 +50,18 @@ test("Separator renders the expected accessibility role and orientation", () => 
 
   expect(separator).toHaveAttribute("data-slot", "separator");
   expect(separator).toHaveAttribute("aria-orientation", "vertical");
+});
+
+test("Collapsible exposes Radix state and accessibility semantics", () => {
+  render(
+    <Collapsible>
+      <CollapsibleTrigger>Advanced filters</CollapsibleTrigger>
+      <CollapsibleContent>Filter fields</CollapsibleContent>
+    </Collapsible>
+  );
+
+  const trigger = screen.getByRole("button", { name: "Advanced filters" });
+
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+  expect(trigger).toHaveAttribute("data-slot", "collapsible-trigger");
 });

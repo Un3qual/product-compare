@@ -1,12 +1,75 @@
 :root {
-  --pc-surface: #ffffff;
-  --pc-text: #111827;
-  --pc-border: #e5e7eb;
+  --pc-surface-canvas: var(--gray-1);
+  --pc-surface-raised: var(--color-panel-solid);
+  --pc-surface-muted: var(--gray-2);
+  --pc-surface-interactive: var(--accent-2);
+  --pc-text-primary: var(--gray-12);
+  --pc-text-secondary: var(--gray-11);
+  --pc-text-subtle: var(--gray-9);
+  --pc-text-inverted: white;
+  --pc-border-quiet: var(--gray-5);
+  --pc-border-standard: var(--gray-6);
+  --pc-border-emphasized: var(--gray-8);
+  --pc-action-accent: var(--accent-9);
+  --pc-action-accent-hover: var(--accent-10);
+  --pc-price-positive: var(--green-11);
+  --pc-coupon: var(--amber-11);
+  --pc-warning: var(--orange-11);
+  --pc-unavailable: var(--gray-10);
+  --pc-page-max: 80rem;
+  --pc-reading-max: 44rem;
+  --pc-nav-height: 4.25rem;
+  --pc-route-space: clamp(1.25rem, 3vw, 2.5rem);
+  --pc-control-height: 2.5rem;
+
+  /* Compatibility aliases while route styles move to semantic tokens. */
+  --pc-surface: var(--pc-surface-canvas);
+  --pc-text: var(--pc-text-primary);
+  --pc-border: var(--pc-border-standard);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--pc-surface-canvas);
 }
 
 body {
   margin: 0;
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  background: var(--pc-surface);
-  color: var(--pc-text);
+  background: var(--pc-surface-canvas);
+  color: var(--pc-text-primary);
+  font-family: var(--default-font-family);
+  min-width: 20rem;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  text-underline-offset: 0.18em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

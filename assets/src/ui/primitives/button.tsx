@@ -1,18 +1,19 @@
-import type { ButtonHTMLAttributes } from "react";
-import { Slot } from "./slot";
+import {
+  Button as RadixButton,
+  type ButtonProps as RadixButtonProps
+} from "@radix-ui/themes";
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  asChild?: boolean;
-};
+type ButtonProps = RadixButtonProps;
 
 export function Button({ asChild = false, type, ...props }: ButtonProps) {
-  const Component = asChild ? Slot : "button";
-
-  if (asChild) {
-    return <Component {...props} data-slot="button" />;
-  }
-
-  return <Component {...props} data-slot="button" type={type ?? "button"} />;
+  return (
+    <RadixButton
+      {...props}
+      asChild={asChild}
+      data-slot="button"
+      type={asChild ? undefined : (type ?? "button")}
+    />
+  );
 }
 
 export type { ButtonProps };

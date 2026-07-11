@@ -14,10 +14,12 @@
     "check": "bun run typecheck && bun run test:unit"
   },
   "dependencies": {
+    "@radix-ui/react-collapsible": "^1.1.16",
     "@radix-ui/react-direction": "^1.1.1",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/themes": "^3.3.0",
     "@stylexjs/stylex": "0.18.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

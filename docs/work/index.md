@@ -167,19 +167,19 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Radix Theme And Shared UI Foundation
+### 1. Shared Application Shell And Home
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Establish Radix Themes, semantic tokens, and reusable page,
-feedback, data, status, and pagination patterns.
+Next action: Apply the shared Radix foundation to responsive navigation and the
+shopper-focused home route.
 Owned paths:
 
-- `assets/package.json`
-- `assets/bun.lock`
-- `assets/src/ui/**`
-- `assets/test/ui/**`
+- `assets/src/ui/components/layout/app-shell.tsx`
+- `assets/src/routes/root.tsx`
+- `assets/test/ui/app-shell.test.tsx`
+- `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
@@ -188,13 +188,14 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/ui`
+- `cd assets && bun x vitest run test/ui/app-shell.test.tsx test/routes/root.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: The shared Radix-backed UI foundation is reusable by every
-route family with green focused verification.
+Exit condition: The responsive shell exposes exact active navigation and the
+home route presents three clear shopper paths while preserving viewer-aware
+destinations.
 
 ## Needs Decision Work
 

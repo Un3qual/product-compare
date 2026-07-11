@@ -1,4 +1,5 @@
 export { Button } from "./button";
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
 export type { ButtonProps } from "./button";
 export { Label } from "./label";
 export { Separator } from "./separator";
