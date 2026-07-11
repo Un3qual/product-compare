@@ -1,4 +1,5 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createApiTokenMutation, {
@@ -15,6 +16,11 @@ import apiTokensRouteQuery, {
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
+import { PageShell } from "../../../ui/components/layout/page-shell";
+import { Pagination } from "../../../ui/components/navigation/pagination";
+import { StatusBadge } from "../../../ui/components/status/status-badge";
+import { Button } from "../../../ui/primitives/button";
+import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -33,6 +39,43 @@ const STATUS_FILTERS = [
   { label: "Active", status: "active" },
   { label: "Revoked", status: "revoked" }
 ] as const;
+
+const styles = stylex.create({
+  createForm: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+    padding: "1.15rem"
+  },
+  list: {
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  item: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
+    paddingBlock: "1.25rem"
+  },
+  token: {
+    display: "grid",
+    gap: "0.85rem"
+  },
+  tokenTitle: {
+    fontSize: "1.2rem",
+    margin: 0
+  },
+  rotateForm: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-3)",
+    display: "grid",
+    gap: "0.75rem",
+    padding: "0.9rem"
+  }
+});
 
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
@@ -260,12 +303,11 @@ export function ApiTokensRoute() {
   }
 
   return (
-    <section>
-      <header>
-        <h1>API tokens</h1>
-        <p>Manage API credentials for command-line tools and automation.</p>
-      </header>
-
+    <PageShell
+      description="Manage API credentials for command-line tools and automation."
+      eyebrow="Account security"
+      title="API tokens"
+    >
       <p aria-live="polite" role="status">
         {viewState.statusMessage}
       </p>
@@ -291,7 +333,7 @@ export function ApiTokensRoute() {
             </ul>
           </nav>
 
-          <form aria-label="Create API token" onSubmit={handleCreate}>
+          <form aria-label="Create API token" onSubmit={handleCreate} {...stylex.props(styles.createForm)}>
             <h2>Create API token</h2>
             <label>
               Label
@@ -313,7 +355,9 @@ export function ApiTokensRoute() {
             <input name="expiresAtPreset" ref={createExpiresAtPresetInputRef} type="hidden" />
             <div>
               {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-                <button
+                <Button
+                  size="1"
+                  variant="soft"
                   key={preset.label}
                   onClick={() => {
                     if (createExpiresAtInputRef.current) {
@@ -329,12 +373,12 @@ export function ApiTokensRoute() {
                   type="button"
                 >
                   {preset.label}
-                </button>
+                </Button>
               ))}
             </div>
-            <button disabled={createSubmitting} type="submit">
+            <Button disabled={createSubmitting} type="submit">
               {createSubmitting ? "Creating API token..." : "Create API token"}
-            </button>
+            </Button>
           </form>
 
           {createError ? <p role="alert">{createError}</p> : null}
@@ -398,7 +442,7 @@ export function ApiTokensRoute() {
           />
         </>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -413,17 +457,12 @@ function ApiTokenPagination({
   hasNextPage: boolean;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
 }) {
-  if (!after && !(hasNextPage && endCursor)) {
-    return null;
-  }
-
   return (
-    <nav aria-label="API token pages">
-      {after ? <Link to={apiTokenPagePath(tokenStatus, null)}>First page</Link> : null}{" "}
-      {hasNextPage && endCursor ? (
-        <Link to={apiTokenPagePath(tokenStatus, endCursor)}>Next page</Link>
-      ) : null}
-    </nav>
+    <Pagination
+      firstHref={after ? apiTokenPagePath(tokenStatus, null) : null}
+      label="API token pages"
+      nextHref={hasNextPage && endCursor ? apiTokenPagePath(tokenStatus, endCursor) : null}
+    />
   );
 }
 
@@ -464,7 +503,7 @@ function RelayApiTokenList({
   tokenQueries: ApiTokenQueryDescriptor[];
 }) {
   return (
-    <ul aria-label="API tokens">
+    <ul aria-label="API tokens" {...stylex.props(styles.list)}>
       {localTokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
@@ -560,7 +599,7 @@ function ApiTokenList({
   tokens: ApiTokenSummary[];
 }) {
   return (
-    <ul aria-label="API tokens">
+    <ul aria-label="API tokens" {...stylex.props(styles.list)}>
       {tokens.map((token) => (
         <ApiTokenListItem
           key={token.id}
@@ -604,9 +643,9 @@ function ApiTokenListItem({
   }
 
   return (
-    <li>
-      <article>
-        <h2>{displayLabel}</h2>
+    <li {...stylex.props(styles.item)}>
+      <article {...stylex.props(styles.token)}>
+        <h2 {...stylex.props(styles.tokenTitle)}>{displayLabel}</h2>
         <ApiTokenDetails token={token} />
         <ApiTokenRowErrors revokeError={revokeError} rotateError={rotateError} />
         <ApiTokenActions
@@ -643,7 +682,11 @@ function ApiTokenDetails({ token }: { token: ApiTokenSummary }) {
       </div>
       <div>
         <dt>Status</dt>
-        <dd>{apiTokenStatusLabel(token)}</dd>
+        <dd>
+          <StatusBadge tone={apiTokenIsActive(token) ? "positive" : "neutral"}>
+            {apiTokenStatusLabel(token)}
+          </StatusBadge>
+        </dd>
       </div>
     </dl>
   );
@@ -692,7 +735,7 @@ function ApiTokenActions({
   return (
     <>
       {tokenActive ? (
-        <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit}>
+        <form aria-label={`Rotate ${displayLabel} API token`} onSubmit={onRotateSubmit} {...stylex.props(styles.rotateForm)}>
           <label>
             {`Replacement label for ${displayLabel}`}
             <input autoComplete="off" name="label" type="text" />
@@ -713,7 +756,9 @@ function ApiTokenActions({
           <input name="expiresAtPreset" ref={rotateExpiresAtPresetInputRef} type="hidden" />
           <div>
             {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-              <button
+              <Button
+                size="1"
+                variant="soft"
                 key={`${token.id}-${preset.label}`}
                 onClick={() => {
                   if (rotateExpiresAtInputRef.current) {
@@ -729,15 +774,16 @@ function ApiTokenActions({
                 type="button"
               >
                 {preset.label}
-              </button>
+              </Button>
             ))}
           </div>
-          <button disabled={lifecyclePending} type="submit">
+          <Button disabled={lifecyclePending} type="submit">
             {rotatePending ? "Rotating token..." : "Rotate token"}
-          </button>
+          </Button>
         </form>
       ) : null}
-      <button
+      <Button
+        color="red"
         disabled={lifecyclePending}
         onClick={() => {
           onRevoke(token.id);
@@ -745,7 +791,7 @@ function ApiTokenActions({
         type="button"
       >
         {revokePending ? "Revoking token..." : "Revoke token"}
-      </button>
+      </Button>
     </>
   );
 }

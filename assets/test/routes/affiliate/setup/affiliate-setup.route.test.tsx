@@ -120,6 +120,7 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   renderAffiliateSetupRoute();
 
   expect(screen.getByRole("heading", { name: "Affiliate setup" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Affiliate setup" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate network" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate program" })).toBeInTheDocument();
 

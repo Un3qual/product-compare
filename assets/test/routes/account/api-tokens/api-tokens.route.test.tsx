@@ -166,6 +166,7 @@ test("API token route prompts unauthenticated users to sign in", () => {
   renderApiTokensRoute();
 
   expect(screen.getByRole("heading", { name: "API tokens" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "API tokens" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent("Sign in to manage API tokens.");
   expect(screen.getByRole("link", { name: "Sign in to manage API tokens" })).toHaveAttribute(
     "href",

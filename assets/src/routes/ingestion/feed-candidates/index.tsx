@@ -1,4 +1,5 @@
 import { Suspense, useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import merchantFeedCandidatesRouteQuery, {
@@ -10,6 +11,12 @@ import reviewMerchantFeedCandidateMutation, {
 } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
+import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../../ui/components/layout/page-shell";
+import { Pagination } from "../../../ui/components/navigation/pagination";
+import { StatusBadge } from "../../../ui/components/status/status-badge";
+import { Button } from "../../../ui/primitives/button";
+import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData
@@ -31,14 +38,58 @@ const reviewedAtFormatter = new Intl.DateTimeFormat("en-US", {
   timeStyle: "short"
 });
 
+const styles = stylex.create({
+  controls: {
+    alignItems: "end",
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "1rem",
+    padding: "1rem"
+  },
+  summary: {
+    display: "grid",
+    gap: "0.75rem",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    margin: 0
+  },
+  summaryItem: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-3)",
+    display: "grid",
+    gap: "0.25rem",
+    padding: "0.8rem"
+  },
+  list: {
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  item: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
+    display: "grid",
+    gap: "0.65rem",
+    paddingBlock: "1.25rem"
+  },
+  actions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.65rem"
+  }
+});
+
 export function FeedCandidatesRoute() {
   const loaderData = useLoaderData<typeof feedCandidatesLoader>() as FeedCandidatesLoaderData;
 
   return (
-    <section>
-      <header>
-        <h1>CJ feed candidates</h1>
-      </header>
+    <PageShell
+      description="Review merchant feed candidates with the fit, market, and review context needed to make a confident decision."
+      eyebrow="Ingestion operations"
+      title="CJ feed candidates"
+    >
       <FeedCandidatesControls pagination={loaderData.pagination} />
 
       {loaderData.status === "error" ? (
@@ -48,7 +99,7 @@ export function FeedCandidatesRoute() {
           fallback={<FeedCandidatesUnavailableFallback />}
           resetToken={loaderData.query}
         >
-          <Suspense fallback={<p role="status">Loading feed candidates...</p>}>
+          <Suspense fallback={<FeedbackState kind="loading" title="Loading feed candidates..." />}>
             <FeedCandidatesPanel
               pagination={loaderData.pagination}
               query={loaderData.query}
@@ -56,7 +107,7 @@ export function FeedCandidatesRoute() {
           </Suspense>
         </ResettableErrorBoundary>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -74,6 +125,7 @@ function FeedCandidatesControls({
       action="/ingestion/feed-candidates"
       key={`${pagination.first}:${reviewStatusParam}:${sortParam}`}
       method="get"
+      {...stylex.props(styles.controls)}
     >
       <input name="first" type="hidden" value={pagination.first} />
       <label>
@@ -100,7 +152,7 @@ function FeedCandidatesControls({
           <option value="last_seen_desc">Last seen</option>
         </select>
       </label>
-      <button type="submit">Apply</button>
+      <Button type="submit">Apply</Button>
     </form>
   );
 }
@@ -208,21 +260,21 @@ function FeedCandidatesList({
 
   return (
     <>
-      <dl aria-label="CJ feed candidate review summary">
-        <div>
+      <dl aria-label="CJ feed candidate review summary" {...stylex.props(styles.summary)}>
+        <div {...stylex.props(styles.summaryItem)}>
           <dt>Pending</dt>
           <dd>{reviewCounts.pending}</dd>
         </div>
-        <div>
+        <div {...stylex.props(styles.summaryItem)}>
           <dt>Shortlisted</dt>
           <dd>{reviewCounts.shortlisted}</dd>
         </div>
-        <div>
+        <div {...stylex.props(styles.summaryItem)}>
           <dt>Dismissed</dt>
           <dd>{reviewCounts.dismissed}</dd>
         </div>
       </dl>
-      <ul aria-label="CJ feed candidates">
+      <ul aria-label="CJ feed candidates" {...stylex.props(styles.list)}>
         {candidates.map((candidate) => (
           <FeedCandidateListItem
             candidate={candidate}
@@ -235,18 +287,21 @@ function FeedCandidatesList({
         ))}
       </ul>
       {reviewFeedback ? <p role="status">{reviewFeedback}</p> : null}
-      {connection.pageInfo.hasPreviousPage && pagination.after ? (
-        <p>
-          <Link to={feedCandidatesFirstPagePath(pagination)}>First candidates</Link>
-        </p>
-      ) : null}
-      {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
-        <p>
-          <Link to={feedCandidatesNextPagePath(pagination, connection.pageInfo.endCursor)}>
-            Next candidates
-          </Link>
-        </p>
-      ) : null}
+      <Pagination
+        firstHref={
+          connection.pageInfo.hasPreviousPage && pagination.after
+            ? feedCandidatesFirstPagePath(pagination)
+            : null
+        }
+        firstLabel="First candidates"
+        label="Feed candidate pages"
+        nextHref={
+          connection.pageInfo.hasNextPage && connection.pageInfo.endCursor
+            ? feedCandidatesNextPagePath(pagination, connection.pageInfo.endCursor)
+            : null
+        }
+        nextLabel="Next candidates"
+      />
     </>
   );
 }
@@ -270,7 +325,7 @@ function FeedCandidateListItem({
   const fitReasons = candidateFitReasons(candidate);
 
   return (
-    <li>
+    <li {...stylex.props(styles.item)}>
       <h2>{candidateName}</h2>
       <p>{candidate.feedName ?? "Unnamed feed"}</p>
       <p>{formatProductCount(candidate.productCount)}</p>
@@ -282,7 +337,9 @@ function FeedCandidateListItem({
           ))}
         </ul>
       ) : null}
-      <p>{formatReviewStatus(candidate.reviewStatus)}</p>
+      <StatusBadge tone={reviewStatusTone(candidate.reviewStatus)}>
+        {formatReviewStatus(candidate.reviewStatus)}
+      </StatusBadge>
       <dl>
         {candidate.advertiserCountry ? (
           <>
@@ -312,31 +369,33 @@ function FeedCandidateListItem({
           value={reviewNoteValue}
         />
       </label>
-      <div>
-        <button
+      <div {...stylex.props(styles.actions)}>
+        <Button
           aria-label={`Shortlist ${candidateName}`}
           disabled={isReviewInFlight}
           onClick={() => onReview(candidate, "SHORTLISTED")}
           type="button"
         >
           Shortlist
-        </button>
-        <button
+        </Button>
+        <Button
+          color="red"
           aria-label={`Dismiss ${candidateName}`}
           disabled={isReviewInFlight}
           onClick={() => onReview(candidate, "DISMISSED")}
           type="button"
         >
           Dismiss
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="soft"
           aria-label={`Reset ${candidateName}`}
           disabled={isReviewInFlight}
           onClick={() => onReview(candidate, "PENDING")}
           type="button"
         >
           Reset
-        </button>
+        </Button>
       </div>
     </li>
   );
@@ -508,6 +567,18 @@ function formatReviewStatus(reviewStatus: string | null | undefined) {
     default:
       return "Pending";
   }
+}
+
+function reviewStatusTone(reviewStatus: string | null | undefined) {
+  if (reviewStatus === "SHORTLISTED") {
+    return "positive" as const;
+  }
+
+  if (reviewStatus === "DISMISSED") {
+    return "neutral" as const;
+  }
+
+  return "warning" as const;
 }
 
 function countByReviewStatus(candidates: ReadonlyArray<FeedCandidate>) {

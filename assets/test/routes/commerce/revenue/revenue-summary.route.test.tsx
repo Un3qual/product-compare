@@ -112,6 +112,9 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(
     screen.getByRole("heading", { name: "Revenue reporting preview" })
   ).toBeInTheDocument();
+  expect(
+    screen.getByRole("region", { name: "Revenue reporting preview" })
+  ).toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });

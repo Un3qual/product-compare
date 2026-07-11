@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
@@ -6,6 +7,10 @@ import revenueSummaryRouteQuery, {
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
+import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../../ui/components/layout/page-shell";
+import { Button } from "../../../ui/primitives/button";
+import { tokens } from "../../../ui/theme/tokens.stylex";
 import { revenueSummaryLoader, type RevenueSummaryLoaderData } from "./loader";
 
 type RevenueSummary = NonNullable<RevenueSummaryRouteQuery["response"]["revenueSummary"]>;
@@ -14,19 +19,45 @@ type RevenueSummaryMetric = {
   value: string;
 };
 
+const styles = stylex.create({
+  filters: {
+    alignItems: "end",
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
+    padding: "1rem"
+  },
+  metrics: {
+    display: "grid",
+    gap: "0.75rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))",
+    margin: 0
+  },
+  metric: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-3)",
+    display: "grid",
+    gap: "0.35rem",
+    padding: "1rem"
+  },
+  metricValue: {
+    fontSize: "1.2rem",
+    fontWeight: 750,
+    margin: 0
+  }
+});
+
 export function RevenueSummaryRoute() {
   const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
 
   return (
-    <section>
-      <header>
-        <h1>Revenue reporting preview</h1>
-        <p>
-          This preview summarizes recorded attribution data. A live conversion provider is not
-          connected for this milestone.
-        </p>
-      </header>
-
+    <PageShell
+      description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
+      eyebrow="Commerce analytics"
+      title="Revenue reporting preview"
+    >
       <RevenueSummaryFilterForm
         key={revenueSummaryFilterKey(loaderData.filters)}
         filters={loaderData.filters}
@@ -45,12 +76,12 @@ export function RevenueSummaryRoute() {
           fallback={<RevenueSummaryUnavailableFallback />}
           resetToken={loaderData.query}
         >
-          <Suspense fallback={<p role="status">Loading revenue summary...</p>}>
+          <Suspense fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}>
             <RevenueSummaryPanel query={loaderData.query} />
           </Suspense>
         </ResettableErrorBoundary>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -60,7 +91,7 @@ function RevenueSummaryFilterForm({
   filters: RevenueSummaryLoaderData["filters"];
 }) {
   return (
-    <form method="get" aria-label="Revenue filters">
+    <form method="get" aria-label="Revenue filters" {...stylex.props(styles.filters)}>
       <label>
         Network
         <input
@@ -88,7 +119,7 @@ function RevenueSummaryFilterForm({
         To
         <input defaultValue={filters.to ?? ""} name="to" type="date" />
       </label>
-      <button type="submit">Apply filters</button>
+      <Button type="submit">Apply filters</Button>
       <Link to="/commerce/revenue">Clear filters</Link>
     </form>
   );
@@ -175,11 +206,11 @@ function RevenueSummaryMetrics({ summary }: { summary: RevenueSummary }) {
           match the current filters.
         </p>
       ) : null}
-      <dl>
+      <dl {...stylex.props(styles.metrics)}>
         {metrics.map((metric) => (
-          <div key={metric.label}>
+          <div key={metric.label} {...stylex.props(styles.metric)}>
             <dt>{metric.label}</dt>
-            <dd>{metric.value}</dd>
+            <dd {...stylex.props(styles.metricValue)}>{metric.value}</dd>
           </div>
         ))}
       </dl>

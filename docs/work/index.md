@@ -167,23 +167,25 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Operational Routes
+### 1. Authentication Routes
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Apply the shared Radix foundation to affiliate setup, revenue,
-feed-candidate review, and API-token workspaces.
+Next action: Apply the shared Radix form and feedback foundation across login,
+logout, registration, password recovery/reset, and email verification.
 Owned paths:
 
-- `assets/src/routes/affiliate/setup/index.tsx`
-- `assets/src/routes/commerce/revenue/index.tsx`
-- `assets/src/routes/ingestion/feed-candidates/index.tsx`
-- `assets/src/routes/account/api-tokens/index.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `assets/src/routes/auth/form-shell.tsx`
+- `assets/src/routes/auth/login.tsx`
+- `assets/src/routes/auth/logout.tsx`
+- `assets/src/routes/auth/register.tsx`
+- `assets/src/routes/auth/forgot-password.tsx`
+- `assets/src/routes/auth/reset-password.tsx`
+- `assets/src/routes/auth/verify-email.tsx`
+- `assets/test/routes/auth/form-shell.test.tsx`
+- `assets/test/routes/auth/session.route.test.tsx`
+- `assets/test/routes/auth/recovery.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
@@ -192,14 +194,14 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/auth/form-shell.test.tsx test/routes/auth/session.route.test.tsx test/routes/auth/recovery.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: Affiliate setup, revenue, feed-candidate review, and API-token
-workspaces use readable control bands, explicit status hierarchy, structured
-records, and scoped Radix actions without changing operational behavior.
+Exit condition: Every authentication route uses one narrow Radix-backed form
+composition with consistent fields, actions, feedback, and recovery links
+while preserving all session and recovery behavior.
 
 ## Needs Decision Work
 

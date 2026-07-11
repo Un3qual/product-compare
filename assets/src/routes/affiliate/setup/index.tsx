@@ -1,4 +1,5 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createCouponMutation, {
@@ -18,6 +19,10 @@ import affiliateSetupRouteQuery, {
 } from "../../../__generated__/AffiliateSetupRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/resettable-error-boundary";
+import { FeedbackState } from "../../../ui/components/feedback/feedback-state";
+import { PageShell } from "../../../ui/components/layout/page-shell";
+import { Button } from "../../../ui/primitives/button";
+import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -56,15 +61,29 @@ type AffiliateSetupMerchantConnection = NonNullable<
   AffiliateSetupRouteQuery["response"]["merchants"]
 >;
 
+const styles = stylex.create({
+  form: {
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--radius-4)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+    padding: "1.15rem"
+  }
+});
+
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
 
   return (
-    <section>
-      <header>
-        <h1>Affiliate setup</h1>
-      </header>
-
+    <PageShell
+      description="Configure the networks, merchant programs, tracked links, and coupons that power affiliate commerce."
+      eyebrow="Commerce operations"
+      title="Affiliate setup"
+    >
       {loaderData.status === "error" ? (
         <AffiliateSetupUnavailableFallback />
       ) : (
@@ -72,12 +91,12 @@ export function AffiliateSetupRoute() {
           fallback={<AffiliateSetupUnavailableFallback />}
           resetToken={loaderData.merchantQuery}
         >
-          <Suspense fallback={<p role="status">Loading affiliate setup...</p>}>
+          <Suspense fallback={<FeedbackState kind="loading" title="Loading affiliate setup..." />}>
             <AffiliateSetupPanel merchantQuery={loaderData.merchantQuery} />
           </Suspense>
         </ResettableErrorBoundary>
       )}
-    </section>
+    </PageShell>
   );
 }
 
@@ -275,15 +294,15 @@ function AffiliateSetupPanel({
 
   return (
     <>
-      <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit}>
+      <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit} {...stylex.props(styles.form)}>
         <h2>Network</h2>
         <label>
           Network name
           <input autoComplete="off" name="networkName" type="text" />
         </label>
-        <button disabled={networkPending} type="submit">
+        <Button disabled={networkPending} type="submit">
           Save network
-        </button>
+        </Button>
         {networkError ? <p role="alert">{networkError}</p> : null}
         {networkResult ? (
           <section aria-label="Affiliate network result">
@@ -296,7 +315,7 @@ function AffiliateSetupPanel({
       {merchantChoices.length === 0 ? (
         <p role="status">No merchants available for affiliate setup yet.</p>
       ) : (
-        <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit}>
+        <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit} {...stylex.props(styles.form)}>
           <h2>Program</h2>
           {selectedMerchantSummary ? (
             <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
@@ -333,9 +352,9 @@ function AffiliateSetupPanel({
             Program status
             <input autoComplete="off" name="programStatus" type="text" />
           </label>
-          <button disabled={programPending} type="submit">
+          <Button disabled={programPending} type="submit">
             Save program
-          </button>
+          </Button>
           {programError ? <p role="alert">{programError}</p> : null}
           {programResult ? (
             <section aria-label="Affiliate program result">
@@ -347,7 +366,7 @@ function AffiliateSetupPanel({
         </form>
       )}
 
-      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit}>
+      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit} {...stylex.props(styles.form)}>
         <h2>Link</h2>
         {selectedMerchantSummary ? (
           <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
@@ -372,9 +391,9 @@ function AffiliateSetupPanel({
           Last verified at
           <input name="lastVerifiedAt" type="datetime-local" />
         </label>
-        <button disabled={linkPending} type="submit">
+        <Button disabled={linkPending} type="submit">
           Save link
-        </button>
+        </Button>
         {linkError ? <p role="alert">{linkError}</p> : null}
         {linkResult ? (
           <section aria-label="Affiliate link result">
@@ -385,7 +404,7 @@ function AffiliateSetupPanel({
       </form>
 
       {merchantChoices.length === 0 ? null : (
-        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit}>
+        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit} {...stylex.props(styles.form)}>
           <h2>Coupon</h2>
           {selectedMerchantSummary ? (
             <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
@@ -445,9 +464,9 @@ function AffiliateSetupPanel({
             Terms
             <input autoComplete="off" name="terms" type="text" />
           </label>
-          <button disabled={couponPending} type="submit">
+          <Button disabled={couponPending} type="submit">
             Create coupon
-          </button>
+          </Button>
           {couponError ? <p role="alert">{couponError}</p> : null}
           {couponResult ? <CouponResultPanel coupon={couponResult} /> : null}
         </form>

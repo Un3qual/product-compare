@@ -175,9 +175,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 6: Operational Routes
+## Batch 6: Operational Routes
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/routes/affiliate/setup/index.tsx`
@@ -200,6 +200,42 @@ Verification:
 Exit condition: affiliate setup, revenue, feed-candidate review, and API-token
 workspaces use readable control bands, explicit status hierarchy, structured
 records, and scoped Radix actions without changing operational behavior.
+
+Completion evidence:
+
+- RED: all four focused operational suites failed on absent labeled page
+  regions while their existing behavior assertions remained green.
+- GREEN: the focused operational suites passed 4 files and 84 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 7: Authentication Routes
+
+Status: active
+Owned paths:
+
+- `assets/src/routes/auth/form-shell.tsx`
+- `assets/src/routes/auth/login.tsx`
+- `assets/src/routes/auth/logout.tsx`
+- `assets/src/routes/auth/register.tsx`
+- `assets/src/routes/auth/forgot-password.tsx`
+- `assets/src/routes/auth/reset-password.tsx`
+- `assets/src/routes/auth/verify-email.tsx`
+- `assets/test/routes/auth/form-shell.test.tsx`
+- `assets/test/routes/auth/session.route.test.tsx`
+- `assets/test/routes/auth/recovery.route.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/auth/form-shell.test.tsx test/routes/auth/session.route.test.tsx test/routes/auth/recovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: every authentication route uses one narrow Radix-backed form
+composition with consistent fields, actions, feedback, and recovery links
+while preserving all session and recovery behavior.
 
 ## Dependent Batches
 
