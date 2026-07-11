@@ -323,6 +323,8 @@ findings. The follow-up now:
 - uses a Radix Themes horizontal `ScrollArea` for the comparison matrix instead
   of a focusable section with redundant landmark attributes;
 - exposes compared-product actions as named navigation landmarks;
+- replaces generic home action groups with a named section and navigation
+  landmarks;
 - preserves loader-backed URL navigation when comparison tabs are clicked;
 - removes unused router imports and reduces the catalog filter JSX depth; and
 - fixes all outside-diff Markdown list-spacing annotations in the implementation

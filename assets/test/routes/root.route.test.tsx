@@ -251,7 +251,7 @@ test("root route renders guest home actions as links while using the shared butt
     "aria-current",
     "page"
   );
-  const homeActions = screen.getByRole("group", { name: "Home actions" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
   const shopperPaths = within(homeActions).getByRole("list", { name: "Shopper paths" });
 
   expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
@@ -305,7 +305,7 @@ test("root route focuses the home content on the shopper journey", async () => {
     screen.queryByText(/GraphQL-backed browser auth flows/i)
   ).not.toBeInTheDocument();
 
-  const shopperActions = screen.getByRole("group", { name: "Shopper actions" });
+  const shopperActions = screen.getByRole("navigation", { name: "Shopper actions" });
 
   expect(within(shopperActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
@@ -339,7 +339,11 @@ test("root route renders authenticated home actions", async () => {
   renderRootRoute(authenticatedLoaderData);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  const homeActions = screen.getByRole("group", { name: "Home actions" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+
+  expect(
+    within(homeActions).getByRole("navigation", { name: "More Product Compare actions" })
+  ).toBeInTheDocument();
 
   expect(within(homeActions).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",

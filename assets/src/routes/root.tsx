@@ -166,8 +166,8 @@ export function RootRoute() {
       title="Product Compare"
       width="reading"
     >
-      <div aria-label="Home actions" role="group" {...props(styles.actionGroups)}>
-        <div aria-label="Shopper actions" role="group" {...props(styles.actions)}>
+      <section aria-label="Home actions" {...props(styles.actionGroups)}>
+        <nav aria-label="Shopper actions" {...props(styles.actions)}>
           <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
             {SHOPPER_DESTINATIONS.map(({ label, to }) => (
               <li key={to} {...props(styles.shopperPath)}>
@@ -180,10 +180,9 @@ export function RootRoute() {
               </li>
             ))}
           </ul>
-        </div>
-        <div
+        </nav>
+        <nav
           aria-label="More Product Compare actions"
-          role="group"
           {...props(styles.actions, styles.secondaryActions)}
         >
           <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} variant="soft" />
@@ -191,8 +190,8 @@ export function RootRoute() {
             <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="soft" />
           ) : null}
           <AuthLinks viewer={viewer} />
-        </div>
-      </div>
+        </nav>
+      </section>
     </PageShell>
   );
 }
