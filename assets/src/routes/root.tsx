@@ -11,6 +11,10 @@ import { AppProviders } from "../ui/providers/app-providers";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 
 const styles = stylex.create({
+  actionGroups: {
+    display: "grid",
+    gap: "1.25rem"
+  },
   home: {
     display: "grid",
     gap: "1rem",
@@ -128,36 +132,39 @@ export function RootRoute() {
     <section {...stylex.props(styles.home)}>
       <div>
         <h1>Product Compare</h1>
-        <p>GraphQL-backed browser auth flows now live alongside the frontend routes.</p>
+        <p>
+          Find products, compare specifications, and review current offers before you choose what
+          to buy.
+        </p>
       </div>
-      <div aria-label="Home actions" role="group" {...stylex.props(styles.actions)}>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/products">Browse products</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/merchants">Merchants</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/affiliate/setup">Affiliate setup</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/offers">Offers</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/compare">Compare products</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/compare/saved">Saved comparisons</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/commerce/revenue">Revenue</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/account/api-tokens">API tokens</Link>
-        </Button>
-        <AuthLinks viewer={viewer} />
+      <div aria-label="Home actions" role="group" {...stylex.props(styles.actionGroups)}>
+        <div aria-label="Shopper actions" role="group" {...stylex.props(styles.actions)}>
+          <DestinationLink label="Browse products" to="/products" />
+          <DestinationLink label="Compare products" to="/compare" />
+          <DestinationLink label="Review offers" to="/offers" />
+        </div>
+        <div
+          aria-label="More Product Compare actions"
+          role="group"
+          {...stylex.props(styles.actions)}
+        >
+          <DestinationLink label="Merchants" to="/merchants" />
+          <DestinationLink label="Affiliate setup" to="/affiliate/setup" />
+          <DestinationLink label="Saved comparisons" to="/compare/saved" />
+          <DestinationLink label="Revenue" to="/commerce/revenue" />
+          <DestinationLink label="API tokens" to="/account/api-tokens" />
+          <AuthLinks viewer={viewer} />
+        </div>
       </div>
     </section>
+  );
+}
+
+function DestinationLink({ label, to }: { label: string; to: string }) {
+  return (
+    <Button asChild {...stylex.props(styles.link)}>
+      <Link to={to}>{label}</Link>
+    </Button>
   );
 }
 

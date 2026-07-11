@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: ready (viewer-aware navigation; shopper home content complete)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-10 against `assets/src/routes/root.tsx` and
@@ -15,18 +15,15 @@
 
 ## Verified Current Gaps
 
-- The home introduction says `GraphQL-backed browser auth flows now live
-  alongside the frontend routes`, which exposes implementation status rather
-  than the shopper outcome.
 - Home actions and primary navigation currently show Saved comparisons,
   Affiliate setup, Revenue, and API tokens to guests even though those surfaces
   use authenticated contracts or account-oriented workflows.
-- Existing tests explicitly lock the viewer-agnostic links, so both batches
-  start with focused RED coverage before behavior changes.
+- Existing tests still lock viewer-agnostic destination visibility, so the
+  remaining batch starts with focused RED coverage before behavior changes.
 
 ## Ready Batch 1: Shopper-Focused Home Content
 
-Status: ready
+Status: done
 Plan: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
 Owned paths:
 
@@ -42,6 +39,17 @@ Verification:
 
 Exit condition: The root page communicates and prioritizes the browse, compare,
 and offer-review journey without changing route data or authorization.
+
+Completion evidence:
+
+- RED: `cd assets && bun x vitest run test/routes/root.route.test.tsx` failed
+  with 1 expected failure because shopper copy and the `Shopper actions` group
+  did not exist.
+- GREEN: the same focused suite passed 9 tests, `cd assets && bun run
+  typecheck` exited 0, and `git diff --check` exited 0.
+- The root page now describes finding products, comparing specifications, and
+  reviewing current offers, with primary shopper actions separated from
+  secondary destinations.
 
 ## Ready Batch 2: Viewer-Aware Navigation
 

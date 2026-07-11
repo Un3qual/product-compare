@@ -247,7 +247,7 @@ test("root route renders guest home actions as links while using the shared butt
     "href",
     "/affiliate/setup"
   );
-  expect(within(homeActions).getByRole("link", { name: "Offers" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
     "href",
     "/offers"
   );
@@ -261,6 +261,33 @@ test("root route renders guest home actions as links while using the shared butt
   );
   expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
+});
+
+test("root route focuses the home content on the shopper journey", async () => {
+  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
+  renderRootRoute(guestLoaderData);
+
+  expect(await screen.findByText(/find products/i)).toBeInTheDocument();
+  expect(screen.getByText(/compare specifications/i)).toBeInTheDocument();
+  expect(screen.getByText(/review current offers/i)).toBeInTheDocument();
+  expect(
+    screen.queryByText(/GraphQL-backed browser auth flows/i)
+  ).not.toBeInTheDocument();
+
+  const shopperActions = screen.getByRole("group", { name: "Shopper actions" });
+
+  expect(within(shopperActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+  expect(within(shopperActions).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "href",
+    "/compare"
+  );
+  expect(within(shopperActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
+    "href",
+    "/offers"
+  );
 });
 
 test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {
