@@ -405,10 +405,15 @@ function CreateApiTokenForm({
   return (
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
       <h2>Create API token</h2>
-      <label htmlFor="api-token-label">
-        Label
-        <TextField autoComplete="off" id="api-token-label" name="label" type="text" />
-      </label>
+      <div>
+        <span id="api-token-label">Label</span>
+        <TextField
+          aria-labelledby="api-token-label"
+          autoComplete="off"
+          name="label"
+          type="text"
+        />
+      </div>
       <label>
         Expires at
         <input

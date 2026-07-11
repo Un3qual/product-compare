@@ -201,14 +201,14 @@ function SavedComparisonControls({
 }) {
   return (
     <div {...props(styles.controls)}>
-      <label htmlFor="saved-comparison-filter">
-        Filter saved comparisons
+      <div>
+        <span id="saved-comparison-filter-label">Filter saved comparisons</span>
         <TextField
-          id="saved-comparison-filter"
+          aria-labelledby="saved-comparison-filter-label"
           onChange={(event) => onFilterTextChange(event.target.value)}
           value={filterText}
         />
-      </label>
+      </div>
       <label>
         Sort saved comparisons
         <select

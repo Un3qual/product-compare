@@ -2164,15 +2164,22 @@ test("ready compare page renders specification mode tabs with stable URL state",
   for (const tab of screen.getAllByRole("tab")) {
     const panelId = tab.getAttribute("aria-controls");
 
-    expect(panelId).toBeTruthy();
-    expect(document.getElementById(panelId!)).toHaveAttribute("role", "tabpanel");
+    if (!panelId) {
+      throw new Error("Expected every specification mode tab to control a panel");
+    }
+
+    expect(document.getElementById(panelId)).toHaveAttribute("role", "tabpanel");
   }
 
   const activePanelId = screen
     .getByRole("tab", { name: "Differences" })
     .getAttribute("aria-controls");
 
-  expect(document.getElementById(activePanelId!)).not.toHaveAttribute("hidden");
+  if (!activePanelId) {
+    throw new Error("Expected the active specification mode tab to control a panel");
+  }
+
+  expect(document.getElementById(activePanelId)).not.toHaveAttribute("hidden");
 });
 
 test("specification mode tab clicks navigate to loader-backed URL state", () => {
