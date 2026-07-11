@@ -405,9 +405,9 @@ function CreateApiTokenForm({
   return (
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
       <h2>Create API token</h2>
-      <label>
+      <label htmlFor="api-token-label">
         Label
-        <TextField autoComplete="off" name="label" type="text" />
+        <TextField autoComplete="off" id="api-token-label" name="label" type="text" />
       </label>
       <label>
         Expires at
@@ -530,18 +530,20 @@ function RelayApiTokenList(props: RelayApiTokenListProps) {
   );
 }
 
-function RelayApiTokenListContent({
-  apiTokenUpdates,
-  localTokens,
-  onRotate,
-  onRevoke,
-  pendingRevokeIds,
-  pendingRotateIds,
-  revokeErrorsByTokenId,
-  rotateErrorsByTokenId,
-  tokenStatus,
-  tokenQueries
-}: RelayApiTokenListProps) {
+function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
+  const {
+    apiTokenUpdates,
+    localTokens,
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+    tokenStatus,
+    tokenQueries
+  } = relayProps;
+
   return (
     <ul aria-label="API tokens" {...props(styles.list)}>
       {localTokens.map((token) => (

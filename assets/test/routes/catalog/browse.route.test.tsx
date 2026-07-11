@@ -1137,6 +1137,35 @@ test("renders metadata-backed catalog filter controls", () => {
   expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
 });
 
+test("keeps active advanced filters in the form while the controls are collapsed", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        useCaseTaxonIds: ["use-gaming"],
+        numeric: [{ attributeId: "attr-refresh", min: "120", max: "240" }],
+        booleans: [{ attributeId: "attr-wireless", value: true }],
+        enums: [{ attributeId: "attr-color", enumOptionId: "enum-red" }]
+      }
+    }),
+    metadataData: buildProductFilterMetadataResponse({ selected: true })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.queryByRole("group", { name: "Use cases" })).not.toBeInTheDocument();
+
+  const formData = new FormData(filterForm);
+
+  expect(formData.getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
+  expect(formData.get("numeric.attr-refresh.min")).toBe("120");
+  expect(formData.get("numeric.attr-refresh.max")).toBe("240");
+  expect(formData.get("boolean.attr-wireless")).toBe("true");
+  expect(formData.get("enum.attr-color")).toBe("enum-red");
+});
+
 test("omits the default catalog sort until an explicit sort is selected", () => {
   renderBrowseRouteWithRelayData();
 

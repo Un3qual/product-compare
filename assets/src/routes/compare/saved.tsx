@@ -201,9 +201,10 @@ function SavedComparisonControls({
 }) {
   return (
     <div {...props(styles.controls)}>
-      <label>
+      <label htmlFor="saved-comparison-filter">
         Filter saved comparisons
         <TextField
+          id="saved-comparison-filter"
           onChange={(event) => onFilterTextChange(event.target.value)}
           value={filterText}
         />

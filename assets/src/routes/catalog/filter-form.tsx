@@ -119,7 +119,11 @@ export function CatalogFilterForm({
         <CollapsibleTrigger asChild>
           <Button variant="soft">Advanced filters</Button>
         </CollapsibleTrigger>
-        <CollapsibleContent {...props(styles.advanced)}>
+        <CollapsibleContent
+          forceMount
+          hidden={!advancedOpen}
+          {...props(styles.advanced)}
+        >
           <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
           <NumericFiltersFieldset filters={filters} metadata={metadata} />
           <BooleanFiltersFieldset filters={filters} metadata={metadata} />
