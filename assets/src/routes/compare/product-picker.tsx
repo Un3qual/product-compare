@@ -1,14 +1,41 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useLazyLoadQuery } from "react-relay";
 import compareProductPickerQuery, {
   type CompareProductPickerQuery
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 import { buildComparePathFromSlugs } from "./paths";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
+
+const styles = stylex.create({
+  picker: {
+    display: "grid",
+    gap: "1rem"
+  },
+  title: {
+    fontSize: "1.25rem",
+    margin: 0
+  },
+  option: {
+    display: "grid",
+    gap: "0.35rem"
+  },
+  optionTitle: {
+    margin: 0
+  },
+  metadata: {
+    color: tokens.textSecondary,
+    margin: 0
+  }
+});
 
 type ComparePickerProduct =
   CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
@@ -27,9 +54,9 @@ export function CompareProductPickerBoundary({
   return (
     <ResettableErrorBoundary
       resetToken={resetToken}
-      fallback={<p role="alert">Product picker unavailable.</p>}
+      fallback={<FeedbackState kind="error" title="Product picker unavailable." />}
     >
-      <Suspense fallback={<p role="status">Loading products...</p>}>
+      <Suspense fallback={<FeedbackState kind="loading" title="Loading products..." />}>
         <CompareProductPicker
           heading={heading}
           key={resetToken}
@@ -76,8 +103,8 @@ function CompareProductPicker({
   }
 
   return (
-    <section>
-      <h2>{heading}</h2>
+    <section {...stylex.props(styles.picker)}>
+      <h2 {...stylex.props(styles.title)}>{heading}</h2>
       <CompareProductPickerOptions
         availableProducts={availableProducts}
         specMode={specMode}
@@ -121,17 +148,25 @@ function CompareProductPickerOptions({
   }
 
   return (
-    <ul>
+    <DataList label="Products available to compare">
       {availableProducts.map((product) => (
-        <li key={product.id}>
-          <h3>{product.name}</h3>
-          <p>{product.brand.name}</p>
-          <Link to={buildComparePath(selectedSlugs, product.slug, specMode)}>
-            Compare {product.name}
-          </Link>
-        </li>
+        <DataListItem
+          actions={
+            <Button asChild variant="soft">
+              <Link to={buildComparePath(selectedSlugs, product.slug, specMode)}>
+                Compare {product.name}
+              </Link>
+            </Button>
+          }
+          key={product.id}
+        >
+          <div {...stylex.props(styles.option)}>
+            <h3 {...stylex.props(styles.optionTitle)}>{product.name}</h3>
+            <p {...stylex.props(styles.metadata)}>{product.brand.name}</p>
+          </div>
+        </DataListItem>
       ))}
-    </ul>
+    </DataList>
   );
 }
 
@@ -147,14 +182,14 @@ function ShowMoreProductsButton({
   }
 
   return (
-    <button
+    <Button
       onClick={() => {
         onShowMore(nextCursor);
       }}
       type="button"
     >
       Show more products
-    </button>
+    </Button>
   );
 }
 

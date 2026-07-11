@@ -1,4 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from "react";
+import * as Tabs from "@radix-ui/react-tabs";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import createSavedComparisonSetMutation, {
@@ -7,6 +9,9 @@ import createSavedComparisonSetMutation, {
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/resettable-error-boundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -40,6 +45,31 @@ const COMPARE_SPEC_MODE_OPTIONS: Array<{
   { label: "Differences", mode: "differences" },
   { label: "All specs", mode: "all" }
 ];
+
+const styles = stylex.create({
+  tabList: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
+    display: "flex",
+    gap: "0.25rem",
+    overflowX: "auto"
+  },
+  tab: {
+    borderBlockEndColor: "transparent",
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "2px",
+    color: tokens.textSecondary,
+    fontWeight: 650,
+    paddingBlock: "0.65rem",
+    paddingInline: "0.9rem",
+    textDecoration: "none"
+  },
+  tabActive: {
+    borderBlockEndColor: tokens.actionAccent,
+    color: tokens.text
+  }
+});
 
 interface SaveFeedbackState {
   error: string | null;
@@ -191,9 +221,9 @@ export function CompareRoute() {
     return (
       <CompareShell
         actions={
-          <button disabled={saveInFlight} onClick={handleSave} type="button">
+          <Button disabled={saveInFlight} onClick={handleSave} type="button">
             {saveInFlight ? "Saving comparison..." : "Save comparison"}
-          </button>
+          </Button>
         }
         title="Compare products"
       >
@@ -201,7 +231,9 @@ export function CompareRoute() {
         <p aria-label="Save comparison status" aria-live="polite" role="status">
           {activeSaveFeedback.message ?? ""}
         </p>
-        {activeSaveFeedback.error ? <p role="alert">{activeSaveFeedback.error}</p> : null}
+        {activeSaveFeedback.error ? (
+          <FeedbackState kind="error" title={activeSaveFeedback.error} />
+        ) : null}
         <CompareSelectionTray
           items={loaderData.products.map((product) => ({
             label: product.name,
@@ -226,12 +258,12 @@ export function CompareRoute() {
           resetToken={loaderData.query}
           fallback={
             <>
-              <p role="alert">Comparison details unavailable.</p>
+              <FeedbackState kind="error" title="Comparison details unavailable." />
               <CompareProductSummaryList products={loaderData.products} />
             </>
           }
         >
-          <Suspense fallback={<p role="status">Loading comparison...</p>}>
+          <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
             <CompareProductList loaderData={loaderData} />
           </Suspense>
         </ResettableErrorBoundary>
@@ -255,10 +287,13 @@ export function CompareRoute() {
         />
       ) : null}
       {loaderData.status === "too_many" ? (
-        <p>You can compare up to {MAX_COMPARE_PRODUCTS} products.</p>
+        <FeedbackState
+          kind="warning"
+          title={`You can compare up to ${MAX_COMPARE_PRODUCTS} products.`}
+        />
       ) : null}
       {loaderData.status === "not_found" ? (
-        <p>One or more selected products were not found.</p>
+        <FeedbackState kind="error" title="One or more selected products were not found." />
       ) : null}
     </CompareShell>
   );
@@ -282,22 +317,26 @@ function CompareSpecModeControls({
   specMode: CompareSpecMode;
 }) {
   return (
-    <nav aria-label="Specification views">
-      <ul>
+    <Tabs.Root value={specMode}>
+      <Tabs.List aria-label="Specification views" {...stylex.props(styles.tabList)}>
         {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
-          <li key={option.mode}>
+          <Tabs.Trigger asChild key={option.mode} value={option.mode}>
             <Link
               aria-current={specMode === option.mode ? "page" : undefined}
               to={buildComparePathFromSlugs(selectedSlugs, {
                 specMode: option.mode
               })}
+              {...stylex.props(
+                styles.tab,
+                specMode === option.mode ? styles.tabActive : null
+              )}
             >
               {option.label}
             </Link>
-          </li>
+          </Tabs.Trigger>
         ))}
-      </ul>
-    </nav>
+      </Tabs.List>
+    </Tabs.Root>
   );
 }
 

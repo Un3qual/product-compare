@@ -138,9 +138,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 5: Comparison And Saved Comparisons
+## Batch 5: Comparison And Saved Comparisons
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/routes/compare/compare-shell.tsx`
@@ -165,6 +165,41 @@ Verification:
 Exit condition: comparison mode navigation uses accessible Radix tabs, the
 comparison matrix remains a readable table in a horizontal scroll region, and
 the selection tray and saved-set rows expose clear context and scoped actions.
+
+Completion evidence:
+
+- RED: focused comparison tests failed on absent tab semantics, the absent
+  named horizontal matrix workspace, and a native saved-set action button.
+- GREEN: the focused comparison and saved-set suites passed 2 files and 126
+  tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 6: Operational Routes
+
+Status: active
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/index.tsx`
+- `assets/src/routes/commerce/revenue/index.tsx`
+- `assets/src/routes/ingestion/feed-candidates/index.tsx`
+- `assets/src/routes/account/api-tokens/index.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: affiliate setup, revenue, feed-candidate review, and API-token
+workspaces use readable control bands, explicit status hierarchy, structured
+records, and scoped Radix actions without changing operational behavior.
 
 ## Dependent Batches
 

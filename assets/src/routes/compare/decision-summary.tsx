@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { tokens } from "../../ui/theme/tokens.stylex";
 
 import { compareDecimalStrings } from "../decimal-values";
 import type {
@@ -43,6 +45,29 @@ type ComparablePrice = {
   value: string;
 };
 
+const styles = stylex.create({
+  section: {
+    display: "grid",
+    gap: "0.85rem"
+  },
+  title: {
+    fontSize: "1.25rem",
+    margin: 0
+  },
+  tableWrap: {
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--radius-4)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    overflowX: "auto"
+  },
+  table: {
+    borderCollapse: "collapse",
+    minWidth: "48rem",
+    width: "100%"
+  }
+});
+
 export function DecisionSummary({
   offerContexts,
   products
@@ -55,15 +80,17 @@ export function DecisionSummary({
   }
 
   return (
-    <section>
-      <h2>Decision summary</h2>
-      <table aria-label="Decision summary">
-        <DecisionSummaryHeader products={products} />
-        <tbody>
-          <DecisionSummaryMetricRows offerContexts={offerContexts} products={products} />
-          <ReviewOffersRow products={products} />
-        </tbody>
-      </table>
+    <section {...stylex.props(styles.section)}>
+      <h2 {...stylex.props(styles.title)}>Decision summary</h2>
+      <div {...stylex.props(styles.tableWrap)}>
+        <table aria-label="Decision summary" {...stylex.props(styles.table)}>
+          <DecisionSummaryHeader products={products} />
+          <tbody>
+            <DecisionSummaryMetricRows offerContexts={offerContexts} products={products} />
+            <ReviewOffersRow products={products} />
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

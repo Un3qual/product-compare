@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { TextField } from "@radix-ui/themes";
+import * as stylex from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import deleteSavedComparisonSetMutation, {
@@ -8,6 +10,11 @@ import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
+import { Pagination } from "../../ui/components/navigation/pagination";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -27,6 +34,45 @@ type SavedComparisonSortMode =
   | "name-asc"
   | "product-count-desc"
   | "product-count-asc";
+
+const styles = stylex.create({
+  controls: {
+    alignItems: "end",
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--radius-4)",
+    display: "grid",
+    gap: "1rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+    padding: "1rem"
+  },
+  controlNote: {
+    color: tokens.textSecondary,
+    gridColumn: "1 / -1",
+    margin: 0
+  },
+  savedSet: {
+    display: "grid",
+    gap: "0.55rem"
+  },
+  title: {
+    fontSize: "1.25rem",
+    letterSpacing: "-0.02em",
+    margin: 0
+  },
+  metadata: {
+    color: tokens.textSecondary,
+    margin: 0
+  },
+  actions: {
+    alignItems: "center",
+    border: 0,
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.65rem",
+    margin: 0,
+    padding: 0
+  }
+});
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
@@ -107,18 +153,19 @@ export function SavedComparisonsRoute() {
       <p aria-label="Saved comparisons status" aria-live="polite" role="status">
         {viewState.statusMessage}
       </p>
-      {deleteError ? <p role="alert">{deleteError}</p> : null}
+      {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
       {loaderData.status === "unauthorized" ? (
-        <Link to="/auth/login">Sign in to view saved comparisons</Link>
+        <Button asChild variant="solid">
+          <Link to="/auth/login">Sign in to view saved comparisons</Link>
+        </Button>
       ) : (
-        <>
+        <div {...stylex.props(styles.controls)}>
           <label>
             Filter saved comparisons
-            <input
+            <TextField.Root
               onChange={(event) => {
                 setFilterText(event.target.value);
               }}
-              type="text"
               value={filterText}
             />
           </label>
@@ -136,8 +183,10 @@ export function SavedComparisonsRoute() {
               <option value="product-count-asc">Product count low-to-high</option>
             </select>
           </label>
-          <p>Filtering and sorting apply to the visible page.</p>
-        </>
+          <p {...stylex.props(styles.controlNote)}>
+            Filtering and sorting apply to the visible page.
+          </p>
+        </div>
       )}
       {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
       {savedSetQueries.length > 0 ? (
@@ -170,17 +219,12 @@ function SavedComparisonsPagination({
   endCursor: string | null;
   hasNextPage: boolean;
 }) {
-  if (!after && !(hasNextPage && endCursor)) {
-    return null;
-  }
-
   return (
-    <nav aria-label="Saved comparison pages">
-      {after ? <Link to="/compare/saved">First page</Link> : null}{" "}
-      {hasNextPage && endCursor ? (
-        <Link to={savedComparisonsPagePath(endCursor)}>Next page</Link>
-      ) : null}
-    </nav>
+    <Pagination
+      firstHref={after ? "/compare/saved" : null}
+      label="Saved comparison pages"
+      nextHref={hasNextPage && endCursor ? savedComparisonsPagePath(endCursor) : null}
+    />
   );
 }
 
@@ -230,16 +274,17 @@ function SavedComparisonSetList({
   savedSets: SavedComparisonSetSummary[];
 }) {
   return (
-    <ul aria-label="Saved comparison sets">
+    <DataList label="Saved comparison sets">
       {savedSets.map((savedSet) => (
-        <SavedComparisonSetItem
-          key={savedSet.id}
-          onDelete={onDelete}
-          pendingDeleteIds={pendingDeleteIds}
-          savedSet={savedSet}
-        />
+        <DataListItem key={savedSet.id}>
+          <SavedComparisonSetItem
+            onDelete={onDelete}
+            pendingDeleteIds={pendingDeleteIds}
+            savedSet={savedSet}
+          />
+        </DataListItem>
       ))}
-    </ul>
+    </DataList>
   );
 }
 
@@ -279,18 +324,16 @@ function SavedComparisonSetItem({
   const savedProductCount = formatSavedProductCount(savedSet.products.length);
 
   return (
-    <li>
-      <article>
-        <h2>{savedSet.name}</h2>
-        <p>{savedProductCount} in this saved comparison</p>
-        <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
-        <SavedComparisonSetActions
-          deletePending={deletePending}
-          onDelete={onDelete}
-          savedSet={savedSet}
-        />
-      </article>
-    </li>
+    <article {...stylex.props(styles.savedSet)}>
+      <h2 {...stylex.props(styles.title)}>{savedSet.name}</h2>
+      <p {...stylex.props(styles.metadata)}>{savedProductCount} in this saved comparison</p>
+      <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
+      <SavedComparisonSetActions
+        deletePending={deletePending}
+        onDelete={onDelete}
+        savedSet={savedSet}
+      />
+    </article>
   );
 }
 
@@ -304,14 +347,15 @@ function SavedComparisonSetActions({
   savedSet: SavedComparisonSetSummary;
 }) {
   return (
-    <fieldset>
+    <fieldset {...stylex.props(styles.actions)}>
       <legend>Actions for {savedSet.name}</legend>
-      <p>
+      <Button asChild variant="soft">
         <Link to={buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug))}>
           Open comparison
         </Link>
-      </p>
-      <button
+      </Button>
+      <Button
+        color="red"
         disabled={deletePending}
         onClick={() => {
           onDelete(savedSet.id);
@@ -319,7 +363,7 @@ function SavedComparisonSetActions({
         type="button"
       >
         {deletePending ? "Deleting comparison..." : "Delete comparison"}
-      </button>
+      </Button>
     </fieldset>
   );
 }

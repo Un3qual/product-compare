@@ -244,7 +244,10 @@ test("saved comparison cards scope reopen and delete actions to the set", () => 
   const openComparisonLink = within(actions).getByRole("link", { name: "Open comparison" });
 
   expect(openComparisonLink).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
-  expect(within(actions).getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  const deleteButton = within(actions).getByRole("button", { name: "Delete comparison" });
+
+  expect(deleteButton).toBeEnabled();
+  expect(deleteButton).toHaveAttribute("data-slot", "button");
 });
 
 test("saved comparisons route restores current order after another sort", () => {

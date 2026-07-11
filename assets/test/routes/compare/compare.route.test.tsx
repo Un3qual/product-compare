@@ -2134,7 +2134,7 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
   expect(within(matrix).queryByText("Refresh rate duplicate")).not.toBeInTheDocument();
 });
 
-test("ready compare page renders specification mode links with stable URL state", () => {
+test("ready compare page renders specification mode tabs with stable URL state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
       specMode: "differences"
@@ -2143,19 +2143,19 @@ test("ready compare page renders specification mode links with stable URL state"
 
   renderCompareRoute();
 
-  expect(screen.getByRole("link", { name: "Shared specs" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product"
   );
-  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product&specs=differences"
   );
-  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "aria-current",
     "page"
   );
-  expect(screen.getByRole("link", { name: "All specs" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "All specs" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product&specs=all"
   );
@@ -3188,6 +3188,34 @@ test("compare route exposes a named region for the compare shell", () => {
       name: "Compare products"
     })
   ).toBeInTheDocument();
+});
+
+test("compare route presents URL-driven specification modes as tabs", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const tabs = screen.getByRole("tablist", { name: "Specification views" });
+
+  expect(within(tabs).getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  expect(within(tabs).getByRole("tab", { name: "Differences" })).toHaveAttribute(
+    "href",
+    expect.stringContaining("specs=differences")
+  );
+});
+
+test("comparison matrix remains a table inside a named horizontal workspace", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const workspace = screen.getByRole("region", { name: "Specification comparison" });
+
+  expect(within(workspace).getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
+  expect(workspace).toHaveAttribute("tabindex", "0");
 });
 
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {

@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { FeedbackState } from "../../ui/components/feedback/feedback-state";
 import { CompareShell } from "./compare-shell";
 
 type RouteErrorBoundaryProps = {
@@ -49,10 +50,11 @@ export function RouteErrorBoundary({
 
   return (
     <CompareShell title={title}>
-      <div role="alert">
-        <p>{errorMessage}</p>
-        <p>{retryGuidance}</p>
-      </div>
+      <FeedbackState
+        description={retryGuidance}
+        kind="error"
+        title={errorMessage}
+      />
     </CompareShell>
   );
 }

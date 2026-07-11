@@ -1,4 +1,8 @@
 import { Link } from "react-router-dom";
+import * as stylex from "@stylexjs/stylex";
+import { DataList, DataListItem } from "../../ui/components/data/data-list";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import { ProductAttributeList } from "../products/product-attribute-list";
 import type {
   CompareProductSummary,
@@ -20,6 +24,31 @@ const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
   shared: "No shared specifications across these products yet."
 };
 
+const styles = stylex.create({
+  tableWorkspace: {
+    overflowX: "auto",
+    paddingBlockEnd: "0.35rem"
+  },
+  table: {
+    borderCollapse: "collapse",
+    minWidth: "48rem",
+    width: "100%"
+  },
+  product: {
+    display: "grid",
+    gap: "0.7rem"
+  },
+  productTitle: {
+    fontSize: "1.25rem",
+    letterSpacing: "-0.02em",
+    margin: 0
+  },
+  metadata: {
+    color: tokens.textSecondary,
+    margin: 0
+  }
+});
+
 export function CompareProductList({
   loaderData
 }: {
@@ -35,17 +64,18 @@ export function CompareProductList({
         products={loaderData.products}
         specMode={loaderData.specMode}
       />
-      <ul>
+      <DataList label="Compared products">
         {loaderData.products.map((product, index) => (
-          <CompareProductCard
-            key={product.id}
-            product={product}
-            selectedSlugs={loaderData.slugs}
-            selectedIndex={index}
-            specMode={loaderData.specMode}
-          />
+          <DataListItem key={product.id}>
+            <CompareProductCard
+              product={product}
+              selectedSlugs={loaderData.slugs}
+              selectedIndex={index}
+              specMode={loaderData.specMode}
+            />
+          </DataListItem>
         ))}
-      </ul>
+      </DataList>
     </>
   );
 }
@@ -65,12 +95,17 @@ function CompareSpecificationMatrix({
   const title = specificationMatrixTitle(specMode);
 
   return (
-    <section>
+    <section
+      aria-label="Specification comparison"
+      role="region"
+      tabIndex={0}
+      {...stylex.props(styles.tableWorkspace)}
+    >
       <h2>{title}</h2>
       {rows.length === 0 ? (
         <p>{emptySpecificationMatrixMessage(specMode)}</p>
       ) : (
-        <table aria-label={title}>
+        <table aria-label={title} {...stylex.props(styles.table)}>
           <thead>
             <tr>
               <th scope="col">Specification</th>
@@ -362,18 +397,18 @@ function buildFirstAttributeByCode(
 
 export function CompareProductSummaryList({ products }: { products: CompareProductSummary[] }) {
   return (
-    <ul>
+    <DataList label="Compared product summaries">
       {products.map((product) => (
-        <li key={product.id}>
-          <article>
-            <h2>{product.name}</h2>
-            <p>{product.brandName ?? "Unknown brand"}</p>
-            <p>{product.slug}</p>
+        <DataListItem key={product.id}>
+          <article {...stylex.props(styles.product)}>
+            <h2 {...stylex.props(styles.productTitle)}>{product.name}</h2>
+            <p {...stylex.props(styles.metadata)}>{product.brandName ?? "Unknown brand"}</p>
+            <p {...stylex.props(styles.metadata)}>{product.slug}</p>
             {product.description ? <p>{product.description}</p> : null}
           </article>
-        </li>
+        </DataListItem>
       ))}
-    </ul>
+    </DataList>
   );
 }
 
@@ -393,19 +428,21 @@ function CompareProductCard({
   });
 
   return (
-    <li>
-      <article>
-        <h2>{product.name}</h2>
-        <p>{product.brandName ?? "Unknown brand"}</p>
-        <p>{product.slug}</p>
-        <CompareProductDescription description={product.description} />
-        <ProductAttributeList
-          attributes={product.currentAttributes}
-          emptyMessage="No product attributes available yet."
-        />
-        <Link to={removePath}>Remove {product.name}</Link>
-      </article>
-    </li>
+    <article {...stylex.props(styles.product)}>
+      <h2 {...stylex.props(styles.productTitle)}>{product.name}</h2>
+      <p {...stylex.props(styles.metadata)}>{product.brandName ?? "Unknown brand"}</p>
+      <p {...stylex.props(styles.metadata)}>{product.slug}</p>
+      <CompareProductDescription description={product.description} />
+      <ProductAttributeList
+        attributes={product.currentAttributes}
+        emptyMessage="No product attributes available yet."
+      />
+      <div role="group" aria-label={`Actions for ${product.name}`}>
+        <Button asChild variant="soft">
+          <Link to={removePath}>Remove {product.name}</Link>
+        </Button>
+      </div>
+    </article>
   );
 }
 

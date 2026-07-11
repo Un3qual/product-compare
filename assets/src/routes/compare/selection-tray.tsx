@@ -1,5 +1,52 @@
 import { useId } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { Button } from "../../ui/primitives/button";
+import { tokens } from "../../ui/theme/tokens.stylex";
+
+const styles = stylex.create({
+  tray: {
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--radius-4)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "grid",
+    gap: "0.85rem",
+    padding: "1.15rem"
+  },
+  header: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.75rem",
+    justifyContent: "space-between"
+  },
+  title: {
+    fontSize: "1rem",
+    margin: 0
+  },
+  status: {
+    color: tokens.textSecondary,
+    margin: 0
+  },
+  list: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.55rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  item: {
+    alignItems: "center",
+    backgroundColor: tokens.surfaceRaised,
+    borderRadius: "var(--radius-3)",
+    display: "flex",
+    gap: "0.55rem",
+    padding: "0.4rem 0.55rem"
+  }
+});
 
 interface CompareSelectionTrayItem {
   label: string;
@@ -24,20 +71,30 @@ export function CompareSelectionTray({
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId}>
-      <h2 id={titleId}>{title}</h2>
-      <p aria-live="polite" role="status">
-        {selectedSlugs.length} of {maxProducts} products selected.
-      </p>
-      {selectedSlugs.length > 0 ? <Link to={openComparePath}>Open comparison</Link> : null}
-      <ul>
+    <section aria-labelledby={titleId} {...stylex.props(styles.tray)}>
+      <div {...stylex.props(styles.header)}>
+        <div>
+          <h2 id={titleId} {...stylex.props(styles.title)}>{title}</h2>
+          <p aria-live="polite" role="status" {...stylex.props(styles.status)}>
+            {selectedSlugs.length} of {maxProducts} products selected.
+          </p>
+        </div>
+        {selectedSlugs.length > 0 ? (
+          <Button asChild variant="solid">
+            <Link to={openComparePath}>Open comparison</Link>
+          </Button>
+        ) : null}
+      </div>
+      <ul {...stylex.props(styles.list)}>
         {selectedSlugs.map((slug, index) => {
           const label = items.find((item) => item.slug === slug)?.label ?? slug;
 
           return (
-            <li key={slug}>
+            <li key={slug} {...stylex.props(styles.item)}>
               <span>{label}</span>{" "}
-              <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>
+              <Button asChild size="1" variant="ghost">
+                <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>
+              </Button>
             </li>
           );
         })}

@@ -1,34 +1,5 @@
-import { useId } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
-import * as stylex from "@stylexjs/stylex";
-
-const styles = stylex.create({
-  page: {
-    display: "grid",
-    gap: "1.5rem",
-    marginInline: "auto",
-    maxWidth: "72rem",
-    paddingBlock: "2rem",
-    paddingInline: "1.5rem"
-  },
-  header: {
-    alignItems: "end",
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "1rem",
-    justifyContent: "space-between"
-  },
-  title: {
-    fontSize: "2rem",
-    lineHeight: 1.1,
-    margin: 0
-  },
-  actions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.75rem"
-  }
-});
+import { PageShell } from "../../ui/components/layout/page-shell";
 
 export interface CompareShellProps extends PropsWithChildren {
   actions?: ReactNode;
@@ -36,17 +7,18 @@ export interface CompareShellProps extends PropsWithChildren {
 }
 
 export function CompareShell({ actions, children, title }: CompareShellProps) {
-  const titleId = useId();
-
   return (
-    <section aria-labelledby={titleId} {...stylex.props(styles.page)}>
-      <header {...stylex.props(styles.header)}>
-        <h1 id={titleId} {...stylex.props(styles.title)}>
-          {title}
-        </h1>
-        {actions ? <div {...stylex.props(styles.actions)}>{actions}</div> : null}
-      </header>
+    <PageShell
+      actions={actions}
+      description={
+        title === "Saved comparisons"
+          ? "Return to saved product sets, refine the visible page, or remove comparisons you no longer need."
+          : "Compare the product details and offer signals that matter without losing context."
+      }
+      eyebrow="Decision workspace"
+      title={title}
+    >
       {children}
-    </section>
+    </PageShell>
   );
 }
