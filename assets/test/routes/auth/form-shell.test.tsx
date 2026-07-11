@@ -37,4 +37,7 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
   expect(screen.getByRole("status")).toHaveTextContent("Request completed.");
   expect(screen.getByRole("status")).toHaveClass("rt-CalloutRoot");
   expect(screen.getByRole("region", { name: "Sign in" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Account context" })).toHaveTextContent(
+    "Keep your shopping decisions connected."
+  );
 });

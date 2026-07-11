@@ -11,10 +11,45 @@ import { tokens } from "../../ui/theme/tokens.stylex";
 
 const styles = create({
   section: {
+    alignItems: "center",
+    display: "grid",
+    gap: "clamp(1.5rem, 5vw, 4rem)",
+    gridTemplateColumns: {
+      default: "minmax(0, 0.8fr) minmax(20rem, 1fr)",
+      "@media (max-width: 52rem)": "minmax(0, 1fr)"
+    },
     marginInline: "auto",
-    maxWidth: "32rem",
+    maxWidth: "64rem",
     paddingBlock: "3rem",
     paddingInline: "1.5rem"
+  },
+  context: {
+    borderBlockStartColor: tokens.actionAccent,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "3px",
+    display: "grid",
+    gap: "0.75rem",
+    paddingBlockStart: "1.25rem"
+  },
+  contextEyebrow: {
+    color: tokens.textSecondary,
+    fontSize: "0.78rem",
+    fontWeight: 750,
+    letterSpacing: "0.08em",
+    margin: 0,
+    textTransform: "uppercase"
+  },
+  contextTitle: {
+    fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
+    letterSpacing: "-0.04em",
+    lineHeight: 1.05,
+    margin: 0
+  },
+  contextCopy: {
+    color: tokens.textSecondary,
+    lineHeight: 1.65,
+    margin: 0,
+    maxWidth: "34rem"
   },
   panel: {
     backgroundColor: tokens.surfaceRaised,
@@ -105,6 +140,14 @@ export function AuthFormShell({
 
   return (
     <section aria-labelledby={titleId} {...props(styles.section)}>
+      <aside aria-label="Account context" {...props(styles.context)}>
+        <p {...props(styles.contextEyebrow)}>Product Compare account</p>
+        <p {...props(styles.contextTitle)}>Keep your shopping decisions connected.</p>
+        <p {...props(styles.contextCopy)}>
+          Save comparisons, return to product research, and manage connected tools from one
+          secure account.
+        </p>
+      </aside>
       <div {...props(styles.panel)}>
         <header {...props(styles.headingGroup)}>
           <h1 id={titleId} {...props(styles.title)}>{title}</h1>

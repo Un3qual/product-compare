@@ -64,16 +64,34 @@ const styles = create({
   navigation: {
     alignItems: "center",
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: {
+      default: "wrap",
+      "@media (max-width: 48rem)": "nowrap"
+    },
     gap: "0.75rem 1rem",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    width: "100%"
   },
   navigationLinks: {
     display: "flex",
-    flexWrap: "wrap",
-    gap: "0.75rem"
+    flexWrap: {
+      default: "wrap",
+      "@media (max-width: 48rem)": "nowrap"
+    },
+    gap: "0.75rem",
+    overflowX: {
+      default: "visible",
+      "@media (max-width: 48rem)": "auto"
+    },
+    overscrollBehaviorInline: "contain",
+    paddingBlockEnd: {
+      default: 0,
+      "@media (max-width: 48rem)": "0.25rem"
+    },
+    scrollbarWidth: "thin"
   },
   title: {
+    flexShrink: 0,
     letterSpacing: "-0.02em",
     fontWeight: 700,
     textDecoration: "none"

@@ -137,6 +137,27 @@ Verification:
 - GREEN: `cd assets && bun run build` completed client and SSR production
   builds; the existing large-chunk advisory remains non-blocking.
 
+### Milestone 5: Account And Responsive Shell
+
+Status: done
+
+- Every authentication route now inherits a calm responsive account shell
+  with concise product context alongside the focused form panel.
+- Primary navigation keeps the brand anchor stable and allows destinations to
+  scroll horizontally on narrow screens instead of forming a tall wrapped
+  control block.
+- Shared workspace rails, page widths, tabs, tables, and dialog treatments
+  continue to use the semantic layout and theme tokens established in the
+  first milestone.
+
+Verification:
+
+- GREEN: the authentication, root-route, application-shell, and workspace
+  suites passed 7 files and 54 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+
 ## Batch 1: Radix Theme And Shared UI Foundation
 
 Status: done
