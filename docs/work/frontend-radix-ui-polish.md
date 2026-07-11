@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-11 against `assets/src/router.tsx` and the current UI layer
@@ -17,7 +17,7 @@
 
 ## Follow-Up Batch: Task-First Workspace Layout
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/ui/**`
@@ -44,6 +44,17 @@ Verification:
 Exit condition: every registered route uses the approved task-first hierarchy,
 the shared layout compositions have behavior-first accessibility coverage, and
 the complete frontend verification plus queue validation are green.
+
+Completion evidence:
+
+- `cd assets && bun run relay` compiled 30 reader documents, 29 normalization
+  documents, and 29 operation texts.
+- `cd assets && bun x vitest run` passed 47 files and 641 tests.
+- `cd assets && bun run typecheck` exited 0.
+- `cd assets && bun run build` completed client and SSR production builds; the
+  existing large-chunk advisory remains non-blocking.
+- `git diff --check` exited 0.
+- `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
 
 ### Milestone 1: Shared Workspace Compositions
 
