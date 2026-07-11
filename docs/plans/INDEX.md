@@ -28,6 +28,8 @@ Active implementation plans:
 - `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 - `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
 - `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
+- `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`
+- `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -55,6 +57,10 @@ batch and should not be recreated or promoted.
   compare offer context.
 - Saved comparisons: ordered product names in cards while preserving stored
   slug reopen order.
+- Revenue reporting: explicit authenticated preview positioning without live
+  conversion-provider ingestion.
+- Product ingestion: optional scheduled-operation enforcement in the existing
+  secret-safe CJ readiness gate.
 - Deferred and rejected work remains outside the ready-work floor and cannot be
   used as queue filler. Start at `docs/work/index.md` for live dispatch status.
 

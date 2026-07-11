@@ -193,6 +193,56 @@ Verification:
 
 Exit condition: Saved comparison cards display ordered product names and reopen the exact stored slug order with existing auth, pagination, filtering, sorting, and delete behavior intact.
 
+### 5. Revenue Preview Positioning
+
+Status: ready
+Lane: Affiliate revenue and attribution
+Plan: `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`
+Next action: State that authenticated revenue reporting is a preview backed by recorded attribution data and that no live conversion provider is connected for this milestone.
+Owned paths:
+
+- `assets/src/routes/commerce/revenue/index.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/affiliate-revenue-attribution.md`
+
+Prerequisites:
+
+- Existing revenue loader, Relay query, filters, suppression, and authentication behavior remain unchanged.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Revenue reporting is visibly an authenticated preview, makes no live-provider claim, and retains existing route behavior with green focused tests.
+
+### 6. CJ Scheduled Readiness
+
+Status: ready
+Lane: Product data scraping
+Plan: `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
+Next action: Extend the read-only CJ readiness gate with non-secret schedule state and optional scheduled-operation enforcement while preserving manual readiness.
+Owned paths:
+
+- `lib/mix/tasks/product_compare.ingestion.cj_readiness_gate.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs`
+- `docs/runbooks/cj-weekly-operator-loop.md`
+- `docs/work/product-data-scraping.md`
+
+Prerequisites:
+
+- Existing CJ scheduler enable flags, bounded runtime configuration, persisted run freshness, and candidate readiness data remain the source of truth.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `git diff --check`
+
+Exit condition: The gate distinguishes manual readiness from recurring scheduled readiness without starting schedulers, contacting CJ, or exposing secret values.
+
 ## Active Work
 
 None.
