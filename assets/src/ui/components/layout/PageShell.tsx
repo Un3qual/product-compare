@@ -38,9 +38,9 @@ const styles = create({
     textTransform: "uppercase"
   },
   title: {
-    fontSize: "clamp(2rem, 5vw, 3.75rem)",
+    fontSize: tokens.routeTitleSize,
     letterSpacing: "-0.04em",
-    lineHeight: 0.98,
+    lineHeight: 1.04,
     margin: 0
   },
   description: {

@@ -22,5 +22,11 @@ export const tokens = defineVars({
   readingMax: "var(--pc-reading-max)",
   navHeight: "var(--pc-nav-height)",
   routeSpace: "var(--pc-route-space)",
-  controlHeight: "var(--pc-control-height)"
+  controlHeight: "var(--pc-control-height)",
+  workspaceGap: "var(--pc-workspace-gap)",
+  contextRailWidth: "var(--pc-context-rail-width)",
+  stickyOffset: "var(--pc-sticky-offset)",
+  compactGap: "var(--pc-compact-gap)",
+  tableCellSpace: "var(--pc-table-cell-space)",
+  routeTitleSize: "var(--pc-route-title-size)"
 });

@@ -45,6 +45,28 @@ Exit condition: every registered route uses the approved task-first hierarchy,
 the shared layout compositions have behavior-first accessibility coverage, and
 the complete frontend verification plus queue validation are green.
 
+### Milestone 1: Shared Workspace Compositions
+
+Status: done
+
+- Added semantic workspace, context-rail, mobile disclosure, detail-tab,
+  summary-strip, record-table, filter-bar, active-filter, accordion-disclosure,
+  and action-dialog compositions.
+- Interactive compositions use Radix Collapsible, Tabs, Accordion, Themes
+  Table, and Themes Dialog rather than recreating their behavior.
+- Added semantic layout tokens for workspace columns, rail width, sticky
+  offset, compact density, table spacing, and quieter route-title scale.
+
+Verification:
+
+- RED: `cd assets && bun x vitest run test/ui/workspace-layout.test.tsx`
+  failed because the new workspace modules did not exist.
+- GREEN: the focused workspace suite passed 1 file and 8 tests.
+- GREEN: `cd assets && bun x vitest run test/ui` passed 5 files and 22 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+
 ## Batch 1: Radix Theme And Shared UI Foundation
 
 Status: done

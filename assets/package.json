@@ -14,6 +14,7 @@
     "check": "bun run typecheck && bun run test:unit"
   },
   "dependencies": {
+    "@radix-ui/react-accordion": "^1.2.16",
     "@radix-ui/react-collapsible": "^1.1.16",
     "@radix-ui/react-direction": "^1.1.1",
     "@radix-ui/react-label": "^2.1.8",

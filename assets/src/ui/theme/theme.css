@@ -21,6 +21,12 @@
   --pc-nav-height: 4.25rem;
   --pc-route-space: clamp(1.25rem, 3vw, 2.5rem);
   --pc-control-height: 2.5rem;
+  --pc-workspace-gap: clamp(1.5rem, 3vw, 3rem);
+  --pc-context-rail-width: 18rem;
+  --pc-sticky-offset: calc(var(--pc-nav-height) + 1.25rem);
+  --pc-compact-gap: 0.85rem;
+  --pc-table-cell-space: 0.8rem;
+  --pc-route-title-size: clamp(1.75rem, 3.5vw, 2.75rem);
 
   /* Compatibility aliases while route styles move to semantic tokens. */
   --pc-surface: var(--pc-surface-canvas);
@@ -104,6 +110,23 @@ a {
   color: var(--pc-text-primary);
   font-weight: 700;
   padding-inline: 0.25rem;
+}
+
+[data-slot="mobile-context-content"][data-state="open"],
+[data-slot="disclosure-content"][data-state="open"] {
+  animation: pc-disclosure-in 140ms ease-out;
+}
+
+@keyframes pc-disclosure-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 :focus-visible {
