@@ -185,6 +185,8 @@ test("API token route renders an empty state for authenticated users without tok
   renderApiTokensRoute();
 
   expect(screen.getByRole("status")).toHaveTextContent("No API tokens yet.");
+  expect(screen.getByRole("region", { name: "API token records" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "API token controls" })).toBeInTheDocument();
   expect(screen.queryByRole("list", { name: "API tokens" })).not.toBeInTheDocument();
 });
 
@@ -288,6 +290,8 @@ test("create token submits label and displays the one-time plain text token", as
 
   renderApiTokensRoute();
 
+  openCreateApiTokenDialog();
+
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "CLI automation" }
   });
@@ -325,6 +329,8 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
     } satisfies ApiTokensRouteLoaderData);
 
     renderApiTokensRoute();
+
+    openCreateApiTokenDialog();
 
     const createForm = screen.getByRole("form", { name: "Create API token" });
     const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
@@ -371,6 +377,8 @@ test("create token uses manual expiry after selecting an expiry preset", async (
 
   renderApiTokensRoute();
 
+  openCreateApiTokenDialog();
+
   const createForm = screen.getByRole("form", { name: "Create API token" });
   const expiresAtInput = within(createForm).getByLabelText("Expires at");
 
@@ -406,6 +414,8 @@ test("create token ignores duplicate submits while the request is in flight", as
 
   renderApiTokensRoute();
 
+  openCreateApiTokenDialog();
+
   const createForm = screen.getByRole("form", { name: "Create API token" });
 
   act(() => {
@@ -427,6 +437,8 @@ test("create token preserves the default expiry when the expiry field is blank",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
+
+  openCreateApiTokenDialog();
 
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -454,6 +466,8 @@ test("create token sends null for invalid expiry input", async () => {
 
     renderApiTokensRoute();
 
+    openCreateApiTokenDialog();
+
     fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
     await waitFor(() => {
@@ -480,6 +494,8 @@ test("create token clears the one-time token when the next create starts", async
 
   renderApiTokensRoute();
 
+  openCreateApiTokenDialog();
+
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "First token" }
   });
@@ -491,6 +507,8 @@ test("create token clears the one-time token when the next create starts", async
   completeLatestCreateMutation(buildSuccessfulCreateResponse());
 
   expect(await screen.findByText(ONE_TIME_TOKEN_VALUE)).toBeInTheDocument();
+
+  openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "Second token" }
@@ -512,6 +530,8 @@ test("create token renders mutation payload errors", async () => {
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
+
+  openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "CLI automation" }
@@ -548,6 +568,8 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
+
+  openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
     target: { value: "CLI automation" }
@@ -651,6 +673,8 @@ test("revoke token clears the one-time token when revoke starts", async () => {
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
+
+  openCreateApiTokenDialog();
 
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -1093,6 +1117,10 @@ function renderApiTokensRoute() {
       <ApiTokensRoute />
     </MemoryRouter>
   );
+}
+
+function openCreateApiTokenDialog() {
+  fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 }
 
 function completeLatestCreateMutation(response: unknown, graphQLErrors?: unknown[]) {

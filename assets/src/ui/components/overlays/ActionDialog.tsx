@@ -17,15 +17,19 @@ const styles = create({
 export function ActionDialog({
   children,
   description,
+  onOpenChange,
+  open,
   title,
   trigger
 }: PropsWithChildren<{
   description?: ReactNode;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   title: string;
   trigger: ReactElement;
 }>) {
   return (
-    <Dialog.Root>
+    <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <Dialog.Trigger>{trigger}</Dialog.Trigger>
       <Dialog.Content maxWidth="36rem" {...props(styles.content)}>
         <Dialog.Title>{title}</Dialog.Title>

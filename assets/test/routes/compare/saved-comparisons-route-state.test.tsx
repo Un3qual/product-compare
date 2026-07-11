@@ -124,7 +124,9 @@ function buildSortableSavedSets() {
 }
 
 function savedComparisonNames() {
-  return screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+  return within(screen.getByRole("list", { name: "Saved comparison sets" }))
+    .getAllByRole("heading", { level: 2 })
+    .map((heading) => heading.textContent);
 }
 
 function savedComparisonsStatus() {
@@ -171,6 +173,10 @@ test("saved comparisons route starts with an empty status region when saved sets
   );
 
   expect(savedComparisonsStatus()).toBeEmptyDOMElement();
+  expect(screen.getByRole("region", { name: "Saved comparison records" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("complementary", { name: "Saved comparison controls" })
+  ).toBeInTheDocument();
 });
 
 test("saved comparison cards summarize saved product counts", () => {

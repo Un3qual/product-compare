@@ -116,6 +116,27 @@ Verification:
 - GREEN: `cd assets && bun run build` completed client and SSR production
   builds; the existing large-chunk advisory remains non-blocking.
 
+### Milestone 4: Saved Records And Operational Workspaces
+
+Status: done
+
+- Saved comparisons, revenue reporting, and feed review now keep records and
+  report content in the primary reading path with filtering and sorting in
+  dedicated context rails.
+- API tokens now present the credential inventory as the primary workspace;
+  status filters and Radix-backed token creation sit in the control rail, and
+  successful creation closes the dialog before revealing the one-time token.
+- Affiliate setup now pairs the configuration forms with a persistent ordered
+  setup sequence so network, program, link, and coupon dependencies are clear.
+
+Verification:
+
+- GREEN: the saved-comparison, API-token, revenue, feed-candidate, and affiliate
+  setup suites passed 5 files and 112 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+
 ## Batch 1: Radix Theme And Shared UI Foundation
 
 Status: done

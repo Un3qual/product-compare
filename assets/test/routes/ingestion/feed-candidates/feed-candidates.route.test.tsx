@@ -108,6 +108,8 @@ test("feed candidates route renders review-safe candidate rows", () => {
 
   expect(screen.getByRole("heading", { name: "CJ feed candidates" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "CJ feed candidates" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Feed candidate queue" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Candidate controls" })).toBeInTheDocument();
   const candidateList = screen.getByRole("list", { name: "CJ feed candidates" });
 
   expect(within(candidateList).getByText("Trail Merchant")).toBeInTheDocument();

@@ -11,6 +11,8 @@ import savedComparisonsRouteQuery, {
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
@@ -153,37 +155,46 @@ export function SavedComparisonsRoute() {
       <p aria-label="Saved comparisons status" aria-live="polite" role="status">
         {viewState.statusMessage}
       </p>
-      {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
       {loaderData.status === "unauthorized" ? (
         <Button asChild variant="solid">
           <Link to="/auth/login">Sign in to view saved comparisons</Link>
         </Button>
       ) : (
-        <SavedComparisonControls
-          filterText={filterText}
-          onFilterTextChange={setFilterText}
-          onSortModeChange={setSortMode}
-          sortMode={sortMode}
-        />
+        <WorkspaceLayout
+          context={
+            <ContextRail
+              description="Filter and sort the visible page while your saved records remain the primary focus."
+              label="Saved comparison controls"
+            >
+              <SavedComparisonControls
+                filterText={filterText}
+                onFilterTextChange={setFilterText}
+                onSortModeChange={setSortMode}
+                sortMode={sortMode}
+              />
+            </ContextRail>
+          }
+          label="Saved comparison records"
+        >
+          {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
+          {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
+          {savedSetQueries.length > 0 ? (
+            <SavedComparisonSetQueryRetainers savedSetQueries={savedSetQueries} />
+          ) : null}
+          {viewState.savedSets.length > 0 ? (
+            <SavedComparisonSetList
+              onDelete={handleDelete}
+              pendingDeleteIds={pendingDeleteIds}
+              savedSets={viewState.savedSets}
+            />
+          ) : null}
+          <SavedComparisonsPagination
+            after={loaderData.after ?? null}
+            endCursor={loaderData.endCursor ?? null}
+            hasNextPage={loaderData.hasNextPage ?? false}
+          />
+        </WorkspaceLayout>
       )}
-      {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
-      {savedSetQueries.length > 0 ? (
-        <SavedComparisonSetQueryRetainers savedSetQueries={savedSetQueries} />
-      ) : null}
-      {viewState.savedSets.length > 0 ? (
-        <SavedComparisonSetList
-          onDelete={handleDelete}
-          pendingDeleteIds={pendingDeleteIds}
-          savedSets={viewState.savedSets}
-        />
-      ) : null}
-      {loaderData.status !== "unauthorized" ? (
-        <SavedComparisonsPagination
-          after={loaderData.after ?? null}
-          endCursor={loaderData.endCursor ?? null}
-          hasNextPage={loaderData.hasNextPage ?? false}
-        />
-      ) : null}
     </CompareShell>
   );
 }

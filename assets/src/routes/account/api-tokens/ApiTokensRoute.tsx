@@ -16,8 +16,11 @@ import apiTokensRouteQuery, {
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
+import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../../ui/components/navigation/Pagination";
+import { ActionDialog } from "../../../ui/components/overlays/ActionDialog";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
@@ -86,6 +89,7 @@ export function ApiTokensRoute() {
   );
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createPending, setCreatePending] = useState(false);
   const createInFlightRef = useRef(false);
   const createExpiresAtInputRef = useRef<HTMLInputElement>(null);
@@ -149,6 +153,7 @@ export function ApiTokensRoute() {
         setCreateError(null);
         setCreatedTokens((currentTokens) => upsertApiTokenSummary(currentTokens, createdToken));
         setOneTimeToken(payload.plainTextToken);
+        setCreateDialogOpen(false);
         form.reset();
       } else {
         setCreateError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -318,18 +323,32 @@ export function ApiTokensRoute() {
           <Link to="/auth/login">Sign in to manage API tokens</Link>
         </p>
       ) : (
-        <>
-          <ApiTokenStatusFilters tokenStatus={loaderData.tokenStatus} />
-
-          <CreateApiTokenForm
-            expiresAtInputRef={createExpiresAtInputRef}
-            expiresAtPresetInputRef={createExpiresAtPresetInputRef}
-            onSubmit={handleCreate}
-            submitting={createSubmitting}
-          />
-
-          {createError ? <p role="alert">{createError}</p> : null}
-
+        <WorkspaceLayout
+          context={
+            <ContextRail
+              description="Filter credentials or create a new token without losing the token inventory."
+              label="API token controls"
+            >
+              <ApiTokenStatusFilters tokenStatus={loaderData.tokenStatus} />
+              <ActionDialog
+                description="Choose a clear label and expiration for this credential."
+                onOpenChange={setCreateDialogOpen}
+                open={createDialogOpen}
+                title="Create API token"
+                trigger={<Button>Create API token</Button>}
+              >
+                <CreateApiTokenForm
+                  expiresAtInputRef={createExpiresAtInputRef}
+                  expiresAtPresetInputRef={createExpiresAtPresetInputRef}
+                  onSubmit={handleCreate}
+                  submitting={createSubmitting}
+                />
+                {createError ? <p role="alert">{createError}</p> : null}
+              </ActionDialog>
+            </ContextRail>
+          }
+          label="API token records"
+        >
           {oneTimeToken ? (
             <section aria-labelledby="api-token-one-time-heading">
               <h2 id="api-token-one-time-heading">One-time API token</h2>
@@ -385,7 +404,7 @@ export function ApiTokensRoute() {
             hasNextPage={loaderData.hasNextPage ?? false}
             tokenStatus={loaderData.tokenStatus}
           />
-        </>
+        </WorkspaceLayout>
       )}
     </PageShell>
   );
@@ -404,7 +423,6 @@ function CreateApiTokenForm({
 }) {
   return (
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
-      <h2>Create API token</h2>
       <div>
         <span id="api-token-label">Label</span>
         <TextField

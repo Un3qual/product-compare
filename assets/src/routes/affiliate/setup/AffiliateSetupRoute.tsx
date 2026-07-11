@@ -20,7 +20,9 @@ import affiliateSetupRouteQuery, {
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
@@ -294,7 +296,23 @@ function AffiliateSetupPanel({
   }
 
   return (
-    <>
+    <WorkspaceLayout
+      context={
+        <ContextRail
+          description="Work from network identity through the merchant-facing assets that depend on it."
+          label="Setup sequence"
+        >
+          <ol>
+            <li>Save the affiliate network.</li>
+            <li>Connect a merchant program.</li>
+            <li>Register a tracked link.</li>
+            <li>Add an eligible coupon.</li>
+          </ol>
+          {selectedMerchantSummary ? <p>{`Current merchant: ${selectedMerchantSummary}`}</p> : null}
+        </ContextRail>
+      }
+      label="Affiliate configuration workflow"
+    >
       <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit} {...props(styles.form)}>
         <h2>Network</h2>
         <label>
@@ -448,7 +466,7 @@ function AffiliateSetupPanel({
           {couponResult ? <CouponResultPanel coupon={couponResult} /> : null}
         </form>
       )}
-    </>
+    </WorkspaceLayout>
   );
 }
 

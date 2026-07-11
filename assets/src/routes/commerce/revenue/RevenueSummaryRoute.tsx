@@ -8,7 +8,9 @@ import revenueSummaryRouteQuery, {
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
@@ -59,29 +61,39 @@ export function RevenueSummaryRoute() {
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >
-      <RevenueSummaryFilterForm
-        key={revenueSummaryFilterKey(loaderData.filters)}
-        filters={loaderData.filters}
-      />
-      <RevenueDatePresetLinks filters={loaderData.filters} />
-      <ActiveRevenueFilters filters={loaderData.filters} />
-
-      {loaderData.status === "error" ? (
-        <RevenueSummaryUnavailableFallback />
-      ) : loaderData.status === "needsCurrency" ? (
-        <RevenueSummaryCurrencyRequiredFallback />
-      ) : loaderData.status === "invalidDateRange" ? (
-        <RevenueSummaryInvalidDateRangeFallback />
-      ) : (
-        <ResettableErrorBoundary
-          fallback={<RevenueSummaryUnavailableFallback />}
-          resetToken={loaderData.query}
-        >
-          <Suspense fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}>
-            <RevenueSummaryPanel query={loaderData.query} />
-          </Suspense>
-        </ResettableErrorBoundary>
-      )}
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Adjust the report scope without interrupting the metric reading path."
+            label="Revenue controls"
+          >
+            <RevenueSummaryFilterForm
+              key={revenueSummaryFilterKey(loaderData.filters)}
+              filters={loaderData.filters}
+            />
+            <RevenueDatePresetLinks filters={loaderData.filters} />
+            <ActiveRevenueFilters filters={loaderData.filters} />
+          </ContextRail>
+        }
+        label="Revenue report"
+      >
+        {loaderData.status === "error" ? (
+          <RevenueSummaryUnavailableFallback />
+        ) : loaderData.status === "needsCurrency" ? (
+          <RevenueSummaryCurrencyRequiredFallback />
+        ) : loaderData.status === "invalidDateRange" ? (
+          <RevenueSummaryInvalidDateRangeFallback />
+        ) : (
+          <ResettableErrorBoundary
+            fallback={<RevenueSummaryUnavailableFallback />}
+            resetToken={loaderData.query}
+          >
+            <Suspense fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}>
+              <RevenueSummaryPanel query={loaderData.query} />
+            </Suspense>
+          </ResettableErrorBoundary>
+        )}
+      </WorkspaceLayout>
     </PageShell>
   );
 }

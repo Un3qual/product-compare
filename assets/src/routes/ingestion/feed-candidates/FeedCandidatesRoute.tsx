@@ -12,7 +12,9 @@ import reviewMerchantFeedCandidateMutation, {
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
@@ -90,23 +92,33 @@ export function FeedCandidatesRoute() {
       eyebrow="Ingestion operations"
       title="CJ feed candidates"
     >
-      <FeedCandidatesControls pagination={loaderData.pagination} />
-
-      {loaderData.status === "error" ? (
-        <FeedCandidatesUnavailableFallback />
-      ) : (
-        <ResettableErrorBoundary
-          fallback={<FeedCandidatesUnavailableFallback />}
-          resetToken={loaderData.query}
-        >
-          <Suspense fallback={<FeedbackState kind="loading" title="Loading feed candidates..." />}>
-            <FeedCandidatesPanel
-              pagination={loaderData.pagination}
-              query={loaderData.query}
-            />
-          </Suspense>
-        </ResettableErrorBoundary>
-      )}
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Filter and order the queue while candidate evidence stays in view."
+            label="Candidate controls"
+          >
+            <FeedCandidatesControls pagination={loaderData.pagination} />
+          </ContextRail>
+        }
+        label="Feed candidate queue"
+      >
+        {loaderData.status === "error" ? (
+          <FeedCandidatesUnavailableFallback />
+        ) : (
+          <ResettableErrorBoundary
+            fallback={<FeedCandidatesUnavailableFallback />}
+            resetToken={loaderData.query}
+          >
+            <Suspense fallback={<FeedbackState kind="loading" title="Loading feed candidates..." />}>
+              <FeedCandidatesPanel
+                pagination={loaderData.pagination}
+                query={loaderData.query}
+              />
+            </Suspense>
+          </ResettableErrorBoundary>
+        )}
+      </WorkspaceLayout>
     </PageShell>
   );
 }
