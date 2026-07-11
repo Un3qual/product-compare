@@ -32,7 +32,7 @@
 - Consumes: a Markdown string or path containing one `## Ready Work` section and `###` row headings.
 - Produces: `ProductCompare.WorkQueue.Validator.validate/1`, returning `{:ok, %{ready_count: pos_integer()}}` or `{:error, [String.t()]}`; `validate_file/1` reads a path and delegates to `validate/1`; `mix work_queue.validate [path]` raises on invalid queue state.
 
-- [ ] **Step 1: Write failing validator tests**
+- [x] **Step 1: Write failing validator tests**
 
 Create `test/product_compare/work_queue/validator_test.exs` with this fixture-focused coverage:
 
@@ -108,13 +108,13 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 end
 ```
 
-- [ ] **Step 2: Run the test to verify it fails before implementation**
+- [x] **Step 2: Run the test to verify it fails before implementation**
 
 Run: `mix test test/product_compare/work_queue/validator_test.exs`
 
 Expected: FAIL because `ProductCompare.WorkQueue.Validator` is undefined.
 
-- [ ] **Step 3: Implement the pure validator**
+- [x] **Step 3: Implement the pure validator**
 
 Create `lib/product_compare/work_queue/validator.ex`:
 
@@ -215,7 +215,7 @@ defmodule ProductCompare.WorkQueue.Validator do
 end
 ```
 
-- [ ] **Step 4: Add the Mix task wrapper**
+- [x] **Step 4: Add the Mix task wrapper**
 
 Create `lib/mix/tasks/work_queue.validate.ex`:
 
@@ -247,7 +247,7 @@ defmodule Mix.Tasks.WorkQueue.Validate do
 end
 ```
 
-- [ ] **Step 5: Run fixture verification**
+- [x] **Step 5: Run fixture verification**
 
 Run: `mix test test/product_compare/work_queue/validator_test.exs`
 
@@ -257,7 +257,7 @@ Run: `mix work_queue.validate`
 
 Expected: FAIL with `Ready Work requires at least 3 complete rows; found 0`, proving the current empty queue is reproduced.
 
-- [ ] **Step 6: Commit the validator milestone**
+- [x] **Step 6: Commit the validator milestone**
 
 ```bash
 git add lib/product_compare/work_queue/validator.ex lib/mix/tasks/work_queue.validate.ex test/product_compare/work_queue/validator_test.exs
@@ -278,7 +278,7 @@ git commit -m "test: enforce ready work queue floor"
 - Consumes: the approved design in `docs/superpowers/specs/2026-07-09-rolling-ready-queue-design.md` and `mix work_queue.validate` from Task 1.
 - Produces: one consistent dispatch contract in all entry-point docs: minimum three ready implementation rows at stable boundaries, no fixed maximum, pre-claim replenishment, truthful completion, and deeper curation instead of an empty-state exception.
 
-- [ ] **Step 1: Update repository-level dispatch guidance**
+- [x] **Step 1: Update repository-level dispatch guidance**
 
 Replace the current three-to-five and shortage clauses in `AGENTS.md` with:
 
@@ -300,7 +300,7 @@ Replace the current three-to-five and shortage clauses in `AGENTS.md` with:
   unverified work as queue filler.
 ```
 
-- [ ] **Step 2: Rewrite the rolling-slate section and promotion rules**
+- [x] **Step 2: Rewrite the rolling-slate section and promotion rules**
 
 In `docs/work/operating-model.md`, rename `## Rolling Ready Slate` to
 `## Continuously Replenished Ready Work` and make it define:
@@ -323,7 +323,7 @@ Remove every policy clause that accepts a smaller committed slate because of a
 decision, blocker, or candidate shortage. Keep the prohibition on filler and
 the ownership-conflict rules.
 
-- [ ] **Step 3: Align the compatibility pointer**
+- [x] **Step 3: Align the compatibility pointer**
 
 Update `docs/plans/NOW.md` so `What To Do` says:
 
@@ -338,7 +338,7 @@ Update `docs/plans/NOW.md` so `What To Do` says:
   `mix work_queue.validate` before committing a dispatch update.
 ```
 
-- [ ] **Step 4: Align live queue rules and prompts**
+- [x] **Step 4: Align live queue rules and prompts**
 
 Update the rules and prompts in `docs/work/index.md` to match the same floor,
 claim guard, uncapped promotion behavior, and validator. The coordinator prompt
@@ -356,7 +356,7 @@ Claim the highest-ranked compatible ready row only when three other ready rows w
 If the claim guard is not satisfied, stop and hand off to the coordinator for replenishment.
 ```
 
-- [ ] **Step 5: Run policy consistency checks**
+- [x] **Step 5: Run policy consistency checks**
 
 Run:
 
@@ -370,7 +370,7 @@ Run: `git diff --check`
 
 Expected: exit 0.
 
-- [ ] **Step 6: Commit the policy milestone**
+- [x] **Step 6: Commit the policy milestone**
 
 ```bash
 git add AGENTS.md docs/work/index.md docs/work/operating-model.md docs/plans/NOW.md
@@ -395,7 +395,7 @@ git commit -m "docs: enforce uncapped ready queue floor"
 - Consumes: verified current gaps in `assets/src/routes/root.tsx`, `assets/src/routes/compare/decision-summary.tsx`, `assets/src/routes/compare/saved-data.ts`, `assets/src/routes/compare/saved.tsx`, and `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`.
 - Produces: four priority-ordered `Status: ready` rows with implementation plans, explicit lane ownership, exact prerequisites, verification, and exit conditions; the catalog records them as active plans while the live dispatcher remains authoritative. The two root-route rows share code and test ownership, so they remain ready but execute serially under the active-path conflict rule.
 
-- [ ] **Step 1: Write the shopper-home-content plan and lane contract**
+- [x] **Step 1: Write the shopper-home-content plan and lane contract**
 
 Create `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
 with one TDD task that:
@@ -418,7 +418,7 @@ home-content exit condition is: the root page communicates the shopper journey
 and prioritizes browse, compare, and offer review without changing route data or
 authorization.
 
-- [ ] **Step 2: Write the viewer-aware-navigation plan and lane contract**
+- [x] **Step 2: Write the viewer-aware-navigation plan and lane contract**
 
 Create `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 with one TDD task that:
@@ -438,7 +438,7 @@ with one TDD task that:
   `docs/work/frontend-shopper-home-navigation.md`; it shares root code/test
   ownership with Step 1 and therefore executes after that active row closes.
 
-- [ ] **Step 3: Write the compare relative-price plan and lane contract**
+- [x] **Step 3: Write the compare relative-price plan and lane contract**
 
 Create `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
 with one TDD task that:
@@ -459,7 +459,7 @@ with one TDD task that:
 - Uses `docs/work/frontend-product-comparison-demo-parity.md` as its lane work
   doc and appends a new ready follow-up without reopening completed batches.
 
-- [ ] **Step 4: Write the saved-product-label plan and lane contract**
+- [x] **Step 4: Write the saved-product-label plan and lane contract**
 
 Create `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
 with one TDD task that:
@@ -482,7 +482,7 @@ with one TDD task that:
 - Uses `docs/work/frontend-saved-comparisons-ui.md` as its lane work doc and
   appends a new ready follow-up without rewriting completed history.
 
-- [ ] **Step 5: Seed `docs/work/index.md` with the four complete rows**
+- [x] **Step 5: Seed `docs/work/index.md` with the four complete rows**
 
 Replace the empty `Ready Work` content with four priority-ordered `###`
 sections using this contract shape:
@@ -514,7 +514,7 @@ serially. The relative-price row owns only decision-summary, its focused compare
 test path, and its lane doc. The saved-label row owns the saved query/data/UI,
 generated Relay artifacts, its focused compare test path, and its lane doc.
 
-- [ ] **Step 6: Align catalog and architecture summaries**
+- [x] **Step 6: Align catalog and architecture summaries**
 
 In `docs/plans/INDEX.md`:
 
@@ -530,7 +530,7 @@ In `ARCHITECTURE.md`, replace the stale sentence saying no live implementation
 batch is ready with a concise `Next Planned Slice` list naming the four
 promoted product-facing batches.
 
-- [ ] **Step 7: Run the real queue validator and documentation checks**
+- [x] **Step 7: Run the real queue validator and documentation checks**
 
 Run: `mix work_queue.validate`
 
@@ -548,7 +548,7 @@ Run: `git diff --check`
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit the seeded queue milestone**
+- [x] **Step 8: Commit the seeded queue milestone**
 
 ```bash
 git add ARCHITECTURE.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-10-shopper-home-content-implementation-plan.md docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md docs/work/frontend-shopper-home-navigation.md docs/work/frontend-product-comparison-demo-parity.md docs/work/frontend-saved-comparisons-ui.md
@@ -565,7 +565,7 @@ git commit -m "docs: seed continuously replenished product work"
 - Consumes: `mix work_queue.validate` and a seeded `docs/work/index.md` from Tasks 1-3.
 - Produces: CI and precommit aliases that reject future stable commits with a drained or incomplete ready queue; checked plan boxes record execution evidence.
 
-- [ ] **Step 1: Add queue validation to repository aliases**
+- [x] **Step 1: Add queue validation to repository aliases**
 
 In `mix.exs`, prepend `"work_queue.validate"` to both the `ci` and `precommit`
 alias lists so the workflow invariant runs before formatting, type, quality, and
@@ -584,7 +584,7 @@ precommit: [
 ]
 ```
 
-- [ ] **Step 2: Run focused workflow verification**
+- [x] **Step 2: Run focused workflow verification**
 
 Run: `mix format --check-formatted mix.exs lib/product_compare/work_queue/validator.ex lib/mix/tasks/work_queue.validate.ex test/product_compare/work_queue/validator_test.exs`
 
@@ -598,7 +598,7 @@ Run: `mix work_queue.validate`
 
 Expected: `work queue valid: 4 ready rows`.
 
-- [ ] **Step 3: Run stale-policy and diff checks**
+- [x] **Step 3: Run stale-policy and diff checks**
 
 Run:
 
@@ -614,7 +614,7 @@ Run: `git diff --check`
 
 Expected: exit 0.
 
-- [ ] **Step 4: Mark this implementation plan complete and commit**
+- [x] **Step 4: Mark this implementation plan complete and commit**
 
 Change every checkbox in this plan to `[x]`, then run:
 
@@ -623,7 +623,7 @@ git add mix.exs docs/superpowers/plans/2026-07-10-continuously-replenished-ready
 git commit -m "build: gate continuously replenished work queue"
 ```
 
-- [ ] **Step 5: Record final commit evidence**
+- [x] **Step 5: Record final commit evidence**
 
 Run: `git log -5 --oneline`
 
