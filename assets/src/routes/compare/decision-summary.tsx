@@ -85,13 +85,25 @@ export function DecisionSummary({
       <div {...props(styles.tableWrap)}>
         <table aria-label="Decision summary" {...props(styles.table)}>
           <DecisionSummaryHeader products={products} />
-          <tbody>
-            <DecisionSummaryMetricRows offerContexts={offerContexts} products={products} />
-            <ReviewOffersRow products={products} />
-          </tbody>
+          <DecisionSummaryBody offerContexts={offerContexts} products={products} />
         </table>
       </div>
     </section>
+  );
+}
+
+function DecisionSummaryBody({
+  offerContexts,
+  products
+}: {
+  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
+  products: CompareProductSummary[];
+}) {
+  return (
+    <tbody>
+      <DecisionSummaryMetricRows offerContexts={offerContexts} products={products} />
+      <ReviewOffersRow products={products} />
+    </tbody>
   );
 }
 

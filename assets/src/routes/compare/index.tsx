@@ -254,19 +254,7 @@ export function CompareRoute() {
           selectedSlugs={loaderData.slugs}
           specMode={loaderData.specMode}
         >
-          <ResettableErrorBoundary
-            resetToken={loaderData.query}
-            fallback={
-              <>
-                <FeedbackState kind="error" title="Comparison details unavailable." />
-                <CompareProductSummaryList products={loaderData.products} />
-              </>
-            }
-          >
-            <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
-              <CompareProductList loaderData={loaderData} />
-            </Suspense>
-          </ResettableErrorBoundary>
+          <CompareProductDetailsBoundary loaderData={loaderData} />
         </CompareSpecModeControls>
         {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
           <CompareProductPickerBoundary
@@ -308,6 +296,28 @@ function CompareRouteQueryRetainer({
   useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, query);
 
   return null;
+}
+
+function CompareProductDetailsBoundary({
+  loaderData
+}: {
+  loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
+}) {
+  return (
+    <ResettableErrorBoundary
+      resetToken={loaderData.query}
+      fallback={
+        <>
+          <FeedbackState kind="error" title="Comparison details unavailable." />
+          <CompareProductSummaryList products={loaderData.products} />
+        </>
+      }
+    >
+      <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
+        <CompareProductList loaderData={loaderData} />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
 }
 
 function CompareSpecModeControls({
