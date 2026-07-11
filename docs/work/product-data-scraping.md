@@ -5,10 +5,9 @@
 - Status: done (CJ scheduled-readiness contract)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: CJ scheduled-readiness implementation complete; awaiting
-  coordinator close-out
-- Last verified: 2026-07-10 against the CJ readiness task, focused tests, and
-  updated bounded-operation runbook
+- Live queue row: completed and removed during coordinator close-out.
+- Last verified: 2026-07-11 against effective scheduler configuration and the
+  focused CJ readiness suite.
 - Last documentation refresh: 2026-07-10 after scheduled-readiness verification
 - Last plan refresh: 2026-07-02 after moving the CJ read-model and weekly
   operator runbook plans to completed status
@@ -95,8 +94,9 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs` passed 14
   tests with 0 failures.
 - Manual readiness remains backward compatible when schedules are not required.
-- `--require-scheduled` makes `ready=true` depend on both existing schedule
-  enable flags, while `--require-ready` remains the independent raising switch.
+- `--require-scheduled` makes `ready=true` depend on both effective scheduler
+  configurations, while `--require-ready` remains the independent raising
+  switch.
 - The report exposes only `require_scheduled`, feed/import schedule booleans,
   and `schedules_ready`; it never prints raw environment or credential values.
 - `docs/runbooks/cj-weekly-operator-loop.md` now documents bounded activation,

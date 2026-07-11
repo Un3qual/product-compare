@@ -38,6 +38,7 @@ import {
   buildSuccessfulDeleteResponse
 } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
+import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
 
 const {
   commitMutationMock,
@@ -420,16 +421,7 @@ const buildProductSummary = (product: CompareTestProduct) => ({
 });
 
 const buildSavedProducts = (slugs: string[]) =>
-  slugs.map((slug) => ({
-    name:
-      [DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT].find((product) => product.slug === slug)
-        ?.name ??
-      slug
-        .split("-")
-        .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
-        .join(" "),
-    slug
-  }));
+  savedProductsForSlugs(slugs, [DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
 
 const buildSavedComparisonPage = ({
   endCursor = null,
@@ -488,6 +480,19 @@ const buildReadyCompareLoaderData = (
   ],
   ...overrides
 });
+
+function renderRelativeLoadedPriceCells(
+  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>
+) {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
+  renderCompareRoute();
+
+  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
+    name: /Relative loaded price/
+  });
+
+  return within(row).getAllByRole("cell").map((cell) => cell.textContent);
+}
 
 beforeEach(() => {
   commitMutationMock.mockReset();
@@ -988,6 +993,61 @@ test("compare loader does not choose a best current price across mixed currencie
         activeOfferCount: 2,
         bestCurrentPrice: null,
         latestPriceObservedAt: "2026-06-29T13:00:00Z"
+      }
+    }
+  });
+});
+
+test("compare loader selects the exact lowest price beyond Number precision", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT],
+      offerConnections: new Map([
+        [
+          DETAIL_PRODUCT.id,
+          buildOfferContextConnection({
+            offers: [
+              {
+                id: "merchant-product-higher",
+                currency: "USD",
+                merchant: { id: "merchant-higher", name: "Higher Shop" },
+                latestPrice: {
+                  id: "price-higher",
+                  price: "9007199254740993.00",
+                  observedAt: "2026-06-29T12:00:00Z"
+                }
+              },
+              {
+                id: "merchant-product-lower",
+                currency: "USD",
+                merchant: { id: "merchant-lower", name: "Lower Shop" },
+                latestPrice: {
+                  id: "price-lower",
+                  price: "9007199254740992.00",
+                  observedAt: "2026-06-29T13:00:00Z"
+                }
+              }
+            ]
+          })
+        ]
+      ])
+    })
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        bestCurrentPrice: {
+          currency: "USD",
+          merchantName: "Lower Shop",
+          price: "9007199254740992.00"
+        }
       }
     }
   });
@@ -1566,8 +1626,8 @@ test("ready compare page renders decision summary rows above the specification m
 });
 
 test("ready compare page marks the lowest relative loaded price", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
+  expect(
+    renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
           bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
@@ -1577,49 +1637,27 @@ test("ready compare page marks the lowest relative loaded price", () => {
         })
       }
     })
-  );
-
-  renderCompareRoute();
-
-  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
-  });
-
-  expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "Lowest loaded price",
-    "Above lowest loaded price"
-  ]);
+  ).toEqual(["Lowest loaded price", "Above lowest loaded price"]);
 });
 
-test("ready compare page marks equal normalized prices as tied for lowest loaded price", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
+test("ready compare page compares scientific Decimal prices exactly", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "099.990" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "1E+3" }
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "99.99" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "1000" }
         })
       }
     })
-  );
-
-  renderCompareRoute();
-
-  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
-  });
-
-  expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "Tied for lowest loaded price",
-    "Tied for lowest loaded price"
-  ]);
+  ).toEqual(["Tied for lowest loaded price", "Tied for lowest loaded price"]);
 });
 
 test("ready compare page declines mixed currencies as not comparable", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
+  expect(
+    renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
           bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
@@ -1629,23 +1667,12 @@ test("ready compare page declines mixed currencies as not comparable", () => {
         })
       }
     })
-  );
-
-  renderCompareRoute();
-
-  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
-  });
-
-  expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "Not comparable",
-    "Not comparable"
-  ]);
+  ).toEqual(["Not comparable", "Not comparable"]);
 });
 
 test("ready compare page declines malformed and missing loaded prices as not comparable", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
+  expect(
+    renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
           bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "not-a-price" }
@@ -1653,23 +1680,12 @@ test("ready compare page declines malformed and missing loaded prices as not com
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
       }
     })
-  );
-
-  renderCompareRoute();
-
-  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
-  });
-
-  expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "Not comparable",
-    "Not comparable"
-  ]);
+  ).toEqual(["Not comparable", "Not comparable"]);
 });
 
 test("ready compare page compares two safe prices while an unavailable product is not comparable", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
+  expect(
+    renderRelativeLoadedPriceCells({
       products: [
         buildProductSummary(DETAIL_PRODUCT),
         buildProductSummary(SECOND_PRODUCT),
@@ -1685,19 +1701,7 @@ test("ready compare page compares two safe prices while an unavailable product i
         [THIRD_PRODUCT.id]: buildUnavailableOfferContextSummary(THIRD_PRODUCT.id)
       }
     })
-  );
-
-  renderCompareRoute();
-
-  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
-  });
-
-  expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "Lowest loaded price",
-    "Above lowest loaded price",
-    "Not comparable"
-  ]);
+  ).toEqual(["Lowest loaded price", "Above lowest loaded price", "Not comparable"]);
 });
 
 test("ready compare page keeps specs visible when one offer context is unavailable", () => {

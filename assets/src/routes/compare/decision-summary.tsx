@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { compareDecimalStrings } from "../decimal-values";
 import type {
   CompareOfferContextSummary,
   CompareProductSummary,
@@ -39,12 +40,7 @@ interface DecisionSummaryMetric {
 type ComparablePrice = {
   currency: string;
   productId: string;
-  value: PriceMagnitude;
-};
-
-type PriceMagnitude = {
-  fraction: string;
-  integer: string;
+  value: string;
 };
 
 export function DecisionSummary({
@@ -136,9 +132,10 @@ function relativeLoadedPriceLabels(
       return [];
     }
 
-    const value = parsePriceMagnitude(context.bestCurrentPrice.price);
+    const value = context.bestCurrentPrice.price;
+    const comparisonToZero = compareDecimalStrings(value, "0");
 
-    return value
+    return comparisonToZero !== null && comparisonToZero >= 0
       ? [{ currency: context.bestCurrentPrice.currency, productId: product.id, value }]
       : [];
   });
@@ -151,10 +148,10 @@ function relativeLoadedPriceLabels(
   }
 
   const minimum = comparablePrices.reduce((current, candidate) =>
-    comparePriceMagnitudes(candidate.value, current.value) < 0 ? candidate : current
+    compareDecimalStrings(candidate.value, current.value) === -1 ? candidate : current
   );
   const minimumCount = comparablePrices.filter(
-    ({ value }) => comparePriceMagnitudes(value, minimum.value) === 0
+    ({ value }) => compareDecimalStrings(value, minimum.value) === 0
   ).length;
   const comparableByProductId = new Map(
     comparablePrices.map((price) => [price.productId, price])
@@ -170,7 +167,7 @@ function relativeLoadedPriceLabels(
 
       return [
         id,
-        comparePriceMagnitudes(price.value, minimum.value) === 0
+        compareDecimalStrings(price.value, minimum.value) === 0
           ? minimumCount > 1
             ? "Tied for lowest loaded price"
             : "Lowest loaded price"
@@ -178,35 +175,6 @@ function relativeLoadedPriceLabels(
       ] as const;
     })
   );
-}
-
-function parsePriceMagnitude(value: string): PriceMagnitude | null {
-  const match = /^(\d+)(?:\.(\d+))?$/.exec(value.trim());
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    integer: match[1].replace(/^0+(?=\d)/, ""),
-    fraction: (match[2] ?? "").replace(/0+$/, "")
-  };
-}
-
-function comparePriceMagnitudes(left: PriceMagnitude, right: PriceMagnitude) {
-  if (left.integer.length !== right.integer.length) {
-    return left.integer.length < right.integer.length ? -1 : 1;
-  }
-
-  if (left.integer !== right.integer) {
-    return left.integer < right.integer ? -1 : 1;
-  }
-
-  const fractionLength = Math.max(left.fraction.length, right.fraction.length);
-  const leftFraction = left.fraction.padEnd(fractionLength, "0");
-  const rightFraction = right.fraction.padEnd(fractionLength, "0");
-
-  return leftFraction === rightFraction ? 0 : leftFraction < rightFraction ? -1 : 1;
 }
 
 function ReviewOffersRow({ products }: { products: CompareProductSummary[] }) {

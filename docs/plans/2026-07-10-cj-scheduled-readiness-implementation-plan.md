@@ -6,7 +6,7 @@
 operation through the existing non-secret readiness gate.
 
 **Architecture:** Extend the read-only readiness task with schedule booleans
-derived from the same environment contract used by runtime configuration. Keep
+read from the effective application configuration used by the schedulers. Keep
 manual readiness backward compatible, make scheduled readiness opt-in through
 `--require-scheduled`, and retain `--require-ready` as the enforcement switch.
 
@@ -28,7 +28,7 @@ manual readiness backward compatible, make scheduled readiness opt-in through
 ## Batches
 
 - [x] Add RED coverage for manual compatibility, disabled/partial/enabled
-  schedule state, truthy normalization, and combined enforcement.
+  effective schedule state and combined enforcement.
 - [x] Add `--require-scheduled` plus non-secret schedule output to the existing
   readiness task.
 - [x] Document bounded scheduled activation and post-run verification in the

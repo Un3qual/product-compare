@@ -189,7 +189,7 @@ manual readiness. Email delivery, live conversion-provider ingestion,
 production privacy and attribution controls, and production-readiness proof
 were intentionally excluded from this milestone. The three ready rows above
 are optional polish beyond this completion boundary. Final verification passed
-Relay generation, all 607 frontend tests, frontend typechecking, client and SSR
+Relay generation, all 617 frontend tests, frontend typechecking, client and SSR
 production builds, all 634 backend tests, backend typechecking and formatting,
 diff hygiene, and `mix work_queue.validate` with three ready rows.
 

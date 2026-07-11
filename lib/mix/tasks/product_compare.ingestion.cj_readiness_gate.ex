@@ -16,9 +16,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
   @discovery_surface "shoppingProductFeeds"
   @import_surface "shoppingProducts"
   @required_env_vars ~w(CJ_API_TOKEN CJ_ACCOUNT_ID)
-  @feed_discovery_schedule_env "CJ_FEED_DISCOVERY_SCHEDULE_ENABLED"
-  @product_import_schedule_env "CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED"
-  @truthy_values ~w(1 true yes on)
+  @feed_discovery_scheduler_config :cj_feed_discovery_scheduler
+  @product_import_scheduler_config :cj_product_import_scheduler
   @default_max_discovery_age_hours 48
   @default_max_import_age_hours 48
   @default_min_candidates 1
@@ -99,8 +98,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
     candidate_count = candidate_count()
     shortlisted_count = shortlisted_count()
-    feed_discovery_schedule_enabled = truthy_env?(@feed_discovery_schedule_env)
-    product_import_schedule_enabled = truthy_env?(@product_import_schedule_env)
+    feed_discovery_schedule_enabled = scheduler_enabled?(@feed_discovery_scheduler_config)
+    product_import_schedule_enabled = scheduler_enabled?(@product_import_scheduler_config)
     schedules_ready = feed_discovery_schedule_enabled and product_import_schedule_enabled
 
     base_ready =
@@ -133,12 +132,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
     end
   end
 
-  defp truthy_env?(name) do
-    name
-    |> System.get_env("")
-    |> String.trim()
-    |> String.downcase()
-    |> then(&(&1 in @truthy_values))
+  defp scheduler_enabled?(config_key) do
+    :product_compare
+    |> Application.get_env(config_key, [])
+    |> Keyword.get(:enabled, false)
+    |> Kernel.==(true)
   end
 
   defp candidate_count do

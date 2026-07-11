@@ -6,6 +6,7 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
+import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
 
 const {
   commitMutationMock,
@@ -76,16 +77,6 @@ const SAVED_SET_QUERY_REF = {
   dispose: vi.fn(),
   variables: SAVED_SET_QUERY_DESCRIPTOR.__relayQuery.variables
 };
-
-function savedProducts(slugs: string[]) {
-  return slugs.map((slug) => ({
-    name: slug
-      .split("-")
-      .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
-      .join(" "),
-    slug
-  }));
-}
 
 function buildSavedSet() {
   return {

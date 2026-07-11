@@ -1,4 +1,8 @@
-import { canComparePriceCurrencies, decimalStringToNumber } from "../../src/routes/decimal-values";
+import {
+  canComparePriceCurrencies,
+  compareDecimalStrings,
+  decimalStringToNumber
+} from "../../src/routes/decimal-values";
 
 test("decimalStringToNumber normalizes finite decimal values", () => {
   expect(decimalStringToNumber(42)).toBe(42);
@@ -33,4 +37,23 @@ test("canComparePriceCurrencies allows price comparisons only within one currenc
   expect(canComparePriceCurrencies(["USD", "USD"])).toBe(true);
   expect(canComparePriceCurrencies(["USD", "EUR"])).toBe(false);
   expect(canComparePriceCurrencies(["USD", null])).toBe(false);
+});
+
+test.each([
+  ["9007199254740993.00", "9007199254740992.00", 1],
+  ["1E+3", "1000", 0],
+  ["1E-20", "0.00000000000000000001", 0],
+  ["0", "1E-20", -1],
+  ["1E-20", "0", 1],
+  [".75", "0.7500", 0],
+  ["-4.5e-2", "-0.04", -1],
+  ["-0", "+0.000", 0]
+] as const)("compareDecimalStrings compares %s and %s exactly", (left, right, expected) => {
+  expect(compareDecimalStrings(left, right)).toBe(expected);
+});
+
+test("compareDecimalStrings rejects malformed or unsafe decimal strings", () => {
+  expect(compareDecimalStrings("not-a-price", "1")).toBeNull();
+  expect(compareDecimalStrings("1", "Infinity")).toBeNull();
+  expect(compareDecimalStrings("1e999999999999999999999", "1")).toBeNull();
 });

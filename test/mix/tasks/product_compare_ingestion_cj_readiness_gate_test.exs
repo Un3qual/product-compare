@@ -13,12 +13,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
 
-  @cj_env_vars ~w(
-    CJ_API_TOKEN
-    CJ_ACCOUNT_ID
-    CJ_FEED_DISCOVERY_SCHEDULE_ENABLED
-    CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED
-  )
+  @cj_env_vars ~w(CJ_API_TOKEN CJ_ACCOUNT_ID)
+  @scheduler_config_keys ~w(cj_feed_discovery_scheduler cj_product_import_scheduler)a
 
   setup do
     Repo.delete_all(MerchantFeedCandidate)
@@ -28,12 +24,22 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       @cj_env_vars
       |> Map.new(fn var -> {var, System.get_env(var)} end)
 
+    original_scheduler_configs =
+      Map.new(@scheduler_config_keys, fn key ->
+        {key, Application.get_env(:product_compare, key)}
+      end)
+
     Enum.each(@cj_env_vars, &System.delete_env/1)
+    Enum.each(@scheduler_config_keys, &set_scheduler_enabled(&1, false))
 
     on_exit(fn ->
       Enum.each(original_env, fn
         {var, nil} -> System.delete_env(var)
         {var, value} -> System.put_env(var, value)
+      end)
+
+      Enum.each(original_scheduler_configs, fn {key, value} ->
+        restore_app_env(key, value)
       end)
     end)
   end
@@ -114,7 +120,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
     test "requires both schedules when scheduled operation is requested" do
       seed_ready_cj_state!()
-      System.put_env("CJ_FEED_DISCOVERY_SCHEDULE_ENABLED", "true")
+      set_scheduler_enabled(:cj_feed_discovery_scheduler, true)
 
       output = capture_io(fn -> CjReadinessGate.run(["--require-scheduled"]) end)
 
@@ -125,15 +131,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       assert output =~ "schedules_ready=false"
     end
 
-    test "accepts runtime truthy values when both schedules are required" do
+    test "reports the effective scheduler configuration" do
       seed_ready_cj_state!()
-      System.put_env("CJ_FEED_DISCOVERY_SCHEDULE_ENABLED", "ON")
-      System.put_env("CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED", "yes")
+      set_scheduler_enabled(:cj_feed_discovery_scheduler, true)
+      set_scheduler_enabled(:cj_product_import_scheduler, true)
 
       output = capture_io(fn -> CjReadinessGate.run(["--require-scheduled"]) end)
 
       assert output =~ "ready=true"
-      assert output =~ "require_scheduled=true"
       assert output =~ "feed_discovery_schedule_enabled=true"
       assert output =~ "product_import_schedule_enabled=true"
       assert output =~ "schedules_ready=true"
@@ -381,6 +386,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
   defp restore_app_env(key, nil), do: Application.delete_env(:product_compare, key)
   defp restore_app_env(key, value), do: Application.put_env(:product_compare, key, value)
+
+  defp set_scheduler_enabled(key, enabled) do
+    config = Application.get_env(:product_compare, key, [])
+    Application.put_env(:product_compare, key, Keyword.put(config, :enabled, enabled))
+  end
 
   defp stop_repo_if_started do
     case Process.whereis(Repo) do

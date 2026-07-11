@@ -5,7 +5,7 @@
 - Status: done (saved product labels)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-06-29 after saved-comparisons return-flow verification
+- Last verified: 2026-07-11 after saved-product fixture cleanup
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -60,6 +60,8 @@
 - Route summaries now retain ordered `{name, slug}` products, filters match set
   names plus product names or slugs, counts and sorting use the product list,
   cards render names, and reopen URLs still use stored slug order.
+- Review follow-up replaced duplicated slug-to-name synthesis in route tests
+  with one explicit saved-product fixture catalog that fails on unknown slugs.
 
 ## Current Usable Product Batch
 
