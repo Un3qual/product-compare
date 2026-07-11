@@ -167,19 +167,21 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Shared Application Shell And Home
+### 1. Catalog Browse And Product Detail
 
 Status: active
 Lane: Frontend Radix UI polish
 Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Apply the shared Radix foundation to responsive navigation and the
-shopper-focused home route.
+Next action: Apply the shared Radix foundation to catalog filters, product
+results, product detail, specifications, and active-offer context.
 Owned paths:
 
-- `assets/src/ui/components/layout/app-shell.tsx`
-- `assets/src/routes/root.tsx`
-- `assets/test/ui/app-shell.test.tsx`
-- `assets/test/routes/root.route.test.tsx`
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/products/detail.tsx`
+- `assets/src/routes/products/product-attribute-list.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
 - `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
@@ -188,14 +190,14 @@ Prerequisites:
 
 Verification:
 
-- `cd assets && bun x vitest run test/ui/app-shell.test.tsx test/routes/root.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: The responsive shell exposes exact active navigation and the
-home route presents three clear shopper paths while preserving viewer-aware
-destinations.
+Exit condition: Catalog controls, product rows, detail specifications, decision
+actions, and offer context are visibly grouped and readable without changing
+filter, compare-selection, or pagination behavior.
 
 ## Needs Decision Work
 

@@ -1,11 +1,13 @@
 import * as stylex from "@stylexjs/stylex";
+import type { ButtonProps } from "@radix-ui/themes";
 import { usePreloadedQuery } from "react-relay";
-import { Link, Outlet, useLoaderData, useOutletContext } from "react-router-dom";
+import { Link, NavLink, Outlet, useLoaderData, useOutletContext } from "react-router-dom";
 import rootViewerRouteQuery, {
   type RootViewerRouteQuery
 } from "../__generated__/RootViewerRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../relay/route-preload";
 import { AppShell } from "../ui/components/layout/app-shell";
+import { PageShell } from "../ui/components/layout/page-shell";
 import { Button } from "../ui/primitives/button";
 import { AppProviders } from "../ui/providers/app-providers";
 import type { RootLoaderData, RootViewer } from "./root/loader";
@@ -13,15 +15,7 @@ import type { RootLoaderData, RootViewer } from "./root/loader";
 const styles = stylex.create({
   actionGroups: {
     display: "grid",
-    gap: "1.25rem"
-  },
-  home: {
-    display: "grid",
-    gap: "1rem",
-    marginInline: "auto",
-    maxWidth: "40rem",
-    paddingBlock: "3rem",
-    paddingInline: "1.5rem"
+    gap: "2rem"
   },
   actions: {
     display: "flex",
@@ -29,9 +23,28 @@ const styles = stylex.create({
     gap: "0.75rem"
   },
   link: {
-    color: "inherit",
     fontWeight: 600,
-    textDecoration: "underline"
+    textDecoration: "none"
+  },
+  shopperPaths: {
+    display: "grid",
+    gap: "0.85rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(13rem, 1fr))",
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  shopperPath: {
+    display: "flex"
+  },
+  shopperLink: {
+    justifyContent: "center",
+    minHeight: "3rem",
+    width: "100%"
+  },
+  secondaryActions: {
+    borderBlockStart: "1px solid var(--pc-border-quiet)",
+    paddingBlockStart: "1.25rem"
   },
   navigation: {
     alignItems: "center",
@@ -46,7 +59,7 @@ const styles = stylex.create({
     gap: "0.75rem"
   },
   title: {
-    color: "inherit",
+    letterSpacing: "-0.02em",
     fontWeight: 700,
     textDecoration: "none"
   }
@@ -116,11 +129,15 @@ function RootLayoutShell({ viewer }: RootOutletContext) {
         navigation={
           <div {...stylex.props(styles.navigation)}>
             <Button asChild {...stylex.props(styles.title)}>
-              <Link to="/">Product Compare</Link>
+              <NavLink end to="/">
+                Product Compare
+              </NavLink>
             </Button>
             <div {...stylex.props(styles.navigationLinks)}>
-              <DestinationLinks destinations={PUBLIC_DESTINATIONS} />
-              {viewer ? <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} /> : null}
+              <DestinationLinks destinations={PUBLIC_DESTINATIONS} variant="ghost" />
+              {viewer ? (
+                <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
+              ) : null}
               <AuthLinks viewer={viewer} />
             </div>
           </div>
@@ -136,42 +153,69 @@ export function RootRoute() {
   const { viewer } = useOutletContext<RootOutletContext>();
 
   return (
-    <section {...stylex.props(styles.home)}>
-      <div>
-        <h1>Product Compare</h1>
-        <p>
-          Find products, compare specifications, and review current offers before you choose what
-          to buy.
-        </p>
-      </div>
+    <PageShell
+      description="Find products, compare specifications, and review current offers before you choose what to buy."
+      eyebrow="A clearer path to the right product"
+      title="Product Compare"
+      width="reading"
+    >
       <div aria-label="Home actions" role="group" {...stylex.props(styles.actionGroups)}>
         <div aria-label="Shopper actions" role="group" {...stylex.props(styles.actions)}>
-          <DestinationLinks destinations={SHOPPER_DESTINATIONS} />
+          <ul aria-label="Shopper paths" {...stylex.props(styles.shopperPaths)}>
+            {SHOPPER_DESTINATIONS.map(({ label, to }) => (
+              <li key={to} {...stylex.props(styles.shopperPath)}>
+                <DestinationLink
+                  label={label}
+                  style={styles.shopperLink}
+                  to={to}
+                  variant="solid"
+                />
+              </li>
+            ))}
+          </ul>
         </div>
         <div
           aria-label="More Product Compare actions"
           role="group"
-          {...stylex.props(styles.actions)}
+          {...stylex.props(styles.actions, styles.secondaryActions)}
         >
-          <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} />
-          {viewer ? <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} /> : null}
+          <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} variant="soft" />
+          {viewer ? (
+            <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="soft" />
+          ) : null}
           <AuthLinks viewer={viewer} />
         </div>
       </div>
-    </section>
+    </PageShell>
   );
 }
 
-function DestinationLinks({ destinations }: { destinations: readonly Destination[] }) {
+function DestinationLinks({
+  destinations,
+  variant = "ghost"
+}: {
+  destinations: readonly Destination[];
+  variant?: ButtonProps["variant"];
+}) {
   return destinations.map(({ label, to }) => (
-    <DestinationLink key={to} label={label} to={to} />
+    <DestinationLink key={to} label={label} to={to} variant={variant} />
   ));
 }
 
-function DestinationLink({ label, to }: { label: string; to: string }) {
+function DestinationLink({
+  label,
+  style,
+  to,
+  variant = "ghost"
+}: {
+  label: string;
+  style?: stylex.StyleXStyles;
+  to: string;
+  variant?: ButtonProps["variant"];
+}) {
   return (
-    <Button asChild {...stylex.props(styles.link)}>
-      <Link to={to}>{label}</Link>
+    <Button asChild variant={variant} {...stylex.props(styles.link, style)}>
+      <NavLink to={to}>{label}</NavLink>
     </Button>
   );
 }
@@ -180,7 +224,7 @@ function AuthLinks({ viewer }: { viewer: RootViewer | null }) {
   if (viewer) {
     return (
       <Button asChild {...stylex.props(styles.link)}>
-        <Link to="/auth/logout">Sign out</Link>
+        <NavLink to="/auth/logout">Sign out</NavLink>
       </Button>
     );
   }
@@ -188,10 +232,10 @@ function AuthLinks({ viewer }: { viewer: RootViewer | null }) {
   return (
     <>
       <Button asChild {...stylex.props(styles.link)}>
-        <Link to="/auth/login">Sign in</Link>
+        <NavLink to="/auth/login">Sign in</NavLink>
       </Button>
       <Button asChild {...stylex.props(styles.link)}>
-        <Link to="/auth/register">Create account</Link>
+        <NavLink to="/auth/register">Create account</NavLink>
       </Button>
     </>
   );

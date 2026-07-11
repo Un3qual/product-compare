@@ -226,13 +226,20 @@ test("root route renders guest home actions as links while using the shared butt
   renderRootRoute(guestLoaderData);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
   const homeActions = screen.getByRole("group", { name: "Home actions" });
+  const shopperPaths = within(homeActions).getByRole("list", { name: "Shopper paths" });
 
-  expect(within(homeActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+  expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
+
+  expect(within(shopperPaths).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "data-slot",
     "button"
   );
-  expect(within(homeActions).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+  expect(within(shopperPaths).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "data-slot",
     "button"
   );

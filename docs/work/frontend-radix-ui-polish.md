@@ -43,9 +43,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 2: Shared Application Shell And Home
+## Batch 2: Shared Application Shell And Home
 
-Status: active
+Status: done
 Owned paths:
 
 - `assets/src/ui/components/layout/app-shell.tsx`
@@ -64,6 +64,38 @@ Verification:
 Exit condition: the responsive shell exposes exact active navigation and the
 home route presents three clear shopper paths while preserving viewer-aware
 destinations.
+
+Completion evidence:
+
+- RED: focused shell and root tests failed because the application wrapper,
+  exact active root link, and named shopper-path list were absent.
+- GREEN: the focused shell and root suites passed 2 files and 10 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed both client and SSR builds.
+
+## Active Batch 3: Catalog Browse And Product Detail
+
+Status: active
+Owned paths:
+
+- `assets/src/routes/catalog/browse.tsx`
+- `assets/src/routes/catalog/filter-form.tsx`
+- `assets/src/routes/products/detail.tsx`
+- `assets/src/routes/products/product-attribute-list.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: catalog controls, product rows, detail specifications, decision
+actions, and offer context are visibly grouped and readable without changing
+filter, compare-selection, or pagination behavior.
 
 ## Dependent Batches
 
