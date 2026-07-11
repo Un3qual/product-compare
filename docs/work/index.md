@@ -97,15 +97,21 @@ Lane: Frontend shopper home
 Plan: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
 Next action: Replace technical implementation-status copy with a shopper-oriented browse, compare, and offer-review journey using the existing root route.
 Owned paths:
+
 - `assets/src/routes/root.tsx`
 - `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-shopper-home-navigation.md`
+
 Prerequisites:
+
 - Existing root viewer preload and current route set remain unchanged.
+
 Verification:
+
 - `cd assets && bun x vitest run test/routes/root.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: The root page communicates the shopper journey and prioritizes browse, compare, and offer review with green focused tests.
 
 ### 2. Viewer-Aware Navigation
@@ -115,15 +121,21 @@ Lane: Frontend shopper home
 Plan: `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 Next action: Keep public shopper routes visible to guests and show saved and account-oriented destinations only when the existing root viewer is authenticated.
 Owned paths:
+
 - `assets/src/routes/root.tsx`
 - `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-shopper-home-navigation.md`
+
 Prerequisites:
+
 - No code prerequisite; serialize this row when the other root-route row is active because their owned paths overlap.
+
 Verification:
+
 - `cd assets && bun x vitest run test/routes/root.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: Guest and authenticated root states expose the correct public, account, and auth destinations without changing direct-route authorization.
 
 ### 3. Compare Relative Loaded Price Signal
@@ -133,16 +145,22 @@ Lane: Frontend product comparison demo parity
 Plan: `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
 Next action: Add a decision-summary row that identifies the safe lowest already-loaded same-currency price and declines unsafe comparisons.
 Owned paths:
+
 - `assets/src/routes/compare/decision-summary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
+
 Prerequisites:
+
 - Existing compare offer contexts continue to expose `bestCurrentPrice` without query or loader changes.
+
 Verification:
+
 - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|lowest loaded price|not comparable"`
 - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: The decision summary identifies comparable lowest loaded prices and explicitly declines mixed, missing, malformed, or unavailable comparisons.
 
 ### 4. Saved Comparison Product Labels
@@ -152,19 +170,27 @@ Lane: Frontend saved comparisons
 Plan: `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
 Next action: Query and render saved product names in stored order while preserving slug-based reopen order and current route behavior.
 Owned paths:
+
 - `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`
 - `assets/src/routes/compare/saved-data.ts`
 - `assets/src/routes/compare/saved.tsx`
 - `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`
 - `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `docs/work/frontend-saved-comparisons-ui.md`
+
 Prerequisites:
+
 - The current GraphQL Product type and local schema snapshot continue to expose non-null `name` and `slug` fields.
+
 Verification:
+
 - `cd assets && bun run relay`
 - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: Saved comparison cards display ordered product names and reopen the exact stored slug order with existing auth, pagination, filtering, sorting, and delete behavior intact.
 
 ## Active Work
@@ -350,9 +376,9 @@ Start at docs/work/index.md.
 Read docs/work/operating-model.md.
 Claim the highest-ranked compatible ready row only when three other ready rows will remain.
 Leave other ready rows unchanged.
-Open only that row's Work Doc, linked active plan if any, Target Paths, and immediate tests.
+Open only that row's Work Doc, linked active plan if any, Owned paths, and immediate tests.
 Update the lane work doc as the batch changes.
-Do not edit coordinator-owned docs unless the ready row names them as Target Paths.
+Do not edit coordinator-owned docs unless the ready row names them under Owned paths.
 Stop if the row is blocked, stale, or needs a decision.
 If the claim guard is not satisfied, stop and hand off to the coordinator for replenishment.
 ```

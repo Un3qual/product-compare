@@ -22,16 +22,17 @@
 - If the candidate catalog cannot restore the floor, the coordinator validates
   new implementation candidates against current product behavior, code, tests,
   architecture gaps, and lane evidence before dispatch continues.
-- Never use deferred, rejected, blocked, dependent, speculative, stale, or
-  unverified work as queue filler.
+- Do not use deferred, rejected, blocked, dependent, speculative, stale, or
+  unverified work as queue filler unless a later explicit product decision or
+  fresh validation reclassifies it as `ready`.
 - Coordinators may use `docs/plans/INDEX.md` as the candidate pool only during
   replenishment; workers must not treat it as a second queue.
 - A worker claims the highest-ranked `ready` row that does not conflict with an
   active row. Other executable rows remain `ready`.
 - Verify the selected batch against the codebase before assuming it is still unimplemented.
 - Update the relevant `docs/work/*.md` file when lane-local batch status or blockers change.
-- In parallel mode, a worker may edit only files in its row's `Target Paths` plus its lane work doc.
-- Treat `docs/work/index.md`, `docs/plans/INDEX.md`, `docs/plans/NOW.md`, and `ARCHITECTURE.md` as coordinator-owned shared docs unless the selected queue row explicitly names them as `Target Paths`.
+- In parallel mode, a worker may edit only files in its row's `Owned paths` plus its lane work doc.
+- Treat `docs/work/index.md`, `docs/plans/INDEX.md`, `docs/plans/NOW.md`, and `ARCHITECTURE.md` as coordinator-owned shared docs unless the selected queue row explicitly names them under `Owned paths`.
 - If the selected batch requires another lane's files or a coordinator-owned doc, record the blocker in the lane work doc instead of crossing lanes.
 - Commit only at milestone boundaries that include the related code/test/doc changes; do not make standalone checkbox-only or docs-only progress commits.
 - A docs-only commit is acceptable when the docs/workflow system itself is the requested deliverable.

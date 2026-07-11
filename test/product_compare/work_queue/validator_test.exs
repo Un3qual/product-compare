@@ -21,6 +21,34 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert Enum.any?(errors, &String.contains?(&1, "missing Prerequisites:"))
   end
 
+  test "rejects required scalar fields with empty values" do
+    for {field, populated_line} <- [
+          {"Lane:", "Lane: Lane 1"},
+          {"Plan:", "Plan: `docs/plans/candidate-1.md`"},
+          {"Next action:", "Next action: Implement candidate 1."},
+          {"Exit condition:", "Exit condition: Candidate 1 passes verification."}
+        ] do
+      markdown = String.replace(queue_with_rows(3), populated_line, field, global: false)
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "ready row 1 has empty #{field}" in errors
+    end
+  end
+
+  test "rejects required list fields without a non-empty item" do
+    for {field, populated_section} <- [
+          {"Owned paths:", "Owned paths:\n- `path/1`\n"},
+          {"Prerequisites:", "Prerequisites:\n- None.\n"},
+          {"Verification:", "Verification:\n- `mix test`\n"}
+        ] do
+      markdown =
+        String.replace(queue_with_rows(3), populated_section, "#{field}\n", global: false)
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "ready row 1 has no items under #{field}" in errors
+    end
+  end
+
   test "rejects empty-queue shortage language" do
     markdown = """
     # Work Dispatch Index

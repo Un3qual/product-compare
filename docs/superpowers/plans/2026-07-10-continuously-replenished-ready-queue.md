@@ -24,11 +24,13 @@
 ### Task 1: Add a queue-contract validator with fixture-driven tests
 
 **Files:**
+
 - Create: `lib/product_compare/work_queue/validator.ex`
 - Create: `lib/mix/tasks/work_queue.validate.ex`
 - Create: `test/product_compare/work_queue/validator_test.exs`
 
 **Interfaces:**
+
 - Consumes: a Markdown string or path containing one `## Ready Work` section and `###` row headings.
 - Produces: `ProductCompare.WorkQueue.Validator.validate/1`, returning `{:ok, %{ready_count: pos_integer()}}` or `{:error, [String.t()]}`; `validate_file/1` reads a path and delegates to `validate/1`; `mix work_queue.validate [path]` raises on invalid queue state.
 
@@ -267,6 +269,7 @@ git commit -m "test: enforce ready work queue floor"
 ### Task 2: Replace the optional rolling-slate policy with the uncapped floor
 
 **Files:**
+
 - Modify: `AGENTS.md:11-22`
 - Modify: `docs/work/operating-model.md:43-60`
 - Modify: `docs/work/operating-model.md:151-162`
@@ -275,6 +278,7 @@ git commit -m "test: enforce ready work queue floor"
 - Modify: `docs/work/index.md:251-272`
 
 **Interfaces:**
+
 - Consumes: the approved design in `docs/superpowers/specs/2026-07-09-rolling-ready-queue-design.md` and `mix work_queue.validate` from Task 1.
 - Produces: one consistent dispatch contract in all entry-point docs: minimum three ready implementation rows at stable boundaries, no fixed maximum, pre-claim replenishment, truthful completion, and deeper curation instead of an empty-state exception.
 
@@ -380,6 +384,7 @@ git commit -m "docs: enforce uncapped ready queue floor"
 ### Task 3: Create four validated implementation plans and seed the dispatcher
 
 **Files:**
+
 - Create: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
 - Create: `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 - Create: `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
@@ -392,6 +397,7 @@ git commit -m "docs: enforce uncapped ready queue floor"
 - Modify: `ARCHITECTURE.md`
 
 **Interfaces:**
+
 - Consumes: verified current gaps in `assets/src/routes/root.tsx`, `assets/src/routes/compare/decision-summary.tsx`, `assets/src/routes/compare/saved-data.ts`, `assets/src/routes/compare/saved.tsx`, and `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`.
 - Produces: four priority-ordered `Status: ready` rows with implementation plans, explicit lane ownership, exact prerequisites, verification, and exit conditions; the catalog records them as active plans while the live dispatcher remains authoritative. The two root-route rows share code and test ownership, so they remain ready but execute serially under the active-path conflict rule.
 
@@ -467,6 +473,8 @@ with one TDD task that:
 - Adds focused cases to `assets/test/routes/compare/compare.route.test.tsx`
   proving saved comparison cards render product names in stored position order
   and reopen with the same slug order.
+- Runs `assets/test/routes/compare/saved-comparisons-route-state.test.tsx` to
+  preserve filtering, sorting, pagination, and delete behavior.
 - Extends `SavedComparisonsRouteQuery` to select `product { name slug }`.
 - Changes `SavedComparisonSetSummary` in
   `assets/src/routes/compare/saved-data.ts` to store ordered
@@ -478,6 +486,7 @@ with one TDD task that:
 - Verifies with
   `cd assets && bun run relay`,
   `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`,
+  `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`,
   `cd assets && bun run typecheck`, and `git diff --check`.
 - Uses `docs/work/frontend-saved-comparisons-ui.md` as its lane work doc and
   appends a new ready follow-up without rewriting completed history.
@@ -558,10 +567,12 @@ git commit -m "docs: seed continuously replenished product work"
 ### Task 4: Wire the invariant into repository gates and verify the complete workflow
 
 **Files:**
+
 - Modify: `mix.exs:92-106`
 - Modify: `docs/superpowers/plans/2026-07-10-continuously-replenished-ready-queue.md`
 
 **Interfaces:**
+
 - Consumes: `mix work_queue.validate` and a seeded `docs/work/index.md` from Tasks 1-3.
 - Produces: CI and precommit aliases that reject future stable commits with a drained or incomplete ready queue; checked plan boxes record execution evidence.
 

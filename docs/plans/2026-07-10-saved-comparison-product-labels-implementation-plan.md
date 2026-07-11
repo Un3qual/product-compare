@@ -31,6 +31,7 @@ parameters from slugs.
 - `assets/src/routes/compare/saved.tsx`
 - `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`
 - `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `docs/work/frontend-saved-comparisons-ui.md`
 
 ## Interfaces
@@ -57,6 +58,7 @@ parameters from slugs.
 
 - `cd assets && bun run relay`
 - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 

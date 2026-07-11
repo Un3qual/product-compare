@@ -29,13 +29,17 @@
 Status: ready
 Plan: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
 Owned paths:
+
 - `assets/src/routes/root.tsx`
 - `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-shopper-home-navigation.md`
+
 Verification:
+
 - `cd assets && bun x vitest run test/routes/root.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: The root page communicates and prioritizes the browse, compare,
 and offer-review journey without changing route data or authorization.
 
@@ -44,13 +48,17 @@ and offer-review journey without changing route data or authorization.
 Status: ready
 Plan: `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 Owned paths:
+
 - `assets/src/routes/root.tsx`
 - `assets/test/routes/root.route.test.tsx`
 - `docs/work/frontend-shopper-home-navigation.md`
+
 Verification:
+
 - `cd assets && bun x vitest run test/routes/root.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
+
 Exit condition: Public shopper routes remain visible to guests while saved and
 account-oriented destinations appear only for authenticated viewers.
 

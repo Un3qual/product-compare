@@ -113,8 +113,10 @@ Ready row handoff:
 ```text
 Status: ready
 Lane:
+Plan:
 Next action:
 Owned paths:
+Prerequisites:
 Verification:
 Exit condition:
 ```
