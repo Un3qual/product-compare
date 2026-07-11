@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ScrollArea } from "@radix-ui/themes";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
+import { DisclosureGroup } from "../../ui/components/feedback/DisclosureGroup";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { ProductAttributeList } from "../products/ProductAttributeList";
@@ -64,18 +65,29 @@ export function CompareProductList({
         products={loaderData.products}
         specMode={loaderData.specMode}
       />
-      <DataList label="Compared products">
-        {loaderData.products.map((product, index) => (
-          <DataListItem key={product.id}>
-            <CompareProductCard
-              product={product}
-              selectedSlugs={loaderData.slugs}
-              selectedIndex={index}
-              specMode={loaderData.specMode}
-            />
-          </DataListItem>
-        ))}
-      </DataList>
+      <DisclosureGroup
+        items={[
+          {
+            content: (
+              <DataList label="Compared products">
+                {loaderData.products.map((product, index) => (
+                  <DataListItem key={product.id}>
+                    <CompareProductCard
+                      product={product}
+                      selectedSlugs={loaderData.slugs}
+                      selectedIndex={index}
+                      specMode={loaderData.specMode}
+                    />
+                  </DataListItem>
+                ))}
+              </DataList>
+            ),
+            label: "Individual product details",
+            value: "product-details"
+          }
+        ]}
+        label="Supporting comparison detail"
+      />
     </>
   );
 }

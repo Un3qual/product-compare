@@ -359,6 +359,7 @@ test("compare route clears save feedback when the selected comparison changes", 
   await waitFor(() => {
     expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 
@@ -395,6 +396,7 @@ test("compare route ignores stale save completions after the selected comparison
   await waitFor(() => {
     expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 

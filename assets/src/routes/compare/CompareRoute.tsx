@@ -10,6 +10,8 @@ import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.gr
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
@@ -219,50 +221,57 @@ export function CompareRoute() {
     const saveInFlight = activeSaveFeedback.inFlightSelectionKey === selectionKey;
 
     return (
-      <CompareShell
-        actions={
-          <Button disabled={saveInFlight} onClick={handleSave} type="button">
-            {saveInFlight ? "Saving comparison..." : "Save comparison"}
-          </Button>
-        }
-        title="Compare products"
-      >
+      <CompareShell title="Compare products">
         {loaderData.query ? <CompareRouteQueryRetainer query={loaderData.query} /> : null}
-        <p aria-label="Save comparison status" aria-live="polite" role="status">
-          {activeSaveFeedback.message ?? ""}
-        </p>
-        {activeSaveFeedback.error ? (
-          <FeedbackState kind="error" title={activeSaveFeedback.error} />
-        ) : null}
-        <CompareSelectionTray
-          items={loaderData.products.map((product) => ({
-            label: product.name,
-            slug: product.slug
-          }))}
-          maxProducts={MAX_COMPARE_PRODUCTS}
-          openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
-            specMode: loaderData.specMode
-          })}
-          removePathForIndex={(index) =>
-            buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
-              specMode: loaderData.specMode
-            })
+        <WorkspaceLayout
+          context={
+            <ContextRail
+              description="Manage the selected products without interrupting the aligned comparison."
+              label="Comparison controls"
+            >
+              <Button disabled={saveInFlight} onClick={handleSave} type="button">
+                {saveInFlight ? "Saving comparison..." : "Save comparison"}
+              </Button>
+              <p aria-label="Save comparison status" aria-live="polite" role="status">
+                {activeSaveFeedback.message ?? ""}
+              </p>
+              <CompareSelectionTray
+                items={loaderData.products.map((product) => ({
+                  label: product.name,
+                  slug: product.slug
+                }))}
+                maxProducts={MAX_COMPARE_PRODUCTS}
+                openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
+                  specMode: loaderData.specMode
+                })}
+                removePathForIndex={(index) =>
+                  buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
+                    specMode: loaderData.specMode
+                  })
+                }
+                selectedSlugs={loaderData.slugs}
+              />
+              {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
+                <CompareProductPickerBoundary
+                  heading="Add another product"
+                  specMode={loaderData.specMode}
+                  selectedSlugs={loaderData.slugs}
+                />
+              ) : null}
+            </ContextRail>
           }
-          selectedSlugs={loaderData.slugs}
-        />
-        <CompareSpecModeControls
-          selectedSlugs={loaderData.slugs}
-          specMode={loaderData.specMode}
+          label="Comparison workspace"
         >
-          <CompareProductDetailsBoundary loaderData={loaderData} />
-        </CompareSpecModeControls>
-        {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
-          <CompareProductPickerBoundary
-            heading="Add another product"
-            specMode={loaderData.specMode}
+          {activeSaveFeedback.error ? (
+            <FeedbackState kind="error" title={activeSaveFeedback.error} />
+          ) : null}
+          <CompareSpecModeControls
             selectedSlugs={loaderData.slugs}
-          />
-        ) : null}
+            specMode={loaderData.specMode}
+          >
+            <CompareProductDetailsBoundary loaderData={loaderData} />
+          </CompareSpecModeControls>
+        </WorkspaceLayout>
       </CompareShell>
     );
   }

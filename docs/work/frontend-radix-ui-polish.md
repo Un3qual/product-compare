@@ -93,6 +93,29 @@ Verification:
 - GREEN: `cd assets && bun run build` completed client and SSR production
   builds; the existing large-chunk advisory remains non-blocking.
 
+### Milestone 3: Product Decision And Comparison Workspaces
+
+Status: done
+
+- Product detail now opens on a concise decision overview, separates
+  specifications and offers into Radix tabs, and keeps compare, offer-review,
+  and browse actions available in a dedicated decision rail.
+- Comparison now prioritizes the decision summary and aligned specification
+  matrix, moves selection, save, and add-product controls into a context rail,
+  and places repeated product cards in a collapsed Radix disclosure.
+- Existing route tests now exercise the tabs and disclosure as user-visible
+  interactions instead of assuming all supporting detail is expanded.
+
+Verification:
+
+- RED: the focused product-detail and comparison suites reported missing
+  task-first landmarks before the new workspace hierarchy was implemented.
+- GREEN: the product-detail, comparison, Relay-migration, and save-feedback
+  suites passed 4 files and 162 tests.
+- GREEN: `cd assets && bun run typecheck` exited 0.
+- GREEN: `cd assets && bun run build` completed client and SSR production
+  builds; the existing large-chunk advisory remains non-blocking.
+
 ## Batch 1: Radix Theme And Shared UI Foundation
 
 Status: done

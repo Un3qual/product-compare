@@ -1544,6 +1544,7 @@ test("renders compared product cards returned by the route loader", () => {
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  openIndividualProductDetails();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
 });
@@ -1599,6 +1600,8 @@ test("ready compare page renders decision summary rows above the specification m
 
   renderCompareRoute();
 
+  expect(screen.getByRole("region", { name: "Comparison workspace" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Comparison controls" })).toBeInTheDocument();
   const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
   const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
@@ -1780,6 +1783,8 @@ test("ready compare cards render product attributes", () => {
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getAllByText("144 Hz")).toHaveLength(2);
   expect(screen.getAllByText("165 Hz")).toHaveLength(2);
   expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
@@ -1815,6 +1820,8 @@ test("ready compare cards render from batched loader data without synthetic prod
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
   expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
@@ -1920,6 +1927,7 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
   expect(rows[2]).toHaveTextContent("144 Hz");
   expect(rows[2]).toHaveTextContent("165 Hz");
   expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
+  openIndividualProductDetails();
   expect(screen.getByText("350 nits")).toBeVisible();
 });
 
@@ -2244,6 +2252,8 @@ test("ready compare page preserves specification mode in remove links", () => {
   );
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
 
@@ -2734,6 +2744,8 @@ test("ready compare cards include a remove link for the first selected product",
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
     "/compare?slug=second-product&slug=third-product"
@@ -2753,6 +2765,8 @@ test("ready compare cards include a remove link for a middle selected product", 
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
     "href",
@@ -2774,6 +2788,8 @@ test("ready compare cards include a remove link for the last selected product", 
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product"
@@ -2789,6 +2805,8 @@ test("ready compare card remove link clears all selected slugs when only one is 
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
@@ -3267,9 +3285,15 @@ test("compared product actions use named navigation landmarks", () => {
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getByRole("navigation", { name: "Actions for Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("navigation", { name: "Actions for Second Product" })).toBeInTheDocument();
 });
+
+function openIndividualProductDetails() {
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
+}
 
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
   mockedUseLoaderData.mockReturnValue({

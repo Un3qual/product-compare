@@ -7,8 +7,12 @@ import productDetailRouteQuery, {
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
+import { DetailTabs } from "../../ui/components/layout/DetailTabs";
 import { PageShell } from "../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
 import {
@@ -59,12 +63,25 @@ const styles = create({
     margin: 0
   },
   actions: {
-    backgroundColor: tokens.surfaceMuted,
-    borderColor: tokens.borderQuiet,
-    borderRadius: "var(--radius-4)",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    padding: "1rem"
+    display: "grid",
+    gap: "0.65rem"
+  },
+  actionList: {
+    display: "grid",
+    gap: "0.65rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0
+  },
+  overview: {
+    display: "grid",
+    gap: "1.25rem"
+  },
+  overviewCopy: {
+    color: tokens.textSecondary,
+    lineHeight: 1.65,
+    margin: 0,
+    maxWidth: "42rem"
   }
 });
 
@@ -112,6 +129,43 @@ function ProductDetail({
   }
 
   const { product } = data;
+  const selectionTray =
+    selectedCompareSlugs.length > 0 ? (
+      <CompareSelectionTray
+        items={[
+          {
+            label: product.name,
+            slug: product.slug
+          }
+        ]}
+        maxProducts={MAX_COMPARE_PRODUCTS}
+        openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
+        removePathForIndex={(index) =>
+          productDetailPathWithCompareSlugs(
+            product.slug,
+            location.search,
+            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
+          )
+        }
+        selectedSlugs={selectedCompareSlugs}
+      />
+    ) : null;
+  const offers = (
+    <section aria-labelledby={offersTitleId} {...props(styles.section)}>
+      <h2 id={offersTitleId} {...props(styles.sectionTitle)}>
+        Active offers
+      </h2>
+      <ProductOffers
+        connection={product.merchantProducts}
+        productSlug={product.slug}
+        offersAfter={new URLSearchParams(location.search).get("offersAfter")}
+        selectedCompareSlugs={selectedCompareSlugs}
+      />
+    </section>
+  );
+  const defaultDetailView = new URLSearchParams(location.search).has("offersAfter")
+    ? "offers"
+    : "overview";
 
   return (
     <PageShell
@@ -128,48 +182,77 @@ function ProductDetail({
       eyebrow="Product detail"
       title={product.name}
     >
-      {selectedCompareSlugs.length > 0 ? (
-        <CompareSelectionTray
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Keep the next shopping action available while you move through product detail."
+            label="Product decisions"
+          >
+            {selectionTray}
+            <ProductDecisionActions
+              currentSearch={location.search}
+              productId={product.id}
+              productSlug={product.slug}
+              selectedCompareSlugs={selectedCompareSlugs}
+            />
+          </ContextRail>
+        }
+        label="Product detail workspace"
+      >
+        <DetailTabs
+          defaultValue={defaultDetailView}
           items={[
             {
-              label: product.name,
-              slug: product.slug
-            }
+              content: (
+                <ProductOverview
+                  attributeCount={product.currentAttributes.length}
+                  loadedOfferCount={product.merchantProducts?.edges.length ?? 0}
+                  hasMoreOffers={product.merchantProducts?.pageInfo.hasNextPage ?? false}
+                />
+              ),
+              label: "Overview",
+              value: "overview"
+            },
+            {
+              content: <ProductSpecifications attributes={product.currentAttributes} />,
+              label: "Specifications",
+              value: "specifications"
+            },
+            { content: offers, label: "Offers", value: "offers" }
           ]}
-          maxProducts={MAX_COMPARE_PRODUCTS}
-          openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
-          removePathForIndex={(index) =>
-            productDetailPathWithCompareSlugs(
-              product.slug,
-              location.search,
-              selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
-            )
-          }
-          selectedSlugs={selectedCompareSlugs}
+          label="Product details"
         />
-      ) : null}
-      <ProductDecisionActions
-        currentSearch={location.search}
-        productId={product.id}
-        productSlug={product.slug}
-        selectedCompareSlugs={selectedCompareSlugs}
-      />
-      <ProductSpecifications attributes={product.currentAttributes} />
-      <section
-        aria-labelledby={offersTitleId}
-        {...props(styles.section)}
-      >
-        <h2 id={offersTitleId} {...props(styles.sectionTitle)}>
-          Active offers
-        </h2>
-        <ProductOffers
-          connection={product.merchantProducts}
-          productSlug={product.slug}
-          offersAfter={new URLSearchParams(location.search).get("offersAfter")}
-          selectedCompareSlugs={selectedCompareSlugs}
-        />
-      </section>
+      </WorkspaceLayout>
     </PageShell>
+  );
+}
+
+function ProductOverview({
+  attributeCount,
+  hasMoreOffers,
+  loadedOfferCount
+}: {
+  attributeCount: number;
+  hasMoreOffers: boolean;
+  loadedOfferCount: number;
+}) {
+  return (
+    <section aria-label="Product overview" {...props(styles.overview)}>
+      <SummaryStrip
+        items={[
+          { label: "Specifications available", value: attributeCount },
+          {
+            label: "Active offers loaded",
+            value: hasMoreOffers ? `${loadedOfferCount}+` : loadedOfferCount
+          }
+        ]}
+        label="At a glance"
+      />
+      <p {...props(styles.overviewCopy)}>
+        Start with the available decision signals, then move into specifications or
+        merchant offers when you need the supporting detail.
+      </p>
+    </section>
   );
 }
 
@@ -189,7 +272,7 @@ function ProductDecisionActions({
   return (
     <section aria-labelledby={titleId} {...props(styles.actions)}>
       <h2 id={titleId}>Next steps</h2>
-      <ul>
+      <ul {...props(styles.actionList)}>
         <DetailCompareAction
           currentSearch={currentSearch}
           productSlug={productSlug}
