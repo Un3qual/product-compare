@@ -167,7 +167,34 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-None.
+### 1. Radix Theme And Shared UI Foundation
+
+Status: active
+Lane: Frontend Radix UI polish
+Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
+Next action: Establish Radix Themes, semantic tokens, and reusable page,
+feedback, data, status, and pagination patterns.
+Owned paths:
+
+- `assets/package.json`
+- `assets/bun.lock`
+- `assets/src/ui/**`
+- `assets/test/ui/**`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Prerequisites:
+
+- The approved design spec and implementation plan are committed.
+
+Verification:
+
+- `cd assets && bun x vitest run test/ui`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+
+Exit condition: The shared Radix-backed UI foundation is reusable by every
+route family with green focused verification.
 
 ## Needs Decision Work
 

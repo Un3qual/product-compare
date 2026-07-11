@@ -69,7 +69,7 @@
 
 **Interfaces:**
 - Consumes: approved design at `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md` and this plan.
-- Produces: one `ready` UI-foundation row whose owned paths cover Task 2, with the later route milestones recorded as dependent lane batches rather than queue filler.
+- Produces: one claimed UI-foundation row under `Active Work` whose owned paths cover Task 2, with the later route milestones recorded as dependent lane batches rather than queue filler.
 
 - [ ] **Step 1: Write the lane contract**
 
@@ -130,9 +130,9 @@ Add this bullet beneath `Active implementation plans:` in `docs/plans/INDEX.md`:
 
 Add a planned follow-up group stating that the UI pass executes serially from theme foundation through shell, shopper, operational, and auth routes because each milestone consumes the shared UI layer.
 
-- [ ] **Step 3: Add and claim the queue row**
+- [ ] **Step 3: Add the claimed queue row**
 
-Insert a new highest-ranked row in `docs/work/index.md`:
+Insert this row under `Active Work` in `docs/work/index.md`:
 
 ```markdown
 ### 1. Radix Theme And Shared UI Foundation
@@ -163,7 +163,7 @@ Verification:
 Exit condition: The shared Radix-backed UI foundation is reusable by every route family with green focused verification.
 ```
 
-Renumber the three existing ready rows to 2-4 without changing their status or content. Confirm those three rows remain `ready` while this row is `active`.
+Leave the three existing ready rows numbered 1-3 without changing their status or content. Confirm those three rows remain `ready` while this row is `active` under the separate `Active Work` heading.
 
 - [ ] **Step 4: Validate the dispatch boundary**
 

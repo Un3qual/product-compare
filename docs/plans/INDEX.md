@@ -31,6 +31,7 @@ that milestone by product decision.
 
 Active implementation plans:
 
+- `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
 - `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
 - `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
 - `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
@@ -54,6 +55,9 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
+- Frontend Radix UI polish: execute serially from theme foundation through the
+  shared shell, shopper routes, operational routes, and auth routes because
+  every later milestone consumes the shared UI layer.
 - Product comparison: disclose that relative price uses already-loaded offers,
   then add a local name filter over already-loaded picker products. These plans
   share test and lane paths and execute serially.
