@@ -10,6 +10,7 @@ export const savedComparisonsRouteQuery = graphql`
           items {
             position
             product {
+              name
               slug
             }
           }

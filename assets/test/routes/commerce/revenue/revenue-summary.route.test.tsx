@@ -104,6 +104,18 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+test("revenue route identifies recorded attribution data as a preview", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  renderRevenueSummaryRoute();
+
+  expect(
+    screen.getByRole("heading", { name: "Revenue reporting preview" })
+  ).toBeInTheDocument();
+  expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
+  expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
+});
+
 test("revenue route renders suppressed metrics with threshold copy", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -131,7 +143,7 @@ test("revenue route renders suppressed metrics with threshold copy", () => {
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
     "Revenue metrics are hidden until at least 2 conversions match the current filters."
   );
@@ -391,7 +403,7 @@ test("revenue route asks for a currency before loading metrics", () => {
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
     "Enter a currency code to load revenue metrics."
   );
@@ -413,7 +425,7 @@ test("revenue route asks for a valid date range before loading metrics", () => {
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
     "Enter a start date on or before the end date to load revenue metrics."
   );
@@ -435,7 +447,7 @@ test("revenue route renders the loader error state", () => {
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("heading", { name: "Revenue reporting" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("Revenue summary unavailable.");
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");

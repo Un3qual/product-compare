@@ -5,7 +5,7 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task.
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Show saved comparison product names in stored order instead of raw
 slugs while preserving reopen order and pagination behavior.
@@ -42,16 +42,16 @@ parameters from slugs.
 
 ## Batches
 
-- [ ] **1. Add RED saved-card coverage.** Prove cards render product names in
+- [x] **1. Add RED saved-card coverage.** Prove cards render product names in
   stored position order, do not expose raw slugs as display copy, and retain the
   same repeated-slug reopen href.
-- [ ] **2. Extend route data.** Select `product { name slug }`, validate both
+- [x] **2. Extend route data.** Select `product { name slug }`, validate both
   strings in the summarizer, and retain ordered product objects.
-- [ ] **3. Render labels and regenerate Relay output.** Render names from the
+- [x] **3. Render labels and regenerate Relay output.** Render names from the
   ordered summary and build reopen links from its slugs; run Relay generation.
-- [ ] **4. Verify and record the lane.** Run generation, the focused saved
+- [x] **4. Verify and record the lane.** Run generation, the focused saved
   comparison cases, TypeScript, and diff checks; append RED/GREEN evidence.
-- [ ] **5. Commit the milestone.** Commit source, generated artifact, tests, and
+- [x] **5. Commit the milestone.** Commit source, generated artifact, tests, and
   lane evidence with `feat: label saved comparison products`.
 
 ## Verification

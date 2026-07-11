@@ -20,7 +20,11 @@ export function RevenueSummaryRoute() {
   return (
     <section>
       <header>
-        <h1>Revenue reporting</h1>
+        <h1>Revenue reporting preview</h1>
+        <p>
+          This preview summarizes recorded attribution data. A live conversion provider is not
+          connected for this milestone.
+        </p>
       </header>
 
       <RevenueSummaryFilterForm

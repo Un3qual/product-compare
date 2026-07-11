@@ -11,6 +11,10 @@ import { AppProviders } from "../ui/providers/app-providers";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 
 const styles = stylex.create({
+  actionGroups: {
+    display: "grid",
+    gap: "1.25rem"
+  },
   home: {
     display: "grid",
     gap: "1rem",
@@ -52,6 +56,35 @@ type RootOutletContext = {
   viewer: RootViewer | null;
 };
 
+type Destination = {
+  label: string;
+  to: string;
+};
+
+const PUBLIC_DESTINATIONS = [
+  { label: "Browse products", to: "/products" },
+  { label: "Merchants", to: "/merchants" },
+  { label: "Offers", to: "/offers" },
+  { label: "Compare products", to: "/compare" }
+] as const satisfies readonly Destination[];
+
+const AUTHENTICATED_DESTINATIONS = [
+  { label: "Saved comparisons", to: "/compare/saved" },
+  { label: "Affiliate setup", to: "/affiliate/setup" },
+  { label: "Revenue preview", to: "/commerce/revenue" },
+  { label: "API tokens", to: "/account/api-tokens" }
+] as const satisfies readonly Destination[];
+
+const SHOPPER_DESTINATIONS = [
+  { label: "Browse products", to: "/products" },
+  { label: "Compare products", to: "/compare" },
+  { label: "Review offers", to: "/offers" }
+] as const satisfies readonly Destination[];
+
+const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
+  ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to)
+);
+
 export function RootLayout() {
   const loaderData = useLoaderData() as RootLoaderData;
 
@@ -86,30 +119,8 @@ function RootLayoutShell({ viewer }: RootOutletContext) {
               <Link to="/">Product Compare</Link>
             </Button>
             <div {...stylex.props(styles.navigationLinks)}>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/products">Browse products</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/merchants">Merchants</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/affiliate/setup">Affiliate setup</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/offers">Offers</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/compare">Compare products</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/compare/saved">Saved comparisons</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/commerce/revenue">Revenue</Link>
-              </Button>
-              <Button asChild {...stylex.props(styles.link)}>
-                <Link to="/account/api-tokens">API tokens</Link>
-              </Button>
+              <DestinationLinks destinations={PUBLIC_DESTINATIONS} />
+              {viewer ? <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} /> : null}
               <AuthLinks viewer={viewer} />
             </div>
           </div>
@@ -128,36 +139,40 @@ export function RootRoute() {
     <section {...stylex.props(styles.home)}>
       <div>
         <h1>Product Compare</h1>
-        <p>GraphQL-backed browser auth flows now live alongside the frontend routes.</p>
+        <p>
+          Find products, compare specifications, and review current offers before you choose what
+          to buy.
+        </p>
       </div>
-      <div aria-label="Home actions" role="group" {...stylex.props(styles.actions)}>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/products">Browse products</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/merchants">Merchants</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/affiliate/setup">Affiliate setup</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/offers">Offers</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/compare">Compare products</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/compare/saved">Saved comparisons</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/commerce/revenue">Revenue</Link>
-        </Button>
-        <Button asChild {...stylex.props(styles.link)}>
-          <Link to="/account/api-tokens">API tokens</Link>
-        </Button>
-        <AuthLinks viewer={viewer} />
+      <div aria-label="Home actions" role="group" {...stylex.props(styles.actionGroups)}>
+        <div aria-label="Shopper actions" role="group" {...stylex.props(styles.actions)}>
+          <DestinationLinks destinations={SHOPPER_DESTINATIONS} />
+        </div>
+        <div
+          aria-label="More Product Compare actions"
+          role="group"
+          {...stylex.props(styles.actions)}
+        >
+          <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} />
+          {viewer ? <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} /> : null}
+          <AuthLinks viewer={viewer} />
+        </div>
       </div>
     </section>
+  );
+}
+
+function DestinationLinks({ destinations }: { destinations: readonly Destination[] }) {
+  return destinations.map(({ label, to }) => (
+    <DestinationLink key={to} label={label} to={to} />
+  ));
+}
+
+function DestinationLink({ label, to }: { label: string; to: string }) {
+  return (
+    <Button asChild {...stylex.props(styles.link)}>
+      <Link to={to}>{label}</Link>
+    </Button>
   );
 }
 

@@ -6,6 +6,7 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
+import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
 
 const {
   commitMutationMock,
@@ -81,7 +82,7 @@ function buildSavedSet() {
   return {
     id: "saved-set-1",
     name: "Desk setup",
-    slugs: ["chair", "desk"]
+    products: savedProducts(["chair", "desk"])
   };
 }
 
@@ -107,17 +108,17 @@ function buildSortableSavedSets() {
     {
       id: "saved-set-1",
       name: "Desk setup",
-      slugs: ["chair", "desk"]
+      products: savedProducts(["chair", "desk"])
     },
     {
       id: "saved-set-2",
       name: "Alpha kit",
-      slugs: ["lamp"]
+      products: savedProducts(["lamp"])
     },
     {
       id: "saved-set-3",
       name: "Office suite",
-      slugs: ["monitor", "keyboard", "mouse"]
+      products: savedProducts(["monitor", "keyboard", "mouse"])
     }
   ];
 }
@@ -180,12 +181,12 @@ test("saved comparison cards summarize saved product counts", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: ["lamp"]
+        products: savedProducts(["lamp"])
       }
     ]
   });
@@ -198,6 +199,36 @@ test("saved comparison cards summarize saved product counts", () => {
 
   expect(screen.getByText("2 products in this saved comparison")).toBeInTheDocument();
   expect(screen.getByText("1 product in this saved comparison")).toBeInTheDocument();
+});
+
+test("saved comparison cards render product names and preserve stored slug order", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    savedSetQueries: [],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        products: [
+          { name: "Desk Chair", slug: "chair" },
+          { name: "Standing Desk", slug: "desk" }
+        ]
+      }
+    ]
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Desk Chair, Standing Desk")).toBeInTheDocument();
+  expect(screen.queryByText("chair, desk")).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=chair&slug=desk"
+  );
 });
 
 test("saved comparison cards scope reopen and delete actions to the set", () => {
@@ -443,12 +474,12 @@ test("saved comparisons route clears stale delete errors when a later delete suc
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: ["lamp"]
+        products: savedProducts(["lamp"])
       }
     ]
   });
@@ -571,17 +602,17 @@ test("saved comparisons route filters loaded sets by saved-set name", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: ["lamp", "table"]
+        products: savedProducts(["lamp", "table"])
       },
       {
         id: "saved-set-3",
         name: "Outdoor gear",
-        slugs: ["tent", "rucksack"]
+        products: savedProducts(["tent", "rucksack"])
       }
     ]
   });
@@ -609,17 +640,17 @@ test("saved comparisons route filters loaded sets by product slug", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: ["lamp", "table"]
+        products: savedProducts(["lamp", "table"])
       },
       {
         id: "saved-set-3",
         name: "Outdoor gear",
-        slugs: ["tent", "rucksack"]
+        products: savedProducts(["tent", "rucksack"])
       }
     ]
   });
@@ -644,17 +675,17 @@ test("saved comparisons route filters Relay-backed saved set pages", () => {
     {
       id: "saved-set-1",
       name: "Desk setup",
-      slugs: ["chair", "desk"]
+      products: savedProducts(["chair", "desk"])
     },
     {
       id: "saved-set-2",
       name: "Office setup",
-      slugs: ["lamp", "table"]
+      products: savedProducts(["lamp", "table"])
     },
     {
       id: "saved-set-3",
       name: "Outdoor gear",
-      slugs: ["tent", "rucksack"]
+      products: savedProducts(["tent", "rucksack"])
     }
   ];
 
@@ -689,7 +720,7 @@ test("saved comparisons route renders first and next page links", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
-    savedSets: [{ id: "saved-set-1", name: "Desk setup", slugs: ["desk"] }],
+    savedSets: [{ id: "saved-set-1", name: "Desk setup", products: savedProducts(["desk"]) }],
     after: "cursor-current",
     hasNextPage: true,
     endCursor: "cursor-next"
@@ -716,24 +747,24 @@ test("saved comparisons route sorts combined loader saved sets while retaining l
     {
       id: "saved-set-1",
       name: "Desk setup",
-      slugs: ["chair", "desk"]
+      products: savedProducts(["chair", "desk"])
     },
     {
       id: "saved-set-2",
       name: "Zoo kit",
-      slugs: ["storage-bin"]
+      products: savedProducts(["storage-bin"])
     }
   ];
   const secondPageSavedSets = [
     {
       id: "saved-set-3",
       name: "Alpha kit",
-      slugs: ["lamp"]
+      products: savedProducts(["lamp"])
     },
     {
       id: "saved-set-4",
       name: "Office suite",
-      slugs: ["monitor", "keyboard", "mouse"]
+      products: savedProducts(["monitor", "keyboard", "mouse"])
     }
   ];
 
@@ -777,12 +808,12 @@ test("saved comparisons route shows a no-match message when the filter excludes 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: ["lamp", "table"]
+        products: savedProducts(["lamp", "table"])
       }
     ]
   });
@@ -814,7 +845,7 @@ test("filtered no-match state links to product browsing and comparison", async (
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       }
     ]
   });
@@ -862,12 +893,12 @@ test("saved comparisons route preserves pending delete state when the filter cha
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Desk setup alt",
-        slugs: ["lamp"]
+        products: savedProducts(["lamp"])
       }
     ]
   });
@@ -910,12 +941,12 @@ test("saved comparisons route keeps delete errors visible when the filter change
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: ["chair", "desk"]
+        products: savedProducts(["chair", "desk"])
       },
       {
         id: "saved-set-2",
         name: "Desk setup alt",
-        slugs: ["lamp"]
+        products: savedProducts(["lamp"])
       }
     ]
   });

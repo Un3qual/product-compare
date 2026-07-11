@@ -64,14 +64,20 @@
   in `docs/work/product-data-scraping.md`.
 - The product-facing polish batch across catalog browse, product detail, offer
   discovery, saved comparisons, and merchant discovery is complete.
-- Shopper-focused home content is ready using the current root route and route
-  set without new data fetching.
-- Viewer-aware root navigation is ready using the current preloaded `viewer` as
-  its only visibility signal; it does not change direct-route authorization.
-- A compare relative loaded-price signal is ready using existing
-  `bestCurrentPrice` summaries with same-currency safety rules.
-- Saved-comparison product labels are ready using the existing public Product
-  `name` and `slug` fields while preserving stored reopen order.
+- The feature-complete product milestone is complete: the root now leads with
+  the shopper journey, navigation is viewer-aware, compare exposes a safe
+  relative loaded-price signal, and saved comparisons show ordered product
+  names while preserving stored reopen order.
+- Revenue reporting is explicitly an authenticated recorded-data preview with
+  no live conversion provider connected for this milestone.
+- The CJ readiness gate can optionally require secret-safe schedule enablement
+  while preserving manual readiness and without activating an environment.
+- Email delivery, live conversion-provider ingestion, production privacy and
+  attribution controls, and production-readiness proof are outside the current
+  feature-complete milestone by product decision.
+- The next optional shopper enhancements are loaded-price scope copy, a local
+  loaded-product compare-picker filter, and a visible-page merchant-name
+  filter. They are queue follow-ups, not feature-completeness blockers.
 - The revenue readiness, shopper UX polish, and backend quality parallel batch
   is complete: first-party tracked commerce clicks, `/offers` visible merchant
   quick filters, and Relay connection invalid-page-size hardening are recorded

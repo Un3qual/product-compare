@@ -2,18 +2,13 @@
 
 ## Snapshot
 
-- Status: done (CJ read-model and weekly operator runbook batch)
+- Status: done (CJ scheduled-readiness contract)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed after the 2026-07-01 CJ read-model and weekly
-  operator-runbook parallel batch
-- Last verified: 2026-07-02 against current code/tests for the completed
-  candidate cohort, market coverage, candidate freshness, run health, run
-  throughput, import artifact quality, import price quality, merchant identity
-  quality, application readiness, and weekly operator runbook; their evidence
-  sections record final gates
-- Last documentation refresh: 2026-07-02 after closing the CJ live queue rows
-  and promoting product-facing follow-up work
+- Live queue row: completed and removed during coordinator close-out.
+- Last verified: 2026-07-11 against effective scheduler configuration and the
+  focused CJ readiness suite.
+- Last documentation refresh: 2026-07-10 after scheduled-readiness verification
 - Last plan refresh: 2026-07-02 after moving the CJ read-model and weekly
   operator runbook plans to completed status
 - Historical context:
@@ -25,6 +20,7 @@
 - Active implementation plans:
   - None.
 - Recently completed implementation plans:
+  - `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-application-readiness-read-model-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-weekly-operator-runbook-implementation-plan.md`
@@ -81,11 +77,31 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 
 ## Verified Current State
 
-- Scraping job orchestration remains deferred during MVP+1 ingestion foundation work.
+- Tier-3 scraping job orchestration remains deferred. Bounded CJ feed-discovery
+  and product-import schedulers exist and remain disabled by default.
 - Existing `Catalog`, `Specs`, and `Pricing` context boundaries already provide persistence targets for normalized ingestion records.
 - `ProductCompare.Ingestion` now owns the source-agnostic normalized listing contract, source adapter behavior, CJ fixture parser, and source-scoped merchant identity resolution.
 - `merchant_source_identities` now persists deterministic source-to-merchant links for replay-safe imports.
 - `ProductCompare.Ingestion.persist_normalized_listing/2` now persists fixture-backed normalized listings into `SourceArtifact`, `ExternalProduct`, catalog product shells, `MerchantProduct`, and `PricePoint` rows with replay idempotency and stale price-observation guards.
+
+## CJ Scheduled Readiness Evidence
+
+- Plan: `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`.
+- RED: the focused readiness suite reported 5 failures because
+  `--require-scheduled` was unsupported and schedule state was absent from the
+  readiness report.
+- GREEN: `mix test
+  test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs` passed 14
+  tests with 0 failures.
+- Manual readiness remains backward compatible when schedules are not required.
+- `--require-scheduled` makes `ready=true` depend on both effective scheduler
+  configurations, while `--require-ready` remains the independent raising
+  switch.
+- The report exposes only `require_scheduled`, feed/import schedule booleans,
+  and `schedules_ready`; it never prints raw environment or credential values.
+- `docs/runbooks/cj-weekly-operator-loop.md` now documents bounded activation,
+  credential preflight, post-run scheduled readiness, and the unchanged
+  no-eBay/no-scraping/no-automation guardrails.
 
 ## Current Recommendation
 

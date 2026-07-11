@@ -5,7 +5,7 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task.
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Keep public shopper routes visible to guests while showing saved and
 account-oriented destinations only to authenticated viewers.
@@ -42,17 +42,17 @@ direct-route authorization.
 
 ## Batches
 
-- [ ] **1. Add RED viewer-state coverage.** Prove guest navigation and home
+- [x] **1. Add RED viewer-state coverage.** Prove guest navigation and home
   actions omit Saved comparisons, Affiliate setup, Revenue, and API tokens while
   retaining public routes plus Sign in/Create account. Prove authenticated state
   exposes the four authenticated destinations plus Sign out.
-- [ ] **2. Implement viewer-aware groups.** Render public destinations for all
+- [x] **2. Implement viewer-aware groups.** Render public destinations for all
   viewers and authenticated destinations only when `viewer` exists, reusing the
   same link definitions in navigation and home actions.
-- [ ] **3. Verify and record the lane.** Run the focused root suite, TypeScript,
+- [x] **3. Verify and record the lane.** Run the focused root suite, TypeScript,
   and diff checks; record RED/GREEN evidence without changing direct-route
   behavior.
-- [ ] **4. Commit the milestone.** Commit code, tests, and lane evidence with
+- [x] **4. Commit the milestone.** Commit code, tests, and lane evidence with
   `feat: make navigation viewer aware`.
 
 ## Verification

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { compareDecimalStrings } from "../decimal-values";
 import type {
   CompareOfferContextSummary,
   CompareProductSummary,
@@ -35,6 +36,12 @@ interface DecisionSummaryMetric {
   label: string;
   valueLabel: (context: CompareOfferContextSummary) => string;
 }
+
+type ComparablePrice = {
+  currency: string;
+  productId: string;
+  value: string;
+};
 
 export function DecisionSummary({
   offerContexts,
@@ -83,8 +90,16 @@ function DecisionSummaryMetricRows({
   offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
   products: CompareProductSummary[];
 }) {
+  const relativePriceLabels = relativeLoadedPriceLabels(products, offerContexts);
+
   return (
     <>
+      <DecisionSummaryRow
+        cellKey="relative-loaded-price"
+        label="Relative loaded price"
+        products={products}
+        renderCell={(product) => relativePriceLabels.get(product.id) ?? "Not comparable"}
+      />
       {DECISION_SUMMARY_METRICS.map((metric) => (
         <DecisionSummaryRow
           key={metric.key}
@@ -97,6 +112,68 @@ function DecisionSummaryMetricRows({
         />
       ))}
     </>
+  );
+}
+
+function relativeLoadedPriceLabels(
+  products: CompareProductSummary[],
+  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"]
+) {
+  const unavailable = new Map(products.map(({ id }) => [id, "Not comparable"]));
+
+  if (products.length < 2) {
+    return unavailable;
+  }
+
+  const comparablePrices = products.flatMap((product): ComparablePrice[] => {
+    const context = offerContextForProduct(offerContexts, product.id);
+
+    if (context.status === "unavailable" || !context.bestCurrentPrice) {
+      return [];
+    }
+
+    const value = context.bestCurrentPrice.price;
+    const comparisonToZero = compareDecimalStrings(value, "0");
+
+    return comparisonToZero !== null && comparisonToZero >= 0
+      ? [{ currency: context.bestCurrentPrice.currency, productId: product.id, value }]
+      : [];
+  });
+
+  if (
+    comparablePrices.length < 2 ||
+    new Set(comparablePrices.map(({ currency }) => currency)).size !== 1
+  ) {
+    return unavailable;
+  }
+
+  const minimum = comparablePrices.reduce((current, candidate) =>
+    compareDecimalStrings(candidate.value, current.value) === -1 ? candidate : current
+  );
+  const minimumCount = comparablePrices.filter(
+    ({ value }) => compareDecimalStrings(value, minimum.value) === 0
+  ).length;
+  const comparableByProductId = new Map(
+    comparablePrices.map((price) => [price.productId, price])
+  );
+
+  return new Map(
+    products.map(({ id }) => {
+      const price = comparableByProductId.get(id);
+
+      if (!price) {
+        return [id, "Not comparable"] as const;
+      }
+
+      return [
+        id,
+        compareDecimalStrings(price.value, minimum.value) === 0
+          ? minimumCount > 1
+            ? "Tied for lowest loaded price"
+            : "Lowest loaded price"
+          : "Above lowest loaded price"
+      ] as const;
+    })
   );
 }
 

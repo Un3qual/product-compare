@@ -5,7 +5,7 @@ import {
   getRelayEnvironmentFromRouterContext,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
-import { decimalStringToNumber } from "../decimal-values";
+import { compareDecimalStrings } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
@@ -280,7 +280,9 @@ function lowestCurrentPrice(
   }
 
   const bestPrice = candidates.reduce((bestCandidate, candidate) =>
-    candidate.numericPrice < bestCandidate.numericPrice ? candidate : bestCandidate
+    compareDecimalStrings(candidate.price, bestCandidate.price) === -1
+      ? candidate
+      : bestCandidate
   );
 
   return {
@@ -290,24 +292,18 @@ function lowestCurrentPrice(
   };
 }
 
-type CompareBestCurrentPriceCandidate = CompareBestCurrentPriceSummary & {
-  numericPrice: number;
-};
-
 function currentPriceCandidate(
   offer: CompareOfferContextNode
-): CompareBestCurrentPriceCandidate | null {
+): CompareBestCurrentPriceSummary | null {
   const latestPrice = offer.latestPrice;
-  const numericPrice = decimalStringToNumber(latestPrice?.price);
 
-  if (!latestPrice || numericPrice === null) {
+  if (!latestPrice || compareDecimalStrings(latestPrice.price, "0") === null) {
     return null;
   }
 
   return {
     currency: offer.currency,
     merchantName: offer.merchant?.name ?? null,
-    numericPrice,
     price: latestPrice.price
   };
 }

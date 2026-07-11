@@ -16,6 +16,41 @@ secrets. This runbook uses existing Mix tasks and read-only reporting surfaces.
   decisions. Do not record credential values, account ids, tracking params,
   provider payloads, raw metadata, or source artifact payloads.
 
+## Bounded Scheduled Operation
+
+Recurring CJ operation remains opt-in. Before enabling either schedule, run the
+credential preflight and one bounded manual discovery/import cycle from the
+weekly flow below. Set runtime values outside source control.
+
+- `CJ_FEED_DISCOVERY_SCHEDULE_ENABLED=true` enables bounded feed-candidate
+  discovery.
+- `CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED=true` enables bounded product import.
+- `CJ_FEED_DISCOVERY_INTERVAL_MINUTES` and
+  `CJ_PRODUCT_IMPORT_INTERVAL_MINUTES` default to `1440`.
+- `CJ_FEED_DISCOVERY_LIMIT`, `CJ_PRODUCT_IMPORT_LIMIT`,
+  `CJ_FEED_DISCOVERY_PAGES`, and `CJ_PRODUCT_IMPORT_PAGES` bound each run.
+- Product import query scope remains controlled by
+  `CJ_PRODUCT_IMPORT_KEYWORDS`, `CJ_PRODUCT_IMPORT_CURRENCY`, and
+  `CJ_PRODUCT_IMPORT_SERVICEABLE_AREAS`.
+
+After both schedules are enabled and each surface has completed a successful
+bounded run, require scheduled readiness:
+
+```sh
+mix product_compare.ingestion.cj_readiness_gate \
+  --max-discovery-age-hours 48 \
+  --max-import-age-hours 48 \
+  --min-candidates 1 \
+  --require-scheduled \
+  --require-ready
+```
+
+The report exposes schedule booleans only; it does not print environment values
+or start either scheduler. A failed scheduled-readiness gate is an operational
+signal to inspect the bounded CJ runs. It does not authorize eBay fallback,
+Tier-3 scraping, ingestion dashboards, automated merchant applications,
+account-manager automation, credential persistence, or CSV export.
+
 ## Weekly Flow
 
 1. Check credential presence before any network-facing CJ command:
@@ -101,7 +136,8 @@ secrets. This runbook uses existing Mix tasks and read-only reporting surfaces.
   `--require-ready`.
 - `mix product_compare.ingestion.cj_readiness_gate`
   checks persisted readiness using recent discovery/import runs and candidate
-  counts.
+  counts; `--require-scheduled` additionally requires both existing runtime
+  schedules to be enabled.
 - `mix product_compare.ingestion.cj_runs`
   reports `latest`, `history`, or `failed` CJ runs for discovery and import
   surfaces.

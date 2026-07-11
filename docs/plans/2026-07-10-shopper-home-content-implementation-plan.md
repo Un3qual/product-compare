@@ -5,7 +5,7 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task.
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Make the home route explain the shopper journey and prioritize product
 browse, comparison, and offer review instead of exposing implementation-status
@@ -39,16 +39,16 @@ query, router, route authorization, or destination behavior.
 
 ## Batches
 
-- [ ] **1. Add RED home-content coverage.** Assert the rendered home route
+- [x] **1. Add RED home-content coverage.** Assert the rendered home route
   describes finding products, comparing specifications, and reviewing offers;
   assert the technical `GraphQL-backed browser auth flows` sentence is absent;
   and assert the three primary shopper links keep their current paths.
-- [ ] **2. Implement the shopper hierarchy.** Replace the technical
+- [x] **2. Implement the shopper hierarchy.** Replace the technical
   introduction with outcome-focused copy, render a labeled primary shopper
   action group, and keep secondary destinations in a separate labeled group.
-- [ ] **3. Verify and record the lane.** Run the focused root suite, TypeScript,
+- [x] **3. Verify and record the lane.** Run the focused root suite, TypeScript,
   and diff checks; record RED/GREEN evidence in the lane work doc.
-- [ ] **4. Commit the milestone.** Commit code, tests, and lane evidence with
+- [x] **4. Commit the milestone.** Commit code, tests, and lane evidence with
   `feat: focus home on shopper journey`.
 
 ## Verification

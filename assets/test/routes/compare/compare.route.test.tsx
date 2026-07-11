@@ -38,6 +38,7 @@ import {
   buildSuccessfulDeleteResponse
 } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
+import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
 
 const {
   commitMutationMock,
@@ -419,6 +420,9 @@ const buildProductSummary = (product: CompareTestProduct) => ({
   }))
 });
 
+const buildSavedProducts = (slugs: string[]) =>
+  savedProductsForSlugs(slugs, [DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
+
 const buildSavedComparisonPage = ({
   endCursor = null,
   hasNextPage = false,
@@ -429,7 +433,10 @@ const buildSavedComparisonPage = ({
   savedSets: Array<{
     id: string;
     name: string;
-    slugs: string[];
+    products: Array<{
+      name: string;
+      slug: string;
+    }>;
   }>;
 }) => ({
   mySavedComparisonSets: {
@@ -437,11 +444,9 @@ const buildSavedComparisonPage = ({
       node: {
         id: savedSet.id,
         name: savedSet.name,
-        items: savedSet.slugs.map((slug, index) => ({
+        items: savedSet.products.map((product, index) => ({
           position: index + 1,
-          product: {
-            slug
-          }
+          product
         }))
       }
     })),
@@ -475,6 +480,19 @@ const buildReadyCompareLoaderData = (
   ],
   ...overrides
 });
+
+function renderRelativeLoadedPriceCells(
+  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>
+) {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
+  renderCompareRoute();
+
+  const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
+    name: /Relative loaded price/
+  });
+
+  return within(row).getAllByRole("cell").map((cell) => cell.textContent);
+}
 
 beforeEach(() => {
   commitMutationMock.mockReset();
@@ -975,6 +993,61 @@ test("compare loader does not choose a best current price across mixed currencie
         activeOfferCount: 2,
         bestCurrentPrice: null,
         latestPriceObservedAt: "2026-06-29T13:00:00Z"
+      }
+    }
+  });
+});
+
+test("compare loader selects the exact lowest price beyond Number precision", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT],
+      offerConnections: new Map([
+        [
+          DETAIL_PRODUCT.id,
+          buildOfferContextConnection({
+            offers: [
+              {
+                id: "merchant-product-higher",
+                currency: "USD",
+                merchant: { id: "merchant-higher", name: "Higher Shop" },
+                latestPrice: {
+                  id: "price-higher",
+                  price: "9007199254740993.00",
+                  observedAt: "2026-06-29T12:00:00Z"
+                }
+              },
+              {
+                id: "merchant-product-lower",
+                currency: "USD",
+                merchant: { id: "merchant-lower", name: "Lower Shop" },
+                latestPrice: {
+                  id: "price-lower",
+                  price: "9007199254740992.00",
+                  observedAt: "2026-06-29T13:00:00Z"
+                }
+              }
+            ]
+          })
+        ]
+      ])
+    })
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        bestCurrentPrice: {
+          currency: "USD",
+          merchantName: "Lower Shop",
+          price: "9007199254740992.00"
+        }
       }
     }
   });
@@ -1550,6 +1623,85 @@ test("ready compare page renders decision summary rows above the specification m
   expect(
     within(decisionSummary).getByRole("link", { name: "Review Second Product offers" })
   ).toHaveAttribute("href", `/offers?productId=${SECOND_PRODUCT.id}`);
+});
+
+test("ready compare page marks the lowest relative loaded price", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" }
+        })
+      }
+    })
+  ).toEqual(["Lowest loaded price", "Above lowest loaded price"]);
+});
+
+test("ready compare page compares scientific Decimal prices exactly", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "1E+3" }
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "1000" }
+        })
+      }
+    })
+  ).toEqual(["Tied for lowest loaded price", "Tied for lowest loaded price"]);
+});
+
+test("ready compare page declines mixed currencies as not comparable", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
+          bestCurrentPrice: { currency: "EUR", merchantName: "Shop Two", price: "89.99" }
+        })
+      }
+    })
+  ).toEqual(["Not comparable", "Not comparable"]);
+});
+
+test("ready compare page declines malformed and missing loaded prices as not comparable", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "not-a-price" }
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
+      }
+    })
+  ).toEqual(["Not comparable", "Not comparable"]);
+});
+
+test("ready compare page compares two safe prices while an unavailable product is not comparable", () => {
+  expect(
+    renderRelativeLoadedPriceCells({
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT)
+      ],
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+        }),
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" }
+        }),
+        [THIRD_PRODUCT.id]: buildUnavailableOfferContextSummary(THIRD_PRODUCT.id)
+      }
+    })
+  ).toEqual(["Lowest loaded price", "Above lowest loaded price", "Not comparable"]);
 });
 
 test("ready compare page keeps specs visible when one offer context is unavailable", () => {
@@ -2773,7 +2925,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
           {
             id: "saved-set-1",
             name: "Desk setup",
-            slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+            products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
           }
         ]
       })
@@ -2789,7 +2941,7 @@ test("saved comparisons loader requests the current user's sets and forwards the
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ],
     after: null,
@@ -2805,6 +2957,95 @@ test("saved comparisons loader requests the current user's sets and forwards the
   );
 });
 
+test("saved comparison loader keeps product labels in stored position order", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedSavedComparisonPage({
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Desk setup",
+              items: [
+                {
+                  position: 2,
+                  product: { name: "Standing Desk", slug: "desk" }
+                },
+                {
+                  position: 1,
+                  product: { name: "Desk Chair", slug: "chair" }
+                }
+              ]
+            }
+          }
+        ],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    })
+  );
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).resolves.toEqual({
+    status: "ready",
+    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        products: [
+          { name: "Desk Chair", slug: "chair" },
+          { name: "Standing Desk", slug: "desk" }
+        ]
+      }
+    ],
+    after: null,
+    hasNextPage: false,
+    endCursor: null
+  });
+});
+
+test("saved comparison loader uses the product slug when its name is missing", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedSavedComparisonPage({
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Desk setup",
+              items: [
+                {
+                  position: 1,
+                  product: { slug: "standing-desk" }
+                }
+              ]
+            }
+          }
+        ],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    })
+  );
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        products: [{ name: "standing-desk", slug: "standing-desk" }]
+      }
+    ]
+  });
+});
+
 test("saved comparisons loader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
@@ -2817,7 +3058,7 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
             {
               id: "saved-set-1",
               name: "Desk setup",
-              slugs: [DETAIL_PRODUCT.slug]
+              products: buildSavedProducts([DETAIL_PRODUCT.slug])
             }
           ]
         })
@@ -2833,7 +3074,7 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ],
     after: null,
@@ -2910,12 +3151,12 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -2952,7 +3193,7 @@ test("compare route exposes a named region for the compare shell", () => {
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    savedSets: [{ id: "saved-set-1", name: "Desk setup", slugs: ["desk", "chair"] }]
+    savedSets: [{ id: "saved-set-1", name: "Desk setup", products: buildSavedProducts(["desk", "chair"]) }]
   });
 
   render(
@@ -2976,12 +3217,12 @@ test("saved comparisons route removes a deleted set from the list", async () => 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3023,7 +3264,7 @@ test("saved comparisons route keeps the set visible when delete fails and clears
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3078,7 +3319,7 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3124,12 +3365,12 @@ test("saved comparisons route applies overlapping delete responses against the l
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3180,12 +3421,12 @@ test("saved comparisons route keeps later delete rows pending until their own re
       {
         id: "saved-set-1",
         name: "Desk setup",
-        slugs: [SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug])
       }
     ]
   });
@@ -3456,7 +3697,7 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
           {
             id: "saved-set-1",
             name: "Desk setup",
-            slugs: [DETAIL_PRODUCT.slug]
+            products: buildSavedProducts([DETAIL_PRODUCT.slug])
           }
         ]
       }),
@@ -3553,7 +3794,7 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-1",
               name: "Set 1",
-              slugs: [DETAIL_PRODUCT.slug]
+              products: buildSavedProducts([DETAIL_PRODUCT.slug])
             }
           ]
         })
@@ -3568,7 +3809,7 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-2",
               name: "Set 2",
-              slugs: [SECOND_PRODUCT.slug]
+              products: buildSavedProducts([SECOND_PRODUCT.slug])
             }
           ]
         }),

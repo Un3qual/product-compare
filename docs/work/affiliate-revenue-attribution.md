@@ -5,8 +5,8 @@
 - Status: completed
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-08 after Commerce Offer Interaction focused attribution,
-  redirect, and GraphQL click tests passed
+- Last verified: 2026-07-10 after authenticated revenue-preview positioning
+  passed focused route and TypeScript verification
 - Detailed plan:
   - `docs/plans/2026-03-23-affiliate-link-attribution-and-revenue-tracking-plan.md`
   - `docs/plans/2026-05-22-commerce-revenue-summary-graphql-implementation-plan.md`
@@ -30,15 +30,33 @@
 ## Current Recommendation
 
 - Build a first-party redirect/click contract first, then layer network conversion ingestion.
-- Start integration detail validation with Impact, CJ, and Awin payload samples because their ingestion modes differ (postback/API/report/feed).
+- Keep live Impact, CJ, and Awin conversion ingestion outside the current
+  feature-complete milestone; reconsider it only through a later explicit
+  product decision with representative provider evidence.
 - Use deterministic last-click attribution in phase 1.
 - Keep public dashboards aggregate-only with suppression thresholds.
+
+## Revenue Preview Positioning Evidence
+
+- Status: done
+- Plan: `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`
+- RED: the named preview test failed because the route still used the `Revenue
+  reporting` heading and had no recorded-data or provider-status disclosure.
+- GREEN: the focused revenue route suite passed 15 tests, `cd assets && bun run
+  typecheck` exited 0, and `git diff --check` exited 0.
+- The authenticated route now says `Revenue reporting preview`, describes its
+  metrics as recorded attribution data, and states that no live conversion
+  provider is connected for this milestone.
+- Existing loader, Relay query, filter, suppression, and error behavior remain
+  unchanged.
 
 ## Next Batch
 
 - Status: none queued
 - Batch: no unblocked commerce attribution implementation batch remains in this worktree.
-- Next step: keep CJ/Awin source-field mapping deferred until account docs or sample payloads are available. Product data ingestion remains blocked in `docs/work/product-data-scraping.md` on first-source selection, ownership, and the ingestion execution ADR.
+- Next step: keep live conversion-provider ingestion deferred until a later
+  explicit product decision; do not treat it as a blocker for the current
+  shopper feature-complete milestone.
 
 ## Completed
 

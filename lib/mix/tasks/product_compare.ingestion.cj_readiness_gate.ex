@@ -16,6 +16,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
   @discovery_surface "shoppingProductFeeds"
   @import_surface "shoppingProducts"
   @required_env_vars ~w(CJ_API_TOKEN CJ_ACCOUNT_ID)
+  @feed_discovery_scheduler_config :cj_feed_discovery_scheduler
+  @product_import_scheduler_config :cj_product_import_scheduler
   @default_max_discovery_age_hours 48
   @default_max_import_age_hours 48
   @default_min_candidates 1
@@ -46,6 +48,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
         max_import_age_hours: :integer,
         min_candidates: :integer,
         min_shortlisted: :integer,
+        require_scheduled: :boolean,
         require_ready: :boolean
       )
 
@@ -74,6 +77,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
           @default_min_shortlisted,
           "--min-shortlisted"
         ),
+      require_scheduled: Keyword.get(opts, :require_scheduled, false),
       require_ready: Keyword.get(opts, :require_ready, false)
     }
   end
@@ -94,17 +98,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
     candidate_count = candidate_count()
     shortlisted_count = shortlisted_count()
+    feed_discovery_schedule_enabled = scheduler_enabled?(@feed_discovery_scheduler_config)
+    product_import_schedule_enabled = scheduler_enabled?(@product_import_scheduler_config)
+    schedules_ready = feed_discovery_schedule_enabled and product_import_schedule_enabled
+
+    base_ready =
+      credentials_ready and discovery_fresh and import_fresh and
+        candidate_count >= opts.min_candidates and
+        shortlisted_count >= opts.min_shortlisted
 
     Map.merge(opts, %{
       candidate_count: candidate_count,
       credentials_ready: credentials_ready,
       discovery_fresh: discovery_fresh,
+      feed_discovery_schedule_enabled: feed_discovery_schedule_enabled,
       import_fresh: import_fresh,
       missing_required: missing_required,
-      ready:
-        credentials_ready and discovery_fresh and import_fresh and
-          candidate_count >= opts.min_candidates and
-          shortlisted_count >= opts.min_shortlisted,
+      product_import_schedule_enabled: product_import_schedule_enabled,
+      ready: base_ready and (not opts.require_scheduled or schedules_ready),
+      schedules_ready: schedules_ready,
       shortlisted_count: shortlisted_count
     })
   end
@@ -118,6 +130,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       value when is_binary(value) -> String.trim(value) != ""
       _value -> false
     end
+  end
+
+  defp scheduler_enabled?(config_key) do
+    :product_compare
+    |> Application.get_env(config_key, [])
+    |> Keyword.get(:enabled, false)
+    |> Kernel.==(true)
   end
 
   defp candidate_count do
@@ -144,7 +163,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       "candidate_count=#{report.candidate_count}",
       "min_candidates=#{report.min_candidates}",
       "shortlisted_count=#{report.shortlisted_count}",
-      "min_shortlisted=#{report.min_shortlisted}"
+      "min_shortlisted=#{report.min_shortlisted}",
+      "require_scheduled=#{report.require_scheduled}",
+      "feed_discovery_schedule_enabled=#{report.feed_discovery_schedule_enabled}",
+      "product_import_schedule_enabled=#{report.product_import_schedule_enabled}",
+      "schedules_ready=#{report.schedules_ready}"
     ]
     |> Enum.join(" ")
     |> Kernel.<>("\n")

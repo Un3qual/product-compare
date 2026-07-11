@@ -276,14 +276,14 @@ function SavedComparisonSetItem({
   savedSet: SavedComparisonSetSummary;
 }) {
   const deletePending = pendingDeleteIds.has(savedSet.id);
-  const savedProductCount = formatSavedProductCount(savedSet.slugs.length);
+  const savedProductCount = formatSavedProductCount(savedSet.products.length);
 
   return (
     <li>
       <article>
         <h2>{savedSet.name}</h2>
         <p>{savedProductCount} in this saved comparison</p>
-        <p>{savedSet.slugs.join(", ")}</p>
+        <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
         <SavedComparisonSetActions
           deletePending={deletePending}
           onDelete={onDelete}
@@ -307,7 +307,9 @@ function SavedComparisonSetActions({
     <fieldset>
       <legend>Actions for {savedSet.name}</legend>
       <p>
-        <Link to={buildSavedComparisonHref(savedSet.slugs)}>Open comparison</Link>
+        <Link to={buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug))}>
+          Open comparison
+        </Link>
       </p>
       <button
         disabled={deletePending}
@@ -462,10 +464,10 @@ function sortSavedComparisonSets(
       );
       break;
     case "product-count-desc":
-      sortedSavedSets.sort((left, right) => right.slugs.length - left.slugs.length);
+      sortedSavedSets.sort((left, right) => right.products.length - left.products.length);
       break;
     case "product-count-asc":
-      sortedSavedSets.sort((left, right) => left.slugs.length - right.slugs.length);
+      sortedSavedSets.sort((left, right) => left.products.length - right.products.length);
       break;
     default: {
       const exhaustiveCheck: never = sortMode;
@@ -484,5 +486,9 @@ function savedComparisonSetMatchesFilter(
     return true;
   }
 
-  return savedSet.slugs.some((slug) => slug.toLowerCase().includes(normalizedFilter));
+  return savedSet.products.some(
+    ({ name, slug }) =>
+      name.toLowerCase().includes(normalizedFilter) ||
+      slug.toLowerCase().includes(normalizedFilter)
+  );
 }

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9f786a6cb573bec4f14eb0246b55749c>>
+ * @generated SignedSource<<622765b5e7a3a87304506f110f2fb0dc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,6 +21,7 @@ export type SavedComparisonsRouteQuery$data = {
         readonly items: ReadonlyArray<{
           readonly position: number;
           readonly product: {
+            readonly name: string;
             readonly slug: string;
           };
         }>;
@@ -167,6 +168,7 @@ return {
                         "name": "product",
                         "plural": false,
                         "selections": [
+                          (v4/*: any*/),
                           (v6/*: any*/)
                         ],
                         "storageKey": null
@@ -240,6 +242,7 @@ return {
                         "name": "product",
                         "plural": false,
                         "selections": [
+                          (v4/*: any*/),
                           (v6/*: any*/),
                           (v3/*: any*/)
                         ],
@@ -261,16 +264,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "01da79ab4c19c0d6bcae36a5ca5b605b",
+    "cacheID": "cd1cadb62f08b471381f375bcad42cd5",
     "id": null,
     "metadata": {},
     "name": "SavedComparisonsRouteQuery",
     "operationKind": "query",
-    "text": "query SavedComparisonsRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  mySavedComparisonSets(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        items {\n          position\n          product {\n            slug\n            id\n          }\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query SavedComparisonsRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  mySavedComparisonSets(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        items {\n          position\n          product {\n            name\n            slug\n            id\n          }\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "cd80dc9f3a157ee11e5b14613cc027fb";
+(node as any).hash = "8394f04b9351633c2789a3c4a6e1ca3a";
 
 export default node;

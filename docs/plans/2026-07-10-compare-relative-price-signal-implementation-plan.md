@@ -5,7 +5,7 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task.
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Help shoppers identify the lowest already-loaded comparable price in
 the comparison decision summary without making unsafe cross-currency claims.
@@ -40,16 +40,16 @@ backend work.
 
 ## Batches
 
-- [ ] **1. Add RED decision-summary cases.** Cover distinct same-currency
+- [x] **1. Add RED decision-summary cases.** Cover distinct same-currency
   prices, a tied minimum, mixed currencies, malformed or missing prices, and an
   unavailable context.
-- [ ] **2. Implement the safe relative signal.** Parse comparable decimal
+- [x] **2. Implement the safe relative signal.** Parse comparable decimal
   strings without floating-point arithmetic, require one shared currency and at
   least two usable values, and render the new row without altering loader data.
-- [ ] **3. Verify and record the lane.** Run the focused named cases, full
+- [x] **3. Verify and record the lane.** Run the focused named cases, full
   compare route suite, TypeScript, and diff checks; append RED/GREEN evidence to
   the comparison lane doc.
-- [ ] **4. Commit the milestone.** Commit code, tests, and lane evidence with
+- [x] **4. Commit the milestone.** Commit code, tests, and lane evidence with
   `feat: add relative comparison price signal`.
 
 ## Verification
