@@ -1,15 +1,15 @@
-import * as LabelPrimitive from "@radix-ui/react-label";
+import { Root as LabelPrimitive } from "@radix-ui/react-label";
 import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react";
 
-type LabelProps = ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+type LabelProps = ComponentPropsWithoutRef<typeof LabelPrimitive> & {
   "data-slot"?: string;
 };
 
 export const Label = forwardRef<
-  ElementRef<typeof LabelPrimitive.Root>,
+  ElementRef<typeof LabelPrimitive>,
   LabelProps
 >(function Label(props, ref) {
   const { ["data-slot"]: dataSlot = "label", ...restProps } = props;
 
-  return <LabelPrimitive.Root data-slot={dataSlot} ref={ref} {...restProps} />;
+  return <LabelPrimitive data-slot={dataSlot} ref={ref} {...restProps} />;
 });
