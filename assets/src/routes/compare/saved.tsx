@@ -418,12 +418,12 @@ const buildSavedComparisonsStatus = (
   return "";
 };
 
-const buildSavedComparisonsViewState = (
+function buildSavedComparisonsViewState(
   loaderData: SavedComparisonsRouteLoaderData,
   deletedSavedSetIds: ReadonlySet<string>,
   filterText: string,
   sortMode: SavedComparisonSortMode
-) => {
+) {
   const {
     hasDeletedSavedSet,
     hasFilter,
@@ -446,7 +446,7 @@ const buildSavedComparisonsViewState = (
       hasLoadedSavedSets
     )
   };
-};
+}
 
 function visibleSavedComparisonSets(
   savedSets: readonly SavedComparisonSetSummary[],
