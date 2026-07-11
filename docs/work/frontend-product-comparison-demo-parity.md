@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (relative loaded price signal; prior batches complete)
+- Status: done (relative loaded price signal)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-01 after persistent compare tray verification
@@ -17,9 +17,9 @@
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
-## Ready Relative Loaded Price Follow-Up
+## Relative Loaded Price Follow-Up Evidence
 
-- Status: ready.
+- Status: done.
 - Plan:
   `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`.
 - Verified gap: the current decision summary displays each product's best loaded
@@ -36,6 +36,17 @@
 - Exit condition: the decision summary identifies the safe lowest loaded price
   for comparable same-currency values and declines mixed, missing, malformed, or
   unavailable comparisons.
+- RED: the named focused command failed with 5 expected cases because the
+  `Relative loaded price` decision row did not exist.
+- GREEN:
+  - the named focused command passed 5 tests;
+  - the full compare route suite passed 93 tests;
+  - `cd assets && bun run typecheck` exited 0;
+  - `git diff --check` exited 0.
+- Exact decimal-string comparison avoids floating-point coercion, normalizes
+  leading/trailing zeroes, declines mixed currencies and malformed values, and
+  leaves missing or unavailable cells as `Not comparable` when two other safe
+  prices can still be compared.
 
 ## Batch Status
 

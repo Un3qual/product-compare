@@ -36,6 +36,17 @@ interface DecisionSummaryMetric {
   valueLabel: (context: CompareOfferContextSummary) => string;
 }
 
+type ComparablePrice = {
+  currency: string;
+  productId: string;
+  value: PriceMagnitude;
+};
+
+type PriceMagnitude = {
+  fraction: string;
+  integer: string;
+};
+
 export function DecisionSummary({
   offerContexts,
   products
@@ -83,8 +94,16 @@ function DecisionSummaryMetricRows({
   offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
   products: CompareProductSummary[];
 }) {
+  const relativePriceLabels = relativeLoadedPriceLabels(products, offerContexts);
+
   return (
     <>
+      <DecisionSummaryRow
+        cellKey="relative-loaded-price"
+        label="Relative loaded price"
+        products={products}
+        renderCell={(product) => relativePriceLabels.get(product.id) ?? "Not comparable"}
+      />
       {DECISION_SUMMARY_METRICS.map((metric) => (
         <DecisionSummaryRow
           key={metric.key}
@@ -98,6 +117,96 @@ function DecisionSummaryMetricRows({
       ))}
     </>
   );
+}
+
+function relativeLoadedPriceLabels(
+  products: CompareProductSummary[],
+  offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"]
+) {
+  const unavailable = new Map(products.map(({ id }) => [id, "Not comparable"]));
+
+  if (products.length < 2) {
+    return unavailable;
+  }
+
+  const comparablePrices = products.flatMap((product): ComparablePrice[] => {
+    const context = offerContextForProduct(offerContexts, product.id);
+
+    if (context.status === "unavailable" || !context.bestCurrentPrice) {
+      return [];
+    }
+
+    const value = parsePriceMagnitude(context.bestCurrentPrice.price);
+
+    return value
+      ? [{ currency: context.bestCurrentPrice.currency, productId: product.id, value }]
+      : [];
+  });
+
+  if (
+    comparablePrices.length < 2 ||
+    new Set(comparablePrices.map(({ currency }) => currency)).size !== 1
+  ) {
+    return unavailable;
+  }
+
+  const minimum = comparablePrices.reduce((current, candidate) =>
+    comparePriceMagnitudes(candidate.value, current.value) < 0 ? candidate : current
+  );
+  const minimumCount = comparablePrices.filter(
+    ({ value }) => comparePriceMagnitudes(value, minimum.value) === 0
+  ).length;
+  const comparableByProductId = new Map(
+    comparablePrices.map((price) => [price.productId, price])
+  );
+
+  return new Map(
+    products.map(({ id }) => {
+      const price = comparableByProductId.get(id);
+
+      if (!price) {
+        return [id, "Not comparable"] as const;
+      }
+
+      return [
+        id,
+        comparePriceMagnitudes(price.value, minimum.value) === 0
+          ? minimumCount > 1
+            ? "Tied for lowest loaded price"
+            : "Lowest loaded price"
+          : "Above lowest loaded price"
+      ] as const;
+    })
+  );
+}
+
+function parsePriceMagnitude(value: string): PriceMagnitude | null {
+  const match = /^(\d+)(?:\.(\d+))?$/.exec(value.trim());
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    integer: match[1].replace(/^0+(?=\d)/, ""),
+    fraction: (match[2] ?? "").replace(/0+$/, "")
+  };
+}
+
+function comparePriceMagnitudes(left: PriceMagnitude, right: PriceMagnitude) {
+  if (left.integer.length !== right.integer.length) {
+    return left.integer.length < right.integer.length ? -1 : 1;
+  }
+
+  if (left.integer !== right.integer) {
+    return left.integer < right.integer ? -1 : 1;
+  }
+
+  const fractionLength = Math.max(left.fraction.length, right.fraction.length);
+  const leftFraction = left.fraction.padEnd(fractionLength, "0");
+  const rightFraction = right.fraction.padEnd(fractionLength, "0");
+
+  return leftFraction === rightFraction ? 0 : leftFraction < rightFraction ? -1 : 1;
 }
 
 function ReviewOffersRow({ products }: { products: CompareProductSummary[] }) {
