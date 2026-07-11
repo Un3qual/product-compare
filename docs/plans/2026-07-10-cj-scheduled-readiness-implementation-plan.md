@@ -1,6 +1,6 @@
 # CJ Scheduled Readiness Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Distinguish manual CJ pilot freshness from recurring scheduled CJ
 operation through the existing non-secret readiness gate.
@@ -27,13 +27,13 @@ manual readiness backward compatible, make scheduled readiness opt-in through
 
 ## Batches
 
-- [ ] Add RED coverage for manual compatibility, disabled/partial/enabled
+- [x] Add RED coverage for manual compatibility, disabled/partial/enabled
   schedule state, truthy normalization, and combined enforcement.
-- [ ] Add `--require-scheduled` plus non-secret schedule output to the existing
+- [x] Add `--require-scheduled` plus non-secret schedule output to the existing
   readiness task.
-- [ ] Document bounded scheduled activation and post-run verification in the
+- [x] Document bounded scheduled activation and post-run verification in the
   operator runbook.
-- [ ] Run focused tests, type and format checks, and diff checks; record lane
+- [x] Run focused tests, type and format checks, and diff checks; record lane
   evidence and commit the milestone.
 
 ## Verification
@@ -48,4 +48,3 @@ manual readiness backward compatible, make scheduled readiness opt-in through
 Operators can require evidence that both bounded schedules are enabled in
 addition to the existing credential, freshness, and candidate gates, while
 manual readiness remains backward compatible and secret-safe.
-

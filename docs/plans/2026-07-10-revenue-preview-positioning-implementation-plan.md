@@ -1,6 +1,6 @@
 # Revenue Preview Positioning Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Make the authenticated revenue route explicit about its preview
 status without adding or implying live conversion-provider ingestion.
@@ -24,12 +24,12 @@ row.
 
 ## Batches
 
-- [ ] Add RED route-copy coverage for the preview heading, recorded-data
+- [x] Add RED route-copy coverage for the preview heading, recorded-data
   description, and no-live-provider disclosure.
-- [ ] Add static preview positioning without changing route data behavior.
-- [ ] Run the focused route suite, TypeScript, and diff checks; record evidence
+- [x] Add static preview positioning without changing route data behavior.
+- [x] Run the focused route suite, TypeScript, and diff checks; record evidence
   in the lane doc.
-- [ ] Commit code, tests, and lane evidence together.
+- [x] Commit code, tests, and lane evidence together.
 
 ## Verification
 
@@ -42,4 +42,3 @@ row.
 The authenticated revenue route is visibly a preview backed only by recorded
 attribution data, does not claim a live conversion provider, and retains all
 existing query and filter behavior with green focused tests.
-

@@ -766,8 +766,7 @@ explicit non-goal.
 cd assets && bun run relay
 cd assets && bun run test:unit
 cd assets && bun run typecheck
-cd assets && bun run build:client
-cd assets && bun run build:ssr
+cd assets && bun run build
 ```
 
 Expected: every command exits 0 with no failing test.

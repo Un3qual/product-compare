@@ -366,6 +366,7 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
                 {
                   position: 1,
                   product: {
+                    name: DETAIL_PRODUCT.name,
                     slug: DETAIL_PRODUCT.slug
                   }
                 }
@@ -392,7 +393,12 @@ test("saved comparisons loader preloads saved-set pages through Relay", async ()
       {
         id: "saved-set-1",
         name: "Relay saved set",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: [
+          {
+            name: DETAIL_PRODUCT.name,
+            slug: DETAIL_PRODUCT.slug
+          }
+        ]
       }
     ],
     after: null,
@@ -417,7 +423,12 @@ test("saved comparisons route renders loader summaries while retaining Relay rou
       {
         id: "fallback-saved-set",
         name: "Fallback saved set",
-        slugs: ["fallback-product"]
+        products: [
+          {
+            name: "Fallback product",
+            slug: "fallback-product"
+          }
+        ]
       }
     ]
   });
@@ -435,7 +446,7 @@ test("saved comparisons route renders loader summaries while retaining Relay rou
   );
 
   expect(screen.getByText("Fallback saved set")).toBeInTheDocument();
-  expect(screen.getByText("fallback-product")).toBeInTheDocument();
+  expect(screen.getByText("Fallback product")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     savedComparisonsRouteQueryDescriptor
@@ -451,7 +462,12 @@ test("saved comparisons route deletes saved sets through a Relay mutation", asyn
       {
         id: "saved-set-1",
         name: "Relay saved set",
-        slugs: [DETAIL_PRODUCT.slug]
+        products: [
+          {
+            name: DETAIL_PRODUCT.name,
+            slug: DETAIL_PRODUCT.slug
+          }
+        ]
       }
     ]
   });

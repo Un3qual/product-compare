@@ -83,67 +83,22 @@ Comparison, product detail, and catalog now use one initial route-data request,
 while saved comparisons and API tokens use explicit one-page-at-a-time cursor
 navigation.
 
-On 2026-07-10, the continuously replenished queue policy replaced the prior
-empty-slate exception. Current route and test inspection validated four
-product-facing batches: shopper-focused home content, viewer-aware navigation,
-a safe relative loaded-price signal, and saved-comparison product labels.
+On 2026-07-10, the feature-complete product milestone finished the current
+shopper journey: shopper-focused home content, viewer-aware navigation, a safe
+relative loaded-price signal, ordered saved-comparison product labels, honest
+revenue-preview positioning, and secret-safe CJ scheduled-readiness checks.
+Email delivery, live conversion-provider ingestion, production privacy and
+attribution controls, and production-readiness proof are explicitly outside
+this milestone by product decision.
 
 ## Ready Work
 
-### 1. Shopper-Focused Home Content
-
-Status: ready
-Lane: Frontend shopper home
-Plan: `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
-Next action: Replace technical implementation-status copy with a shopper-oriented browse, compare, and offer-review journey using the existing root route.
-Owned paths:
-
-- `assets/src/routes/root.tsx`
-- `assets/test/routes/root.route.test.tsx`
-- `docs/work/frontend-shopper-home-navigation.md`
-
-Prerequisites:
-
-- Existing root viewer preload and current route set remain unchanged.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The root page communicates the shopper journey and prioritizes browse, compare, and offer review with green focused tests.
-
-### 2. Viewer-Aware Navigation
-
-Status: ready
-Lane: Frontend shopper home
-Plan: `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
-Next action: Keep public shopper routes visible to guests and show saved and account-oriented destinations only when the existing root viewer is authenticated.
-Owned paths:
-
-- `assets/src/routes/root.tsx`
-- `assets/test/routes/root.route.test.tsx`
-- `docs/work/frontend-shopper-home-navigation.md`
-
-Prerequisites:
-
-- No code prerequisite; serialize this row when the other root-route row is active because their owned paths overlap.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Guest and authenticated root states expose the correct public, account, and auth destinations without changing direct-route authorization.
-
-### 3. Compare Relative Loaded Price Signal
+### 1. Compare Loaded-Price Scope Copy
 
 Status: ready
 Lane: Frontend product comparison demo parity
-Plan: `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
-Next action: Add a decision-summary row that identifies the safe lowest already-loaded same-currency price and declines unsafe comparisons.
+Plan: `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
+Next action: Explain that the relative-price signal compares only already-loaded offers without changing its calculation.
 Owned paths:
 
 - `assets/src/routes/compare/decision-summary.tsx`
@@ -152,96 +107,63 @@ Owned paths:
 
 Prerequisites:
 
-- Existing compare offer contexts continue to expose `bestCurrentPrice` without query or loader changes.
+- Existing relative loaded-price behavior and safety rules remain unchanged.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|lowest loaded price|not comparable"`
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|loaded offers"`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The decision summary explicitly scopes relative price to already-loaded offers with green focused tests.
+
+### 2. Compare Picker Loaded-Name Filter
+
+Status: ready
+Lane: Frontend product comparison demo parity
+Plan: `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
+Next action: Add a case-insensitive local name filter over products already loaded in the compare picker.
+Owned paths:
+
+- `assets/src/routes/compare/product-picker.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+
+Prerequisites:
+
+- No code prerequisite; serialize this row with the loaded-price scope row because their test and lane paths overlap.
+
+Verification:
+
 - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: The decision summary identifies comparable lowest loaded prices and explicitly declines mixed, missing, malformed, or unavailable comparisons.
+Exit condition: Shoppers can filter already-loaded picker products without changing pagination, selection, or compare URLs.
 
-### 4. Saved Comparison Product Labels
+### 3. Merchant Visible-Page Name Filter
 
 Status: ready
-Lane: Frontend saved comparisons
-Plan: `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
-Next action: Query and render saved product names in stored order while preserving slug-based reopen order and current route behavior.
+Lane: Frontend merchant discovery demo parity
+Plan: `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
+Next action: Add a case-insensitive local merchant-name filter clearly scoped to the currently visible page.
 Owned paths:
 
-- `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`
-- `assets/src/routes/compare/saved-data.ts`
-- `assets/src/routes/compare/saved.tsx`
-- `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-saved-comparisons-ui.md`
+- `assets/src/routes/merchants/index.tsx`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-discovery-demo-parity.md`
 
 Prerequisites:
 
-- The current GraphQL Product type and local schema snapshot continue to expose non-null `name` and `slug` fields.
+- Existing merchant Relay page, safe-link behavior, and cursor controls remain unchanged.
 
 Verification:
 
-- `cd assets && bun run relay`
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Saved comparison cards display ordered product names and reopen the exact stored slug order with existing auth, pagination, filtering, sorting, and delete behavior intact.
-
-### 5. Revenue Preview Positioning
-
-Status: ready
-Lane: Affiliate revenue and attribution
-Plan: `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`
-Next action: State that authenticated revenue reporting is a preview backed by recorded attribution data and that no live conversion provider is connected for this milestone.
-Owned paths:
-
-- `assets/src/routes/commerce/revenue/index.tsx`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `docs/work/affiliate-revenue-attribution.md`
-
-Prerequisites:
-
-- Existing revenue loader, Relay query, filters, suppression, and authentication behavior remain unchanged.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Revenue reporting is visibly an authenticated preview, makes no live-provider claim, and retains existing route behavior with green focused tests.
-
-### 6. CJ Scheduled Readiness
-
-Status: ready
-Lane: Product data scraping
-Plan: `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
-Next action: Extend the read-only CJ readiness gate with non-secret schedule state and optional scheduled-operation enforcement while preserving manual readiness.
-Owned paths:
-
-- `lib/mix/tasks/product_compare.ingestion.cj_readiness_gate.ex`
-- `test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs`
-- `docs/runbooks/cj-weekly-operator-loop.md`
-- `docs/work/product-data-scraping.md`
-
-Prerequisites:
-
-- Existing CJ scheduler enable flags, bounded runtime configuration, persisted run freshness, and candidate readiness data remain the source of truth.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `git diff --check`
-
-Exit condition: The gate distinguishes manual readiness from recurring scheduled readiness without starting schedulers, contacting CJ, or exposing secret values.
+Exit condition: Shoppers can filter merchant names on the visible page while retaining page-size, cursor, and safe-link behavior.
 
 ## Active Work
 
@@ -256,6 +178,20 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-10 feature-complete product milestone is complete. The home route
+now leads with browse, compare, and offer review; navigation separates public,
+guest, and authenticated destinations; compare identifies the lowest safe
+already-loaded same-currency price; saved sets render ordered product names;
+revenue reporting is explicitly a recorded-data preview; and the CJ readiness
+gate can optionally enforce non-secret scheduler enablement while preserving
+manual readiness. Email delivery, live conversion-provider ingestion,
+production privacy and attribution controls, and production-readiness proof
+were intentionally excluded from this milestone. The three ready rows above
+are optional polish beyond this completion boundary. Final verification passed
+Relay generation, all 607 frontend tests, frontend typechecking, client and SSR
+production builds, all 634 backend tests, backend typechecking and formatting,
+diff hygiene, and `mix work_queue.validate` with three ready rows.
 
 The 2026-07-10 GraphQL request-waterfall batch is complete. `/compare` now
 combines selected products, initial offer context, and picker data into one

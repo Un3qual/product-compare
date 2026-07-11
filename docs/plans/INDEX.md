@@ -22,14 +22,18 @@ decision-confidence batch are also complete.
 Shopper decision confidence was selected and completed on 2026-07-09. Deferred
 ingestion/eBay/operator candidates remain deferred or rejected.
 
+The 2026-07-10 feature-complete product milestone is also complete. It covered
+shopper home and navigation, safe relative loaded-price comparison, saved-set
+product labels, explicit revenue-preview positioning, and CJ scheduled
+readiness. Email delivery, live conversion-provider ingestion, production
+privacy and attribution controls, and production-readiness proof remain outside
+that milestone by product decision.
+
 Active implementation plans:
 
-- `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
-- `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
-- `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
-- `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
-- `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`
-- `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
+- `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
+- `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
+- `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -50,17 +54,11 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Shopper home and navigation: shopper-oriented root content followed by
-  viewer-aware account destination visibility. The plans share owned paths and
-  execute serially.
-- Product comparison: a safe relative loaded-price signal derived from existing
-  compare offer context.
-- Saved comparisons: ordered product names in cards while preserving stored
-  slug reopen order.
-- Revenue reporting: explicit authenticated preview positioning without live
-  conversion-provider ingestion.
-- Product ingestion: optional scheduled-operation enforcement in the existing
-  secret-safe CJ readiness gate.
+- Product comparison: disclose that relative price uses already-loaded offers,
+  then add a local name filter over already-loaded picker products. These plans
+  share test and lane paths and execute serially.
+- Merchant discovery: add a local merchant-name filter explicitly scoped to the
+  visible Relay page.
 - Deferred and rejected work remains outside the ready-work floor and cannot be
   used as queue filler. Start at `docs/work/index.md` for live dispatch status.
 
@@ -70,6 +68,14 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Feature-complete product milestone:
+  `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`,
+  `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`,
+  `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`,
+  `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`,
+  `docs/plans/2026-07-10-revenue-preview-positioning-implementation-plan.md`,
+  and `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`.
 
 - Shopper decision-confidence batch:
   `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`,
