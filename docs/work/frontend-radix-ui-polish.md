@@ -2,14 +2,48 @@
 
 ## Snapshot
 
-- Status: complete
+- Status: active
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-11 against `assets/src/router.tsx` and the current UI layer
 - Design: `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md`
 - Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
+- Follow-up design:
+  `docs/superpowers/specs/2026-07-11-task-first-workspace-layout-design.md`
+- Follow-up plan:
+  `docs/superpowers/plans/2026-07-11-task-first-workspace-layout.md`
 - Objective: establish a Radix-backed theme and reusable UI patterns, then
   polish every registered frontend route without changing application behavior.
+
+## Follow-Up Batch: Task-First Workspace Layout
+
+Status: active
+Owned paths:
+
+- `assets/src/ui/**`
+- `assets/src/routes/**`
+- `assets/test/ui/**`
+- `assets/test/routes/**`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Objective: replace the remaining flat page-header, controls, summary, and list
+sequences with reusable workspace, detail, and guided-flow hierarchies. Keep
+primary content in a clear reading path and move supporting context into
+Radix-backed rails, tabs, accordions, collapsibles, and dialogs where those
+patterns improve comprehension.
+
+Verification:
+
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+- `mix work_queue.validate`
+
+Exit condition: every registered route uses the approved task-first hierarchy,
+the shared layout compositions have behavior-first accessibility coverage, and
+the complete frontend verification plus queue validation are green.
 
 ## Batch 1: Radix Theme And Shared UI Foundation
 

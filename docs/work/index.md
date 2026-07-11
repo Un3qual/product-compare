@@ -167,7 +167,41 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-None.
+### Task-First Workspace Layout Pass
+
+Status: active
+Lane: Frontend Radix UI polish
+Plan: `docs/superpowers/plans/2026-07-11-task-first-workspace-layout.md`
+Next action: Add reusable workspace, context-rail, disclosure, summary, table,
+and action-dialog compositions before reshaping every registered route around
+its primary task.
+Owned paths:
+
+- `assets/src/ui/**`
+- `assets/src/routes/**`
+- `assets/test/ui/**`
+- `assets/test/routes/**`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Prerequisites:
+
+- The user approved the task-first workspace design at
+  `docs/superpowers/specs/2026-07-11-task-first-workspace-layout-design.md`.
+- The initial Radix theme and component-filename follow-ups are complete.
+
+Verification:
+
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run build`
+- `git diff --check`
+- `mix work_queue.validate`
+
+Exit condition: every registered route uses an appropriate workspace, detail,
+or guided-flow hierarchy; responsive context and disclosure behavior is
+Radix-backed; all frontend and queue verification is green; and completion
+evidence is recorded in the lane document.
 
 ## Needs Decision Work
 
@@ -178,6 +212,12 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The initial 2026-07-11 frontend Radix UI polish milestone remains complete.
+The user approved a follow-up information-architecture pass after identifying
+that several screens still used the same difficult-to-follow flat layout. That
+follow-up is active above and does not consume any of the three unrelated ready
+rows.
 
 The 2026-07-11 frontend Radix UI polish milestone is complete. It established
 Radix Themes and semantic brand tokens, reusable page/feedback/data/status/
