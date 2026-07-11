@@ -3007,6 +3007,45 @@ test("saved comparison loader keeps product labels in stored position order", as
   });
 });
 
+test("saved comparison loader uses the product slug when its name is missing", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare/saved");
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedSavedComparisonPage({
+      mySavedComparisonSets: {
+        edges: [
+          {
+            node: {
+              id: "saved-set-1",
+              name: "Desk setup",
+              items: [
+                {
+                  position: 1,
+                  product: { slug: "standing-desk" }
+                }
+              ]
+            }
+          }
+        ],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    })
+  );
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    savedSets: [
+      {
+        id: "saved-set-1",
+        name: "Desk setup",
+        products: [{ name: "standing-desk", slug: "standing-desk" }]
+      }
+    ]
+  });
+});
+
 test("saved comparisons loader returns one page and exposes its next cursor", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");

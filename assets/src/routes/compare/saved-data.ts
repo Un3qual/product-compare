@@ -181,12 +181,12 @@ function summarizeSavedComparisonItem(
 
   const { name, slug } = item.product;
 
-  if (typeof name !== "string" || typeof slug !== "string") {
+  if (!(name == null || typeof name === "string") || typeof slug !== "string") {
     throwSavedComparisonsParseError();
   }
 
   return {
-    name,
+    name: name ?? slug,
     position: item.position,
     slug
   };
