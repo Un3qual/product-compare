@@ -62,22 +62,32 @@ export function MerchantDirectoryRoute() {
       {loaderData.status === "error" ? (
         <MerchantDirectoryUnavailableFallback />
       ) : (
-        <>
-          <MerchantDirectoryControls pagination={loaderData.pagination} />
-          <ResettableErrorBoundary
-            fallback={<MerchantDirectoryUnavailableFallback />}
-            resetToken={loaderData.query}
-          >
-            <Suspense fallback={<p role="status">Loading merchants...</p>}>
-              <MerchantDirectoryPanel
-                pagination={loaderData.pagination}
-                query={loaderData.query}
-              />
-            </Suspense>
-          </ResettableErrorBoundary>
-        </>
+        <MerchantDirectoryContent loaderData={loaderData} />
       )}
     </PageShell>
+  );
+}
+
+function MerchantDirectoryContent({
+  loaderData
+}: {
+  loaderData: Extract<MerchantDirectoryLoaderData, { status: "ready" }>;
+}) {
+  return (
+    <>
+      <MerchantDirectoryControls pagination={loaderData.pagination} />
+      <ResettableErrorBoundary
+        fallback={<MerchantDirectoryUnavailableFallback />}
+        resetToken={loaderData.query}
+      >
+        <Suspense fallback={<p role="status">Loading merchants...</p>}>
+          <MerchantDirectoryPanel
+            pagination={loaderData.pagination}
+            query={loaderData.query}
+          />
+        </Suspense>
+      </ResettableErrorBoundary>
+    </>
   );
 }
 
@@ -140,29 +150,9 @@ function MerchantDirectoryList({
   return (
     <>
       <DataList label="Merchants">
-        {merchants.map((merchant) => {
-          const websiteHref = externalWebsiteHref(merchant.domain);
-
-          return (
-            <DataListItem
-              actions={
-                websiteHref ? (
-                  <Button asChild variant="soft">
-                    <a href={websiteHref} target="_blank" rel="noopener noreferrer">
-                      Visit merchant website
-                    </a>
-                  </Button>
-                ) : null
-              }
-              key={merchant.id}
-            >
-              <div {...props(styles.merchant)}>
-                <h2 {...props(styles.name)}>{merchant.name}</h2>
-                <p {...props(styles.domain)}>{merchant.domain}</p>
-              </div>
-            </DataListItem>
-          );
-        })}
+        {merchants.map((merchant) => (
+          <MerchantListItem key={merchant.id} merchant={merchant} />
+        ))}
       </DataList>
       <Pagination
         firstHref={
@@ -180,6 +170,33 @@ function MerchantDirectoryList({
         nextLabel="Next merchants"
       />
     </>
+  );
+}
+
+function MerchantListItem({
+  merchant
+}: {
+  merchant: MerchantDirectoryConnection["edges"][number]["node"];
+}) {
+  const websiteHref = externalWebsiteHref(merchant.domain);
+
+  return (
+    <DataListItem
+      actions={
+        websiteHref ? (
+          <Button asChild variant="soft">
+            <a href={websiteHref} target="_blank" rel="noopener noreferrer">
+              Visit merchant website
+            </a>
+          </Button>
+        ) : null
+      }
+    >
+      <div {...props(styles.merchant)}>
+        <h2 {...props(styles.name)}>{merchant.name}</h2>
+        <p {...props(styles.domain)}>{merchant.domain}</p>
+      </div>
+    </DataListItem>
   );
 }
 

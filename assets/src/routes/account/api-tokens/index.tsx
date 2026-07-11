@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
+import { Suspense, type FormEvent, type RefObject, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
@@ -319,68 +319,14 @@ export function ApiTokensRoute() {
         </p>
       ) : (
         <>
-          <nav aria-label="API token status filters">
-            <ul>
-              {STATUS_FILTERS.map((filter) => (
-                <li key={filter.status}>
-                  <Link
-                    aria-current={loaderData.tokenStatus === filter.status ? "page" : undefined}
-                    to={`/account/api-tokens?status=${filter.status}`}
-                  >
-                    {filter.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <ApiTokenStatusFilters tokenStatus={loaderData.tokenStatus} />
 
-          <form aria-label="Create API token" onSubmit={handleCreate} {...props(styles.createForm)}>
-            <h2>Create API token</h2>
-            <label>
-              Label
-              <TextField autoComplete="off" name="label" type="text" />
-            </label>
-            <label>
-              Expires at
-              <input
-                name="expiresAt"
-                onChange={() => {
-                  if (createExpiresAtPresetInputRef.current) {
-                    createExpiresAtPresetInputRef.current.value = "";
-                  }
-                }}
-                ref={createExpiresAtInputRef}
-                type="datetime-local"
-              />
-            </label>
-            <input name="expiresAtPreset" ref={createExpiresAtPresetInputRef} type="hidden" />
-            <div>
-              {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-                <Button
-                  size="1"
-                  variant="soft"
-                  key={preset.label}
-                  onClick={() => {
-                    if (createExpiresAtInputRef.current) {
-                      createExpiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
-                        preset.label,
-                        new Date(Date.now())
-                      );
-                    }
-                    if (createExpiresAtPresetInputRef.current) {
-                      createExpiresAtPresetInputRef.current.value = preset.label;
-                    }
-                  }}
-                  type="button"
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-            <Button disabled={createSubmitting} type="submit">
-              {createSubmitting ? "Creating API token..." : "Create API token"}
-            </Button>
-          </form>
+          <CreateApiTokenForm
+            expiresAtInputRef={createExpiresAtInputRef}
+            expiresAtPresetInputRef={createExpiresAtPresetInputRef}
+            onSubmit={handleCreate}
+            submitting={createSubmitting}
+          />
 
           {createError ? <p role="alert">{createError}</p> : null}
 
@@ -407,20 +353,18 @@ export function ApiTokensRoute() {
               }
               resetToken={tokenQueries}
             >
-              <Suspense fallback={<p role="status">Loading API tokens...</p>}>
-                <RelayApiTokenList
-                  apiTokenUpdates={apiTokenUpdates}
-                  localTokens={viewState.localTokens}
-                  onRotate={handleRotate}
-                  onRevoke={handleRevoke}
-                  pendingRevokeIds={pendingRevokeIds}
-                  pendingRotateIds={pendingRotateIds}
-                  revokeErrorsByTokenId={revokeErrorsByTokenId}
-                  rotateErrorsByTokenId={rotateErrorsByTokenId}
-                  tokenStatus={loaderData.tokenStatus}
-                  tokenQueries={tokenQueries}
-                />
-              </Suspense>
+              <RelayApiTokenList
+                apiTokenUpdates={apiTokenUpdates}
+                localTokens={viewState.localTokens}
+                onRotate={handleRotate}
+                onRevoke={handleRevoke}
+                pendingRevokeIds={pendingRevokeIds}
+                pendingRotateIds={pendingRotateIds}
+                revokeErrorsByTokenId={revokeErrorsByTokenId}
+                rotateErrorsByTokenId={rotateErrorsByTokenId}
+                tokenStatus={loaderData.tokenStatus}
+                tokenQueries={tokenQueries}
+              />
             </ResettableErrorBoundary>
           ) : null}
 
@@ -444,6 +388,91 @@ export function ApiTokensRoute() {
         </>
       )}
     </PageShell>
+  );
+}
+
+function CreateApiTokenForm({
+  expiresAtInputRef,
+  expiresAtPresetInputRef,
+  onSubmit,
+  submitting
+}: {
+  expiresAtInputRef: RefObject<HTMLInputElement | null>;
+  expiresAtPresetInputRef: RefObject<HTMLInputElement | null>;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  submitting: boolean;
+}) {
+  return (
+    <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
+      <h2>Create API token</h2>
+      <label>
+        Label
+        <TextField autoComplete="off" name="label" type="text" />
+      </label>
+      <label>
+        Expires at
+        <input
+          name="expiresAt"
+          onChange={() => {
+            if (expiresAtPresetInputRef.current) {
+              expiresAtPresetInputRef.current.value = "";
+            }
+          }}
+          ref={expiresAtInputRef}
+          type="datetime-local"
+        />
+      </label>
+      <input name="expiresAtPreset" ref={expiresAtPresetInputRef} type="hidden" />
+      <div>
+        {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
+          <Button
+            size="1"
+            variant="soft"
+            key={preset.label}
+            onClick={() => {
+              if (expiresAtInputRef.current) {
+                expiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
+                  preset.label,
+                  new Date(Date.now())
+                );
+              }
+              if (expiresAtPresetInputRef.current) {
+                expiresAtPresetInputRef.current.value = preset.label;
+              }
+            }}
+            type="button"
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      <Button disabled={submitting} type="submit">
+        {submitting ? "Creating API token..." : "Create API token"}
+      </Button>
+    </form>
+  );
+}
+
+function ApiTokenStatusFilters({
+  tokenStatus
+}: {
+  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
+}) {
+  return (
+    <nav aria-label="API token status filters">
+      <ul>
+        {STATUS_FILTERS.map((filter) => (
+          <li key={filter.status}>
+            <Link
+              aria-current={tokenStatus === filter.status ? "page" : undefined}
+              to={`/account/api-tokens?status=${filter.status}`}
+            >
+              {filter.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -480,18 +509,7 @@ function apiTokenPagePath(
   return `/account/api-tokens?${searchParams.toString()}`;
 }
 
-function RelayApiTokenList({
-  apiTokenUpdates,
-  localTokens,
-  onRotate,
-  onRevoke,
-  pendingRevokeIds,
-  pendingRotateIds,
-  revokeErrorsByTokenId,
-  rotateErrorsByTokenId,
-  tokenStatus,
-  tokenQueries
-}: {
+type RelayApiTokenListProps = {
   apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
   localTokens: ApiTokenSummary[];
   onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
@@ -502,7 +520,28 @@ function RelayApiTokenList({
   rotateErrorsByTokenId: ReadonlyMap<string, string>;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
   tokenQueries: ApiTokenQueryDescriptor[];
-}) {
+};
+
+function RelayApiTokenList(props: RelayApiTokenListProps) {
+  return (
+    <Suspense fallback={<p role="status">Loading API tokens...</p>}>
+      <RelayApiTokenListContent {...props} />
+    </Suspense>
+  );
+}
+
+function RelayApiTokenListContent({
+  apiTokenUpdates,
+  localTokens,
+  onRotate,
+  onRevoke,
+  pendingRevokeIds,
+  pendingRotateIds,
+  revokeErrorsByTokenId,
+  rotateErrorsByTokenId,
+  tokenStatus,
+  tokenQueries
+}: RelayApiTokenListProps) {
   return (
     <ul aria-label="API tokens" {...props(styles.list)}>
       {localTokens.map((token) => (

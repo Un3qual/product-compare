@@ -331,20 +331,11 @@ function AffiliateSetupPanel({
               value={affiliateNetworkId}
             />
           </label>
-          <label>
-            Merchant
-            <select
-              name="merchantId"
-              onChange={(event) => setSelectedMerchantId(event.currentTarget.value)}
-              value={selectedMerchantValue}
-            >
-              {merchantChoices.map((merchant) => (
-                <option key={merchant.id} value={merchant.id}>
-                  {merchant.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <MerchantSelect
+            merchantChoices={merchantChoices}
+            onSelectedMerchantIdChange={setSelectedMerchantId}
+            selectedMerchantValue={selectedMerchantValue}
+          />
           <label>
             Program code
             <TextField autoComplete="off" name="programCode" type="text" />
@@ -410,20 +401,13 @@ function AffiliateSetupPanel({
           {selectedMerchantSummary ? (
             <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
           ) : null}
-          <label>
-            Coupon merchant
-            <select
-              name="couponMerchantId"
-              onChange={(event) => setSelectedMerchantId(event.currentTarget.value)}
-              value={selectedMerchantValue}
-            >
-              {merchantChoices.map((merchant) => (
-                <option key={merchant.id} value={merchant.id}>
-                  {merchant.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <MerchantSelect
+            label="Coupon merchant"
+            merchantChoices={merchantChoices}
+            name="couponMerchantId"
+            onSelectedMerchantIdChange={setSelectedMerchantId}
+            selectedMerchantValue={selectedMerchantValue}
+          />
           <label>
             Coupon affiliate network ID
             <TextField autoComplete="off" name="couponAffiliateNetworkId" type="text" />
@@ -436,15 +420,7 @@ function AffiliateSetupPanel({
             Description
             <TextField autoComplete="off" name="couponDescription" type="text" />
           </label>
-          <label>
-            Discount type
-            <select defaultValue="OTHER" name="discountType">
-              <option value="OTHER">OTHER</option>
-              <option value="PERCENT">PERCENT</option>
-              <option value="AMOUNT">AMOUNT</option>
-              <option value="FREE_SHIPPING">FREE_SHIPPING</option>
-            </select>
-          </label>
+          <DiscountTypeSelect />
           <label>
             Discount value
             <TextField autoComplete="off" name="discountValue" type="text" />
@@ -473,6 +449,51 @@ function AffiliateSetupPanel({
         </form>
       )}
     </>
+  );
+}
+
+function MerchantSelect({
+  label = "Merchant",
+  merchantChoices,
+  name = "merchantId",
+  onSelectedMerchantIdChange,
+  selectedMerchantValue
+}: {
+  label?: string;
+  merchantChoices: MerchantChoice[];
+  name?: string;
+  onSelectedMerchantIdChange: (merchantId: string) => void;
+  selectedMerchantValue: string;
+}) {
+  return (
+    <label>
+      {label}
+      <select
+        name={name}
+        onChange={(event) => onSelectedMerchantIdChange(event.currentTarget.value)}
+        value={selectedMerchantValue}
+      >
+        {merchantChoices.map((merchant) => (
+          <option key={merchant.id} value={merchant.id}>
+            {merchant.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function DiscountTypeSelect() {
+  return (
+    <label>
+      Discount type
+      <select defaultValue="OTHER" name="discountType">
+        <option value="OTHER">OTHER</option>
+        <option value="PERCENT">PERCENT</option>
+        <option value="AMOUNT">AMOUNT</option>
+        <option value="FREE_SHIPPING">FREE_SHIPPING</option>
+      </select>
+    </label>
   );
 }
 

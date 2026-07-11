@@ -240,26 +240,44 @@ function OfferDiscoveryList({
           <VisibleOfferSnapshot
             summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
           />
-          <DataList label="Offers">
-            {offers.map((renderableOffer, index) => (
-              <DataListItem key={renderableOffer.offer.id}>
-                <OfferListItem
-                  offer={renderableOffer.offer}
-                  highlightLabel={priceSortHighlightLabel(
-                    filters.sort,
-                    index,
-                    renderableOffer,
-                    canComparePrices
-                  )}
-                />
-              </DataListItem>
-            ))}
-          </DataList>
+          <OfferDataList
+            canComparePrices={canComparePrices}
+            offers={offers}
+            sort={filters.sort}
+          />
         </>
       )}
       <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={connection} filters={filters} />
     </>
+  );
+}
+
+function OfferDataList({
+  canComparePrices,
+  offers,
+  sort
+}: {
+  canComparePrices: boolean;
+  offers: RenderableOffer[];
+  sort: OfferDiscoverySort;
+}) {
+  return (
+    <DataList label="Offers">
+      {offers.map((renderableOffer, index) => (
+        <DataListItem key={renderableOffer.offer.id}>
+          <OfferListItem
+            offer={renderableOffer.offer}
+            highlightLabel={priceSortHighlightLabel(
+              sort,
+              index,
+              renderableOffer,
+              canComparePrices
+            )}
+          />
+        </DataListItem>
+      ))}
+    </DataList>
   );
 }
 
@@ -615,27 +633,31 @@ function CouponSummary({
   return (
     <>
       <ul aria-label={`${merchantName} active coupons`}>
-        {couponEdges.map(({ cursor, node: coupon }) => {
-          const couponDiscountLabel = discountLabel(coupon);
-          const couponValidTo = graphQLDateTimeContext(coupon.validTo);
-
-          return (
-            <li key={cursor}>
-              <strong>{coupon.code}</strong>
-              {coupon.description ? <p>{coupon.description}</p> : null}
-              {couponDiscountLabel ? <p>{couponDiscountLabel}</p> : null}
-              {couponValidTo ? (
-                <p>
-                  Valid through <time dateTime={couponValidTo.dateTime}>{couponValidTo.label}</time>
-                </p>
-              ) : null}
-              {coupon.terms ? <p>{coupon.terms}</p> : null}
-            </li>
-          );
-        })}
+        {couponEdges.map(({ cursor, node: coupon }) => (
+          <CouponListItem coupon={coupon} key={cursor} />
+        ))}
       </ul>
       {hasMore ? <p>More coupons available.</p> : null}
     </>
+  );
+}
+
+function CouponListItem({ coupon }: { coupon: CouponNode }) {
+  const couponDiscountLabel = discountLabel(coupon);
+  const couponValidTo = graphQLDateTimeContext(coupon.validTo);
+
+  return (
+    <li>
+      <strong>{coupon.code}</strong>
+      {coupon.description ? <p>{coupon.description}</p> : null}
+      {couponDiscountLabel ? <p>{couponDiscountLabel}</p> : null}
+      {couponValidTo ? (
+        <p>
+          Valid through <time dateTime={couponValidTo.dateTime}>{couponValidTo.label}</time>
+        </p>
+      ) : null}
+      {coupon.terms ? <p>{coupon.terms}</p> : null}
+    </li>
   );
 }
 

@@ -325,6 +325,8 @@ findings. The follow-up now:
 - exposes compared-product actions as named navigation landmarks;
 - replaces generic home action groups with a named section and navigation
   landmarks;
+- extracts dense nested route sections into named components so UI composition
+  stays within the four-level JSX depth guideline;
 - preserves loader-backed URL navigation when comparison tabs are clicked;
 - removes unused router imports and reduces the catalog filter JSX depth; and
 - fixes all outside-diff Markdown list-spacing annotations in the implementation

@@ -399,37 +399,43 @@ function ProductOffers({
       <OfferSnapshot
         summary={buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS)}
       />
-      <ul aria-label="Active offer list">
-        {offers.map((offer) => (
-          <li key={offer.id}>
-            <TrackedCommerceClickAction
-              label={offer.merchantName}
-              merchantProductId={offer.id}
-            />
-            {offer.priceText ? <p>{offer.priceText}</p> : null}
-            {offer.priceObservation ? (
-              <p>
-                Price observed{" "}
-                <time dateTime={offer.priceObservation.dateTime}>
-                  {offer.priceObservation.label}
-                </time>
-              </p>
-            ) : null}
-            <OfferPriceHistory
-              merchantName={offer.merchantName}
-              historyRows={offer.priceHistory}
-              hasMore={offer.priceHistoryHasMore}
-            />
-            <OfferCoupons
-              merchantName={offer.merchantName}
-              coupons={offer.coupons}
-              hasMore={offer.couponsHasMore}
-            />
-          </li>
-        ))}
-      </ul>
+      <ActiveOfferList offers={offers} />
       {paginationLinks}
     </>
+  );
+}
+
+function ActiveOfferList({ offers }: { offers: VisibleProductOffer[] }) {
+  return (
+    <ul aria-label="Active offer list">
+      {offers.map((offer) => (
+        <li key={offer.id}>
+          <TrackedCommerceClickAction
+            label={offer.merchantName}
+            merchantProductId={offer.id}
+          />
+          {offer.priceText ? <p>{offer.priceText}</p> : null}
+          {offer.priceObservation ? (
+            <p>
+              Price observed{" "}
+              <time dateTime={offer.priceObservation.dateTime}>
+                {offer.priceObservation.label}
+              </time>
+            </p>
+          ) : null}
+          <OfferPriceHistory
+            merchantName={offer.merchantName}
+            historyRows={offer.priceHistory}
+            hasMore={offer.priceHistoryHasMore}
+          />
+          <OfferCoupons
+            merchantName={offer.merchantName}
+            coupons={offer.coupons}
+            hasMore={offer.couponsHasMore}
+          />
+        </li>
+      ))}
+    </ul>
   );
 }
 

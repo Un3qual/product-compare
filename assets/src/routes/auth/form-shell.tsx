@@ -111,19 +111,7 @@ export function AuthFormShell({
           <p {...props(styles.copy)}>{description}</p>
         </header>
 
-        {visibleErrors.length > 0 ? (
-          <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
-            <Callout.Text>
-              <ul {...props(styles.errorList)}>
-                {visibleErrors.map((error) => (
-                  <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
-                    {error.message}
-                  </li>
-                ))}
-              </ul>
-            </Callout.Text>
-          </Callout.Root>
-        ) : null}
+        <FormGlobalErrors errors={visibleErrors} />
 
         {successMessage ? (
           <Callout.Root aria-live="polite" color="green" role="status" variant="surface">
@@ -133,17 +121,45 @@ export function AuthFormShell({
 
         <Slot {...props(styles.form)}>{children}</Slot>
 
-        {footerLinks.length > 0 ? (
-          <footer {...props(styles.footer)}>
-            {footerLinks.map((link) => (
-              <Button key={link.to} asChild variant="ghost" {...props(styles.link)}>
-                <Link to={link.to}>{link.label}</Link>
-              </Button>
-            ))}
-          </footer>
-        ) : null}
+        <AuthFooterLinks footerLinks={footerLinks} />
       </div>
     </section>
+  );
+}
+
+function FormGlobalErrors({ errors }: { errors: MutationError[] }) {
+  if (errors.length === 0) {
+    return null;
+  }
+
+  return (
+    <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
+      <Callout.Text>
+        <ul {...props(styles.errorList)}>
+          {errors.map((error) => (
+            <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
+              {error.message}
+            </li>
+          ))}
+        </ul>
+      </Callout.Text>
+    </Callout.Root>
+  );
+}
+
+function AuthFooterLinks({ footerLinks }: { footerLinks: FooterLink[] }) {
+  if (footerLinks.length === 0) {
+    return null;
+  }
+
+  return (
+    <footer {...props(styles.footer)}>
+      {footerLinks.map((link) => (
+        <Button key={link.to} asChild variant="ghost" {...props(styles.link)}>
+          <Link to={link.to}>{link.label}</Link>
+        </Button>
+      ))}
+    </footer>
   );
 }
 

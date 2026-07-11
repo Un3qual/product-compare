@@ -105,28 +105,7 @@ function CompareSpecificationMatrix({
         {rows.length === 0 ? (
           <p>{emptySpecificationMatrixMessage(specMode)}</p>
         ) : (
-          <table aria-label={title} {...props(styles.table)}>
-            <thead>
-              <tr>
-                <th scope="col">Specification</th>
-                {products.map((product) => (
-                  <th key={product.id} scope="col">
-                    {product.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.code}>
-                  <th scope="row">{row.displayName}</th>
-                  {row.values.map((value, index) => (
-                    <td key={`${row.code}-${products[index]?.id ?? index}`}>{value}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <SpecificationTable products={products} rows={rows} title={title} />
         )}
       </ScrollArea>
     </section>
@@ -140,6 +119,41 @@ interface CompareSpecificationRow {
   missingValues: boolean[];
   values: string[];
   comparisonValues: string[];
+}
+
+function SpecificationTable({
+  products,
+  rows,
+  title
+}: {
+  products: CompareProductSummary[];
+  rows: CompareSpecificationRow[];
+  title: string;
+}) {
+  return (
+    <table aria-label={title} {...props(styles.table)}>
+      <thead>
+        <tr>
+          <th scope="col">Specification</th>
+          {products.map((product) => (
+            <th key={product.id} scope="col">
+              {product.name}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.code}>
+            <th scope="row">{row.displayName}</th>
+            {row.values.map((value, index) => (
+              <td key={`${row.code}-${products[index]?.id ?? index}`}>{value}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 function buildSpecificationRows(

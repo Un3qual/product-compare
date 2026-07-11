@@ -85,20 +85,38 @@ export function CompareSelectionTray({
           </Button>
         ) : null}
       </div>
-      <ul {...props(styles.list)}>
-        {selectedSlugs.map((slug, index) => {
-          const label = items.find((item) => item.slug === slug)?.label ?? slug;
-
-          return (
-            <li key={slug} {...props(styles.item)}>
-              <span>{label}</span>{" "}
-              <Button asChild size="1" variant="ghost">
-                <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
+      <SelectionItems
+        items={items}
+        removePathForIndex={removePathForIndex}
+        selectedSlugs={selectedSlugs}
+      />
     </section>
+  );
+}
+
+function SelectionItems({
+  items,
+  removePathForIndex,
+  selectedSlugs
+}: {
+  items: readonly CompareSelectionTrayItem[];
+  removePathForIndex: (index: number) => string;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <ul {...props(styles.list)}>
+      {selectedSlugs.map((slug, index) => {
+        const label = items.find((item) => item.slug === slug)?.label ?? slug;
+
+        return (
+          <li key={slug} {...props(styles.item)}>
+            <span>{label}</span>{" "}
+            <Button asChild size="1" variant="ghost">
+              <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>
+            </Button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

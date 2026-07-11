@@ -132,27 +132,29 @@ function ReadyRootLayout({
 function RootLayoutShell({ viewer }: RootOutletContext) {
   return (
     <AppProviders>
-      <AppShell
-        navigation={
-          <div {...props(styles.navigation)}>
-            <Button asChild {...props(styles.title)}>
-              <NavLink end to="/">
-                Product Compare
-              </NavLink>
-            </Button>
-            <div {...props(styles.navigationLinks)}>
-              <DestinationLinks destinations={PUBLIC_DESTINATIONS} variant="ghost" />
-              {viewer ? (
-                <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
-              ) : null}
-              <AuthLinks viewer={viewer} />
-            </div>
-          </div>
-        }
-      >
+      <AppShell navigation={<PrimaryNavigation viewer={viewer} />}>
         <Outlet context={{ viewer }} />
       </AppShell>
     </AppProviders>
+  );
+}
+
+function PrimaryNavigation({ viewer }: RootOutletContext) {
+  return (
+    <div {...props(styles.navigation)}>
+      <Button asChild {...props(styles.title)}>
+        <NavLink end to="/">
+          Product Compare
+        </NavLink>
+      </Button>
+      <div {...props(styles.navigationLinks)}>
+        <DestinationLinks destinations={PUBLIC_DESTINATIONS} variant="ghost" />
+        {viewer ? (
+          <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
+        ) : null}
+        <AuthLinks viewer={viewer} />
+      </div>
+    </div>
   );
 }
 
@@ -167,20 +169,7 @@ export function RootRoute() {
       width="reading"
     >
       <section aria-label="Home actions" {...props(styles.actionGroups)}>
-        <nav aria-label="Shopper actions" {...props(styles.actions)}>
-          <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
-            {SHOPPER_DESTINATIONS.map(({ label, to }) => (
-              <li key={to} {...props(styles.shopperPath)}>
-                <DestinationLink
-                  label={label}
-                  style={styles.shopperLink}
-                  to={to}
-                  variant="solid"
-                />
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <ShopperActions />
         <nav
           aria-label="More Product Compare actions"
           {...props(styles.actions, styles.secondaryActions)}
@@ -193,6 +182,25 @@ export function RootRoute() {
         </nav>
       </section>
     </PageShell>
+  );
+}
+
+function ShopperActions() {
+  return (
+    <nav aria-label="Shopper actions" {...props(styles.actions)}>
+      <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
+        {SHOPPER_DESTINATIONS.map(({ label, to }) => (
+          <li key={to} {...props(styles.shopperPath)}>
+            <DestinationLink
+              label={label}
+              style={styles.shopperLink}
+              to={to}
+              variant="solid"
+            />
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 

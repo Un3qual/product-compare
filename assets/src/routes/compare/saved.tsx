@@ -159,34 +159,12 @@ export function SavedComparisonsRoute() {
           <Link to="/auth/login">Sign in to view saved comparisons</Link>
         </Button>
       ) : (
-        <div {...props(styles.controls)}>
-          <label>
-            Filter saved comparisons
-            <TextField
-              onChange={(event) => {
-                setFilterText(event.target.value);
-              }}
-              value={filterText}
-            />
-          </label>
-          <label>
-            Sort saved comparisons
-            <select
-              onChange={(event) => {
-                setSortMode(savedComparisonSortModeFromValue(event.target.value));
-              }}
-              value={sortMode}
-            >
-              <option value="current">Current order</option>
-              <option value="name-asc">Name A-Z</option>
-              <option value="product-count-desc">Product count high-to-low</option>
-              <option value="product-count-asc">Product count low-to-high</option>
-            </select>
-          </label>
-          <p {...props(styles.controlNote)}>
-            Filtering and sorting apply to the visible page.
-          </p>
-        </div>
+        <SavedComparisonControls
+          filterText={filterText}
+          onFilterTextChange={setFilterText}
+          onSortModeChange={setSortMode}
+          sortMode={sortMode}
+        />
       )}
       {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
       {savedSetQueries.length > 0 ? (
@@ -207,6 +185,45 @@ export function SavedComparisonsRoute() {
         />
       ) : null}
     </CompareShell>
+  );
+}
+
+function SavedComparisonControls({
+  filterText,
+  onFilterTextChange,
+  onSortModeChange,
+  sortMode
+}: {
+  filterText: string;
+  onFilterTextChange: (filterText: string) => void;
+  onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
+  sortMode: SavedComparisonSortMode;
+}) {
+  return (
+    <div {...props(styles.controls)}>
+      <label>
+        Filter saved comparisons
+        <TextField
+          onChange={(event) => onFilterTextChange(event.target.value)}
+          value={filterText}
+        />
+      </label>
+      <label>
+        Sort saved comparisons
+        <select
+          onChange={(event) => onSortModeChange(savedComparisonSortModeFromValue(event.target.value))}
+          value={sortMode}
+        >
+          <option value="current">Current order</option>
+          <option value="name-asc">Name A-Z</option>
+          <option value="product-count-desc">Product count high-to-low</option>
+          <option value="product-count-asc">Product count low-to-high</option>
+        </select>
+      </label>
+      <p {...props(styles.controlNote)}>
+        Filtering and sorting apply to the visible page.
+      </p>
+    </div>
   );
 }
 
