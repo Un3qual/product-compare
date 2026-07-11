@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-11 against `assets/src/router.tsx` and the current UI layer
@@ -245,9 +245,9 @@ Completion evidence:
 - GREEN: `cd assets && bun run typecheck` exited 0.
 - GREEN: `cd assets && bun run build` completed both client and SSR builds.
 
-## Active Batch 8: Full Verification And Closeout
+## Batch 8: Full Verification And Closeout
 
-Status: active
+Status: done
 Owned paths:
 
 - `docs/work/frontend-radix-ui-polish.md`
@@ -267,6 +267,17 @@ Exit condition: the complete frontend suite, generated contracts, types,
 client/SSR builds, and work queue are green; the lane is closed with the three
 unrelated ready rows preserved.
 
+Completion evidence:
+
+- `cd assets && bun run relay` compiled 30 reader documents, 29 normalization
+  documents, and 29 operation texts with no generated diff.
+- `cd assets && bun run test:unit` passed 46 files and 628 tests.
+- `cd assets && bun run typecheck` exited 0.
+- `cd assets && bun run build` completed client and SSR production builds; the
+  existing large-chunk advisory remains non-blocking.
+- `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
+- `git diff --check` exited 0.
+
 ## Dependent Batches
 
 1. Shared application shell and home.
@@ -276,9 +287,9 @@ unrelated ready rows preserved.
 5. Operational routes.
 6. Authentication routes.
 
-Promote only the next batch after its dependency has green completion evidence.
-Keep the three unrelated ready rows in `docs/work/index.md` available throughout
-execution.
+All dependent batches completed serially with green completion evidence. The
+three unrelated ready rows in `docs/work/index.md` remained available
+throughout execution.
 
 ## Baseline Evidence
 

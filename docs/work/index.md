@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-10
+Updated: 2026-07-11
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -167,35 +167,7 @@ Exit condition: Shoppers can filter merchant names on the visible page while ret
 
 ## Active Work
 
-### 1. Radix UI Polish Full Verification
-
-Status: active
-Lane: Frontend Radix UI polish
-Plan: `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`
-Next action: Run complete frontend behavior, Relay contract, type, client/SSR
-build, queue, and diff verification; then close the UI polish lane.
-Owned paths:
-
-- `docs/work/frontend-radix-ui-polish.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-
-Prerequisites:
-
-- The approved design spec and implementation plan are committed.
-
-Verification:
-
-- `cd assets && bun run test:unit`
-- `cd assets && bun run relay`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run build`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: The complete frontend suite, generated contracts, types,
-client/SSR builds, and work queue are green; the lane is closed with the three
-unrelated ready rows preserved.
+None.
 
 ## Needs Decision Work
 
@@ -206,6 +178,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 frontend Radix UI polish milestone is complete. It established
+Radix Themes and semantic brand tokens, reusable page/feedback/data/status/
+pagination patterns, a responsive application shell, and calmer information
+hierarchy across home, catalog, product detail, merchants, offers, comparison,
+saved comparisons, operational workspaces, and every authentication route.
+Final verification passed Relay generation, all 628 frontend tests, frontend
+typechecking, client and SSR production builds, diff hygiene, and
+`mix work_queue.validate` with three ready rows.
 
 The 2026-07-10 feature-complete product milestone is complete. The home route
 now leads with browse, compare, and offer review; navigation separates public,
