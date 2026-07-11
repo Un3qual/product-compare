@@ -140,30 +140,24 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "data-slot",
     "button"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
-    "href",
-    "/account/api-tokens"
-  );
-  expect(within(primaryNavigation).getByRole("link", { name: "Revenue" })).toHaveAttribute(
-    "href",
-    "/commerce/revenue"
-  );
   expect(within(primaryNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
     "/merchants"
-  );
-  expect(within(primaryNavigation).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
-    "href",
-    "/affiliate/setup"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
     "href",
     "/offers"
   );
+  for (const accountDestination of [
+    "Saved comparisons",
+    "Affiliate setup",
+    "Revenue preview",
+    "API tokens"
+  ]) {
+    expect(
+      within(primaryNavigation).queryByRole("link", { name: accountDestination })
+    ).not.toBeInTheDocument();
+  }
   expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login"
@@ -188,6 +182,22 @@ test("root layout renders authenticated auth links in the primary navigation", a
   expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+    "href",
+    "/compare/saved"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
+    "href",
+    "/affiliate/setup"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens"
   );
   expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   expect(
@@ -226,31 +236,24 @@ test("root route renders guest home actions as links while using the shared butt
     "data-slot",
     "button"
   );
-  expect(within(homeActions).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
-    "href",
-    "/account/api-tokens"
-  );
-
-  expect(within(homeActions).getByRole("link", { name: "Revenue" })).toHaveAttribute(
-    "href",
-    "/commerce/revenue"
-  );
   expect(within(homeActions).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
     "/merchants"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
-    "href",
-    "/affiliate/setup"
   );
   expect(within(homeActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
     "href",
     "/offers"
   );
+  for (const accountDestination of [
+    "Saved comparisons",
+    "Affiliate setup",
+    "Revenue preview",
+    "API tokens"
+  ]) {
+    expect(
+      within(homeActions).queryByRole("link", { name: accountDestination })
+    ).not.toBeInTheDocument();
+  }
   expect(within(homeActions).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login"
@@ -313,6 +316,22 @@ test("root route renders authenticated home actions", async () => {
   expect(within(homeActions).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+    "href",
+    "/compare/saved"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
+    "href",
+    "/affiliate/setup"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
+  );
+  expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens"
   );
   expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
