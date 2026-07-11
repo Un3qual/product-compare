@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (saved product labels; prior batches complete)
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-06-29 after saved-comparisons return-flow verification
@@ -23,6 +23,31 @@
   - The frontend exposes a saved-comparisons route for authenticated users.
   - Saved sets can be reopened into `/compare` using repeated `slug` query params and deleted from the UI.
   - Focused frontend tests cover save, list, reopen, and delete states without reopening unrelated route work.
+
+## Ready Saved Product Labels Follow-Up
+
+- Status: ready.
+- Plan:
+  `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`.
+- Verified gap: `SavedComparisonsRouteQuery` selects product slugs but not names,
+  and saved-set cards render the raw comma-separated slug list as shopper copy.
+- Owned paths:
+  - `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts`
+  - `assets/src/routes/compare/saved-data.ts`
+  - `assets/src/routes/compare/saved.tsx`
+  - `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `docs/work/frontend-saved-comparisons-ui.md`
+- Verification:
+  - `cd assets && bun run relay`
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "saved comparison.*product|stored position order"`
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: saved comparison cards display ordered product names and
+  reopen the exact stored slug order with current auth, pagination, filtering,
+  sorting, and delete behavior intact.
 
 ## Current Usable Product Batch
 

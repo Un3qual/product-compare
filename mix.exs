@@ -90,8 +90,15 @@ defmodule ProductCompare.MixProject do
         "reach.check --smells --strict --baseline .reach-baseline.json",
         "dialyzer"
       ],
-      ci: ["format --check-formatted", "typecheck", "quality", "test --cover"],
+      ci: [
+        "work_queue.validate",
+        "format --check-formatted",
+        "typecheck",
+        "quality",
+        "test --cover"
+      ],
       precommit: [
+        "work_queue.validate",
         "format",
         "typecheck",
         "quality",

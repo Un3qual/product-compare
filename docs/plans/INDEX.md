@@ -17,12 +17,21 @@ Start at `docs/work/index.md` for live dispatch status and ownership. The
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
 completed. The 2026-07-08 product-facing curation batch and the full shopper
-decision-confidence batch are also complete. The live queue has no ready rows.
+decision-confidence batch are also complete.
 
 Shopper decision confidence was selected and completed on 2026-07-09. Deferred
 ingestion/eBay/operator candidates remain deferred or rejected.
 
-There are no active implementation plans.
+Active implementation plans:
+
+- `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
+- `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
+- `docs/plans/2026-07-10-compare-relative-price-signal-implementation-plan.md`
+- `docs/plans/2026-07-10-saved-comparison-product-labels-implementation-plan.md`
+
+These plans are dispatched only from `docs/work/index.md`. Three is the live
+queue floor, not a catalog cap; the catalog may retain every additional useful
+validated candidate.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -39,10 +48,15 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- No planned follow-up groups are currently listed outside the deferred
-  candidate pool. The empty slate reflects a shortage of validated candidates;
-  deferred and rejected work is not queue filler. Start at `docs/work/index.md`
-  for live dispatch status.
+- Shopper home and navigation: shopper-oriented root content followed by
+  viewer-aware account destination visibility. The plans share owned paths and
+  execute serially.
+- Product comparison: a safe relative loaded-price signal derived from existing
+  compare offer context.
+- Saved comparisons: ordered product names in cards while preserving stored
+  slug reopen order.
+- Deferred and rejected work remains outside the ready-work floor and cannot be
+  used as queue filler. Start at `docs/work/index.md` for live dispatch status.
 
 ## Completed Plan Archive
 

@@ -40,28 +40,33 @@ Every live queue row must answer these questions:
 
 If any answer is missing, the row is not `ready`.
 
-## Rolling Ready Slate
+## Continuously Replenished Ready Work
 
-- Target three to five `ready` rows whenever validated work exists.
-- Count only `ready` rows; `active`, `blocked`, and `needs_decision` rows do not
-  count toward the target.
-- At every promotion, completion, blocking, or reassignment boundary, replenish
-  in one coordinator pass when fewer than three `ready` rows remain.
-- A valid below-target result contains every currently valid row plus an
-  explicit decision, blocker, or shortage of validated candidates.
-- More than five `ready` rows requires an explicitly requested larger execution
-  batch.
+- A stable dispatch boundary is the committed queue state after a claim,
+  promotion, completion, blocking, or reassignment update.
+- At least three complete `ready` implementation rows must exist at every stable
+  dispatch boundary.
+- Three is the replenishment floor, not a target or maximum. Promote every
+  useful validated candidate found in the same curation pass.
+- Count only `ready` implementation rows; `active`, `blocked`,
+  `needs_decision`, deferred, rejected, dependent, speculative, stale, and
+  unverified work does not count toward the floor.
+- Before a claim, count the rows that will remain `ready`. A worker may claim a
+  row only when three other ready rows will remain.
+- Completion evidence stays truthful. Remove completed or blocked queue rows
+  only in a coordinator boundary update that preserves the ready-work floor.
+- If the catalog cannot restore the floor, inspect current product behavior,
+  code gaps, tests, architecture gaps, and lane evidence; write executable
+  plans; and validate them before dispatch resumes.
 - Do not create filler work or promote deferred, rejected, blocked, dependent,
-  or unverified candidates to satisfy queue depth.
-- A worker claims the highest-ranked `ready` row that does not conflict with
-  active ownership. Other executable rows remain `ready`.
+  speculative, stale, or unverified candidates.
 - Rows may execute in parallel only when their owned paths and lane work docs do
   not overlap.
 
 ## Prompt Rules
 
 Use the coordinator prompt when deciding priorities, unblocking external
-dependencies, or replenishing the rolling slate. During replenishment,
+dependencies, or replenishing ready work. During replenishment,
 coordinators may consult `docs/plans/INDEX.md` and the directly relevant lane
 docs to validate source-backed candidates.
 
@@ -108,8 +113,10 @@ Ready row handoff:
 ```text
 Status: ready
 Lane:
+Plan:
 Next action:
 Owned paths:
+Prerequisites:
 Verification:
 Exit condition:
 ```
@@ -153,11 +160,13 @@ Next row promoted:
 
 ## Promotion Rules
 
-- Resolve a `needs_decision` row by promoting enough source-backed work to
-  restore the rolling slate, or record why fewer than three valid rows exist.
-- Promote `blocked` work only after its missing evidence is recorded; then
-  continue replenishing the slate if it remains below target.
-- Close a lane only after focused verification passes and the queue has three to
-  five `ready` rows or an explicit below-target explanation.
+- Resolve a `needs_decision` row by promoting every useful source-backed
+  candidate made executable by that decision.
+- Promote `blocked` work only after its missing evidence is recorded, then
+  continue replenishing if fewer than three ready successors would remain.
+- Close a lane only after focused verification passes and the coordinator can
+  preserve at least three complete `ready` implementation rows.
+- When the catalog cannot preserve the floor, validate new candidates from
+  current product and code evidence before another worker claims work.
 - If a selected row requires files outside its owned paths, stop and record a
   blocker instead of widening scope silently.

@@ -63,8 +63,15 @@
 - The CJ read-model and weekly operator-runbook batch is complete and recorded
   in `docs/work/product-data-scraping.md`.
 - The product-facing polish batch across catalog browse, product detail, offer
-  discovery, saved comparisons, and merchant discovery is complete. No live
-  implementation batch is currently ready in `docs/work/index.md`.
+  discovery, saved comparisons, and merchant discovery is complete.
+- Shopper-focused home content is ready using the current root route and route
+  set without new data fetching.
+- Viewer-aware root navigation is ready using the current preloaded `viewer` as
+  its only visibility signal; it does not change direct-route authorization.
+- A compare relative loaded-price signal is ready using existing
+  `bestCurrentPrice` summaries with same-currency safety rules.
+- Saved-comparison product labels are ready using the existing public Product
+  `name` and `slug` fields while preserving stored reopen order.
 - The revenue readiness, shopper UX polish, and backend quality parallel batch
   is complete: first-party tracked commerce clicks, `/offers` visible merchant
   quick filters, and Relay connection invalid-page-size hardening are recorded

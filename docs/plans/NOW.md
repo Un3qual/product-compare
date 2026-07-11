@@ -15,11 +15,12 @@ instead.
 
 ## What To Do
 
-- For execution, open `docs/work/index.md` and claim the highest-ranked `ready`
-  row that does not conflict with active ownership.
-- When fewer than three `ready` rows remain, use the coordinator rules in
-  `docs/work/operating-model.md` to replenish the slate to three to five in one
-  pass.
-- If the slate cannot reach three, keep every valid row and record the decision,
-  blocker, or shortage of validated candidates in `docs/work/index.md`.
+- For execution, open `docs/work/index.md` and claim the highest-ranked
+  compatible `ready` row only when three other ready rows will remain.
+- When a proposed boundary would leave fewer than three ready rows, use the
+  coordinator rules in `docs/work/operating-model.md` to validate and promote
+  more implementation work first.
+- Three is a floor, not a cap. Keep every additional useful validated row.
+- An empty or shortage-only `Ready Work` section is invalid; run
+  `mix work_queue.validate` before committing a dispatch update.
 - Update this file only if the queue entry point changes.
