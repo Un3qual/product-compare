@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready (catalog advanced filter presentation extraction)
+- Status: done (catalog advanced filter presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after shopper decision-confidence aggregate verification
+- Last verified: 2026-07-12 after catalog advanced-filter extraction (60 tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -25,9 +25,9 @@
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
-## Ready Next Batch
+## Catalog Advanced Filter Presentation Extraction
 
-- Status: ready.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Next action: Extract use-case, numeric, boolean, and enum filter fieldsets
   while preserving form-owned search, sort, page size, compare selection,
@@ -45,6 +45,17 @@
   - `git diff --check`
 - Exit condition: advanced facet presentation is isolated without changing
   field names, selected values, filtering semantics, or URL serialization.
+- Completion evidence:
+  - RED: the focused suite failed because `CatalogAdvancedFilters.tsx` did not
+    exist.
+  - `CatalogAdvancedFilters` now owns use-case, numeric, boolean, and enum
+    fieldsets plus their selected-value resolution.
+  - `CatalogFilterForm` retains search, sort, page size, compare-selection
+    fields, product-type and descendant state, collapsible state, submission,
+    and active-filter summaries.
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+    passed 60 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## Completed Catalog Product List Presentation Extraction
 
