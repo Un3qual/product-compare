@@ -107,4 +107,3 @@ and active-filter summaries.
 - [ ] Run `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`.
 - [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
 - [ ] Record lane evidence and commit `refactor(frontend): extract catalog advanced filters`.
-
