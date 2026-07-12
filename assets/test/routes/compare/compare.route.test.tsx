@@ -23,6 +23,7 @@ import {
 } from "../../../src/routes/compare/saved-data";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
+import { CompareSpecificationMatrix } from "../../../src/routes/compare/CompareSpecificationMatrix";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -513,6 +514,51 @@ beforeEach(() => {
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockCompareRouteQueries();
+});
+
+test("comparison matrix directly renders ordered rows, missing values, and the selected mode", () => {
+  render(
+    <CompareSpecificationMatrix
+      products={[
+        {
+          ...buildProductSummary(DETAIL_PRODUCT),
+          currentAttributes: [
+            {
+              code: "refresh-rate",
+              displayName: "Refresh rate",
+              valueText: "144 Hz",
+              sortOrder: 20
+            },
+            {
+              code: "panel-type",
+              displayName: "Panel type",
+              valueText: "IPS",
+              sortOrder: 10
+            }
+          ]
+        },
+        {
+          ...buildProductSummary(SECOND_PRODUCT),
+          currentAttributes: [
+            {
+              code: "panel-type",
+              displayName: "Panel type",
+              valueText: "OLED",
+              sortOrder: 10
+            }
+          ]
+        }
+      ]}
+      specMode="all"
+    />
+  );
+
+  expect(screen.getByRole("heading", { name: "All specifications" })).toBeInTheDocument();
+  const rows = within(screen.getByRole("table", { name: "All specifications" })).getAllByRole(
+    "row"
+  );
+  expect(rows[1]).toHaveTextContent("Panel typeIPSOLED");
+  expect(rows[2]).toHaveTextContent("Refresh rate144 HzNot available");
 });
 
 test("compare path helpers normalize selected slugs and cap serialized route query strings", () => {

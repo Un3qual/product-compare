@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready (compare specification matrix extraction)
+- Status: done (compare specification matrix extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-11 after exact loaded-price review follow-up
+- Last verified: 2026-07-12 after compare specification matrix extraction (104 tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -17,9 +17,9 @@
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
-## Ready Next Batch
+## Compare Specification Matrix Extraction
 
-- Status: ready.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Next action: Extract matrix rendering and row-comparison semantics into
   `CompareSpecificationMatrix` while leaving decision summary and individual
@@ -37,6 +37,17 @@
   - `git diff --check`
 - Exit condition: matrix presentation and exact row comparison are isolated
   without changing mode, ordering, missing-cell, or numeric/unit behavior.
+- Completion evidence:
+  - RED: the focused suite failed because `CompareSpecificationMatrix.tsx`
+    did not exist.
+  - `CompareSpecificationMatrix` now owns matrix titles and empty states,
+    horizontal scrolling, table markup, stable row construction and ordering,
+    duplicate-code handling, and exact typed comparison normalization.
+  - `CompareProductList` retains decision-summary and individual-product-card
+    presentation.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+    passed 104 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## Completed Bounded Local-Filter Batch
 
