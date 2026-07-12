@@ -141,11 +141,89 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 2. Affiliate Setup Form Component Extraction
+### 2. Saved Comparison Set Presentation Extraction
 
 Status: ready
-Lane: Frontend affiliate setup demo parity
+Lane: Frontend compare and saved routes hardening
 Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
+Owned paths:
+
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-compare-saved-hardening.md`
+
+Prerequisites:
+
+- Existing saved-comparison route-state suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
+
+### 3. Catalog Product List Presentation Extraction
+
+Status: ready
+Lane: Frontend catalog browse
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract product cards, specification highlights, and compare actions while preserving route-owned Relay, filter, URL, tray, and pagination orchestration.
+Owned paths:
+
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/catalog/BrowseProductList.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-browse.md`
+
+Prerequisites:
+
+- Existing catalog browse route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Product-list presentation is isolated while filters, compare selection, navigation, and pagination behavior remain green.
+
+### 4. Revenue Summary Presentation Extraction
+
+Status: ready
+Lane: Affiliate revenue and attribution
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract filter, date-preset, active-filter, and metric presentation while preserving route-owned loader, Relay, suspense, and error orchestration.
+Owned paths:
+
+- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/affiliate-revenue-attribution.md`
+
+Prerequisites:
+
+- Existing revenue-summary route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Revenue presentation is isolated while query, filter, suppression, date-preset, and error behavior remain green.
+
+## Active Work
+
+### Affiliate Setup Form Component Extraction
+
+Status: active
+Owner: `codex/extract-affiliate-feed-presentations`
+Lane: Frontend affiliate setup demo parity
+Plan: `docs/superpowers/plans/2026-07-11-affiliate-feed-presentation-extractions.md`
 Next action: Extract the four affiliate setup form presentations from the route owner while preserving route-owned mutation orchestration.
 Owned paths:
 
@@ -153,10 +231,6 @@ Owned paths:
 - `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
 - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `docs/work/frontend-affiliate-setup-demo-parity.md`
-
-Prerequisites:
-
-- Existing affiliate setup behavior suite remains the characterization contract.
 
 Verification:
 
@@ -166,11 +240,12 @@ Verification:
 
 Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 3. Feed Candidate Review Component Extraction
+### Feed Candidate Review Component Extraction
 
-Status: ready
+Status: active
+Owner: `codex/extract-affiliate-feed-presentations`
 Lane: Product data scraping
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Plan: `docs/superpowers/plans/2026-07-11-affiliate-feed-presentation-extractions.md`
 Next action: Extract feed-candidate list and review presentation from the existing route without adding dashboard or ingestion behavior.
 Owned paths:
 
@@ -179,10 +254,6 @@ Owned paths:
 - `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
 - `docs/work/product-data-scraping.md`
 
-Prerequisites:
-
-- Existing feed-candidate route behavior and secret-safe field policy remain unchanged.
-
 Verification:
 
 - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
@@ -190,10 +261,6 @@ Verification:
 - `git diff --check`
 
 Exit condition: Review presentation is isolated with all behavior and secret-safety coverage green.
-
-## Active Work
-
-None.
 
 ## Needs Decision Work
 

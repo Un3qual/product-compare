@@ -35,6 +35,15 @@
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 
+## Presentation Extraction Batch
+
+- Status: completed 2026-07-11.
+- Extracted `AffiliateNetworkForm`, `AffiliateProgramForm`, `AffiliateLinkForm`, and `AffiliateCouponForm` into `AffiliateSetupForms.tsx`; the route retains mutation, in-flight, selection, and submit-handler ownership.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx` - 19 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
 ## Verification
 
 - Plan creation verified the existing backend contract by reading `ARCHITECTURE.md`, `docs/plans/INDEX.md`, `lib/product_compare_web/schema.ex`, `lib/product_compare_web/resolvers/affiliate_resolver.ex`, `lib/product_compare/affiliate.ex`, `test/product_compare_web/graphql/affiliate_workflows_test.exs`, and the local `assets/schema.graphql` snapshot.

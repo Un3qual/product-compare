@@ -2,6 +2,12 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
+import {
+  AffiliateCouponForm,
+  AffiliateLinkForm,
+  AffiliateNetworkForm,
+  AffiliateProgramForm
+} from "../../../../src/routes/affiliate/setup/AffiliateSetupForms";
 import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
 import type { AffiliateSetupLoaderData } from "../../../../src/routes/affiliate/setup/loader";
 
@@ -141,6 +147,81 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
     expect.anything(),
     AFFILIATE_SETUP_QUERY_REF
   );
+});
+
+test("affiliate setup forms preserve submission callbacks and controlled merchant selections", () => {
+  const onNetworkSubmit = vi.fn();
+  const onProgramSubmit = vi.fn();
+  const onLinkSubmit = vi.fn();
+  const onCouponSubmit = vi.fn();
+  const onAffiliateNetworkIdChange = vi.fn();
+  const onSelectedMerchantIdChange = vi.fn();
+  const merchantChoices = [
+    { id: MERCHANT_ID, name: "Acme Market", domain: "acme.example" },
+    { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" }
+  ];
+
+  render(
+    <>
+      <AffiliateNetworkForm
+        error={null}
+        onSubmit={onNetworkSubmit}
+        pending={false}
+        result={null}
+      />
+      <AffiliateProgramForm
+        affiliateNetworkId={NETWORK_ID}
+        error={null}
+        merchantChoices={merchantChoices}
+        onAffiliateNetworkIdChange={onAffiliateNetworkIdChange}
+        onSelectedMerchantIdChange={onSelectedMerchantIdChange}
+        onSubmit={onProgramSubmit}
+        pending={false}
+        result={null}
+        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantValue={MERCHANT_ID}
+      />
+      <AffiliateLinkForm
+        error={null}
+        onSubmit={onLinkSubmit}
+        pending={false}
+        result={null}
+        selectedMerchantSummary="Acme Market (acme.example)"
+      />
+      <AffiliateCouponForm
+        error={null}
+        merchantChoices={merchantChoices}
+        onSelectedMerchantIdChange={onSelectedMerchantIdChange}
+        onSubmit={onCouponSubmit}
+        pending={false}
+        result={null}
+        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantValue={MERCHANT_ID}
+      />
+    </>
+  );
+
+  fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
+    target: { value: "new-network-id" }
+  });
+  fireEvent.change(screen.getByLabelText("Merchant"), {
+    target: { value: SECOND_MERCHANT_ID }
+  });
+  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
+    target: { value: SECOND_MERCHANT_ID }
+  });
+  fireEvent.submit(screen.getByRole("form", { name: "Save affiliate network" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Save affiliate program" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Save affiliate link" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Create affiliate coupon" }));
+
+  expect(onAffiliateNetworkIdChange).toHaveBeenCalledWith("new-network-id");
+  expect(onSelectedMerchantIdChange).toHaveBeenNthCalledWith(1, SECOND_MERCHANT_ID);
+  expect(onSelectedMerchantIdChange).toHaveBeenNthCalledWith(2, SECOND_MERCHANT_ID);
+  expect(onNetworkSubmit).toHaveBeenCalledOnce();
+  expect(onProgramSubmit).toHaveBeenCalledOnce();
+  expect(onLinkSubmit).toHaveBeenCalledOnce();
+  expect(onCouponSubmit).toHaveBeenCalledOnce();
 });
 
 test("affiliate setup route renders selected merchant summaries for program, link, and coupon forms", () => {
