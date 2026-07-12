@@ -1,3 +1,5 @@
+import { render, screen } from "@testing-library/react";
+import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { createClientRouter, routes, shouldRevalidateRootLoader } from "../src/router";
 import { ApiTokensRoute } from "../src/routes/account/api-tokens/ApiTokensRoute";
 import { apiTokensLoader } from "../src/routes/account/api-tokens/loader";
@@ -127,6 +129,35 @@ test("every non-root screen is absent from the initial route graph", () => {
     expect(route, route.path).not.toHaveProperty("loader");
     expect(route, route.path).not.toHaveProperty("errorElement");
   }
+});
+
+test("root error boundary handles a rejected lazy route", async () => {
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <Outlet />,
+        errorElement: routes[0]?.errorElement,
+        children: [
+          {
+            path: "broken-chunk",
+            lazy: async () => {
+              throw new Error("chunk import failed");
+            }
+          }
+        ]
+      }
+    ],
+    { initialEntries: ["/broken-chunk"] }
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the page."
+  );
+  expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
 });
 
 test("application router registers a wildcard 404 route", () => {

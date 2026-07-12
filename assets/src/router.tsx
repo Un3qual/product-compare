@@ -32,6 +32,7 @@ export const routes: RouteObject[] = [
     loader: rootLoader,
     shouldRevalidate: shouldRevalidateRootLoader,
     element: <RootLayout />,
+    errorElement: <RouteErrorBoundary resourceName="page" title="Product Compare" />,
     children: [
       {
         index: true,
