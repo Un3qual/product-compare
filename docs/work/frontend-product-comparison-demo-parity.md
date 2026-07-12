@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done (relative loaded price signal)
+- Status: ready (compare specification matrix extraction)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-11 after exact loaded-price review follow-up
@@ -16,6 +16,27 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Ready Next Batch
+
+- Status: ready.
+- Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Next action: Extract matrix rendering and row-comparison semantics into
+  `CompareSpecificationMatrix` while leaving decision summary and individual
+  product cards in `CompareProductList`.
+- Owned paths:
+  - `assets/src/routes/compare/CompareProductList.tsx`
+  - `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Prerequisite: the existing compare route suite is green and remains the
+  characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: matrix presentation and exact row comparison are isolated
+  without changing mode, ordering, missing-cell, or numeric/unit behavior.
 
 ## Completed Bounded Local-Filter Batch
 

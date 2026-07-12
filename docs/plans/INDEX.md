@@ -32,13 +32,14 @@ that milestone by product decision.
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
 affiliate-setup and feed-candidate presentation extractions are also complete.
-The three remaining saved-comparison, catalog, and revenue presentation
-extractions are validated `ready` work with a dedicated execution plan.
+Skip navigation plus the saved-comparison, catalog product-list, and revenue
+presentation extractions are complete. API-token controls, compare matrix, and
+catalog advanced-filter presentation are validated `ready` work with a
+dedicated execution plan.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-- `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+- `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -65,12 +66,15 @@ batch and should not be recreated or promoted.
 - Merchant discovery: add a local merchant-name filter explicitly scoped to the
   visible Relay page.
 - Route foundations: add a real wildcard 404 and shared route document metadata.
-- Frontend route maintainability: extract cohesive presentation boundaries from
-  API-token, offer-discovery, and product-detail route owners.
-- Ready reserve: skip navigation remains executable through
-  `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`. Saved-
-  comparison, catalog, and revenue presentation extraction execute through
-  `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`.
+- Frontend route maintainability: extract API-token controls, the compare
+  specification matrix, and catalog advanced filters through the active
+  control-and-matrix plan.
+- Ready reserve: API-token controls, compare specification matrix, and catalog
+  advanced-filter presentation execute through
+  `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Completed reserve: skip navigation plus saved-comparison, catalog product-
+  list, and revenue-summary presentation extractions are complete; do not
+  promote them again without fresh scope.
 - Completed reserve: affiliate-setup form and feed-candidate review presentation
   extractions are complete; do not promote them again without fresh scope.
 - Deferred and rejected work remains outside the ready-work floor and cannot be

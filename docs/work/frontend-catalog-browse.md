@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done (catalog product list presentation extraction)
+- Status: ready (catalog advanced filter presentation extraction)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after shopper decision-confidence aggregate verification
@@ -24,6 +24,27 @@
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Ready Next Batch
+
+- Status: ready.
+- Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Next action: Extract use-case, numeric, boolean, and enum filter fieldsets
+  while preserving form-owned search, sort, page size, compare selection,
+  product-type/descendant, collapsible, and submission behavior.
+- Owned paths:
+  - `assets/src/routes/catalog/CatalogFilterForm.tsx`
+  - `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Prerequisite: the existing catalog browse route suite is green and remains
+  the characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: advanced facet presentation is isolated without changing
+  field names, selected values, filtering semantics, or URL serialization.
 
 ## Completed Catalog Product List Presentation Extraction
 

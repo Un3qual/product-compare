@@ -2,13 +2,35 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (API token control presentation extraction)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-06-27 after Task 7 expiry preset verification.
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
+
+## Ready Next Batch
+
+- Status: ready.
+- Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Next action: Extract status filters, create dialog/form/presets, create-error
+  presentation, and one-time secret disclosure while preserving route-owned
+  mutation and token lifecycle state.
+- Owned paths:
+  - `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+  - `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
+  - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `docs/work/frontend-api-token-management-demo-parity.md`
+- Prerequisite: the existing API-token route suite is green and remains the
+  characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: creation/control presentation is isolated while mutation,
+  secret lifecycle, status filtering, rotation/revocation, and pagination stay
+  green.
 
 ## Batch Status
 
