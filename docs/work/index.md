@@ -260,9 +260,7 @@ discovery cards now live behind focused typed boundaries. Review follow-up
 replaced modal-hidden accessibility queries, concatenated table text
 assertions, and duplicate widened offer fixtures with semantic queries and
 production-owned type contracts. The four focused suites passed 251 tests;
-TypeScript and diff hygiene were green. Four newly validated, non-overlapping
-rows replace the completed cohort, grounded in current source and 200 passing
-characterization tests.
+TypeScript and diff hygiene were green.
 
 The 2026-07-11 four-row follow-up completed skip navigation plus the saved-set,
 catalog product-list, and revenue-summary presentation extractions. Focused
