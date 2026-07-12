@@ -48,7 +48,10 @@ function MerchantDirectoryContent({
           description="Adjust how many merchants appear in the current result page."
           label="Merchant controls"
         >
-          <MerchantDirectoryControls formAction="/merchants" pagination={loaderData.pagination} />
+          <MerchantDirectoryControls
+            formAction="/merchants"
+            pageSize={loaderData.pagination.first}
+          />
         </ContextRail>
       }
       label="Merchant results"

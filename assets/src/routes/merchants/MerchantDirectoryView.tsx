@@ -7,7 +7,6 @@ import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import type { MerchantDirectoryPagination } from "./loader";
 
 const styles = create({
   controls: {
@@ -36,22 +35,22 @@ const styles = create({
   }
 });
 
-export type MerchantDirectoryViewMerchant = {
+type MerchantDirectoryViewMerchant = {
   domain: string;
   id: string;
   name: string;
   websiteHref: string | null;
 };
 
-export type MerchantDirectoryViewProps = {
+type MerchantDirectoryViewProps = {
   firstHref: string | null;
   merchants: MerchantDirectoryViewMerchant[];
   nextHref: string | null;
 };
 
-export type MerchantDirectoryControlsProps = {
+type MerchantDirectoryControlsProps = {
   formAction: string;
-  pagination: MerchantDirectoryPagination;
+  pageSize: number;
 };
 
 export function MerchantDirectoryView({
@@ -116,13 +115,13 @@ export function MerchantDirectoryView({
 
 export function MerchantDirectoryControls({
   formAction,
-  pagination
+  pageSize
 }: MerchantDirectoryControlsProps) {
   return (
     <form action={formAction} method="get" {...props(styles.controls)}>
       <label>
         Page size
-        <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
+        <select key={pageSize} name="first" defaultValue={String(pageSize)}>
           <option value="20">20</option>
           <option value="35">35</option>
           <option value="50">50</option>
