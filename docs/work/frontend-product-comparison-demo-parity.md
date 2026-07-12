@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready (compare product picker view extraction)
+- Status: done (compare product picker view extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after compare matrix extraction and next-boundary
-  validation (104 compare tests; 200 tests across the promoted cohort)
+- Last verified: 2026-07-12 after compare product picker view extraction
+  (105 compare tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -20,7 +20,7 @@
 
 ## Compare Product Picker View Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
 - Next action: Extract picker headings, loaded-product filtering, option
   presentation, no-match copy, and show-more controls while preserving
@@ -40,6 +40,19 @@
 - Exit condition: picker presentation and local filter state are isolated
   without changing Relay reads, loaded-product accumulation, selected-product
   exclusion, option URLs, empty states, or pagination.
+- Completion evidence:
+  - RED: the direct picker-view test failed because
+    `CompareProductPickerView.tsx` did not exist.
+  - `CompareProductPickerBoundary` retains Relay reads, loaded-page
+    accumulation and deduplication, selected-product exclusion, genuinely empty
+    dataset handling, and resolved comparison paths.
+  - `CompareProductPickerView` owns picker headings, loaded-product filtering,
+    option markup, no-match copy, and the show-more action from route-resolved
+    option view models and a callback.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+    passed 105 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with
+    exit 0.
 
 ## Compare Specification Matrix Extraction
 
