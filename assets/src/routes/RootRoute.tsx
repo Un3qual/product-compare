@@ -15,6 +15,7 @@ import { AppShell } from "../ui/components/layout/AppShell";
 import { PageShell } from "../ui/components/layout/PageShell";
 import { Button, type ButtonProps } from "../ui/primitives/Button";
 import { AppProviders } from "../ui/providers/AppProviders";
+import { RouteMetadata } from "./RouteMetadata";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 
 const styles = create({
@@ -173,11 +174,14 @@ function ReadyRootLayout({
 
 function RootLayoutShell({ viewer }: RootOutletContext) {
   return (
-    <AppProviders>
-      <AppShell navigation={<PrimaryNavigation viewer={viewer} />}>
-        <Outlet context={{ viewer }} />
-      </AppShell>
-    </AppProviders>
+    <>
+      <RouteMetadata />
+      <AppProviders>
+        <AppShell navigation={<PrimaryNavigation viewer={viewer} />}>
+          <Outlet context={{ viewer }} />
+        </AppShell>
+      </AppProviders>
+    </>
   );
 }
 

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Approved design:
   `docs/superpowers/specs/2026-07-11-next-frontend-batches-design.md`
@@ -28,6 +28,12 @@
 ## Verification
 
 - `cd assets && bun x vitest run test/router.test.tsx test/entry.server.test.tsx test/entry.server.error-handling.test.tsx test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run build`
-- `git diff --check`
+  passed 37 tests on 2026-07-11.
+- `cd assets && bun run typecheck` passed on 2026-07-11.
+- `cd assets && bun run build` completed the client and SSR production builds
+  on 2026-07-11; Vite retained its advisory about the existing client chunk
+  size.
+- Unknown paths now render the shared page-not-found boundary and return a 404
+  `Response` from SSR, including accumulated static-handler response headers.
+- Every registered application route now owns a static title and description,
+  rendered by the deepest matched route on both SSR and client navigation.

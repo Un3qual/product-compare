@@ -234,6 +234,41 @@ test("server render returns redirect responses from the static handler unchanged
   expect(renderToReadableStreamMock).not.toHaveBeenCalled();
 });
 
+test("server render preserves non-success static-handler status and headers", async () => {
+  createStaticHandlerMock.mockReturnValue({
+    dataRoutes: [],
+    query: vi.fn(() => ({
+      actionData: null,
+      actionHeaders: {},
+      activeDeferreds: null,
+      basename: "/",
+      errors: null,
+      loaderData: {},
+      loaderHeaders: {},
+      location: {
+        hash: "",
+        key: "default",
+        pathname: "/missing-page",
+        search: "",
+        state: null
+      },
+      matches: [],
+      statusCode: 404
+    }))
+  });
+  mockServerRenderHtml("<div>The requested page could not be found.</div>");
+
+  const { render } = await import("../src/entry.server");
+  const result = await render("/missing-page");
+
+  expect(result).toBeInstanceOf(Response);
+
+  const response = result as Response;
+
+  expect(response.status).toBe(404);
+  await expect(response.text()).resolves.toContain("The requested page could not be found.");
+});
+
 test("server render inserts Relay records before a full document body closes", async () => {
   const relayRecordsScript = '<script id="__relayRecords" type="application/json">{"records":{}}</script>';
   mockServerRenderHtml("<!doctype html><html><body><div>Product Compare</div></body></html>");

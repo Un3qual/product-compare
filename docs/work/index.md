@@ -96,66 +96,14 @@ that relative loaded price uses already-loaded offers, the compare picker can
 filter already-loaded product names, and the merchant directory can filter the
 visible Relay page without changing cursor behavior.
 
+The 2026-07-11 route-foundation batch is complete. Unknown application paths
+now render the shared not-found experience with an SSR 404 response, and every
+registered route provides static title and description metadata for SSR and
+client navigation.
+
 ## Ready Work
 
-### 1. Application Wildcard Not Found
-
-Status: ready
-Lane: Frontend route foundations
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Register an explicit wildcard route that renders the shared not-found experience and preserves a 404 SSR response status.
-Owned paths:
-
-- `assets/src/routes/NotFoundRoute.tsx`
-- `assets/src/router.tsx`
-- `assets/src/entry.server.tsx`
-- `assets/test/router.test.tsx`
-- `assets/test/entry.server.test.tsx`
-- `assets/test/entry.server.error-handling.test.tsx`
-- `docs/work/frontend-route-foundations.md`
-
-Prerequisites:
-
-- Existing redirects and route-specific error boundaries remain unchanged.
-
-Verification:
-
-- `cd assets && bun x vitest run test/router.test.tsx test/entry.server.test.tsx test/entry.server.error-handling.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Unknown application paths render a useful not-found page and SSR returns status 404.
-
-### 2. Route Document Metadata
-
-Status: ready
-Lane: Frontend route foundations
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Add static route-handle titles and descriptions rendered through one React 19 metadata component for client navigation and SSR.
-Owned paths:
-
-- `assets/src/routes/RouteMetadata.tsx`
-- `assets/src/router.tsx`
-- `assets/src/routes/RootRoute.tsx`
-- `assets/test/router.test.tsx`
-- `assets/test/routes/root.route.test.tsx`
-- `assets/test/entry.server.test.tsx`
-- `docs/work/frontend-route-foundations.md`
-
-Prerequisites:
-
-- No code prerequisite; serialize this row with the wildcard 404 row because their router and test paths overlap.
-
-Verification:
-
-- `cd assets && bun x vitest run test/router.test.tsx test/routes/root.route.test.tsx test/entry.server.test.tsx`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run build`
-- `git diff --check`
-
-Exit condition: Every registered route emits stable title and description metadata on SSR and client navigation.
-
-### 3. API Token Route Component Extraction
+### 1. API Token Route Component Extraction
 
 Status: ready
 Lane: Frontend API token management demo parity
@@ -180,7 +128,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full API-token behavior suite remains green.
 
-### 4. Offer Discovery Route Component Extraction
+### 2. Offer Discovery Route Component Extraction
 
 Status: ready
 Lane: Frontend offer discovery demo parity
@@ -205,7 +153,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full offer-discovery behavior suite remains green.
 
-### 5. Product Detail Route Component Extraction
+### 3. Product Detail Route Component Extraction
 
 Status: ready
 Lane: Frontend product detail
@@ -230,7 +178,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full product-detail behavior suite remains green.
 
-### 6. Skip Navigation
+### 4. Skip Navigation
 
 Status: ready
 Lane: Frontend Radix UI polish
@@ -254,7 +202,7 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 7. Affiliate Setup Form Component Extraction
+### 5. Affiliate Setup Form Component Extraction
 
 Status: ready
 Lane: Frontend affiliate setup demo parity
@@ -279,7 +227,7 @@ Verification:
 
 Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 8. Feed Candidate Review Component Extraction
+### 6. Feed Candidate Review Component Extraction
 
 Status: ready
 Lane: Product data scraping
