@@ -43,8 +43,14 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   const statusCode = context.statusCode ?? 200;
 
   if (statusCode !== 200) {
+    const responseHeaders = responseHeadersFromContext(
+      context.loaderHeaders,
+      context.actionHeaders
+    );
+    responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+
     return new Response(renderedHtml, {
-      headers: responseHeadersFromContext(context.loaderHeaders, context.actionHeaders),
+      headers: responseHeaders,
       status: statusCode
     });
   }

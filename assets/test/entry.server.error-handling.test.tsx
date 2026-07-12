@@ -247,7 +247,10 @@ test("server render preserves non-success static-handler status and headers", as
       errors: null,
       loaderData: {},
       loaderHeaders: {
-        loader: new Headers({ "X-Loader-Result": "preserved" })
+        loader: new Headers({
+          "Content-Type": "application/json",
+          "X-Loader-Result": "preserved"
+        })
       },
       location: {
         hash: "",
@@ -270,6 +273,7 @@ test("server render preserves non-success static-handler status and headers", as
   const response = result as Response;
 
   expect(response.status).toBe(404);
+  expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
   expect(response.headers.get("x-action-result")).toBe("preserved");
   expect(response.headers.get("x-loader-result")).toBe("preserved");
   await expect(response.text()).resolves.toContain("The requested page could not be found.");
