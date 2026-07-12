@@ -6,8 +6,7 @@ import { decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import {
   graphQLDateTimeContext,
-  graphQLDateTimeLabel,
-  type GraphQLDateTimeContext
+  graphQLDateTimeLabel
 } from "../graphql-datetime";
 import {
   ProductOfferList,
