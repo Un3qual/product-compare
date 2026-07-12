@@ -1,4 +1,6 @@
-import type { AffiliateSetupMerchantPagination } from "./loader";
+import type { MerchantPagination } from "../../merchants/pagination";
+
+export type AffiliateSetupMerchantPagination = MerchantPagination;
 
 export function affiliateSetupPagePath(pagination: AffiliateSetupMerchantPagination) {
   const params = new URLSearchParams();

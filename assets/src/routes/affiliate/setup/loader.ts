@@ -8,12 +8,8 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
-import {
-  merchantPaginationFromUrl,
-  type MerchantPagination
-} from "../../merchants/pagination";
-
-export type AffiliateSetupMerchantPagination = MerchantPagination;
+import { merchantPaginationFromUrl } from "../../merchants/pagination";
+import type { AffiliateSetupMerchantPagination } from "./pagination";
 
 export type AffiliateSetupLoaderData =
   | {
