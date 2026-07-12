@@ -291,7 +291,7 @@ presentation, empty/no-match states, and pagination; its focused controls remain
 presentation-owned while the route retains the workspace around Relay suspense
 and errors, connection normalization, URL safety, and path construction. Review
 follow-up restored the shell during loading, query error, and null-data states.
-The focused suite passed 30 tests with TypeScript and diff hygiene green.
+The focused suite passed 27 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 compare picker-view extraction is complete.
 `CompareProductPickerView` now owns the heading, loaded-option filter state,
