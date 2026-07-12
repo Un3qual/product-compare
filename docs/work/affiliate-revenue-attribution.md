@@ -36,6 +36,27 @@
 - Use deterministic last-click attribution in phase 1.
 - Keep public dashboards aggregate-only with suppression thresholds.
 
+## Attribution Integrity Evidence
+
+- Status: done on 2026-07-12 as project-quality audit milestone 3.
+- Conversion ingestion resolves click-session dimensions before assigning high
+  confidence or writing. A non-null provider merchant, affiliate program,
+  product, or merchant-product id that conflicts with the resolved click now
+  returns the existing changeset error shape and writes no conversion.
+- Valid link-only clicks still enrich conversions with the link merchant and
+  affiliate program while leaving unavailable product dimensions nil.
+- Impact accepts only the supported pending, approved, reversed, and paid
+  statuses. An unknown initial status is a changeset error; an unknown update
+  leaves an existing approved conversion and its amounts/timestamps unchanged.
+- RED: the combined focused suite reported 76 tests and 4 failures because
+  conflicting dimensions persisted and unknown statuses created or downgraded
+  conversions as pending.
+- GREEN: `mix test test/product_compare/ingestion/ingestion_test.exs
+  test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+  passed 76 tests with 0 failures; `mix typecheck` passed. `mix dialyzer`
+  remains nonzero only on the four pre-existing `CommerceLink` findings already
+  recorded in the project-quality audit baseline.
+
 ## Revenue Preview Positioning Evidence
 
 - Status: done

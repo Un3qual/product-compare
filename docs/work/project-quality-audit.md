@@ -102,3 +102,23 @@ output, a clean working tree, and an independent whole-branch review.
   the same operator helper before repository access; anonymous callers now get
   `UNAUTHENTICATED`, members get `FORBIDDEN`, and session/API-token operators
   succeed. Public and owner-scoped node behavior is unchanged.
+
+### 2026-07-12 — Milestone 3: ingestion and attribution integrity
+
+- External-product conflict handling now exposes an explicit internal
+  fresh/stale decision. Stale observations, including older different-URL
+  payloads, return a report-compatible success without changing external
+  product state or creating/changing product, merchant-product, or price rows.
+- Resolved click sessions validate every available merchant, affiliate-program,
+  product, and merchant-product dimension before high-confidence enrichment or
+  persistence. Conflicts return changeset errors and valid link-only enrichment
+  remains intact.
+- Impact status parsing explicitly recognizes pending, approved, reversed, and
+  paid. Unknown initial or update statuses return changeset errors, write
+  nothing, and cannot downgrade an approved conversion.
+- RED evidence: the combined focused suite ran 76 tests with 4 failures,
+  reproducing the stale different-URL write, provider/click conflict write,
+  unknown-status insert, and unknown-status downgrade.
+- GREEN evidence: the same focused suite passed 76 tests with 0 failures, and
+  `mix typecheck` passed. Dialyzer remains at the audit baseline of four
+  pre-existing `CommerceLink` warnings and produced no touched-module warning.

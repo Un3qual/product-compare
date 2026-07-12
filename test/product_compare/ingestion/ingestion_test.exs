@@ -836,6 +836,56 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "treats an older different URL as a successful no-op for product persistence" do
+      source = source_fixture()
+
+      current_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-URL-FRESHNESS",
+          listing_url: "https://trail.example/products/current",
+          amount: Decimal.new("129.99"),
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-URL-FRESHNESS", "price" => "129.99"}
+        })
+
+      stale_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-URL-FRESHNESS",
+          listing_url: "https://trail.example/products/older-url",
+          product_title: "Older Product Title",
+          amount: Decimal.new("89.99"),
+          observed_at: ~U[2026-05-23 15:00:00Z],
+          raw_payload: %{"id" => "CJ-URL-FRESHNESS", "price" => "89.99"}
+        })
+
+      assert {:ok, current_persisted} =
+               Ingestion.persist_normalized_listing(source, current_listing)
+
+      product_count = Repo.aggregate(Product, :count, :id)
+      merchant_product_count = Repo.aggregate(MerchantProduct, :count, :id)
+      price_point_count = Repo.aggregate(PricePoint, :count, :id)
+
+      assert {:ok, stale_persisted} =
+               Ingestion.persist_normalized_listing(source, stale_listing)
+
+      assert stale_persisted.external_product.id == current_persisted.external_product.id
+      assert stale_persisted.product.id == current_persisted.product.id
+      assert stale_persisted.merchant_product.id == current_persisted.merchant_product.id
+      assert stale_persisted.price_point.id == current_persisted.price_point.id
+
+      assert Repo.aggregate(Product, :count, :id) == product_count
+      assert Repo.aggregate(MerchantProduct, :count, :id) == merchant_product_count
+      assert Repo.aggregate(PricePoint, :count, :id) == price_point_count
+
+      reloaded_external_product = Repo.reload!(current_persisted.external_product)
+      assert reloaded_external_product.canonical_url == current_listing.listing_url
+
+      assert DateTime.compare(
+               reloaded_external_product.last_seen_at,
+               current_listing.observed_at
+             ) == :eq
+    end
+
     test "does not attach stale external product observations over newer rows" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]

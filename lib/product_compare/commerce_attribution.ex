@@ -117,12 +117,16 @@ defmodule ProductCompare.CommerceAttribution do
   @spec ingest_conversion(map()) ::
           {:ok, CommerceConversion.t()} | {:error, Ecto.Changeset.t()}
   def ingest_conversion(attrs) do
+    case resolve_click_attribution(attrs) do
+      {:ok, attrs} -> persist_conversion(attrs)
+      {:error, conflicts} -> {:error, attribution_conflict_changeset(attrs, conflicts)}
+    end
+  end
+
+  defp persist_conversion(attrs) do
     now = DateTime.utc_now()
 
-    attrs =
-      attrs
-      |> maybe_put_click_session_id()
-      |> put_default_attribution_confidence()
+    attrs = put_default_attribution_confidence(attrs)
 
     changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
 
@@ -788,38 +792,67 @@ defmodule ProductCompare.CommerceAttribution do
     )
   end
 
-  defp maybe_put_click_session_id(attrs) do
-    if attr_present?(attrs, :click_session_id) do
-      attrs
-    else
-      case Input.fetch_attr(attrs, :public_click_id) do
-        nil ->
-          attrs
+  defp resolve_click_attribution(attrs) do
+    case resolved_click_session(attrs) do
+      nil ->
+        {:ok, attrs}
 
-        click_id ->
-          case get_click_session_by_public_id(click_id) do
-            nil ->
-              attrs
+      %CommerceClickSession{} = click_session ->
+        click_session = Repo.preload(click_session, [:commerce_link, :merchant_product])
+        dimensions = click_session_attribution_dimensions(click_session)
 
-            %CommerceClickSession{} = click_session ->
-              put_click_session_attribution_attrs(attrs, click_session)
-          end
-      end
+        case conflicting_click_dimensions(attrs, dimensions) do
+          [] -> {:ok, put_click_session_attribution_attrs(attrs, click_session, dimensions)}
+          conflicts -> {:error, conflicts}
+        end
     end
   end
 
-  defp put_click_session_attribution_attrs(attrs, click_session) do
-    click_session = Repo.preload(click_session, [:commerce_link, :merchant_product])
-
+  defp put_click_session_attribution_attrs(attrs, click_session, dimensions) do
     attrs
     |> put_attr(:click_session_id, click_session.id)
-    |> put_attr_if_missing(:merchant_id, click_session_merchant_id(click_session))
-    |> put_attr_if_missing(
-      :affiliate_program_id,
-      click_session_affiliate_program_id(click_session)
+    |> put_attr_if_missing(:merchant_id, dimensions.merchant_id)
+    |> put_attr_if_missing(:affiliate_program_id, dimensions.affiliate_program_id)
+    |> put_attr_if_missing(:merchant_product_id, dimensions.merchant_product_id)
+    |> put_attr_if_missing(:product_id, dimensions.product_id)
+  end
+
+  defp click_session_attribution_dimensions(click_session) do
+    %{
+      merchant_id: click_session_merchant_id(click_session),
+      affiliate_program_id: click_session_affiliate_program_id(click_session),
+      merchant_product_id: click_session.merchant_product_id,
+      product_id: click_session_product_id(click_session)
+    }
+  end
+
+  defp conflicting_click_dimensions(attrs, dimensions) do
+    for {field, click_value} <- dimensions,
+        provider_value = Input.fetch_attr(attrs, field),
+        not is_nil(click_value),
+        not is_nil(provider_value),
+        provider_value != click_value,
+        do: field
+  end
+
+  defp attribution_conflict_changeset(attrs, conflicts) do
+    Enum.reduce(
+      conflicts,
+      CommerceConversion.changeset(%CommerceConversion{}, attrs),
+      &Ecto.Changeset.add_error(&2, &1, "does not match resolved click")
     )
-    |> put_attr_if_missing(:merchant_product_id, click_session.merchant_product_id)
-    |> put_attr_if_missing(:product_id, click_session_product_id(click_session))
+  end
+
+  defp resolved_click_session(attrs) do
+    case Input.fetch_attr(attrs, :click_session_id) do
+      click_session_id when is_integer(click_session_id) ->
+        Repo.get(CommerceClickSession, click_session_id)
+
+      _click_session_id ->
+        attrs
+        |> Input.fetch_attr(:public_click_id)
+        |> get_click_session_by_public_id()
+    end
   end
 
   defp click_session_merchant_id(%CommerceClickSession{commerce_link: %CommerceLink{} = link}),
@@ -845,6 +878,8 @@ defmodule ProductCompare.CommerceAttribution do
        do: product.product_id
 
   defp click_session_product_id(_click_session), do: nil
+
+  defp get_click_session_by_public_id(nil), do: nil
 
   defp get_click_session_by_public_id(click_id) do
     with {:ok, cast_click_id} <- Ecto.UUID.cast(click_id) do

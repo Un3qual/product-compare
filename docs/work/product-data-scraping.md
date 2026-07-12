@@ -84,6 +84,24 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - `merchant_source_identities` now persists deterministic source-to-merchant links for replay-safe imports.
 - `ProductCompare.Ingestion.persist_normalized_listing/2` now persists fixture-backed normalized listings into `SourceArtifact`, `ExternalProduct`, catalog product shells, `MerchantProduct`, and `PricePoint` rows with replay idempotency and stale price-observation guards.
 
+## Ingestion Freshness Integrity Evidence
+
+- Status: done on 2026-07-12 as project-quality audit milestone 3.
+- External-product upserts now return an explicit internal `:fresh` or `:stale`
+  decision. Stale observations short-circuit before product, merchant-product,
+  or price mutation while preserving the public success tuple and persisted
+  result-map keys.
+- An older observation with a different listing URL returns the existing
+  external product and its current product, merchant-product, and latest price
+  when available. It does not create a product shell, a second offer, or an
+  older price row, and it does not replace the canonical URL.
+- RED: the combined focused ingestion/attribution run reported 76 tests and 4
+  failures; the stale different-URL case returned a newly created merchant
+  product instead of the current one.
+- GREEN: `mix test test/product_compare/ingestion/ingestion_test.exs
+  test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+  passed 76 tests with 0 failures.
+
 ## CJ Scheduled Readiness Evidence
 
 - Plan: `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`.

@@ -190,9 +190,9 @@ defmodule ProductCompare.Ingestion do
   @type persisted_listing :: %{
           source_artifact: SourceArtifact.t(),
           external_product: ExternalProduct.t(),
-          product: Product.t(),
+          product: Product.t() | nil,
           merchant_identity: MerchantSourceIdentity.t(),
-          merchant_product: MerchantProduct.t(),
+          merchant_product: MerchantProduct.t() | nil,
           price_point: PricePoint.t() | nil
         }
 
@@ -224,8 +224,25 @@ defmodule ProductCompare.Ingestion do
 
   defp persist_listing_in_transaction(source, listing, merchant_identity) do
     with {:ok, source_artifact} <- upsert_source_artifact(source, listing),
-         {:ok, external_product} <- upsert_external_product(source, listing),
-         {:ok, product} <- ensure_listing_product(external_product, listing),
+         {:ok, {freshness, external_product}} <- upsert_external_product(source, listing) do
+      persist_listing_by_freshness(
+        freshness,
+        source_artifact,
+        external_product,
+        merchant_identity,
+        listing
+      )
+    end
+  end
+
+  defp persist_listing_by_freshness(
+         :fresh,
+         source_artifact,
+         external_product,
+         merchant_identity,
+         listing
+       ) do
+    with {:ok, product} <- ensure_listing_product(external_product, listing),
          {:ok, external_product} <- attach_external_product(external_product, product, listing),
          {:ok, merchant_product} <-
            upsert_listing_merchant_product(merchant_identity, product, listing),
@@ -241,6 +258,46 @@ defmodule ProductCompare.Ingestion do
        }}
     end
   end
+
+  defp persist_listing_by_freshness(
+         :stale,
+         source_artifact,
+         external_product,
+         merchant_identity,
+         _listing
+       ) do
+    product = fetch_stale_listing_product(external_product)
+    merchant_product = fetch_stale_listing_merchant_product(merchant_identity, external_product)
+
+    {:ok,
+     %{
+       source_artifact: source_artifact,
+       external_product: external_product,
+       product: product,
+       merchant_identity: merchant_identity,
+       merchant_product: merchant_product,
+       price_point: merchant_product && Pricing.latest_price(merchant_product.id)
+     }}
+  end
+
+  defp fetch_stale_listing_product(%ExternalProduct{product_id: nil}), do: nil
+
+  defp fetch_stale_listing_product(%ExternalProduct{product_id: product_id}),
+    do: Repo.get(Product, product_id)
+
+  defp fetch_stale_listing_merchant_product(
+         %MerchantSourceIdentity{merchant_id: merchant_id},
+         %ExternalProduct{product_id: product_id, canonical_url: canonical_url}
+       )
+       when not is_nil(product_id) do
+    Repo.get_by(MerchantProduct,
+      merchant_id: merchant_id,
+      product_id: product_id,
+      url: canonical_url
+    )
+  end
+
+  defp fetch_stale_listing_merchant_product(_merchant_identity, _external_product), do: nil
 
   defp upsert_source_artifact(%Source{id: source_id}, listing) do
     content_hash = listing_content_hash(listing)
@@ -285,10 +342,13 @@ defmodule ProductCompare.Ingestion do
     )
     |> case do
       {:ok, %ExternalProduct{id: nil}} ->
-        fetch_external_product(source_id, listing.external_product_id)
+        with {:ok, external_product} <-
+               fetch_external_product(source_id, listing.external_product_id) do
+          {:ok, {:stale, external_product}}
+        end
 
       {:ok, %ExternalProduct{} = external_product} ->
-        {:ok, external_product}
+        {:ok, {:fresh, external_product}}
 
       {:error, reason} ->
         {:error, reason}
