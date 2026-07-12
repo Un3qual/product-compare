@@ -165,3 +165,24 @@ output, a clean working tree, and an independent whole-branch review.
   the accepted-claim status TOCTOU through commit. RED reproduced both gaps;
   GREEN passes 66 focused tests with zero failures plus typecheck, formatting,
   and diff hygiene.
+
+### 2026-07-12 — Milestone 5: product 404 and API-token route state
+
+- A GraphQL `product: null` result now returns typed React Router data with HTTP
+  404 while retaining the existing product-not-found markup and serialized
+  Relay bootstrap in SSR output.
+- API-token optimistic rows, mutation updates, pending/errors, and one-time
+  plaintext now live in an inner page keyed by canonical access, status, and
+  cursor identity. Status/cursor navigation receives clean state on its first
+  committed render; same-location mutation and revalidation behavior remains
+  intact.
+- RED evidence: the initial focused run passed 97 existing tests and produced
+  four expected failures. The product loader returned plain data, SSR returned
+  HTTP 200, and destination layout-commit probes observed stale API-token state
+  after both status and cursor navigation.
+- GREEN evidence: the expanded product route/loader, API-token route/loader,
+  and SSR suites passed 115 tests with zero failures. `bun run typecheck`,
+  `bun run relay:check`, `mix format --check-formatted`, and `git diff --check`
+  passed. Relay validation compiled 30 reader, 29 normalization, and 29
+  operation-text documents without pending changes after the required
+  Watchman sandbox-permission retry.

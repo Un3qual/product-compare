@@ -1,6 +1,6 @@
-import { createRef } from "react";
+import { createRef, useLayoutEffect } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { Link, MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
@@ -476,6 +476,57 @@ test("create token submits label and displays the one-time plain text token", as
   expect(oneTimeRegion).toHaveTextContent("Visible only once");
   expect(oneTimeRegion).toHaveTextContent(ONE_TIME_TOKEN_VALUE);
 });
+
+test.each([
+  ["status", "/account/api-tokens?status=revoked"],
+  ["cursor", "/account/api-tokens?status=all&after=cursor-next"]
+])(
+  "created token state does not render after navigating to a different %s location",
+  async (_locationPart, destination) => {
+    mockedUseLoaderData.mockImplementation(() => {
+      const searchParams = new URLSearchParams(useLocation().search);
+      const tokenStatus = searchParams.get("status") === "revoked" ? "revoked" : "all";
+      const after = searchParams.get("after");
+
+      return {
+        status: "empty",
+        tokenQueries: [],
+        tokens: [],
+        tokenStatus,
+        after
+      } satisfies ApiTokensRouteLoaderData;
+    });
+    const destinationRenders: boolean[] = [];
+
+    render(
+      <MemoryRouter initialEntries={["/account/api-tokens?status=all"]}>
+        <ApiTokensRoute />
+        <Link to={destination}>Navigate to another token page</Link>
+        <ApiTokenLocationRenderProbe
+          destination={destination}
+          onDestinationRender={(leakedState) => destinationRenders.push(leakedState)}
+        />
+      </MemoryRouter>
+    );
+
+    openCreateApiTokenDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
+
+    await waitFor(() => {
+      expect(commitCreateMutationMock).toHaveBeenCalledTimes(1);
+    });
+    completeLatestCreateMutation(buildSuccessfulCreateResponse());
+
+    expect(await screen.findByText(ONE_TIME_TOKEN_VALUE)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CLI automation" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Navigate to another token page" }));
+
+    expect(destinationRenders).toEqual([false]);
+    expect(screen.queryByText(ONE_TIME_TOKEN_VALUE)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "CLI automation" })).not.toBeInTheDocument();
+  }
+);
 
 test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
   "create token applies the %s preset",
@@ -1276,6 +1327,29 @@ function renderApiTokensRoute() {
       <ApiTokensRoute />
     </MemoryRouter>
   );
+}
+
+function ApiTokenLocationRenderProbe({
+  destination,
+  onDestinationRender
+}: {
+  destination: string;
+  onDestinationRender: (leakedState: boolean) => void;
+}) {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    if (`${location.pathname}${location.search}` !== destination) {
+      return;
+    }
+
+    const renderedText = document.body.textContent ?? "";
+    onDestinationRender(
+      renderedText.includes(ONE_TIME_TOKEN_VALUE) || renderedText.includes("CLI automation")
+    );
+  }, [destination, location.pathname, location.search, onDestinationRender]);
+
+  return null;
 }
 
 function openCreateApiTokenDialog() {

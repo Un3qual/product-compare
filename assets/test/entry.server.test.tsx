@@ -39,6 +39,45 @@ test("server render returns a 404 response for unknown application paths", async
   expect(body).toContain('__relayRecords');
 });
 
+test("server render returns product not-found markup and Relay bootstrap with HTTP 404", async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = vi.fn(() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          data: {
+            product: null,
+            viewer: null
+          }
+        }),
+        {
+          headers: {
+            "content-type": "application/json"
+          },
+          status: 200
+        }
+      )
+    )
+  ) as typeof fetch;
+
+  try {
+    const result = await render("/products/missing-product");
+
+    expect(result).toBeInstanceOf(Response);
+
+    const response = result as Response;
+
+    expect(response.status).toBe(404);
+    const body = await response.text();
+
+    expect(body).toContain("Product not found.");
+    expect(body).toContain('__relayRecords');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("server render resolves recovery route markup", async () => {
   await expect(render("/auth/forgot-password")).resolves.toContain("Reset your password");
 });

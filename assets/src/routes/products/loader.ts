@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
+import { data, type LoaderFunctionArgs } from "react-router-dom";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
@@ -26,7 +26,7 @@ export async function productDetailLoader({
   context,
   params,
   request
-}: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
+}: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = offersAfterFromUrl(new URL(request.url));
 
@@ -54,9 +54,12 @@ export async function productDetailLoader({
     if (!productRouteQuery.data.product) {
       productRouteQuery.dispose();
 
-      return {
-        status: "not_found"
-      };
+      return data<ProductDetailLoaderData>(
+        {
+          status: "not_found"
+        },
+        { status: 404 }
+      );
     }
 
     return {
