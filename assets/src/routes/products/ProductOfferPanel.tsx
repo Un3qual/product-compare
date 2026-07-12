@@ -10,6 +10,12 @@ import {
   type GraphQLDateTimeContext
 } from "../graphql-datetime";
 import {
+  ProductOfferList,
+  type ProductOfferCouponRow,
+  type ProductOfferListItem,
+  type ProductOfferPriceHistoryRow
+} from "./ProductOfferList";
+import {
   formatCouponAvailabilityCount,
   formatOfferCount
 } from "../offer-formatting";
@@ -18,20 +24,11 @@ import {
   type OfferSnapshotSelectors,
   type OfferSnapshotSummary
 } from "../offer-snapshot";
-import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction";
 
-type VisibleProductOffer = {
+type VisibleProductOffer = ProductOfferListItem & {
   currency: string | null;
-  id: string;
-  merchantName: string;
   url: string;
-  priceText: string | null;
   numericPrice: number | null;
-  priceObservation: GraphQLDateTimeContext | null;
-  coupons: ReturnType<typeof buildCouponRows>;
-  couponsHasMore: boolean;
-  priceHistory: ReturnType<typeof buildPriceHistoryRows>;
-  priceHistoryHasMore: boolean;
 };
 
 const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
@@ -86,7 +83,7 @@ export function ProductOfferPanel({
       <OfferSnapshot
         summary={buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS)}
       />
-      <ActiveOfferList offers={offers} />
+      <ProductOfferList offers={offers} />
       {pagination}
     </>
   );
@@ -184,40 +181,6 @@ function buildVisiblePriceHistorySummary(
   };
 }
 
-function ActiveOfferList({ offers }: { offers: VisibleProductOffer[] }) {
-  return (
-    <ul aria-label="Active offer list">
-      {offers.map((offer) => (
-        <li key={offer.id}>
-          <TrackedCommerceClickAction
-            label={offer.merchantName}
-            merchantProductId={offer.id}
-          />
-          {offer.priceText ? <p>{offer.priceText}</p> : null}
-          {offer.priceObservation ? (
-            <p>
-              Price observed{" "}
-              <time dateTime={offer.priceObservation.dateTime}>
-                {offer.priceObservation.label}
-              </time>
-            </p>
-          ) : null}
-          <OfferPriceHistory
-            merchantName={offer.merchantName}
-            historyRows={offer.priceHistory}
-            hasMore={offer.priceHistoryHasMore}
-          />
-          <OfferCoupons
-            merchantName={offer.merchantName}
-            coupons={offer.coupons}
-            hasMore={offer.couponsHasMore}
-          />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function OfferSnapshot({
   summary
 }: {
@@ -288,78 +251,6 @@ function productOffersPath(
   return `${path}#offers`;
 }
 
-function OfferPriceHistory({
-  merchantName,
-  historyRows,
-  hasMore
-}: {
-  merchantName: string;
-  historyRows: ReadonlyArray<{
-    id: string;
-    observedAt: string;
-    observedDate: string;
-    priceText: string;
-  }>;
-  hasMore: boolean;
-}) {
-  if (historyRows.length === 0) {
-    return <p>No price history for this offer yet.</p>;
-  }
-
-  return (
-    <section>
-      <h3>Price history</h3>
-      <ul aria-label={`${merchantName} price history`}>
-        {historyRows.map((row) => (
-          <li key={row.id}>
-            <time dateTime={row.observedAt}>{row.observedDate}</time>
-            <span>{row.priceText}</span>
-          </li>
-        ))}
-      </ul>
-      {hasMore ? <p>More price history available.</p> : null}
-    </section>
-  );
-}
-
-function OfferCoupons({
-  merchantName,
-  coupons,
-  hasMore
-}: {
-  merchantName: string;
-  coupons: ReadonlyArray<{
-    key: string;
-    code: string;
-    description: string | null | undefined;
-    discountText: string | null;
-    validToText: string | null;
-    terms: string | null | undefined;
-  }>;
-  hasMore: boolean;
-}) {
-  if (coupons.length === 0) {
-    return <p>No active coupons for this offer.</p>;
-  }
-
-  return (
-    <>
-      <ul aria-label={`${merchantName} active coupons`}>
-        {coupons.map((coupon) => (
-          <li key={coupon.key}>
-            <strong>{coupon.code}</strong>
-            {coupon.description ? <p>{coupon.description}</p> : null}
-            {coupon.discountText ? <p>{coupon.discountText}</p> : null}
-            {coupon.validToText ? <p>{coupon.validToText}</p> : null}
-            {coupon.terms ? <p>{coupon.terms}</p> : null}
-          </li>
-        ))}
-      </ul>
-      {hasMore ? <p>More coupons available.</p> : null}
-    </>
-  );
-}
-
 function buildCouponRows(
   edges: ReadonlyArray<{
     readonly cursor: string;
@@ -373,7 +264,7 @@ function buildCouponRows(
       readonly terms: string | null | undefined;
     };
   }>
-) {
+): ProductOfferCouponRow[] {
   return edges.map(({ cursor, node }) => ({
     key: cursor,
     code: node.code,
@@ -393,7 +284,7 @@ function buildPriceHistoryRows(
     };
   }>,
   currency: unknown
-) {
+): ProductOfferPriceHistoryRow[] {
   return edges.flatMap(({ node }) => {
     const observedDate = graphQLDateTimeLabel(node.observedAt);
     const priceText = formatPriceText(node.price, currency);
