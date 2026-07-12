@@ -9,6 +9,8 @@ export type SavedComparisonSortMode =
   | "product-count-desc"
   | "product-count-asc";
 
+const COMBINING_MARKS = /\p{M}/gu;
+
 export function buildSavedComparisonsViewState(
   loaderData: SavedComparisonsRouteLoaderData,
   deletedSavedSetIds: ReadonlySet<string>,
@@ -110,7 +112,7 @@ function sortSavedComparisonSets(
   switch (sortMode) {
     case "name-asc":
       sortedSavedSets.sort((left, right) =>
-        left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
+        compareSavedComparisonNames(left.name, right.name)
       );
       break;
     case "product-count-desc":
@@ -126,6 +128,25 @@ function sortSavedComparisonSets(
   }
 
   return sortedSavedSets;
+}
+
+function compareSavedComparisonNames(left: string, right: string) {
+  const leftKey = savedComparisonNameSortKey(left);
+  const rightKey = savedComparisonNameSortKey(right);
+
+  if (leftKey < rightKey) {
+    return -1;
+  }
+
+  if (leftKey > rightKey) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function savedComparisonNameSortKey(name: string) {
+  return name.normalize("NFKD").replace(COMBINING_MARKS, "").toLowerCase();
 }
 
 function savedComparisonSetMatchesFilter(

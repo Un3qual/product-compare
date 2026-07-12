@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
   buildSavedComparisonsViewState,
   type SavedComparisonSortMode
@@ -157,6 +157,30 @@ describe("sorting", () => {
     );
 
     expect(savedSetIds(viewState)).toEqual(["saved-set-1", "saved-set-2", "saved-set-3"]);
+  });
+
+  test("orders names without depending on the host locale", () => {
+    const localeCompare = vi
+      .spyOn(String.prototype, "localeCompare")
+      .mockImplementation(() => {
+        throw new Error("ambient locale comparison used");
+      });
+
+    try {
+      const viewState = buildSavedComparisonsViewState(
+        readyLoaderData([
+          { id: "saved-set-1", name: "Zulu", products: [] },
+          { id: "saved-set-2", name: "Älpha", products: [] }
+        ]),
+        new Set(),
+        "",
+        "name-asc"
+      );
+
+      expect(savedSetIds(viewState)).toEqual(["saved-set-2", "saved-set-1"]);
+    } finally {
+      localeCompare.mockRestore();
+    }
   });
 
   test.each([
