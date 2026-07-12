@@ -6,7 +6,7 @@
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-12 after credential auth form extraction (focused
-  session route suite: 19 tests; TypeScript and diff hygiene green)
+  session route suite: 21 tests; TypeScript and diff hygiene green)
 - Implementation plan: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
 - Objective: make the root shell reflect the current GraphQL `viewer` session state and harden browser/backend logout coverage before the logout branch opens a PR.
 
@@ -99,7 +99,7 @@
   - RED: `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
     exited 1 because the direct form contract could not resolve the absent
     `CredentialAuthForm` module.
-  - GREEN: the same focused session suite exited 0 with 1 file and 19 tests
+  - GREEN: the same focused session suite exited 0 with 1 file and 21 tests
     passing. Direct semantic coverage verifies login and registration copy,
     email/password autocomplete, field errors, footer links, pending-state
     disabling, and submit callback delegation.

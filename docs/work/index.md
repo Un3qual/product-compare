@@ -128,37 +128,7 @@ tests; TypeScript and diff hygiene were green.
 
 ## Ready Work
 
-### 1. Credential Auth Form Presentation Extraction
-
-Status: ready
-Lane: Frontend auth state hardening
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: replace duplicated login/register shell and credential fields
-with one explicit typed presentation component while preserving route-owned
-GraphQL mutations, session results, viewer-cache updates, and navigation.
-Owned paths:
-
-- `assets/src/routes/auth/CredentialAuthForm.tsx`
-- `assets/src/routes/auth/LoginRoute.tsx`
-- `assets/src/routes/auth/RegisterRoute.tsx`
-- `assets/test/routes/auth/session.route.test.tsx`
-- `docs/work/frontend-auth-state-hardening.md`
-
-Prerequisites:
-
-- Existing auth session route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Login and registration share only credential presentation;
-GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
-updates, and navigation remain unchanged.
-
-### 2. Product Detail Decision Actions Presentation
+### 1. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -186,7 +156,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 3. Revenue Summary View-Data Contract
+### 2. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -216,7 +186,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 4. Specification Matrix Data Contract
+### 3. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -254,6 +224,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 credential-auth form extraction is complete.
+`CredentialAuthForm` now owns the explicit email/password presentation shared
+by login and registration while both routes retain form-data extraction, Relay
+mutations, GraphQL error resolution, viewer-cache updates, and navigation.
+Review follow-up kept the prop contracts private and added actual-route checks
+for copy, footer destinations, and password autocomplete. The focused suite
+passed 21 tests with TypeScript and diff hygiene green; the GraphQL-over-
+`/api/graphql`, cookie-backed Phoenix-session contract is unchanged.
 
 The 2026-07-12 saved-comparison view-state extraction is complete. A framework-
 free module now owns local deletion hiding, case-insensitive name/product/slug
