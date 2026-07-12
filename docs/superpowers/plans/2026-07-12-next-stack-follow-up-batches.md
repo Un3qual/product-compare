@@ -74,14 +74,14 @@ empty/no-match states, and pagination. The route retains loader/query reads,
 suspense/error boundaries, connection normalization, safe external URL
 resolution, and route path construction.
 
-- [ ] Add direct view assertions for page-size controls, case-insensitive local
+- [x] Add direct view assertions for page-size controls, case-insensitive local
   filtering, no match, safe links, empty data, and pagination; verify RED.
-- [ ] Build typed view models and hrefs in the route, then move only
+- [x] Build typed view models and hrefs in the route, then move only
   presentation and local filter state to the sibling.
-- [ ] Keep Relay, fallback, normalization, URL safety, and path construction in
+- [x] Keep Relay, fallback, normalization, URL safety, and path construction in
   the route.
-- [ ] Run the focused merchant suite, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Run the focused merchant suite, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
