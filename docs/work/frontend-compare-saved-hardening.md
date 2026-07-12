@@ -5,7 +5,7 @@
 - Status: completed (saved comparison view-state extraction)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-12 after saved comparison view-state extraction (42
+- Last verified: 2026-07-12 after saved comparison view-state extraction (46
   focused saved-comparison tests)
 - Historical context:
   - `ARCHITECTURE.md`
@@ -34,7 +34,7 @@
   - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
   - `docs/work/frontend-compare-saved-hardening.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts` - 11 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts` - 15 tests, 0 failures.
   - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx` - 31 tests, 0 failures.
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with no output.
