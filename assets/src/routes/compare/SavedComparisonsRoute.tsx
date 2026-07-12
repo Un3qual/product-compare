@@ -24,9 +24,12 @@ import type {
 } from "./saved-data";
 import { CompareShell } from "./CompareShell";
 import {
-  SavedComparisonSetList,
-  type SavedComparisonSortMode
+  SavedComparisonSetList
 } from "./SavedComparisonSetList";
+import {
+  buildSavedComparisonsViewState,
+  type SavedComparisonSortMode
+} from "./saved-view-state";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
@@ -233,138 +236,4 @@ function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): Read
   const nextValues = new Set(currentValues);
   nextValues.delete(removedValue);
   return nextValues;
-}
-
-const buildSavedComparisonsStatus = (
-  loaderData: SavedComparisonsRouteLoaderData,
-  visibleSavedSets: SavedComparisonSetSummary[],
-  hasLocalDeletion: boolean,
-  hasFilter: boolean,
-  hasLoadedSavedSets: boolean
-) => {
-  if (loaderData.status === "unauthorized") {
-    return "Sign in to view saved comparisons.";
-  }
-
-  if (hasLocalDeletion) {
-    return "Comparison deleted.";
-  }
-
-  if (hasFilter && hasLoadedSavedSets && visibleSavedSets.length === 0) {
-    return "No saved comparisons match your filter.";
-  }
-
-  if (visibleSavedSets.length === 0) {
-    return "No saved comparisons yet.";
-  }
-
-  return "";
-};
-
-function buildSavedComparisonsViewState(
-  loaderData: SavedComparisonsRouteLoaderData,
-  deletedSavedSetIds: ReadonlySet<string>,
-  filterText: string,
-  sortMode: SavedComparisonSortMode
-) {
-  const {
-    hasDeletedSavedSet,
-    hasFilter,
-    hasLoadedSavedSets,
-    savedSets
-  } = visibleSavedComparisonSets(
-    loaderData.savedSets,
-    deletedSavedSetIds,
-    filterText,
-    sortMode
-  );
-
-  return {
-    savedSets,
-    statusMessage: buildSavedComparisonsStatus(
-      loaderData,
-      savedSets,
-      hasDeletedSavedSet,
-      hasFilter,
-      hasLoadedSavedSets
-    )
-  };
-}
-
-function visibleSavedComparisonSets(
-  savedSets: readonly SavedComparisonSetSummary[],
-  deletedSavedSetIds: ReadonlySet<string>,
-  filterText: string,
-  sortMode: SavedComparisonSortMode
-) {
-  const normalizedFilter = filterText.trim().toLowerCase();
-  const visibleSavedSets: SavedComparisonSetSummary[] = [];
-  let hasDeletedSavedSet = false;
-
-  for (const savedSet of savedSets) {
-    if (deletedSavedSetIds.has(savedSet.id)) {
-      hasDeletedSavedSet = true;
-      continue;
-    }
-
-    if (
-      normalizedFilter === "" ||
-      savedComparisonSetMatchesFilter(savedSet, normalizedFilter)
-    ) {
-      visibleSavedSets.push(savedSet);
-    }
-  }
-
-  return {
-    hasDeletedSavedSet,
-    hasFilter: normalizedFilter !== "",
-    hasLoadedSavedSets: savedSets.length > 0,
-    savedSets: sortSavedComparisonSets(visibleSavedSets, sortMode)
-  };
-}
-
-function sortSavedComparisonSets(
-  savedSets: SavedComparisonSetSummary[],
-  sortMode: SavedComparisonSortMode
-) {
-  if (sortMode === "current") {
-    return savedSets;
-  }
-
-  const sortedSavedSets = [...savedSets];
-
-  switch (sortMode) {
-    case "name-asc":
-      sortedSavedSets.sort((left, right) =>
-        left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
-      );
-      break;
-    case "product-count-desc":
-      sortedSavedSets.sort((left, right) => right.products.length - left.products.length);
-      break;
-    case "product-count-asc":
-      sortedSavedSets.sort((left, right) => left.products.length - right.products.length);
-      break;
-    default: {
-      const exhaustiveCheck: never = sortMode;
-      return exhaustiveCheck;
-    }
-  }
-
-  return sortedSavedSets;
-}
-
-function savedComparisonSetMatchesFilter(
-  savedSet: SavedComparisonSetSummary,
-  normalizedFilter: string
-) {
-  if (savedSet.name.toLowerCase().includes(normalizedFilter)) {
-    return true;
-  }
-
-  return savedSet.products.some(
-    ({ name, slug }) =>
-      name.toLowerCase().includes(normalizedFilter) ||
-      slug.toLowerCase().includes(normalizedFilter)
-  );
 }
