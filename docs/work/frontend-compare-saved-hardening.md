@@ -2,10 +2,11 @@
 
 ## Snapshot
 
-- Status: done (saved comparison set presentation extraction)
+- Status: ready (saved comparison view-state extraction)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-05-30 after saved-comparisons Relay migration handoff verification
+- Last verified: 2026-07-12 after follow-up validation (31 saved-comparison
+  tests; 93 tests across the promoted cohort)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -17,6 +18,26 @@
   - Save/delete feedback is exposed through accessible route-local status messaging.
   - Compare and saved-comparisons routes register route-level error boundaries for unexpected loader/render failures.
   - Focused frontend tests cover the hardened shell and error-boundary fallbacks without reopening unrelated route work.
+
+## Saved Comparison View-State Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
+- Next action: move pure deleted-id hiding, filtering, sorting, and status
+  precedence into a framework-free module while preserving route-owned state,
+  Relay retainers, mutation commits, pagination, and URL construction.
+- Owned paths:
+  - `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+  - `assets/src/routes/compare/saved-view-state.ts`
+  - `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `docs/work/frontend-compare-saved-hardening.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: the route consumes one pure view-state contract with exact
+  deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
 ## Completed Saved Comparison Set Presentation Extraction
 
