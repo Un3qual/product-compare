@@ -72,13 +72,13 @@ price-history rows, and coupon rows. `ProductOfferPanel` keeps GraphQL
 normalization, safe URL and numeric handling, visible-page snapshot,
 mixed-currency decisions, pagination, and route URL construction.
 
-- [ ] Add direct list assertions for merchant actions, prices, observation
+- [x] Add direct list assertions for merchant actions, prices, observation
   times, history, coupons, and bounded-more messages; verify RED.
-- [ ] Extract the list and per-offer presentation behind one exported view-model
+- [x] Extract the list and per-offer presentation behind one exported view-model
   contract without duplicating GraphQL response types.
-- [ ] Keep normalization, snapshot calculation, and pagination in the panel.
-- [ ] Run the focused product-detail suite, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Keep normalization, snapshot calculation, and pagination in the panel.
+- [x] Run the focused product-detail suite, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
