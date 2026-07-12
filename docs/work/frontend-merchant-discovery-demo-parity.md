@@ -6,7 +6,7 @@
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-12 after merchant-directory view extraction review
-  follow-up (30 merchant tests)
+  follow-up (27 merchant tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
