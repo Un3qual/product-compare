@@ -145,7 +145,7 @@ Exit condition: Keyboard users can bypass primary navigation and focus the main 
 
 Status: ready
 Lane: Frontend compare and saved routes hardening
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
 Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
 Owned paths:
 
@@ -170,7 +170,7 @@ Exit condition: Saved-set presentation is isolated while mutation, query-retenti
 
 Status: ready
 Lane: Frontend catalog browse
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
 Next action: Extract product cards, specification highlights, and compare actions while preserving route-owned Relay, filter, URL, tray, and pagination orchestration.
 Owned paths:
 
@@ -195,7 +195,7 @@ Exit condition: Product-list presentation is isolated while filters, compare sel
 
 Status: ready
 Lane: Affiliate revenue and attribution
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
 Next action: Extract filter, date-preset, active-filter, and metric presentation while preserving route-owned loader, Relay, suspense, and error orchestration.
 Owned paths:
 

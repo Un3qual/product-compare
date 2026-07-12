@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready (saved comparison set presentation extraction)
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-05-30 after saved-comparisons Relay migration handoff verification
@@ -17,6 +17,23 @@
   - Save/delete feedback is exposed through accessible route-local status messaging.
   - Compare and saved-comparisons routes register route-level error boundaries for unexpected loader/render failures.
   - Focused frontend tests cover the hardened shell and error-boundary fallbacks without reopening unrelated route work.
+
+## Ready Next Batch
+
+- Status: ready
+- Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+- Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
+- Owned paths:
+  - `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+  - `assets/src/routes/compare/SavedComparisonSetList.tsx`
+  - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `docs/work/frontend-compare-saved-hardening.md`
+- Prerequisites: Existing saved-comparison route-state suite remains the characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
 
 ## Verified Current State
 

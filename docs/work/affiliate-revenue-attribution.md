@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready (revenue summary presentation extraction)
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-07-10 after authenticated revenue-preview positioning
@@ -50,13 +50,22 @@
 - Existing loader, Relay query, filter, suppression, and error behavior remain
   unchanged.
 
-## Next Batch
+## Ready Next Batch
 
-- Status: none queued
-- Batch: no unblocked commerce attribution implementation batch remains in this worktree.
-- Next step: keep live conversion-provider ingestion deferred until a later
-  explicit product decision; do not treat it as a blocker for the current
-  shopper feature-complete milestone.
+- Status: ready
+- Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+- Next action: Extract filter, date-preset, active-filter, and metric presentation while preserving route-owned loader, Relay, suspense, and error orchestration.
+- Owned paths:
+  - `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+  - `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+  - `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+  - `docs/work/affiliate-revenue-attribution.md`
+- Prerequisites: Existing revenue-summary route suite remains the characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: Revenue presentation is isolated while query, filter, suppression, date-preset, and error behavior remain green.
 
 ## Completed
 
