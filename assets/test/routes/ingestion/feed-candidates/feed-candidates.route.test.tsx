@@ -6,6 +6,11 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../../src/relay/route-preload";
 import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
+import {
+  formatFeedCandidateName,
+  formatFeedCandidateReviewStatus,
+  type FeedCandidate
+} from "../../../../src/routes/ingestion/feed-candidates/FeedCandidateReviewList";
 import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidatesRoute";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
@@ -142,6 +147,16 @@ test("feed candidates route renders review-safe candidate rows", () => {
     expect.anything(),
     FEED_CANDIDATES_QUERY_REF
   );
+});
+
+test("feed candidate review presentation formats the candidate name and review status", () => {
+  expect(
+    formatFeedCandidateName({
+      advertiserName: null,
+      providerFeedId: "feed-fallback"
+    } as FeedCandidate)
+  ).toBe("feed-fallback");
+  expect(formatFeedCandidateReviewStatus("SHORTLISTED")).toBe("Shortlisted");
 });
 
 test("feed candidates route renders current page review counts", () => {

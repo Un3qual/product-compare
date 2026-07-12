@@ -216,30 +216,6 @@ Verification:
 
 Exit condition: Revenue presentation is isolated while query, filter, suppression, date-preset, and error behavior remain green.
 
-## Active Work
-
-### Feed Candidate Review Component Extraction
-
-Status: active
-Owner: `codex/extract-affiliate-feed-presentations`
-Lane: Product data scraping
-Plan: `docs/superpowers/plans/2026-07-11-affiliate-feed-presentation-extractions.md`
-Next action: Extract feed-candidate list and review presentation from the existing route without adding dashboard or ingestion behavior.
-Owned paths:
-
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `docs/work/product-data-scraping.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Review presentation is isolated with all behavior and secret-safety coverage green.
-
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -249,6 +225,11 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 feed-candidate review extraction is complete. `FeedCandidateReviewList`
+now owns review presentation while the route retains Relay/revalidation and draft
+orchestration; the focused suite passed 17 tests, TypeScript typechecking passed,
+the secret/raw-field scan found no matches, and `git diff --check` was clean.
 
 The 2026-07-11 affiliate setup form extraction is complete. `AffiliateNetworkForm`,
 `AffiliateProgramForm`, `AffiliateLinkForm`, and `AffiliateCouponForm` now own

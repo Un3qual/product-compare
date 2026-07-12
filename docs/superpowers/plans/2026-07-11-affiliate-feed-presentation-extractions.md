@@ -164,7 +164,7 @@ Run:
 cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx
 ```
 
-Expected: 14 tests pass before extraction.
+Expected: 16 tests pass before extraction.
 
 - [ ] **Step 2: Create the pure review-list presentation**
 

@@ -883,6 +883,15 @@ Completion evidence remains under each assigned heading.
 
 ### Review Workspace
 
+- Completed 2026-07-11 feed-candidate review presentation extraction: moved
+  candidate summary, rows, review controls, feedback, pagination, formatting,
+  and display helpers into `FeedCandidateReviewList` while the route retains
+  Relay query/mutation orchestration, draft notes, revalidation, and review
+  guardrails. `cd assets && bun x vitest run
+  test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx` passed
+  17 tests, `cd assets && bun run typecheck` passed, the secret/raw-field scan
+  returned no matches, and `git diff --check` passed.
+
 - Added current-page pending/shortlisted/dismissed review counts, existing
   review note and reviewed timestamp display, per-candidate note capture, and
   trimmed optional note submission for `reviewMerchantFeedCandidate`.
