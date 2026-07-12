@@ -62,7 +62,7 @@ export function SavedComparisonSetList(props: {
 
 - The route supplies the typed `SavedComparisonSetSummary` import from `./saved-data`; the component must not construct comparison or pagination URLs itself.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -72,17 +72,17 @@ cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.
 
 Expected: the focused saved-comparisons state suite passes before any route markup moves.
 
-- [ ] **Step 2: Add behavior assertions for the presentation seam**
+- [x] **Step 2: Add behavior assertions for the presentation seam**
 
 In `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`, retain the existing authorization, deletion, filtering, sorting, reopen, and cursor-pagination assertions. Add a render-level assertion that one visible saved set still exposes its filter/sort controls, `Open comparison` link, enabled delete action, and `Saved comparison pages` pagination label after the route delegates markup to the new component.
 
-- [ ] **Step 3: Create the typed presentation component**
+- [x] **Step 3: Create the typed presentation component**
 
 Move the existing `SavedComparisonControls`, list markup, item markup, product-count formatting, reopen/delete action markup, and pagination markup into `SavedComparisonSetList.tsx`. Keep the existing StyleX controls, saved-set, title, metadata, and actions styles with the presentation. Render a disabled delete button only when `pendingDeleteIds.has(savedSet.id)` and preserve the exact `Deleting comparison...` text.
 
 `SavedComparisonSetList` renders the controls, list, and pagination from its typed props. It calls `onOpenComparison(savedSet)` for the reopen link and `onDelete(savedSet.id)` for the delete action; it does not call `useLoaderData`, `useMutation`, `useRoutePreloadedQuery`, or construct URL search parameters.
 
-- [ ] **Step 4: Leave orchestration in the route owner**
+- [x] **Step 4: Leave orchestration in the route owner**
 
 Import `SavedComparisonSetList` and pass existing `filterText`, `setFilterText`, `sortMode`, `setSortMode`, `viewState.savedSets`, `pendingDeleteIds`, and `handleDelete` directly. In `SavedComparisonsRoute.tsx`, build and pass:
 
@@ -101,7 +101,7 @@ const onOpenComparison = (savedSet: SavedComparisonSetSummary) =>
 
 Keep the unauthorized branch, status message, delete error feedback, empty return actions, and `SavedComparisonSetQueryRetainers` in `SavedComparisonsRoute.tsx`.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -113,7 +113,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/frontend-compare-saved-hardening.md` naming `SavedComparisonSetList`, route-retained Relay/mutation/query-retention/URL/filter orchestration, and the Step 5 command results.
 

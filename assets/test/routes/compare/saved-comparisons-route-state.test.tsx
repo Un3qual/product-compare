@@ -4,6 +4,7 @@ import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonSetList } from "../../../src/routes/compare/SavedComparisonSetList";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
@@ -132,6 +133,33 @@ function savedComparisonNames() {
 function savedComparisonsStatus() {
   return screen.getByRole("status", { name: "Saved comparisons status" });
 }
+
+test("saved comparison presentation exposes controls, actions, and pagination", () => {
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        filterText=""
+        onDelete={vi.fn()}
+        onFilterTextChange={vi.fn()}
+        onOpenComparison={() => "/compare?slug=chair&slug=desk"}
+        onSortModeChange={vi.fn()}
+        pagination={{ firstHref: "/compare/saved", nextHref: "/compare/saved?after=cursor-1" }}
+        pendingDeleteIds={new Set()}
+        savedSets={[buildSavedSet()]}
+        sortMode="current"
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("textbox", { name: "Filter saved comparisons" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Sort saved comparisons" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=chair&slug=desk"
+  );
+  expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  expect(screen.getByRole("navigation", { name: "Saved comparison pages" })).toBeVisible();
+});
 
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
