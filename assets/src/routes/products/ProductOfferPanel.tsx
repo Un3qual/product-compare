@@ -26,7 +26,6 @@ import {
 
 type VisibleProductOffer = ProductOfferListItem & {
   currency: string | null;
-  url: string;
   numericPrice: number | null;
 };
 
@@ -141,7 +140,6 @@ function buildVisibleProductOffer(node: ProductOfferNode): VisibleProductOffer |
     id: node.id,
     currency: normalizedCurrency(node.currency),
     merchantName: productOfferMerchantName(node.merchant),
-    url: safeUrl,
     ...buildLatestPriceSummary(node.latestPrice, node.currency),
     ...buildVisibleCouponSummary(node.activeCoupons),
     ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency)
