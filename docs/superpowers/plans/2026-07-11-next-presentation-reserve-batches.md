@@ -159,7 +159,7 @@ export function BrowseProductList(props: {
 
 - `BrowseProductList` owns product-card, specification-highlight, and compare-action presentation. It preserves the three-highlight cap and renders only route-provided destinations.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -169,17 +169,17 @@ cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx
 
 Expected: the focused catalog browse suite passes before moving product-list presentation.
 
-- [ ] **Step 2: Add behavior assertions for the extracted card boundary**
+- [x] **Step 2: Add behavior assertions for the extracted card boundary**
 
 In `assets/test/routes/catalog/browse.route.test.tsx`, retain the existing filter, compare-tray, pagination, encoded-detail-link, and empty-state coverage. Add one populated-result assertion that confirms a card keeps its accessible product name, at most three specification highlights, `View details`, `View offers`, and the route-derived add/selected/full compare state after delegation.
 
-- [ ] **Step 3: Create the typed product-list presentation**
+- [x] **Step 3: Create the typed product-list presentation**
 
 Move `BrowseProductCard`, `SpecificationHighlights`, `CompareAction`, `SPECIFICATION_HIGHLIGHT_LIMIT`, and the existing product/card metadata/action/highlight StyleX styles into `BrowseProductList.tsx`. The list maps `products` to the existing labelled `DataList`/`DataListItem` structure.
 
 For a `BrowseCompareAction`, preserve exact user-visible behavior: `selected` renders `<product name> selected for comparison`, `full` renders `Compare selection full`, and `add` renders `Add <product name> to compare` linked to `href`. The component uses `detailHrefFor(product)` and `offerHrefFor(product)` without importing route paths, compare-selection helpers, `useLocation`, or Relay hooks.
 
-- [ ] **Step 4: Keep query, filter, URL, tray, and pagination orchestration in the route**
+- [x] **Step 4: Keep query, filter, URL, tray, and pagination orchestration in the route**
 
 In `BrowseRoute.tsx`, retain construction of `activeFilters`, `currentBrowsePathname`, `currentCompareSearch`, `selectedCompareSlugs`, `selectionTray`, `catalogControls`, and `paginationLinks`. Pass these route-built callbacks to the new list:
 
@@ -202,7 +202,7 @@ compareActionFor={(product) => {
 
 Keep the no-products branch and `FeedbackState` in `BrowseRoute.tsx`; render `BrowseProductList` only for the populated branch.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -214,7 +214,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/frontend-catalog-browse.md` naming `BrowseProductList`, route-retained Relay/filter/URL/tray/pagination orchestration, and the Step 5 command results.
 
