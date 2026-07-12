@@ -15,6 +15,8 @@ import {
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
+const REGISTER_AUTOCOMPLETE_HINT = "new-password";
+
 export function RegisterRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ export function RegisterRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      authFieldAutoComplete="new-password"
+      passwordAutoComplete={REGISTER_AUTOCOMPLETE_HINT}
       submitLabel="Create account"
       title="Create your account"
     />
