@@ -25,9 +25,9 @@
 
 ## Product Detail Offer List Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
-- Next action: Extract active-offer list, merchant action, current price and
+- Completed: Extracted active-offer list, merchant action, current price and
   observation, price-history rows, and coupon rows while preserving panel-owned
   normalization, safety checks, snapshot calculation, and pagination.
 - Owned paths:
@@ -44,6 +44,13 @@
 - Exit condition: normalized active-offer presentation is isolated without
   changing safe-link filtering, price/date formatting, coupon/history output,
   snapshots, mixed-currency behavior, or pagination.
+- Completed evidence:
+  - RED: `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+    failed as expected because `ProductOfferList` did not yet exist.
+  - GREEN: the focused suite passed with 49 tests, including the new direct
+    normalized-list presentation contract test.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## 2026-07-11 Route Decomposition
 

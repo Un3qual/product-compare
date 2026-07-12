@@ -15,6 +15,10 @@ import {
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
 import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
+import {
+  ProductOfferList,
+  type ProductOfferListItem
+} from "../../../src/routes/products/ProductOfferList";
 
 const {
   fetchRouteQueryMock,
@@ -174,6 +178,69 @@ beforeEach(() => {
   loadQueryMock.mockReturnValue({ dispose: vi.fn() });
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
+});
+
+test("ProductOfferList renders normalized offer details with bounded-more messages", () => {
+  const offers: ProductOfferListItem[] = [
+    {
+      id: "merchant-product-1",
+      merchantName: "Acme",
+      priceText: "199.99 USD",
+      priceObservation: {
+        dateTime: "2026-06-01T00:00:00Z",
+        label: "2026-06-01"
+      },
+      priceHistory: [
+        {
+          id: "price-1",
+          observedAt: "2026-05-01T00:00:00Z",
+          observedDate: "2026-05-01",
+          priceText: "249.99 USD"
+        }
+      ],
+      priceHistoryHasMore: true,
+      coupons: [
+        {
+          key: "coupon-cursor-1",
+          code: "SAVE20",
+          description: "Save on the detail product.",
+          discountText: "20.00 USD",
+          validToText: "Valid through 2026-07-01",
+          terms: "Online orders only."
+        }
+      ],
+      couponsHasMore: true
+    }
+  ];
+
+  render(<ProductOfferList offers={offers} />);
+
+  const offerList = screen.getByRole("list", { name: "Active offer list" });
+  const merchantAction = within(offerList).getByRole("link", { name: "Acme" });
+  const offer = merchantAction.closest("li");
+
+  expect(offer).not.toBeNull();
+  const offerItem = within(offer as HTMLElement);
+  expect(merchantAction).toHaveAttribute(
+    "href",
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+  );
+  expect(offerItem.getByText("199.99 USD")).toBeVisible();
+  const priceObservedAt = offerItem.getByText("2026-06-01", { selector: "time" });
+
+  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
+  expect(priceObservedAt).toHaveAttribute(
+    "datetime",
+    "2026-06-01T00:00:00Z"
+  );
+  expect(offerItem.getByRole("list", { name: "Acme price history" })).toBeVisible();
+  expect(offerItem.getByText("249.99 USD")).toBeVisible();
+  expect(offerItem.getByText("More price history available.")).toBeVisible();
+  expect(offerItem.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
+  expect(offerItem.getByText("SAVE20")).toBeVisible();
+  expect(offerItem.getByText("20.00 USD")).toBeVisible();
+  expect(offerItem.getByText("Valid through 2026-07-01")).toBeVisible();
+  expect(offerItem.getByText("More coupons available.")).toBeVisible();
 });
 
 test("product detail loader preloads product detail and active offers through Relay", async () => {
