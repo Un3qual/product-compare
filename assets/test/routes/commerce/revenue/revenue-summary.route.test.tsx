@@ -1,4 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
@@ -360,6 +362,57 @@ test("revenue date presets use the browser's local calendar day ahead of UTC", (
   }
 });
 
+test.each([
+  ["America/Los_Angeles", "2026-06-28T06:30:00.000Z", "2026-06-27"],
+  ["Asia/Tokyo", "2026-06-27T16:30:00.000Z", "2026-06-28"]
+])(
+  "revenue presets hydrate without mismatches and then use the %s local day",
+  async (timeZone, currentTime, expectedTo) => {
+    const originalTimeZone = process.env.TZ;
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    process.env.TZ = "UTC";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(currentTime));
+    mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+    const container = document.createElement("div");
+    let root: ReturnType<typeof hydrateRoot> | null = null;
+
+    try {
+      const app = (
+        <MemoryRouter>
+          <RevenueSummaryRoute />
+        </MemoryRouter>
+      );
+      container.innerHTML = renderToString(app);
+      document.body.append(container);
+      process.env.TZ = timeZone;
+
+      await act(async () => {
+        root = hydrateRoot(container, app);
+        await Promise.resolve();
+      });
+      expect(
+        Array.from(container.querySelectorAll("a")).find(
+          (link) => link.textContent === "Last 7 days"
+        )
+      ).toHaveAttribute("href", expect.stringContaining(`to=${expectedTo}`));
+      expect(
+        consoleError.mock.calls.filter(([message]) =>
+          /hydrat/i.test(String(message))
+        )
+      ).toEqual([]);
+    } finally {
+      if (root) {
+        await act(async () => root?.unmount());
+      }
+      container.remove();
+      vi.useRealTimers();
+      process.env.TZ = originalTimeZone;
+      consoleError.mockRestore();
+    }
+  }
+);
+
 test("buildRevenueDatePresetLinks is deterministic for a fixed date and preserves filters", () => {
   const currentDate = new Date("2026-06-27T12:00:00.000Z");
   const presetLinks = buildRevenueDatePresetLinks(
@@ -406,15 +459,13 @@ test("buildRevenueDatePresetLinks skips invalid ranges", () => {
 });
 
 test("revenue route updates filter field values when loader filters change", () => {
-  mockedUseLoaderData.mockReturnValueOnce(
-    buildReadyLoaderData({
-      currency: "USD",
-      from: "2026-05-01",
-      network: "impact",
-      to: "2026-05-31"
-    })
-  );
-  mockedUseLoaderData.mockReturnValueOnce(buildReadyLoaderData({ currency: "USD" }));
+  let loaderData = buildReadyLoaderData({
+    currency: "USD",
+    from: "2026-05-01",
+    network: "impact",
+    to: "2026-05-31"
+  });
+  mockedUseLoaderData.mockImplementation(() => loaderData);
 
   const { rerender } = render(
     <MemoryRouter>
@@ -427,6 +478,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
   const reportSummary = screen.getByRole("region", { name: "Summary" });
 
+  loaderData = buildReadyLoaderData({ currency: "USD" });
   rerender(
     <MemoryRouter>
       <RevenueSummaryRoute />

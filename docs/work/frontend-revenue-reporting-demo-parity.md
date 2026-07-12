@@ -5,10 +5,25 @@
 - Status: ready (revenue summary view-data contract)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after post-stack validation (22 focused tests)
+- Last verified: 2026-07-12 after hydration-safe local-date validation (24 focused tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
+
+## Hydration-Safe Local Date Presets
+
+- Status: done on 2026-07-12.
+- Server rendering and the first hydration render now share a stable null date
+  snapshot. After hydration, the route acquires the browser-local date and
+  builds the existing last-7-days, last-30-days, and month-to-date links.
+- The local-calendar contract remains intact both behind and ahead of UTC;
+  preset query ordering and preserved network/currency filters are unchanged.
+- RED: a UTC server render hydrated in Los Angeles or Tokyo retained the wrong
+  day and emitted a hydration mismatch; the feed review timestamp also varied
+  with the host time zone.
+- GREEN: revenue route and loader suites passed 24 tests, including both time-
+  zone offsets; the combined compare, ingestion, offer, revenue, and SSR run
+  passed 207 tests. `bun run typecheck` and `git diff --check` passed.
 
 ## Batch Status
 

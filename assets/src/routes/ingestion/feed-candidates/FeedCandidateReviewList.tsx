@@ -6,6 +6,7 @@ import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { formatProductDateTime } from "../../product-formatting";
 import {
   feedCandidatesReviewStatusToUrlParam,
   feedCandidatesSortToUrlParam,
@@ -17,11 +18,6 @@ export type FeedCandidatesConnection = NonNullable<
 >;
 export type FeedCandidate = FeedCandidatesConnection["edges"][number]["node"];
 export type ReviewStatus = "PENDING" | "SHORTLISTED" | "DISMISSED";
-
-const reviewedAtFormatter = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "short"
-});
 
 const styles = create({
   list: {
@@ -409,5 +405,5 @@ function formatReviewedAt(value: string | null | undefined) {
     return "";
   }
 
-  return reviewedAtFormatter.format(date);
+  return formatProductDateTime(date);
 }

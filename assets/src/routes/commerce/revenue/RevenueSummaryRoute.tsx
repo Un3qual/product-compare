@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
@@ -21,7 +21,10 @@ type RevenueSummary = NonNullable<RevenueSummaryRouteQuery["response"]["revenueS
 export function RevenueSummaryRoute() {
   const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
   const activeFilters = buildActiveFilterItems(loaderData.filters);
-  const datePresetLinks = buildRevenueDatePresetLinks(loaderData.filters);
+  const datePresetLinks = buildRevenueDatePresetLinks(
+    loaderData.filters,
+    useHydratedLocalDate()
+  );
 
   return (
     <PageShell
@@ -115,8 +118,17 @@ function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {
 
 export function buildRevenueDatePresetLinks(
   filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">,
-  currentDate = new Date()
+  currentDate: Date | null = new Date()
 ): RevenueDatePresetLink[] {
+  if (currentDate === null) {
+    return [
+      {
+        label: "Clear dates",
+        to: buildRevenueDatePresetSearchPath(filters, null, null)
+      }
+    ];
+  }
+
   const baseDate = toLocalDateOnly(currentDate);
   const toDate = formatDate(baseDate);
   const monthStartDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
@@ -158,6 +170,16 @@ export function buildRevenueDatePresetLinks(
   }
 
   return links;
+}
+
+function useHydratedLocalDate() {
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+  return currentDate;
 }
 
 function buildRevenueDatePresetSearchPath(

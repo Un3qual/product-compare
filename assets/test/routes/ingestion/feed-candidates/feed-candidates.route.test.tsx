@@ -224,13 +224,8 @@ test("feed candidates route reflects selected fit-score sort from loader data", 
 test("feed candidates route renders existing review metadata", () => {
   renderFeedCandidatesRoute();
 
-  const reviewedAt = new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date("2026-06-04T21:15:00.000000Z"));
-
   expect(screen.getAllByText("Prioritized for launch review.")).toHaveLength(2);
-  expect(screen.getByText(`Reviewed ${reviewedAt}`)).toBeInTheDocument();
+  expect(screen.getByText("Reviewed Jun 4, 2026, 9:15 PM")).toBeInTheDocument();
 });
 
 test("feed candidates route omits review feedback before an action completes", () => {

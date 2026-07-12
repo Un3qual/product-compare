@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode, useEffect, useRef, useState } from "react";
+import { Suspense, type ReactNode, useRef, useState } from "react";
 import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as TabsTrigger } from "@radix-ui/react-tabs";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
@@ -75,54 +75,32 @@ const styles = create({
 
 interface SaveFeedbackState {
   error: string | null;
-  inFlightSelectionKey: string | null;
+  isInFlight: boolean;
   message: string | null;
-  selectionKey: string | null;
 }
 
 export function CompareRoute() {
   const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
   const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
+
+  return <CompareSelectionRoute key={selectionKey} loaderData={loaderData} />;
+}
+
+function CompareSelectionRoute({
+  loaderData
+}: {
+  loaderData: CompareRouteLoaderData;
+}) {
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
     error: null,
-    inFlightSelectionKey: null,
-    message: null,
-    selectionKey: null
+    isInFlight: false,
+    message: null
   });
   const isSaveInFlightRef = useRef(false);
-  const activeSelectionKeyRef = useRef<string | null>(null);
-  const activeSaveRequestRef = useRef<{ id: number; selectionKey: string } | null>(null);
+  const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
     useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
-  const activeSaveFeedback =
-    saveFeedback.selectionKey === selectionKey
-      ? saveFeedback
-      : {
-          error: null,
-          inFlightSelectionKey: null,
-          message: null
-        };
-
-  if (activeSelectionKeyRef.current !== selectionKey) {
-    activeSelectionKeyRef.current = selectionKey;
-    activeSaveRequestRef.current = null;
-    isSaveInFlightRef.current = false;
-  }
-
-  useEffect(() => {
-    setSaveFeedback((currentSaveFeedback) =>
-      currentSaveFeedback.selectionKey === null ||
-      currentSaveFeedback.selectionKey === selectionKey
-        ? currentSaveFeedback
-        : {
-            error: null,
-            inFlightSelectionKey: null,
-            message: null,
-            selectionKey: null
-          }
-    );
-  }, [selectionKey]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -135,16 +113,14 @@ export function CompareRoute() {
 
     isSaveInFlightRef.current = true;
     const saveRequest = {
-      id: nextSaveRequestIdRef.current + 1,
-      selectionKey
+      id: nextSaveRequestIdRef.current + 1
     };
     nextSaveRequestIdRef.current = saveRequest.id;
     activeSaveRequestRef.current = saveRequest;
     setSaveFeedback({
       error: null,
-      inFlightSelectionKey: selectionKey,
-      message: null,
-      selectionKey
+      isInFlight: true,
+      message: null
     });
 
     commitRouteMutation(
@@ -169,16 +145,14 @@ export function CompareRoute() {
           ) {
             setSaveFeedback({
               error: null,
-              inFlightSelectionKey: null,
-              message: "Comparison saved.",
-              selectionKey
+              isInFlight: false,
+              message: "Comparison saved."
             });
           } else {
             setSaveFeedback({
               error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-              inFlightSelectionKey: null,
-              message: null,
-              selectionKey
+              isInFlight: false,
+              message: null
             });
           }
 
@@ -192,9 +166,8 @@ export function CompareRoute() {
 
           setSaveFeedback({
             error: DEFAULT_ROUTE_ERROR_MESSAGE,
-            inFlightSelectionKey: null,
-            message: null,
-            selectionKey
+            isInFlight: false,
+            message: null
           });
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
@@ -207,9 +180,8 @@ export function CompareRoute() {
 
         setSaveFeedback({
           error: DEFAULT_ROUTE_ERROR_MESSAGE,
-          inFlightSelectionKey: null,
-          message: null,
-          selectionKey
+          isInFlight: false,
+          message: null
         });
         activeSaveRequestRef.current = null;
         isSaveInFlightRef.current = false;
@@ -218,7 +190,7 @@ export function CompareRoute() {
   }
 
   if (loaderData.status === "ready") {
-    const saveInFlight = activeSaveFeedback.inFlightSelectionKey === selectionKey;
+    const saveInFlight = saveFeedback.isInFlight;
 
     return (
       <CompareShell title="Compare products">
@@ -233,7 +205,7 @@ export function CompareRoute() {
                 {saveInFlight ? "Saving comparison..." : "Save comparison"}
               </Button>
               <p aria-label="Save comparison status" aria-live="polite" role="status">
-                {activeSaveFeedback.message ?? ""}
+                {saveFeedback.message ?? ""}
               </p>
               <CompareSelectionTray
                 items={loaderData.products.map((product) => ({
@@ -262,8 +234,8 @@ export function CompareRoute() {
           }
           label="Comparison workspace"
         >
-          {activeSaveFeedback.error ? (
-            <FeedbackState kind="error" title={activeSaveFeedback.error} />
+          {saveFeedback.error ? (
+            <FeedbackState kind="error" title={saveFeedback.error} />
           ) : null}
           <CompareSpecModeControls
             selectedSlugs={loaderData.slugs}
@@ -373,13 +345,10 @@ function CompareSpecModeControls({
 }
 
 function isActiveSaveRequest(
-  activeSaveRequest: { id: number; selectionKey: string } | null,
-  saveRequest: { id: number; selectionKey: string }
+  activeSaveRequest: { id: number } | null,
+  saveRequest: { id: number }
 ) {
-  return (
-    activeSaveRequest?.id === saveRequest.id &&
-    activeSaveRequest.selectionKey === saveRequest.selectionKey
-  );
+  return activeSaveRequest?.id === saveRequest.id;
 }
 
 function buildSavedComparisonName(

@@ -5,7 +5,7 @@
 - Status: ready (serial matrix and decision-summary data contracts)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after post-stack validation (105 compare tests)
+- Last verified: 2026-07-12 after compare-save and formatting hardening (108 compare tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -16,6 +16,22 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Compare Save And Deterministic Formatting Hardening
+
+- Status: done on 2026-07-12.
+- Compare save request refs, pending state, errors, and success feedback now live
+  in an inner component keyed to the selected product identity. A selection
+  render that suspends before commit cannot mutate or invalidate the still-
+  visible selection's request.
+- Specification labels and offer merchant names use the product's explicit
+  `en-US` ordering rather than the runtime default locale.
+- RED: the abandoned-transition regression left the visible save completion
+  blank, and Swedish-default probes ordered `Zebra` before `Älg` in both the
+  specification matrix and merchant sort.
+- GREEN: the compare suite passed 108 tests; the combined compare, ingestion,
+  offer, revenue, and SSR run passed 207 tests. `bun run typecheck` and
+  `git diff --check` passed.
 
 ## Specification Matrix Data Contract
 

@@ -186,3 +186,23 @@ output, a clean working tree, and an independent whole-branch review.
   passed. Relay validation compiled 30 reader, 29 normalization, and 29
   operation-text documents without pending changes after the required
   Watchman sandbox-permission retry.
+
+### 2026-07-12 — Milestone 6: compare-save state and hydration-stable formatting
+
+- Compare mutation refs and feedback now belong to a selected-product-keyed
+  committed inner component. There is no render-time ref mutation or effect-
+  driven selection reset; a save callback can settle the visible selection
+  while a replacement selection suspends and is abandoned.
+- A product-specific formatting helper pins visible text ordering to `en-US`
+  and reviewed timestamps to `en-US` in UTC. The matrix, offer merchant sort,
+  and feed-candidate review timestamp no longer inherit host defaults.
+- Revenue presets start from the same null snapshot on the server and first
+  hydration render, then acquire the browser-local calendar date after
+  hydration. Los Angeles and Tokyo regressions preserve the intended local day
+  on opposite sides of UTC without `suppressHydrationWarning`.
+- RED evidence: six focused regressions reproduced the abandoned save
+  completion, Swedish-default matrix and merchant ordering, Pacific timestamp,
+  and UTC-to-Los-Angeles/Tokyo hydration date defects.
+- GREEN evidence: the focused compare, ingestion, offer, revenue, revenue-
+  loader, and SSR suites passed 207 tests with zero failures. `bun run
+  typecheck` and `git diff --check` passed.
