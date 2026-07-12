@@ -2,9 +2,13 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import type { CouponDiscountType } from "../../../src/__generated__/OfferDiscoveryRouteQuery.graphql";
 import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
 import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
+import type {
+  ActiveCouponsConnection,
+  OfferNode,
+  PriceHistoryConnection
+} from "../../../src/routes/offers/offer-discovery-data";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/TrackedCommerceClickAction";
 
@@ -1434,63 +1438,9 @@ type SelectedProductNode =
     }
   | null;
 
-type OfferNode = {
-  id: string;
-  url: string;
-  currency: string;
-  lastSeenAt: unknown;
-  isActive: boolean;
-  merchant: {
-    id: string;
-    name: string;
-    domain: string;
-  } | null;
-  product: {
-    id: string;
-    name: string;
-    slug: string;
-  } | null;
-  latestPrice: {
-    id: string;
-    price: string;
-    observedAt: unknown;
-  } | null;
-  activeCoupons: CouponConnection;
-  priceHistory: PriceHistoryConnection;
-};
-
-type CouponConnection = {
-  edges: Array<{
-    cursor: string;
-    node: {
-      code: string;
-      description: string | null;
-      discountType: CouponDiscountType;
-      discountValue: string | number | null;
-      currency: string | null;
-      validTo: unknown;
-      terms: string | null;
-    };
-  }>;
-  pageInfo: {
-    hasNextPage: boolean;
-  };
-};
-
-type PriceHistoryConnection = {
-  edges: Array<{
-    node: {
-      id: string;
-      price: string | number | null;
-      observedAt: unknown;
-    };
-  }>;
-  pageInfo: {
-    hasNextPage: boolean;
-  };
-};
-
-function buildCouponConnection(edges: CouponConnection["edges"]): CouponConnection {
+function buildCouponConnection(
+  edges: ActiveCouponsConnection["edges"]
+): ActiveCouponsConnection {
   return {
     edges,
     pageInfo: {

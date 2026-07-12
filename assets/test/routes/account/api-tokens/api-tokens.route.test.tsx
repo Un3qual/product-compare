@@ -163,30 +163,48 @@ afterEach(() => {
 test("API token controls render status navigation, creation state, and expiration presets", () => {
   const expiresAtInputRef = createRef<HTMLInputElement>();
   const expiresAtPresetInputRef = createRef<HTMLInputElement>();
+  const onCreate = vi.fn();
+  const onCreateDialogOpenChange = vi.fn();
 
-  render(
+  const view = render(
+    <MemoryRouter>
+      <ApiTokenControls
+        createDialogOpen={false}
+        createError={null}
+        expiresAtInputRef={expiresAtInputRef}
+        expiresAtPresetInputRef={expiresAtPresetInputRef}
+        onCreate={onCreate}
+        onCreateDialogOpenChange={onCreateDialogOpenChange}
+        submitting={false}
+        tokenStatus="active"
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "All" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=all"
+  );
+  expect(screen.getByRole("link", { name: "Active" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+
+  view.rerender(
     <MemoryRouter>
       <ApiTokenControls
         createDialogOpen
         createError="Token creation failed."
         expiresAtInputRef={expiresAtInputRef}
         expiresAtPresetInputRef={expiresAtPresetInputRef}
-        onCreate={vi.fn()}
-        onCreateDialogOpenChange={vi.fn()}
+        onCreate={onCreate}
+        onCreateDialogOpenChange={onCreateDialogOpenChange}
         submitting
         tokenStatus="active"
       />
     </MemoryRouter>
   );
 
-  expect(screen.getByRole("link", { hidden: true, name: "All" })).toHaveAttribute(
-    "href",
-    "/account/api-tokens?status=all"
-  );
-  expect(screen.getByRole("link", { hidden: true, name: "Active" })).toHaveAttribute(
-    "aria-current",
-    "page"
-  );
   expect(screen.getByRole("form", { name: "Create API token" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "30 days" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "90 days" })).toBeInTheDocument();

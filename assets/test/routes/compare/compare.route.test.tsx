@@ -557,8 +557,16 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
   const rows = within(screen.getByRole("table", { name: "All specifications" })).getAllByRole(
     "row"
   );
-  expect(rows[1]).toHaveTextContent("Panel typeIPSOLED");
-  expect(rows[2]).toHaveTextContent("Refresh rate144 HzNot available");
+  expect(within(rows[1]).getByRole("rowheader")).toHaveTextContent("Panel type");
+  expect(within(rows[1]).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+    "IPS",
+    "OLED"
+  ]);
+  expect(within(rows[2]).getByRole("rowheader")).toHaveTextContent("Refresh rate");
+  expect(within(rows[2]).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+    "144 Hz",
+    "Not available"
+  ]);
 });
 
 test("compare path helpers normalize selected slugs and cap serialized route query strings", () => {
