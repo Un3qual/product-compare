@@ -10,6 +10,7 @@ import {
   OneTimeApiToken
 } from "../../../../src/routes/account/api-tokens/ApiTokenControls";
 import { ApiTokenItem } from "../../../../src/routes/account/api-tokens/ApiTokenItem";
+import { apiTokenIsActive } from "../../../../src/routes/account/api-tokens/api-token-status";
 import { buildApiTokenExpiresAtInputValue } from "../../../../src/routes/account/api-tokens/date-presets";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
@@ -159,6 +160,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+test.each([
+  ["without an expiration", BUILD_BOT_TOKEN, true],
+  ["before expiration", ACTIVE_TOKEN, true],
+  ["after expiration", EXPIRED_TOKEN, false],
+  ["after revocation", REVOKED_TOKEN, false],
+  ["with an invalid expiration", { ...ACTIVE_TOKEN, expiresAt: "invalid" }, true]
+])("API token lifecycle reports the expected state %s", (_caseName, token, expected) => {
+  expect(apiTokenIsActive(token)).toBe(expected);
 });
 
 test("API token item presents token lifecycle details and delegates actions", () => {

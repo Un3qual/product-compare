@@ -4,6 +4,7 @@ import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { apiTokenIsActive } from "./api-token-status";
 import {
   API_TOKEN_EXPIRES_AT_PRESETS,
   buildApiTokenExpiresAtInputValue
@@ -34,7 +35,7 @@ const styles = create({
   }
 });
 
-export type ApiTokenItemProps = {
+type ApiTokenItemProps = {
   onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   revokeError: string | null;
@@ -250,17 +251,4 @@ function apiTokenStatusLabel(token: ApiTokenSummary) {
   }
 
   return apiTokenIsActive(token) ? "Active token" : "Expired token";
-}
-
-export function apiTokenIsActive(token: ApiTokenSummary) {
-  if (token.revokedAt) {
-    return false;
-  }
-
-  if (!token.expiresAt) {
-    return true;
-  }
-
-  const expiresAt = new Date(token.expiresAt).getTime();
-  return Number.isNaN(expiresAt) || expiresAt > Date.now();
 }

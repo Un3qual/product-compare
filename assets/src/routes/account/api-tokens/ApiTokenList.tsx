@@ -5,7 +5,8 @@ import apiTokensRouteQuery, {
   type ApiTokensRouteQuery
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
-import { ApiTokenItem, apiTokenIsActive } from "./ApiTokenItem";
+import { ApiTokenItem } from "./ApiTokenItem";
+import { apiTokenIsActive } from "./api-token-status";
 import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import { summarizeApiTokensPage } from "./loader";
 
@@ -17,9 +18,7 @@ const styles = create({
   }
 });
 
-export { apiTokenIsActive } from "./ApiTokenItem";
-
-export type ApiTokenListLifecycleProps = {
+type ApiTokenListLifecycleProps = {
   onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
@@ -154,13 +153,11 @@ export function ApiTokenList({
   );
 }
 
-
 function apiTokenQueryKey(tokenQuery: ApiTokenQueryDescriptor) {
   return `${tokenQuery.__relayQuery.operationName}:${JSON.stringify(
     stableJsonValue(tokenQuery.__relayQuery.variables)
   )}`;
 }
-
 
 function apiTokenMatchesStatus(
   token: ApiTokenSummary,
