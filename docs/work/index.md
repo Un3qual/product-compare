@@ -128,36 +128,7 @@ tests; TypeScript and diff hygiene were green.
 
 ## Ready Work
 
-### 1. Merchant Directory View Extraction
-
-Status: ready
-Lane: Frontend merchant discovery
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: extract page-size controls, visible-page filtering, merchant list
-and safe website presentation, empty states, and pagination while preserving
-route-owned Relay reads, normalization, URL safety, and path construction.
-Owned paths:
-
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/src/routes/merchants/MerchantDirectoryView.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing merchant directory route suite remains the characterization
-  contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Merchant presentation is isolated without changing query,
-filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
-
-### 2. Saved Comparison View-State Extraction
+### 1. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -187,7 +158,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 3. Credential Auth Form Presentation Extraction
+### 2. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -217,7 +188,7 @@ Exit condition: Login and registration share only credential presentation;
 GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
 updates, and navigation remain unchanged.
 
-### 4. Product Detail Decision Actions Presentation
+### 3. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -245,7 +216,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 5. Revenue Summary View-Data Contract
+### 4. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -275,7 +246,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 6. Specification Matrix Data Contract
+### 5. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -313,6 +284,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 merchant-directory view extraction is complete.
+`MerchantDirectoryView` owns visible-page filtering, merchant list and safe-link
+presentation, empty/no-match states, and pagination; its focused controls remain
+presentation-owned while the route retains the workspace around Relay suspense
+and errors, connection normalization, URL safety, and path construction. Review
+follow-up restored the shell during loading, query error, and null-data states.
+The focused suite passed 30 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 compare picker-view extraction is complete.
 `CompareProductPickerView` now owns the heading, loaded-option filter state,
