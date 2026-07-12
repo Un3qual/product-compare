@@ -120,39 +120,15 @@ navigation, and saved-comparison, catalog-product-list, and revenue-summary
 presentation live in focused sibling components while their route owners retain
 data, mutation, URL, suspense, and error orchestration.
 
+The 2026-07-12 affiliate merchant-choice pagination batch is complete. The
+setup route now exposes truthful First/Next navigation from the loader-owned
+page size and Relay cursor state without changing merchant selection or any of
+the four mutation lifecycles. The focused loader and route suites passed 27
+tests; TypeScript and diff hygiene were green.
+
 ## Ready Work
 
-### 1. Affiliate Setup Merchant Pagination
-
-Status: ready
-Lane: Frontend affiliate setup
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: expose truthful First/Next navigation for merchant choices using
-the loader's existing normalized `first`/`after` state and the Relay
-connection's `pageInfo`.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/pagination.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-demo-parity.md`
-
-Prerequisites:
-
-- Existing affiliate setup loader and route suites remain the characterization
-  contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Loaded merchant pages expose correct First/Next links without
-changing merchant selection or any affiliate mutation behavior.
-
-### 2. Merchant Directory View Extraction
+### 1. Merchant Directory View Extraction
 
 Status: ready
 Lane: Frontend merchant discovery
@@ -181,7 +157,7 @@ Verification:
 Exit condition: Merchant presentation is isolated without changing query,
 filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
 
-### 3. Saved Comparison View-State Extraction
+### 2. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -211,7 +187,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 4. Credential Auth Form Presentation Extraction
+### 3. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
