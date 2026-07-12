@@ -261,7 +261,7 @@ export function RevenueSummaryMetrics(props: {
 
 - The route passes its existing summary values through the public boundary; the view does not call `useLoaderData`, Relay hooks, or build URL query strings.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -271,17 +271,17 @@ cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route
 
 Expected: the focused revenue summary suite passes before moving presentation.
 
-- [ ] **Step 2: Add behavior assertions for controls and metrics**
+- [x] **Step 2: Add behavior assertions for controls and metrics**
 
 In `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`, retain existing loader error, missing-currency, invalid-date-range, suppression, and query assertions. Add a populated-summary assertion that verifies `Revenue filters`, all four named fields, `Apply filters`, `Clear filters`, `Revenue date presets`, `Active revenue filters`, and the `Summary` metrics label remain available after extraction.
 
-- [ ] **Step 3: Create the typed summary-view presentation**
+- [x] **Step 3: Create the typed summary-view presentation**
 
 Move the filter form, date-preset link list, active-filter list, `ContextRail`, and `SummaryStrip`/suppression-status markup into `RevenueSummaryView.tsx`. Keep the existing `filters` StyleX style in that file. The filter form preserves the exact `method="get"`, field names, autocomplete values, currency max length, submit text, and `/commerce/revenue` clear link.
 
 `RevenueSummaryView` renders the context rail from `filters`, `datePresetLinks`, and `activeFilters`, then renders `children` in the existing workspace layout. `RevenueSummaryMetrics` renders the existing suppression wording and `SummaryStrip` from the supplied values. Neither function evaluates loader status, reads a preloaded query, or constructs date-preset URLs.
 
-- [ ] **Step 4: Keep loader, Relay, suspense, errors, and filter orchestration in the route**
+- [x] **Step 4: Keep loader, Relay, suspense, errors, and filter orchestration in the route**
 
 In `RevenueSummaryRoute.tsx`, retain `revenueSummaryFilterKey`, `buildRevenueDatePresetLinks`, `buildActiveFilterItems`, `buildRevenueSummaryMetrics`, the loader status branches, `ResettableErrorBoundary`, and `Suspense`. Build the view props in the route:
 
@@ -300,7 +300,7 @@ const activeFilters = buildActiveFilterItems(loaderData.filters);
 
 Make `RevenueSummaryPanel` pass route-derived metrics and `data.revenueSummary.suppression` to `RevenueSummaryMetrics`. Preserve every unavailable, currency-required, and invalid-date fallback in `RevenueSummaryRoute.tsx`.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -312,7 +312,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/affiliate-revenue-attribution.md` naming `RevenueSummaryView` and `RevenueSummaryMetrics`, route-retained loader/Relay/filter/suspense/error orchestration, and the Step 5 command results.
 
