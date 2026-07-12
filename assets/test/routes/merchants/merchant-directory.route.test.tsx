@@ -3,6 +3,7 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
+import { MerchantDirectoryView } from "../../../src/routes/merchants/MerchantDirectoryView";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 
 const {
@@ -93,6 +94,59 @@ test("merchant directory renders merchant names and domains", () => {
     expect.anything(),
     MERCHANT_DIRECTORY_QUERY_REF
   );
+});
+
+test("merchant directory view renders controls, safe actions, and page navigation", () => {
+  renderMerchantDirectoryView();
+
+  const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
+  expect(pageSizeSelect.closest("form")).toHaveAttribute("action", "/merchants");
+  expect(pageSizeSelect).toHaveValue("35");
+
+  const safeMerchant = getMerchantListItem("Acme Market");
+  expect(
+    within(safeMerchant).getByRole("link", { name: "Visit merchant website" })
+  ).toHaveAttribute("href", "https://acme.example");
+  expect(
+    within(getMerchantListItem("Unsafe Seller")).queryByRole("link", {
+      name: "Visit merchant website"
+    })
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
+    "href",
+    "/merchants?first=35"
+  );
+  expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
+    "href",
+    "/merchants?first=35&after=next-cursor"
+  );
+});
+
+test("merchant directory view filters names case-insensitively and explains no matches", () => {
+  renderMerchantDirectoryView();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+    target: { value: "aCmE" }
+  });
+
+  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Unsafe Seller" })).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+    target: { value: "missing" }
+  });
+
+  expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
+});
+
+test("merchant directory view explains when its result page is empty", () => {
+  renderMerchantDirectoryView({ merchants: [] });
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("searchbox", { name: "Filter merchants on this page" })).toBeNull();
 });
 
 test("merchant directory normalizes domain-only website links to HTTPS", () => {
@@ -434,6 +488,42 @@ function renderMerchantDirectoryRoute() {
   return render(
     <MemoryRouter>
       <MerchantDirectoryRoute />
+    </MemoryRouter>
+  );
+}
+
+function renderMerchantDirectoryView({
+  merchants = [
+    {
+      id: "merchant-1",
+      name: "Acme Market",
+      domain: "acme.example",
+      websiteHref: "https://acme.example"
+    },
+    {
+      id: "merchant-unsafe",
+      name: "Unsafe Seller",
+      domain: "http://localhost",
+      websiteHref: null
+    }
+  ]
+}: {
+  merchants?: Array<{
+    id: string;
+    name: string;
+    domain: string;
+    websiteHref: string | null;
+  }>;
+} = {}) {
+  return render(
+    <MemoryRouter>
+      <MerchantDirectoryView
+        firstHref="/merchants?first=35"
+        formAction="/merchants"
+        merchants={merchants}
+        nextHref="/merchants?first=35&after=next-cursor"
+        pagination={{ after: "previous-cursor", first: 35 }}
+      />
     </MemoryRouter>
   );
 }
