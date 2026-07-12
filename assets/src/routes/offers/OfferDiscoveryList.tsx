@@ -1,5 +1,4 @@
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
@@ -7,19 +6,10 @@ import { Pagination } from "../../ui/components/navigation/Pagination";
 import { StatusBadge } from "../../ui/components/status/StatusBadge";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalHttpUrlHref } from "../external-links";
+import { graphQLDateTimeContext } from "../graphql-datetime";
+import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
+import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "../offer-snapshot";
 import {
-  graphQLDateTimeContext
-} from "../graphql-datetime";
-import {
-  formatCouponAvailabilityCount,
-  formatOfferCount
-} from "../offer-formatting";
-import {
-  buildOfferSnapshotSummary,
-  type OfferSnapshotSummary
-} from "../offer-snapshot";
-import {
-  activeVisibleMerchant,
   discountLabel,
   emptyCouponConnection,
   emptyPriceHistoryConnection,
@@ -32,19 +22,18 @@ import {
   renderableOffers,
   sortedRenderableOffers,
   visibleLowestPriceLabel,
-  visibleMerchants,
   type OfferConnection,
   type OfferNode,
   type ActiveCouponsConnection,
   type CouponNode,
   type PriceHistoryConnection,
   type PriceHistoryRow,
-  type RenderableOffer,
-  type VisibleMerchant
+  type RenderableOffer
 } from "./offer-discovery-data";
 import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./loader";
 import { offerDiscoveryPath } from "./paths";
 import { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";
+import { VisibleMerchantFilters } from "./VisibleMerchantFilters";
 
 type CouponEdge = ActiveCouponsConnection["edges"][number];
 const styles = create({
@@ -73,10 +62,6 @@ const styles = create({
   muted: {
     color: tokens.textSecondary,
     margin: 0
-  },
-  filterSection: {
-    display: "grid",
-    gap: "0.75rem"
   },
   offerDecision: {
     alignItems: "start",
@@ -335,67 +320,6 @@ function OfferMerchantAction({
       <a href={directMerchantHref}>{merchantName}</a>
     </div>
   );
-}
-
-function VisibleMerchantFilters({
-  filters,
-  offers
-}: {
-  filters: OfferDiscoveryFilters;
-  offers: ReadonlyArray<RenderableOffer>;
-}) {
-  const merchants = visibleMerchants(offers);
-  const activeMerchant = activeVisibleMerchant(filters.merchantId, merchants);
-  const filterableMerchants = merchants.filter((merchant) => merchant.id !== filters.merchantId);
-
-  if (isEmptyMerchantFilterSection(activeMerchant, filterableMerchants)) {
-    return null;
-  }
-
-  return (
-    <section
-      aria-label="Merchant filters on this page"
-      {...props(styles.filterSection)}
-    >
-      <ActiveMerchantFilterSummary merchant={activeMerchant} />
-      <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
-    </section>
-  );
-}
-
-function ActiveMerchantFilterSummary({ merchant }: { merchant: VisibleMerchant | null }) {
-  return merchant ? <p>{`Filtered to ${merchant.name}`}</p> : null;
-}
-
-function VisibleMerchantFilterLinks({
-  filters,
-  merchants
-}: {
-  filters: OfferDiscoveryFilters;
-  merchants: ReadonlyArray<VisibleMerchant>;
-}) {
-  if (merchants.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul>
-      {merchants.map((merchant) => (
-        <li key={merchant.id}>
-          <Link to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}>
-            {`Filter to ${merchant.name}`}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function isEmptyMerchantFilterSection(
-  activeMerchant: VisibleMerchant | null,
-  filterableMerchants: ReadonlyArray<VisibleMerchant>
-) {
-  return !activeMerchant && filterableMerchants.length === 0;
 }
 
 function OfferMerchantDomain({ domain }: { domain: string | null }) {

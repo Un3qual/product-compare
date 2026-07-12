@@ -9,7 +9,6 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Button } from "../../ui/primitives/Button";
-import { Label } from "../../ui/primitives/Label";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
@@ -88,6 +87,7 @@ function CompareProductPicker({
   const [filterText, setFilterText] = useState("");
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
   const filterInputId = useId();
+  const filterLabelId = `${filterInputId}-label`;
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
@@ -120,16 +120,17 @@ function CompareProductPicker({
   return (
     <section {...props(styles.picker)}>
       <h2 {...props(styles.title)}>{heading}</h2>
-      <Label htmlFor={filterInputId} {...props(styles.filter)}>
-        Filter loaded products
+      <div {...props(styles.filter)}>
+        <span id={filterLabelId}>Filter loaded products</span>
         <TextField
+          aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
           onChange={(event) => setFilterText(event.currentTarget.value)}
           type="search"
           value={filterText}
         />
-      </Label>
+      </div>
       <CompareProductPickerOptions
         availableProducts={visibleProducts}
         hasFilter={Boolean(normalizedFilterText)}

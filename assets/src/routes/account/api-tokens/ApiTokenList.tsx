@@ -7,7 +7,6 @@ import apiTokensRouteQuery, {
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
-import { Label } from "../../../ui/primitives/Label";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
@@ -286,6 +285,7 @@ function ApiTokenActions({
   const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
   const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
   const rotateLabelInputId = useId();
+  const rotateLabelId = `${rotateLabelInputId}-label`;
 
   if (token.revokedAt) {
     return null;
@@ -302,15 +302,16 @@ function ApiTokenActions({
           onSubmit={onRotateSubmit}
           {...props(styles.rotateForm)}
         >
-          <Label htmlFor={rotateLabelInputId}>
-            {`Replacement label for ${displayLabel}`}
+          <div>
+            <span id={rotateLabelId}>{`Replacement label for ${displayLabel}`}</span>
             <TextField
+              aria-labelledby={rotateLabelId}
               autoComplete="off"
               id={rotateLabelInputId}
               name="label"
               type="text"
             />
-          </Label>
+          </div>
           <label>
             {`Replacement expiry for ${displayLabel}`}
             <input

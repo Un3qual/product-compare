@@ -15,7 +15,6 @@ import { SectionHeading } from "../../ui/components/layout/SectionHeading";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
-import { Label } from "../../ui/primitives/Label";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalWebsiteHref } from "../external-links";
@@ -159,6 +158,7 @@ function MerchantDirectoryList({
 }) {
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();
+  const filterLabelId = `${filterInputId}-label`;
   const merchants = connection.edges.map(({ node }) => node);
 
   if (merchants.length === 0) {
@@ -182,16 +182,17 @@ function MerchantDirectoryList({
             : `${merchants.length} merchants on this page`
         }
       />
-      <Label htmlFor={filterInputId} {...props(styles.filter)}>
-        Filter merchants on this page
+      <div {...props(styles.filter)}>
+        <span id={filterLabelId}>Filter merchants on this page</span>
         <TextField
+          aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
           onChange={(event) => setFilterText(event.currentTarget.value)}
           type="search"
           value={filterText}
         />
-      </Label>
+      </div>
       {visibleMerchants.length === 0 ? (
         <p>No merchants on this page match this filter.</p>
       ) : (

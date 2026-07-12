@@ -1461,7 +1461,10 @@ test("product picker filters loaded product names without hiding pagination", ()
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
   expect(filter.id).not.toBe("");
-  expect(filter.closest("label")).toHaveAttribute("for", filter.id);
+  expect(filter).toHaveAttribute("aria-labelledby");
+  expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
+    "Filter loaded products"
+  );
 
   fireEvent.change(filter, { target: { value: "bEtA" } });
 

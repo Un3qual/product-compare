@@ -294,7 +294,10 @@ test("merchant directory filters visible-page names without hiding pagination", 
   const filter = screen.getByRole("searchbox", { name: "Filter merchants on this page" });
 
   expect(filter.id).not.toBe("");
-  expect(filter.closest("label")).toHaveAttribute("for", filter.id);
+  expect(filter).toHaveAttribute("aria-labelledby");
+  expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
+    "Filter merchants on this page"
+  );
 
   fireEvent.change(filter, { target: { value: "gLoBeX" } });
 
