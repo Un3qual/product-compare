@@ -1,9 +1,14 @@
+import { createRef } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
 import { ApiTokensRoute } from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
+import {
+  ApiTokenControls,
+  OneTimeApiToken
+} from "../../../../src/routes/account/api-tokens/ApiTokenControls";
 import { buildApiTokenExpiresAtInputValue } from "../../../../src/routes/account/api-tokens/date-presets";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
@@ -153,6 +158,50 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+test("API token controls render status navigation, creation state, and expiration presets", () => {
+  const expiresAtInputRef = createRef<HTMLInputElement>();
+  const expiresAtPresetInputRef = createRef<HTMLInputElement>();
+
+  render(
+    <MemoryRouter>
+      <ApiTokenControls
+        createDialogOpen
+        createError="Token creation failed."
+        expiresAtInputRef={expiresAtInputRef}
+        expiresAtPresetInputRef={expiresAtPresetInputRef}
+        onCreate={vi.fn()}
+        onCreateDialogOpenChange={vi.fn()}
+        submitting
+        tokenStatus="active"
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { hidden: true, name: "All" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens?status=all"
+  );
+  expect(screen.getByRole("link", { hidden: true, name: "Active" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+  expect(screen.getByRole("form", { name: "Create API token" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "30 days" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "90 days" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "1 year" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "No expiration" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Creating API token..." })).toBeDisabled();
+  expect(screen.getByRole("alert")).toHaveTextContent("Token creation failed.");
+});
+
+test("one-time API token presentation warns before showing the secret", () => {
+  render(<OneTimeApiToken token={ONE_TIME_TOKEN_VALUE} />);
+
+  const region = screen.getByRole("region", { name: "One-time API token" });
+  expect(region).toHaveTextContent("Visible only once. Copy this token now before leaving the page.");
+  expect(region).toHaveTextContent(ONE_TIME_TOKEN_VALUE);
 });
 
 test("API token route prompts unauthenticated users to sign in", () => {

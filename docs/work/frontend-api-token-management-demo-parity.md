@@ -2,17 +2,17 @@
 
 ## Snapshot
 
-- Status: ready (API token control presentation extraction)
+- Status: done (API token control presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-11 after API-token route decomposition characterization (35 tests).
+- Last verified: 2026-07-12 after API-token control presentation extraction (37 tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
-## Ready Next Batch
+## API Token Control Presentation Extraction
 
-- Status: ready.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Next action: Extract status filters, create dialog/form/presets, create-error
   presentation, and one-time secret disclosure while preserving route-owned
@@ -31,6 +31,16 @@
 - Exit condition: creation/control presentation is isolated while mutation,
   secret lifecycle, status filtering, rotation/revocation, and pagination stay
   green.
+- Completion evidence:
+  - RED: the focused suite failed because `ApiTokenControls.tsx` did not exist.
+  - `ApiTokenControls` now owns status-filter navigation, create-dialog/form
+    presentation, expiration presets, pending copy, and create-error output.
+  - `OneTimeApiToken` owns the one-time secret warning and disclosure.
+  - `ApiTokensRoute` retains dialog and mutation state, submit orchestration,
+    optimistic token summaries, rotation/revocation, Relay reads, and pagination.
+  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
+    passed 37 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## Batch Status
 
