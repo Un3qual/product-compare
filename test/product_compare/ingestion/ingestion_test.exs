@@ -886,6 +886,59 @@ defmodule ProductCompare.IngestionTest do
              ) == :eq
     end
 
+    test "returns the current offer when a stale payload resolves a different merchant" do
+      source = source_fixture()
+
+      current_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-MERCHANT-FRESHNESS",
+          listing_url: "https://trail.example/products/current-merchant-offer",
+          merchant_identifier: "current-merchant",
+          merchant_name: "Current Merchant",
+          merchant_domain: "current-merchant.example",
+          amount: Decimal.new("129.99"),
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-MERCHANT-FRESHNESS", "price" => "129.99"}
+        })
+
+      stale_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-MERCHANT-FRESHNESS",
+          listing_url: "https://other.example/products/stale-offer",
+          merchant_identifier: "stale-merchant",
+          merchant_name: "Stale Merchant",
+          merchant_domain: "stale-merchant.example",
+          amount: Decimal.new("89.99"),
+          observed_at: ~U[2026-05-23 15:00:00Z],
+          raw_payload: %{"id" => "CJ-MERCHANT-FRESHNESS", "price" => "89.99"}
+        })
+
+      assert {:ok, current_persisted} =
+               Ingestion.persist_normalized_listing(source, current_listing)
+
+      current_merchant_product = current_persisted.merchant_product
+      current_price_point = current_persisted.price_point
+      product_count = Repo.aggregate(Product, :count, :id)
+      merchant_product_count = Repo.aggregate(MerchantProduct, :count, :id)
+      price_point_count = Repo.aggregate(PricePoint, :count, :id)
+
+      assert {:ok, stale_persisted} =
+               Ingestion.persist_normalized_listing(source, stale_listing)
+
+      assert stale_persisted.merchant_identity.merchant_id !=
+               current_persisted.merchant_identity.merchant_id
+
+      assert stale_persisted.product.id == current_persisted.product.id
+      assert stale_persisted.merchant_product.id == current_merchant_product.id
+      assert stale_persisted.price_point.id == current_price_point.id
+
+      assert Repo.reload!(current_merchant_product) == current_merchant_product
+      assert Repo.reload!(current_price_point) == current_price_point
+      assert Repo.aggregate(Product, :count, :id) == product_count
+      assert Repo.aggregate(MerchantProduct, :count, :id) == merchant_product_count
+      assert Repo.aggregate(PricePoint, :count, :id) == price_point_count
+    end
+
     test "does not attach stale external product observations over newer rows" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]

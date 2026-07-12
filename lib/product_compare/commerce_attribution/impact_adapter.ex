@@ -73,7 +73,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       (fallback_key && Map.get(payload, fallback_key))
   end
 
-  defp normalize_status(nil), do: nil
+  defp normalize_status(nil), do: :missing
 
   defp normalize_status(status) when status in [:pending, :approved, :reversed, :paid], do: status
 

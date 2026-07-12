@@ -101,6 +101,11 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
 - GREEN: `mix test test/product_compare/ingestion/ingestion_test.exs
   test/product_compare/commerce_attribution/commerce_attribution_test.exs`
   passed 76 tests with 0 failures.
+- Review follow-up: stale success lookup now derives the current offer solely
+  from the persisted external product's product and canonical URL, so a stale
+  payload that resolves a different merchant identity still returns the current
+  merchant-product/latest-price pair without mutating those rows. The expanded
+  focused suite passes 81 tests with 0 failures.
 
 ## CJ Scheduled Readiness Evidence
 

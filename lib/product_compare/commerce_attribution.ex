@@ -793,7 +793,9 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp resolve_click_attribution(attrs) do
-    case resolved_click_session(attrs) do
+    changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
+
+    case resolved_click_session(attrs, changeset) do
       nil ->
         {:ok, attrs}
 
@@ -801,7 +803,7 @@ defmodule ProductCompare.CommerceAttribution do
         click_session = Repo.preload(click_session, [:commerce_link, :merchant_product])
         dimensions = click_session_attribution_dimensions(click_session)
 
-        case conflicting_click_dimensions(attrs, dimensions) do
+        case conflicting_click_dimensions(attrs, changeset, dimensions) do
           [] -> {:ok, put_click_session_attribution_attrs(attrs, click_session, dimensions)}
           conflicts -> {:error, conflicts}
         end
@@ -826,13 +828,70 @@ defmodule ProductCompare.CommerceAttribution do
     }
   end
 
-  defp conflicting_click_dimensions(attrs, dimensions) do
-    for {field, click_value} <- dimensions,
-        provider_value = Input.fetch_attr(attrs, field),
-        not is_nil(click_value),
-        not is_nil(provider_value),
-        provider_value != click_value,
-        do: field
+  defp conflicting_click_dimensions(attrs, changeset, dimensions) do
+    direct_conflicts =
+      for {field, click_value} <- dimensions,
+          provider_value = cast_provider_dimension(attrs, changeset, field),
+          not is_nil(click_value),
+          not is_nil(provider_value),
+          provider_value != click_value,
+          do: field
+
+    (direct_conflicts ++
+       affiliate_program_relation_conflicts(attrs, changeset, dimensions) ++
+       merchant_product_relation_conflicts(attrs, changeset, dimensions))
+    |> Enum.uniq()
+  end
+
+  defp affiliate_program_relation_conflicts(attrs, changeset, %{merchant_id: merchant_id})
+       when not is_nil(merchant_id) do
+    case cast_provider_dimension(attrs, changeset, :affiliate_program_id) do
+      nil ->
+        []
+
+      affiliate_program_id ->
+        case Repo.get(AffiliateProgram, affiliate_program_id) do
+          %AffiliateProgram{merchant_id: ^merchant_id} -> []
+          %AffiliateProgram{} -> [:affiliate_program_id]
+          nil -> []
+        end
+    end
+  end
+
+  defp affiliate_program_relation_conflicts(_attrs, _changeset, _dimensions), do: []
+
+  defp merchant_product_relation_conflicts(attrs, changeset, dimensions) do
+    case cast_provider_dimension(attrs, changeset, :merchant_product_id) do
+      nil ->
+        []
+
+      merchant_product_id ->
+        case Repo.get(MerchantProduct, merchant_product_id) do
+          %MerchantProduct{} = merchant_product ->
+            if merchant_product_matches_click?(merchant_product, dimensions) do
+              []
+            else
+              [:merchant_product_id]
+            end
+
+          nil ->
+            []
+        end
+    end
+  end
+
+  defp merchant_product_matches_click?(merchant_product, dimensions) do
+    matches_click_dimension?(merchant_product.merchant_id, dimensions.merchant_id) and
+      matches_click_dimension?(merchant_product.product_id, dimensions.product_id)
+  end
+
+  defp matches_click_dimension?(_provider_value, nil), do: true
+  defp matches_click_dimension?(provider_value, click_value), do: provider_value == click_value
+
+  defp cast_provider_dimension(attrs, changeset, field) do
+    if Input.attr_key_present?(attrs, field) do
+      Ecto.Changeset.get_field(changeset, field)
+    end
   end
 
   defp attribution_conflict_changeset(attrs, conflicts) do
@@ -843,17 +902,24 @@ defmodule ProductCompare.CommerceAttribution do
     )
   end
 
-  defp resolved_click_session(attrs) do
+  defp resolved_click_session(attrs, changeset) do
     case Input.fetch_attr(attrs, :click_session_id) do
-      click_session_id when is_integer(click_session_id) ->
-        Repo.get(CommerceClickSession, click_session_id)
-
-      _click_session_id ->
+      nil ->
         attrs
         |> Input.fetch_attr(:public_click_id)
         |> get_click_session_by_public_id()
+
+      _click_session_id ->
+        changeset
+        |> Ecto.Changeset.get_field(:click_session_id)
+        |> get_click_session_by_id()
     end
   end
+
+  defp get_click_session_by_id(nil), do: nil
+
+  defp get_click_session_by_id(click_session_id),
+    do: Repo.get(CommerceClickSession, click_session_id)
 
   defp click_session_merchant_id(%CommerceClickSession{commerce_link: %CommerceLink{} = link}),
     do: link.merchant_id

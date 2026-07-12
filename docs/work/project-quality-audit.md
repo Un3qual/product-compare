@@ -122,3 +122,10 @@ output, a clean working tree, and an independent whole-branch review.
 - GREEN evidence: the same focused suite passed 76 tests with 0 failures, and
   `mix typecheck` passed. Dialyzer remains at the audit baseline of four
   pre-existing `CommerceLink` warnings and produced no touched-module warning.
+- Independent review follow-up corrected four additional boundary cases:
+  current-offer lookup no longer depends on stale merchant identity; provider
+  affiliate-program and merchant-product relationships must agree with all
+  click-known dimensions; castable string click-session ids resolve before
+  conflict validation; and Impact requires an explicit recognized status for
+  inserts and updates. RED reproduced all four gaps in 82 tests with 5 failures;
+  GREEN passes the reconciled 81-test suite with 0 failures.

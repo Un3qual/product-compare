@@ -56,6 +56,14 @@
   passed 76 tests with 0 failures; `mix typecheck` passed. `mix dialyzer`
   remains nonzero only on the four pre-existing `CommerceLink` findings already
   recorded in the project-quality audit baseline.
+- Review follow-up: relationship validation now rejects an affiliate program
+  whose merchant conflicts with a click-known merchant and a provider
+  merchant-product whose merchant or product conflicts with click-known
+  dimensions, while compatible values remain allowed where the click lacks the
+  same-named dimension. Castable string click-session ids are resolved before
+  validation. Impact now also requires an explicit known status on every
+  initial and update payload. The expanded focused suite passes 81 tests with 0
+  failures.
 
 ## Revenue Preview Positioning Evidence
 

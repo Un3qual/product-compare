@@ -267,7 +267,7 @@ defmodule ProductCompare.Ingestion do
          _listing
        ) do
     product = fetch_stale_listing_product(external_product)
-    merchant_product = fetch_stale_listing_merchant_product(merchant_identity, external_product)
+    merchant_product = fetch_stale_listing_merchant_product(external_product)
 
     {:ok,
      %{
@@ -285,19 +285,25 @@ defmodule ProductCompare.Ingestion do
   defp fetch_stale_listing_product(%ExternalProduct{product_id: product_id}),
     do: Repo.get(Product, product_id)
 
-  defp fetch_stale_listing_merchant_product(
-         %MerchantSourceIdentity{merchant_id: merchant_id},
-         %ExternalProduct{product_id: product_id, canonical_url: canonical_url}
-       )
+  defp fetch_stale_listing_merchant_product(%ExternalProduct{
+         product_id: product_id,
+         canonical_url: canonical_url
+       })
        when not is_nil(product_id) do
-    Repo.get_by(MerchantProduct,
-      merchant_id: merchant_id,
-      product_id: product_id,
-      url: canonical_url
+    MerchantProduct
+    |> where(
+      [merchant_product],
+      merchant_product.product_id == ^product_id and merchant_product.url == ^canonical_url
     )
+    |> order_by([merchant_product],
+      desc: merchant_product.last_seen_at,
+      desc: merchant_product.id
+    )
+    |> limit(1)
+    |> Repo.one()
   end
 
-  defp fetch_stale_listing_merchant_product(_merchant_identity, _external_product), do: nil
+  defp fetch_stale_listing_merchant_product(_external_product), do: nil
 
   defp upsert_source_artifact(%Source{id: source_id}, listing) do
     content_hash = listing_content_hash(listing)
