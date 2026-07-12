@@ -3,10 +3,12 @@ import { gzipSync } from "node:zlib";
 import { resolve } from "node:path";
 
 interface ManifestChunk {
+  dynamicImports?: string[];
   file: string;
   imports?: string[];
   isDynamicEntry?: boolean;
   isEntry?: boolean;
+  name?: string;
   src?: string;
 }
 
@@ -20,10 +22,30 @@ const distPath = resolve(import.meta.dir, "../dist");
 const INITIAL_GZIP_BUDGET_BYTES = 200_000;
 
 const requiredDynamicRoutes = [
-  ["affiliate setup", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
-  ["feed candidates", "src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx"],
-  ["revenue", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
-  ["API tokens", "src/routes/account/api-tokens/ApiTokensRoute.tsx"]
+  ["affiliate setup screen", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
+  [
+    "affiliate setup loader",
+    "src/routes/affiliate/setup/loader.ts",
+    "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"
+  ],
+  ["feed candidates screen", "src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx"],
+  [
+    "feed candidates loader",
+    "src/routes/ingestion/feed-candidates/loader.ts",
+    "src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx"
+  ],
+  ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
+  [
+    "revenue loader",
+    "src/routes/commerce/revenue/loader.ts",
+    "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"
+  ],
+  ["API tokens screen", "src/routes/account/api-tokens/ApiTokensRoute.tsx"],
+  [
+    "API tokens loader",
+    "src/routes/account/api-tokens/loader.ts",
+    "src/routes/account/api-tokens/ApiTokensRoute.tsx"
+  ]
 ] as const;
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Manifest;
@@ -37,6 +59,7 @@ if (clientEntries.length !== 1) {
 }
 
 const [entryKey] = clientEntries[0];
+const entryDynamicImports = new Set(manifest[entryKey]?.dynamicImports ?? []);
 const initialClosure = collectStaticImportClosure(manifest, entryKey);
 const initialFiles = [...initialClosure].map((key) => manifest[key]?.file).filter(Boolean);
 const initialJavaScriptFiles = initialFiles.filter((file) => file.endsWith(".js"));
@@ -58,10 +81,8 @@ if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
   );
 }
 
-for (const [label, expectedSource] of requiredDynamicRoutes) {
-  const match = manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource
-  );
+for (const [label, expectedSource, relatedScreenSource] of requiredDynamicRoutes) {
+  const match = findManifestEntry(expectedSource, relatedScreenSource);
 
   if (!match) {
     failures.push(`${label} route has no manifest chunk for ${expectedSource}`);
@@ -115,4 +136,27 @@ function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
 
 function normalizeSource(source: string) {
   return source.replaceAll("\\", "/").replace(/^_+/, "");
+}
+
+function findManifestEntry(expectedSource: string, relatedScreenSource?: string) {
+  const directMatch = manifestEntries.find(
+    ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource
+  );
+  if (directMatch || !relatedScreenSource) return directMatch;
+
+  // Rollup omits `src` when a directly imported loader is also shared with its
+  // screen. Associate that facade through the screen's static imports and the
+  // client entry's dynamic-import graph instead of relying on output hashes.
+  const screenMatch = manifestEntries.find(
+    ([key, chunk]) => normalizeSource(chunk.src ?? key) === relatedScreenSource
+  );
+  if (!screenMatch) return undefined;
+
+  const loaderName = expectedSource.split("/").at(-1)?.replace(/\.[^.]+$/, "");
+  const candidates = (screenMatch[1].imports ?? []).filter((key) => {
+    const chunk = manifest[key];
+    return chunk?.name === loaderName && chunk.isDynamicEntry && entryDynamicImports.has(key);
+  });
+
+  return candidates.length === 1 ? ([candidates[0], manifest[candidates[0]]] as const) : undefined;
 }
