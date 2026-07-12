@@ -165,6 +165,63 @@ test("saved comparison presentation exposes controls, actions, and pagination", 
   expect(screen.getByRole("navigation", { name: "Saved comparison pages" })).toBeVisible();
 });
 
+test("saved comparison presentation disables a pending row deletion", () => {
+  const onDelete = vi.fn();
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete,
+          onOpenComparison: () => "/compare?slug=chair&slug=desk",
+          pendingDeleteIds: new Set(["saved-set-1"])
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: null, nextHref: null }}
+        savedSets={[buildSavedSet()]}
+      />
+    </MemoryRouter>
+  );
+
+  const deleteButton = screen.getByRole("button", { name: "Deleting comparison..." });
+
+  expect(deleteButton).toBeDisabled();
+  fireEvent.click(deleteButton);
+  expect(onDelete).not.toHaveBeenCalled();
+});
+
+test("saved comparison presentation omits the data list when no records are visible", () => {
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete: vi.fn(),
+          onOpenComparison: () => "/compare",
+          pendingDeleteIds: new Set()
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: null, nextHref: null }}
+        savedSets={[]}
+      >
+        <p>No saved comparisons yet.</p>
+      </SavedComparisonSetList>
+    </MemoryRouter>
+  );
+
+  expect(screen.queryByRole("list", { name: "Saved comparison sets" })).not.toBeInTheDocument();
+  expect(screen.getByText("No saved comparisons yet.")).toBeVisible();
+});
+
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
 

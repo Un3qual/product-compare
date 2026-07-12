@@ -42,8 +42,8 @@
 ## Historical Completed Hardening And Relay Migration
 
 The following records describe the completed shared-shell, error-boundary, and
-Relay-migration work that preceded the currently ready presentation-extraction
-batch above.
+Relay-migration work that preceded the completed saved comparison set
+presentation-extraction section above.
 
 - `assets/src/routes/compare/compare-shell.tsx` provides a shared responsive shell for both compare routes.
 - `assets/src/routes/compare/index.tsx` uses the shared shell and exposes save-success feedback through a polite `role="status"` region.

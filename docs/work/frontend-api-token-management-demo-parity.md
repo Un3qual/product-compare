@@ -5,7 +5,7 @@
 - Status: ready (API token control presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27 after Task 7 expiry preset verification.
+- Last verified: 2026-07-11 after API-token route decomposition characterization (35 tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.

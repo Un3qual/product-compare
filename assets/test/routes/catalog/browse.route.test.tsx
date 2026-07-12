@@ -982,6 +982,42 @@ test("catalog product presentation keeps highlights and route-derived actions", 
   );
 });
 
+test("catalog product presentation renders selected and full compare states", () => {
+  const product: BrowseProductNode = {
+    id: "product-1",
+    name: "Catalog First",
+    slug: "catalog-first",
+    brand: { id: "brand-1", name: "Acme" },
+    currentAttributes: []
+  };
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ kind: "selected" })}
+        detailHrefFor={() => "/products/catalog-first"}
+        offerHrefFor={() => "/offers?productId=product-1"}
+        products={[product]}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Catalog First selected for comparison")).toBeInTheDocument();
+
+  rerender(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ kind: "full" })}
+        detailHrefFor={() => "/products/catalog-first"}
+        offerHrefFor={() => "/offers?productId=product-1"}
+        products={[product]}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Compare selection full")).toBeInTheDocument();
+});
+
 test("renders browse products from the Relay route query", () => {
   const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
 
