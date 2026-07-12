@@ -64,7 +64,7 @@ export function RegisterRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      passwordAutoComplete="new-password"
+      authFieldAutoComplete="new-password"
       submitLabel="Create account"
       title="Create your account"
     />

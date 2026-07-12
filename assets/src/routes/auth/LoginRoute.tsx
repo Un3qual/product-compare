@@ -62,7 +62,7 @@ export function LoginRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      passwordAutoComplete="current-password"
+      authFieldAutoComplete="current-password"
       submitLabel="Sign in"
       title="Sign in"
     />
