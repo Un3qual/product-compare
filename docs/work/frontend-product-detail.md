@@ -22,6 +22,21 @@
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
+## 2026-07-11 Route Decomposition
+
+- Status: done.
+- Extracted active-offer normalization, the visible offer snapshot, tracked
+  merchant actions, coupon and price-history summaries, and offer pagination
+  into `ProductOfferPanel.tsx`.
+- The route owner retains Relay query ownership, compare selection, detail-tab
+  navigation, product overview, specifications, and route fallbacks; it
+  decreased from 864 lines to 414 lines.
+- Characterization verification:
+  - Before extraction: 48 product-detail route tests passed.
+  - After extraction: 48 product-detail route tests passed.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
+
 ## Product Detail Price Observation Evidence
 
 - Status: done.

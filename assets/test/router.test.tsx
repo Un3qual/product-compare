@@ -10,6 +10,8 @@ import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
 import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
 import { offerDiscoveryLoader } from "../src/routes/offers/loader";
 import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
+import { notFoundLoader } from "../src/routes/NotFoundRoute";
+import type { RouteMetadataHandle } from "../src/routes/RouteMetadata";
 
 test("root route preloads viewer state", () => {
   expect(routes[0]).toEqual(
@@ -115,6 +117,31 @@ test("logout route is registered under the root route", () => {
       element: <LogoutRoute />
     })
   );
+});
+
+test("application router registers a wildcard 404 route", () => {
+  const notFoundRoute = routes[0]?.children?.find((route) => route.path === "*");
+
+  expect(notFoundRoute).toEqual(
+    expect.objectContaining({
+      path: "*",
+      loader: notFoundLoader,
+      errorElement: <RouteErrorBoundary resourceName="page" title="Page not found" />
+    })
+  );
+});
+
+test("every registered application route declares document metadata", () => {
+  const routeHandles = [routes[0], ...(routes[0]?.children ?? [])].map(
+    (route) => route?.handle as RouteMetadataHandle | undefined
+  );
+
+  expect(routeHandles).not.toContain(undefined);
+
+  for (const handle of routeHandles) {
+    expect(handle?.metadata.title).toBeTruthy();
+    expect(handle?.metadata.description).toBeTruthy();
+  }
 });
 
 function buildShouldRevalidateArgs(

@@ -11,6 +11,34 @@ test("server render resolves auth route markup", async () => {
   await expect(render("/auth/login")).resolves.toContain("Sign in");
 });
 
+test("server render emits route document metadata", async () => {
+  const html = await render("/auth/login");
+
+  expect(typeof html).toBe("string");
+  expect(html).toContain("<title>Sign in | Product Compare</title>");
+  expect(html).toContain(
+    '<meta name="description" content="Sign in to manage saved comparisons and account tools."/>'
+  );
+});
+
+test("server render returns a 404 response for unknown application paths", async () => {
+  const result = await render("/missing-page");
+
+  expect(result).toBeInstanceOf(Response);
+
+  const response = result as Response;
+
+  expect(response.status).toBe(404);
+  const body = await response.text();
+
+  expect(body).toContain("<title>Page not found | Product Compare</title>");
+  expect(body).toContain(
+    '<meta name="description" content="The requested Product Compare page could not be found."/>'
+  );
+  expect(body).toContain("The requested page could not be found.");
+  expect(body).toContain('__relayRecords');
+});
+
 test("server render resolves recovery route markup", async () => {
   await expect(render("/auth/forgot-password")).resolves.toContain("Reset your password");
 });

@@ -38,8 +38,42 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
 
   const appHtml = await new Response(htmlStream).text();
   const relayRecordsScript = renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment));
+  const renderedHtml = insertRelayRecordsScript(appHtml, relayRecordsScript);
 
-  return insertRelayRecordsScript(appHtml, relayRecordsScript);
+  const statusCode = context.statusCode ?? 200;
+
+  if (statusCode !== 200) {
+    const responseHeaders = responseHeadersFromContext(
+      context.loaderHeaders,
+      context.actionHeaders
+    );
+    responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+
+    return new Response(renderedHtml, {
+      headers: responseHeaders,
+      status: statusCode
+    });
+  }
+
+  return renderedHtml;
+}
+
+function responseHeadersFromContext(
+  loaderHeaders: Record<string, Headers> = {},
+  actionHeaders: Record<string, Headers> = {}
+) {
+  const responseHeaders = new Headers();
+
+  for (const routeHeaders of [
+    ...Object.values(loaderHeaders),
+    ...Object.values(actionHeaders)
+  ]) {
+    routeHeaders.forEach((value, key) => {
+      responseHeaders.append(key, value);
+    });
+  }
+
+  return responseHeaders;
 }
 
 async function waitForAllReady(stream: ReactReadableStream) {

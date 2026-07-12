@@ -91,79 +91,105 @@ Email delivery, live conversion-provider ingestion, production privacy and
 attribution controls, and production-readiness proof are explicitly outside
 this milestone by product decision.
 
+The 2026-07-11 bounded local-filter batch is complete. Compare now explains
+that relative loaded price uses already-loaded offers, the compare picker can
+filter already-loaded product names, and the merchant directory can filter the
+visible Relay page without changing cursor behavior.
+
+The 2026-07-11 route-foundation batch is complete. Unknown application paths
+now render the shared not-found experience with an SSR 404 response, and every
+registered route provides static title and description metadata for SSR and
+client navigation.
+
+The 2026-07-11 API-token route decomposition is complete. Relay token-page
+rendering and token lifecycle presentation now live in a focused component,
+while the route owner retains loader and mutation orchestration.
+
+The 2026-07-11 offer-discovery route decomposition is complete. Page-local
+ordering, offer cards and summaries, merchant quick filters, tracked actions,
+and pagination now live in a focused result component; the route owner retains
+loader-state and Relay query orchestration.
+
+The 2026-07-11 product-detail route decomposition is complete. Active-offer
+normalization, snapshots, tracked actions, coupon and price-history summaries,
+and pagination now live in a focused panel; the route owner retains Relay,
+compare selection, and tab orchestration.
+
 ## Ready Work
 
-### 1. Compare Loaded-Price Scope Copy
+### 1. Skip Navigation
 
 Status: ready
-Lane: Frontend product comparison demo parity
-Plan: `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
-Next action: Explain that the relative-price signal compares only already-loaded offers without changing its calculation.
+Lane: Frontend Radix UI polish
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Add a keyboard-visible skip link and stable main-content target to the shared application shell.
 Owned paths:
 
-- `assets/src/routes/compare/DecisionSummary.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
+- `assets/src/ui/components/layout/AppShell.tsx`
+- `assets/test/ui/app-shell.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
 
 Prerequisites:
 
-- Existing relative loaded-price behavior and safety rules remain unchanged.
+- No code prerequisite.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|loaded offers"`
+- `cd assets && bun x vitest run test/ui/app-shell.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: The decision summary explicitly scopes relative price to already-loaded offers with green focused tests.
+Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 2. Compare Picker Loaded-Name Filter
+### 2. Affiliate Setup Form Component Extraction
 
 Status: ready
-Lane: Frontend product comparison demo parity
-Plan: `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
-Next action: Add a case-insensitive local name filter over products already loaded in the compare picker.
+Lane: Frontend affiliate setup demo parity
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract the four affiliate setup form presentations from the route owner while preserving route-owned mutation orchestration.
 Owned paths:
 
-- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-demo-parity.md`
 
 Prerequisites:
 
-- No code prerequisite; serialize this row with the loaded-price scope row because their test and lane paths overlap.
+- Existing affiliate setup behavior suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Shoppers can filter already-loaded picker products without changing pagination, selection, or compare URLs.
+Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 3. Merchant Visible-Page Name Filter
+### 3. Feed Candidate Review Component Extraction
 
 Status: ready
-Lane: Frontend merchant discovery demo parity
-Plan: `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
-Next action: Add a case-insensitive local merchant-name filter clearly scoped to the currently visible page.
+Lane: Product data scraping
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract feed-candidate list and review presentation from the existing route without adding dashboard or ingestion behavior.
 Owned paths:
 
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/product-data-scraping.md`
 
 Prerequisites:
 
-- Existing merchant Relay page, safe-link behavior, and cursor controls remain unchanged.
+- Existing feed-candidate route behavior and secret-safe field policy remain unchanged.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Shoppers can filter merchant names on the visible page while retaining page-size, cursor, and safe-link behavior.
+Exit condition: Review presentation is isolated with all behavior and secret-safety coverage green.
 
 ## Active Work
 

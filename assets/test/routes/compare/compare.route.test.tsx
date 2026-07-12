@@ -1423,6 +1423,109 @@ test("product picker keeps previous products visible when loading another page",
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeInTheDocument();
 });
 
+test("product picker filters loaded product names without hiding pagination", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    specMode: "shared",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:monitor-a",
+            name: "Monitor Alpha",
+            slug: "monitor-alpha",
+            brand: { id: "Brand:displayco", name: "DisplayCo" }
+          }
+        },
+        {
+          node: {
+            id: "Product:monitor-b",
+            name: "Monitor Beta",
+            slug: "monitor-beta",
+            brand: { id: "Brand:viewco", name: "ViewCo" }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "next-products"
+      }
+    }
+  });
+
+  renderCompareRoute();
+
+  const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
+
+  expect(filter.id).not.toBe("");
+  expect(filter).toHaveAttribute("aria-labelledby");
+  expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
+    "Filter loaded products"
+  );
+
+  fireEvent.change(filter, { target: { value: "bEtA" } });
+
+  expect(screen.queryByRole("link", { name: "Compare Monitor Alpha" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Show more products" })).toBeInTheDocument();
+
+  fireEvent.change(filter, { target: { value: "missing" } });
+
+  expect(screen.getByText("No loaded products match this filter.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Show more products" })).toBeInTheDocument();
+
+  fireEvent.change(filter, { target: { value: "" } });
+
+  expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toBeInTheDocument();
+});
+
+test("product picker filtering is stable when the browser locale has special casing rules", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    specMode: "shared",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:istanbul",
+            name: "Istanbul",
+            slug: "istanbul",
+            brand: { id: "Brand:displayco", name: "DisplayCo" }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+  const localeLowerCase = vi
+    .spyOn(String.prototype, "toLocaleLowerCase")
+    .mockImplementation(function (this: string) {
+      return String(this).replaceAll("I", "ı").toLowerCase();
+    });
+
+  try {
+    renderCompareRoute();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Filter loaded products" }), {
+      target: { value: "i" }
+    });
+
+    expect(screen.getByRole("link", { name: "Compare Istanbul" })).toBeInTheDocument();
+  } finally {
+    localeLowerCase.mockRestore();
+  }
+});
+
 test("product picker resets pagination before rendering a changed selected set", () => {
   let loaderData: CompareRouteLoaderData = {
     status: "ready",
@@ -1642,6 +1745,18 @@ test("ready compare page marks the lowest relative loaded price", () => {
       }
     })
   ).toEqual(["Lowest loaded price", "Above lowest loaded price"]);
+});
+
+test("ready compare page scopes relative loaded price to already-loaded offers", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  expect(
+    screen.getByText(
+      "Relative loaded price compares only the offers already loaded for these products."
+    )
+  ).toBeVisible();
 });
 
 test("ready compare page compares scientific Decimal prices exactly", () => {

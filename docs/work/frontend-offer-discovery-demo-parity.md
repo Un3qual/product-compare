@@ -19,6 +19,21 @@
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
 
+## 2026-07-11 Route Decomposition
+
+- Status: done.
+- Extracted page-local ordering, visible merchant filters, offer snapshots,
+  result cards, tracked merchant actions, coupon and price-history summaries,
+  and pagination into `OfferDiscoveryList.tsx`.
+- The route owner now retains loader-state branching, Relay query ownership,
+  product context, and loading/error fallbacks; it decreased from 927 lines to
+  140 lines.
+- Characterization verification:
+  - Before extraction: 49 offer-discovery route tests passed.
+  - After extraction: 49 offer-discovery route tests passed.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
+
 ## Ready Shopper Decision Confidence Batches
 
 ### Offer Observation And Coupon Validity Evidence

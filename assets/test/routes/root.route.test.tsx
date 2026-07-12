@@ -85,6 +85,7 @@ const degradedAuthenticatedLoaderData = {
 } satisfies RootLoaderData;
 
 beforeEach(() => {
+  document.title = "";
   mockedFetchRouteQuery.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
@@ -103,14 +104,32 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
       {
         path: "/",
         id: "root",
+        handle: {
+          metadata: {
+            title: "Product Compare",
+            description: "Choose products with clearer specifications and current offers."
+          }
+        },
         element: <RootLayout />,
         children: [
           {
             index: true,
+            handle: {
+              metadata: {
+                title: "Product Compare",
+                description: "Choose products with clearer specifications and current offers."
+              }
+            },
             element: <RootRoute />
           },
           {
             path: "*",
+            handle: {
+              metadata: {
+                title: "Nested | Product Compare",
+                description: "Nested route metadata."
+              }
+            },
             element: <div>Nested route</div>
           }
         ]
@@ -128,6 +147,20 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
 
   return render(<RouterProvider router={router} />);
 }
+
+test("root layout applies the deepest matched document metadata", async () => {
+  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
+
+  renderRootRoute(guestLoaderData);
+
+  await screen.findByRole("heading", { name: "Product Compare" });
+
+  expect(document.title).toBe("Product Compare");
+  expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "Choose products with clearer specifications and current offers."
+  );
+});
 
 test("root layout renders guest auth links in the primary navigation", async () => {
   mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);

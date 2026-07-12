@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useLazyLoadQuery } from "react-relay";
@@ -9,6 +9,7 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Button } from "../../ui/primitives/Button";
+import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 import { buildComparePathFromSlugs } from "./paths";
@@ -23,6 +24,11 @@ const styles = create({
   title: {
     fontSize: "1.25rem",
     margin: 0
+  },
+  filter: {
+    display: "grid",
+    gap: "0.35rem",
+    maxWidth: "24rem"
   },
   option: {
     display: "grid",
@@ -78,7 +84,10 @@ function CompareProductPicker({
   selectedSlugs: readonly string[];
 }) {
   const [after, setAfter] = useState<string | null>(null);
+  const [filterText, setFilterText] = useState("");
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
+  const filterInputId = useId();
+  const filterLabelId = `${filterInputId}-label`;
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
@@ -92,6 +101,12 @@ function CompareProductPicker({
   const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
+  const normalizedFilterText = filterText.trim().toLowerCase();
+  const visibleProducts = normalizedFilterText
+    ? availableProducts.filter((product) =>
+        product.name.toLowerCase().includes(normalizedFilterText)
+      )
+    : availableProducts;
   const nextCursor = nextProductPageCursor(data.products.pageInfo);
 
   useEffect(() => {
@@ -105,8 +120,20 @@ function CompareProductPicker({
   return (
     <section {...props(styles.picker)}>
       <h2 {...props(styles.title)}>{heading}</h2>
+      <div {...props(styles.filter)}>
+        <span id={filterLabelId}>Filter loaded products</span>
+        <TextField
+          aria-labelledby={filterLabelId}
+          autoComplete="off"
+          id={filterInputId}
+          onChange={(event) => setFilterText(event.currentTarget.value)}
+          type="search"
+          value={filterText}
+        />
+      </div>
       <CompareProductPickerOptions
-        availableProducts={availableProducts}
+        availableProducts={visibleProducts}
+        hasFilter={Boolean(normalizedFilterText)}
         specMode={specMode}
         selectedSlugs={selectedSlugs}
       />
@@ -136,15 +163,23 @@ function emptyProductPickerMessage(selectedSlugs: readonly string[]) {
 
 function CompareProductPickerOptions({
   availableProducts,
+  hasFilter,
   specMode,
   selectedSlugs
 }: {
   availableProducts: readonly ComparePickerProduct[];
+  hasFilter: boolean;
   specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
   if (availableProducts.length === 0) {
-    return <p>No additional products are available on this page.</p>;
+    return (
+      <p>
+        {hasFilter
+          ? "No loaded products match this filter."
+          : "No additional products are available on this page."}
+      </p>
+    );
   }
 
   return (

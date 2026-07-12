@@ -212,6 +212,14 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
   expect(screen.getByText("Active token")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Old automation" })).toBeInTheDocument();
   expect(screen.getByText("Revoked token")).toBeInTheDocument();
+
+  const replacementLabel = screen.getByLabelText("Replacement label for CLI");
+
+  expect(replacementLabel.id).not.toBe("");
+  expect(replacementLabel).toHaveAttribute("aria-labelledby");
+  expect(
+    document.getElementById(replacementLabel.getAttribute("aria-labelledby") ?? "")
+  ).toHaveTextContent("Replacement label for CLI");
 });
 
 test("API token route renders first and next page links while preserving status", () => {
