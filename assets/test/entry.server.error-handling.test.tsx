@@ -239,12 +239,16 @@ test("server render preserves non-success static-handler status and headers", as
     dataRoutes: [],
     query: vi.fn(() => ({
       actionData: null,
-      actionHeaders: {},
+      actionHeaders: {
+        action: new Headers({ "X-Action-Result": "preserved" })
+      },
       activeDeferreds: null,
       basename: "/",
       errors: null,
       loaderData: {},
-      loaderHeaders: {},
+      loaderHeaders: {
+        loader: new Headers({ "X-Loader-Result": "preserved" })
+      },
       location: {
         hash: "",
         key: "default",
@@ -266,6 +270,8 @@ test("server render preserves non-success static-handler status and headers", as
   const response = result as Response;
 
   expect(response.status).toBe(404);
+  expect(response.headers.get("x-action-result")).toBe("preserved");
+  expect(response.headers.get("x-loader-result")).toBe("preserved");
   await expect(response.text()).resolves.toContain("The requested page could not be found.");
 });
 
