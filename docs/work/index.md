@@ -218,28 +218,6 @@ Exit condition: Revenue presentation is isolated while query, filter, suppressio
 
 ## Active Work
 
-### Affiliate Setup Form Component Extraction
-
-Status: active
-Owner: `codex/extract-affiliate-feed-presentations`
-Lane: Frontend affiliate setup demo parity
-Plan: `docs/superpowers/plans/2026-07-11-affiliate-feed-presentation-extractions.md`
-Next action: Extract the four affiliate setup form presentations from the route owner while preserving route-owned mutation orchestration.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-demo-parity.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
-
 ### Feed Candidate Review Component Extraction
 
 Status: active
@@ -271,6 +249,11 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 affiliate setup form extraction is complete. `AffiliateNetworkForm`,
+`AffiliateProgramForm`, `AffiliateLinkForm`, and `AffiliateCouponForm` now own
+presentation while the route retains mutation orchestration; the focused suite
+passed 19 tests, TypeScript typechecking passed, and `git diff --check` was clean.
 
 The 2026-07-11 task-first workspace follow-up is complete. Every registered
 route now uses the appropriate workspace, detail, guided-flow, or focused-form
