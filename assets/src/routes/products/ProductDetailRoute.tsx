@@ -1,6 +1,6 @@
 import { Suspense, useId } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useLocation } from "react-router-dom";
+import { Link, useLoaderData, useLocation, useNavigate } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
@@ -119,6 +119,7 @@ function ProductDetail({
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const location = useLocation();
+  const navigate = useNavigate();
   const offersTitleId = useId();
   const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
     maxProducts: MAX_COMPARE_PRODUCTS
@@ -144,7 +145,8 @@ function ProductDetail({
           productDetailPathWithCompareSlugs(
             product.slug,
             location.search,
-            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
+            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
+            location.hash
           )
         }
         selectedSlugs={selectedCompareSlugs}
@@ -163,9 +165,7 @@ function ProductDetail({
       />
     </section>
   );
-  const defaultDetailView = new URLSearchParams(location.search).has("offersAfter")
-    ? "offers"
-    : "overview";
+  const detailView = detailViewFromLocation(location.hash, location.search);
 
   return (
     <PageShell
@@ -185,11 +185,12 @@ function ProductDetail({
       <WorkspaceLayout
         context={
           <ContextRail
-            description="Keep the next shopping action available while you move through product detail."
+            description="Add this product to a comparison, review offers, or return to the catalog."
             label="Product decisions"
           >
             {selectionTray}
             <ProductDecisionActions
+              currentHash={location.hash}
               currentSearch={location.search}
               productId={product.id}
               productSlug={product.slug}
@@ -200,7 +201,6 @@ function ProductDetail({
         label="Product detail workspace"
       >
         <DetailTabs
-          defaultValue={defaultDetailView}
           items={[
             {
               content: (
@@ -221,6 +221,17 @@ function ProductDetail({
             { content: offers, label: "Offers", value: "offers" }
           ]}
           label="Product details"
+          onValueChange={(value) =>
+            void navigate(
+              {
+                hash: `#${value}`,
+                pathname: location.pathname,
+                search: location.search
+              },
+              { replace: true }
+            )
+          }
+          value={detailView}
         />
       </WorkspaceLayout>
     </PageShell>
@@ -257,11 +268,13 @@ function ProductOverview({
 }
 
 function ProductDecisionActions({
+  currentHash,
   currentSearch,
   productId,
   productSlug,
   selectedCompareSlugs
 }: {
+  currentHash: string;
   currentSearch: string;
   productId: string;
   productSlug: string;
@@ -274,6 +287,7 @@ function ProductDecisionActions({
       <h2 id={titleId}>Next steps</h2>
       <ul {...props(styles.actionList)}>
         <DetailCompareAction
+          currentHash={currentHash}
           currentSearch={currentSearch}
           productSlug={productSlug}
           selectedCompareSlugs={selectedCompareSlugs}
@@ -292,10 +306,12 @@ function ProductDecisionActions({
 }
 
 function DetailCompareAction({
+  currentHash,
   currentSearch,
   productSlug,
   selectedCompareSlugs
 }: {
+  currentHash: string;
   currentSearch: string;
   productSlug: string;
   selectedCompareSlugs: readonly string[];
@@ -316,7 +332,14 @@ function DetailCompareAction({
 
   return (
     <li>
-      <Link to={productDetailPathWithCompareSlugs(productSlug, currentSearch, nextCompareSlugs)}>
+      <Link
+        to={productDetailPathWithCompareSlugs(
+          productSlug,
+          currentSearch,
+          nextCompareSlugs,
+          currentHash
+        )}
+      >
         Add this product to compare
       </Link>
     </li>
@@ -582,16 +605,29 @@ function productDetailPath(productSlug: string) {
   return `/products/${encodeURIComponent(productSlug)}`;
 }
 
+function detailViewFromLocation(hash: string, search: string) {
+  const view = hash.replace(/^#/, "");
+
+  if (view === "overview" || view === "specifications" || view === "offers") {
+    return view;
+  }
+
+  return new URLSearchParams(search).has("offersAfter") ? "offers" : "overview";
+}
+
 function productDetailPathWithCompareSlugs(
   productSlug: string,
   search: string,
-  selectedCompareSlugs: readonly string[]
+  selectedCompareSlugs: readonly string[],
+  hash = ""
 ) {
-  return buildCurrentRoutePathWithCompareSlugs(
+  const path = buildCurrentRoutePathWithCompareSlugs(
     productDetailPath(productSlug),
     search,
     selectedCompareSlugs
   );
+
+  return `${path}${hash}`;
 }
 
 function productOffersPath(
@@ -611,9 +647,11 @@ function productOffersPath(
 
   const query = params.toString();
 
-  return query.length > 0
+  const path = query.length > 0
     ? `${productDetailPath(productSlug)}?${query}`
     : productDetailPath(productSlug);
+
+  return `${path}#offers`;
 }
 
 function OfferPriceHistory({

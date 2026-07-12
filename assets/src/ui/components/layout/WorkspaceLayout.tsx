@@ -9,7 +9,7 @@ const styles = create({
     gap: tokens.workspaceGap,
     gridTemplateAreas: {
       default: '"workspace context"',
-      "@media (max-width: 62rem)": '"context" "workspace"'
+      "@media (max-width: 62rem)": '"workspace" "context"'
     },
     gridTemplateColumns: {
       default: `minmax(0, 1fr) ${tokens.contextRailWidth}`,

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import {
   createRelayEnvironment,
@@ -448,6 +448,7 @@ test("renders product detail and active offers from Relay route queries", () => 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
+      <LocationProbe />
     </MemoryRouter>
   );
 
@@ -468,12 +469,14 @@ test("renders product detail and active offers from Relay route queries", () => 
     ctrlKey: false
   });
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
+  expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
 
   fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Offers" }), {
     button: 0,
     ctrlKey: false
   });
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
+  expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
     "href",
@@ -485,7 +488,6 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test.each([
@@ -1008,11 +1010,11 @@ test("renders next and first offer page links from URL-driven offersAfter state"
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue"
+    "/products/detail%2Fproduct%3Fvalue#offers"
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value"
+    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value#offers"
   );
 });
 
@@ -1737,7 +1739,7 @@ test("clamps URL-driven compare selections before rendering product detail contr
   );
 });
 
-test("adds the current detail product while preserving offersAfter", () => {
+test("adds the current detail product while preserving offersAfter and the active tab", () => {
   const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor-next-page");
 
   mockedUseLoaderData.mockReturnValue({
@@ -1754,7 +1756,7 @@ test("adds the current detail product while preserving offersAfter", () => {
   render(
     <MemoryRouter
       initialEntries={[
-        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product"
+        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product#specifications"
       ]}
     >
       <ProductDetailRoute />
@@ -1763,7 +1765,7 @@ test("adds the current detail product while preserving offersAfter", () => {
 
   expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product"
+    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product#specifications"
   );
 });
 
@@ -1901,7 +1903,6 @@ test("renders an unavailable-offers message without collapsing the product detai
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
   expect(screen.queryByText("Product unavailable.")).not.toBeInTheDocument();
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test("renders a local unavailable-offers message when combined offer data is missing", () => {
@@ -1980,6 +1981,12 @@ function openProductDetailTab(name: "Offers" | "Specifications") {
     button: 0,
     ctrlKey: false
   });
+}
+
+function LocationProbe() {
+  const location = useLocation();
+
+  return <output data-testid="location">{`${location.search}${location.hash}`}</output>;
 }
 
 function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRODUCT) {

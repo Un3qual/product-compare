@@ -8,7 +8,7 @@ const styles = create({
   tray: {
     backgroundColor: tokens.surfaceMuted,
     borderColor: tokens.borderQuiet,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     borderStyle: "solid",
     borderWidth: "1px",
     display: "grid",
@@ -41,7 +41,7 @@ const styles = create({
   item: {
     alignItems: "center",
     backgroundColor: tokens.surfaceRaised,
-    borderRadius: "var(--radius-3)",
+    borderRadius: "var(--pc-radius-medium)",
     display: "flex",
     gap: "0.55rem",
     padding: "0.4rem 0.55rem"

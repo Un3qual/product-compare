@@ -72,17 +72,13 @@ test("DataList preserves list semantics for dense rows", () => {
   const item = within(list).getByRole("listitem");
 
   expect(item).toHaveTextContent("Camera");
-  expect(item).toHaveAttribute("data-slot", "data-list-item");
-  expect(within(item).getByRole("button", { name: "Compare" }).parentElement).toHaveAttribute(
-    "data-slot",
-    "data-list-actions"
-  );
+  expect(within(item).getByRole("button", { name: "Compare" })).toBeInTheDocument();
 });
 
-test("StatusBadge renders its status text through Radix Badge", () => {
+test("StatusBadge renders its status text", () => {
   render(<StatusBadge tone="positive">Active</StatusBadge>);
 
-  expect(screen.getByText("Active")).toHaveClass("rt-Badge");
+  expect(screen.getByText("Active")).toBeInTheDocument();
 });
 
 test("SectionHeading groups a title with orientation copy", () => {

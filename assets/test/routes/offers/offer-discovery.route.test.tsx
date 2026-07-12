@@ -305,10 +305,6 @@ test("offer discovery renders ready offer rows", () => {
   );
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
-  expect(offerContent.getByText("Active")).toHaveAttribute(
-    "data-slot",
-    "status-badge"
-  );
   expect(offerContent.getByText("199.99 USD")).toBeVisible();
   const offerCheckedAt = offerContent.getByText("2026-06-02", { selector: "time" });
   const priceObservedAt = offerContent.getByText("2026-06-01", { selector: "time" });

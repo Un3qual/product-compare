@@ -137,12 +137,12 @@ test("root layout renders guest auth links in the primary navigation", async () 
 
   expect(primaryNavigation).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/compare"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
@@ -257,12 +257,12 @@ test("root route renders guest home actions as links while using the shared butt
   expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
 
   expect(within(shopperPaths).getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/products"
   );
   expect(within(shopperPaths).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/compare"
   );
   expect(within(homeActions).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",

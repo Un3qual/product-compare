@@ -11,6 +11,7 @@ import reviewMerchantFeedCandidateMutation, {
 } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
+import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
@@ -44,24 +45,11 @@ const styles = create({
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     display: "flex",
     flexWrap: "wrap",
     gap: "1rem",
     padding: "1rem"
-  },
-  summary: {
-    display: "grid",
-    gap: "0.75rem",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    margin: 0
-  },
-  summaryItem: {
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-3)",
-    display: "grid",
-    gap: "0.25rem",
-    padding: "0.8rem"
   },
   list: {
     listStyle: "none",
@@ -272,20 +260,14 @@ function FeedCandidatesList({
 
   return (
     <>
-      <dl aria-label="CJ feed candidate review summary" {...props(styles.summary)}>
-        <div {...props(styles.summaryItem)}>
-          <dt>Pending</dt>
-          <dd>{reviewCounts.pending}</dd>
-        </div>
-        <div {...props(styles.summaryItem)}>
-          <dt>Shortlisted</dt>
-          <dd>{reviewCounts.shortlisted}</dd>
-        </div>
-        <div {...props(styles.summaryItem)}>
-          <dt>Dismissed</dt>
-          <dd>{reviewCounts.dismissed}</dd>
-        </div>
-      </dl>
+      <SummaryStrip
+        items={[
+          { label: "Pending", value: reviewCounts.pending },
+          { label: "Shortlisted", value: reviewCounts.shortlisted },
+          { label: "Dismissed", value: reviewCounts.dismissed }
+        ]}
+        label="CJ feed candidate review summary"
+      />
       <ul aria-label="CJ feed candidates" {...props(styles.list)}>
         {candidates.map((candidate) => (
           <FeedCandidateListItem

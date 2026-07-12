@@ -47,7 +47,7 @@ const STATUS_FILTERS = [
 const styles = create({
   createForm: {
     backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
@@ -74,7 +74,7 @@ const styles = create({
   },
   rotateForm: {
     backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-3)",
+    borderRadius: "var(--pc-radius-medium)",
     display: "grid",
     gap: "0.75rem",
     padding: "0.9rem"
@@ -326,7 +326,7 @@ export function ApiTokensRoute() {
         <WorkspaceLayout
           context={
             <ContextRail
-              description="Filter credentials or create a new token without losing the token inventory."
+              description="Filter credentials by status or create an API token."
               label="API token controls"
             >
               <ApiTokenStatusFilters tokenStatus={loaderData.tokenStatus} />

@@ -279,10 +279,6 @@ test("merchant directory renders next-page navigation when available", () => {
     "href",
     "/merchants?first=35&after=next-cursor"
   );
-  expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
 });
 
 test("merchant directory renders first-page navigation when cursor-paged", () => {

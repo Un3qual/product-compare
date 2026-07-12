@@ -3269,7 +3269,7 @@ test("compare route presents URL-driven specification modes as tabs", () => {
   );
 });
 
-test("comparison matrix remains a table inside a named horizontal workspace", () => {
+test("comparison matrix keeps its selected view inside a named workspace", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   renderCompareRoute();
@@ -3277,7 +3277,7 @@ test("comparison matrix remains a table inside a named horizontal workspace", ()
   const workspace = screen.getByRole("region", { name: "Specification comparison" });
 
   expect(within(workspace).getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
-  expect(workspace.querySelector(".rt-ScrollAreaViewport")).toBeInTheDocument();
+  expect(within(workspace).getByText("No shared specifications across these products yet.")).toBeInTheDocument();
 });
 
 test("compared product actions use named navigation landmarks", () => {

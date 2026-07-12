@@ -1,5 +1,4 @@
 import { useId, useMemo, type ComponentProps, type PropsWithChildren } from "react";
-import { Callout } from "@radix-ui/themes";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import type { MutationError } from "./errors";
@@ -60,7 +59,7 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     padding: "clamp(1.25rem, 4vw, 2rem)",
-    boxShadow: "0 1rem 3rem color-mix(in srgb, var(--gray-12) 8%, transparent)"
+    boxShadow: "0 1rem 3rem color-mix(in srgb, var(--pc-text-primary) 8%, transparent)"
   },
   headingGroup: {
     display: "grid",
@@ -157,9 +156,14 @@ export function AuthFormShell({
         <FormGlobalErrors errors={visibleErrors} />
 
         {successMessage ? (
-          <Callout.Root aria-live="polite" color="green" role="status" variant="surface">
-            <Callout.Text>{successMessage}</Callout.Text>
-          </Callout.Root>
+          <div
+            aria-live="polite"
+            data-feedback-kind="success"
+            data-slot="feedback-state"
+            role="status"
+          >
+            {successMessage}
+          </div>
         ) : null}
 
         <Slot {...props(styles.form)}>{children}</Slot>
@@ -176,7 +180,12 @@ function FormGlobalErrors({ errors }: { errors: MutationError[] }) {
   }
 
   return (
-    <Callout.Root aria-live="assertive" color="red" role="alert" variant="surface">
+    <div
+      aria-live="assertive"
+      data-feedback-kind="error"
+      data-slot="feedback-state"
+      role="alert"
+    >
       <ul {...props(styles.errorList)}>
         {errors.map((error) => (
           <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
@@ -184,7 +193,7 @@ function FormGlobalErrors({ errors }: { errors: MutationError[] }) {
           </li>
         ))}
       </ul>
-    </Callout.Root>
+    </div>
   );
 }
 

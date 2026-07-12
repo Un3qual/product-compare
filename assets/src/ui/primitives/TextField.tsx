@@ -1,8 +1,7 @@
-import { TextField as RadixTextField } from "@radix-ui/themes";
-import type { ComponentProps } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
-export type TextFieldProps = ComponentProps<typeof RadixTextField.Root>;
+export type TextFieldProps = ComponentPropsWithoutRef<"input">;
 
 export function TextField(props: TextFieldProps) {
-  return <RadixTextField.Root data-slot="text-field" {...props} />;
+  return <input data-slot="text-field" {...props} />;
 }

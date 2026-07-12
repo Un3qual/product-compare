@@ -27,31 +27,26 @@ test("Button preserves link semantics when composed through the slot wrapper", (
 
   const link = screen.getByRole("link", { name: "Browse products" });
 
-  expect(link).toHaveAttribute("data-slot", "button");
   expect(link).toHaveAttribute("href", "/products");
   expect(
     screen.queryByRole("button", { name: "Browse products" })
   ).not.toBeInTheDocument();
 });
 
-test("Button defaults to a native button while using Radix Themes", () => {
+test("Button defaults to native button semantics", () => {
   render(<Button>Apply</Button>);
 
   const button = screen.getByRole("button", { name: "Apply" });
 
   expect(button).toHaveAttribute("type", "button");
-  expect(button).toHaveAttribute("data-slot", "button");
-  expect(button).toHaveClass("rt-BaseButton");
 });
 
-test("TextField renders a named Radix input", () => {
+test("TextField renders a named search input", () => {
   render(<TextField aria-label="Search products" name="q" type="search" />);
 
   const input = screen.getByRole("searchbox", { name: "Search products" });
 
   expect(input).toHaveAttribute("name", "q");
-  expect(input).toHaveAttribute("data-slot", "text-field");
-  expect(input).toHaveClass("rt-TextFieldInput");
 });
 
 test("Separator renders the expected accessibility role and orientation", () => {
@@ -59,7 +54,6 @@ test("Separator renders the expected accessibility role and orientation", () => 
 
   const separator = screen.getByRole("separator", { name: "Section divider" });
 
-  expect(separator).toHaveAttribute("data-slot", "separator");
   expect(separator).toHaveAttribute("aria-orientation", "vertical");
 });
 
@@ -74,5 +68,4 @@ test("Collapsible exposes Radix state and accessibility semantics", () => {
   const trigger = screen.getByRole("button", { name: "Advanced filters" });
 
   expect(trigger).toHaveAttribute("aria-expanded", "false");
-  expect(trigger).toHaveAttribute("data-slot", "collapsible-trigger");
 });

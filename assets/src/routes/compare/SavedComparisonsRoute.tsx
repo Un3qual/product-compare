@@ -41,7 +41,7 @@ const styles = create({
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",

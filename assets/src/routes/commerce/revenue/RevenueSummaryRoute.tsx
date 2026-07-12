@@ -7,6 +7,7 @@ import revenueSummaryRouteQuery, {
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
+import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
@@ -26,30 +27,12 @@ const styles = create({
   filters: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
     padding: "1rem"
   },
-  metrics: {
-    display: "grid",
-    gap: "0.75rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))",
-    margin: 0
-  },
-  metric: {
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--radius-3)",
-    display: "grid",
-    gap: "0.35rem",
-    padding: "1rem"
-  },
-  metricValue: {
-    fontSize: "1.2rem",
-    fontWeight: 750,
-    margin: 0
-  }
 });
 
 export function RevenueSummaryRoute() {
@@ -64,7 +47,7 @@ export function RevenueSummaryRoute() {
       <WorkspaceLayout
         context={
           <ContextRail
-            description="Adjust the report scope without interrupting the metric reading path."
+            description="Filter recorded attribution by network, currency, or date range."
             label="Revenue controls"
           >
             <RevenueSummaryFilterForm
@@ -211,23 +194,15 @@ function RevenueSummaryMetrics({ summary }: { summary: RevenueSummary }) {
   const metrics = buildRevenueSummaryMetrics(summary, currency);
 
   return (
-    <section aria-labelledby="revenue-summary-heading">
-      <h2 id="revenue-summary-heading">Summary</h2>
+    <>
       {summary.suppression.suppressed ? (
         <p aria-live="polite" role="status">
           Revenue metrics are hidden until at least {summary.suppression.threshold} conversions
           match the current filters.
         </p>
       ) : null}
-      <dl {...props(styles.metrics)}>
-        {metrics.map((metric) => (
-          <div key={metric.label} {...props(styles.metric)}>
-            <dt>{metric.label}</dt>
-            <dd {...props(styles.metricValue)}>{metric.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+      <SummaryStrip items={metrics} label="Summary" />
+    </>
   );
 }
 

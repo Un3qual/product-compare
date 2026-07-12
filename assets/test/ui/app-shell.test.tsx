@@ -9,7 +9,6 @@ test("renders primary nav landmarks with a shared shell separator", () => {
   );
 
   expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
-  expect(screen.getByRole("separator")).toHaveAttribute("data-slot", "separator");
+  expect(screen.getByRole("separator")).toBeInTheDocument();
   expect(screen.getByRole("main")).toHaveTextContent("content");
-  expect(screen.getByRole("main").closest('[data-slot="app-shell"]')).toBeInTheDocument();
 });

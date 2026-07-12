@@ -56,7 +56,7 @@ const styles = create({
   },
   tableWrap: {
     borderColor: tokens.borderQuiet,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     borderStyle: "solid",
     borderWidth: "1px",
     overflowX: "auto"

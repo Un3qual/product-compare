@@ -253,7 +253,6 @@ test("saved comparison cards scope reopen and delete actions to the set", () => 
   const deleteButton = within(actions).getByRole("button", { name: "Delete comparison" });
 
   expect(deleteButton).toBeEnabled();
-  expect(deleteButton).toHaveAttribute("data-slot", "button");
 });
 
 test("saved comparisons route restores current order after another sort", () => {

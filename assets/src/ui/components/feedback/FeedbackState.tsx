@@ -1,11 +1,7 @@
-import { Callout } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 
 const styles = create({
-  root: {
-    alignItems: "start"
-  },
   body: {
     display: "grid",
     gap: "0.35rem"
@@ -27,14 +23,6 @@ export type FeedbackStateProps = {
   title: string;
 };
 
-const colors = {
-  empty: "gray",
-  error: "red",
-  loading: "blue",
-  success: "green",
-  warning: "amber"
-} as const;
-
 export function FeedbackState({
   action,
   description,
@@ -44,19 +32,12 @@ export function FeedbackState({
   const role = kind === "error" ? "alert" : "status";
 
   return (
-    <Callout.Root
-      {...props(styles.root)}
-      color={colors[kind]}
-      data-feedback-kind={kind}
-      role={role}
-      size="2"
-      variant="surface"
-    >
-      <Callout.Text {...props(styles.body)}>
+    <div data-feedback-kind={kind} data-slot="feedback-state" role={role}>
+      <div {...props(styles.body)}>
         <span {...props(styles.title)}>{title}</span>
         {description ? <span>{description}</span> : null}
-      </Callout.Text>
+      </div>
       {action ? <div {...props(styles.action)}>{action}</div> : null}
-    </Callout.Root>
+    </div>
   );
 }

@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom";
-import { ScrollArea } from "@radix-ui/themes";
+import {
+  Root as ScrollAreaRoot,
+  Scrollbar as ScrollAreaScrollbar,
+  Thumb as ScrollAreaThumb,
+  Viewport as ScrollAreaViewport
+} from "@radix-ui/react-scroll-area";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { DisclosureGroup } from "../../ui/components/feedback/DisclosureGroup";
@@ -28,7 +33,23 @@ const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
 
 const styles = create({
   tableWorkspace: {
+    overflow: "hidden",
     paddingBlockEnd: "0.35rem"
+  },
+  tableViewport: {
+    width: "100%"
+  },
+  tableScrollbar: {
+    backgroundColor: tokens.surfaceMuted,
+    display: "flex",
+    height: "0.65rem",
+    padding: "0.15rem",
+    userSelect: "none"
+  },
+  tableThumb: {
+    backgroundColor: tokens.borderEmphasized,
+    borderRadius: "999px",
+    flex: 1
   },
   table: {
     borderCollapse: "collapse",
@@ -109,17 +130,18 @@ function CompareSpecificationMatrix({
   return (
     <section aria-label="Specification comparison">
       <h2>{title}</h2>
-      <ScrollArea
-        scrollbars="horizontal"
-        type="auto"
-        {...props(styles.tableWorkspace)}
-      >
-        {rows.length === 0 ? (
-          <p>{emptySpecificationMatrixMessage(specMode)}</p>
-        ) : (
-          <SpecificationTable products={products} rows={rows} title={title} />
-        )}
-      </ScrollArea>
+      <ScrollAreaRoot type="auto" {...props(styles.tableWorkspace)}>
+        <ScrollAreaViewport {...props(styles.tableViewport)}>
+          {rows.length === 0 ? (
+            <p>{emptySpecificationMatrixMessage(specMode)}</p>
+          ) : (
+            <SpecificationTable products={products} rows={rows} title={title} />
+          )}
+        </ScrollAreaViewport>
+        <ScrollAreaScrollbar orientation="horizontal" {...props(styles.tableScrollbar)}>
+          <ScrollAreaThumb {...props(styles.tableThumb)} />
+        </ScrollAreaScrollbar>
+      </ScrollAreaRoot>
     </section>
   );
 }

@@ -31,7 +31,6 @@ that milestone by product decision.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-11-task-first-workspace-layout.md`
 - `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
 - `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
 - `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
@@ -55,9 +54,6 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Frontend information architecture: apply the approved task-first workspace,
-  detail, and guided-flow archetypes across every registered route while
-  preserving the existing Radix theme and application behavior.
 - Product comparison: disclose that relative price uses already-loaded offers,
   then add a local name filter over already-loaded picker products. These plans
   share test and lane paths and execute serially.
@@ -73,8 +69,9 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
-- Frontend Radix UI polish:
-  `docs/superpowers/plans/2026-07-11-radix-ui-polish.md`.
+- Frontend Radix UI polish architecture and completion evidence:
+  `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md` and
+  `docs/work/frontend-radix-ui-polish.md`.
 
 - Feature-complete product milestone:
   `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`,

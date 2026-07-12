@@ -1,5 +1,4 @@
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
-import type { ButtonProps } from "@radix-ui/themes";
 import { usePreloadedQuery } from "react-relay";
 import {
   NavLink,
@@ -14,7 +13,7 @@ import rootViewerRouteQuery, {
 import { useRoutePreloadedQuery } from "../relay/route-preload";
 import { AppShell } from "../ui/components/layout/AppShell";
 import { PageShell } from "../ui/components/layout/PageShell";
-import { Button } from "../ui/primitives/Button";
+import { Button, type ButtonProps } from "../ui/primitives/Button";
 import { AppProviders } from "../ui/providers/AppProviders";
 import type { RootLoaderData, RootViewer } from "./root/loader";
 

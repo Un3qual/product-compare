@@ -159,7 +159,7 @@ function MerchantDirectoryList({
   return (
     <>
       <SectionHeading
-        description="Seller identity and website access stay aligned for quick scanning."
+        description="Merchant names and destination domains for this result page."
         title={`${merchants.length} merchants on this page`}
       />
       <DataList label="Merchants">

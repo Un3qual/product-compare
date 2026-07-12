@@ -13,7 +13,7 @@ export function CompareShell({ actions, children, title }: CompareShellProps) {
       description={
         title === "Saved comparisons"
           ? "Return to saved product sets, refine the visible page, or remove comparisons you no longer need."
-          : "Compare the product details and offer signals that matter without losing context."
+          : "Review aligned product details, specifications, and current offer signals."
       }
       eyebrow="Decision workspace"
       title={title}

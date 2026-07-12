@@ -226,7 +226,7 @@ export function CompareRoute() {
         <WorkspaceLayout
           context={
             <ContextRail
-              description="Manage the selected products without interrupting the aligned comparison."
+              description="Save this set, remove selected products, or add another product."
               label="Comparison controls"
             >
               <Button disabled={saveInFlight} onClick={handleSave} type="button">

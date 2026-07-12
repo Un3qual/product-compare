@@ -68,7 +68,7 @@ const styles = create({
   form: {
     backgroundColor: tokens.surfaceMuted,
     borderColor: tokens.borderQuiet,
-    borderRadius: "var(--radius-4)",
+    borderRadius: "var(--pc-radius-large)",
     borderStyle: "solid",
     borderWidth: "1px",
     display: "grid",
