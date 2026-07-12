@@ -54,6 +54,10 @@ const styles = create({
     fontSize: "1.25rem",
     margin: 0
   },
+  description: {
+    color: tokens.textSecondary,
+    margin: 0
+  },
   tableWrap: {
     borderColor: tokens.borderQuiet,
     borderRadius: "var(--pc-radius-large)",
@@ -82,6 +86,9 @@ export function DecisionSummary({
   return (
     <section {...props(styles.section)}>
       <h2 {...props(styles.title)}>Decision summary</h2>
+      <p {...props(styles.description)}>
+        Relative loaded price compares only the offers already loaded for these products.
+      </p>
       <div {...props(styles.tableWrap)}>
         <table aria-label="Decision summary" {...props(styles.table)}>
           <DecisionSummaryHeader products={products} />

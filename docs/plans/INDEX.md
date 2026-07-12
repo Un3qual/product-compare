@@ -31,9 +31,7 @@ that milestone by product decision.
 
 Active implementation plans:
 
-- `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
-- `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
-- `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -59,6 +57,12 @@ batch and should not be recreated or promoted.
   share test and lane paths and execute serially.
 - Merchant discovery: add a local merchant-name filter explicitly scoped to the
   visible Relay page.
+- Route foundations: add a real wildcard 404 and shared route document metadata.
+- Frontend route maintainability: extract cohesive presentation boundaries from
+  API-token, offer-discovery, and product-detail route owners.
+- Ready reserve: skip navigation, affiliate-setup form decomposition, and
+  feed-candidate review decomposition remain executable after the selected
+  batch closes.
 - Deferred and rejected work remains outside the ready-work floor and cannot be
   used as queue filler. Start at `docs/work/index.md` for live dispatch status.
 
@@ -68,6 +72,11 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Bounded local-filter polish:
+  `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`,
+  `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`,
+  and `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`.
 
 - Frontend Radix UI polish architecture and completion evidence:
   `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md` and

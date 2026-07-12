@@ -17,6 +17,21 @@
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
+## Completed Bounded Local-Filter Batch
+
+- Status: done on 2026-07-11.
+- The decision summary now states that relative loaded price compares only
+  already-loaded offers without changing decimal or currency safety behavior.
+- The compare picker now filters already-loaded, unselected product names
+  case-insensitively while preserving selection URLs and the `Show more
+  products` action when no loaded item matches.
+- RED: the two focused cases failed because the scope disclosure and loaded
+  product search field were absent.
+- GREEN:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "loaded product names|scopes relative loaded price"` - 2 passed.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx` - 124 passed.
+  - `cd assets && bun run typecheck` - exited 0.
+
 ## Relative Loaded Price Follow-Up Evidence
 
 - Status: done.

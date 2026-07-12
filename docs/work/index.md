@@ -91,79 +91,218 @@ Email delivery, live conversion-provider ingestion, production privacy and
 attribution controls, and production-readiness proof are explicitly outside
 this milestone by product decision.
 
+The 2026-07-11 bounded local-filter batch is complete. Compare now explains
+that relative loaded price uses already-loaded offers, the compare picker can
+filter already-loaded product names, and the merchant directory can filter the
+visible Relay page without changing cursor behavior.
+
 ## Ready Work
 
-### 1. Compare Loaded-Price Scope Copy
+### 1. Application Wildcard Not Found
 
 Status: ready
-Lane: Frontend product comparison demo parity
-Plan: `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`
-Next action: Explain that the relative-price signal compares only already-loaded offers without changing its calculation.
+Lane: Frontend route foundations
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Register an explicit wildcard route that renders the shared not-found experience and preserves a 404 SSR response status.
 Owned paths:
 
-- `assets/src/routes/compare/DecisionSummary.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
+- `assets/src/routes/NotFoundRoute.tsx`
+- `assets/src/router.tsx`
+- `assets/src/entry.server.tsx`
+- `assets/test/router.test.tsx`
+- `assets/test/entry.server.test.tsx`
+- `assets/test/entry.server.error-handling.test.tsx`
+- `docs/work/frontend-route-foundations.md`
 
 Prerequisites:
 
-- Existing relative loaded-price behavior and safety rules remain unchanged.
+- Existing redirects and route-specific error boundaries remain unchanged.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx -t "relative loaded price|loaded offers"`
+- `cd assets && bun x vitest run test/router.test.tsx test/entry.server.test.tsx test/entry.server.error-handling.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: The decision summary explicitly scopes relative price to already-loaded offers with green focused tests.
+Exit condition: Unknown application paths render a useful not-found page and SSR returns status 404.
 
-### 2. Compare Picker Loaded-Name Filter
+### 2. Route Document Metadata
 
 Status: ready
-Lane: Frontend product comparison demo parity
-Plan: `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-plan.md`
-Next action: Add a case-insensitive local name filter over products already loaded in the compare picker.
+Lane: Frontend route foundations
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Add static route-handle titles and descriptions rendered through one React 19 metadata component for client navigation and SSR.
 Owned paths:
 
-- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
+- `assets/src/routes/RouteMetadata.tsx`
+- `assets/src/router.tsx`
+- `assets/src/routes/RootRoute.tsx`
+- `assets/test/router.test.tsx`
+- `assets/test/routes/root.route.test.tsx`
+- `assets/test/entry.server.test.tsx`
+- `docs/work/frontend-route-foundations.md`
 
 Prerequisites:
 
-- No code prerequisite; serialize this row with the loaded-price scope row because their test and lane paths overlap.
+- No code prerequisite; serialize this row with the wildcard 404 row because their router and test paths overlap.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun x vitest run test/router.test.tsx test/routes/root.route.test.tsx test/entry.server.test.tsx`
 - `cd assets && bun run typecheck`
+- `cd assets && bun run build`
 - `git diff --check`
 
-Exit condition: Shoppers can filter already-loaded picker products without changing pagination, selection, or compare URLs.
+Exit condition: Every registered route emits stable title and description metadata on SSR and client navigation.
 
-### 3. Merchant Visible-Page Name Filter
+### 3. API Token Route Component Extraction
 
 Status: ready
-Lane: Frontend merchant discovery demo parity
-Plan: `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-plan.md`
-Next action: Add a case-insensitive local merchant-name filter clearly scoped to the currently visible page.
+Lane: Frontend API token management demo parity
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract the API-token list and lifecycle presentation from the route owner without changing Relay or mutation behavior.
 Owned paths:
 
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-management-demo-parity.md`
 
 Prerequisites:
 
-- Existing merchant Relay page, safe-link behavior, and cursor controls remain unchanged.
+- Existing API-token route behavior suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Shoppers can filter merchant names on the visible page while retaining page-size, cursor, and safe-link behavior.
+Exit condition: The route owner is smaller and the full API-token behavior suite remains green.
+
+### 4. Offer Discovery Route Component Extraction
+
+Status: ready
+Lane: Frontend offer discovery demo parity
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract offer result cards, summaries, and pagination from the route owner without changing query, URL, or tracked-click behavior.
+Owned paths:
+
+- `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
+- `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Prerequisites:
+
+- Existing offer-discovery route behavior suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The route owner is smaller and the full offer-discovery behavior suite remains green.
+
+### 5. Product Detail Route Component Extraction
+
+Status: ready
+Lane: Frontend product detail
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract active-offer, coupon, and price-history presentation from the route owner without changing loader, tab, or tracked-click behavior.
+Owned paths:
+
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/src/routes/products/ProductOfferPanel.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md`
+
+Prerequisites:
+
+- Existing product-detail route behavior suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The route owner is smaller and the full product-detail behavior suite remains green.
+
+### 6. Skip Navigation
+
+Status: ready
+Lane: Frontend Radix UI polish
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Add a keyboard-visible skip link and stable main-content target to the shared application shell.
+Owned paths:
+
+- `assets/src/ui/components/layout/AppShell.tsx`
+- `assets/test/ui/app-shell.test.tsx`
+- `docs/work/frontend-radix-ui-polish.md`
+
+Prerequisites:
+
+- No code prerequisite.
+
+Verification:
+
+- `cd assets && bun x vitest run test/ui/app-shell.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
+
+### 7. Affiliate Setup Form Component Extraction
+
+Status: ready
+Lane: Frontend affiliate setup demo parity
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract the four affiliate setup form presentations from the route owner while preserving route-owned mutation orchestration.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-demo-parity.md`
+
+Prerequisites:
+
+- Existing affiliate setup behavior suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
+
+### 8. Feed Candidate Review Component Extraction
+
+Status: ready
+Lane: Product data scraping
+Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+Next action: Extract feed-candidate list and review presentation from the existing route without adding dashboard or ingestion behavior.
+Owned paths:
+
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/product-data-scraping.md`
+
+Prerequisites:
+
+- Existing feed-candidate route behavior and secret-safe field policy remain unchanged.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Review presentation is isolated with all behavior and secret-safety coverage green.
 
 ## Active Work
 

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
@@ -279,6 +279,35 @@ test("merchant directory renders next-page navigation when available", () => {
     "href",
     "/merchants?first=35&after=next-cursor"
   );
+});
+
+test("merchant directory filters visible-page names without hiding pagination", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      endCursor: "next-cursor",
+      hasNextPage: true
+    })
+  );
+
+  renderMerchantDirectoryRoute();
+
+  const filter = screen.getByRole("searchbox", { name: "Filter merchants on this page" });
+
+  fireEvent.change(filter, { target: { value: "gLoBeX" } });
+
+  expect(screen.queryByRole("heading", { name: "Acme Market" })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
+
+  fireEvent.change(filter, { target: { value: "missing" } });
+
+  expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
+
+  fireEvent.change(filter, { target: { value: "" } });
+
+  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
 });
 
 test("merchant directory renders first-page navigation when cursor-paged", () => {

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -15,6 +15,7 @@ import { SectionHeading } from "../../ui/components/layout/SectionHeading";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
+import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalWebsiteHref } from "../external-links";
 import {
@@ -34,6 +35,11 @@ const styles = create({
     display: "grid",
     gap: "0.75rem",
     gridTemplateColumns: "minmax(0, 1fr)"
+  },
+  filter: {
+    display: "grid",
+    gap: "0.35rem",
+    maxWidth: "24rem"
   },
   merchant: {
     display: "grid",
@@ -150,23 +156,48 @@ function MerchantDirectoryList({
   connection: MerchantDirectoryConnection;
   pagination: MerchantDirectoryPagination;
 }) {
+  const [filterText, setFilterText] = useState("");
   const merchants = connection.edges.map(({ node }) => node);
 
   if (merchants.length === 0) {
     return <FeedbackState kind="empty" title="No merchants available yet." />;
   }
 
+  const normalizedFilterText = filterText.trim().toLocaleLowerCase();
+  const visibleMerchants = normalizedFilterText
+    ? merchants.filter((merchant) =>
+        merchant.name.toLocaleLowerCase().includes(normalizedFilterText)
+      )
+    : merchants;
+
   return (
     <>
       <SectionHeading
         description="Merchant names and destination domains for this result page."
-        title={`${merchants.length} merchants on this page`}
+        title={
+          normalizedFilterText
+            ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
+            : `${merchants.length} merchants on this page`
+        }
       />
-      <DataList label="Merchants">
-        {merchants.map((merchant) => (
-          <MerchantListItem key={merchant.id} merchant={merchant} />
-        ))}
-      </DataList>
+      <label {...props(styles.filter)}>
+        Filter merchants on this page
+        <TextField
+          autoComplete="off"
+          onChange={(event) => setFilterText(event.currentTarget.value)}
+          type="search"
+          value={filterText}
+        />
+      </label>
+      {visibleMerchants.length === 0 ? (
+        <p>No merchants on this page match this filter.</p>
+      ) : (
+        <DataList label="Merchants">
+          {visibleMerchants.map((merchant) => (
+            <MerchantListItem key={merchant.id} merchant={merchant} />
+          ))}
+        </DataList>
+      )}
       <Pagination
         firstHref={
           connection.pageInfo.hasPreviousPage && pagination.after

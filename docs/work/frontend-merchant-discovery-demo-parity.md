@@ -10,6 +10,19 @@
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
 
+## Completed Visible-Page Name Filter
+
+- Status: done on 2026-07-11.
+- The directory now filters merchant names case-insensitively over the current
+  Relay page only and labels that scope explicitly.
+- Empty local matches retain First/Next cursor navigation, and clearing the
+  field restores the current page without a network request.
+- RED: the focused route case failed because the visible-page search field was absent.
+- GREEN:
+  - `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx -t "filters visible-page names"` - 1 passed.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx` - 124 passed.
+  - `cd assets && bun run typecheck` - exited 0.
+
 ## Batch Status
 
 - [x] Task 1: add the Relay route query and loader for `/merchants`.
