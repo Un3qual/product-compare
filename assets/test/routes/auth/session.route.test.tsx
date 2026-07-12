@@ -156,7 +156,7 @@ const credentialFormVariants = [
       { label: "Create account", to: "/auth/register" },
       { label: "Forgot password?", to: "/auth/forgot-password" }
     ],
-    passwordAutoComplete: "current-password" as const,
+    credentialAutoComplete: "current-password" as const,
     submitLabel: "Sign in",
     title: "Sign in"
   },
@@ -166,7 +166,7 @@ const credentialFormVariants = [
       { label: "Sign in instead", to: "/auth/login" },
       { label: "Forgot password?", to: "/auth/forgot-password" }
     ],
-    passwordAutoComplete: "new-password" as const,
+    credentialAutoComplete: "new-password" as const,
     submitLabel: "Create account",
     title: "Create your account"
   }
@@ -181,6 +181,7 @@ function renderCredentialAuthForm(
   render(
     <MemoryRouter>
       <CredentialAuthForm
+        credentialAutoComplete={variant.credentialAutoComplete}
         description={variant.description}
         errors={[
           {
@@ -197,7 +198,6 @@ function renderCredentialAuthForm(
         footerLinks={variant.footerLinks}
         isSubmitting={isSubmitting}
         onSubmit={onSubmit}
-        passwordAutoComplete={variant.passwordAutoComplete}
         submitLabel={variant.submitLabel}
         title={variant.title}
       />
@@ -217,7 +217,7 @@ test.each(credentialFormVariants)(
     expect(screen.getByRole("heading", { name: variant.title })).toBeInTheDocument();
     expect(screen.getByText(variant.description)).toBeInTheDocument();
     expect(email).toHaveAttribute("autocomplete", "email");
-    expect(password).toHaveAttribute("autocomplete", variant.passwordAutoComplete);
+    expect(password).toHaveAttribute("autocomplete", variant.credentialAutoComplete);
     expect(email).toHaveAttribute("aria-invalid", "true");
     expect(password).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Enter a valid email address")).toBeInTheDocument();
