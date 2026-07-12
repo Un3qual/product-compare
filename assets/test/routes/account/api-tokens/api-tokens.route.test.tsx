@@ -165,15 +165,17 @@ test("API token item presents token lifecycle details and delegates actions", ()
   const onRevoke = vi.fn();
   const onRotate = vi.fn();
   const view = render(
-    <ApiTokenItem
-      onRevoke={onRevoke}
-      onRotate={onRotate}
-      revokeError="Token cannot be revoked."
-      revokePending={false}
-      rotateError="Token rotation failed."
-      rotatePending
-      token={ACTIVE_TOKEN}
-    />
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError="Token cannot be revoked."
+        revokePending={false}
+        rotateError="Token rotation failed."
+        rotatePending
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
   );
 
   expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
@@ -191,29 +193,33 @@ test("API token item presents token lifecycle details and delegates actions", ()
   expect(screen.getByRole("button", { name: "Revoke token" })).toBeDisabled();
 
   view.rerender(
-    <ApiTokenItem
-      onRevoke={onRevoke}
-      onRotate={onRotate}
-      revokeError={null}
-      revokePending
-      rotateError={null}
-      rotatePending={false}
-      token={ACTIVE_TOKEN}
-    />
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError={null}
+        revokePending
+        rotateError={null}
+        rotatePending={false}
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
   );
 
   expect(screen.getByRole("button", { name: "Revoking token..." })).toBeDisabled();
 
   view.rerender(
-    <ApiTokenItem
-      onRevoke={onRevoke}
-      onRotate={onRotate}
-      revokeError={null}
-      revokePending={false}
-      rotateError={null}
-      rotatePending={false}
-      token={ACTIVE_TOKEN}
-    />
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError={null}
+        revokePending={false}
+        rotateError={null}
+        rotatePending={false}
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
