@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4da02ec5822134d8b47c4ea198cda3b5>>
+ * @generated SignedSource<<0cad0b90a738bd481ebbd5d04342b312>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -23,6 +23,7 @@ export type LoginMutation$data = {
     readonly viewer: {
       readonly email: string;
       readonly id: string;
+      readonly isOperator: boolean;
     } | null | undefined;
   };
 };
@@ -85,6 +86,13 @@ v1 = [
             "kind": "ScalarField",
             "name": "email",
             "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "isOperator",
+            "storageKey": null
           }
         ],
         "storageKey": null
@@ -143,16 +151,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "2ec1f7cc09ee230c766920ef3d9ea23e",
+    "cacheID": "8f72163867b94e31c971a8cba025fae3",
     "id": null,
     "metadata": {},
     "name": "LoginMutation",
     "operationKind": "mutation",
-    "text": "mutation LoginMutation(\n  $email: String!\n  $password: String!\n) {\n  login(email: $email, password: $password) {\n    viewer {\n      id\n      email\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation LoginMutation(\n  $email: String!\n  $password: String!\n) {\n  login(email: $email, password: $password) {\n    viewer {\n      id\n      email\n      isOperator\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "39d24c11cfcead7f75ff3ee057dd130c";
+(node as any).hash = "2ddcf8e88fe0aa9b57fb448624d0e5a0";
 
 export default node;

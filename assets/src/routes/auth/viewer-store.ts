@@ -7,6 +7,7 @@ import {
 type RootViewer = {
   id: string;
   email: string;
+  isOperator?: boolean;
 };
 
 export function setRootViewer(environment: Environment, viewer: RootViewer) {
@@ -15,6 +16,7 @@ export function setRootViewer(environment: Environment, viewer: RootViewer) {
 
     viewerRecord.setValue(viewer.id, "id");
     viewerRecord.setValue(viewer.email, "email");
+    viewerRecord.setValue(viewer.isOperator === true, "isOperator");
     store.getRoot().setLinkedRecord(viewerRecord, "viewer");
   });
 }

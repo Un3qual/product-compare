@@ -126,6 +126,16 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
              } = graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
     end
 
+    test "merchantFeedCandidates rejects authenticated members", %{conn: conn} do
+      conn = member_conn(conn)
+
+      assert %{
+               "data" => %{"merchantFeedCandidates" => nil},
+               "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
+             } =
+               graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+    end
+
     test "merchantFeedCandidate does not expose raw metadata fields", %{conn: conn} do
       assert %{
                "data" => %{
@@ -429,6 +439,31 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                Repo.get!(MerchantFeedCandidate, candidate.id)
     end
 
+    test "reviewMerchantFeedCandidate rejects authenticated members without mutating state", %{
+      conn: conn
+    } do
+      source = source_fixture()
+      candidate = merchant_feed_candidate_fixture(source, %{provider_feed_id: "member-denied"})
+      conn = member_conn(conn)
+
+      assert %{
+               "data" => %{
+                 "reviewMerchantFeedCandidate" => %{
+                   "candidate" => nil,
+                   "errors" => [%{"code" => "FORBIDDEN"}]
+                 }
+               }
+             } =
+               graphql(conn, review_merchant_feed_candidate_mutation(), %{
+                 "input" => %{
+                   "id" => relay_id(:merchant_feed_candidate, candidate.id),
+                   "status" => "DISMISSED"
+                 }
+               })
+
+      assert %MerchantFeedCandidate{review_status: "pending"} = Repo.reload(candidate)
+    end
+
     test "reviewMerchantFeedCandidate returns payload errors for invalid ids", %{conn: conn} do
       conn = authed_conn(conn)
 
@@ -595,6 +630,12 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   end
 
   defp authed_conn(conn) do
+    conn
+    |> log_in_user(AccountsFixtures.operator_fixture())
+    |> put_req_header_same_origin()
+  end
+
+  defp member_conn(conn) do
     conn
     |> log_in_user(AccountsFixtures.user_fixture())
     |> put_req_header_same_origin()

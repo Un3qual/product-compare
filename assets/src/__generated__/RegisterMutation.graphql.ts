@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<28dab38d61bac951e138363fb80d931e>>
+ * @generated SignedSource<<0f6b591037c7df79acab5c918c7234f0>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -23,6 +23,7 @@ export type RegisterMutation$data = {
     readonly viewer: {
       readonly email: string;
       readonly id: string;
+      readonly isOperator: boolean;
     } | null | undefined;
   };
 };
@@ -85,6 +86,13 @@ v1 = [
             "kind": "ScalarField",
             "name": "email",
             "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "isOperator",
+            "storageKey": null
           }
         ],
         "storageKey": null
@@ -143,16 +151,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "b780f61403239708a1aa90ef59721a76",
+    "cacheID": "34233fa41ed6b131bdcec0b474420e70",
     "id": null,
     "metadata": {},
     "name": "RegisterMutation",
     "operationKind": "mutation",
-    "text": "mutation RegisterMutation(\n  $email: String!\n  $password: String!\n) {\n  register(email: $email, password: $password) {\n    viewer {\n      id\n      email\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation RegisterMutation(\n  $email: String!\n  $password: String!\n) {\n  register(email: $email, password: $password) {\n    viewer {\n      id\n      email\n      isOperator\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "415a8f29656241868e50eef08afddac9";
+(node as any).hash = "56034fdfe54390160d9892a7276f8d82";
 
 export default node;

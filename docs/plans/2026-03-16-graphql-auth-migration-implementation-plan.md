@@ -191,6 +191,10 @@ Expected: PASS.
 - [x] Move frontend auth routes onto Relay mutation artifacts and remove the route-local auth `fetchGraphQL` helper.
 - [x] Record an explicit transport deferral decision for reset and verification delivery.
 - [x] Expand frontend auth browser-level end-to-end coverage for recovery and verification.
+- [x] Add non-null operator capability to `viewer`, preserve it through Relay
+      auth/root state, and keep self-service registration non-operator.
+- [x] Enforce one shared operator boundary for global affiliate, feed-review,
+      and revenue GraphQL surfaces with `UNAUTHENTICATED`/`FORBIDDEN` parity.
 
 **Step 1: Add GraphQL `forgotPassword`, `resetPassword`, `verifyEmail`**
 

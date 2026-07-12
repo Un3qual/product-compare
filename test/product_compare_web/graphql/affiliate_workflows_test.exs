@@ -441,6 +441,61 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert Repo.aggregate(Coupon, :count, :id) == baseline_counts.coupon
     end
 
+    test "affiliate mutations and activeCoupons reject authenticated members without writes", %{
+      conn: conn
+    } do
+      member_conn = member_conn(conn)
+      merchant = merchant_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant})
+      {:ok, network} = Affiliate.upsert_network(%{name: "Member Boundary Network"})
+      network_id = relay_id(:affiliate_network, network.id)
+      merchant_id = relay_id(:merchant, merchant.id)
+      merchant_product_id = relay_id(:merchant_product, merchant_product.id)
+
+      baseline =
+        {Repo.aggregate(AffiliateNetwork, :count), Repo.aggregate(AffiliateProgram, :count),
+         Repo.aggregate(AffiliateLink, :count), Repo.aggregate(Coupon, :count)}
+
+      for {query, variables, root, entity} <- [
+            {upsert_network_mutation(), %{"input" => %{"name" => "Denied Network"}},
+             "upsertAffiliateNetwork", "network"},
+            {upsert_program_mutation(),
+             %{"input" => %{"affiliateNetworkId" => network_id, "merchantId" => merchant_id}},
+             "upsertAffiliateProgram", "program"},
+            {upsert_link_mutation(),
+             %{
+               "input" => %{
+                 "merchantProductId" => merchant_product_id,
+                 "affiliateNetworkId" => network_id,
+                 "originalUrl" => "https://merchant.example/item",
+                 "affiliateUrl" => "https://affiliate.example/item"
+               }
+             }, "upsertAffiliateLink", "link"},
+            {create_coupon_mutation(),
+             %{
+               "input" => %{
+                 "merchantId" => merchant_id,
+                 "code" => "DENIED",
+                 "discountType" => "OTHER"
+               }
+             }, "createCoupon", "coupon"}
+          ] do
+        assert %{"data" => %{^root => %{^entity => nil, "errors" => [%{"code" => "FORBIDDEN"}]}}} =
+                 graphql(member_conn, query, variables)
+      end
+
+      assert %{
+               "data" => %{"activeCoupons" => nil},
+               "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
+             } =
+               graphql(member_conn, active_coupons_query(), %{
+                 "input" => %{"merchantId" => merchant_id}
+               })
+
+      assert {Repo.aggregate(AffiliateNetwork, :count), Repo.aggregate(AffiliateProgram, :count),
+              Repo.aggregate(AffiliateLink, :count), Repo.aggregate(Coupon, :count)} == baseline
+    end
+
     test "affiliate mutations reject raw affiliate network IDs", %{conn: conn} do
       authed_conn = authed_conn(conn)
       merchant = merchant_fixture()
@@ -607,7 +662,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                AffiliateResolver.active_coupons(
                  nil,
                  %{input: %{"merchant_id" => merchant_id, "at" => future_at, "first" => 10}},
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
     end
 
@@ -618,7 +673,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                AffiliateResolver.upsert_affiliate_network(
                  nil,
                  %{input: %{"name" => name}},
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
     end
 
@@ -637,7 +692,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                      "status" => "active"
                    }
                  },
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
     end
 
@@ -656,7 +711,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                      "status" => "active"
                    }
                  },
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
 
       assert {:ok, %{program: %{status: nil}, errors: []}} =
@@ -670,7 +725,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                      "status" => nil
                    }
                  },
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
     end
 
@@ -696,7 +751,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                      "last_verified_at" => verified_at
                    }
                  },
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
 
       assert network_id == network.id
@@ -714,7 +769,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                      "last_verified_at" => nil
                    }
                  },
-                 %{context: %{current_user: user_fixture()}}
+                 %{context: %{current_user: operator_fixture()}}
                )
     end
   end
@@ -735,12 +790,18 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   end
 
   defp authed_conn(conn) do
-    user = user_fixture()
+    user = operator_fixture()
 
     {:ok, %{plain_text_token: plain_text_token}} =
       Accounts.create_api_token(user.id, %{label: "bootstrap"})
 
     put_req_header(conn, "authorization", "Bearer #{plain_text_token}")
+  end
+
+  defp member_conn(conn) do
+    user = user_fixture()
+    {:ok, %{plain_text_token: token}} = Accounts.create_api_token(user.id, %{label: "member"})
+    put_req_header(conn, "authorization", "Bearer #{token}")
   end
 
   defp merchant_fixture(attrs \\ %{}) do

@@ -35,7 +35,8 @@ The current branch introduced browser auth writes through REST endpoints under `
 
 ### Frontend Contract
 
-- `viewer` returns the authenticated user or `null`.
+- `viewer` returns the authenticated user, including non-null `isOperator`, or
+  `null`. Self-service registration always returns `isOperator: false`.
 - `login(email, password)` authenticates credentials, renews the Phoenix session, and returns a typed payload.
 - `register(email, password)` creates the account, renews the Phoenix session, optionally dispatches email verification instructions through the delivery hook, and returns a typed payload.
 - `logout` deletes the current session token when present, drops the Phoenix session cookie, and returns a typed payload.
@@ -51,6 +52,9 @@ The current branch introduced browser auth writes through REST endpoints under `
 - Credential failures use `INVALID_CREDENTIALS`.
 - Invalid or expired reset and verification tokens use `INVALID_TOKEN`.
 - Cross-origin session-writing attempts use `INVALID_ORIGIN`.
+- Missing authentication on operator-only fields uses `UNAUTHENTICATED`;
+  authenticated members use `FORBIDDEN`. Mutation denials remain typed payload
+  errors while query denials remain top-level GraphQL errors.
 
 ## Architecture
 

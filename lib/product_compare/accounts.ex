@@ -50,6 +50,15 @@ defmodule ProductCompare.Accounts do
   @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email), do: Repo.get_by(User, email: normalize_email(email))
 
+  @doc "Updates operator access for trusted seed and bootstrap code."
+  @spec set_operator_access(User.t(), boolean()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator) do
+    user
+    |> User.operator_access_changeset(is_operator)
+    |> Repo.update()
+  end
+
   @doc """
   Ensures a user exists with a usable password hash.
 

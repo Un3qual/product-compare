@@ -4,35 +4,39 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   alias ProductCompare.Affiliate
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
 
   @spec upsert_affiliate_network(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def upsert_affiliate_network(_parent, %{input: input}, %{
-        context: %{current_user: _current_user}
-      }) do
-    attrs = Input.take_present(input, [:name])
+  def upsert_affiliate_network(_parent, %{input: input}, resolution) do
+    with {:ok, _user} <- Authorization.require_operator(resolution) do
+      attrs = Input.take_present(input, [:name])
 
-    case Affiliate.upsert_network(attrs) do
-      {:ok, network} ->
-        {:ok, %{network: network, errors: []}}
+      case Affiliate.upsert_network(attrs) do
+        {:ok, network} ->
+          {:ok, %{network: network, errors: []}}
 
-      {:error, changeset} ->
-        {field, message} = GraphQLErrors.changeset_first_error(changeset)
-        {:ok, mutation_error_payload(:network, "INVALID_ARGUMENT", message, field)}
+        {:error, changeset} ->
+          {field, message} = GraphQLErrors.changeset_first_error(changeset)
+          {:ok, mutation_error_payload(:network, "INVALID_ARGUMENT", message, field)}
+      end
+    else
+      {:error, reason} ->
+        {:ok,
+         mutation_error_payload(:network, GraphQLErrors.authorization_mutation_error(reason))}
     end
   end
 
-  def upsert_affiliate_network(_parent, _args, _resolution),
-    do: {:ok, mutation_error_payload(:network, GraphQLErrors.unauthenticated_mutation_error())}
+  def upsert_affiliate_network(_parent, _args, resolution),
+    do: denied_mutation(:network, resolution)
 
   @spec upsert_affiliate_program(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def upsert_affiliate_program(_parent, %{input: input}, %{
-        context: %{current_user: _current_user}
-      }) do
-    affiliate_mutation(
+  def upsert_affiliate_program(_parent, %{input: input}, resolution) do
+    operator_affiliate_mutation(
+      resolution,
       :program,
       input,
       [:affiliate_network_id, :merchant_id],
@@ -41,13 +45,14 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     )
   end
 
-  def upsert_affiliate_program(_parent, _args, _resolution),
-    do: {:ok, mutation_error_payload(:program, GraphQLErrors.unauthenticated_mutation_error())}
+  def upsert_affiliate_program(_parent, _args, resolution),
+    do: denied_mutation(:program, resolution)
 
   @spec upsert_affiliate_link(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def upsert_affiliate_link(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
-    affiliate_mutation(
+  def upsert_affiliate_link(_parent, %{input: input}, resolution) do
+    operator_affiliate_mutation(
+      resolution,
       :link,
       input,
       [:merchant_product_id, :affiliate_network_id],
@@ -56,13 +61,13 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     )
   end
 
-  def upsert_affiliate_link(_parent, _args, _resolution),
-    do: {:ok, mutation_error_payload(:link, GraphQLErrors.unauthenticated_mutation_error())}
+  def upsert_affiliate_link(_parent, _args, resolution), do: denied_mutation(:link, resolution)
 
   @spec create_coupon(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def create_coupon(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
-    affiliate_mutation(
+  def create_coupon(_parent, %{input: input}, resolution) do
+    operator_affiliate_mutation(
+      resolution,
       :coupon,
       input,
       [:merchant_id, :affiliate_network_id, :artifact_id],
@@ -71,13 +76,13 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     )
   end
 
-  def create_coupon(_parent, _args, _resolution),
-    do: {:ok, mutation_error_payload(:coupon, GraphQLErrors.unauthenticated_mutation_error())}
+  def create_coupon(_parent, _args, resolution), do: denied_mutation(:coupon, resolution)
 
   @spec active_coupons(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
-  def active_coupons(_parent, %{input: input}, %{context: %{current_user: _current_user}}) do
-    with {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]) do
+  def active_coupons(_parent, %{input: input}, resolution) do
+    with {:ok, _user} <- Authorization.require_operator(resolution),
+         {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]) do
       case active_coupon_connection(merchant_id, attrs) do
         {:ok, connection} ->
           {:ok, %{coupons: connection}}
@@ -86,6 +91,9 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
           {:error, message}
       end
     else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
       {:error, {:invalid_id, field}} ->
         {:error, invalid_id_message(field)}
 
@@ -97,8 +105,10 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     end
   end
 
-  def active_coupons(_parent, _args, _resolution),
-    do: {:error, GraphQLErrors.unauthenticated()}
+  def active_coupons(_parent, _args, resolution) do
+    {:error, reason} = Authorization.require_operator(resolution)
+    {:error, GraphQLErrors.authorization_error(reason)}
+  end
 
   @spec merchant_product_active_coupons(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
@@ -148,6 +158,30 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
       {:error, reason} when is_binary(reason) ->
         {:ok, mutation_error_payload(entity_field, "INVALID_ARGUMENT", reason)}
     end
+  end
+
+  defp operator_affiliate_mutation(
+         resolution,
+         entity_field,
+         input,
+         id_fields,
+         attr_fields,
+         save_fun
+       ) do
+    with {:ok, _user} <- Authorization.require_operator(resolution) do
+      affiliate_mutation(entity_field, input, id_fields, attr_fields, save_fun)
+    else
+      {:error, reason} ->
+        {:ok,
+         mutation_error_payload(entity_field, GraphQLErrors.authorization_mutation_error(reason))}
+    end
+  end
+
+  defp denied_mutation(entity_field, resolution) do
+    {:error, reason} = Authorization.require_operator(resolution)
+
+    {:ok,
+     mutation_error_payload(entity_field, GraphQLErrors.authorization_mutation_error(reason))}
   end
 
   defp normalize_ids(attrs, id_fields) when is_map(attrs) do

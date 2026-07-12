@@ -9,6 +9,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     field :email, :string
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime_usec
+    field :is_operator, :boolean, default: false
     field :password, :string, virtual: true, redact: true
 
     has_one :reputation, ProductCompareSchemas.Accounts.UserReputation
@@ -57,6 +58,11 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> validate_required([:password])
     |> validate_length(:password, min: 12, max: 72)
     |> put_hashed_password()
+  end
+
+  @spec operator_access_changeset(t(), boolean()) :: Ecto.Changeset.t()
+  def operator_access_changeset(user, is_operator) when is_boolean(is_operator) do
+    change(user, is_operator: is_operator)
   end
 
   @spec confirm_changeset(t()) :: Ecto.Changeset.t()

@@ -35,6 +35,9 @@ end
 admin = upsert_user.("admin@example.com")
 moderator = upsert_user.("moderator@example.com")
 
+{:ok, admin} = Accounts.set_operator_access(admin, true)
+{:ok, moderator} = Accounts.set_operator_access(moderator, true)
+
 {:ok, _} = Accounts.upsert_user_reputation(admin.id, 1_000)
 {:ok, _} = Accounts.upsert_user_reputation(moderator.id, 500)
 

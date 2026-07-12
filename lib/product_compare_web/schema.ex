@@ -706,6 +706,7 @@ defmodule ProductCompareWeb.Schema do
     end
 
     field :email, non_null(:string)
+    field :is_operator, non_null(:boolean)
   end
 
   object :api_token do

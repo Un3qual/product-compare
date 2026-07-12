@@ -76,3 +76,24 @@ output, a clean working tree, and an independent whole-branch review.
 - Verification: focused backend 36 tests, focused frontend 217 tests,
   `bun run relay:check`, `bun run typecheck`, `mix format --check-formatted`,
   and `git diff --check` all passed.
+
+### 2026-07-12 — Milestone 2: explicit operator authorization
+
+- Added non-null `users.is_operator` persistence with a database default of
+  false. Registration cannot cast the field; trusted seed/bootstrap code uses
+  the Accounts context operation, and both seeded staff accounts are operators.
+- Added one GraphQL authorization helper and shared top-level/mutation error
+  constructors. Anonymous callers retain `UNAUTHENTICATED`; members receive
+  `FORBIDDEN` before query or mutation work.
+- Protected global affiliate mutations and active coupons, merchant feed
+  candidates and review, and revenue summary for both session and API-token
+  authentication paths. Nested shopper coupon access remains public.
+- Exposed `viewer.isOperator`, regenerated canonical SDL/Relay artifacts, and
+  split member account destinations from affiliate, revenue, and feed-review
+  operator destinations while preserving saved comparisons and API tokens.
+- RED evidence: focused backend authorization coverage failed with member
+  writes/reads succeeding and revenue remaining public; root coverage failed
+  while operator links remained visible to members and the cached flag was lost.
+- GREEN evidence: focused backend authorization/session suites passed 55 tests;
+  focused frontend auth/root suites passed 35 tests. Final milestone gates are
+  recorded in the Task 2 report.
