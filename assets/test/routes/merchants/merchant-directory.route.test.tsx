@@ -531,6 +531,9 @@ test("merchant directory renders the loader error state", () => {
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("20");
   expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
