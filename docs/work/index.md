@@ -110,34 +110,14 @@ ordering, offer cards and summaries, merchant quick filters, tracked actions,
 and pagination now live in a focused result component; the route owner retains
 loader-state and Relay query orchestration.
 
+The 2026-07-11 product-detail route decomposition is complete. Active-offer
+normalization, snapshots, tracked actions, coupon and price-history summaries,
+and pagination now live in a focused panel; the route owner retains Relay,
+compare selection, and tab orchestration.
+
 ## Ready Work
 
-### 1. Product Detail Route Component Extraction
-
-Status: ready
-Lane: Frontend product detail
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Extract active-offer, coupon, and price-history presentation from the route owner without changing loader, tab, or tracked-click behavior.
-Owned paths:
-
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/src/routes/products/ProductOfferPanel.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-product-detail.md`
-
-Prerequisites:
-
-- Existing product-detail route behavior suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The route owner is smaller and the full product-detail behavior suite remains green.
-
-### 2. Skip Navigation
+### 1. Skip Navigation
 
 Status: ready
 Lane: Frontend Radix UI polish
@@ -161,7 +141,7 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 3. Affiliate Setup Form Component Extraction
+### 2. Affiliate Setup Form Component Extraction
 
 Status: ready
 Lane: Frontend affiliate setup demo parity
@@ -186,7 +166,7 @@ Verification:
 
 Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 4. Feed Candidate Review Component Extraction
+### 3. Feed Candidate Review Component Extraction
 
 Status: ready
 Lane: Product data scraping
