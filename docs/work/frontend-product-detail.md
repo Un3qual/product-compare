@@ -2,10 +2,11 @@
 
 ## Snapshot
 
-- Status: done (price observation context)
+- Status: ready (product detail offer-list presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after product price-observation verification
+- Last verified: 2026-07-12 after next-boundary validation (200 tests across
+  the promoted cohort)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -21,6 +22,28 @@
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Product Detail Offer List Presentation Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Next action: Extract active-offer list, merchant action, current price and
+  observation, price-history rows, and coupon rows while preserving panel-owned
+  normalization, safety checks, snapshot calculation, and pagination.
+- Owned paths:
+  - `assets/src/routes/products/ProductOfferPanel.tsx`
+  - `assets/src/routes/products/ProductOfferList.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Prerequisite: the existing product-detail route suite is green and remains
+  the characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: normalized active-offer presentation is isolated without
+  changing safe-link filtering, price/date formatting, coupon/history output,
+  snapshots, mixed-currency behavior, or pagination.
 
 ## 2026-07-11 Route Decomposition
 
