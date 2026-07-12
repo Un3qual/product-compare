@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (specification-matrix data contract)
+- Status: ready (serial matrix and decision-summary data contracts)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -38,6 +38,27 @@
 - Exit condition: the pure data contract preserves stable ordering, duplicate-
   code selection, missing cells, modes, typed values, units, and decimal/
   exponent normalization.
+
+## Decision Summary Data Contract
+
+- Status: ready on 2026-07-12; dispatch serially with the specification-matrix
+  data contract because both own this lane doc and the compare route suite.
+- Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
+- Next action: isolate loaded-price safety and decision-metric label derivation
+  in a framework-free module while retaining disclosure, table presentation,
+  and Review offers URLs in `DecisionSummary`.
+- Owned paths:
+  - `assets/src/routes/compare/decision-summary-data.ts`
+  - `assets/src/routes/compare/DecisionSummary.tsx`
+  - `assets/test/routes/compare/decision-summary-data.test.ts`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure metric contracts preserve loaded-offer scope, decimal
+  and currency safety, unavailable labels, and recency output.
 
 ## Compare Product Picker View Extraction
 
