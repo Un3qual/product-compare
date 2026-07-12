@@ -2,11 +2,10 @@
 
 ## Snapshot
 
-- Status: ready (product detail offer-list presentation extraction)
+- Status: ready (product detail decision-actions presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after next-boundary validation (200 tests across
-  the promoted cohort)
+- Last verified: 2026-07-12 after post-stack validation (49 focused tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -22,6 +21,26 @@
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Product Detail Decision Actions Presentation Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
+- Next action: extract the accessible Next steps presentation behind explicit
+  add, selected, and full compare states while preserving route-owned Relay,
+  selection, navigation, and URL construction.
+- Owned paths:
+  - `assets/src/routes/products/ProductDecisionActions.tsx`
+  - `assets/src/routes/products/ProductDetailRoute.tsx`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: decision-action presentation is isolated without changing
+  encoded destinations, comparison state, offer cursors, tab hashes, or
+  tray-return behavior.
 
 ## Product Detail Offer List Presentation Extraction
 
