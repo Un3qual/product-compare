@@ -22,6 +22,7 @@ import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
+import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -40,6 +41,7 @@ import {
   type ProgramResult
 } from "./AffiliateSetupForms";
 import { affiliateSetupLoader, type AffiliateSetupLoaderData } from "./loader";
+import { affiliateSetupPagePath } from "./pagination";
 
 type AffiliateSetupMerchantConnection = NonNullable<
   AffiliateSetupRouteQuery["response"]["merchants"]
@@ -62,7 +64,10 @@ export function AffiliateSetupRoute() {
           resetToken={loaderData.merchantQuery}
         >
           <Suspense fallback={<FeedbackState kind="loading" title="Loading affiliate setup..." />}>
-            <AffiliateSetupPanel merchantQuery={loaderData.merchantQuery} />
+            <AffiliateSetupPanel
+              merchantPagination={loaderData.merchantPagination}
+              merchantQuery={loaderData.merchantQuery}
+            />
           </Suspense>
         </ResettableErrorBoundary>
       )}
@@ -71,8 +76,10 @@ export function AffiliateSetupRoute() {
 }
 
 function AffiliateSetupPanel({
+  merchantPagination,
   merchantQuery
 }: {
+  merchantPagination: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantPagination"];
   merchantQuery: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantQuery"];
 }) {
   const queryRef = useRoutePreloadedQuery<AffiliateSetupRouteQuery>(
@@ -324,6 +331,25 @@ function AffiliateSetupPanel({
           selectedMerchantValue={selectedMerchantValue}
         />
       )}
+
+      <Pagination
+        firstHref={
+          data.merchants.pageInfo.hasPreviousPage && merchantPagination.after
+            ? affiliateSetupPagePath({ ...merchantPagination, after: null })
+            : null
+        }
+        firstLabel="First merchants"
+        label="Merchant choice pages"
+        nextHref={
+          data.merchants.pageInfo.hasNextPage && data.merchants.pageInfo.endCursor
+            ? affiliateSetupPagePath({
+                ...merchantPagination,
+                after: data.merchants.pageInfo.endCursor
+              })
+            : null
+        }
+        nextLabel="Next merchants"
+      />
     </WorkspaceLayout>
   );
 }

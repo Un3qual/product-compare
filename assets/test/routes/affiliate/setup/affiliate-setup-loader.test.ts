@@ -5,6 +5,7 @@ import {
   preloadRouteQuery
 } from "../../../../src/relay/route-preload";
 import { affiliateSetupLoader } from "../../../../src/routes/affiliate/setup/loader";
+import { affiliateSetupPagePath } from "../../../../src/routes/affiliate/setup/pagination";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -71,6 +72,22 @@ test("affiliateSetupLoader preserves supported merchant cursor and page-size par
     },
     merchantQuery: descriptor
   });
+});
+
+test("affiliateSetupPagePath serializes normalized merchant pagination", () => {
+  expect(
+    affiliateSetupPagePath({
+      first: 35,
+      after: "merchant cursor/+"
+    })
+  ).toBe("/affiliate/setup?first=35&after=merchant+cursor%2F%2B");
+
+  expect(
+    affiliateSetupPagePath({
+      first: 35,
+      after: null
+    })
+  ).toBe("/affiliate/setup?first=35");
 });
 
 test("affiliateSetupLoader drops invalid merchant page-size params", async () => {
