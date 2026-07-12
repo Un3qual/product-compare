@@ -19,6 +19,7 @@ defmodule ProductCompare.Accounts do
   @default_reputation_events_limit 50
   @max_reputation_events_limit 200
   @ensure_user_with_password_before_create_hook :ensure_user_with_password_before_create
+  @bootstrap_operator_before_create_hook :bootstrap_operator_before_create
   @deliver_user_confirmation_instructions_hook :deliver_user_confirmation_instructions
   @deliver_user_reset_password_instructions_hook :deliver_user_reset_password_instructions
 
@@ -57,6 +58,76 @@ defmodule ProductCompare.Accounts do
     user
     |> User.operator_access_changeset(is_operator)
     |> Repo.update()
+  end
+
+  @doc """
+  Bootstraps a trusted operator account without taking over an existing account.
+
+  A missing account is created with the supplied password, granted operator
+  access, and assigned the supplied reputation in one transaction. An existing
+  operator is returned unchanged. An existing non-operator fails closed, even
+  if it appears concurrently while the account is being created.
+  """
+  @spec bootstrap_operator_user(String.t(), String.t(), integer()) ::
+          {:ok, User.t()} | {:error, :existing_non_operator | Ecto.Changeset.t()}
+  def bootstrap_operator_user(email, password, reputation_points)
+      when is_binary(email) and is_binary(password) and is_integer(reputation_points) do
+    normalized_email = normalize_email(email)
+
+    case Repo.transaction(fn ->
+           bootstrap_operator_user_transaction(normalized_email, password, reputation_points)
+         end) do
+      {:ok, %User{} = user} -> {:ok, user}
+      {:error, :existing_non_operator} -> {:error, :existing_non_operator}
+      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+    end
+  end
+
+  defp bootstrap_operator_user_transaction(normalized_email, password, reputation_points) do
+    case lock_user_by_email(normalized_email) do
+      %User{is_operator: true} = operator ->
+        operator
+
+      %User{} ->
+        Repo.rollback(:existing_non_operator)
+
+      nil ->
+        run_before_bootstrap_operator_create_hook(normalized_email)
+
+        %User{}
+        |> User.registration_changeset(%{email: normalized_email, password: password})
+        |> Repo.insert(on_conflict: :nothing, conflict_target: [:email], returning: true)
+        |> finish_operator_bootstrap(normalized_email, reputation_points)
+    end
+  end
+
+  defp finish_operator_bootstrap({:ok, %User{id: nil}}, normalized_email, _reputation_points) do
+    case lock_user_by_email(normalized_email) do
+      %User{is_operator: true} = operator -> operator
+      %User{} -> Repo.rollback(:existing_non_operator)
+      nil -> Repo.rollback(:existing_non_operator)
+    end
+  end
+
+  defp finish_operator_bootstrap(
+         {:ok, %User{} = user},
+         _normalized_email,
+         reputation_points
+       ) do
+    with {:ok, %User{} = operator} <- set_operator_access(user, true),
+         {:ok, %UserReputation{}} <- upsert_user_reputation(operator.id, reputation_points) do
+      operator
+    else
+      {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  defp finish_operator_bootstrap(
+         {:error, %Ecto.Changeset{} = changeset},
+         _normalized_email,
+         _reputation_points
+       ) do
+    Repo.rollback(changeset)
   end
 
   @doc """
@@ -165,6 +236,15 @@ defmodule ProductCompare.Accounts do
   defp run_before_ensure_user_with_password_create_hook(email) do
     case Application.get_env(:product_compare, __MODULE__, [])
          |> Keyword.get(@ensure_user_with_password_before_create_hook) do
+      fun when is_function(fun, 1) -> fun.(email)
+      _other -> :ok
+    end
+  end
+
+  # Test-only hook for deterministically exercising the operator create race branch.
+  defp run_before_bootstrap_operator_create_hook(email) do
+    case Application.get_env(:product_compare, __MODULE__, [])
+         |> Keyword.get(@bootstrap_operator_before_create_hook) do
       fun when is_function(fun, 1) -> fun.(email)
       _other -> :ok
     end

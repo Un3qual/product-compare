@@ -27,19 +27,24 @@ seed_user_password =
       end
   end
 
-upsert_user = fn email ->
-  {:ok, user} = Accounts.ensure_user_with_password(email, seed_user_password)
-  user
+bootstrap_operator = fn email, reputation_points ->
+  case Accounts.bootstrap_operator_user(email, seed_user_password, reputation_points) do
+    {:ok, user} ->
+      user
+
+    {:error, :existing_non_operator} ->
+      raise """
+      Refusing to bootstrap #{email}: an existing non-operator account already owns this email.
+      Resolve the account conflict explicitly before rerunning seeds.
+      """
+
+    {:error, %Ecto.Changeset{} = changeset} ->
+      raise "Failed to bootstrap #{email}: #{inspect(changeset.errors)}"
+  end
 end
 
-admin = upsert_user.("admin@example.com")
-moderator = upsert_user.("moderator@example.com")
-
-{:ok, admin} = Accounts.set_operator_access(admin, true)
-{:ok, moderator} = Accounts.set_operator_access(moderator, true)
-
-{:ok, _} = Accounts.upsert_user_reputation(admin.id, 1_000)
-{:ok, _} = Accounts.upsert_user_reputation(moderator.id, 500)
+admin = bootstrap_operator.("admin@example.com", 1_000)
+moderator = bootstrap_operator.("moderator@example.com", 500)
 
 {:ok, _} = Taxonomy.seed_default_taxonomies()
 
