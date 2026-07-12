@@ -15,14 +15,18 @@ export type RevenueSummaryMetric = { label: string; value: string };
 
 type RevenueFilters = RevenueSummaryLoaderData["filters"];
 
-const REVENUE_FILTER_IDS = {
-  currency: "revenue-filter-currency",
-  from: "revenue-filter-from",
-  network: "revenue-filter-network",
-  to: "revenue-filter-to"
+const REVENUE_FILTER_LABEL_IDS = {
+  currency: "revenue-filter-currency-label",
+  from: "revenue-filter-from-label",
+  network: "revenue-filter-network-label",
+  to: "revenue-filter-to-label"
 } as const;
 
 const styles = create({
+  filterField: {
+    display: "grid",
+    gap: "0.35rem"
+  },
   filters: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -85,49 +89,53 @@ function RevenueSummaryControls({
 function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): ReactElement {
   return (
     <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
-      <label htmlFor={REVENUE_FILTER_IDS.network}>
-        Network
+      <div {...props(styles.filterField)}>
+        <span id={REVENUE_FILTER_LABEL_IDS.network}>Network</span>
         <TextField
+          aria-labelledby={REVENUE_FILTER_LABEL_IDS.network}
           autoComplete="off"
-          defaultValue={filters.network ?? ""}
-          id={REVENUE_FILTER_IDS.network}
+          defaultValue={filterFieldValue(filters.network)}
           name="network"
           type="text"
         />
-      </label>
-      <label htmlFor={REVENUE_FILTER_IDS.currency}>
-        Currency
+      </div>
+      <div {...props(styles.filterField)}>
+        <span id={REVENUE_FILTER_LABEL_IDS.currency}>Currency</span>
         <TextField
+          aria-labelledby={REVENUE_FILTER_LABEL_IDS.currency}
           autoComplete="off"
-          defaultValue={filters.currency ?? ""}
-          id={REVENUE_FILTER_IDS.currency}
+          defaultValue={filterFieldValue(filters.currency)}
           maxLength={3}
           name="currency"
           type="text"
         />
-      </label>
-      <label htmlFor={REVENUE_FILTER_IDS.from}>
-        From
+      </div>
+      <div {...props(styles.filterField)}>
+        <span id={REVENUE_FILTER_LABEL_IDS.from}>From</span>
         <input
-          defaultValue={filters.from ?? ""}
-          id={REVENUE_FILTER_IDS.from}
+          aria-labelledby={REVENUE_FILTER_LABEL_IDS.from}
+          defaultValue={filterFieldValue(filters.from)}
           name="from"
           type="date"
         />
-      </label>
-      <label htmlFor={REVENUE_FILTER_IDS.to}>
-        To
+      </div>
+      <div {...props(styles.filterField)}>
+        <span id={REVENUE_FILTER_LABEL_IDS.to}>To</span>
         <input
-          defaultValue={filters.to ?? ""}
-          id={REVENUE_FILTER_IDS.to}
+          aria-labelledby={REVENUE_FILTER_LABEL_IDS.to}
+          defaultValue={filterFieldValue(filters.to)}
           name="to"
           type="date"
         />
-      </label>
+      </div>
       <Button type="submit">Apply filters</Button>
       <Link to="/commerce/revenue">Clear filters</Link>
     </form>
   );
+}
+
+function filterFieldValue(value: string | null | undefined) {
+  return value ?? "";
 }
 
 function RevenueDatePresetList({
