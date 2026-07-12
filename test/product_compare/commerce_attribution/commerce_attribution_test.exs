@@ -615,6 +615,73 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.attribution_confidence == :high
     end
 
+    test "rejects a conflicting merchant product on an identifier-free follow-up" do
+      clicked_merchant = merchant_fixture()
+      clicked_merchant_product = merchant_product_fixture(%{merchant: clicked_merchant})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "ClickId" => click_session.click_id,
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "15.00",
+        "ReportingDate" => "2026-05-20T12:05:00Z",
+        "MerchantProductId" => clicked_merchant_product.id
+      }
+
+      assert {:ok, approved} = ImpactAdapter.ingest_action(payload)
+      conflicting_merchant_product = merchant_product_fixture()
+
+      follow_up =
+        payload
+        |> Map.drop(["ClickId"])
+        |> Map.merge(%{
+          "Status" => "PAID",
+          "Payout" => "20.00",
+          "ReportingDate" => "2026-05-21T12:05:00Z",
+          "MerchantProductId" => conflicting_merchant_product.id
+        })
+
+      assert {:error, changeset} = ImpactAdapter.ingest_action(follow_up)
+      assert "does not match resolved click" in errors_on(changeset).merchant_product_id
+      assert Repo.reload!(approved) == approved
+    end
+
+    test "rejects a conflicting direct dimension on an identifier-free follow-up" do
+      clicked_merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      attrs = %{
+        source_network: :impact,
+        network_conversion_ref: "direct-follow-up-#{System.unique_integer([:positive])}",
+        public_click_id: click_session.click_id,
+        merchant_id: clicked_merchant.id,
+        status: :approved,
+        currency: "USD",
+        commission_amount: Decimal.new("15.00"),
+        reported_at: ~U[2026-05-20 12:05:00Z]
+      }
+
+      assert {:ok, approved} = CommerceAttribution.ingest_conversion(attrs)
+
+      assert {:error, changeset} =
+               CommerceAttribution.ingest_conversion(%{
+                 attrs
+                 | public_click_id: nil,
+                   merchant_id: merchant_fixture().id,
+                   status: :paid,
+                   commission_amount: Decimal.new("20.00"),
+                   reported_at: ~U[2026-05-21 12:05:00Z]
+               })
+
+      assert "does not match resolved click" in errors_on(changeset).merchant_id
+      assert Repo.reload!(approved) == approved
+    end
+
     test "stores external click tokens without rejecting conversions" do
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",

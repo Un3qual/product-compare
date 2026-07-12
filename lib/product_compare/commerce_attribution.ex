@@ -117,9 +117,24 @@ defmodule ProductCompare.CommerceAttribution do
   @spec ingest_conversion(map()) ::
           {:ok, CommerceConversion.t()} | {:error, Ecto.Changeset.t()}
   def ingest_conversion(attrs) do
-    case resolve_click_attribution(attrs) do
-      {:ok, attrs} -> persist_conversion(attrs)
-      {:error, conflicts} -> {:error, attribution_conflict_changeset(attrs, conflicts)}
+    Repo.transaction(fn ->
+      attrs = maybe_restore_persisted_click_attribution(attrs)
+
+      case resolve_click_attribution(attrs) do
+        {:ok, attrs} ->
+          persist_conversion_or_rollback(attrs)
+
+        {:error, conflicts} ->
+          Repo.rollback(attribution_conflict_changeset(attrs, conflicts))
+      end
+    end)
+    |> unwrap_transaction()
+  end
+
+  defp persist_conversion_or_rollback(attrs) do
+    case persist_conversion(attrs) do
+      {:ok, conversion} -> conversion
+      {:error, changeset} -> Repo.rollback(changeset)
     end
   end
 
@@ -790,6 +805,42 @@ defmodule ProductCompare.CommerceAttribution do
       source_network: Ecto.Changeset.get_field(changeset, :source_network),
       network_conversion_ref: Ecto.Changeset.get_field(changeset, :network_conversion_ref)
     )
+  end
+
+  defp maybe_restore_persisted_click_attribution(attrs) do
+    existing_conversion =
+      CommerceConversion.changeset(%CommerceConversion{}, attrs)
+      |> existing_conversion_for_update()
+
+    case {incoming_click_identifier?(attrs), existing_conversion} do
+      {false, %CommerceConversion{click_session_id: click_session_id}}
+      when not is_nil(click_session_id) ->
+        put_attr(attrs, :click_session_id, click_session_id)
+
+      _incoming_or_unattributed ->
+        attrs
+    end
+  end
+
+  defp existing_conversion_for_update(changeset) do
+    source_network = Ecto.Changeset.get_field(changeset, :source_network)
+    network_conversion_ref = Ecto.Changeset.get_field(changeset, :network_conversion_ref)
+
+    if is_nil(source_network) or is_nil(network_conversion_ref) do
+      nil
+    else
+      from(conversion in CommerceConversion,
+        where:
+          conversion.source_network == ^source_network and
+            conversion.network_conversion_ref == ^network_conversion_ref,
+        lock: "FOR UPDATE"
+      )
+      |> Repo.one()
+    end
+  end
+
+  defp incoming_click_identifier?(attrs) do
+    attr_present?(attrs, :click_session_id) or attr_present?(attrs, :public_click_id)
   end
 
   defp resolve_click_attribution(attrs) do
