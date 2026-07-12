@@ -183,6 +183,21 @@ describe("sorting", () => {
     }
   });
 
+  test("orders non-decomposing Latin letters alphabetically", () => {
+    const viewState = buildSavedComparisonsViewState(
+      readyLoaderData([
+        { id: "saved-set-1", name: "Zulu", products: [] },
+        { id: "saved-set-2", name: "Ømega", products: [] },
+        { id: "saved-set-3", name: "Æther", products: [] }
+      ]),
+      new Set(),
+      "",
+      "name-asc"
+    );
+
+    expect(savedSetIds(viewState)).toEqual(["saved-set-3", "saved-set-2", "saved-set-1"]);
+  });
+
   test.each([
     ["product-count-desc", ["saved-set-1", "saved-set-2", "saved-set-3"]],
     ["product-count-asc", ["saved-set-3", "saved-set-1", "saved-set-2"]]
