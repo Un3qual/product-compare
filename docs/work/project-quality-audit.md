@@ -158,3 +158,10 @@ output, a clean working tree, and an independent whole-branch review.
   pass 63 tests with zero failures; `mix typecheck` passes. Dialyzer reports no
   touched-module warnings and retains only warnings outside this milestone's
   owned paths.
+- Independent review follow-up reloads and locks persisted reviews before
+  verified-purchase derivation, so forged/stale structs cannot influence
+  identity, derived state, or unspecified editable fields. Current-claim
+  selection now validates its single claim query under `FOR UPDATE`, closing
+  the accepted-claim status TOCTOU through commit. RED reproduced both gaps;
+  GREEN passes 66 focused tests with zero failures plus typecheck, formatting,
+  and diff hygiene.

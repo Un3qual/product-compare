@@ -109,11 +109,25 @@ defmodule ProductCompare.Discussions do
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def update_review(%ProductReview{} = review, attrs) do
     sanitized_attrs = drop_client_verified_purchase(attrs)
-    verified_purchase = derive_verified_purchase(%{}, review)
 
-    review
-    |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
-    |> Repo.update()
+    Repo.transaction(fn ->
+      persisted_review =
+        Repo.one!(
+          from persisted_review in ProductReview,
+            where: persisted_review.id == ^review.id,
+            lock: "FOR UPDATE"
+        )
+
+      verified_purchase = derive_verified_purchase(%{}, persisted_review)
+
+      persisted_review
+      |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
+      |> Repo.update()
+      |> case do
+        {:ok, updated_review} -> updated_review
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   @spec delete_review(ProductReview.t()) ::

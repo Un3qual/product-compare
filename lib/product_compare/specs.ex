@@ -144,7 +144,14 @@ defmodule ProductCompare.Specs do
   def select_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
     Multi.new()
     |> Multi.run(:claim, fn repo, _changes ->
-      case repo.get(ProductAttributeClaim, claim_id) do
+      claim =
+        repo.one(
+          from claim in ProductAttributeClaim,
+            where: claim.id == ^claim_id,
+            lock: "FOR UPDATE"
+        )
+
+      case claim do
         nil ->
           {:error, :claim_not_found}
 

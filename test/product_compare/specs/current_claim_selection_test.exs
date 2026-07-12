@@ -5,7 +5,14 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
   alias ProductCompare.Specs
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Catalog.Brand
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Specs.Attribute
+  alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Taxonomy.Taxon
+  alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   describe "select_current_claim/4" do
     test "keeps one current row per product+attribute and atomically replaces claim" do
@@ -72,6 +79,28 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
 
       assert {:error, :claim_not_accepted} =
                Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
+    end
+
+    test "returns claim_not_found for a missing selected claim" do
+      product = SpecsFixtures.product_fixture(%{slug: "missing-current-claim-product"})
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "missing_current_claim_attribute",
+          display_name: "Missing Current Claim",
+          data_type: :bool
+        })
+
+      moderator = AccountsFixtures.user_fixture()
+      missing_claim_id = System.unique_integer([:positive])
+
+      assert {:error, :claim_not_found} =
+               Specs.select_current_claim(
+                 product.id,
+                 attribute.id,
+                 missing_claim_id,
+                 moderator.id
+               )
     end
 
     test "rejects selecting claim for a different product/attribute" do
@@ -168,6 +197,59 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
       assert Enum.count(queries, &String.contains?(&1, ~s(FROM "product_attribute_claims"))) == 1
     end
 
+    test "locks the selected claim row before validating its status" do
+      fixture = create_committed_proposed_claim_fixture()
+      on_exit(fn -> cleanup_committed_claim_fixture(fixture) end)
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+
+              Repo.one!(
+                from claim in ProductAttributeClaim,
+                  where: claim.id == ^fixture.claim.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, {:claim_lock_held, backend_pid})
+
+              receive do
+                :release_claim_lock -> :ok
+              after
+                5_000 -> flunk("timed out waiting to release the held claim lock")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive {:claim_lock_held, lock_backend_pid}
+
+      selection =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+            send(parent, {:selection_started, backend_pid})
+
+            Specs.select_current_claim(
+              fixture.product.id,
+              fixture.attribute.id,
+              fixture.claim.id,
+              fixture.moderator.id
+            )
+          end)
+        end)
+
+      assert_receive {:selection_started, selection_backend_pid}
+      assert_blocked_by(selection_backend_pid, lock_backend_pid)
+
+      send(lock_holder.pid, :release_claim_lock)
+      assert {:ok, :ok} = Task.await(lock_holder)
+      assert {:error, :claim_not_accepted} = Task.await(selection)
+    end
+
     test "concurrent selection still leaves a single current row" do
       product = SpecsFixtures.product_fixture(%{slug: "concurrent-swap-product"})
 
@@ -261,5 +343,79 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
     |> String.trim_leading()
     |> String.upcase()
     |> String.starts_with?("SELECT")
+  end
+
+  defp assert_blocked_by(waiting_backend_pid, blocking_backend_pid) do
+    deadline = System.monotonic_time(:millisecond) + 2_000
+    wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+  end
+
+  defp wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
+    blocked? =
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.query!("SELECT $1 = ANY(pg_blocking_pids($2))", [
+          blocking_backend_pid,
+          waiting_backend_pid
+        ])
+        |> then(&(&1.rows == [[true]]))
+      end)
+
+    cond do
+      blocked? ->
+        :ok
+
+      System.monotonic_time(:millisecond) < deadline ->
+        wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+
+      true ->
+        flunk(
+          "expected database backend #{waiting_backend_pid} to wait for #{blocking_backend_pid}"
+        )
+    end
+  end
+
+  defp create_committed_proposed_claim_fixture do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      moderator = AccountsFixtures.user_fixture()
+
+      product =
+        SpecsFixtures.product_fixture(%{slug: "locked-claim-#{System.unique_integer()}"})
+
+      taxon = Repo.get!(Taxon, product.primary_type_taxon_id)
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "locked_claim_#{System.unique_integer([:positive])}",
+          display_name: "Locked Claim",
+          data_type: :bool
+        })
+
+      {:ok, claim} =
+        Specs.propose_claim(product.id, attribute.id, %{value_bool: true}, %{
+          source_type: :user,
+          created_by: moderator.id
+        })
+
+      %{
+        attribute: attribute,
+        brand_id: product.brand_id,
+        claim: claim,
+        moderator: moderator,
+        product: product,
+        taxon_id: taxon.id,
+        taxonomy_id: taxon.taxonomy_id
+      }
+    end)
+  end
+
+  defp cleanup_committed_claim_fixture(fixture) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+      Repo.delete_all(from attribute in Attribute, where: attribute.id == ^fixture.attribute.id)
+      Repo.delete_all(from brand in Brand, where: brand.id == ^fixture.brand_id)
+      Repo.delete_all(from taxon in Taxon, where: taxon.id == ^fixture.taxon_id)
+      Repo.delete_all(from taxonomy in Taxonomy, where: taxonomy.id == ^fixture.taxonomy_id)
+      Repo.delete_all(from user in User, where: user.id == ^fixture.moderator.id)
+    end)
   end
 end
