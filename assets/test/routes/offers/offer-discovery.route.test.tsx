@@ -2,9 +2,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { OfferDiscoveryRoute } from "../../../src/routes/offers/index";
+import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
-import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/TrackedCommerceClickAction";
 
 const {
   commitCommerceClickMock,
@@ -161,6 +161,9 @@ test("offer discovery renders filter controls with existing filter values", () =
 
   renderOfferDiscoveryRoute();
 
+  expect(screen.getByRole("region", { name: "Offer results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Offer controls" })).toBeInTheDocument();
+
   const filterForm = screen.getByRole("form", { name: "Offer discovery filters" });
 
   expect(filterForm).toHaveAttribute("action", "/offers");
@@ -286,6 +289,7 @@ test("offer discovery renders ready offer rows", () => {
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("heading", { name: "Offers" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Offers" })).toBeInTheDocument();
   expect(screen.getByText("Active offers")).toBeVisible();
 
   const offer = screen.getByRole("heading", { name: "Detail Product" }).closest("li");

@@ -1,13 +1,13 @@
 import { createClientRouter, routes, shouldRevalidateRootLoader } from "../src/router";
-import { AffiliateSetupRoute } from "../src/routes/affiliate/setup/index";
+import { AffiliateSetupRoute } from "../src/routes/affiliate/setup/AffiliateSetupRoute";
 import { affiliateSetupLoader } from "../src/routes/affiliate/setup/loader";
-import { LogoutRoute } from "../src/routes/auth/logout";
-import { RouteErrorBoundary } from "../src/routes/compare/error-boundary";
-import { RevenueSummaryRoute } from "../src/routes/commerce/revenue/index";
+import { LogoutRoute } from "../src/routes/auth/LogoutRoute";
+import { RouteErrorBoundary } from "../src/routes/compare/RouteErrorBoundary";
+import { RevenueSummaryRoute } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { revenueSummaryLoader } from "../src/routes/commerce/revenue/loader";
-import { MerchantDirectoryRoute } from "../src/routes/merchants/index";
+import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirectoryRoute";
 import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
-import { OfferDiscoveryRoute } from "../src/routes/offers/index";
+import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
 import { offerDiscoveryLoader } from "../src/routes/offers/loader";
 import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
 

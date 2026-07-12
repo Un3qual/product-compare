@@ -1,5 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { Button, Label, Separator } from "../../src/ui/primitives/index";
+import { TextField } from "../../src/ui/primitives/TextField";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "../../src/ui/primitives/Collapsible";
 
 test("Label associates auth fields with their inputs", () => {
   render(
@@ -21,11 +27,26 @@ test("Button preserves link semantics when composed through the slot wrapper", (
 
   const link = screen.getByRole("link", { name: "Browse products" });
 
-  expect(link).toHaveAttribute("data-slot", "button");
   expect(link).toHaveAttribute("href", "/products");
   expect(
     screen.queryByRole("button", { name: "Browse products" })
   ).not.toBeInTheDocument();
+});
+
+test("Button defaults to native button semantics", () => {
+  render(<Button>Apply</Button>);
+
+  const button = screen.getByRole("button", { name: "Apply" });
+
+  expect(button).toHaveAttribute("type", "button");
+});
+
+test("TextField renders a named search input", () => {
+  render(<TextField aria-label="Search products" name="q" type="search" />);
+
+  const input = screen.getByRole("searchbox", { name: "Search products" });
+
+  expect(input).toHaveAttribute("name", "q");
 });
 
 test("Separator renders the expected accessibility role and orientation", () => {
@@ -33,6 +54,18 @@ test("Separator renders the expected accessibility role and orientation", () => 
 
   const separator = screen.getByRole("separator", { name: "Section divider" });
 
-  expect(separator).toHaveAttribute("data-slot", "separator");
   expect(separator).toHaveAttribute("aria-orientation", "vertical");
+});
+
+test("Collapsible exposes Radix state and accessibility semantics", () => {
+  render(
+    <Collapsible>
+      <CollapsibleTrigger>Advanced filters</CollapsibleTrigger>
+      <CollapsibleContent>Filter fields</CollapsibleContent>
+    </Collapsible>
+  );
+
+  const trigger = screen.getByRole("button", { name: "Advanced filters" });
+
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
 });

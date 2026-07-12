@@ -1,5 +1,8 @@
-export { Button } from "./button";
-export type { ButtonProps } from "./button";
-export { Label } from "./label";
-export { Separator } from "./separator";
-export { Slot } from "./slot";
+export { Button } from "./Button";
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./Collapsible";
+export type { ButtonProps } from "./Button";
+export { Label } from "./Label";
+export { Separator } from "./Separator";
+export { Slot } from "./Slot";
+export { TextField } from "./TextField";
+export type { TextFieldProps } from "./TextField";

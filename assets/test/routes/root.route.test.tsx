@@ -9,7 +9,7 @@ import {
   useRoutePreloadedQuery
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
-import { RootLayout, RootRoute } from "../../src/routes/root";
+import { RootLayout, RootRoute } from "../../src/routes/RootRoute";
 import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
@@ -97,7 +97,7 @@ beforeEach(() => {
   } as never);
 });
 
-function renderRootRoute(loaderData: RootLoaderData) {
+function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
   const router = createMemoryRouter(
     [
       {
@@ -108,6 +108,10 @@ function renderRootRoute(loaderData: RootLoaderData) {
           {
             index: true,
             element: <RootRoute />
+          },
+          {
+            path: "*",
+            element: <div>Nested route</div>
           }
         ]
       }
@@ -118,7 +122,7 @@ function renderRootRoute(loaderData: RootLoaderData) {
           root: loaderData
         }
       },
-      initialEntries: ["/"]
+      initialEntries: [initialEntry]
     }
   );
 
@@ -133,12 +137,12 @@ test("root layout renders guest auth links in the primary navigation", async () 
 
   expect(primaryNavigation).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+    "href",
+    "/compare"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
@@ -205,6 +209,23 @@ test("root layout renders authenticated auth links in the primary navigation", a
   ).not.toBeInTheDocument();
 });
 
+test("root layout identifies one exact active destination on saved comparisons", async () => {
+  renderRootRoute(authenticatedLoaderData, "/compare/saved");
+
+  const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const compareLink = within(primaryNavigation).getByRole("link", {
+    name: "Compare products"
+  });
+  const savedLink = within(primaryNavigation).getByRole("link", {
+    name: "Saved comparisons"
+  });
+
+  expect(compareLink).not.toHaveAttribute("aria-current");
+  expect(compareLink).toHaveAttribute("data-active", "false");
+  expect(savedLink).toHaveAttribute("aria-current", "page");
+  expect(savedLink).toHaveAttribute("data-active", "true");
+});
+
 test("root layout reads authenticated viewer state from the preloaded root query", async () => {
   renderRootRoute(readyLoaderDataWithoutSnapshotViewer);
 
@@ -226,15 +247,22 @@ test("root route renders guest home actions as links while using the shared butt
   renderRootRoute(guestLoaderData);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  const homeActions = screen.getByRole("group", { name: "Home actions" });
-
-  expect(within(homeActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
+    "aria-current",
+    "page"
   );
-  expect(within(homeActions).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "data-slot",
-    "button"
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+  const shopperPaths = within(homeActions).getByRole("list", { name: "Shopper paths" });
+
+  expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
+
+  expect(within(shopperPaths).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+  expect(within(shopperPaths).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "href",
+    "/compare"
   );
   expect(within(homeActions).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
@@ -277,7 +305,7 @@ test("root route focuses the home content on the shopper journey", async () => {
     screen.queryByText(/GraphQL-backed browser auth flows/i)
   ).not.toBeInTheDocument();
 
-  const shopperActions = screen.getByRole("group", { name: "Shopper actions" });
+  const shopperActions = screen.getByRole("navigation", { name: "Shopper actions" });
 
   expect(within(shopperActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
@@ -291,6 +319,9 @@ test("root route focuses the home content on the shopper journey", async () => {
     "href",
     "/offers"
   );
+  expect(within(shopperActions).getByText(/narrow by what matters/i)).toBeInTheDocument();
+  expect(within(shopperActions).getByText(/meaningful differences side by side/i)).toBeInTheDocument();
+  expect(within(shopperActions).getByText(/current prices, availability, and coupons/i)).toBeInTheDocument();
 });
 
 test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {
@@ -311,7 +342,11 @@ test("root route renders authenticated home actions", async () => {
   renderRootRoute(authenticatedLoaderData);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  const homeActions = screen.getByRole("group", { name: "Home actions" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+
+  expect(
+    within(homeActions).getByRole("navigation", { name: "More Product Compare actions" })
+  ).toBeInTheDocument();
 
   expect(within(homeActions).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",

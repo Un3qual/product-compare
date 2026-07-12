@@ -17,7 +17,7 @@ handling, and First/Next pagination unchanged.
 
 ## Owned Paths
 
-- `assets/src/routes/merchants/index.tsx`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
 - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - `docs/work/frontend-merchant-discovery-demo-parity.md`
 

@@ -5,7 +5,7 @@ import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import {
   RevenueSummaryRoute,
   buildRevenueDatePresetLinks
-} from "../../../../src/routes/commerce/revenue/index";
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
 
 const {
@@ -112,6 +112,11 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(
     screen.getByRole("heading", { name: "Revenue reporting preview" })
   ).toBeInTheDocument();
+  expect(
+    screen.getByRole("region", { name: "Revenue reporting preview" })
+  ).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Revenue report" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Revenue controls" })).toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });

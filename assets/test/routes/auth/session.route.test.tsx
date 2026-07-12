@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { commitLocalUpdate } from "relay-runtime";
 import { useMutation, useRelayEnvironment } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { LoginRoute } from "../../../src/routes/auth/login";
-import { LogoutRoute } from "../../../src/routes/auth/logout";
-import { RegisterRoute } from "../../../src/routes/auth/register";
+import { LoginRoute } from "../../../src/routes/auth/LoginRoute";
+import { LogoutRoute } from "../../../src/routes/auth/LogoutRoute";
+import { RegisterRoute } from "../../../src/routes/auth/RegisterRoute";
 
 const navigateMock = vi.fn();
 const {
@@ -151,16 +151,6 @@ beforeEach(() => {
 test("login route commits credentials through Relay and redirects after a successful session response", async () => {
   renderRoute("/auth/login");
 
-  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
-  expect(screen.getByRole("button", { name: /sign in/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(screen.getByRole("link", { name: /create account/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }
   });
@@ -205,10 +195,6 @@ test("logout route commits the Relay logout mutation and redirects after Phoenix
 
   expect(screen.getByRole("heading", { name: /sign out/i })).toBeInTheDocument();
   expect(screen.getByText("Sign out of your account.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /sign out/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
   expect(screen.getByRole("link", { name: /back to sign in/i })).toHaveAttribute(
     "href",
     "/auth/login"
@@ -324,16 +310,6 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
   renderRoute("/auth/register");
 
   const emailInput = screen.getByLabelText(/email/i);
-
-  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
-  expect(screen.getByRole("button", { name: /create account/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(screen.getByRole("link", { name: /sign in instead/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
 
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }

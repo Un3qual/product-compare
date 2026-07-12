@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { ResettableErrorBoundary } from "../../src/relay/resettable-error-boundary";
+import { ResettableErrorBoundary } from "../../src/relay/ResettableErrorBoundary";
 
 let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 

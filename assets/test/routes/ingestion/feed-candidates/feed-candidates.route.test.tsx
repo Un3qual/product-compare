@@ -6,7 +6,7 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../../src/relay/route-preload";
 import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
-import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/index";
+import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidatesRoute";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
 const {
@@ -107,6 +107,9 @@ test("feed candidates route renders review-safe candidate rows", () => {
   renderFeedCandidatesRoute();
 
   expect(screen.getByRole("heading", { name: "CJ feed candidates" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "CJ feed candidates" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Feed candidate queue" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Candidate controls" })).toBeInTheDocument();
   const candidateList = screen.getByRole("list", { name: "CJ feed candidates" });
 
   expect(within(candidateList).getByText("Trail Merchant")).toBeInTheDocument();

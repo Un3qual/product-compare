@@ -9,12 +9,12 @@ import {
   RouterProvider,
   Routes
 } from "react-router-dom";
-import { ForgotPasswordRoute } from "../../../src/routes/auth/forgot-password";
-import { ResetPasswordRoute } from "../../../src/routes/auth/reset-password";
+import { ForgotPasswordRoute } from "../../../src/routes/auth/ForgotPasswordRoute";
+import { ResetPasswordRoute } from "../../../src/routes/auth/ResetPasswordRoute";
 import {
   resetVerifyEmailRequestCache,
   VerifyEmailRoute
-} from "../../../src/routes/auth/verify-email";
+} from "../../../src/routes/auth/VerifyEmailRoute";
 
 const { commitMutationMock, useMutationMock } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
@@ -90,16 +90,6 @@ beforeEach(() => {
 
 test("forgot password route commits the email through Relay and shows the privacy-safe success state", async () => {
   renderRoute("/auth/forgot-password");
-
-  expect(screen.getByText("Email").closest("label")).toHaveAttribute("data-slot", "label");
-  expect(screen.getByRole("button", { name: /send reset link/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(screen.getByRole("link", { name: /create account/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
 
   fireEvent.change(screen.getByLabelText(/email/i), {
     target: { value: "person@example.com" }
@@ -180,19 +170,6 @@ test("forgot password route hides synchronous Relay commit errors behind a gener
 
 test("reset password route reads the token from the URL and commits the new password", async () => {
   renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
-
-  expect(screen.getByText("New password").closest("label")).toHaveAttribute(
-    "data-slot",
-    "label"
-  );
-  expect(screen.getByRole("button", { name: /update password/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
-  expect(screen.getByRole("link", { name: /back to sign in/i })).toHaveAttribute(
-    "data-slot",
-    "button"
-  );
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
     target: { value: TEST_RESET_PASSWORD }

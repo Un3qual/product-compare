@@ -69,6 +69,10 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Frontend Radix UI polish architecture and completion evidence:
+  `docs/superpowers/specs/2026-07-11-radix-ui-polish-design.md` and
+  `docs/work/frontend-radix-ui-polish.md`.
+
 - Feature-complete product milestone:
   `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`,
   `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`,

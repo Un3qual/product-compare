@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-10
+Updated: 2026-07-11
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -101,7 +101,7 @@ Plan: `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan
 Next action: Explain that the relative-price signal compares only already-loaded offers without changing its calculation.
 Owned paths:
 
-- `assets/src/routes/compare/decision-summary.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
@@ -125,7 +125,7 @@ Plan: `docs/plans/2026-07-10-compare-picker-loaded-name-filter-implementation-pl
 Next action: Add a case-insensitive local name filter over products already loaded in the compare picker.
 Owned paths:
 
-- `assets/src/routes/compare/product-picker.tsx`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
@@ -149,7 +149,7 @@ Plan: `docs/plans/2026-07-10-merchant-visible-page-name-filter-implementation-pl
 Next action: Add a case-insensitive local merchant-name filter clearly scoped to the currently visible page.
 Owned paths:
 
-- `assets/src/routes/merchants/index.tsx`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
 - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - `docs/work/frontend-merchant-discovery-demo-parity.md`
 
@@ -178,6 +178,22 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 task-first workspace follow-up is complete. Every registered
+route now uses the appropriate workspace, detail, guided-flow, or focused-form
+hierarchy; shared context, disclosure, tab, table, summary, and dialog patterns
+remain Radix-backed; and the three unrelated ready rows remain available.
+
+The 2026-07-11 frontend Radix UI polish milestone is complete. It established
+Radix Themes and semantic brand tokens, reusable page/feedback/data/status/
+pagination patterns, a responsive application shell, and calmer information
+hierarchy across home, catalog, product detail, merchants, offers, comparison,
+saved comparisons, operational workspaces, and every authentication route.
+Independent review follow-up completed the reusable Radix text-field adoption,
+compare tab panels, responsive data-list actions, neutral route errors, and
+exact active navigation. Final verification passed Relay generation, all 630
+frontend tests, frontend typechecking, client and SSR production builds, diff
+hygiene, and `mix work_queue.validate` with three ready rows.
 
 The 2026-07-10 feature-complete product milestone is complete. The home route
 now leads with browse, compare, and offer review; navigation separates public,

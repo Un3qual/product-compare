@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/index";
+import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
 import type { AffiliateSetupLoaderData } from "../../../../src/routes/affiliate/setup/loader";
 
 const {
@@ -120,6 +120,9 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   renderAffiliateSetupRoute();
 
   expect(screen.getByRole("heading", { name: "Affiliate setup" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Affiliate setup" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Affiliate configuration workflow" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Setup sequence" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate network" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate program" })).toBeInTheDocument();
 

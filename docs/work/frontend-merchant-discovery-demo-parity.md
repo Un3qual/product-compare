@@ -21,7 +21,7 @@
 - Status: done.
 - Plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/merchants/index.tsx`
+  - `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
   - `assets/src/routes/merchants/pagination.ts`
   - `assets/test/routes/merchants/merchant-directory-loader.test.ts`
   - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
@@ -46,7 +46,7 @@
 - Plan:
   `docs/plans/2026-07-02-merchant-directory-website-links-implementation-plan.md`.
 - Owned paths:
-  - `assets/src/routes/merchants/index.tsx`
+  - `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
   - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
   - `docs/work/frontend-merchant-discovery-demo-parity.md`
 - Verification:

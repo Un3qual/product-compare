@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { MerchantDirectoryRoute } from "../../../src/routes/merchants/index";
+import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 
 const {
@@ -78,6 +78,7 @@ test("merchant directory renders merchant names and domains", () => {
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Merchants" })).toBeInTheDocument();
   const merchantList = screen.getByRole("list", { name: "Merchants" });
 
   expect(within(merchantList).getByText("Acme Market")).toBeInTheDocument();
@@ -96,6 +97,9 @@ test("merchant directory renders merchant names and domains", () => {
 
 test("merchant directory normalizes domain-only website links to HTTPS", () => {
   renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
 
   expect(getMerchantListItem("Acme Market")).toHaveTextContent("acme.example");
   const websiteLink = within(getMerchantListItem("Acme Market")).getByRole("link", {

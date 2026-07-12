@@ -14,10 +14,15 @@
     "check": "bun run typecheck && bun run test:unit"
   },
   "dependencies": {
+    "@radix-ui/react-accordion": "^1.2.16",
+    "@radix-ui/react-collapsible": "^1.1.16",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-direction": "^1.1.1",
     "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.17",
     "@stylexjs/stylex": "0.18.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

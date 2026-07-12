@@ -14,7 +14,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { browseLoader } from "../../../src/routes/catalog/loader";
-import { BrowseRoute } from "../../../src/routes/catalog/browse";
+import { BrowseRoute } from "../../../src/routes/catalog/BrowseRoute";
 import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
 
 const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
@@ -986,6 +986,14 @@ test("renders browse products from the Relay route query", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Browse products" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Catalog results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Catalog controls" })).toBeInTheDocument();
+  expect(screen.getByRole("list", { name: "Products" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "false"
+  );
   expect(screen.getByRole("combobox", { name: "Products per page" })).toHaveValue("12");
   expect(screen.getByRole("link", { name: "View details for Catalog First" })).toHaveAttribute(
     "href",
@@ -1010,6 +1018,11 @@ test("renders browse products from the Relay route query", () => {
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
   expect(screen.getByText("catalog-first")).toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("article", { name: "Catalog First" })).getByRole("list", {
+      name: "Decision actions for Catalog First"
+    })
+  ).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), browseQueryDescriptor);
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), queryRef);
 });
@@ -1111,6 +1124,8 @@ test("renders metadata-backed catalog filter controls", () => {
 
   const filterForm = screen.getByRole("form", { name: "Filter products" });
 
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
+
   expect(within(filterForm).getByRole("searchbox", { name: "Search products" })).toHaveValue("");
   expect(within(filterForm).getByRole("combobox", { name: "Sort products" })).toHaveValue(
     "ID_ASC"
@@ -1124,6 +1139,35 @@ test("renders metadata-backed catalog filter controls", () => {
   expect(within(filterForm).getByRole("combobox", { name: "Wireless" })).toHaveValue("");
   expect(within(filterForm).getByRole("radio", { name: "Red (2)" })).not.toBeChecked();
   expect(within(filterForm).getByRole("button", { name: "Apply filters" })).toBeInTheDocument();
+});
+
+test("keeps active advanced filters in the form while the controls are collapsed", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        useCaseTaxonIds: ["use-gaming"],
+        numeric: [{ attributeId: "attr-refresh", min: "120", max: "240" }],
+        booleans: [{ attributeId: "attr-wireless", value: true }],
+        enums: [{ attributeId: "attr-color", enumOptionId: "enum-red" }]
+      }
+    }),
+    metadataData: buildProductFilterMetadataResponse({ selected: true })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.queryByRole("group", { name: "Use cases" })).not.toBeInTheDocument();
+
+  const formData = new FormData(filterForm);
+
+  expect(formData.getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
+  expect(formData.get("numeric.attr-refresh.min")).toBe("120");
+  expect(formData.get("numeric.attr-refresh.max")).toBe("240");
+  expect(formData.get("boolean.attr-wireless")).toBe("true");
+  expect(formData.get("enum.attr-color")).toBe("enum-red");
 });
 
 test("omits the default catalog sort until an explicit sort is selected", () => {
@@ -1689,6 +1733,8 @@ test("refreshes filter controls when loader filters clear on the same browse rou
 
   const clearedFilterForm = screen.getByRole("form", { name: "Filter products" });
 
+  fireEvent.click(within(clearedFilterForm).getByRole("button", { name: "Advanced filters" }));
+
   expect(within(clearedFilterForm).getByRole("combobox", { name: "Product type" })).toHaveValue(
     ""
   );
@@ -1711,6 +1757,9 @@ test("submits only one selected enum option per enum facet", () => {
   renderBrowseRouteWithRelayData();
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  fireEvent.click(within(filterForm).getByRole("button", { name: "Advanced filters" }));
+
   const colorGroup = within(filterForm).getByRole("group", { name: "Color" });
   const redOption = within(colorGroup).getByRole("radio", { name: "Red (2)" });
   const blueOption = within(colorGroup).getByRole("radio", { name: "Blue (1)" });

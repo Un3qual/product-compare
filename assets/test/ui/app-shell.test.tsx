@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { AppShell } from "../../src/ui/components/layout/app-shell";
+import { AppShell } from "../../src/ui/components/layout/AppShell";
 
 test("renders primary nav landmarks with a shared shell separator", () => {
   render(
@@ -9,6 +9,6 @@ test("renders primary nav landmarks with a shared shell separator", () => {
   );
 
   expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
-  expect(screen.getByRole("separator")).toHaveAttribute("data-slot", "separator");
+  expect(screen.getByRole("separator")).toBeInTheDocument();
   expect(screen.getByRole("main")).toHaveTextContent("content");
 });

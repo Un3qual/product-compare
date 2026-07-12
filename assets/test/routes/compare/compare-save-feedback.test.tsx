@@ -3,7 +3,7 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import { CompareRoute } from "../../../src/routes/compare/index";
+import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 
 const {
   commitMutationMock,
@@ -359,6 +359,7 @@ test("compare route clears save feedback when the selected comparison changes", 
   await waitFor(() => {
     expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 
@@ -395,6 +396,7 @@ test("compare route ignores stale save completions after the selected comparison
   await waitFor(() => {
     expect(saveComparisonStatus()).toBeEmptyDOMElement();
   });
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: DESK_CHAIR.name })).toBeInTheDocument();
 });
 

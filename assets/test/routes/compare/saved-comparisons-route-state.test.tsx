@@ -3,7 +3,7 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/saved";
+import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/SavedComparisonsRoute";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
@@ -124,7 +124,9 @@ function buildSortableSavedSets() {
 }
 
 function savedComparisonNames() {
-  return screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+  return within(screen.getByRole("list", { name: "Saved comparison sets" }))
+    .getAllByRole("heading", { level: 2 })
+    .map((heading) => heading.textContent);
 }
 
 function savedComparisonsStatus() {
@@ -171,6 +173,10 @@ test("saved comparisons route starts with an empty status region when saved sets
   );
 
   expect(savedComparisonsStatus()).toBeEmptyDOMElement();
+  expect(screen.getByRole("region", { name: "Saved comparison records" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("complementary", { name: "Saved comparison controls" })
+  ).toBeInTheDocument();
 });
 
 test("saved comparison cards summarize saved product counts", () => {
@@ -244,7 +250,9 @@ test("saved comparison cards scope reopen and delete actions to the set", () => 
   const openComparisonLink = within(actions).getByRole("link", { name: "Open comparison" });
 
   expect(openComparisonLink).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
-  expect(within(actions).getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  const deleteButton = within(actions).getByRole("button", { name: "Delete comparison" });
+
+  expect(deleteButton).toBeEnabled();
 });
 
 test("saved comparisons route restores current order after another sort", () => {

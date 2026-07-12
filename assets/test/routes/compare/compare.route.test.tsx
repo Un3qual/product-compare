@@ -7,6 +7,7 @@ import {
 import {
   MemoryRouter,
   useLoaderData,
+  useLocation,
   useRouteError
 } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
@@ -20,15 +21,15 @@ import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader
 } from "../../../src/routes/compare/saved-data";
-import { RouteErrorBoundary } from "../../../src/routes/compare/error-boundary";
-import { CompareRoute } from "../../../src/routes/compare/index";
+import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
+import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch
 } from "../../../src/routes/compare/paths";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/saved";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
 import {
   buildAbortableRequest,
   buildCompareLoaderArgs,
@@ -1543,6 +1544,7 @@ test("renders compared product cards returned by the route loader", () => {
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
+  openIndividualProductDetails();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
 });
@@ -1598,6 +1600,8 @@ test("ready compare page renders decision summary rows above the specification m
 
   renderCompareRoute();
 
+  expect(screen.getByRole("region", { name: "Comparison workspace" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Comparison controls" })).toBeInTheDocument();
   const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
   const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
@@ -1779,6 +1783,8 @@ test("ready compare cards render product attributes", () => {
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getAllByText("144 Hz")).toHaveLength(2);
   expect(screen.getAllByText("165 Hz")).toHaveLength(2);
   expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
@@ -1814,6 +1820,8 @@ test("ready compare cards render from batched loader data without synthetic prod
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
   expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
@@ -1919,6 +1927,7 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
   expect(rows[2]).toHaveTextContent("144 Hz");
   expect(rows[2]).toHaveTextContent("165 Hz");
   expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
+  openIndividualProductDetails();
   expect(screen.getByText("350 nits")).toBeVisible();
 });
 
@@ -2134,7 +2143,7 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
   expect(within(matrix).queryByText("Refresh rate duplicate")).not.toBeInTheDocument();
 });
 
-test("ready compare page renders specification mode links with stable URL state", () => {
+test("ready compare page renders specification mode tabs with stable URL state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
       specMode: "differences"
@@ -2143,21 +2152,60 @@ test("ready compare page renders specification mode links with stable URL state"
 
   renderCompareRoute();
 
-  expect(screen.getByRole("link", { name: "Shared specs" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product"
   );
-  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product&specs=differences"
   );
-  expect(screen.getByRole("link", { name: "Differences" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "aria-current",
     "page"
   );
-  expect(screen.getByRole("link", { name: "All specs" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "All specs" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product&specs=all"
+  );
+
+  for (const tab of screen.getAllByRole("tab")) {
+    const panelId = tab.getAttribute("aria-controls");
+
+    if (!panelId) {
+      throw new Error("Expected every specification mode tab to control a panel");
+    }
+
+    expect(document.getElementById(panelId)).toHaveAttribute("role", "tabpanel");
+  }
+
+  const activePanelId = screen
+    .getByRole("tab", { name: "Differences" })
+    .getAttribute("aria-controls");
+
+  if (!activePanelId) {
+    throw new Error("Expected the active specification mode tab to control a panel");
+  }
+
+  expect(document.getElementById(activePanelId)).not.toHaveAttribute("hidden");
+});
+
+test("specification mode tab clicks navigate to loader-backed URL state", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  render(
+    <MemoryRouter
+      initialEntries={["/compare?slug=detail-product&slug=second-product"]}
+    >
+      <CompareRoute />
+      <LocationProbe />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("tab", { name: "Differences" }));
+
+  expect(screen.getByTestId("location-probe")).toHaveTextContent(
+    "/compare?slug=detail-product&slug=second-product&specs=differences"
   );
 });
 
@@ -2204,6 +2252,8 @@ test("ready compare page preserves specification mode in remove links", () => {
   );
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
 
@@ -2694,6 +2744,8 @@ test("ready compare cards include a remove link for the first selected product",
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
     "/compare?slug=second-product&slug=third-product"
@@ -2713,6 +2765,8 @@ test("ready compare cards include a remove link for a middle selected product", 
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
     "href",
@@ -2734,6 +2788,8 @@ test("ready compare cards include a remove link for the last selected product", 
 
   renderCompareRoute();
 
+  openIndividualProductDetails();
+
   expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
     "href",
     "/compare?slug=detail-product&slug=second-product"
@@ -2749,6 +2805,8 @@ test("ready compare card remove link clears all selected slugs when only one is 
   });
 
   renderCompareRoute();
+
+  openIndividualProductDetails();
 
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
@@ -2794,6 +2852,10 @@ test("compare error boundary supports route-specific resource copy", () => {
     "A network error occurred while loading the revenue report."
   );
   expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
+  expect(screen.queryByText("Decision workspace")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/compare the product details and offer signals/i)
+  ).not.toBeInTheDocument();
 });
 
 test("compare route saves the current ready-state selection", async () => {
@@ -3189,6 +3251,49 @@ test("compare route exposes a named region for the compare shell", () => {
     })
   ).toBeInTheDocument();
 });
+
+test("compare route presents URL-driven specification modes as tabs", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const tabs = screen.getByRole("tablist", { name: "Specification views" });
+
+  expect(within(tabs).getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  expect(within(tabs).getByRole("tab", { name: "Differences" })).toHaveAttribute(
+    "href",
+    expect.stringContaining("specs=differences")
+  );
+});
+
+test("comparison matrix keeps its selected view inside a named workspace", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const workspace = screen.getByRole("region", { name: "Specification comparison" });
+
+  expect(within(workspace).getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
+  expect(within(workspace).getByText("No shared specifications across these products yet.")).toBeInTheDocument();
+});
+
+test("compared product actions use named navigation landmarks", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  openIndividualProductDetails();
+
+  expect(screen.getByRole("navigation", { name: "Actions for Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("navigation", { name: "Actions for Second Product" })).toBeInTheDocument();
+});
+
+function openIndividualProductDetails() {
+  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
+}
 
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -3728,6 +3833,17 @@ function renderCompareRoute() {
     <MemoryRouter>
       <CompareRoute />
     </MemoryRouter>
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+
+  return (
+    <span data-testid="location-probe">
+      {location.pathname}
+      {location.search}
+    </span>
   );
 }
 

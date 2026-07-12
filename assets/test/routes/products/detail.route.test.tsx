@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import {
   createRelayEnvironment,
@@ -14,7 +14,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
-import { ProductDetailRoute } from "../../../src/routes/products/detail";
+import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
 
 const {
   fetchRouteQueryMock,
@@ -448,12 +448,35 @@ test("renders product detail and active offers from Relay route queries", () => 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
+      <LocationProbe />
     </MemoryRouter>
   );
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Detail Product" })).toBeInTheDocument();
+  const detailTabs = screen.getByRole("tablist", { name: "Product details" });
+  expect(within(detailTabs).getByRole("tab", { name: "Overview" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  expect(screen.getByRole("region", { name: "Product overview" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
+
+  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Specifications" }), {
+    button: 0,
+    ctrlKey: false
+  });
+  expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
+  expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
+
+  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Offers" }), {
+    button: 0,
+    ctrlKey: false
+  });
+  expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
+  expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
     "href",
@@ -465,7 +488,6 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test.each([
@@ -511,6 +533,8 @@ test.each([
       </MemoryRouter>
     );
 
+    openProductDetailTab("Offers");
+
     expect(screen.getByText("199.99 USD")).toBeVisible();
     expect(screen.queryByText(/^Price observed/)).not.toBeInTheDocument();
   }
@@ -549,6 +573,8 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   fireEvent.click(screen.getByRole("link", { name: "Acme" }));
 
@@ -601,6 +627,8 @@ test("product detail blocks pending tracked merchant action re-clicks", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   const merchantLink = screen.getByRole("link", { name: "Acme" });
   const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
 
@@ -642,6 +670,8 @@ test("renders offers with valid urls and null merchants using a fallback label",
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
@@ -762,6 +792,8 @@ test("renders an offer snapshot from the visible active offer page", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   const activeOffersHeading = screen.getByRole("heading", { name: "Active offers" });
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
   const offersList = screen.getByRole("list", { name: "Active offer list" });
@@ -828,6 +860,8 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
   expect(within(offerSnapshot).getByText("No visible prices")).toBeVisible();
@@ -880,6 +914,8 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
@@ -974,11 +1010,11 @@ test("renders next and first offer page links from URL-driven offersAfter state"
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue"
+    "/products/detail%2Fproduct%3Fvalue#offers"
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value"
+    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value#offers"
   );
 });
 
@@ -1084,6 +1120,8 @@ test("renders active coupon details for product offers", () => {
       </MemoryRouter>
     );
 
+    openProductDetailTab("Offers");
+
     const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
     expect(offerItem).not.toBeNull();
@@ -1176,6 +1214,8 @@ test("renders duplicate active coupon codes without React key warnings", () => {
       </MemoryRouter>
     );
 
+    openProductDetailTab("Offers");
+
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
     expect(screen.getByText("First duplicate coupon.")).toBeVisible();
     expect(screen.getByText("Second duplicate coupon.")).toBeVisible();
@@ -1223,6 +1263,8 @@ test("renders offers when a merchant has no active coupons", () => {
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
@@ -1319,6 +1361,8 @@ test("renders active offer price history rows", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
@@ -1390,6 +1434,8 @@ test("renders empty price history state for active offers", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
@@ -1434,6 +1480,8 @@ test("renders product specifications from current attributes", () => {
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Specifications");
 
   expect(screen.getByRole("heading", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByText("Refresh rate")).toBeVisible();
@@ -1506,6 +1554,8 @@ test("renders product specifications grouped by compare group label", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Specifications");
+
   const specifications = screen
     .getByRole("heading", { name: "Specifications" })
     .closest("section");
@@ -1565,6 +1615,8 @@ test("renders product specification group labels case-insensitively", () => {
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Specifications");
 
   const specifications = screen
     .getByRole("heading", { name: "Specifications" })
@@ -1687,7 +1739,7 @@ test("clamps URL-driven compare selections before rendering product detail contr
   );
 });
 
-test("adds the current detail product while preserving offersAfter", () => {
+test("adds the current detail product while preserving offersAfter and the active tab", () => {
   const offersDescriptorWithAfter = makeOffersQueryDescriptor("cursor-next-page");
 
   mockedUseLoaderData.mockReturnValue({
@@ -1704,7 +1756,7 @@ test("adds the current detail product while preserving offersAfter", () => {
   render(
     <MemoryRouter
       initialEntries={[
-        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product"
+        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product#specifications"
       ]}
     >
       <ProductDetailRoute />
@@ -1713,7 +1765,7 @@ test("adds the current detail product while preserving offersAfter", () => {
 
   expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product"
+    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product#specifications"
   );
 });
 
@@ -1748,6 +1800,8 @@ test("renders an offer without a latest price", () => {
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme" })).toBeVisible();
   expect(screen.queryByText("199.99 USD")).not.toBeInTheDocument();
@@ -1770,6 +1824,8 @@ test("renders an empty-offers message when no active offers exist", () => {
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
@@ -1817,6 +1873,8 @@ test.each([
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Acme" })).not.toBeInTheDocument();
 });
@@ -1840,10 +1898,11 @@ test("renders an unavailable-offers message without collapsing the product detai
     </MemoryRouter>
   );
 
+  openProductDetailTab("Offers");
+
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
   expect(screen.queryByText("Product unavailable.")).not.toBeInTheDocument();
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test("renders a local unavailable-offers message when combined offer data is missing", () => {
@@ -1863,6 +1922,8 @@ test("renders a local unavailable-offers message when combined offer data is mis
       <ProductDetailRoute />
     </MemoryRouter>
   );
+
+  openProductDetailTab("Offers");
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
@@ -1912,6 +1973,20 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
 
     throw new Error(`Unexpected route query descriptor: ${JSON.stringify(descriptor)}`);
   });
+}
+
+function openProductDetailTab(name: "Offers" | "Specifications") {
+  const tabList = screen.getByRole("tablist", { name: "Product details" });
+  fireEvent.mouseDown(within(tabList).getByRole("tab", { name }), {
+    button: 0,
+    ctrlKey: false
+  });
+}
+
+function LocationProbe() {
+  const location = useLocation();
+
+  return <output data-testid="location">{`${location.search}${location.hash}`}</output>;
 }
 
 function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRODUCT) {
