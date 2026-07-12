@@ -5,7 +5,7 @@
 - Status: done (API token item presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after API-token item presentation extraction (38
+- Last verified: 2026-07-12 after API-token item presentation extraction (43
   API-token tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
@@ -19,8 +19,10 @@
   controls and presets, and revoke action into `ApiTokenItem` while preserving
   list-owned Relay reads, update merging, status filtering, and composition.
 - Owned paths:
+  - `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
   - `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
   - `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+  - `assets/src/routes/account/api-tokens/api-token-status.ts`
   - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
   - `docs/work/frontend-api-token-management-demo-parity.md`
 - Prerequisite: the existing API-token route suite is green and remains the
@@ -35,10 +37,13 @@
 - Completion evidence:
   - RED: `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
     failed because `ApiTokenItem.tsx` did not exist.
-  - GREEN: the focused suite passed 38 tests after `ApiTokenItem` received the
+  - GREEN: the focused suite passed 43 tests after `ApiTokenItem` received the
     token, lifecycle pending/error values, and rotate/revoke callbacks.
   - `ApiTokenList` retains Relay page reads, local/remote list composition,
     update merging, status filtering, and query-key construction.
+  - Review follow-up moved the shared active-token predicate into the
+    framework-free `api-token-status.ts` boundary and added a five-case
+    lifecycle truth table.
   - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## API Token Control Presentation Extraction
