@@ -70,7 +70,7 @@ const styles = create({
 });
 
 export function ProductDetailRoute() {
-  const loaderData = useLoaderData<typeof productDetailLoader>() as ProductDetailLoaderData;
+  const loaderData = useLoaderData<typeof productDetailLoader>();
 
   if (loaderData.status !== "ready") {
     return loaderData.status === "not_found" ? (

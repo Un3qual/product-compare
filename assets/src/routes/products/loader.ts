@@ -22,11 +22,15 @@ export type ProductDetailLoaderData =
       status: "not_found" | "error";
     };
 
+export type ProductDetailLoaderResult =
+  | ProductDetailLoaderData
+  | ReturnType<typeof data<ProductDetailLoaderData>>;
+
 export async function productDetailLoader({
   context,
   params,
   request
-}: LoaderFunctionArgs) {
+}: LoaderFunctionArgs): Promise<ProductDetailLoaderResult> {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = offersAfterFromUrl(new URL(request.url));
 
