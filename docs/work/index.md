@@ -101,34 +101,13 @@ now render the shared not-found experience with an SSR 404 response, and every
 registered route provides static title and description metadata for SSR and
 client navigation.
 
+The 2026-07-11 API-token route decomposition is complete. Relay token-page
+rendering and token lifecycle presentation now live in a focused component,
+while the route owner retains loader and mutation orchestration.
+
 ## Ready Work
 
-### 1. API Token Route Component Extraction
-
-Status: ready
-Lane: Frontend API token management demo parity
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Extract the API-token list and lifecycle presentation from the route owner without changing Relay or mutation behavior.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-management-demo-parity.md`
-
-Prerequisites:
-
-- Existing API-token route behavior suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The route owner is smaller and the full API-token behavior suite remains green.
-
-### 2. Offer Discovery Route Component Extraction
+### 1. Offer Discovery Route Component Extraction
 
 Status: ready
 Lane: Frontend offer discovery demo parity
@@ -153,7 +132,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full offer-discovery behavior suite remains green.
 
-### 3. Product Detail Route Component Extraction
+### 2. Product Detail Route Component Extraction
 
 Status: ready
 Lane: Frontend product detail
@@ -178,7 +157,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full product-detail behavior suite remains green.
 
-### 4. Skip Navigation
+### 3. Skip Navigation
 
 Status: ready
 Lane: Frontend Radix UI polish
@@ -202,7 +181,7 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 5. Affiliate Setup Form Component Extraction
+### 4. Affiliate Setup Form Component Extraction
 
 Status: ready
 Lane: Frontend affiliate setup demo parity
@@ -227,7 +206,7 @@ Verification:
 
 Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 6. Feed Candidate Review Component Extraction
+### 5. Feed Candidate Review Component Extraction
 
 Status: ready
 Lane: Product data scraping

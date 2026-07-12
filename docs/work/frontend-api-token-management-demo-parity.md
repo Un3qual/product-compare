@@ -94,3 +94,17 @@
 ## Blockers
 
 - None for this completed lane.
+
+## 2026-07-11 Route Decomposition
+
+- Status: done.
+- Extracted Relay page rendering, token details, lifecycle controls, and their
+  presentation helpers into `ApiTokenList.tsx` while keeping loader data,
+  mutation orchestration, optimistic local summaries, and dialogs in the route
+  owner.
+- `ApiTokensRoute.tsx` decreased from 1,144 lines to 703 lines.
+- Characterization verification:
+  - Before extraction: 35 API-token route tests passed.
+  - After extraction: 35 API-token route tests passed.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
