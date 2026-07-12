@@ -122,36 +122,7 @@ data, mutation, URL, suspense, and error orchestration.
 
 ## Ready Work
 
-### 1. Root Destination Presentation Extraction
-
-Status: ready
-Lane: Frontend shopper home and navigation
-Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
-Next action: Extract primary navigation and home destination presentation while
-preserving route-owned Relay reads, viewer normalization, providers, metadata,
-shell, outlet context, and page copy.
-Owned paths:
-
-- `assets/src/routes/RootRoute.tsx`
-- `assets/src/routes/RootDestinations.tsx`
-- `assets/test/routes/root.route.test.tsx`
-- `docs/work/frontend-shopper-home-navigation.md`
-
-Prerequisites:
-
-- Existing root route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Guest/authenticated destination presentation is isolated
-without changing route data, viewer visibility, active states, labels, paths,
-auth actions, SSR, or hydration.
-
-### 2. Compare Product Picker View Extraction
+### 1. Compare Product Picker View Extraction
 
 Status: ready
 Lane: Frontend product comparison
@@ -181,7 +152,7 @@ Exit condition: Picker presentation and local filter state are isolated without
 changing Relay reads, loaded-product accumulation, selected-product exclusion,
 option URLs, empty states, or pagination.
 
-### 3. Affiliate Setup Merchant Pagination
+### 2. Affiliate Setup Merchant Pagination
 
 Status: ready
 Lane: Frontend affiliate setup
@@ -211,7 +182,7 @@ Verification:
 Exit condition: Loaded merchant pages expose correct First/Next links without
 changing merchant selection or any affiliate mutation behavior.
 
-### 4. Merchant Directory View Extraction
+### 3. Merchant Directory View Extraction
 
 Status: ready
 Lane: Frontend merchant discovery
@@ -240,7 +211,7 @@ Verification:
 Exit condition: Merchant presentation is isolated without changing query,
 filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
 
-### 5. Saved Comparison View-State Extraction
+### 4. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -270,7 +241,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 6. Credential Auth Form Presentation Extraction
+### 5. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -309,6 +280,13 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 root destination extraction is complete.
+`RootDestinations` now owns public/authenticated destination catalogs, primary
+navigation, shopper paths, secondary actions, auth actions, and active-link
+styles while `RootRoute` retains loader and Relay reads, viewer normalization,
+metadata, providers, shell, outlet context, and page copy. The focused suite
+passed 13 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 product-detail offer-list extraction is complete.
 `ProductOfferList` now owns normalized active-offer list, merchant action,
