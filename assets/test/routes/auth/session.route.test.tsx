@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { commitLocalUpdate } from "relay-runtime";
 import { useMutation, useRelayEnvironment } from "react-relay";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { CredentialAuthForm } from "../../../src/routes/auth/CredentialAuthForm";
 import { LoginRoute } from "../../../src/routes/auth/LoginRoute";
 import { LogoutRoute } from "../../../src/routes/auth/LogoutRoute";
 import { RegisterRoute } from "../../../src/routes/auth/RegisterRoute";
@@ -147,6 +148,104 @@ beforeEach(() => {
   mockedUseRelayEnvironment.mockReturnValue(relayEnvironment as never);
   navigateMock.mockReset();
 });
+
+const credentialFormVariants = [
+  {
+    description: "Use your email and password to continue through the GraphQL auth flow.",
+    footerLinks: [
+      { label: "Create account", to: "/auth/register" },
+      { label: "Forgot password?", to: "/auth/forgot-password" }
+    ],
+    passwordAutoComplete: "current-password" as const,
+    submitLabel: "Sign in",
+    title: "Sign in"
+  },
+  {
+    description: "Create an email/password account and let Phoenix establish the browser session.",
+    footerLinks: [
+      { label: "Sign in instead", to: "/auth/login" },
+      { label: "Forgot password?", to: "/auth/forgot-password" }
+    ],
+    passwordAutoComplete: "new-password" as const,
+    submitLabel: "Create account",
+    title: "Create your account"
+  }
+];
+
+function renderCredentialAuthForm(
+  variant: (typeof credentialFormVariants)[number],
+  isSubmitting = false
+) {
+  const onSubmit = vi.fn();
+
+  render(
+    <MemoryRouter>
+      <CredentialAuthForm
+        description={variant.description}
+        errors={[
+          {
+            code: "INVALID_ARGUMENT",
+            field: "email",
+            message: "Enter a valid email address"
+          },
+          {
+            code: "INVALID_ARGUMENT",
+            field: "password",
+            message: "Password does not meet the requirements"
+          }
+        ]}
+        footerLinks={variant.footerLinks}
+        isSubmitting={isSubmitting}
+        onSubmit={onSubmit}
+        passwordAutoComplete={variant.passwordAutoComplete}
+        submitLabel={variant.submitLabel}
+        title={variant.title}
+      />
+    </MemoryRouter>
+  );
+
+  return onSubmit;
+}
+
+test.each(credentialFormVariants)(
+  "credential auth form renders $title copy, credentials, errors, footer links, and submits",
+  (variant) => {
+    const onSubmit = renderCredentialAuthForm(variant);
+    const email = screen.getByLabelText("Email");
+    const password = screen.getByLabelText("Password");
+
+    expect(screen.getByRole("heading", { name: variant.title })).toBeInTheDocument();
+    expect(screen.getByText(variant.description)).toBeInTheDocument();
+    expect(email).toHaveAttribute("autocomplete", "email");
+    expect(password).toHaveAttribute("autocomplete", variant.passwordAutoComplete);
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Enter a valid email address")).toBeInTheDocument();
+    expect(screen.getByText("Password does not meet the requirements")).toBeInTheDocument();
+
+    for (const footerLink of variant.footerLinks) {
+      expect(screen.getByRole("link", { name: footerLink.label })).toHaveAttribute(
+        "href",
+        footerLink.to
+      );
+    }
+
+    fireEvent.change(email, { target: { value: "person@example.com" } });
+    fireEvent.change(password, { target: { value: TEST_PASSWORD } });
+    fireEvent.submit(email.closest("form")!);
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  }
+);
+
+test.each(credentialFormVariants)(
+  "credential auth form disables $submitLabel while its mutation is pending",
+  (variant) => {
+    renderCredentialAuthForm(variant, true);
+
+    expect(screen.getByRole("button", { name: variant.submitLabel })).toBeDisabled();
+  }
+);
 
 test("login route commits credentials through Relay and redirects after a successful session response", async () => {
   renderRoute("/auth/login");
