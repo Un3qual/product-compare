@@ -29,6 +29,11 @@ readiness. Email delivery, live conversion-provider ingestion, production
 privacy and attribution controls, and production-readiness proof remain outside
 that milestone by product decision.
 
+The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
+decomposition batch is complete with full frontend verification. Its plan
+remains linked from the three ready reserve rows for their validated scope and
+ownership context.
+
 Active implementation plans:
 
 - `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`

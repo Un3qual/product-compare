@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
-> implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for
+> implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for
 > tracking.
 
 **Goal:** Complete user-selected batches 1, 2, 3, 5, 6, 7, 8, and 9 while
@@ -37,9 +37,9 @@ Bun SSR.
 **Interface:** `DecisionSummary` renders one concise disclosure stating that
 relative loaded price compares only offers already loaded for selected products.
 
-- [ ] Add a focused assertion for the disclosure and verify RED.
-- [ ] Render the disclosure without changing price arithmetic.
-- [ ] Run the focused compare test and TypeScript.
+- [x] Add a focused assertion for the disclosure and verify RED.
+- [x] Render the disclosure without changing price arithmetic.
+- [x] Run the focused compare test and TypeScript.
 
 ### Task 2: Compare picker loaded-name filter
 
@@ -51,9 +51,9 @@ relative loaded price compares only offers already loaded for selected products.
 **Interface:** local `filterText` derives visible options from loaded,
 unselected products; `Show more products` remains independent.
 
-- [ ] Add cases for case-insensitive filtering, clearing, no match, and retained pagination; verify RED.
-- [ ] Add an explicitly loaded-product-scoped text field and derived results.
-- [ ] Run the full compare route suite and TypeScript.
+- [x] Add cases for case-insensitive filtering, clearing, no match, and retained pagination; verify RED.
+- [x] Add an explicitly loaded-product-scoped text field and derived results.
+- [x] Run the full compare route suite and TypeScript.
 
 ### Task 3: Merchant visible-page name filter
 
@@ -65,9 +65,9 @@ unselected products; `Show more products` remains independent.
 **Interface:** local `filterText` narrows `connection.edges` only; page-size and
 cursor links remain unchanged.
 
-- [ ] Add cases for case-insensitive filtering, clearing, no match, and retained pagination; verify RED.
-- [ ] Add the visible-page-scoped text field and result count.
-- [ ] Run the merchant route suite and TypeScript.
+- [x] Add cases for case-insensitive filtering, clearing, no match, and retained pagination; verify RED.
+- [x] Add the visible-page-scoped text field and result count.
+- [x] Run the merchant route suite and TypeScript.
 
 ### Task 4: Application wildcard 404
 
@@ -83,9 +83,9 @@ cursor links remain unchanged.
 **Interfaces:** `notFoundLoader(): never` throws a 404 `Response`; SSR returns
 rendered non-200 route contexts as `Response` objects with preserved status.
 
-- [ ] Add wildcard registration and SSR status tests; verify RED.
-- [ ] Add the wildcard route and preserve static-handler status/headers.
-- [ ] Run router, SSR, and TypeScript verification.
+- [x] Add wildcard registration and SSR status tests; verify RED.
+- [x] Add the wildcard route and preserve static-handler status/headers.
+- [x] Run router, SSR, and TypeScript verification.
 
 ### Task 5: Route document metadata
 
@@ -102,9 +102,9 @@ rendered non-200 route contexts as `Response` objects with preserved status.
 `RouteMetadata` resolves the deepest matched handle and renders React 19
 `<title>` and description `<meta>` resources.
 
-- [ ] Add client-navigation and SSR metadata expectations; verify RED.
-- [ ] Declare handles for every registered route and render the shared metadata component.
-- [ ] Run root, router, SSR, TypeScript, and build verification.
+- [x] Add client-navigation and SSR metadata expectations; verify RED.
+- [x] Declare handles for every registered route and render the shared metadata component.
+- [x] Run root, router, SSR, TypeScript, and build verification.
 
 ### Task 6: API-token route decomposition
 
@@ -118,9 +118,9 @@ rendered non-200 route contexts as `Response` objects with preserved status.
 presentation while the route keeps Relay pagination, mutation commits, and
 one-time secret state.
 
-- [ ] Run the route characterization suite before extraction.
-- [ ] Extract the list boundary with explicit typed props and direct imports.
-- [ ] Rerun the route suite and TypeScript with identical behavior.
+- [x] Run the route characterization suite before extraction.
+- [x] Extract the list boundary with explicit typed props and direct imports.
+- [x] Rerun the route suite and TypeScript with identical behavior.
 
 ### Task 7: Offer-discovery route decomposition
 
@@ -134,9 +134,9 @@ one-time secret state.
 pagination; the route keeps query ownership, filter state, and tracked-click
 mutation orchestration.
 
-- [ ] Run the route characterization suite before extraction.
-- [ ] Extract the results boundary without changing query or URL contracts.
-- [ ] Rerun the route suite and TypeScript with identical behavior.
+- [x] Run the route characterization suite before extraction.
+- [x] Extract the results boundary without changing query or URL contracts.
+- [x] Rerun the route suite and TypeScript with identical behavior.
 
 ### Task 8: Product-detail route decomposition
 
@@ -150,9 +150,9 @@ mutation orchestration.
 presentation; the route keeps loader state, tab selection, product identity,
 and tracked-click orchestration.
 
-- [ ] Run the detail characterization suite before extraction.
-- [ ] Extract the offer panel through explicit typed props.
-- [ ] Rerun the detail suite and TypeScript with identical behavior.
+- [x] Run the detail characterization suite before extraction.
+- [x] Extract the offer panel through explicit typed props.
+- [x] Rerun the detail suite and TypeScript with identical behavior.
 
 ### Task 9: Queue reconciliation and final gates
 
@@ -161,6 +161,23 @@ and tracked-click orchestration.
 - Modify: `docs/plans/INDEX.md`
 - Modify: affected lane work docs
 
-- [ ] Leave skip navigation, affiliate-setup form decomposition, and feed-candidate review decomposition as three complete ready rows.
-- [ ] Run `bun run relay`, `bun run check`, `bun run build`, `mix work_queue.validate`, and `git diff --check`.
-- [ ] Commit each milestone with its code, tests, and lane evidence.
+- [x] Leave skip navigation, affiliate-setup form decomposition, and feed-candidate review decomposition as three complete ready rows.
+- [x] Run `bun run relay`, `bun run check`, `bun run build`, `mix work_queue.validate`, and `git diff --check`.
+- [x] Commit each milestone with its code, tests, and lane evidence.
+
+## Completion Evidence
+
+- Milestones:
+  - `79a32ee feat(frontend): add bounded local filters`
+  - `140b086 feat(frontend): add route foundations`
+  - `15a9680 refactor(frontend): extract API token list`
+  - `a90242b refactor(frontend): extract offer discovery list`
+  - `5f57c8c refactor(frontend): extract product offer panel`
+- `cd assets && bun run relay` compiled 30 reader, 29 normalization, and 29
+  operation-text documents.
+- `cd assets && bun run check` passed 47 test files and 648 tests after a clean
+  TypeScript check.
+- `cd assets && bun run build` completed client and SSR production builds;
+  Vite retained its advisory about the existing client chunk size.
+- `mix work_queue.validate` reported `work queue valid: 3 ready rows`.
+- `git diff --check` completed with no output.
