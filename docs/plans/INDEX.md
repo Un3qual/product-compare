@@ -40,10 +40,14 @@ and compare picker-view presentation completed as the first stack cohort.
 Affiliate merchant pagination, merchant-directory view presentation, saved-
 comparison pure view state, and credential-auth form presentation are freshly
 validated follow-up rows with a second dedicated execution plan.
+Product-detail decision actions, revenue-summary view data, and specification-
+matrix data are validated post-stack reserve rows that keep the live queue
+truthful after the current stack completes.
 
 Active implementation plans:
 
 - `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
+- `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -78,6 +82,9 @@ batch and should not be recreated or promoted.
   presentation, saved-comparison pure view state, and credential-auth form
   presentation execute through
   `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
+- Ready reserve: product-detail decision actions, revenue-summary view data,
+  and specification-matrix data execute through
+  `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

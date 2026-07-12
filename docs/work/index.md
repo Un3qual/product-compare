@@ -217,6 +217,93 @@ Exit condition: Login and registration share only credential presentation;
 GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
 updates, and navigation remain unchanged.
 
+### 4. Product Detail Decision Actions Presentation
+
+Status: ready
+Lane: Frontend product detail
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: extract the accessible Next steps presentation behind explicit
+add, selected, and full compare states while preserving route-owned Relay,
+selection, navigation, and URL construction.
+Owned paths:
+
+- `assets/src/routes/products/ProductDecisionActions.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md`
+
+Prerequisites:
+
+- Existing 49-test product-detail characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Decision-action presentation is isolated without changing any
+destination, comparison state, cursor, tab, or tray-return behavior.
+
+### 5. Revenue Summary View-Data Contract
+
+Status: ready
+Lane: Frontend revenue reporting
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: extract framework-free active-filter, date-preset, and metric
+derivation while retaining route-owned loader, Relay, boundary, fallback, and
+currency orchestration.
+Owned paths:
+
+- `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
+- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/frontend-revenue-reporting-demo-parity.md`
+
+Prerequisites:
+
+- Existing 22-test revenue route and loader characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/commerce/revenue/revenue-summary-loader.test.ts`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
+suppressed values, nulls, and intentional empty-string amount behavior.
+
+### 6. Specification Matrix Data Contract
+
+Status: ready
+Lane: Frontend product comparison
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: move stable row construction and typed comparison normalization
+into a framework-free module while retaining matrix presentation in the
+component.
+Owned paths:
+
+- `assets/src/routes/compare/specification-matrix-data.ts`
+- `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+- `assets/test/routes/compare/specification-matrix-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+
+Prerequisites:
+
+- Existing 105-test compare characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/specification-matrix-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The pure matrix contract preserves ordering, duplicates,
+missing cells, modes, typed values, units, and decimal/exponent behavior.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
