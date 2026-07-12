@@ -13,7 +13,7 @@ interface CredentialAuthFormProps {
   footerLinks: CredentialAuthFooterLink[];
   isSubmitting: boolean;
   onSubmit: FormEventHandler<HTMLFormElement>;
-  passwordAutoComplete: "current-password" | "new-password";
+  authFieldAutoComplete: "current-password" | "new-password";
   submitLabel: string;
   title: string;
 }
@@ -24,7 +24,7 @@ export function CredentialAuthForm({
   footerLinks,
   isSubmitting,
   onSubmit,
-  passwordAutoComplete,
+  authFieldAutoComplete,
   submitLabel,
   title
 }: CredentialAuthFormProps) {
@@ -45,7 +45,7 @@ export function CredentialAuthForm({
           type="email"
         />
         <AuthField
-          autoComplete={passwordAutoComplete}
+          autoComplete={authFieldAutoComplete}
           error={findMutationError(errors, "password")}
           label="Password"
           name="password"

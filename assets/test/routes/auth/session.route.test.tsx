@@ -156,7 +156,7 @@ const credentialFormVariants = [
       { label: "Create account", to: "/auth/register" },
       { label: "Forgot password?", to: "/auth/forgot-password" }
     ],
-    passwordAutoComplete: "current-password" as const,
+    authFieldAutoComplete: "current-password" as const,
     submitLabel: "Sign in",
     title: "Sign in"
   },
@@ -166,7 +166,7 @@ const credentialFormVariants = [
       { label: "Sign in instead", to: "/auth/login" },
       { label: "Forgot password?", to: "/auth/forgot-password" }
     ],
-    passwordAutoComplete: "new-password" as const,
+    authFieldAutoComplete: "new-password" as const,
     submitLabel: "Create account",
     title: "Create your account"
   }
@@ -197,7 +197,7 @@ function renderCredentialAuthForm(
         footerLinks={variant.footerLinks}
         isSubmitting={isSubmitting}
         onSubmit={onSubmit}
-        passwordAutoComplete={variant.passwordAutoComplete}
+        authFieldAutoComplete={variant.authFieldAutoComplete}
         submitLabel={variant.submitLabel}
         title={variant.title}
       />
@@ -217,7 +217,7 @@ test.each(credentialFormVariants)(
     expect(screen.getByRole("heading", { name: variant.title })).toBeInTheDocument();
     expect(screen.getByText(variant.description)).toBeInTheDocument();
     expect(email).toHaveAttribute("autocomplete", "email");
-    expect(password).toHaveAttribute("autocomplete", variant.passwordAutoComplete);
+    expect(password).toHaveAttribute("autocomplete", variant.authFieldAutoComplete);
     expect(email).toHaveAttribute("aria-invalid", "true");
     expect(password).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Enter a valid email address")).toBeInTheDocument();
@@ -232,7 +232,13 @@ test.each(credentialFormVariants)(
 
     fireEvent.change(email, { target: { value: "person@example.com" } });
     fireEvent.change(password, { target: { value: TEST_PASSWORD } });
-    fireEvent.submit(email.closest("form")!);
+    const form = email.closest("form");
+
+    if (!form) {
+      throw new Error("credential field is not contained in a form");
+    }
+
+    fireEvent.submit(form);
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
   }
