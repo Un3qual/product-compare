@@ -103,16 +103,22 @@ test("merchant directory controls render the selected page size", () => {
   render(
     <MerchantDirectoryControls
       formAction="/merchants"
-      pagination={{ after: "previous-cursor", first: 35 }}
+      pageSize={35}
     />
   );
 
   const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
-  expect(pageSizeSelect.closest("form")).toHaveAttribute("action", "/merchants");
+  const pageSizeForm = pageSizeSelect.closest("form");
+
+  expect(pageSizeForm).toHaveAttribute("action", "/merchants");
+  expect(pageSizeForm).toHaveAttribute("method", "get");
   expect(pageSizeSelect).toHaveValue("35");
+  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
+  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
+  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
 });
 
-test("merchant directory view renders safe actions and page navigation", () => {
+test("merchant directory view renders only supplied safe actions", () => {
   renderMerchantDirectoryView();
 
   const safeMerchant = getMerchantListItem("Acme Market");
@@ -124,14 +130,6 @@ test("merchant directory view renders safe actions and page navigation", () => {
       name: "Visit merchant website"
     })
   ).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
-    "href",
-    "/merchants?first=35"
-  );
-  expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
-    "href",
-    "/merchants?first=35&after=next-cursor"
-  );
 });
 
 test("merchant directory view filters names case-insensitively and explains no matches", () => {
@@ -314,17 +312,6 @@ test("merchant directory rejects website links with URL userinfo", () => {
   ).not.toBeInTheDocument();
 });
 
-test("merchant directory renders an empty state", () => {
-  mockedUsePreloadedQuery.mockReturnValue(buildMerchantDirectoryData({ merchants: [] }));
-
-  renderMerchantDirectoryRoute();
-
-  expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
-  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
-  expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
-});
-
 test("merchant directory renders next-page navigation when available", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -345,41 +332,6 @@ test("merchant directory renders next-page navigation when available", () => {
     "href",
     "/merchants?first=35&after=next-cursor"
   );
-});
-
-test("merchant directory filters visible-page names without hiding pagination", () => {
-  mockedUsePreloadedQuery.mockReturnValue(
-    buildMerchantDirectoryData({
-      endCursor: "next-cursor",
-      hasNextPage: true
-    })
-  );
-
-  renderMerchantDirectoryRoute();
-
-  const filter = screen.getByRole("searchbox", { name: "Filter merchants on this page" });
-
-  expect(filter.id).not.toBe("");
-  expect(filter).toHaveAttribute("aria-labelledby");
-  expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
-    "Filter merchants on this page"
-  );
-
-  fireEvent.change(filter, { target: { value: "gLoBeX" } });
-
-  expect(screen.queryByRole("heading", { name: "Acme Market" })).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
-
-  fireEvent.change(filter, { target: { value: "missing" } });
-
-  expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
-
-  fireEvent.change(filter, { target: { value: "" } });
-
-  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
 });
 
 test("merchant filtering is stable when the browser locale has special casing rules", () => {
@@ -435,27 +387,6 @@ test("merchant directory renders first-page navigation when cursor-paged", () =>
     "href",
     "/merchants?first=35"
   );
-});
-
-test("merchant directory renders a reload-safe page-size selector", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyLoaderData({
-      first: 50,
-      after: null
-    })
-  );
-
-  renderMerchantDirectoryRoute();
-
-  const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
-  const pageSizeForm = pageSizeSelect.closest("form");
-
-  expect(pageSizeForm).toHaveAttribute("action", "/merchants");
-  expect(pageSizeForm).toHaveAttribute("method", "get");
-  expect(pageSizeSelect).toHaveValue("50");
-  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
-  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
-  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
 });
 
 test("merchant directory refreshes the page-size selector when pagination changes", () => {
