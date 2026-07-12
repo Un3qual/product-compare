@@ -2,7 +2,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
+import type { CouponDiscountType } from "../../../src/__generated__/OfferDiscoveryRouteQuery.graphql";
 import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
+import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/TrackedCommerceClickAction";
 
@@ -91,6 +93,37 @@ beforeEach(() => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockedUseRoutePreloadedQuery.mockReturnValue(OFFER_DISCOVERY_QUERY_REF as never);
   mockedUsePreloadedQuery.mockReturnValue(buildOfferDiscoveryData());
+});
+
+test("offer card directly renders tracked action, observations, price history, and coupon validity", () => {
+  const offer = buildOfferDiscoveryData().merchantProducts.edges[0]?.node;
+
+  if (!offer) {
+    throw new Error("Expected the default offer fixture");
+  }
+
+  render(
+    <MemoryRouter>
+      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer} />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
+    "href",
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+  );
+  expect(screen.getByText("Best price on this page")).toBeVisible();
+  expect(screen.getByText("199.99 USD")).toBeVisible();
+  expect(screen.getByText("2026-06-02", { selector: "time" }).parentElement).toHaveTextContent(
+    "Offer checked 2026-06-02"
+  );
+  expect(screen.getByText("2026-05-30", { selector: "time" })).toBeVisible();
+  expect(screen.getByText("189.99 USD")).toBeVisible();
+  expect(screen.getByText("SAVE20")).toBeVisible();
+  expect(screen.getByText("2026-06-30", { selector: "time" }).parentElement).toHaveTextContent(
+    "Valid through 2026-06-30"
+  );
 });
 
 test("offer discovery asks users to start from browse products when productId is missing", () => {
@@ -382,6 +415,7 @@ test("offer discovery keeps offer actions when merchant metadata is unavailable"
           id: "merchant-product-without-merchant",
           url: "https://merchant.example.com/no-merchant-offer",
           currency: "USD",
+          lastSeenAt: null,
           isActive: true,
           merchant: null,
           product: {
@@ -984,6 +1018,7 @@ test("offer discovery renders inactive filter state", () => {
           id: "merchant-product-1",
           url: "https://merchant.example.com/detail-product",
           currency: "USD",
+          lastSeenAt: null,
           isActive: false,
           merchant: {
             id: "merchant-1",
@@ -1403,7 +1438,7 @@ type OfferNode = {
   id: string;
   url: string;
   currency: string;
-  lastSeenAt?: unknown;
+  lastSeenAt: unknown;
   isActive: boolean;
   merchant: {
     id: string;
@@ -1430,7 +1465,7 @@ type CouponConnection = {
     node: {
       code: string;
       description: string | null;
-      discountType: string | null;
+      discountType: CouponDiscountType;
       discountValue: string | number | null;
       currency: string | null;
       validTo: unknown;

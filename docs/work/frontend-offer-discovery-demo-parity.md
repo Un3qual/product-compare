@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: ready (offer card presentation extraction)
+- Status: done (offer card presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12, 49 characterization tests before offer-card extraction
+- Last verified: 2026-07-12 after offer-card extraction (50 tests)
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -34,11 +34,11 @@
   - `cd assets && bun run typecheck` completed with exit 0.
   - `git diff --check` completed with exit 0.
 
-## Ready Next Batch
+## Offer Discovery Card Presentation Extraction
 
 ### Offer Discovery Card Presentation Extraction
 
-- Status: ready.
+- Status: done on 2026-07-12.
 - Plan:
   `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Owned paths:
@@ -64,6 +64,21 @@
   - `git diff --check`
 - Exit condition: per-offer presentation is isolated without changing list-
   level ordering, filtering, snapshot, pagination, or merchant-action behavior.
+- Completion evidence:
+  - RED: the focused suite failed because `OfferDiscoveryCard.tsx` did not
+    exist.
+  - `OfferDiscoveryCard` now owns the offer article, active/inactive status,
+    product heading, tracked or safe direct merchant action, observation
+    context, current price, price-history summary, and coupon summary.
+  - `OfferDiscoveryList` retains renderable-offer normalization, page-local
+    ordering, price-sort highlights, snapshot calculation, merchant quick
+    filters, empty state, and pagination.
+  - The direct card fixture now uses the generated `CouponDiscountType` and
+    required nullable `lastSeenAt` contract instead of a broader duplicate
+    test-only shape.
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    passed 50 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## Ready Shopper Decision Confidence Batches
 
