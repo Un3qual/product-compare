@@ -34,8 +34,8 @@ decomposition batch is complete with full frontend verification. The requested
 affiliate-setup and feed-candidate presentation extractions are also complete.
 Skip navigation plus the saved-comparison, catalog product-list, and revenue
 presentation extractions are complete. API-token controls, compare matrix, and
-catalog advanced-filter presentation are validated `ready` work with a
-dedicated execution plan.
+catalog advanced-filter presentation, and offer-discovery card presentation
+are validated `ready` work with a dedicated execution plan.
 
 Active implementation plans:
 
@@ -67,11 +67,11 @@ batch and should not be recreated or promoted.
   visible Relay page.
 - Route foundations: add a real wildcard 404 and shared route document metadata.
 - Frontend route maintainability: extract API-token controls, the compare
-  specification matrix, and catalog advanced filters through the active
-  control-and-matrix plan.
-- Ready reserve: API-token controls, compare specification matrix, and catalog
-  advanced-filter presentation execute through
-  `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+  specification matrix, catalog advanced filters, and the per-offer discovery
+  card through the active control-and-matrix plan.
+- Ready reserve: API-token controls, compare specification matrix, catalog
+  advanced-filter presentation, and offer-discovery card presentation execute
+  through `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Completed reserve: skip navigation plus saved-comparison, catalog product-
   list, and revenue-summary presentation extractions are complete; do not
   promote them again without fresh scope.

@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-11
+Updated: 2026-07-12
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -197,6 +197,37 @@ Verification:
 
 Exit condition: Advanced facet presentation is isolated without changing field names, selected values, filtering semantics, or URL serialization.
 
+### 4. Offer Discovery Card Presentation Extraction
+
+Status: ready
+Lane: Frontend offer discovery
+Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+Next action: Extract the per-offer card, merchant action, observation context,
+price-history summary, and coupon summary while leaving page-local ordering,
+visible-page snapshot, merchant quick filters, and pagination in the current
+list owner.
+Owned paths:
+
+- `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Prerequisites:
+
+- Existing offer-discovery route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Per-offer presentation is isolated without changing offer
+ordering, tracked or direct merchant actions, observation labels, latest-price
+display, coupon and price-history summaries, empty states, filters, or
+pagination.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -211,9 +242,9 @@ The 2026-07-11 four-row follow-up completed skip navigation plus the saved-set,
 catalog product-list, and revenue-summary presentation extractions. Focused
 verification passed 2 shell tests, 29 saved-comparison tests, 58 catalog tests,
 and 16 revenue tests with TypeScript and diff hygiene green at each milestone.
-The finished rows were replaced by three newly validated, non-overlapping
-implementation rows grounded in current API-token, comparison-matrix, and
-catalog-filter code and 196 passing characterization tests.
+The finished rows were replaced by four newly validated, non-overlapping
+implementation rows grounded in current API-token, comparison-matrix,
+catalog-filter, and offer-card code and 245 passing characterization tests.
 
 The 2026-07-11 feed-candidate review extraction is complete. `FeedCandidateReviewList`
 now owns review presentation while the route retains Relay/revalidation and draft

@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done (shopper decision confidence)
+- Status: ready (offer card presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-09 after observation, coupon-validity, and visible-snapshot verification
+- Last verified: 2026-07-12, 49 characterization tests before offer-card extraction
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -33,6 +33,37 @@
   - After extraction: 49 offer-discovery route tests passed.
   - `cd assets && bun run typecheck` completed with exit 0.
   - `git diff --check` completed with exit 0.
+
+## Ready Next Batch
+
+### Offer Discovery Card Presentation Extraction
+
+- Status: ready.
+- Plan:
+  `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Owned paths:
+  - `assets/src/routes/offers/OfferDiscoveryList.tsx`
+  - `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Scope:
+  - Extract the per-offer article, merchant action, observation context,
+    current price, price-history summary, and coupon summary into a focused
+    sibling component.
+  - Keep visible-page ordering, snapshot calculation, merchant quick filters,
+    empty state, and pagination in `OfferDiscoveryList`.
+  - Preserve tracked active-offer actions, safe direct inactive-offer links,
+    date labeling, latest-price fallback, coupon validity, and price-history
+    behavior exactly.
+- Characterization evidence:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+    passed 49 tests before promotion.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: per-offer presentation is isolated without changing list-
+  level ordering, filtering, snapshot, pagination, or merchant-action behavior.
 
 ## Ready Shopper Decision Confidence Batches
 

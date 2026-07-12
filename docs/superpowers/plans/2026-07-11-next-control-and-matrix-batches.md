@@ -1,11 +1,11 @@
-# Next Control And Matrix Batches Implementation Plan
+# Next Control, Matrix, And Offer Card Batches Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for
 > tracking.
 
-**Goal:** Isolate three remaining cohesive frontend presentation boundaries
+**Goal:** Isolate four remaining cohesive frontend presentation boundaries
 without changing route-owned mutations, Relay reads, URL state, filter
 serialization, comparison semantics, or accessible behavior.
 
@@ -107,3 +107,35 @@ and active-filter summaries.
 - [ ] Run `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`.
 - [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
 - [ ] Record lane evidence and commit `refactor(frontend): extract catalog advanced filters`.
+
+---
+
+### Task 4: Offer Discovery Card Presentation Extraction
+
+**Files:**
+
+- Create: `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- Modify: `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Modify: `docs/work/frontend-offer-discovery-demo-parity.md`
+
+**Interface:** `OfferDiscoveryCard` receives one `OfferNode` plus its nullable
+price-sort highlight label. It owns the offer article, status and product
+heading, tracked or safe direct merchant action, observation context, current
+price, price-history summary, and coupon summary. `OfferDiscoveryList` retains
+page-local renderable-offer normalization and ordering, mixed-currency price
+comparison decisions, visible-page snapshot, list markup, merchant quick
+filters, empty state, and pagination.
+
+- [ ] Add a direct card render assertion covering active tracked action,
+  observation labels, current price, price history, and coupon validity; verify
+  RED against the missing component.
+- [ ] Create the typed `OfferDiscoveryCard` export by moving the existing
+  per-offer markup, formatting helpers, connection fallbacks, and StyleX rules
+  without changing accessible labels, copy, link safety, or click tracking.
+- [ ] Render the new component from the existing `DataListItem` mapping while
+  keeping ordering, highlights, snapshot, filters, and pagination in
+  `OfferDiscoveryList`.
+- [ ] Run `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`.
+- [ ] Run `cd assets && bun run typecheck` and `git diff --check`.
+- [ ] Record lane evidence and commit `refactor(frontend): extract offer discovery card`.
