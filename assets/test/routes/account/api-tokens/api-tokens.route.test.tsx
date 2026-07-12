@@ -162,6 +162,8 @@ afterEach(() => {
 });
 
 test("API token item presents token lifecycle details and delegates actions", () => {
+  vi.spyOn(Date, "now").mockReturnValue(ROUTE_NOW);
+
   const onRevoke = vi.fn();
   const onRotate = vi.fn();
   const view = render(
