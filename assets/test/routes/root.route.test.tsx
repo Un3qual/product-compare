@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { usePreloadedQuery } from "react-relay";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../src/relay/environment";
 import {
@@ -9,6 +9,10 @@ import {
   useRoutePreloadedQuery
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
+import {
+  RootHomeDestinations,
+  RootPrimaryNavigation
+} from "../../src/routes/RootDestinations";
 import { RootLayout, RootRoute } from "../../src/routes/RootRoute";
 import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
 
@@ -147,6 +151,88 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
 
   return render(<RouterProvider router={router} />);
 }
+
+test("root destinations render guest shopper paths and auth actions", () => {
+  render(
+    <MemoryRouter>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={null} />
+      </nav>
+      <RootHomeDestinations viewer={null} />
+    </MemoryRouter>
+  );
+
+  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+  const shopperPaths = within(homeActions).getByRole("list", { name: "Shopper paths" });
+
+  expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "href",
+    "/compare"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products"
+  );
+  expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
+  expect(within(homeActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
+    "href",
+    "/offers"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register"
+  );
+  expect(within(primaryNavigation).queryByRole("link", { name: "Saved comparisons" })).not.toBeInTheDocument();
+  expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
+});
+
+test("root destinations render authenticated account actions with the exact active link", () => {
+  render(
+    <MemoryRouter initialEntries={["/compare/saved"]}>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={{ id: "viewer-1", email: "person@example.com" }} />
+      </nav>
+      <RootHomeDestinations viewer={{ id: "viewer-1", email: "person@example.com" }} />
+    </MemoryRouter>
+  );
+
+  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+  const savedComparison = within(primaryNavigation).getByRole("link", {
+    name: "Saved comparisons"
+  });
+
+  expect(savedComparison).toHaveAttribute("href", "/compare/saved");
+  expect(savedComparison).toHaveAttribute("aria-current", "page");
+  expect(savedComparison).toHaveAttribute("data-active", "true");
+  expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "data-active",
+    "false"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
+    "href",
+    "/affiliate/setup"
+  );
+  expect(within(homeActions).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
+  );
+  expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
+    "href",
+    "/account/api-tokens"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+    "href",
+    "/auth/logout"
+  );
+  expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+});
 
 test("root layout applies the deepest matched document metadata", async () => {
   mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
