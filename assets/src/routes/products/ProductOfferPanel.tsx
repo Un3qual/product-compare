@@ -43,6 +43,9 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOff
 type ProductOfferNode = NonNullable<
   NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
 >["edges"][number]["node"];
+type ProductOfferConnection = NonNullable<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
+>;
 
 export function ProductOfferPanel({
   connection,
@@ -50,7 +53,7 @@ export function ProductOfferPanel({
   offersAfter,
   selectedCompareSlugs
 }: {
-  connection: NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"];
+  connection: ProductOfferConnection | null | undefined;
   productSlug: string;
   offersAfter: string | null;
   selectedCompareSlugs: readonly string[];
@@ -59,37 +62,21 @@ export function ProductOfferPanel({
     return <FeedbackState kind="error" title="Offers unavailable." />;
   }
 
-  const offers = connection.edges.flatMap(({ node }) => {
-    const offer = buildVisibleProductOffer(node);
-    return offer ? [offer] : [];
-  });
-  const paginationLinks =
-    offersAfter || (connection.pageInfo.hasNextPage && connection.pageInfo.endCursor) ? (
-      <nav aria-label="Active offer pages">
-        {offersAfter ? (
-          <Link to={productOffersPath(productSlug, null, selectedCompareSlugs)}>
-            First offers
-          </Link>
-        ) : null}
-        {connection.pageInfo.hasNextPage && connection.pageInfo.endCursor ? (
-          <Link
-            to={productOffersPath(
-              productSlug,
-              connection.pageInfo.endCursor,
-              selectedCompareSlugs
-            )}
-          >
-            Next offers
-          </Link>
-        ) : null}
-      </nav>
-    ) : null;
+  const offers = visibleProductOffers(connection);
+  const pagination = (
+    <ProductOfferPagination
+      connection={connection}
+      offersAfter={offersAfter}
+      productSlug={productSlug}
+      selectedCompareSlugs={selectedCompareSlugs}
+    />
+  );
 
   if (offers.length === 0) {
     return (
       <>
         <p>No active offers yet.</p>
-        {paginationLinks}
+        {pagination}
       </>
     );
   }
@@ -100,8 +87,50 @@ export function ProductOfferPanel({
         summary={buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS)}
       />
       <ActiveOfferList offers={offers} />
-      {paginationLinks}
+      {pagination}
     </>
+  );
+}
+
+function visibleProductOffers(connection: ProductOfferConnection) {
+  return connection.edges.flatMap(({ node }) => {
+    const offer = buildVisibleProductOffer(node);
+    return offer ? [offer] : [];
+  });
+}
+
+function ProductOfferPagination({
+  connection,
+  offersAfter,
+  productSlug,
+  selectedCompareSlugs
+}: {
+  connection: ProductOfferConnection;
+  offersAfter: string | null;
+  productSlug: string;
+  selectedCompareSlugs: readonly string[];
+}) {
+  const nextCursor = connection.pageInfo.hasNextPage
+    ? connection.pageInfo.endCursor
+    : null;
+
+  if (!offersAfter && !nextCursor) {
+    return null;
+  }
+
+  return (
+    <nav aria-label="Active offer pages">
+      {offersAfter ? (
+        <Link to={productOffersPath(productSlug, null, selectedCompareSlugs)}>
+          First offers
+        </Link>
+      ) : null}
+      {nextCursor ? (
+        <Link to={productOffersPath(productSlug, nextCursor, selectedCompareSlugs)}>
+          Next offers
+        </Link>
+      ) : null}
+    </nav>
   );
 }
 
@@ -115,15 +144,43 @@ function buildVisibleProductOffer(node: ProductOfferNode): VisibleProductOffer |
   return {
     id: node.id,
     currency: normalizedCurrency(node.currency),
-    merchantName: node.merchant?.name ?? "Visit offer",
+    merchantName: productOfferMerchantName(node.merchant),
     url: safeUrl,
-    priceText: formatPriceText(node.latestPrice?.price, node.currency),
-    numericPrice: decimalStringToNumber(node.latestPrice?.price),
-    priceObservation: graphQLDateTimeContext(node.latestPrice?.observedAt),
-    coupons: buildCouponRows(node.activeCoupons?.edges ?? []),
-    couponsHasMore: node.activeCoupons?.pageInfo.hasNextPage ?? false,
-    priceHistory: buildPriceHistoryRows(node.priceHistory?.edges ?? [], node.currency),
-    priceHistoryHasMore: node.priceHistory?.pageInfo.hasNextPage ?? false
+    ...buildLatestPriceSummary(node.latestPrice, node.currency),
+    ...buildVisibleCouponSummary(node.activeCoupons),
+    ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency)
+  };
+}
+
+function productOfferMerchantName(merchant: ProductOfferNode["merchant"]) {
+  return merchant?.name ?? "Visit offer";
+}
+
+function buildLatestPriceSummary(
+  latestPrice: ProductOfferNode["latestPrice"],
+  currency: string
+) {
+  return {
+    priceText: formatPriceText(latestPrice?.price, currency),
+    numericPrice: decimalStringToNumber(latestPrice?.price),
+    priceObservation: graphQLDateTimeContext(latestPrice?.observedAt)
+  };
+}
+
+function buildVisibleCouponSummary(activeCoupons: ProductOfferNode["activeCoupons"]) {
+  return {
+    coupons: buildCouponRows(activeCoupons?.edges ?? []),
+    couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false
+  };
+}
+
+function buildVisiblePriceHistorySummary(
+  priceHistory: ProductOfferNode["priceHistory"],
+  currency: string
+) {
+  return {
+    priceHistory: buildPriceHistoryRows(priceHistory?.edges ?? [], currency),
+    priceHistoryHasMore: priceHistory?.pageInfo.hasNextPage ?? false
   };
 }
 

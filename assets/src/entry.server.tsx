@@ -62,7 +62,9 @@ function responseHeadersFromContext(
     ...Object.values(loaderHeaders),
     ...Object.values(actionHeaders)
   ]) {
-    routeHeaders.forEach((value, key) => responseHeaders.append(key, value));
+    routeHeaders.forEach((value, key) => {
+      responseHeaders.append(key, value);
+    });
   }
 
   return responseHeaders;

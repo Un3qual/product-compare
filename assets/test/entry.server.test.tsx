@@ -29,7 +29,14 @@ test("server render returns a 404 response for unknown application paths", async
   const response = result as Response;
 
   expect(response.status).toBe(404);
-  await expect(response.text()).resolves.toContain("The requested page could not be found.");
+  const body = await response.text();
+
+  expect(body).toContain("<title>Page not found | Product Compare</title>");
+  expect(body).toContain(
+    '<meta name="description" content="The requested Product Compare page could not be found."/>'
+  );
+  expect(body).toContain("The requested page could not be found.");
+  expect(body).toContain('__relayRecords');
 });
 
 test("server render resolves recovery route markup", async () => {

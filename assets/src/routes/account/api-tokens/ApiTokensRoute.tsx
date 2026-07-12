@@ -37,7 +37,7 @@ import {
   applyApiTokenUpdates
 } from "./ApiTokenList";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
-import { apiTokensLoader } from "./loader";
+import type { apiTokensLoader } from "./loader";
 
 const STATUS_FILTERS = [
   { label: "All", status: "all" },

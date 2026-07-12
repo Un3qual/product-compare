@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -157,16 +157,17 @@ function MerchantDirectoryList({
   pagination: MerchantDirectoryPagination;
 }) {
   const [filterText, setFilterText] = useState("");
+  const filterInputId = useId();
   const merchants = connection.edges.map(({ node }) => node);
 
   if (merchants.length === 0) {
     return <FeedbackState kind="empty" title="No merchants available yet." />;
   }
 
-  const normalizedFilterText = filterText.trim().toLocaleLowerCase();
+  const normalizedFilterText = filterText.trim().toLowerCase();
   const visibleMerchants = normalizedFilterText
     ? merchants.filter((merchant) =>
-        merchant.name.toLocaleLowerCase().includes(normalizedFilterText)
+        merchant.name.toLowerCase().includes(normalizedFilterText)
       )
     : merchants;
 
@@ -180,10 +181,11 @@ function MerchantDirectoryList({
             : `${merchants.length} merchants on this page`
         }
       />
-      <label {...props(styles.filter)}>
+      <label htmlFor={filterInputId} {...props(styles.filter)}>
         Filter merchants on this page
         <TextField
           autoComplete="off"
+          id={filterInputId}
           onChange={(event) => setFilterText(event.currentTarget.value)}
           type="search"
           value={filterText}

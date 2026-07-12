@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useRef } from "react";
+import { Suspense, type FormEvent, useId, useRef } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { usePreloadedQuery } from "react-relay";
 import apiTokensRouteQuery, {
@@ -115,21 +115,22 @@ function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
   );
 }
 
-function RelayApiTokenPage({
-  apiTokenUpdates,
-  onRotate,
-  onRevoke,
-  pendingRevokeIds,
-  pendingRotateIds,
-  revokeErrorsByTokenId,
-  rotateErrorsByTokenId,
-  tokenQuery,
-  tokenStatus
-}: ApiTokenListLifecycleProps & {
+function RelayApiTokenPage(props: ApiTokenListLifecycleProps & {
   apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
   tokenQuery: ApiTokenQueryDescriptor;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
 }) {
+  const {
+    apiTokenUpdates,
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+    tokenQuery,
+    tokenStatus
+  } = props;
   const queryRef = useRoutePreloadedQuery<ApiTokensRouteQuery>(
     apiTokensRouteQuery,
     tokenQuery
@@ -283,6 +284,7 @@ function ApiTokenActions({
 }) {
   const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
   const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
+  const rotateLabelInputId = useId();
 
   if (token.revokedAt) {
     return null;
@@ -299,9 +301,14 @@ function ApiTokenActions({
           onSubmit={onRotateSubmit}
           {...props(styles.rotateForm)}
         >
-          <label>
+          <label htmlFor={rotateLabelInputId}>
             {`Replacement label for ${displayLabel}`}
-            <TextField autoComplete="off" name="label" type="text" />
+            <TextField
+              autoComplete="off"
+              id={rotateLabelInputId}
+              name="label"
+              type="text"
+            />
           </label>
           <label>
             {`Replacement expiry for ${displayLabel}`}

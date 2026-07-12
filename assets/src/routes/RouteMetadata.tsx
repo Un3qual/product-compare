@@ -28,22 +28,31 @@ export function RouteMetadata() {
 }
 
 function metadataFromHandle(handle: unknown): RouteDocumentMetadata | null {
-  if (!handle || typeof handle !== "object" || !("metadata" in handle)) {
+  const handleRecord = recordFromUnknown(handle);
+
+  if (!handleRecord) {
     return null;
   }
 
-  const metadata = handle.metadata;
+  const metadata = recordFromUnknown(handleRecord.metadata);
 
-  if (
-    !metadata ||
-    typeof metadata !== "object" ||
-    !("title" in metadata) ||
-    typeof metadata.title !== "string" ||
-    !("description" in metadata) ||
-    typeof metadata.description !== "string"
-  ) {
+  if (!metadata) {
     return null;
   }
 
-  return metadata as RouteDocumentMetadata;
+  const description = stringProperty(metadata, "description");
+  const title = stringProperty(metadata, "title");
+
+  return description === null || title === null ? null : { description, title };
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringProperty(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" ? value : null;
 }

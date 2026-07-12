@@ -30,6 +30,7 @@ Bun SSR.
 ### Task 1: Compare loaded-price scope copy
 
 **Files:**
+
 - Modify: `assets/src/routes/compare/DecisionSummary.tsx`
 - Test: `assets/test/routes/compare/compare.route.test.tsx`
 - Modify: `docs/work/frontend-product-comparison-demo-parity.md`
@@ -44,6 +45,7 @@ relative loaded price compares only offers already loaded for selected products.
 ### Task 2: Compare picker loaded-name filter
 
 **Files:**
+
 - Modify: `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
 - Test: `assets/test/routes/compare/compare.route.test.tsx`
 - Modify: `docs/work/frontend-product-comparison-demo-parity.md`
@@ -58,6 +60,7 @@ unselected products; `Show more products` remains independent.
 ### Task 3: Merchant visible-page name filter
 
 **Files:**
+
 - Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
 - Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
 - Modify: `docs/work/frontend-merchant-discovery-demo-parity.md`
@@ -72,6 +75,7 @@ cursor links remain unchanged.
 ### Task 4: Application wildcard 404
 
 **Files:**
+
 - Create: `assets/src/routes/NotFoundRoute.tsx`
 - Modify: `assets/src/router.tsx`
 - Modify: `assets/src/entry.server.tsx`
@@ -90,6 +94,7 @@ rendered non-200 route contexts as `Response` objects with preserved status.
 ### Task 5: Route document metadata
 
 **Files:**
+
 - Create: `assets/src/routes/RouteMetadata.tsx`
 - Modify: `assets/src/router.tsx`
 - Modify: `assets/src/routes/RootRoute.tsx`
@@ -109,6 +114,7 @@ rendered non-200 route contexts as `Response` objects with preserved status.
 ### Task 6: API-token route decomposition
 
 **Files:**
+
 - Create: `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
 - Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
 - Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
@@ -125,6 +131,7 @@ one-time secret state.
 ### Task 7: Offer-discovery route decomposition
 
 **Files:**
+
 - Create: `assets/src/routes/offers/OfferDiscoveryList.tsx`
 - Modify: `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
 - Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
@@ -141,6 +148,7 @@ mutation orchestration.
 ### Task 8: Product-detail route decomposition
 
 **Files:**
+
 - Create: `assets/src/routes/products/ProductOfferPanel.tsx`
 - Modify: `assets/src/routes/products/ProductDetailRoute.tsx`
 - Test: `assets/test/routes/products/detail.route.test.tsx`
@@ -157,6 +165,7 @@ and tracked-click orchestration.
 ### Task 9: Queue reconciliation and final gates
 
 **Files:**
+
 - Modify: `docs/work/index.md`
 - Modify: `docs/plans/INDEX.md`
 - Modify: affected lane work docs

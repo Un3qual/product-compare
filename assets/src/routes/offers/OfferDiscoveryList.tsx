@@ -1,17 +1,14 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import type { OfferDiscoveryRouteQuery } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { StatusBadge } from "../../ui/components/status/StatusBadge";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import {
-  graphQLDateTimeContext,
-  graphQLDateTimeLabel
+  graphQLDateTimeContext
 } from "../graphql-datetime";
 import {
   formatCouponAvailabilityCount,
@@ -19,42 +16,37 @@ import {
 } from "../offer-formatting";
 import {
   buildOfferSnapshotSummary,
-  type OfferSnapshotSelectors,
   type OfferSnapshotSummary
 } from "../offer-snapshot";
+import {
+  activeVisibleMerchant,
+  discountLabel,
+  emptyCouponConnection,
+  emptyPriceHistoryConnection,
+  OFFER_SNAPSHOT_SELECTORS,
+  offerMerchantName,
+  priceLabel,
+  priceHistoryRow,
+  priceSortHighlightLabel,
+  priceSortUsesSingleCurrency,
+  renderableOffers,
+  sortedRenderableOffers,
+  visibleLowestPriceLabel,
+  visibleMerchants,
+  type OfferConnection,
+  type OfferNode,
+  type ActiveCouponsConnection,
+  type CouponNode,
+  type PriceHistoryConnection,
+  type PriceHistoryRow,
+  type RenderableOffer,
+  type VisibleMerchant
+} from "./offer-discovery-data";
 import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./loader";
 import { offerDiscoveryPath } from "./paths";
 import { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";
 
-type OfferConnection = NonNullable<
-  OfferDiscoveryRouteQuery["response"]["merchantProducts"]
->;
-type OfferNode = OfferConnection["edges"][number]["node"];
-type ActiveCouponsConnection = NonNullable<OfferNode["activeCoupons"]>;
-type PriceHistoryConnection = NonNullable<OfferNode["priceHistory"]>;
 type CouponEdge = ActiveCouponsConnection["edges"][number];
-type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
-type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
-type RenderableOffer = {
-  latestPriceCurrency: string | null;
-  latestPriceValue: number | null;
-  offer: OfferNode;
-  originalIndex: number;
-};
-type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
-type VisibleMerchant = {
-  id: string;
-  name: string;
-};
-const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
-  sensitivity: "base"
-});
-const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
-  currency: (offer) => offer.latestPriceCurrency,
-  hasCoupons: hasVisibleCoupons,
-  numericPrice: (offer) => offer.latestPriceValue
-};
-
 const styles = create({
   offer: {
     display: "grid",
@@ -204,27 +196,6 @@ function VisibleOfferSnapshot({
       label="Visible offer snapshot"
     />
   );
-}
-
-function hasVisibleCoupons({ offer }: RenderableOffer) {
-  const activeCoupons = couponConnection(offer.activeCoupons);
-
-  return activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage;
-}
-
-function visibleLowestPriceLabel(summary: OfferSnapshotSummary<RenderableOffer>) {
-  if (summary.priceState === "mixed") {
-    return "Not comparable across currencies";
-  }
-
-  const lowestPricedOffer = summary.lowestPricedOffer;
-
-  return lowestPricedOffer
-    ? priceLabel(
-        lowestPricedOffer.offer.latestPrice?.price,
-        lowestPricedOffer.offer.currency
-      )
-    : "No visible prices";
 }
 
 function OfferListItem({
@@ -382,34 +353,11 @@ function VisibleMerchantFilterLinks({
   );
 }
 
-function activeVisibleMerchant(
-  merchantId: string | null,
-  merchants: ReadonlyArray<VisibleMerchant>
-) {
-  if (!merchantId) {
-    return null;
-  }
-
-  return merchants.find((merchant) => merchant.id === merchantId) ?? null;
-}
-
 function isEmptyMerchantFilterSection(
   activeMerchant: VisibleMerchant | null,
   filterableMerchants: ReadonlyArray<VisibleMerchant>
 ) {
   return !activeMerchant && filterableMerchants.length === 0;
-}
-
-function visibleMerchants(offers: ReadonlyArray<RenderableOffer>): VisibleMerchant[] {
-  const merchants = new Map<string, string>();
-
-  for (const { offer } of offers) {
-    if (offer.merchant?.id && offer.merchant.name) {
-      merchants.set(offer.merchant.id, offer.merchant.name);
-    }
-  }
-
-  return Array.from(merchants, ([id, name]) => ({ id, name }));
 }
 
 function OfferMerchantDomain({ domain }: { domain: string | null }) {
@@ -450,10 +398,6 @@ function offerProductName(product: OfferNode["product"]) {
 
 function offerStatusLabel(isActive: boolean) {
   return isActive ? "Active" : "Inactive";
-}
-
-function offerMerchantName(merchant: OfferNode["merchant"]) {
-  return merchant?.name ?? "Visit offer";
 }
 
 function offerSummaryMerchantName(merchant: OfferNode["merchant"]) {
@@ -582,195 +526,4 @@ function OfferPagination({
       nextLabel="Next offers"
     />
   );
-}
-
-function renderableOffers(connection: OfferConnection) {
-  const offers: RenderableOffer[] = [];
-
-  connection.edges.forEach(({ node: offer }, originalIndex) => {
-    const latestPriceValue = numericLatestPrice(offer);
-
-    if (externalHttpUrlHref(offer.url)) {
-      offers.push({
-        latestPriceCurrency: latestPriceValue === null ? null : offer.currency,
-        latestPriceValue,
-        offer,
-        originalIndex
-      });
-    }
-  });
-
-  return offers;
-}
-
-function sortedRenderableOffers(
-  offers: RenderableOffer[],
-  sort: OfferDiscoverySort,
-  canComparePrices: boolean
-) {
-  if (sort === "default" || (isPriceSort(sort) && !canComparePrices)) {
-    return offers;
-  }
-
-  return [...offers].sort((left, right) =>
-    compareRenderableOffers(left, right, sort)
-  );
-}
-
-function compareRenderableOffers(
-  left: RenderableOffer,
-  right: RenderableOffer,
-  sort: RenderableOfferSort
-) {
-  if (sort === "price_asc" || sort === "price_desc") {
-    return compareByPrice(left, right, sort);
-  }
-
-  if (sort === "merchant_name") {
-    const merchantComparison = MERCHANT_NAME_COLLATOR.compare(
-      offerMerchantName(left.offer.merchant),
-      offerMerchantName(right.offer.merchant)
-    );
-
-    return merchantComparison || compareByOriginalIndex(left, right);
-  }
-
-  const exhaustiveCheck: never = sort;
-  throw new Error(`Unsupported offer sort: ${exhaustiveCheck}`);
-}
-
-function compareByPrice(
-  left: RenderableOffer,
-  right: RenderableOffer,
-  sort: Extract<OfferDiscoverySort, "price_asc" | "price_desc">
-) {
-  if (left.latestPriceValue === null && right.latestPriceValue === null) {
-    return compareByOriginalIndex(left, right);
-  }
-
-  if (left.latestPriceValue === null) {
-    return 1;
-  }
-
-  if (right.latestPriceValue === null) {
-    return -1;
-  }
-
-  const priceComparison = left.latestPriceValue - right.latestPriceValue;
-
-  return (
-    (sort === "price_asc" ? priceComparison : -priceComparison) ||
-    compareByOriginalIndex(left, right)
-  );
-}
-
-function compareByOriginalIndex(left: RenderableOffer, right: RenderableOffer) {
-  return left.originalIndex - right.originalIndex;
-}
-
-function priceSortHighlightLabel(
-  sort: OfferDiscoverySort,
-  index: number,
-  offer: RenderableOffer,
-  canComparePrices: boolean
-) {
-  if (!canComparePrices || index !== 0 || offer.latestPriceValue === null) {
-    return null;
-  }
-
-  if (sort === "price_asc") {
-    return "Best price on this page";
-  }
-
-  if (sort === "price_desc") {
-    return "Highest price on this page";
-  }
-
-  return null;
-}
-
-function numericLatestPrice(offer: OfferNode) {
-  return decimalStringToNumber(offer.latestPrice?.price);
-}
-
-function isPriceSort(
-  sort: OfferDiscoverySort
-): sort is Extract<OfferDiscoverySort, "price_asc" | "price_desc"> {
-  return sort === "price_asc" || sort === "price_desc";
-}
-
-function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffer>) {
-  return canComparePriceCurrencies(
-    offers.flatMap((offer) =>
-      offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency]
-    )
-  );
-}
-
-function priceLabel(price: string | null | undefined, currency: string) {
-  if (!price) {
-    return null;
-  }
-
-  return `${price} ${currency}`;
-}
-
-type PriceHistoryRow = {
-  id: string;
-  observedAt: string;
-  observedDate: string;
-  price: string;
-};
-
-function priceHistoryRow(
-  pricePoint: PriceHistoryNode,
-  currency: string
-): PriceHistoryRow | null {
-  const price = priceLabel(pricePoint.price, currency);
-  const observedDate = graphQLDateTimeLabel(pricePoint.observedAt);
-
-  if (!price || !observedDate) {
-    return null;
-  }
-
-  return {
-    id: pricePoint.id,
-    observedAt: pricePoint.observedAt,
-    observedDate,
-    price
-  };
-}
-
-function discountLabel(coupon: CouponNode) {
-  if (coupon.discountType === "AMOUNT" && coupon.discountValue && coupon.currency) {
-    return `${coupon.discountValue} ${coupon.currency}`;
-  }
-
-  if (coupon.discountType === "PERCENT" && coupon.discountValue) {
-    return `${coupon.discountValue}%`;
-  }
-
-  if (coupon.discountType === "FREE_SHIPPING") {
-    return "Free shipping";
-  }
-
-  return null;
-}
-
-function emptyCouponConnection(): ActiveCouponsConnection {
-  return {
-    edges: [],
-    pageInfo: {
-      hasNextPage: false
-    }
-  };
-}
-
-function emptyPriceHistoryConnection(): PriceHistoryConnection {
-  return {
-    edges: [],
-    pageInfo: {
-      hasNextPage: false
-    }
-  };
 }

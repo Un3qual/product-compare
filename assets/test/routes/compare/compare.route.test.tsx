@@ -1460,6 +1460,9 @@ test("product picker filters loaded product names without hiding pagination", ()
 
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
+  expect(filter.id).not.toBe("");
+  expect(filter.closest("label")).toHaveAttribute("for", filter.id);
+
   fireEvent.change(filter, { target: { value: "bEtA" } });
 
   expect(screen.queryByRole("link", { name: "Compare Monitor Alpha" })).not.toBeInTheDocument();
@@ -1475,6 +1478,49 @@ test("product picker filters loaded product names without hiding pagination", ()
 
   expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toBeInTheDocument();
+});
+
+test("product picker filtering is stable when the browser locale has special casing rules", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    specMode: "shared",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:istanbul",
+            name: "Istanbul",
+            slug: "istanbul",
+            brand: { id: "Brand:displayco", name: "DisplayCo" }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+  const localeLowerCase = vi
+    .spyOn(String.prototype, "toLocaleLowerCase")
+    .mockImplementation(function (this: string) {
+      return String(this).replaceAll("I", "ı").toLowerCase();
+    });
+
+  try {
+    renderCompareRoute();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Filter loaded products" }), {
+      target: { value: "i" }
+    });
+
+    expect(screen.getByRole("link", { name: "Compare Istanbul" })).toBeInTheDocument();
+  } finally {
+    localeLowerCase.mockRestore();
+  }
 });
 
 test("product picker resets pagination before rendering a changed selected set", () => {

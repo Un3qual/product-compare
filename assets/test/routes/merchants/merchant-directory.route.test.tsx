@@ -293,6 +293,9 @@ test("merchant directory filters visible-page names without hiding pagination", 
 
   const filter = screen.getByRole("searchbox", { name: "Filter merchants on this page" });
 
+  expect(filter.id).not.toBe("");
+  expect(filter.closest("label")).toHaveAttribute("for", filter.id);
+
   fireEvent.change(filter, { target: { value: "gLoBeX" } });
 
   expect(screen.queryByRole("heading", { name: "Acme Market" })).not.toBeInTheDocument();
@@ -308,6 +311,37 @@ test("merchant directory filters visible-page names without hiding pagination", 
 
   expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
+});
+
+test("merchant filtering is stable when the browser locale has special casing rules", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({
+      merchants: [
+        {
+          id: "merchant-istanbul",
+          name: "Istanbul",
+          domain: "istanbul.example"
+        }
+      ]
+    })
+  );
+  const localeLowerCase = vi
+    .spyOn(String.prototype, "toLocaleLowerCase")
+    .mockImplementation(function (this: string) {
+      return String(this).replaceAll("I", "ı").toLowerCase();
+    });
+
+  try {
+    renderMerchantDirectoryRoute();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+      target: { value: "i" }
+    });
+
+    expect(screen.getByRole("heading", { name: "Istanbul" })).toBeInTheDocument();
+  } finally {
+    localeLowerCase.mockRestore();
+  }
 });
 
 test("merchant directory renders first-page navigation when cursor-paged", () => {

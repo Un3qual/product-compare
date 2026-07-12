@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useLazyLoadQuery } from "react-relay";
@@ -86,6 +86,7 @@ function CompareProductPicker({
   const [after, setAfter] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
+  const filterInputId = useId();
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
@@ -99,10 +100,10 @@ function CompareProductPicker({
   const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
-  const normalizedFilterText = filterText.trim().toLocaleLowerCase();
+  const normalizedFilterText = filterText.trim().toLowerCase();
   const visibleProducts = normalizedFilterText
     ? availableProducts.filter((product) =>
-        product.name.toLocaleLowerCase().includes(normalizedFilterText)
+        product.name.toLowerCase().includes(normalizedFilterText)
       )
     : availableProducts;
   const nextCursor = nextProductPageCursor(data.products.pageInfo);
@@ -118,10 +119,11 @@ function CompareProductPicker({
   return (
     <section {...props(styles.picker)}>
       <h2 {...props(styles.title)}>{heading}</h2>
-      <label {...props(styles.filter)}>
+      <label htmlFor={filterInputId} {...props(styles.filter)}>
         Filter loaded products
         <TextField
           autoComplete="off"
+          id={filterInputId}
           onChange={(event) => setFilterText(event.currentTarget.value)}
           type="search"
           value={filterText}
