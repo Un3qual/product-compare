@@ -939,6 +939,73 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == price_point_count
     end
 
+    test "uses external listing identity when current offers share product and URL" do
+      source = source_fixture()
+      shared_url = "https://trail.example/products/shared-offer"
+
+      current_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-STABLE-SKU",
+          listing_url: shared_url,
+          amount: Decimal.new("129.99"),
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-STABLE-SKU", "price" => "129.99"}
+        })
+
+      assert {:ok, current_persisted} =
+               Ingestion.persist_normalized_listing(source, current_listing)
+
+      {:ok, unrelated_merchant} =
+        Pricing.upsert_merchant(%{
+          name: "Unrelated Merchant",
+          domain: "unrelated-merchant.example"
+        })
+
+      {:ok, unrelated_offer} =
+        Pricing.upsert_merchant_product(%{
+          merchant_id: unrelated_merchant.id,
+          product_id: current_persisted.product.id,
+          external_sku: "UNRELATED-SKU",
+          url: shared_url,
+          currency: "USD",
+          is_active: true,
+          last_seen_at: ~U[2026-05-25 15:00:00Z]
+        })
+
+      {:ok, unrelated_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: unrelated_offer.id,
+          observed_at: ~U[2026-05-25 15:00:00Z],
+          price: Decimal.new("199.99"),
+          in_stock: true
+        })
+
+      product_count = Repo.aggregate(Product, :count, :id)
+      merchant_product_count = Repo.aggregate(MerchantProduct, :count, :id)
+      price_point_count = Repo.aggregate(PricePoint, :count, :id)
+
+      stale_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-STABLE-SKU",
+          listing_url: "https://trail.example/products/stale-url",
+          amount: Decimal.new("89.99"),
+          observed_at: ~U[2026-05-23 15:00:00Z],
+          raw_payload: %{"id" => "CJ-STABLE-SKU", "price" => "89.99"}
+        })
+
+      assert {:ok, stale_persisted} =
+               Ingestion.persist_normalized_listing(source, stale_listing)
+
+      assert stale_persisted.merchant_product.id == current_persisted.merchant_product.id
+      assert stale_persisted.price_point.id == current_persisted.price_point.id
+      refute stale_persisted.merchant_product.id == unrelated_offer.id
+      refute stale_persisted.price_point.id == unrelated_price.id
+
+      assert Repo.aggregate(Product, :count, :id) == product_count
+      assert Repo.aggregate(MerchantProduct, :count, :id) == merchant_product_count
+      assert Repo.aggregate(PricePoint, :count, :id) == price_point_count
+    end
+
     test "does not attach stale external product observations over newer rows" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]

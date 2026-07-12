@@ -129,3 +129,7 @@ output, a clean working tree, and an independent whole-branch review.
   conflict validation; and Impact requires an explicit recognized status for
   inserts and updates. RED reproduced all four gaps in 82 tests with 5 failures;
   GREEN passes the reconciled 81-test suite with 0 failures.
+- Final ingestion review tightened current-offer lookup with the persisted
+  external listing identity (`external_id`/`external_sku`) so a newer unrelated
+  merchant offer sharing product and URL cannot be returned for a stale
+  observation.

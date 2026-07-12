@@ -106,6 +106,10 @@ A parallel doc research pass covered provider APIs/feeds plus crawl standards. T
   payload that resolves a different merchant identity still returns the current
   merchant-product/latest-price pair without mutating those rows. The expanded
   focused suite passes 81 tests with 0 failures.
+- Final review follow-up: when multiple merchants legally share the same
+  product and canonical URL, stale lookup also matches
+  `merchant_products.external_sku` to the persisted external product's
+  `external_id`, preserving the source listing identity.
 
 ## CJ Scheduled Readiness Evidence
 

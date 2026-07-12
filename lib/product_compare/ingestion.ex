@@ -287,13 +287,15 @@ defmodule ProductCompare.Ingestion do
 
   defp fetch_stale_listing_merchant_product(%ExternalProduct{
          product_id: product_id,
-         canonical_url: canonical_url
+         canonical_url: canonical_url,
+         external_id: external_id
        })
        when not is_nil(product_id) do
     MerchantProduct
     |> where(
       [merchant_product],
-      merchant_product.product_id == ^product_id and merchant_product.url == ^canonical_url
+      merchant_product.product_id == ^product_id and merchant_product.url == ^canonical_url and
+        merchant_product.external_sku == ^external_id
     )
     |> order_by([merchant_product],
       desc: merchant_product.last_seen_at,
