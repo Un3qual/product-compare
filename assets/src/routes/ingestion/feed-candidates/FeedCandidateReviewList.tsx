@@ -183,10 +183,10 @@ function FeedCandidateListItem({
           Shortlist
         </Button>
         <Button
-          color="red"
           aria-label={`Dismiss ${candidateName}`}
           disabled={isReviewInFlight}
           onClick={() => onReview(candidate, "DISMISSED")}
+          tone="danger"
           type="button"
         >
           Dismiss

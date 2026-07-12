@@ -180,7 +180,7 @@ export function AffiliateLinkForm({
       </label>
       <label>
         Last verified at
-        <input name="lastVerifiedAt" type="datetime-local" />
+        <TextField name="lastVerifiedAt" type="datetime-local" />
       </label>
       <Button disabled={pending} type="submit">
         Save link
@@ -249,11 +249,11 @@ export function AffiliateCouponForm({
       </label>
       <label>
         Valid from
-        <input name="validFrom" type="datetime-local" />
+        <TextField name="validFrom" type="datetime-local" />
       </label>
       <label>
         Valid to
-        <input name="validTo" type="datetime-local" />
+        <TextField name="validTo" type="datetime-local" />
       </label>
       <label>
         Terms

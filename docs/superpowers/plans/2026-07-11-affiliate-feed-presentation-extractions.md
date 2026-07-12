@@ -8,9 +8,11 @@
 
 **Tech Stack:** React 19, React Router 7, Relay 20, TypeScript, StyleX, Vitest.
 
+**Status:** Completed 2026-07-11.
+
 ## Global Constraints
 
-- Browser data remains GraphQL/Relay based.
+- Browser data remains GraphQL/Relay-based.
 - Preserve every existing form field name, accessible label, button label, result region, status message, URL parameter, and mutation variable.
 - Keep mutation hooks, mutation completion/error handling, Relay queries, loader state, and revalidation in the route owner.
 - Feed-candidate presentation must expose only the existing non-secret candidate fields; do not add dashboard, ingestion, provider-call, raw-metadata, credential, account-id, tracking-parameter, file-export, or CSV behavior.
@@ -35,7 +37,7 @@
 - `AffiliateSetupForms.tsx` exports `AffiliateNetworkForm`, `AffiliateProgramForm`, `AffiliateLinkForm`, `AffiliateCouponForm`, and the `MerchantChoice` type.
 - Each form consumes a `FormEventHandler<HTMLFormElement>` callback and typed presentation values. The program and coupon forms consume `MerchantChoice[]`, the selected merchant value/summary, and an `(merchantId: string) => void` callback. The program form additionally consumes the controlled affiliate-network ID and its string change callback.
 
-- [ ] **Step 1: Confirm the characterization contract**
+- [x] **Step 1: Confirm the characterization contract**
 
 Run:
 
@@ -45,7 +47,7 @@ cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.
 
 Expected: 18 tests pass before extraction.
 
-- [ ] **Step 2: Create the presentation component file**
+- [x] **Step 2: Create the presentation component file**
 
 Move the existing form JSX, StyleX `form` style, `MerchantSelect`, `DiscountTypeSelect`, `CouponResultPanel`, and `couponDiscountText` into `AffiliateSetupForms.tsx`. Use this public shape:
 
@@ -98,7 +100,7 @@ export function AffiliateCouponForm(props: {
 
 Derive the result types from the existing generated Relay mutation response types in the new file. Do not alter any form markup or copy while moving it.
 
-- [ ] **Step 3: Replace route-owned markup with typed component calls**
+- [x] **Step 3: Replace route-owned markup with typed component calls**
 
 Import the four form components and `MerchantChoice`. Preserve the existing empty-merchant behavior by keeping the conditional program/coupon rendering in `AffiliateSetupRoute.tsx`. Pass existing state and handlers directly; for the controlled network ID use:
 
@@ -106,7 +108,7 @@ Import the four form components and `MerchantChoice`. Preserve the existing empt
 onAffiliateNetworkIdChange={setAffiliateNetworkId}
 ```
 
-- [ ] **Step 4: Verify behavior and types**
+- [x] **Step 4: Verify behavior and types**
 
 Run:
 
@@ -118,7 +120,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass; diff check has no output.
 
-- [ ] **Step 5: Record lane evidence and commit**
+- [x] **Step 5: Record lane evidence and commit**
 
 Append a concise completed-batch entry to `docs/work/frontend-affiliate-setup-demo-parity.md` naming the extracted forms and the commands/results from Step 4.
 
@@ -156,7 +158,7 @@ export function FeedCandidateReviewList(props: {
 }): ReactElement;
 ```
 
-- [ ] **Step 1: Confirm the characterization contract**
+- [x] **Step 1: Confirm the characterization contract**
 
 Run:
 
@@ -166,13 +168,13 @@ cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candida
 
 Expected: 16 tests pass before extraction.
 
-- [ ] **Step 2: Create the pure review-list presentation**
+- [x] **Step 2: Create the pure review-list presentation**
 
 Move the existing summary, empty state, candidate list item, review controls, feedback status, pagination rendering, pagination-path helpers, fit scoring/reasons, review-status display/tone, product-count formatting, review-date formatting, and candidate counting into `FeedCandidateReviewList.tsx`. Keep the existing StyleX `list`, `item`, and `actions` styles there.
 
 The new component must not call `useMutation`, `useRevalidator`, or own review-note state. It receives all mutation state and callbacks through the public interface above.
 
-- [ ] **Step 3: Keep review orchestration in the route**
+- [x] **Step 3: Keep review orchestration in the route**
 
 Rename the route-owned wrapper to `FeedCandidateReviewPanel` if helpful. It continues to derive candidates, call `useRevalidator`, own `reviewFeedback` and `reviewNotes`, commit `ReviewMerchantFeedCandidateMutation`, omit successful drafts, and build the exact success/error copy. Render `FeedCandidateReviewList` with those values and callbacks.
 
@@ -186,7 +188,7 @@ setReviewFeedback(
 );
 ```
 
-- [ ] **Step 4: Verify behavior, secret safety, and types**
+- [x] **Step 4: Verify behavior, secret safety, and types**
 
 Run:
 
@@ -199,7 +201,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass; the secret/raw-field scan exits 1 with no matches; diff check has no output.
 
-- [ ] **Step 5: Record lane evidence and commit**
+- [x] **Step 5: Record lane evidence and commit**
 
 Append a concise completed-batch entry to `docs/work/product-data-scraping.md` naming the extracted review presentation, unchanged orchestration/guardrails, and the commands/results from Step 4.
 

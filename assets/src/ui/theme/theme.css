@@ -132,6 +132,14 @@ a {
   background: var(--pc-action-accent-hover);
 }
 
+[data-slot="button"][data-tone="danger"][data-variant="solid"] {
+  background: var(--pc-danger);
+}
+
+[data-slot="button"][data-tone="danger"][data-variant="solid"]:hover {
+  background: color-mix(in srgb, var(--pc-danger) 85%, black);
+}
+
 [data-slot="button"][data-variant="soft"] {
   background: var(--pc-surface-interactive);
   border-color: var(--pc-brand-100);

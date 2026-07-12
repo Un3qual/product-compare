@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Browser data remains GraphQL/Relay based.
+- Browser data remains GraphQL/Relay-based.
 - Preserve every existing accessible name, status message, button label, link destination, URL parameter, filter behavior, sort behavior, pagination behavior, and mutation variable.
 - Keep Relay query reads, query retainers, `useMutation`, mutation completion/error handling, loader state, URL/path construction, filter state, pagination decisions, suspense, and error fallbacks in the route owner.
 - New components receive typed values, presentation-ready links, and callbacks; they do not call Relay hooks, route-loader hooks, mutation hooks, or location hooks.

@@ -224,6 +224,17 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
   expect(onCouponSubmit).toHaveBeenCalledOnce();
 });
 
+test("affiliate setup datetime controls use the shared text-field presentation", () => {
+  renderAffiliateSetupRoute();
+
+  expect(screen.getByLabelText("Last verified at")).toHaveAttribute(
+    "data-slot",
+    "text-field"
+  );
+  expect(screen.getByLabelText("Valid from")).toHaveAttribute("data-slot", "text-field");
+  expect(screen.getByLabelText("Valid to")).toHaveAttribute("data-slot", "text-field");
+});
+
 test("affiliate setup route renders selected merchant summaries for program, link, and coupon forms", () => {
   renderAffiliateSetupRoute();
 

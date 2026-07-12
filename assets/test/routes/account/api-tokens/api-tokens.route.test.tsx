@@ -261,7 +261,10 @@ test("API token route hides rotation controls for expired tokens", () => {
     screen.queryByRole("form", { name: "Rotate Expired token API token" })
   ).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Rotate token" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Revoke token" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Revoke token" })).toHaveAttribute(
+    "data-tone",
+    "danger"
+  );
 });
 
 test("API token route links status filters without losing the route path", () => {

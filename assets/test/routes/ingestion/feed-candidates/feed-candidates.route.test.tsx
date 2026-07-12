@@ -136,6 +136,10 @@ test("feed candidates route renders review-safe candidate rows", () => {
   expect(within(trailReasons).getByText("English")).toBeInTheDocument();
   expect(within(trailReasons).getByText("feed type present")).toBeInTheDocument();
   expect(within(candidateList).getByText("Fit score 20")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Dismiss City Gear" })).toHaveAttribute(
+    "data-tone",
+    "danger"
+  );
   expect(
     within(candidateList).queryByText(/tracking|account|token|raw metadata|rawMetadata|raw_metadata/i)
   ).not.toBeInTheDocument();
