@@ -15,6 +15,10 @@ import {
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { browseLoader } from "../../../src/routes/catalog/loader";
 import { BrowseRoute } from "../../../src/routes/catalog/BrowseRoute";
+import {
+  BrowseProductList,
+  type BrowseProductNode
+} from "../../../src/routes/catalog/BrowseProductList";
 import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
 
 const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
@@ -933,6 +937,85 @@ test("Relay store reads each URL-driven browse page without previous page edges"
   ).products.edges.map(({ node }) => node.id);
 
   expect(pageTwoProductIds).toEqual(["product-page-2"]);
+});
+
+test("catalog product presentation keeps highlights and route-derived actions", () => {
+  const product: BrowseProductNode = {
+    id: "product-1",
+    name: "Catalog First",
+    slug: "catalog-first",
+    brand: { id: "brand-1", name: "Acme" },
+    currentAttributes: [
+      { code: "battery", displayName: "Battery", sortOrder: 10, valueText: "12 hours" },
+      { code: "screen", displayName: "Screen", sortOrder: 20, valueText: "15 inches" },
+      { code: "weight", displayName: "Weight", sortOrder: 30, valueText: "3 lb" },
+      { code: "wireless", displayName: "Wireless", sortOrder: 40, valueText: "Wi-Fi 6" }
+    ]
+  };
+
+  render(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ href: "/products?slug=catalog-first", kind: "add" })}
+        detailHrefFor={() => "/products/catalog-first"}
+        offerHrefFor={() => "/offers?productId=product-1"}
+        products={[product]}
+      />
+    </MemoryRouter>
+  );
+
+  const card = screen.getByRole("article", { name: "Catalog First" });
+  const highlights = within(card).getByRole("list", { name: "Specification highlights" });
+
+  expect(within(highlights).getAllByRole("listitem")).toHaveLength(3);
+  expect(within(card).getByRole("link", { name: "View details for Catalog First" })).toHaveAttribute(
+    "href",
+    "/products/catalog-first"
+  );
+  expect(within(card).getByRole("link", { name: "View offers for Catalog First" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product-1"
+  );
+  expect(within(card).getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
+    "href",
+    "/products?slug=catalog-first"
+  );
+});
+
+test("catalog product presentation renders selected and full compare states", () => {
+  const product: BrowseProductNode = {
+    id: "product-1",
+    name: "Catalog First",
+    slug: "catalog-first",
+    brand: { id: "brand-1", name: "Acme" },
+    currentAttributes: []
+  };
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ kind: "selected" })}
+        detailHrefFor={() => "/products/catalog-first"}
+        offerHrefFor={() => "/offers?productId=product-1"}
+        products={[product]}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Catalog First selected for comparison")).toBeInTheDocument();
+
+  rerender(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ kind: "full" })}
+        detailHrefFor={() => "/products/catalog-first"}
+        offerHrefFor={() => "/offers?productId=product-1"}
+        products={[product]}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText("Compare selection full")).toBeInTheDocument();
 });
 
 test("renders browse products from the Relay route query", () => {

@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import deleteSavedComparisonSetMutation, {
@@ -9,14 +8,8 @@ import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -30,51 +23,10 @@ import type {
   SavedComparisonsRouteLoaderData
 } from "./saved-data";
 import { CompareShell } from "./CompareShell";
-
-type SavedComparisonSortMode =
-  | "current"
-  | "name-asc"
-  | "product-count-desc"
-  | "product-count-asc";
-
-const styles = create({
-  controls: {
-    alignItems: "end",
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--pc-radius-large)",
-    display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1rem"
-  },
-  controlNote: {
-    color: tokens.textSecondary,
-    gridColumn: "1 / -1",
-    margin: 0
-  },
-  savedSet: {
-    display: "grid",
-    gap: "0.55rem"
-  },
-  title: {
-    fontSize: "1.25rem",
-    letterSpacing: "-0.02em",
-    margin: 0
-  },
-  metadata: {
-    color: tokens.textSecondary,
-    margin: 0
-  },
-  actions: {
-    alignItems: "center",
-    border: 0,
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.65rem",
-    margin: 0,
-    padding: 0
-  }
-});
+import {
+  SavedComparisonSetList,
+  type SavedComparisonSortMode
+} from "./SavedComparisonSetList";
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
@@ -149,7 +101,7 @@ export function SavedComparisonsRoute() {
     loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
   const shouldShowReturnActions =
     loaderData.status !== "unauthorized" && viewState.savedSets.length === 0;
-
+  const pagination = buildSavedComparisonsPagination(loaderData);
   return (
     <CompareShell title="Saved comparisons">
       <p aria-label="Saved comparisons status" aria-live="polite" role="status">
@@ -160,107 +112,54 @@ export function SavedComparisonsRoute() {
           <Link to="/auth/login">Sign in to view saved comparisons</Link>
         </Button>
       ) : (
-        <WorkspaceLayout
-          context={
-            <ContextRail
-              description="Filter and sort the visible page while your saved records remain the primary focus."
-              label="Saved comparison controls"
-            >
-              <SavedComparisonControls
-                filterText={filterText}
-                onFilterTextChange={setFilterText}
-                onSortModeChange={setSortMode}
-                sortMode={sortMode}
-              />
-            </ContextRail>
-          }
-          label="Saved comparison records"
+        <SavedComparisonSetList
+          actions={{
+            onDelete: handleDelete,
+            onOpenComparison: savedComparisonHref,
+            pendingDeleteIds
+          }}
+          controls={{
+            filterText,
+            onFilterTextChange: setFilterText,
+            onSortModeChange: setSortMode,
+            sortMode
+          }}
+          pagination={pagination}
+          savedSets={viewState.savedSets}
         >
           {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
           {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
           {savedSetQueries.length > 0 ? (
             <SavedComparisonSetQueryRetainers savedSetQueries={savedSetQueries} />
           ) : null}
-          {viewState.savedSets.length > 0 ? (
-            <SavedComparisonSetList
-              onDelete={handleDelete}
-              pendingDeleteIds={pendingDeleteIds}
-              savedSets={viewState.savedSets}
-            />
-          ) : null}
-          <SavedComparisonsPagination
-            after={loaderData.after ?? null}
-            endCursor={loaderData.endCursor ?? null}
-            hasNextPage={loaderData.hasNextPage ?? false}
-          />
-        </WorkspaceLayout>
+        </SavedComparisonSetList>
       )}
     </CompareShell>
   );
 }
 
-function SavedComparisonControls({
-  filterText,
-  onFilterTextChange,
-  onSortModeChange,
-  sortMode
-}: {
-  filterText: string;
-  onFilterTextChange: (filterText: string) => void;
-  onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
-  sortMode: SavedComparisonSortMode;
-}) {
-  return (
-    <div {...props(styles.controls)}>
-      <div>
-        <span id="saved-comparison-filter-label">Filter saved comparisons</span>
-        <TextField
-          aria-labelledby="saved-comparison-filter-label"
-          onChange={(event) => onFilterTextChange(event.target.value)}
-          value={filterText}
-        />
-      </div>
-      <label>
-        Sort saved comparisons
-        <select
-          onChange={(event) => onSortModeChange(savedComparisonSortModeFromValue(event.target.value))}
-          value={sortMode}
-        >
-          <option value="current">Current order</option>
-          <option value="name-asc">Name A-Z</option>
-          <option value="product-count-desc">Product count high-to-low</option>
-          <option value="product-count-asc">Product count low-to-high</option>
-        </select>
-      </label>
-      <p {...props(styles.controlNote)}>
-        Filtering and sorting apply to the visible page.
-      </p>
-    </div>
-  );
-}
-
-function SavedComparisonsPagination({
-  after,
-  endCursor,
-  hasNextPage
-}: {
-  after: string | null;
-  endCursor: string | null;
-  hasNextPage: boolean;
-}) {
-  return (
-    <Pagination
-      firstHref={after ? "/compare/saved" : null}
-      label="Saved comparison pages"
-      nextHref={hasNextPage && endCursor ? savedComparisonsPagePath(endCursor) : null}
-    />
-  );
+function savedComparisonHref(savedSet: SavedComparisonSetSummary) {
+  return buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug));
 }
 
 function savedComparisonsPagePath(after: string) {
   const searchParams = new URLSearchParams({ after });
 
   return `/compare/saved?${searchParams.toString()}`;
+}
+
+function buildSavedComparisonsPagination(loaderData: SavedComparisonsRouteLoaderData) {
+  if (loaderData.status === "unauthorized") {
+    return { firstHref: null, nextHref: null };
+  }
+
+  return {
+    firstHref: loaderData.after ? "/compare/saved" : null,
+    nextHref:
+      loaderData.hasNextPage && loaderData.endCursor
+        ? savedComparisonsPagePath(loaderData.endCursor)
+        : null
+  };
 }
 
 function SavedComparisonSetQueryRetainers({
@@ -293,30 +192,6 @@ function SavedComparisonSetQueryRetainer({
   return null;
 }
 
-function SavedComparisonSetList({
-  onDelete,
-  pendingDeleteIds,
-  savedSets
-}: {
-  onDelete: (savedComparisonSetId: string) => void;
-  pendingDeleteIds: ReadonlySet<string>;
-  savedSets: SavedComparisonSetSummary[];
-}) {
-  return (
-    <DataList label="Saved comparison sets">
-      {savedSets.map((savedSet) => (
-        <DataListItem key={savedSet.id}>
-          <SavedComparisonSetItem
-            onDelete={onDelete}
-            pendingDeleteIds={pendingDeleteIds}
-            savedSet={savedSet}
-          />
-        </DataListItem>
-      ))}
-    </DataList>
-  );
-}
-
 function buildSavedComparisonHref(slugs: string[]) {
   const searchParams = new URLSearchParams();
 
@@ -333,67 +208,6 @@ function SavedComparisonReturnActions() {
       <Link to="/products">Browse products</Link>{" "}
       <Link to="/compare">Start a new comparison</Link>
     </nav>
-  );
-}
-
-function formatSavedProductCount(productCount: number) {
-  return `${productCount} ${productCount === 1 ? "product" : "products"}`;
-}
-
-function SavedComparisonSetItem({
-  onDelete,
-  pendingDeleteIds,
-  savedSet
-}: {
-  onDelete: (savedComparisonSetId: string) => void;
-  pendingDeleteIds: ReadonlySet<string>;
-  savedSet: SavedComparisonSetSummary;
-}) {
-  const deletePending = pendingDeleteIds.has(savedSet.id);
-  const savedProductCount = formatSavedProductCount(savedSet.products.length);
-
-  return (
-    <article {...props(styles.savedSet)}>
-      <h2 {...props(styles.title)}>{savedSet.name}</h2>
-      <p {...props(styles.metadata)}>{savedProductCount} in this saved comparison</p>
-      <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
-      <SavedComparisonSetActions
-        deletePending={deletePending}
-        onDelete={onDelete}
-        savedSet={savedSet}
-      />
-    </article>
-  );
-}
-
-function SavedComparisonSetActions({
-  deletePending,
-  onDelete,
-  savedSet
-}: {
-  deletePending: boolean;
-  onDelete: (savedComparisonSetId: string) => void;
-  savedSet: SavedComparisonSetSummary;
-}) {
-  return (
-    <fieldset {...props(styles.actions)}>
-      <legend>Actions for {savedSet.name}</legend>
-      <Button asChild variant="soft">
-        <Link to={buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug))}>
-          Open comparison
-        </Link>
-      </Button>
-      <Button
-        disabled={deletePending}
-        onClick={() => {
-          onDelete(savedSet.id);
-        }}
-        tone="danger"
-        type="button"
-      >
-        {deletePending ? "Deleting comparison..." : "Delete comparison"}
-      </Button>
-    </fieldset>
   );
 }
 
@@ -507,17 +321,6 @@ function visibleSavedComparisonSets(
     hasLoadedSavedSets: savedSets.length > 0,
     savedSets: sortSavedComparisonSets(visibleSavedSets, sortMode)
   };
-}
-
-function savedComparisonSortModeFromValue(value: string): SavedComparisonSortMode {
-  switch (value) {
-    case "name-asc":
-    case "product-count-desc":
-    case "product-count-asc":
-      return value;
-    default:
-      return "current";
-  }
 }
 
 function sortSavedComparisonSets(

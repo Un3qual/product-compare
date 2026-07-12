@@ -6,6 +6,10 @@ import {
   RevenueSummaryRoute,
   buildRevenueDatePresetLinks
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
+import {
+  RevenueSummaryMetrics,
+  RevenueSummaryView
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
 
 const {
@@ -102,6 +106,42 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+test("revenue presentation exposes filters, presets, active filters, and metrics", () => {
+  render(
+    <MemoryRouter>
+      <RevenueSummaryView
+        activeFilters={[{ label: "Network", value: "impact" }]}
+        datePresetLinks={[{ label: "Last 7 days", to: "/commerce/revenue?from=2026-07-05" }]}
+        filters={{
+          currency: "USD",
+          from: "2026-07-05",
+          network: "impact",
+          to: "2026-07-11"
+        }}
+      >
+        <RevenueSummaryMetrics
+          metrics={[{ label: "Clicks", value: "12" }]}
+          suppression={{ suppressed: false, threshold: 2 }}
+        />
+      </RevenueSummaryView>
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("form", { name: "Revenue filters" })).toBeVisible();
+  expect(screen.getByLabelText("Network")).toHaveValue("impact");
+  expect(screen.getByLabelText("Currency")).toHaveValue("USD");
+  expect(screen.getByLabelText("From")).toHaveValue("2026-07-05");
+  expect(screen.getByLabelText("To")).toHaveValue("2026-07-11");
+  expect(screen.getByRole("button", { name: "Apply filters" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue"
+  );
+  expect(screen.getByRole("list", { name: "Revenue date presets" })).toBeVisible();
+  expect(screen.getByRole("list", { name: "Active revenue filters" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
 });
 
 test("revenue route identifies recorded attribution data as a preview", () => {
@@ -385,6 +425,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("From")).toHaveValue("2026-05-01");
   expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
+  const reportSummary = screen.getByRole("region", { name: "Summary" });
 
   rerender(
     <MemoryRouter>
@@ -396,6 +437,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(screen.getByLabelText("From")).toHaveValue("");
   expect(screen.getByLabelText("To")).toHaveValue("");
+  expect(screen.getByRole("region", { name: "Summary" })).toBe(reportSummary);
 });
 
 test("revenue route asks for a currency before loading metrics", () => {

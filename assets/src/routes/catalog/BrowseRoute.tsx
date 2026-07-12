@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useLocation } from "react-router-dom";
+import { useLoaderData, useLocation } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import browseProductsRouteQuery, {
   type BrowseProductsRouteQuery
@@ -8,13 +7,11 @@ import browseProductsRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
-import { tokens } from "../../ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -27,6 +24,7 @@ import {
   type CatalogFilters
 } from "./filters";
 import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterForm";
+import { BrowseProductList, type BrowseCompareAction } from "./BrowseProductList";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   catalogBrowseFirstPagePath,
@@ -34,58 +32,6 @@ import {
   catalogBrowseSearchWithNormalizedSort
 } from "./paths";
 import { catalogResultStatus } from "./result-status";
-
-type BrowseProductNode = BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
-
-const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
-
-const styles = create({
-  product: {
-    display: "grid",
-    gap: "0.8rem"
-  },
-  productHeading: {
-    fontSize: "1.35rem",
-    letterSpacing: "-0.02em",
-    margin: 0
-  },
-  metadata: {
-    color: tokens.textSecondary,
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.45rem 1rem"
-  },
-  metadataItem: {
-    margin: 0
-  },
-  actionList: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.6rem 1rem",
-    listStyle: "none",
-    margin: 0,
-    padding: 0
-  },
-  highlights: {
-    display: "grid",
-    gap: "0.45rem"
-  },
-  highlightsTitle: {
-    color: tokens.textSecondary,
-    fontSize: "0.8rem",
-    letterSpacing: "0.06em",
-    margin: 0,
-    textTransform: "uppercase"
-  },
-  highlightsList: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.45rem 1.25rem",
-    listStyle: "none",
-    margin: 0,
-    padding: 0
-  }
-});
 
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
@@ -242,136 +188,52 @@ function BrowseProducts({
   return (
     <WorkspaceLayout context={catalogControls} label="Catalog results">
       {selectionTray}
-      <DataList label="Products">
-        {products.map((product) => (
-          <DataListItem key={product.id}>
-            <BrowseProductCard
-              currentPathname={currentBrowsePathname}
-              currentSearch={currentCompareSearch}
-              product={product}
-              selectedCompareSlugs={selectedCompareSlugs}
-            />
-          </DataListItem>
-        ))}
-      </DataList>
+      <BrowseProductList
+        compareActionFor={(product) =>
+          browseCompareAction(
+            product.slug,
+            currentBrowsePathname,
+            currentCompareSearch,
+            selectedCompareSlugs
+          )
+        }
+        detailHrefFor={(product) =>
+          browseProductDetailPath(product.slug, selectedCompareSlugs)
+        }
+        offerHrefFor={(product) => `/offers?productId=${encodeURIComponent(product.id)}`}
+        products={products}
+      />
       {paginationLinks}
     </WorkspaceLayout>
   );
 }
 
-function BrowseProductCard({
-  currentPathname,
-  currentSearch,
-  product,
-  selectedCompareSlugs
-}: {
-  currentPathname: string;
-  currentSearch: string;
-  product: BrowseProductNode;
-  selectedCompareSlugs: readonly string[];
-}) {
-  return (
-    <article aria-label={product.name} {...props(styles.product)}>
-      <h2 {...props(styles.productHeading)}>{product.name}</h2>
-      <div {...props(styles.metadata)}>
-        <p {...props(styles.metadataItem)}>{product.brand.name}</p>
-        <p {...props(styles.metadataItem)}>{product.slug}</p>
-      </div>
-      <SpecificationHighlights attributes={product.currentAttributes} />
-      <ul
-        aria-label={`Decision actions for ${product.name}`}
-        {...props(styles.actionList)}
-      >
-        <li>
-          <Link to={browseProductDetailPath(product.slug, selectedCompareSlugs)}>
-            View details for {product.name}
-          </Link>
-        </li>
-        <CompareAction
-          currentPathname={currentPathname}
-          currentSearch={currentSearch}
-          product={product}
-          selectedCompareSlugs={selectedCompareSlugs}
-        />
-        <li>
-          <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
-            View offers for {product.name}
-          </Link>
-        </li>
-      </ul>
-    </article>
-  );
-}
-
-function SpecificationHighlights({
-  attributes
-}: {
-  attributes: BrowseProductNode["currentAttributes"];
-}) {
-  const highlights = [...attributes]
-    .sort(
-      (left, right) =>
-        (left.sortOrder ?? Number.MAX_SAFE_INTEGER) -
-        (right.sortOrder ?? Number.MAX_SAFE_INTEGER)
-    )
-    .slice(0, SPECIFICATION_HIGHLIGHT_LIMIT);
-
-  if (highlights.length === 0) {
-    return null;
-  }
-
-  return (
-    <section {...props(styles.highlights)}>
-      <h3 {...props(styles.highlightsTitle)}>Specification highlights</h3>
-      <ul aria-label="Specification highlights" {...props(styles.highlightsList)}>
-        {highlights.map((attribute) => (
-          <li key={attribute.code}>
-            {attribute.displayName}: {attribute.valueText}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function CompareAction({
-  currentPathname,
-  currentSearch,
-  product,
-  selectedCompareSlugs
-}: {
-  currentPathname: string;
-  currentSearch: string;
-  product: BrowseProductNode;
-  selectedCompareSlugs: readonly string[];
-}) {
-  if (selectedCompareSlugs.includes(product.slug)) {
-    return <li>{product.name} selected for comparison</li>;
+function browseCompareAction(
+  productSlug: string,
+  currentPathname: string,
+  currentSearch: string,
+  selectedCompareSlugs: readonly string[]
+): BrowseCompareAction {
+  if (selectedCompareSlugs.includes(productSlug)) {
+    return { kind: "selected" };
   }
 
   if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
-    return <li>Compare selection full</li>;
+    return { kind: "full" };
   }
 
-  const nextCompareSlugs = selectedCompareSlugsAfterAdding(
-    selectedCompareSlugs,
-    product.slug,
-    MAX_COMPARE_PRODUCTS
-  );
-
-  return (
-    <li>
-      <Link
-        to={buildCurrentRoutePathWithCompareSlugs(
-          currentPathname,
-          currentSearch,
-          nextCompareSlugs
-        )}
-      >
-        Add {product.name} to compare
-      </Link>
-    </li>
-  );
+  return {
+    href: buildCurrentRoutePathWithCompareSlugs(
+      currentPathname,
+      currentSearch,
+      selectedCompareSlugsAfterAdding(
+        selectedCompareSlugs,
+        productSlug,
+        MAX_COMPARE_PRODUCTS
+      )
+    ),
+    kind: "add"
+  };
 }
 
 function browseProductDetailPath(slug: string, selectedCompareSlugs: readonly string[]) {

@@ -62,7 +62,7 @@ export function SavedComparisonSetList(props: {
 
 - The route supplies the typed `SavedComparisonSetSummary` import from `./saved-data`; the component must not construct comparison or pagination URLs itself.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -72,17 +72,17 @@ cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.
 
 Expected: the focused saved-comparisons state suite passes before any route markup moves.
 
-- [ ] **Step 2: Add behavior assertions for the presentation seam**
+- [x] **Step 2: Add behavior assertions for the presentation seam**
 
 In `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`, retain the existing authorization, deletion, filtering, sorting, reopen, and cursor-pagination assertions. Add a render-level assertion that one visible saved set still exposes its filter/sort controls, `Open comparison` link, enabled delete action, and `Saved comparison pages` pagination label after the route delegates markup to the new component.
 
-- [ ] **Step 3: Create the typed presentation component**
+- [x] **Step 3: Create the typed presentation component**
 
 Move the existing `SavedComparisonControls`, list markup, item markup, product-count formatting, reopen/delete action markup, and pagination markup into `SavedComparisonSetList.tsx`. Keep the existing StyleX controls, saved-set, title, metadata, and actions styles with the presentation. Render a disabled delete button only when `pendingDeleteIds.has(savedSet.id)` and preserve the exact `Deleting comparison...` text.
 
 `SavedComparisonSetList` renders the controls, list, and pagination from its typed props. It calls `onOpenComparison(savedSet)` for the reopen link and `onDelete(savedSet.id)` for the delete action; it does not call `useLoaderData`, `useMutation`, `useRoutePreloadedQuery`, or construct URL search parameters.
 
-- [ ] **Step 4: Leave orchestration in the route owner**
+- [x] **Step 4: Leave orchestration in the route owner**
 
 Import `SavedComparisonSetList` and pass existing `filterText`, `setFilterText`, `sortMode`, `setSortMode`, `viewState.savedSets`, `pendingDeleteIds`, and `handleDelete` directly. In `SavedComparisonsRoute.tsx`, build and pass:
 
@@ -101,7 +101,7 @@ const onOpenComparison = (savedSet: SavedComparisonSetSummary) =>
 
 Keep the unauthorized branch, status message, delete error feedback, empty return actions, and `SavedComparisonSetQueryRetainers` in `SavedComparisonsRoute.tsx`.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -113,7 +113,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/frontend-compare-saved-hardening.md` naming `SavedComparisonSetList`, route-retained Relay/mutation/query-retention/URL/filter orchestration, and the Step 5 command results.
 
@@ -159,7 +159,7 @@ export function BrowseProductList(props: {
 
 - `BrowseProductList` owns product-card, specification-highlight, and compare-action presentation. It preserves the three-highlight cap and renders only route-provided destinations.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -169,17 +169,17 @@ cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx
 
 Expected: the focused catalog browse suite passes before moving product-list presentation.
 
-- [ ] **Step 2: Add behavior assertions for the extracted card boundary**
+- [x] **Step 2: Add behavior assertions for the extracted card boundary**
 
 In `assets/test/routes/catalog/browse.route.test.tsx`, retain the existing filter, compare-tray, pagination, encoded-detail-link, and empty-state coverage. Add one populated-result assertion that confirms a card keeps its accessible product name, at most three specification highlights, `View details`, `View offers`, and the route-derived add/selected/full compare state after delegation.
 
-- [ ] **Step 3: Create the typed product-list presentation**
+- [x] **Step 3: Create the typed product-list presentation**
 
 Move `BrowseProductCard`, `SpecificationHighlights`, `CompareAction`, `SPECIFICATION_HIGHLIGHT_LIMIT`, and the existing product/card metadata/action/highlight StyleX styles into `BrowseProductList.tsx`. The list maps `products` to the existing labelled `DataList`/`DataListItem` structure.
 
 For a `BrowseCompareAction`, preserve exact user-visible behavior: `selected` renders `<product name> selected for comparison`, `full` renders `Compare selection full`, and `add` renders `Add <product name> to compare` linked to `href`. The component uses `detailHrefFor(product)` and `offerHrefFor(product)` without importing route paths, compare-selection helpers, `useLocation`, or Relay hooks.
 
-- [ ] **Step 4: Keep query, filter, URL, tray, and pagination orchestration in the route**
+- [x] **Step 4: Keep query, filter, URL, tray, and pagination orchestration in the route**
 
 In `BrowseRoute.tsx`, retain construction of `activeFilters`, `currentBrowsePathname`, `currentCompareSearch`, `selectedCompareSlugs`, `selectionTray`, `catalogControls`, and `paginationLinks`. Pass these route-built callbacks to the new list:
 
@@ -202,7 +202,7 @@ compareActionFor={(product) => {
 
 Keep the no-products branch and `FeedbackState` in `BrowseRoute.tsx`; render `BrowseProductList` only for the populated branch.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -214,7 +214,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/frontend-catalog-browse.md` naming `BrowseProductList`, route-retained Relay/filter/URL/tray/pagination orchestration, and the Step 5 command results.
 
@@ -261,7 +261,7 @@ export function RevenueSummaryMetrics(props: {
 
 - The route passes its existing summary values through the public boundary; the view does not call `useLoaderData`, Relay hooks, or build URL query strings.
 
-- [ ] **Step 1: Confirm the characterization contract before extraction**
+- [x] **Step 1: Confirm the characterization contract before extraction**
 
 Run:
 
@@ -271,17 +271,17 @@ cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route
 
 Expected: the focused revenue summary suite passes before moving presentation.
 
-- [ ] **Step 2: Add behavior assertions for controls and metrics**
+- [x] **Step 2: Add behavior assertions for controls and metrics**
 
 In `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`, retain existing loader error, missing-currency, invalid-date-range, suppression, and query assertions. Add a populated-summary assertion that verifies `Revenue filters`, all four named fields, `Apply filters`, `Clear filters`, `Revenue date presets`, `Active revenue filters`, and the `Summary` metrics label remain available after extraction.
 
-- [ ] **Step 3: Create the typed summary-view presentation**
+- [x] **Step 3: Create the typed summary-view presentation**
 
 Move the filter form, date-preset link list, active-filter list, `ContextRail`, and `SummaryStrip`/suppression-status markup into `RevenueSummaryView.tsx`. Keep the existing `filters` StyleX style in that file. The filter form preserves the exact `method="get"`, field names, autocomplete values, currency max length, submit text, and `/commerce/revenue` clear link.
 
 `RevenueSummaryView` renders the context rail from `filters`, `datePresetLinks`, and `activeFilters`, then renders `children` in the existing workspace layout. `RevenueSummaryMetrics` renders the existing suppression wording and `SummaryStrip` from the supplied values. Neither function evaluates loader status, reads a preloaded query, or constructs date-preset URLs.
 
-- [ ] **Step 4: Keep loader, Relay, suspense, errors, and filter orchestration in the route**
+- [x] **Step 4: Keep loader, Relay, suspense, errors, and filter orchestration in the route**
 
 In `RevenueSummaryRoute.tsx`, retain `revenueSummaryFilterKey`, `buildRevenueDatePresetLinks`, `buildActiveFilterItems`, `buildRevenueSummaryMetrics`, the loader status branches, `ResettableErrorBoundary`, and `Suspense`. Build the view props in the route:
 
@@ -300,7 +300,7 @@ const activeFilters = buildActiveFilterItems(loaderData.filters);
 
 Make `RevenueSummaryPanel` pass route-derived metrics and `data.revenueSummary.suppression` to `RevenueSummaryMetrics`. Preserve every unavailable, currency-required, and invalid-date fallback in `RevenueSummaryRoute.tsx`.
 
-- [ ] **Step 5: Verify behavior, types, and diff hygiene**
+- [x] **Step 5: Verify behavior, types, and diff hygiene**
 
 Run:
 
@@ -312,7 +312,7 @@ git diff --check
 
 Expected: the focused suite and TypeScript pass, and diff check has no output.
 
-- [ ] **Step 6: Record lane evidence and commit the milestone**
+- [x] **Step 6: Record lane evidence and commit the milestone**
 
 Append a completed-batch entry to `docs/work/affiliate-revenue-attribution.md` naming `RevenueSummaryView` and `RevenueSummaryMetrics`, route-retained loader/Relay/filter/suspense/error orchestration, and the Step 5 command results.
 

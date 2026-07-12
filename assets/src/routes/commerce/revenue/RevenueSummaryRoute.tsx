@@ -1,42 +1,27 @@
 import { Suspense } from "react";
-import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData } from "react-router-dom";
+import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
   type RevenueSummaryRouteQuery
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
 import { revenueSummaryLoader, type RevenueSummaryLoaderData } from "./loader";
+import {
+  RevenueSummaryMetrics,
+  RevenueSummaryView,
+  type RevenueDatePresetLink,
+  type RevenueSummaryMetric
+} from "./RevenueSummaryView";
 
 type RevenueSummary = NonNullable<RevenueSummaryRouteQuery["response"]["revenueSummary"]>;
-type RevenueSummaryMetric = {
-  label: string;
-  value: string;
-};
-
-const styles = create({
-  filters: {
-    alignItems: "end",
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--pc-radius-large)",
-    display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
-    padding: "1rem"
-  },
-});
 
 export function RevenueSummaryRoute() {
   const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
+  const activeFilters = buildActiveFilterItems(loaderData.filters);
+  const datePresetLinks = buildRevenueDatePresetLinks(loaderData.filters);
 
   return (
     <PageShell
@@ -44,21 +29,10 @@ export function RevenueSummaryRoute() {
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >
-      <WorkspaceLayout
-        context={
-          <ContextRail
-            description="Filter recorded attribution by network, currency, or date range."
-            label="Revenue controls"
-          >
-            <RevenueSummaryFilterForm
-              key={revenueSummaryFilterKey(loaderData.filters)}
-              filters={loaderData.filters}
-            />
-            <RevenueDatePresetLinks filters={loaderData.filters} />
-            <ActiveRevenueFilters filters={loaderData.filters} />
-          </ContextRail>
-        }
-        label="Revenue report"
+      <RevenueSummaryView
+        activeFilters={activeFilters}
+        datePresetLinks={datePresetLinks}
+        filters={loaderData.filters}
       >
         {loaderData.status === "error" ? (
           <RevenueSummaryUnavailableFallback />
@@ -76,95 +50,8 @@ export function RevenueSummaryRoute() {
             </Suspense>
           </ResettableErrorBoundary>
         )}
-      </WorkspaceLayout>
+      </RevenueSummaryView>
     </PageShell>
-  );
-}
-
-function RevenueSummaryFilterForm({
-  filters
-}: {
-  filters: RevenueSummaryLoaderData["filters"];
-}) {
-  return (
-    <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
-      <label>
-        Network
-        <TextField
-          autoComplete="off"
-          defaultValue={filters.network ?? ""}
-          name="network"
-          type="text"
-        />
-      </label>
-      <label>
-        Currency
-        <TextField
-          autoComplete="off"
-          defaultValue={filters.currency ?? ""}
-          maxLength={3}
-          name="currency"
-          type="text"
-        />
-      </label>
-      <label>
-        From
-        <input defaultValue={filters.from ?? ""} name="from" type="date" />
-      </label>
-      <label>
-        To
-        <input defaultValue={filters.to ?? ""} name="to" type="date" />
-      </label>
-      <Button type="submit">Apply filters</Button>
-      <Link to="/commerce/revenue">Clear filters</Link>
-    </form>
-  );
-}
-
-function RevenueDatePresetLinks({
-  filters,
-  currentDate = new Date()
-}: {
-  filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">;
-  currentDate?: Date;
-}) {
-  const datePresets = buildRevenueDatePresetLinks(filters, currentDate);
-
-  if (datePresets.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul aria-label="Revenue date presets">
-      {datePresets.map((preset) => (
-        <li key={preset.label}>
-          <Link to={preset.to}>{preset.label}</Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ActiveRevenueFilters({
-  filters
-}: {
-  filters: RevenueSummaryLoaderData["filters"];
-}) {
-  const activeFilters = buildActiveFilterItems(filters);
-
-  if (activeFilters.length === 0) {
-    return <p>Aggregate revenue summary</p>;
-  }
-
-  return (
-    <ul aria-label="Active revenue filters">
-      {activeFilters.map((filter) => (
-        <li key={filter.label}>
-          <span>{filter.label}</span>
-          <span>{filter.value}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -186,23 +73,14 @@ function RevenueSummaryPanel({
     return <RevenueSummaryUnavailableFallback />;
   }
 
-  return <RevenueSummaryMetrics summary={data.revenueSummary} />;
-}
-
-function RevenueSummaryMetrics({ summary }: { summary: RevenueSummary }) {
-  const currency = summary.metrics.currency ?? summary.filters.currency ?? "";
-  const metrics = buildRevenueSummaryMetrics(summary, currency);
-
   return (
-    <>
-      {summary.suppression.suppressed ? (
-        <p aria-live="polite" role="status">
-          Revenue metrics are hidden until at least {summary.suppression.threshold} conversions
-          match the current filters.
-        </p>
-      ) : null}
-      <SummaryStrip items={metrics} label="Summary" />
-    </>
+    <RevenueSummaryMetrics
+      metrics={buildRevenueSummaryMetrics(
+        data.revenueSummary,
+        data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? ""
+      )}
+      suppression={data.revenueSummary.suppression}
+    />
   );
 }
 
@@ -222,10 +100,6 @@ function RevenueSummaryInvalidDateRangeFallback() {
   return <p role="status">Enter a start date on or before the end date to load revenue metrics.</p>;
 }
 
-function revenueSummaryFilterKey(filters: RevenueSummaryLoaderData["filters"]) {
-  return [filters.network, filters.currency, filters.from, filters.to].join("|");
-}
-
 function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {
   return [
     filters.network ? { label: "Network", value: filters.network } : null,
@@ -238,11 +112,6 @@ function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {
       : null
   ].filter((filter): filter is { label: string; value: string } => filter !== null);
 }
-
-type RevenueDatePresetLink = {
-  label: string;
-  to: string;
-};
 
 export function buildRevenueDatePresetLinks(
   filters: Pick<RevenueSummaryLoaderData["filters"], "network" | "currency">,

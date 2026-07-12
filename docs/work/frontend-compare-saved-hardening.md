@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (saved comparison set presentation extraction)
+- Status: done (saved comparison set presentation extraction)
 - Priority: P2
 - Source of truth: this file
 - Last verified: 2026-05-30 after saved-comparisons Relay migration handoff verification
@@ -18,28 +18,32 @@
   - Compare and saved-comparisons routes register route-level error boundaries for unexpected loader/render failures.
   - Focused frontend tests cover the hardened shell and error-boundary fallbacks without reopening unrelated route work.
 
-## Ready Next Batch
+## Completed Saved Comparison Set Presentation Extraction
 
-- Status: ready
+- Status: done on 2026-07-11.
 - Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
-- Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
+- `SavedComparisonSetList` now owns saved-set controls, list and item markup,
+  reopen/delete actions, and pagination presentation.
+- `SavedComparisonsRoute` retains loader and Relay reads, mutation commits and
+  completion/error handling, query retainers, local filter/sort/delete state,
+  return/error branches, and every route-built URL.
 - Owned paths:
   - `assets/src/routes/compare/SavedComparisonsRoute.tsx`
   - `assets/src/routes/compare/SavedComparisonSetList.tsx`
   - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
   - `docs/work/frontend-compare-saved-hardening.md`
-- Prerequisites: Existing saved-comparison route-state suite remains the characterization contract.
 - Verification:
-  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx` - 29 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with no output.
+- Exit condition met: saved-set presentation is isolated while mutation,
+  query-retention, filtering, sorting, and pagination behavior remain green.
 
 ## Historical Completed Hardening And Relay Migration
 
 The following records describe the completed shared-shell, error-boundary, and
-Relay-migration work that preceded the currently ready presentation-extraction
-batch above.
+Relay-migration work that preceded the completed saved comparison set
+presentation-extraction section above.
 
 - `assets/src/routes/compare/compare-shell.tsx` provides a shared responsive shell for both compare routes.
 - `assets/src/routes/compare/index.tsx` uses the shared shell and exposes save-success feedback through a polite `role="status"` region.

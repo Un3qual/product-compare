@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (catalog product list presentation extraction)
+- Status: ready (catalog advanced filter presentation extraction)
 - Priority: P1
 - Source of truth: this file
 - Last verified: 2026-07-09 after shopper decision-confidence aggregate verification
@@ -27,20 +27,44 @@
 
 ## Ready Next Batch
 
-- Status: ready
+- Status: ready.
+- Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Next action: Extract use-case, numeric, boolean, and enum filter fieldsets
+  while preserving form-owned search, sort, page size, compare selection,
+  product-type/descendant, collapsible, and submission behavior.
+- Owned paths:
+  - `assets/src/routes/catalog/CatalogFilterForm.tsx`
+  - `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Prerequisite: the existing catalog browse route suite is green and remains
+  the characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: advanced facet presentation is isolated without changing
+  field names, selected values, filtering semantics, or URL serialization.
+
+## Completed Catalog Product List Presentation Extraction
+
+- Status: done on 2026-07-11.
 - Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
-- Next action: Extract product cards, specification highlights, and compare actions while preserving route-owned Relay, filter, URL, tray, and pagination orchestration.
+- `BrowseProductList` now owns product cards, bounded specification highlights,
+  and route-derived detail, offer, and comparison action presentation.
+- `BrowseRoute` retains Relay reads, filters, URL and compare-path construction,
+  compare tray state, empty/result guidance, and pagination orchestration.
 - Owned paths:
   - `assets/src/routes/catalog/BrowseRoute.tsx`
   - `assets/src/routes/catalog/BrowseProductList.tsx`
   - `assets/test/routes/catalog/browse.route.test.tsx`
   - `docs/work/frontend-catalog-browse.md`
-- Prerequisites: Existing catalog browse route suite remains the characterization contract.
 - Verification:
-  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: Product-list presentation is isolated while filters, compare selection, navigation, and pagination behavior remain green.
+  - `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx` - 58 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with no output.
+- Exit condition met: product-list presentation is isolated while filters,
+  compare selection, navigation, and pagination behavior remain green.
 
 ## Catalog Result Guidance And Removable Filters Evidence
 

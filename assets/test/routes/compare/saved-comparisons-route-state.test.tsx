@@ -4,6 +4,7 @@ import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonSetList } from "../../../src/routes/compare/SavedComparisonSetList";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
@@ -132,6 +133,94 @@ function savedComparisonNames() {
 function savedComparisonsStatus() {
   return screen.getByRole("status", { name: "Saved comparisons status" });
 }
+
+test("saved comparison presentation exposes controls, actions, and pagination", () => {
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete: vi.fn(),
+          onOpenComparison: () => "/compare?slug=chair&slug=desk",
+          pendingDeleteIds: new Set()
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: "/compare/saved", nextHref: "/compare/saved?after=cursor-1" }}
+        savedSets={[buildSavedSet()]}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("textbox", { name: "Filter saved comparisons" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Sort saved comparisons" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=chair&slug=desk"
+  );
+  expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
+  expect(screen.getByRole("navigation", { name: "Saved comparison pages" })).toBeVisible();
+});
+
+test("saved comparison presentation disables a pending row deletion", () => {
+  const onDelete = vi.fn();
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete,
+          onOpenComparison: () => "/compare?slug=chair&slug=desk",
+          pendingDeleteIds: new Set(["saved-set-1"])
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: null, nextHref: null }}
+        savedSets={[buildSavedSet()]}
+      />
+    </MemoryRouter>
+  );
+
+  const deleteButton = screen.getByRole("button", { name: "Deleting comparison..." });
+
+  expect(deleteButton).toBeDisabled();
+  fireEvent.click(deleteButton);
+  expect(onDelete).not.toHaveBeenCalled();
+});
+
+test("saved comparison presentation omits the data list when no records are visible", () => {
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete: vi.fn(),
+          onOpenComparison: () => "/compare",
+          pendingDeleteIds: new Set()
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: null, nextHref: null }}
+        savedSets={[]}
+      >
+        <p>No saved comparisons yet.</p>
+      </SavedComparisonSetList>
+    </MemoryRouter>
+  );
+
+  expect(screen.queryByRole("list", { name: "Saved comparison sets" })).not.toBeInTheDocument();
+  expect(screen.getByText("No saved comparisons yet.")).toBeVisible();
+});
 
 test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
   let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;

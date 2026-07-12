@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-11
+Updated: 2026-07-12
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -115,67 +115,73 @@ normalization, snapshots, tracked actions, coupon and price-history summaries,
 and pagination now live in a focused panel; the route owner retains Relay,
 compare selection, and tab orchestration.
 
+The 2026-07-11 follow-up batch is complete. The shared shell now supports skip
+navigation, and saved-comparison, catalog-product-list, and revenue-summary
+presentation live in focused sibling components while their route owners retain
+data, mutation, URL, suspense, and error orchestration.
+
 ## Ready Work
 
-### 1. Skip Navigation
+### 1. API Token Control Presentation Extraction
 
 Status: ready
-Lane: Frontend Radix UI polish
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Add a keyboard-visible skip link and stable main-content target to the shared application shell.
+Lane: Frontend API token management
+Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+Next action: Extract API-token status filters, create dialog/form/presets, create-error presentation, and one-time secret disclosure while preserving route-owned mutation and token lifecycle state.
 Owned paths:
 
-- `assets/src/ui/components/layout/AppShell.tsx`
-- `assets/test/ui/app-shell.test.tsx`
-- `docs/work/frontend-radix-ui-polish.md`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-management-demo-parity.md`
 
 Prerequisites:
 
-- No code prerequisite.
+- Existing API-token route suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/ui/app-shell.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
+Exit condition: Creation/control presentation is isolated while mutation, secret lifecycle, status filtering, rotation/revocation, and pagination behavior remain green.
 
-### 2. Saved Comparison Set Presentation Extraction
+### 2. Compare Specification Matrix Extraction
 
 Status: ready
-Lane: Frontend compare and saved routes hardening
-Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
-Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
+Lane: Frontend product comparison
+Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+Next action: Extract matrix rendering, row construction, exact comparison normalization, and table presentation while leaving decision summary and product cards in the current owner.
 Owned paths:
 
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/src/routes/compare/SavedComparisonSetList.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-compare-saved-hardening.md`
+- `assets/src/routes/compare/CompareProductList.tsx`
+- `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
 
 Prerequisites:
 
-- Existing saved-comparison route-state suite remains the characterization contract.
+- Existing compare route suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
+Exit condition: Matrix presentation and exact row comparison are isolated without changing mode, ordering, missing-cell, or numeric/unit behavior.
 
-### 3. Catalog Product List Presentation Extraction
+### 3. Catalog Advanced Filter Presentation Extraction
 
 Status: ready
 Lane: Frontend catalog browse
-Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
-Next action: Extract product cards, specification highlights, and compare actions while preserving route-owned Relay, filter, URL, tray, and pagination orchestration.
+Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+Next action: Extract use-case, numeric, boolean, and enum fieldsets while preserving form-owned search, sort, page size, compare selection, product-type/descendant, collapsible, and submission behavior.
 Owned paths:
 
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/src/routes/catalog/BrowseProductList.tsx`
+- `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
 - `assets/test/routes/catalog/browse.route.test.tsx`
 - `docs/work/frontend-catalog-browse.md`
 
@@ -189,32 +195,38 @@ Verification:
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Product-list presentation is isolated while filters, compare selection, navigation, and pagination behavior remain green.
+Exit condition: Advanced facet presentation is isolated without changing field names, selected values, filtering semantics, or URL serialization.
 
-### 4. Revenue Summary Presentation Extraction
+### 4. Offer Discovery Card Presentation Extraction
 
 Status: ready
-Lane: Affiliate revenue and attribution
-Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
-Next action: Extract filter, date-preset, active-filter, and metric presentation while preserving route-owned loader, Relay, suspense, and error orchestration.
+Lane: Frontend offer discovery
+Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+Next action: Extract the per-offer card, merchant action, observation context,
+price-history summary, and coupon summary while leaving page-local ordering,
+visible-page snapshot, merchant quick filters, and pagination in the current
+list owner.
 Owned paths:
 
-- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
-- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `docs/work/affiliate-revenue-attribution.md`
+- `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
 
 Prerequisites:
 
-- Existing revenue-summary route suite remains the characterization contract.
+- Existing offer-discovery route suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Revenue presentation is isolated while query, filter, suppression, date-preset, and error behavior remain green.
+Exit condition: Per-offer presentation is isolated without changing offer
+ordering, tracked or direct merchant actions, observation labels, latest-price
+display, coupon and price-history summaries, empty states, filters, or
+pagination.
 
 ## Needs Decision Work
 
@@ -225,6 +237,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 four-row follow-up completed skip navigation plus the saved-set,
+catalog product-list, and revenue-summary presentation extractions. Focused
+verification passed 2 shell tests, 29 saved-comparison tests, 58 catalog tests,
+and 16 revenue tests with TypeScript and diff hygiene green at each milestone.
+The finished rows were replaced by four newly validated, non-overlapping
+implementation rows grounded in current API-token, comparison-matrix,
+catalog-filter, and offer-card code and 245 passing characterization tests.
 
 The 2026-07-11 feed-candidate review extraction is complete. `FeedCandidateReviewList`
 now owns review presentation while the route retains Relay/revalidation and draft
