@@ -58,7 +58,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
     log_result(result, opts)
 
-    state = advance_cursor(state, result)
+    state = %{state | cursor: OptionNormalization.next_cursor(state.cursor, result)}
 
     schedule_run(state.interval_ms)
 
@@ -114,15 +114,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
         "pages=#{opts[:pages]} cursor=#{inspect(opts[:cursor])}"
     )
   end
-
-  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}})
-       when is_integer(next_cursor) and next_cursor >= 0 do
-    %{state | cursor: next_cursor}
-  end
-
-  defp advance_cursor(state, {:ok, %{next_cursor: nil}}), do: %{state | cursor: nil}
-
-  defp advance_cursor(state, _result), do: state
 
   defp string_option(opts, key, default) do
     opts

@@ -59,12 +59,14 @@ defmodule ProductCompare.Fixtures.SpecsFixtures do
         })
 
     brand_id =
-      if Map.has_key?(attrs, :brand_id) do
-        Map.fetch!(attrs, :brand_id)
-      else
-        case Catalog.upsert_brand(%{name: "Brand #{System.unique_integer([:positive])}"}) do
-          {:ok, brand} -> brand.id
-        end
+      case Map.fetch(attrs, :brand_id) do
+        {:ok, brand_id} ->
+          brand_id
+
+        :error ->
+          case Catalog.upsert_brand(%{name: "Brand #{System.unique_integer([:positive])}"}) do
+            {:ok, brand} -> brand.id
+          end
       end
 
     slug = Map.get(attrs, :slug, "product-#{System.unique_integer([:positive])}")

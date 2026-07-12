@@ -90,19 +90,22 @@ defmodule ProductCompare.MixProject do
         "reach.check --smells --strict --baseline .reach-baseline.json",
         "dialyzer"
       ],
+      frontend_check: ["cmd --cd assets bun run check"],
       ci: [
         "work_queue.validate",
         "format --check-formatted",
         "typecheck",
         "quality",
-        "test --cover"
+        "test --cover",
+        "frontend_check"
       ],
       precommit: [
         "work_queue.validate",
         "format",
         "typecheck",
         "quality",
-        "test --cover"
+        "test --cover",
+        "frontend_check"
       ],
       deps_prune: ["deps.unlock --unused"]
     ]

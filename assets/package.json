@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "relay": "relay-compiler",
     "relay:check": "relay-compiler --validate",
-    "check": "bun run typecheck && bun run test:unit"
+    "check": "bun run relay:check && bun run typecheck && bun run test:unit && bun run build"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.16",

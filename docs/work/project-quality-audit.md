@@ -1,6 +1,6 @@
 # Project Quality Audit
 
-Status: active
+Status: done
 Owner: `codex/project-quality-audit`
 Approved direction: comprehensive correctness-first remediation
 Base: PR #94, `codex/extract-credential-auth-form` at `21e8fbe5`
@@ -233,3 +233,38 @@ output, a clean working tree, and an independent whole-branch review.
   unit suite passed 718 tests, `bun run typecheck` passed, and `bun run build`
   completed the client build, SSR build, and bundle contract. `git diff
   --check` passed.
+
+### 2026-07-12 — Milestone 8: destination URL boundary and whole-project gates
+
+- Extracted the existing URL, authority, numeric-IP, IPv6, IDNA, and punycode
+  policy into the pure
+  `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1` boundary.
+  `CommerceLink.valid_destination_url?/1` remains as a compatibility delegate;
+  the pre-extraction adversarial suite passed 8 tests and the post-extraction
+  compatibility suite passed 9 tests with zero acceptance-policy changes.
+- Removed unreachable internal URL-policy clauses, replaced eager indexed IPv4
+  enumeration with a direct value/exponent reduction, and removed the
+  Task-3-introduced unreachable `put_attr/3` catch-all without changing its map
+  semantics. Dialyzer has no unsuppressed warning and Reach reports no issue.
+- The first final ExDNA run exposed a seventh clone outside Task 8 ownership:
+  the same cursor-result transition in both CJ schedulers. With explicit scope
+  approval, the existing `OptionNormalization` boundary now owns only that
+  shared nil/non-negative/unchanged transition; discovery/import reports and
+  side effects remain distinct. Focused helper/scheduler coverage passes 21
+  tests, and ExDNA returns to the configured six-clone budget.
+- Combined CI then exposed the Task-1 explicit-brand fixture's `Map.has_key?`
+  plus `Map.fetch!` double lookup. With exact scope approval, one `Map.fetch/2`
+  case now preserves `{:ok, nil}` brandless semantics and creates a default
+  brand only for `:error`; the focused brandless GraphQL regression remains
+  green and Reach is pristine without analyzer reordering or suppression.
+- Connection pagination regressions now assert the exact first 50 and first 100
+  returned nodes instead of checking edge counts alone. Credo reports no issue.
+- Frontend `bun run check` now validates Relay artifacts, type-checks, runs all
+  718 unit tests, builds client and SSR output, and enforces the client bundle
+  contract. Playwright remains a separate service-dependent command.
+- Root `mix ci` and `mix precommit` invoke the complete frontend gate after all
+  backend checks. The Nix development shell provides Bun, and README documents
+  both root and frontend gate contracts.
+- RED command-graph evidence showed frontend `check` missing Relay/build and
+  both root aliases missing frontend execution. Fresh final gate evidence is
+  recorded in `.superpowers/sdd/task-8-report.md`.

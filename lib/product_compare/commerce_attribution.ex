@@ -975,7 +975,6 @@ defmodule ProductCompare.CommerceAttribution do
   end
 
   defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
-  defp put_attr(attrs, _key, _value), do: attrs
 
   defp put_attr_if_missing(attrs, _key, nil), do: attrs
 

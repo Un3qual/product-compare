@@ -124,43 +124,6 @@ The requested eight-PR stack is complete. Its plan checklists and lane work
 docs hold implementation and verification evidence; this index stays focused
 on dispatchable work.
 
-The user approved a repository-wide correctness and quality remediation on
-2026-07-12. It is active on `codex/project-quality-audit`, stacked on PR #94,
-and does not claim or replace any of the four ready implementation rows below.
-
-## Active Work
-
-### Project Quality Audit Remediation
-
-Status: active
-Lane: Cross-project correctness and quality
-Owner: `codex/project-quality-audit`
-Plan: `docs/superpowers/plans/2026-07-12-project-quality-audit-remediation.md`
-Next action: make the live Absinthe SDL the canonical Relay contract and add
-brandless-product regressions before correcting the stale snapshot.
-Owned paths:
-
-- Paths explicitly listed by Tasks 1-8 in the active plan
-- `docs/work/project-quality-audit.md`
-- Auth, ingestion, attribution, discussion, frontend, and tooling lane docs
-  explicitly named by those tasks
-
-Prerequisites:
-
-- Approved design at
-  `docs/superpowers/specs/2026-07-12-project-quality-audit-remediation-design.md`
-- Clean baseline on PR #94 at `21e8fbe5`
-
-Verification:
-
-- Focused RED/GREEN evidence and independent review for every task
-- Final `mix ci`, frontend production build/bundle gate, Dialyzer, Reach,
-  ExDNA, formatting, and diff hygiene
-
-Exit condition: all validated findings are fixed or explicitly rejected with
-evidence, the active row is removed without changing the four ready rows, and
-a non-draft PR is opened against the latest compatible stacked head.
-
 ## Ready Work
 
 ### 1. Product Detail Decision Actions Presentation

@@ -17,7 +17,7 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
 
       assert {:ok, connection} = Connection.from_list(items, %{})
 
-      assert length(connection.edges) == 50
+      assert Enum.map(connection.edges, & &1.node) == Enum.to_list(1..50)
       assert connection.page_info.has_next_page
     end
 
@@ -26,7 +26,7 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
 
       assert {:ok, connection} = Connection.from_list(items, %{first: 200})
 
-      assert length(connection.edges) == 100
+      assert Enum.map(connection.edges, & &1.node) == Enum.to_list(1..100)
       assert connection.page_info.has_next_page
     end
 

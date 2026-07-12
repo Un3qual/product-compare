@@ -48,8 +48,15 @@ Schema modules live under `ProductCompareSchemas` and remain schema-only.
 - `mix test`
 - `mix typecheck`
 - `mix quality`
-- `mix precommit`
-- `mix ci`
+- `mix precommit` - formats the backend, runs all backend checks and tests, then
+  runs the complete frontend gate.
+- `mix ci` - checks backend formatting, runs all backend checks and tests, then
+  runs the complete frontend gate.
+- `cd assets && bun run check` - validates Relay artifacts, type-checks, runs
+  all unit tests, builds the client and SSR bundles, and verifies the client
+  bundle contract.
+- `cd assets && bun run test:e2e` - runs the service-dependent Playwright suite
+  separately from the deterministic frontend gate.
 
 ## Planning Docs
 

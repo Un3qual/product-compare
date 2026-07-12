@@ -41,6 +41,13 @@ defmodule ProductCompare.Ingestion.OptionNormalization do
     end
   end
 
+  def next_cursor(_current_cursor, {:ok, %{next_cursor: next_cursor}})
+      when is_integer(next_cursor) and next_cursor >= 0,
+      do: next_cursor
+
+  def next_cursor(_current_cursor, {:ok, %{next_cursor: nil}}), do: nil
+  def next_cursor(current_cursor, _result), do: current_cursor
+
   defp normalize_integer(value, _default) when is_integer(value), do: value
 
   defp normalize_integer(value, default) when is_binary(value) do
