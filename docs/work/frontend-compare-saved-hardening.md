@@ -35,7 +35,11 @@
   - `git diff --check`
 - Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
 
-## Verified Current State
+## Historical Completed Hardening And Relay Migration
+
+The following records describe the completed shared-shell, error-boundary, and
+Relay-migration work that preceded the currently ready presentation-extraction
+batch above.
 
 - `assets/src/routes/compare/compare-shell.tsx` provides a shared responsive shell for both compare routes.
 - `assets/src/routes/compare/index.tsx` uses the shared shell and exposes save-success feedback through a polite `role="status"` region.
@@ -45,18 +49,20 @@
 - `assets/src/routes/compare/error-boundary.tsx` provides differentiated error messages based on route error response status codes and network-related error signatures.
 - `assets/src/routes/compare/__tests__/compare.route.test.tsx` covers the shared-shell accessibility semantics, compare save status messaging, overlapping delete regressions, and loader-level regression tests for unauthorized, parse-failure, truncation, and cursor-safety paths.
 
-## Next Batch
+## Historical Completed Batch Closure Record
 
-- Status: completed
-- Batch: none queued in this work item
-- Why this batch:
+- Status: completed (historical)
+- Completed prior batch:
   - Task 1 already landed the shared shell plus route-local status semantics.
   - Task 2 already landed compare-scoped `errorElement` wiring and focused regression tests.
-  - Relay route-data Task 6 closed the queue rebaseline blocker; no additional compare/saved hardening batch is queued from this work item.
+  - Relay route-data Task 6 closed the former queue-rebaseline blocker.
 
-## Planned Follow-Up
+## Historical Follow-Up Record
 
-- Keep this work item closed. The `/compare/saved` Relay migration completed in `docs/work/frontend-saved-comparisons-relay-migration.md`; track any additional compare polish as a new active work item.
+At the time of the prior hardening closure, the `/compare/saved` Relay migration
+had completed in `docs/work/frontend-saved-comparisons-relay-migration.md`.
+That closure is historical; the current active lane state is the ready Saved
+Comparison Set Presentation Extraction batch in `## Ready Next Batch`.
 
 ## Verification Commands
 
