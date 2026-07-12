@@ -107,8 +107,8 @@ mutation commits, pagination, and comparison URL construction.
   name/product/slug filtering, and every sort mode; verify RED against the
   missing module.
 - [x] Move the pure state functions and only the required production types into
-  `saved-view-state.ts` without React, Relay, or router imports; consume the
-  canonical sort-mode type from the presentation component.
+  `saved-view-state.ts` without React, Relay, or router imports; make the
+  presentation component consume that module's canonical sort-mode type.
 - [x] Import the state builder into the route and remove the duplicate local
   implementation.
 - [x] Run both focused saved-comparison suites, TypeScript, and

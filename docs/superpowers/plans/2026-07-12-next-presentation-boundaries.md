@@ -10,9 +10,10 @@ Relay, route, URL, and lifecycle orchestration after the completed route-level
 decompositions.
 
 **Architecture:** Data owners keep Relay hooks, page accumulation, mutation
-orchestration, URL construction, normalization, filtering, snapshots, and
-pagination. New sibling components receive small typed view contracts and own
-only existing accessible markup and local presentation state.
+orchestration, URL construction, normalization, data-level filtering,
+snapshots, and pagination. New sibling components receive small typed view
+contracts and own existing accessible markup plus explicitly assigned local
+presentation state, including the compare picker's loaded-option filter.
 
 **Tech Stack:** React 19, React Router 7, Relay 20, TypeScript, StyleX, Radix UI,
 Vitest.
