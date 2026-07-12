@@ -343,7 +343,7 @@ The 2026-07-12 API-token item extraction is complete. `ApiTokenItem` now owns
 per-token details, status, lifecycle errors, rotation controls and presets,
 pending copy, and revocation while `ApiTokenList` retains Relay reads, page and
 local composition, update merging, filtering, and query keys. The direct and
-route characterization suite passed 38 tests with TypeScript and diff hygiene
+route characterization suite passed 43 tests with TypeScript and diff hygiene
 green; task review approved the boundary and its test-quality follow-up.
 
 The 2026-07-12 control-and-matrix batch is complete. API-token controls,
