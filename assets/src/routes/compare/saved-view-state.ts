@@ -119,6 +119,10 @@ function sortSavedComparisonSets(
     case "product-count-asc":
       sortedSavedSets.sort((left, right) => left.products.length - right.products.length);
       break;
+    default: {
+      const exhaustiveCheck: never = sortMode;
+      return exhaustiveCheck;
+    }
   }
 
   return sortedSavedSets;

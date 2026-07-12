@@ -73,6 +73,18 @@ test("hides locally deleted sets and announces the deletion before an empty stat
   expect(viewState.statusMessage).toBe("Comparison deleted.");
 });
 
+test("announces a local deletion before an active filter's no-match state", () => {
+  const viewState = buildSavedComparisonsViewState(
+    readyLoaderData([savedSets[0]]),
+    new Set(["saved-set-1"]),
+    "sofa",
+    "current"
+  );
+
+  expect(savedSetIds(viewState)).toEqual([]);
+  expect(viewState.statusMessage).toBe("Comparison deleted.");
+});
+
 test("reports a no-match status for a filter against loaded saved sets", () => {
   const viewState = buildSavedComparisonsViewState(
     readyLoaderData(),
@@ -124,6 +136,39 @@ describe("sorting", () => {
   ])("orders visible saved sets with %s", (sortMode, expectedIds) => {
     const viewState = buildSavedComparisonsViewState(
       readyLoaderData(),
+      new Set(),
+      "",
+      sortMode
+    );
+
+    expect(savedSetIds(viewState)).toEqual(expectedIds);
+  });
+
+  test("preserves source order for name ties", () => {
+    const viewState = buildSavedComparisonsViewState(
+      readyLoaderData([
+        { id: "saved-set-1", name: "alpha kit", products: [] },
+        { id: "saved-set-2", name: "Alpha kit", products: [] },
+        { id: "saved-set-3", name: "Bravo kit", products: [] }
+      ]),
+      new Set(),
+      "",
+      "name-asc"
+    );
+
+    expect(savedSetIds(viewState)).toEqual(["saved-set-1", "saved-set-2", "saved-set-3"]);
+  });
+
+  test.each([
+    ["product-count-desc", ["saved-set-1", "saved-set-2", "saved-set-3"]],
+    ["product-count-asc", ["saved-set-3", "saved-set-1", "saved-set-2"]]
+  ] as const)("preserves source order for tied %s results", (sortMode, expectedIds) => {
+    const viewState = buildSavedComparisonsViewState(
+      readyLoaderData([
+        { id: "saved-set-1", name: "First", products: savedSets[0].products },
+        { id: "saved-set-2", name: "Second", products: savedSets[0].products },
+        { id: "saved-set-3", name: "Third", products: [] }
+      ]),
       new Set(),
       "",
       sortMode
