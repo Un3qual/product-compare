@@ -105,34 +105,14 @@ The 2026-07-11 API-token route decomposition is complete. Relay token-page
 rendering and token lifecycle presentation now live in a focused component,
 while the route owner retains loader and mutation orchestration.
 
+The 2026-07-11 offer-discovery route decomposition is complete. Page-local
+ordering, offer cards and summaries, merchant quick filters, tracked actions,
+and pagination now live in a focused result component; the route owner retains
+loader-state and Relay query orchestration.
+
 ## Ready Work
 
-### 1. Offer Discovery Route Component Extraction
-
-Status: ready
-Lane: Frontend offer discovery demo parity
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Extract offer result cards, summaries, and pagination from the route owner without changing query, URL, or tracked-click behavior.
-Owned paths:
-
-- `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
-- `assets/src/routes/offers/OfferDiscoveryList.tsx`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing offer-discovery route behavior suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The route owner is smaller and the full offer-discovery behavior suite remains green.
-
-### 2. Product Detail Route Component Extraction
+### 1. Product Detail Route Component Extraction
 
 Status: ready
 Lane: Frontend product detail
@@ -157,7 +137,7 @@ Verification:
 
 Exit condition: The route owner is smaller and the full product-detail behavior suite remains green.
 
-### 3. Skip Navigation
+### 2. Skip Navigation
 
 Status: ready
 Lane: Frontend Radix UI polish
@@ -181,7 +161,7 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 4. Affiliate Setup Form Component Extraction
+### 3. Affiliate Setup Form Component Extraction
 
 Status: ready
 Lane: Frontend affiliate setup demo parity
@@ -206,7 +186,7 @@ Verification:
 
 Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
 
-### 5. Feed Candidate Review Component Extraction
+### 4. Feed Candidate Review Component Extraction
 
 Status: ready
 Lane: Product data scraping
