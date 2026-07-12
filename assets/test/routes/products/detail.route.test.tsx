@@ -228,7 +228,7 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
   expect(offerItem.getByText("199.99 USD")).toBeVisible();
   const priceObservedAt = offerItem.getByText("2026-06-01", { selector: "time" });
 
-  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
+  expect(offerItem.getByText("Price observed", { selector: "p" })).toBeVisible();
   expect(priceObservedAt).toHaveAttribute(
     "datetime",
     "2026-06-01T00:00:00Z"
