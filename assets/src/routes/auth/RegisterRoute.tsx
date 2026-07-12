@@ -15,8 +15,6 @@ import {
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
-const REGISTER_AUTOCOMPLETE_HINT = "new-password";
-
 export function RegisterRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
@@ -58,6 +56,7 @@ export function RegisterRoute() {
 
   return (
     <CredentialAuthForm
+      credentialAutoComplete="new-password"
       description="Create an email/password account and let Phoenix establish the browser session."
       errors={errors}
       footerLinks={[
@@ -66,7 +65,6 @@ export function RegisterRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      passwordAutoComplete={REGISTER_AUTOCOMPLETE_HINT}
       submitLabel="Create account"
       title="Create your account"
     />

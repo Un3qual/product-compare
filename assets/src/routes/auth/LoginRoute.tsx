@@ -13,8 +13,6 @@ import {
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
-const LOGIN_AUTOCOMPLETE_HINT = "current-password";
-
 export function LoginRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
@@ -56,6 +54,7 @@ export function LoginRoute() {
 
   return (
     <CredentialAuthForm
+      credentialAutoComplete="current-password"
       description="Use your email and password to continue through the GraphQL auth flow."
       errors={errors}
       footerLinks={[
@@ -64,7 +63,6 @@ export function LoginRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      passwordAutoComplete={LOGIN_AUTOCOMPLETE_HINT}
       submitLabel="Sign in"
       title="Sign in"
     />
