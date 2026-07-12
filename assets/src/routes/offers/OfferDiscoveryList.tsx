@@ -215,35 +215,73 @@ function OfferListItem({
         isActive={offer.isActive}
         productName={offerProductName(offer.product)}
       />
-      <div {...props(styles.offerDecision)}>
-        <section aria-label="Merchant and availability" {...props(styles.merchantContext)}>
-          <OfferMerchantAction
-            isActive={offer.isActive}
-            merchantName={merchantName}
-            merchantProductId={offer.id}
-            merchantUrl={offer.url}
-          />
-          <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
-          <OfferObservationContext offer={offer} />
-        </section>
-        <section aria-label="Current price" {...props(styles.priceContext)}>
-          {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
-          <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
-        </section>
-      </div>
-      <div {...props(styles.supportingDetail)}>
-        <PriceHistorySummary
-          hasMore={priceHistory.pageInfo.hasNextPage}
-          merchantName={offerSummaryMerchantName(offer.merchant)}
-          rows={offerPriceHistoryRows(priceHistory, offer.currency)}
-        />
-        <CouponSummary
-          couponEdges={activeCoupons.edges}
-          hasMore={activeCoupons.pageInfo.hasNextPage}
-          merchantName={offerSummaryMerchantName(offer.merchant)}
-        />
-      </div>
+      <OfferDecisionContext
+        highlightLabel={highlightLabel}
+        merchantName={merchantName}
+        offer={offer}
+      />
+      <OfferSupportingDetail
+        activeCoupons={activeCoupons}
+        offer={offer}
+        priceHistory={priceHistory}
+      />
     </article>
+  );
+}
+
+function OfferDecisionContext({
+  highlightLabel,
+  merchantName,
+  offer
+}: {
+  highlightLabel: string | null;
+  merchantName: string;
+  offer: OfferNode;
+}) {
+  return (
+    <div {...props(styles.offerDecision)}>
+      <section aria-label="Merchant and availability" {...props(styles.merchantContext)}>
+        <OfferMerchantAction
+          isActive={offer.isActive}
+          merchantName={merchantName}
+          merchantProductId={offer.id}
+          merchantUrl={offer.url}
+        />
+        <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+        <OfferObservationContext offer={offer} />
+      </section>
+      <section aria-label="Current price" {...props(styles.priceContext)}>
+        {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
+        <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
+      </section>
+    </div>
+  );
+}
+
+function OfferSupportingDetail({
+  activeCoupons,
+  offer,
+  priceHistory
+}: {
+  activeCoupons: ReturnType<typeof couponConnection>;
+  offer: OfferNode;
+  priceHistory: ReturnType<typeof priceHistoryConnection>;
+}) {
+  const merchantName = offerSummaryMerchantName(offer.merchant);
+
+  return (
+    <div {...props(styles.supportingDetail)}>
+      <PriceHistorySummary
+        hasMore={priceHistory.pageInfo.hasNextPage}
+        merchantName={merchantName}
+        rows={offerPriceHistoryRows(priceHistory, offer.currency)}
+      />
+      <CouponSummary
+        couponEdges={activeCoupons.edges}
+        hasMore={activeCoupons.pageInfo.hasNextPage}
+        merchantName={merchantName}
+      />
+    </div>
   );
 }
 

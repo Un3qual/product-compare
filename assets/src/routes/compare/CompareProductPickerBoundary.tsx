@@ -9,6 +9,7 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
@@ -119,7 +120,7 @@ function CompareProductPicker({
   return (
     <section {...props(styles.picker)}>
       <h2 {...props(styles.title)}>{heading}</h2>
-      <label htmlFor={filterInputId} {...props(styles.filter)}>
+      <Label htmlFor={filterInputId} {...props(styles.filter)}>
         Filter loaded products
         <TextField
           autoComplete="off"
@@ -128,7 +129,7 @@ function CompareProductPicker({
           type="search"
           value={filterText}
         />
-      </label>
+      </Label>
       <CompareProductPickerOptions
         availableProducts={visibleProducts}
         hasFilter={Boolean(normalizedFilterText)}

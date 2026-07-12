@@ -15,6 +15,7 @@ import { SectionHeading } from "../../ui/components/layout/SectionHeading";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { externalWebsiteHref } from "../external-links";
@@ -181,7 +182,7 @@ function MerchantDirectoryList({
             : `${merchants.length} merchants on this page`
         }
       />
-      <label htmlFor={filterInputId} {...props(styles.filter)}>
+      <Label htmlFor={filterInputId} {...props(styles.filter)}>
         Filter merchants on this page
         <TextField
           autoComplete="off"
@@ -190,7 +191,7 @@ function MerchantDirectoryList({
           type="search"
           value={filterText}
         />
-      </label>
+      </Label>
       {visibleMerchants.length === 0 ? (
         <p>No merchants on this page match this filter.</p>
       ) : (
