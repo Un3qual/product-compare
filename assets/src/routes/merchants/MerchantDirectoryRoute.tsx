@@ -31,11 +31,7 @@ export function MerchantDirectoryRoute() {
       eyebrow="Seller directory"
       title="Merchants"
     >
-      {loaderData.status === "error" ? (
-        <MerchantDirectoryUnavailableFallback />
-      ) : (
-        <MerchantDirectoryContent loaderData={loaderData} />
-      )}
+      <MerchantDirectoryContent loaderData={loaderData} />
     </PageShell>
   );
 }
@@ -43,7 +39,7 @@ export function MerchantDirectoryRoute() {
 function MerchantDirectoryContent({
   loaderData
 }: {
-  loaderData: Extract<MerchantDirectoryLoaderData, { status: "ready" }>;
+  loaderData: MerchantDirectoryLoaderData;
 }) {
   return (
     <WorkspaceLayout
@@ -57,14 +53,21 @@ function MerchantDirectoryContent({
       }
       label="Merchant results"
     >
-      <ResettableErrorBoundary
-        fallback={<MerchantDirectoryUnavailableFallback />}
-        resetToken={loaderData.query}
-      >
-        <Suspense fallback={<p role="status">Loading merchants...</p>}>
-          <MerchantDirectoryPanel pagination={loaderData.pagination} query={loaderData.query} />
-        </Suspense>
-      </ResettableErrorBoundary>
+      {loaderData.status === "error" ? (
+        <MerchantDirectoryUnavailableFallback />
+      ) : (
+        <ResettableErrorBoundary
+          fallback={<MerchantDirectoryUnavailableFallback />}
+          resetToken={loaderData.query}
+        >
+          <Suspense fallback={<p role="status">Loading merchants...</p>}>
+            <MerchantDirectoryPanel
+              pagination={loaderData.pagination}
+              query={loaderData.query}
+            />
+          </Suspense>
+        </ResettableErrorBoundary>
+      )}
     </WorkspaceLayout>
   );
 }
