@@ -6,6 +6,11 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../../src/relay/route-preload";
 import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
+import {
+  formatFeedCandidateName,
+  formatFeedCandidateReviewStatus,
+  type FeedCandidate
+} from "../../../../src/routes/ingestion/feed-candidates/FeedCandidateReviewList";
 import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidatesRoute";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 
@@ -131,6 +136,10 @@ test("feed candidates route renders review-safe candidate rows", () => {
   expect(within(trailReasons).getByText("English")).toBeInTheDocument();
   expect(within(trailReasons).getByText("feed type present")).toBeInTheDocument();
   expect(within(candidateList).getByText("Fit score 20")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Dismiss City Gear" })).toHaveAttribute(
+    "data-tone",
+    "danger"
+  );
   expect(
     within(candidateList).queryByText(/tracking|account|token|raw metadata|rawMetadata|raw_metadata/i)
   ).not.toBeInTheDocument();
@@ -142,6 +151,16 @@ test("feed candidates route renders review-safe candidate rows", () => {
     expect.anything(),
     FEED_CANDIDATES_QUERY_REF
   );
+});
+
+test("feed candidate review presentation formats the candidate name and review status", () => {
+  expect(
+    formatFeedCandidateName({
+      advertiserName: null,
+      providerFeedId: "feed-fallback"
+    } as FeedCandidate)
+  ).toBe("feed-fallback");
+  expect(formatFeedCandidateReviewStatus("SHORTLISTED")).toBe("Shortlisted");
 });
 
 test("feed candidates route renders current page review counts", () => {

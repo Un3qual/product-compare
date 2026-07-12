@@ -149,6 +149,8 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
 
   const deleteButton = screen.getByRole("button", { name: "Delete comparison" });
 
+  expect(deleteButton).toHaveAttribute("data-tone", "danger");
+
   fireEvent.click(deleteButton);
   fireEvent.click(deleteButton);
 

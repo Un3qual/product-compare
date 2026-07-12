@@ -384,11 +384,11 @@ function SavedComparisonSetActions({
         </Link>
       </Button>
       <Button
-        color="red"
         disabled={deletePending}
         onClick={() => {
           onDelete(savedSet.id);
         }}
+        tone="danger"
         type="button"
       >
         {deletePending ? "Deleting comparison..." : "Delete comparison"}

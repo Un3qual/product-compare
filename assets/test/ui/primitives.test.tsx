@@ -41,6 +41,15 @@ test("Button defaults to native button semantics", () => {
   expect(button).toHaveAttribute("type", "button");
 });
 
+test("Button exposes destructive intent through its semantic tone", () => {
+  render(<Button tone="danger">Delete</Button>);
+
+  const button = screen.getByRole("button", { name: "Delete" });
+
+  expect(button).toHaveAttribute("data-tone", "danger");
+  expect(button).not.toHaveAttribute("color");
+});
+
 test("TextField renders a named search input", () => {
   render(<TextField aria-label="Search products" name="q" type="search" />);
 

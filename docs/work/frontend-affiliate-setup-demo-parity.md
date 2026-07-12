@@ -5,7 +5,7 @@
 - Status: done
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27, selected merchant context verification
+- Last verified: 2026-07-11, presentation extraction verification
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
@@ -32,6 +32,15 @@
 - Exit condition: `/affiliate/setup` keeps selected merchant context visible across program, link, and coupon forms.
 - Completed verification:
   - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx` - 18 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
+
+## Presentation Extraction Batch
+
+- Status: completed 2026-07-11.
+- Extracted `AffiliateNetworkForm`, `AffiliateProgramForm`, `AffiliateLinkForm`, and `AffiliateCouponForm` into `AffiliateSetupForms.tsx`; the route retains mutation, in-flight, selection, and submit-handler ownership.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx` - 19 tests, 0 failures.
   - `cd assets && bun run typecheck` - completed with exit 0.
   - `git diff --check` - completed with exit 0.
 

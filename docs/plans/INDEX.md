@@ -30,13 +30,15 @@ privacy and attribution controls, and production-readiness proof remain outside
 that milestone by product decision.
 
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
-decomposition batch is complete with full frontend verification. Its plan
-remains linked from the three ready reserve rows for their validated scope and
-ownership context.
+decomposition batch is complete with full frontend verification. The requested
+affiliate-setup and feed-candidate presentation extractions are also complete.
+The three remaining saved-comparison, catalog, and revenue presentation
+extractions are validated `ready` work with a dedicated execution plan.
 
 Active implementation plans:
 
 - `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
+- `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -65,9 +67,12 @@ batch and should not be recreated or promoted.
 - Route foundations: add a real wildcard 404 and shared route document metadata.
 - Frontend route maintainability: extract cohesive presentation boundaries from
   API-token, offer-discovery, and product-detail route owners.
-- Ready reserve: skip navigation, affiliate-setup form decomposition, and
-  feed-candidate review decomposition remain executable after the selected
-  batch closes.
+- Ready reserve: skip navigation remains executable through
+  `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`. Saved-
+  comparison, catalog, and revenue presentation extraction execute through
+  `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`.
+- Completed reserve: affiliate-setup form and feed-candidate review presentation
+  extractions are complete; do not promote them again without fresh scope.
 - Deferred and rejected work remains outside the ready-work floor and cannot be
   used as queue filler. Start at `docs/work/index.md` for live dispatch status.
 

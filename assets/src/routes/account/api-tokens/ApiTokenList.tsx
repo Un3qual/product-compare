@@ -355,9 +355,9 @@ function ApiTokenActions({
         </form>
       ) : null}
       <Button
-        color="red"
         disabled={lifecyclePending}
         onClick={() => onRevoke(token.id)}
+        tone="danger"
         type="button"
       >
         {revokePending ? "Revoking token..." : "Revoke token"}

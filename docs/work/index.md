@@ -141,59 +141,80 @@ Verification:
 
 Exit condition: Keyboard users can bypass primary navigation and focus the main content landmark.
 
-### 2. Affiliate Setup Form Component Extraction
+### 2. Saved Comparison Set Presentation Extraction
 
 Status: ready
-Lane: Frontend affiliate setup demo parity
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Extract the four affiliate setup form presentations from the route owner while preserving route-owned mutation orchestration.
+Lane: Frontend compare and saved routes hardening
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+Next action: Extract saved-set list, controls, reopen/delete actions, and pagination presentation while preserving route-owned Relay mutation and query-retention orchestration.
 Owned paths:
 
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-demo-parity.md`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-compare-saved-hardening.md`
 
 Prerequisites:
 
-- Existing affiliate setup behavior suite remains the characterization contract.
+- Existing saved-comparison route-state suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Affiliate form rendering is isolated and all existing mutation behavior remains green.
+Exit condition: Saved-set presentation is isolated while mutation, query-retention, filtering, sorting, and pagination behavior remain green.
 
-### 3. Feed Candidate Review Component Extraction
+### 3. Catalog Product List Presentation Extraction
 
 Status: ready
-Lane: Product data scraping
-Plan: `docs/superpowers/plans/2026-07-11-next-frontend-batches.md`
-Next action: Extract feed-candidate list and review presentation from the existing route without adding dashboard or ingestion behavior.
+Lane: Frontend catalog browse
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+Next action: Extract product cards, specification highlights, and compare actions while preserving route-owned Relay, filter, URL, tray, and pagination orchestration.
 Owned paths:
 
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `docs/work/product-data-scraping.md`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/catalog/BrowseProductList.tsx`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-browse.md`
 
 Prerequisites:
 
-- Existing feed-candidate route behavior and secret-safe field policy remain unchanged.
+- Existing catalog browse route suite remains the characterization contract.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Review presentation is isolated with all behavior and secret-safety coverage green.
+Exit condition: Product-list presentation is isolated while filters, compare selection, navigation, and pagination behavior remain green.
 
-## Active Work
+### 4. Revenue Summary Presentation Extraction
 
-None.
+Status: ready
+Lane: Affiliate revenue and attribution
+Plan: `docs/superpowers/plans/2026-07-11-next-presentation-reserve-batches.md`
+Next action: Extract filter, date-preset, active-filter, and metric presentation while preserving route-owned loader, Relay, suspense, and error orchestration.
+Owned paths:
+
+- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/affiliate-revenue-attribution.md`
+
+Prerequisites:
+
+- Existing revenue-summary route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Revenue presentation is isolated while query, filter, suppression, date-preset, and error behavior remain green.
 
 ## Needs Decision Work
 
@@ -204,6 +225,16 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-11 feed-candidate review extraction is complete. `FeedCandidateReviewList`
+now owns review presentation while the route retains Relay/revalidation and draft
+orchestration; the focused suite passed 17 tests, TypeScript typechecking passed,
+the secret/raw-field scan found no matches, and `git diff --check` was clean.
+
+The 2026-07-11 affiliate setup form extraction is complete. `AffiliateNetworkForm`,
+`AffiliateProgramForm`, `AffiliateLinkForm`, and `AffiliateCouponForm` now own
+presentation while the route retains mutation orchestration; the focused suite
+passed 19 tests, TypeScript typechecking passed, and `git diff --check` was clean.
 
 The 2026-07-11 task-first workspace follow-up is complete. Every registered
 route now uses the appropriate workspace, detail, guided-flow, or focused-form

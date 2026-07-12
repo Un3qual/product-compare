@@ -1,5 +1,4 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
-import { create, props } from "@stylexjs/stylex";
 import { useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import createCouponMutation, {
@@ -23,60 +22,28 @@ import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../../route-errors";
+import {
+  AffiliateCouponForm,
+  AffiliateLinkForm,
+  AffiliateNetworkForm,
+  AffiliateProgramForm,
+  type CouponResult,
+  type LinkResult,
+  type MerchantChoice,
+  type NetworkResult,
+  type ProgramResult
+} from "./AffiliateSetupForms";
 import { affiliateSetupLoader, type AffiliateSetupLoaderData } from "./loader";
-
-type MerchantChoice = {
-  domain: string;
-  id: string;
-  name: string;
-};
-
-type NetworkResult = NonNullable<
-  NonNullable<
-    UpsertAffiliateNetworkMutation["response"]["upsertAffiliateNetwork"]
-  >["network"]
->;
-
-type ProgramResult = NonNullable<
-  NonNullable<
-    UpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"]
-  >["program"]
->;
-
-type LinkResult = NonNullable<
-  NonNullable<UpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]>["link"]
->;
-
-type CouponResult = NonNullable<
-  NonNullable<CreateCouponMutation["response"]["createCoupon"]>["coupon"]
->;
 
 type AffiliateSetupMerchantConnection = NonNullable<
   AffiliateSetupRouteQuery["response"]["merchants"]
 >;
-
-const styles = create({
-  form: {
-    backgroundColor: tokens.surfaceMuted,
-    borderColor: tokens.borderQuiet,
-    borderRadius: "var(--pc-radius-large)",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1.15rem"
-  }
-});
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -313,235 +280,52 @@ function AffiliateSetupPanel({
       }
       label="Affiliate configuration workflow"
     >
-      <form aria-label="Save affiliate network" method="post" onSubmit={handleNetworkSubmit} {...props(styles.form)}>
-        <h2>Network</h2>
-        <label>
-          Network name
-          <TextField autoComplete="off" name="networkName" type="text" />
-        </label>
-        <Button disabled={networkPending} type="submit">
-          Save network
-        </Button>
-        {networkError ? <p role="alert">{networkError}</p> : null}
-        {networkResult ? (
-          <section aria-label="Affiliate network result">
-            <h3>{networkResult.name}</h3>
-            <p>{networkResult.id}</p>
-          </section>
-        ) : null}
-      </form>
+      <AffiliateNetworkForm
+        error={networkError}
+        onSubmit={handleNetworkSubmit}
+        pending={networkPending}
+        result={networkResult}
+      />
 
       {merchantChoices.length === 0 ? (
         <p role="status">No merchants available for affiliate setup yet.</p>
       ) : (
-        <form aria-label="Save affiliate program" method="post" onSubmit={handleProgramSubmit} {...props(styles.form)}>
-          <h2>Program</h2>
-          {selectedMerchantSummary ? (
-            <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
-          ) : null}
-          <label>
-            Affiliate network ID
-            <TextField
-              autoComplete="off"
-              name="affiliateNetworkId"
-              onChange={(event) => setAffiliateNetworkId(event.currentTarget.value)}
-              type="text"
-              value={affiliateNetworkId}
-            />
-          </label>
-          <MerchantSelect
-            merchantChoices={merchantChoices}
-            onSelectedMerchantIdChange={setSelectedMerchantId}
-            selectedMerchantValue={selectedMerchantValue}
-          />
-          <label>
-            Program code
-            <TextField autoComplete="off" name="programCode" type="text" />
-          </label>
-          <label>
-            Program status
-            <TextField autoComplete="off" name="programStatus" type="text" />
-          </label>
-          <Button disabled={programPending} type="submit">
-            Save program
-          </Button>
-          {programError ? <p role="alert">{programError}</p> : null}
-          {programResult ? (
-            <section aria-label="Affiliate program result">
-              <h3>{programResult.programCode ?? "Affiliate program"}</h3>
-              <p>{programResult.id}</p>
-              {programResult.status ? <p>{programResult.status}</p> : null}
-            </section>
-          ) : null}
-        </form>
+        <AffiliateProgramForm
+          affiliateNetworkId={affiliateNetworkId}
+          error={programError}
+          merchantChoices={merchantChoices}
+          onAffiliateNetworkIdChange={setAffiliateNetworkId}
+          onSelectedMerchantIdChange={setSelectedMerchantId}
+          onSubmit={handleProgramSubmit}
+          pending={programPending}
+          result={programResult}
+          selectedMerchantSummary={selectedMerchantSummary}
+          selectedMerchantValue={selectedMerchantValue}
+        />
       )}
 
-      <form aria-label="Save affiliate link" method="post" onSubmit={handleLinkSubmit} {...props(styles.form)}>
-        <h2>Link</h2>
-        {selectedMerchantSummary ? (
-          <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
-        ) : null}
-        <label>
-          Merchant product ID
-          <TextField autoComplete="off" name="merchantProductId" type="text" />
-        </label>
-        <label>
-          Link affiliate network ID
-          <TextField autoComplete="off" name="linkAffiliateNetworkId" type="text" />
-        </label>
-        <label>
-          Original URL
-          <TextField autoComplete="off" name="originalUrl" type="url" />
-        </label>
-        <label>
-          Affiliate URL
-          <TextField autoComplete="off" name="affiliateUrl" type="url" />
-        </label>
-        <label>
-          Last verified at
-          <input name="lastVerifiedAt" type="datetime-local" />
-        </label>
-        <Button disabled={linkPending} type="submit">
-          Save link
-        </Button>
-        {linkError ? <p role="alert">{linkError}</p> : null}
-        {linkResult ? (
-          <section aria-label="Affiliate link result">
-            <h3>{linkResult.id}</h3>
-            <p>{linkResult.affiliateUrl}</p>
-          </section>
-        ) : null}
-      </form>
+      <AffiliateLinkForm
+        error={linkError}
+        onSubmit={handleLinkSubmit}
+        pending={linkPending}
+        result={linkResult}
+        selectedMerchantSummary={selectedMerchantSummary}
+      />
 
       {merchantChoices.length === 0 ? null : (
-        <form aria-label="Create affiliate coupon" method="post" onSubmit={handleCouponSubmit} {...props(styles.form)}>
-          <h2>Coupon</h2>
-          {selectedMerchantSummary ? (
-            <p>{`Selected merchant: ${selectedMerchantSummary}`}</p>
-          ) : null}
-          <MerchantSelect
-            label="Coupon merchant"
-            merchantChoices={merchantChoices}
-            name="couponMerchantId"
-            onSelectedMerchantIdChange={setSelectedMerchantId}
-            selectedMerchantValue={selectedMerchantValue}
-          />
-          <label>
-            Coupon affiliate network ID
-            <TextField autoComplete="off" name="couponAffiliateNetworkId" type="text" />
-          </label>
-          <label>
-            Coupon code
-            <TextField autoComplete="off" name="couponCode" type="text" />
-          </label>
-          <label>
-            Description
-            <TextField autoComplete="off" name="couponDescription" type="text" />
-          </label>
-          <DiscountTypeSelect />
-          <label>
-            Discount value
-            <TextField autoComplete="off" name="discountValue" type="text" />
-          </label>
-          <label>
-            Currency
-            <TextField autoComplete="off" maxLength={3} name="currency" type="text" />
-          </label>
-          <label>
-            Valid from
-            <input name="validFrom" type="datetime-local" />
-          </label>
-          <label>
-            Valid to
-            <input name="validTo" type="datetime-local" />
-          </label>
-          <label>
-            Terms
-            <TextField autoComplete="off" name="terms" type="text" />
-          </label>
-          <Button disabled={couponPending} type="submit">
-            Create coupon
-          </Button>
-          {couponError ? <p role="alert">{couponError}</p> : null}
-          {couponResult ? <CouponResultPanel coupon={couponResult} /> : null}
-        </form>
+        <AffiliateCouponForm
+          error={couponError}
+          merchantChoices={merchantChoices}
+          onSelectedMerchantIdChange={setSelectedMerchantId}
+          onSubmit={handleCouponSubmit}
+          pending={couponPending}
+          result={couponResult}
+          selectedMerchantSummary={selectedMerchantSummary}
+          selectedMerchantValue={selectedMerchantValue}
+        />
       )}
     </WorkspaceLayout>
   );
-}
-
-function MerchantSelect({
-  label = "Merchant",
-  merchantChoices,
-  name = "merchantId",
-  onSelectedMerchantIdChange,
-  selectedMerchantValue
-}: {
-  label?: string;
-  merchantChoices: MerchantChoice[];
-  name?: string;
-  onSelectedMerchantIdChange: (merchantId: string) => void;
-  selectedMerchantValue: string;
-}) {
-  return (
-    <label>
-      {label}
-      <select
-        name={name}
-        onChange={(event) => onSelectedMerchantIdChange(event.currentTarget.value)}
-        value={selectedMerchantValue}
-      >
-        {merchantChoices.map((merchant) => (
-          <option key={merchant.id} value={merchant.id}>
-            {merchant.name}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function DiscountTypeSelect() {
-  return (
-    <label>
-      Discount type
-      <select defaultValue="OTHER" name="discountType">
-        <option value="OTHER">OTHER</option>
-        <option value="PERCENT">PERCENT</option>
-        <option value="AMOUNT">AMOUNT</option>
-        <option value="FREE_SHIPPING">FREE_SHIPPING</option>
-      </select>
-    </label>
-  );
-}
-
-function CouponResultPanel({ coupon }: { coupon: CouponResult }) {
-  const discountText = couponDiscountText(coupon);
-
-  return (
-    <section aria-label="Coupon result">
-      <h3>{coupon.code}</h3>
-      <p>{coupon.id}</p>
-      {discountText ? <p>{discountText}</p> : null}
-    </section>
-  );
-}
-
-function couponDiscountText(coupon: CouponResult) {
-  const value = coupon.discountValue == null ? null : String(coupon.discountValue);
-
-  switch (coupon.discountType) {
-    case "AMOUNT":
-      return value && coupon.currency ? `${value} ${coupon.currency}` : null;
-    case "PERCENT":
-      return value ? `${value}% off` : null;
-    case "FREE_SHIPPING":
-      return "Free shipping";
-    case "OTHER":
-      return value ? `${value} off` : "Other discount";
-    default:
-      return null;
-  }
 }
 
 function AffiliateSetupUnavailableFallback() {
