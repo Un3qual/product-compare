@@ -13,11 +13,11 @@
 
 ## Merchant-Choice Pagination
 
-- Status: ready on 2026-07-12.
+- Status: completed 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Next action: expose truthful First/Next navigation for the merchant choices
+- Completed: added truthful First/Next navigation for the merchant choices
   already paginated by the loader and Relay query, preserving page size and
-  encoded cursor state.
+  encoded cursor state without changing merchant selection or mutation behavior.
 - Owned paths:
   - `assets/src/routes/affiliate/setup/pagination.ts`
   - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
@@ -30,6 +30,10 @@
   - `git diff --check`
 - Exit condition: loaded merchant pages expose correct First/Next links without
   changing merchant selection or any affiliate mutation behavior.
+- Completed verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx` - 27 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with exit 0.
 
 ## Batch Status
 
