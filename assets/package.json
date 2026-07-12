@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --ssr src/entry.server.tsx --outDir dist/server",
+    "build": "bun run build:client && bun run build:ssr && bun run check:bundle",
+    "build:client": "vite build",
+    "build:ssr": "vite build --ssr src/entry.server.tsx --outDir dist/server",
+    "check:bundle": "bun scripts/check-client-bundle.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",

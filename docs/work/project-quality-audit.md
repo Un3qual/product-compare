@@ -206,3 +206,30 @@ output, a clean working tree, and an independent whole-branch review.
 - GREEN evidence: the focused compare, ingestion, offer, revenue, revenue-
   loader, and SSR suites passed 207 tests with zero failures. `bun run
   typecheck` and `git diff --check` passed.
+
+### 2026-07-12 — Milestone 7: lazy route delivery and measured bundle contract
+
+- Root shell/home, static metadata handles, and the wildcard 404 remain in the
+  initial graph. Every non-root screen and loader now resolves through its own
+  direct React Router `lazy` imports; paths, loaders, route-specific error
+  boundaries, SSR, and client navigation contracts are preserved.
+- The client Vite manifest is enabled. `bun run check:bundle` finds the sole
+  client entry by manifest metadata, recursively walks its full static import
+  closure, measures raw and gzip JavaScript bytes, and fails with actionable
+  diagnostics if the closure exceeds budget or the named rare routes are not
+  dynamic entries outside it.
+- Affiliate setup, feed candidates, revenue, and API tokens are independently
+  identified by manifest source/facade metadata rather than hashed output names
+  and proven outside the initial static closure.
+- RED build evidence: the original single-entry build measured 888,553 raw /
+  255,112 gzip bytes. The new checker failed its 200,000-byte gzip budget and
+  reported all four missing dynamic route chunks. Router regressions then
+  produced seven expected failures while non-root routes were still eager.
+- GREEN build evidence: the post-split initial closure measures 591,583 raw /
+  180,879 gzip bytes, reductions of 33.4% raw and 29.1% gzip. The 200,000-byte
+  budget provides 19,121 bytes (10.6%) headroom for ordinary dependency patch
+  drift without accommodating the former monolith.
+- Verification: focused router/SSR suites passed 28 tests, the full frontend
+  unit suite passed 718 tests, `bun run typecheck` passed, and `bun run build`
+  completed the client build, SSR build, and bundle contract. `git diff
+  --check` passed.
