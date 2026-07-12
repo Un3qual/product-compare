@@ -247,6 +247,44 @@ test.each(credentialFormVariants)(
   }
 );
 
+test("login route preserves its credential presentation configuration", () => {
+  renderRoute("/auth/login");
+
+  expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+  expect(
+    screen.getByText("Use your email and password to continue through the GraphQL auth flow.")
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
+  expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register"
+  );
+  expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
+    "href",
+    "/auth/forgot-password"
+  );
+});
+
+test("register route preserves its credential presentation configuration", () => {
+  renderRoute("/auth/register");
+
+  expect(screen.getByRole("heading", { name: "Create your account" })).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Create an email/password account and let Phoenix establish the browser session."
+    )
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password");
+  expect(screen.getByRole("link", { name: "Sign in instead" })).toHaveAttribute(
+    "href",
+    "/auth/login"
+  );
+  expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
+    "href",
+    "/auth/forgot-password"
+  );
+});
+
 test("login route commits credentials through Relay and redirects after a successful session response", async () => {
   renderRoute("/auth/login");
 

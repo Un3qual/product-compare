@@ -2,12 +2,12 @@ import type { FormEventHandler } from "react";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { findMutationError, type MutationError } from "./errors";
 
-export interface CredentialAuthFooterLink {
+interface CredentialAuthFooterLink {
   label: string;
   to: string;
 }
 
-export interface CredentialAuthFormProps {
+interface CredentialAuthFormProps {
   description: string;
   errors: MutationError[];
   footerLinks: CredentialAuthFooterLink[];
