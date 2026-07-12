@@ -13,6 +13,8 @@ import {
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
+const LOGIN_AUTOCOMPLETE_HINT = "current-password";
+
 export function LoginRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
@@ -62,7 +64,7 @@ export function LoginRoute() {
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
-      authFieldAutoComplete="current-password"
+      passwordAutoComplete={LOGIN_AUTOCOMPLETE_HINT}
       submitLabel="Sign in"
       title="Sign in"
     />
