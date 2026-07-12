@@ -122,37 +122,7 @@ data, mutation, URL, suspense, and error orchestration.
 
 ## Ready Work
 
-### 1. Compare Product Picker View Extraction
-
-Status: ready
-Lane: Frontend product comparison
-Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
-Next action: Extract picker headings, loaded-product filtering, option
-presentation, no-match copy, and show-more controls while preserving
-boundary-owned Relay reads, page accumulation, selection exclusion, empty
-dataset decisions, and compare path construction.
-Owned paths:
-
-- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
-- `assets/src/routes/compare/CompareProductPickerView.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
-
-Prerequisites:
-
-- Existing compare route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Picker presentation and local filter state are isolated without
-changing Relay reads, loaded-product accumulation, selected-product exclusion,
-option URLs, empty states, or pagination.
-
-### 2. Affiliate Setup Merchant Pagination
+### 1. Affiliate Setup Merchant Pagination
 
 Status: ready
 Lane: Frontend affiliate setup
@@ -182,7 +152,7 @@ Verification:
 Exit condition: Loaded merchant pages expose correct First/Next links without
 changing merchant selection or any affiliate mutation behavior.
 
-### 3. Merchant Directory View Extraction
+### 2. Merchant Directory View Extraction
 
 Status: ready
 Lane: Frontend merchant discovery
@@ -211,7 +181,7 @@ Verification:
 Exit condition: Merchant presentation is isolated without changing query,
 filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
 
-### 4. Saved Comparison View-State Extraction
+### 3. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -241,7 +211,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 5. Credential Auth Form Presentation Extraction
+### 4. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -280,6 +250,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 compare picker-view extraction is complete.
+`CompareProductPickerView` now owns the heading, loaded-option filter state,
+option and no-match presentation, and show-more control while the boundary
+retains Relay/error/suspense ownership, page accumulation and deduplication,
+selected-product exclusion, empty-dataset decisions, and compare path
+construction. The focused suite passed 105 tests with TypeScript and diff
+hygiene green.
 
 The 2026-07-12 root destination extraction is complete.
 `RootDestinations` now owns public/authenticated destination catalogs, primary

@@ -36,14 +36,13 @@ Skip navigation plus the saved-comparison, catalog product-list, and revenue
 presentation extractions are complete. API-token controls, compare matrix,
 catalog advanced-filter presentation, and offer-discovery card presentation
 are also complete. API-token item, product-detail offer-list, root destination,
-and compare picker-view presentation are the first active stack cohort.
+and compare picker-view presentation completed as the first stack cohort.
 Affiliate merchant pagination, merchant-directory view presentation, saved-
 comparison pure view state, and credential-auth form presentation are freshly
 validated follow-up rows with a second dedicated execution plan.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
 - `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
@@ -71,11 +70,10 @@ batch and should not be recreated or promoted.
 - Merchant discovery: add a local merchant-name filter explicitly scoped to the
   visible Relay page.
 - Route foundations: add a real wildcard 404 and shared route document metadata.
-- Frontend route maintainability: extract API-token item presentation,
-  product-detail offer-list presentation, root destinations, and the compare
-  picker view through the active presentation-boundaries plan.
-- Ready reserve: the four non-overlapping presentation boundaries execute
-  through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Completed reserve: API-token item presentation, product-detail offer-list
+  presentation, root destinations, and the compare picker view are complete
+  through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`;
+  do not promote them again without fresh scope.
 - Ready reserve: affiliate merchant pagination, merchant-directory view
   presentation, saved-comparison pure view state, and credential-auth form
   presentation execute through
@@ -99,6 +97,10 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Frontend token-item, product-offer-list, root-destination, and compare-picker
+  presentation:
+  `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
 
 - Frontend control, matrix, advanced-filter, and offer-card presentation:
   `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
