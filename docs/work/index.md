@@ -128,37 +128,7 @@ tests; TypeScript and diff hygiene were green.
 
 ## Ready Work
 
-### 1. Saved Comparison View-State Extraction
-
-Status: ready
-Lane: Frontend compare and saved hardening
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: move pure deleted-id hiding, filtering, sorting, and status
-precedence into a framework-free module while preserving route-owned state,
-Relay retainers, mutation commits, pagination, and URLs.
-Owned paths:
-
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/src/routes/compare/saved-view-state.ts`
-- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-compare-saved-hardening.md`
-
-Prerequisites:
-
-- Existing saved-comparison route-state suite remains the characterization
-  contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The route consumes one pure view-state contract with exact
-deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
-
-### 2. Credential Auth Form Presentation Extraction
+### 1. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -188,7 +158,7 @@ Exit condition: Login and registration share only credential presentation;
 GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
 updates, and navigation remain unchanged.
 
-### 3. Product Detail Decision Actions Presentation
+### 2. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -216,7 +186,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 4. Revenue Summary View-Data Contract
+### 3. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -246,7 +216,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 5. Specification Matrix Data Contract
+### 4. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -284,6 +254,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 saved-comparison view-state extraction is complete. A framework-
+free module now owns local deletion hiding, case-insensitive name/product/slug
+filtering, stable sorting, and status precedence while the route retains React
+state, Relay retainers, mutations, pagination, and URL construction. Review
+follow-up established one canonical exhaustive sort-mode type and added
+deletion/filter precedence plus stable-tie coverage. The focused suites passed
+46 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 merchant-directory view extraction is complete.
 `MerchantDirectoryView` owns visible-page filtering, merchant list and safe-link

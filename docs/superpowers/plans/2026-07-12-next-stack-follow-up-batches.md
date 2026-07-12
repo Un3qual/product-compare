@@ -91,6 +91,7 @@ resolution, and route path construction.
 
 - Create: `assets/src/routes/compare/saved-view-state.ts`
 - Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Modify: `assets/src/routes/compare/SavedComparisonSetList.tsx`
 - Create: `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
 - Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
 - Modify: `docs/work/frontend-compare-saved-hardening.md`
@@ -102,16 +103,17 @@ case-insensitive name/product filtering, current/name/product-count sorting,
 and status precedence. The route retains React state, Relay query retainers,
 mutation commits, pagination, and comparison URL construction.
 
-- [ ] Add pure tests for unauthorized, local deletion, no-match, empty,
+- [x] Add pure tests for unauthorized, local deletion, no-match, empty,
   name/product/slug filtering, and every sort mode; verify RED against the
   missing module.
-- [ ] Move the pure state functions and only the required production types into
-  `saved-view-state.ts` without React, Relay, or router imports.
-- [ ] Import the state builder into the route and remove the duplicate local
+- [x] Move the pure state functions and only the required production types into
+  `saved-view-state.ts` without React, Relay, or router imports; consume the
+  canonical sort-mode type from the presentation component.
+- [x] Import the state builder into the route and remove the duplicate local
   implementation.
-- [ ] Run both focused saved-comparison suites, TypeScript, and
+- [x] Run both focused saved-comparison suites, TypeScript, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
