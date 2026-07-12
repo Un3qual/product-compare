@@ -31,7 +31,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def init(opts) do
     state = %{
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
-      cursor: Keyword.get(opts, :cursor),
+      cursor: cursor_option(opts),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -115,9 +115,12 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
     )
   end
 
-  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}}) do
+  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}})
+       when is_integer(next_cursor) and next_cursor >= 0 do
     %{state | cursor: next_cursor}
   end
+
+  defp advance_cursor(state, {:ok, %{next_cursor: nil}}), do: %{state | cursor: nil}
 
   defp advance_cursor(state, _result), do: state
 
@@ -133,6 +136,13 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
       _other ->
         default
+    end
+  end
+
+  defp cursor_option(opts) do
+    case Keyword.get(opts, :cursor) do
+      value when is_integer(value) and value >= 0 -> value
+      _invalid -> nil
     end
   end
 end

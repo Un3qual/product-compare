@@ -64,14 +64,19 @@ defmodule ProductCompare.Discussions do
   def create_post(attrs) do
     %ThreadPost{}
     |> ThreadPost.changeset(attrs)
+    |> validate_post_parent()
     |> Repo.insert()
   end
 
   @spec update_post(ThreadPost.t(), map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
   def update_post(%ThreadPost{} = post, attrs) do
-    post
-    |> ThreadPost.changeset(attrs)
-    |> Repo.update()
+    if parent_update?(attrs) do
+      update_post_parent(post, attrs)
+    else
+      post
+      |> ThreadPost.changeset(attrs)
+      |> Repo.update()
+    end
   end
 
   @spec delete_post(ThreadPost.t()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
@@ -104,7 +109,7 @@ defmodule ProductCompare.Discussions do
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def update_review(%ProductReview{} = review, attrs) do
     sanitized_attrs = drop_client_verified_purchase(attrs)
-    verified_purchase = derive_verified_purchase(sanitized_attrs, review)
+    verified_purchase = derive_verified_purchase(%{}, review)
 
     review
     |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
@@ -127,6 +132,101 @@ defmodule ProductCompare.Discussions do
       |> Input.clamp_non_negative(0)
 
     {limit, offset}
+  end
+
+  defp parent_update?(attrs) when is_map(attrs) do
+    Map.has_key?(attrs, :parent_post_id) or Map.has_key?(attrs, "parent_post_id")
+  end
+
+  defp parent_update?(_attrs), do: false
+
+  defp update_post_parent(%ThreadPost{} = post, attrs) do
+    Repo.transaction(fn ->
+      current_post = Repo.get!(ThreadPost, post.id)
+
+      Repo.one!(
+        from thread in ProductThread,
+          where: thread.id == ^current_post.thread_id,
+          lock: "FOR UPDATE"
+      )
+
+      ThreadPost
+      |> Repo.get!(post.id)
+      |> ThreadPost.changeset(attrs)
+      |> validate_post_parent()
+      |> Repo.update()
+      |> case do
+        {:ok, updated_post} -> updated_post
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp validate_post_parent(%Ecto.Changeset{valid?: false} = changeset), do: changeset
+
+  defp validate_post_parent(changeset) do
+    parent_post_id = Ecto.Changeset.get_field(changeset, :parent_post_id)
+    thread_id = Ecto.Changeset.get_field(changeset, :thread_id)
+    post_id = changeset.data.id
+
+    case fetch_parent_post(parent_post_id) do
+      :no_parent ->
+        changeset
+
+      :not_found ->
+        Ecto.Changeset.add_error(changeset, :parent_post_id, "does not exist")
+
+      %ThreadPost{thread_id: parent_thread_id} when parent_thread_id != thread_id ->
+        Ecto.Changeset.add_error(
+          changeset,
+          :parent_post_id,
+          "must belong to the same thread"
+        )
+
+      %ThreadPost{} ->
+        if parent_chain_contains_id?(parent_post_id, post_id) do
+          Ecto.Changeset.add_error(changeset, :parent_post_id, "cannot create a cycle")
+        else
+          changeset
+        end
+    end
+  end
+
+  defp fetch_parent_post(nil), do: :no_parent
+
+  defp fetch_parent_post(parent_post_id) do
+    case Repo.get(ThreadPost, parent_post_id) do
+      nil -> :not_found
+      %ThreadPost{} = parent_post -> parent_post
+    end
+  end
+
+  defp parent_chain_contains_id?(_parent_id, nil), do: false
+  defp parent_chain_contains_id?(nil, _target_id), do: false
+
+  defp parent_chain_contains_id?(parent_id, target_id) do
+    parent_chain_contains_id?(parent_id, target_id, [])
+  end
+
+  defp parent_chain_contains_id?(nil, _target_id, _visited), do: false
+
+  defp parent_chain_contains_id?(parent_id, target_id, visited) do
+    cond do
+      parent_id == target_id ->
+        true
+
+      parent_id in visited ->
+        false
+
+      true ->
+        case Repo.get(ThreadPost, parent_id) do
+          nil ->
+            false
+
+          %ThreadPost{parent_post_id: next_parent_id} ->
+            parent_chain_contains_id?(next_parent_id, target_id, [parent_id | visited])
+        end
+    end
   end
 
   defp drop_client_verified_purchase(attrs) when is_map(attrs) do

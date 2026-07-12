@@ -133,3 +133,28 @@ output, a clean working tree, and an independent whole-branch review.
   external listing identity (`external_id`/`external_sku`) so a newer unrelated
   merchant offer sharing product and URL cannot be returned for a stale
   observation.
+
+### 2026-07-12 — Milestone 4: discussion invariants and schema-only boundaries
+
+- Parent mutations now run in one transaction that reloads the post identity,
+  locks the shared product-thread row, reloads the post after the lock, validates
+  parent existence/thread scope/cycles in `Discussions`, and updates. A held-lock
+  database barrier proves concurrent inverse updates serialize: the first
+  commits and the second returns the existing cycle changeset error.
+- `ThreadPost` and `ProductReview` use creation/update-specific cast fields, so
+  existing author, thread, owner, product, and merchant-product identity cannot
+  be reassigned while body, title, and rating edits remain valid.
+- `ThreadPost` and `ProductAttributeCurrent` changesets perform no repository
+  reads. `Specs.select_current_claim/4` retains the existing not-found,
+  not-accepted, and scope-mismatch contracts while selecting the claim with one
+  query rather than a duplicate hidden lookup.
+- CJ feed-discovery startup accepts only nil or non-negative integer cursors;
+  successful reports advance only to the same safe domain. Negative, float,
+  string, and malformed cursors retain safe scheduler state without crashes.
+- RED evidence: the initial 21-test regression run produced eight expected
+  failures covering identity mutation, hidden claim queries, invalid cursor
+  propagation, context parent validation, and missing thread-lock serialization.
+- GREEN evidence: the expanded focused discussion, Specs, and scheduler suites
+  pass 63 tests with zero failures; `mix typecheck` passes. Dialyzer reports no
+  touched-module warnings and retains only warnings outside this milestone's
+  owned paths.
