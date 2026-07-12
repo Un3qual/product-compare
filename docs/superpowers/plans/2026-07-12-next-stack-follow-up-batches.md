@@ -46,15 +46,15 @@ loader-owned pagination into the Relay panel, derives first and next hrefs from
 the loaded merchant connection, and renders the shared `Pagination`. Relay
 reads, merchant selection, and all four mutation lifecycles remain unchanged.
 
-- [ ] Add route assertions for next and first merchant-choice links, retained
+- [x] Add route assertions for next and first merchant-choice links, retained
   `first`, encoded `after`, and absence when `pageInfo` has no destination;
   verify RED because the navigation is missing.
-- [ ] Add the local path helper and thread normalized pagination through the
+- [x] Add the local path helper and thread normalized pagination through the
   existing route and panel.
-- [ ] Render pagination only from truthful `pageInfo` and cursor state without
+- [x] Render pagination only from truthful `pageInfo` and cursor state without
   changing merchant choice or mutation behavior.
-- [ ] Run both focused affiliate suites, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Run both focused affiliate suites, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
