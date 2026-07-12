@@ -425,6 +425,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("From")).toHaveValue("2026-05-01");
   expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
+  const reportSummary = screen.getByRole("region", { name: "Summary" });
 
   rerender(
     <MemoryRouter>
@@ -436,6 +437,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(screen.getByLabelText("From")).toHaveValue("");
   expect(screen.getByLabelText("To")).toHaveValue("");
+  expect(screen.getByRole("region", { name: "Summary" })).toBe(reportSummary);
 });
 
 test("revenue route asks for a currency before loading metrics", () => {

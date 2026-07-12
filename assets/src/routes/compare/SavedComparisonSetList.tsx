@@ -21,6 +21,19 @@ export type SavedComparisonSetPagination = {
   nextHref: string | null;
 };
 
+export type SavedComparisonSetListActions = {
+  onDelete: (savedComparisonSetId: string) => void;
+  onOpenComparison: (savedSet: SavedComparisonSetSummary) => string;
+  pendingDeleteIds: ReadonlySet<string>;
+};
+
+export type SavedComparisonSetListControls = {
+  filterText: string;
+  onFilterTextChange: (filterText: string) => void;
+  onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
+  sortMode: SavedComparisonSortMode;
+};
+
 const styles = create({
   actions: {
     alignItems: "center",
@@ -61,27 +74,17 @@ const styles = create({
 });
 
 export function SavedComparisonSetList({
+  actions,
   children,
-  filterText,
-  onDelete,
-  onFilterTextChange,
-  onOpenComparison,
-  onSortModeChange,
+  controls,
   pagination,
-  pendingDeleteIds,
-  savedSets,
-  sortMode
+  savedSets
 }: {
+  actions: SavedComparisonSetListActions;
   children?: ReactNode;
-  filterText: string;
-  onDelete: (savedComparisonSetId: string) => void;
-  onFilterTextChange: (filterText: string) => void;
-  onOpenComparison: (savedSet: SavedComparisonSetSummary) => string;
-  onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
+  controls: SavedComparisonSetListControls;
   pagination: SavedComparisonSetPagination;
-  pendingDeleteIds: ReadonlySet<string>;
   savedSets: readonly SavedComparisonSetSummary[];
-  sortMode: SavedComparisonSortMode;
 }): ReactElement {
   return (
     <WorkspaceLayout
@@ -91,10 +94,10 @@ export function SavedComparisonSetList({
           label="Saved comparison controls"
         >
           <SavedComparisonControls
-            filterText={filterText}
-            onFilterTextChange={onFilterTextChange}
-            onSortModeChange={onSortModeChange}
-            sortMode={sortMode}
+            filterText={controls.filterText}
+            onFilterTextChange={controls.onFilterTextChange}
+            onSortModeChange={controls.onSortModeChange}
+            sortMode={controls.sortMode}
           />
         </ContextRail>
       }
@@ -106,9 +109,9 @@ export function SavedComparisonSetList({
           {savedSets.map((savedSet) => (
             <DataListItem key={savedSet.id}>
               <SavedComparisonSetItem
-                onDelete={onDelete}
-                onOpenComparison={onOpenComparison}
-                pendingDeleteIds={pendingDeleteIds}
+                onDelete={actions.onDelete}
+                onOpenComparison={actions.onOpenComparison}
+                pendingDeleteIds={actions.pendingDeleteIds}
                 savedSet={savedSet}
               />
             </DataListItem>

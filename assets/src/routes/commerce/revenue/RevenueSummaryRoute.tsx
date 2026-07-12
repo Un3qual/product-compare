@@ -33,7 +33,6 @@ export function RevenueSummaryRoute() {
         activeFilters={activeFilters}
         datePresetLinks={datePresetLinks}
         filters={loaderData.filters}
-        key={revenueSummaryFilterKey(loaderData.filters)}
       >
         {loaderData.status === "error" ? (
           <RevenueSummaryUnavailableFallback />
@@ -99,10 +98,6 @@ function RevenueSummaryCurrencyRequiredFallback() {
 
 function RevenueSummaryInvalidDateRangeFallback() {
   return <p role="status">Enter a start date on or before the end date to load revenue metrics.</p>;
-}
-
-function revenueSummaryFilterKey(filters: RevenueSummaryLoaderData["filters"]) {
-  return [filters.network, filters.currency, filters.from, filters.to].join("|");
 }
 
 function buildActiveFilterItems(filters: RevenueSummaryLoaderData["filters"]) {

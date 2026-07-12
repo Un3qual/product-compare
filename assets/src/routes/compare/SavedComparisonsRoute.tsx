@@ -102,9 +102,6 @@ export function SavedComparisonsRoute() {
   const shouldShowReturnActions =
     loaderData.status !== "unauthorized" && viewState.savedSets.length === 0;
   const pagination = buildSavedComparisonsPagination(loaderData);
-  const onOpenComparison = (savedSet: SavedComparisonSetSummary) =>
-    buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug));
-
   return (
     <CompareShell title="Saved comparisons">
       <p aria-label="Saved comparisons status" aria-live="polite" role="status">
@@ -116,15 +113,19 @@ export function SavedComparisonsRoute() {
         </Button>
       ) : (
         <SavedComparisonSetList
-          filterText={filterText}
-          onDelete={handleDelete}
-          onFilterTextChange={setFilterText}
-          onOpenComparison={onOpenComparison}
-          onSortModeChange={setSortMode}
+          actions={{
+            onDelete: handleDelete,
+            onOpenComparison: savedComparisonHref,
+            pendingDeleteIds
+          }}
+          controls={{
+            filterText,
+            onFilterTextChange: setFilterText,
+            onSortModeChange: setSortMode,
+            sortMode
+          }}
           pagination={pagination}
-          pendingDeleteIds={pendingDeleteIds}
           savedSets={viewState.savedSets}
-          sortMode={sortMode}
         >
           {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
           {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
@@ -135,6 +136,10 @@ export function SavedComparisonsRoute() {
       )}
     </CompareShell>
   );
+}
+
+function savedComparisonHref(savedSet: SavedComparisonSetSummary) {
+  return buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug));
 }
 
 function savedComparisonsPagePath(after: string) {

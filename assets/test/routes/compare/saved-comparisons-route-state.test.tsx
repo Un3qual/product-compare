@@ -138,15 +138,19 @@ test("saved comparison presentation exposes controls, actions, and pagination", 
   render(
     <MemoryRouter>
       <SavedComparisonSetList
-        filterText=""
-        onDelete={vi.fn()}
-        onFilterTextChange={vi.fn()}
-        onOpenComparison={() => "/compare?slug=chair&slug=desk"}
-        onSortModeChange={vi.fn()}
+        actions={{
+          onDelete: vi.fn(),
+          onOpenComparison: () => "/compare?slug=chair&slug=desk",
+          pendingDeleteIds: new Set()
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
         pagination={{ firstHref: "/compare/saved", nextHref: "/compare/saved?after=cursor-1" }}
-        pendingDeleteIds={new Set()}
         savedSets={[buildSavedSet()]}
-        sortMode="current"
       />
     </MemoryRouter>
   );

@@ -77,30 +77,70 @@ export function BrowseProductList({
   return (
     <DataList label="Products">
       {products.map((product) => (
-        <DataListItem key={product.id}>
-          <article aria-label={product.name} {...props(styles.product)}>
-            <h2 {...props(styles.productHeading)}>{product.name}</h2>
-            <div {...props(styles.metadata)}>
-              <p {...props(styles.metadataItem)}>{product.brand.name}</p>
-              <p {...props(styles.metadataItem)}>{product.slug}</p>
-            </div>
-            <SpecificationHighlights attributes={product.currentAttributes} />
-            <ul
-              aria-label={`Decision actions for ${product.name}`}
-              {...props(styles.actionList)}
-            >
-              <li>
-                <Link to={detailHrefFor(product)}>View details for {product.name}</Link>
-              </li>
-              <BrowseCompareActionItem action={compareActionFor(product)} product={product} />
-              <li>
-                <Link to={offerHrefFor(product)}>View offers for {product.name}</Link>
-              </li>
-            </ul>
-          </article>
-        </DataListItem>
+        <BrowseProductListItem
+          compareAction={compareActionFor(product)}
+          detailHref={detailHrefFor(product)}
+          key={product.id}
+          offerHref={offerHrefFor(product)}
+          product={product}
+        />
       ))}
     </DataList>
+  );
+}
+
+function BrowseProductListItem({
+  compareAction,
+  detailHref,
+  offerHref,
+  product
+}: {
+  compareAction: BrowseCompareAction;
+  detailHref: string;
+  offerHref: string;
+  product: BrowseProductNode;
+}): ReactElement {
+  return (
+    <DataListItem>
+      <article aria-label={product.name} {...props(styles.product)}>
+        <h2 {...props(styles.productHeading)}>{product.name}</h2>
+        <div {...props(styles.metadata)}>
+          <p {...props(styles.metadataItem)}>{product.brand.name}</p>
+          <p {...props(styles.metadataItem)}>{product.slug}</p>
+        </div>
+        <SpecificationHighlights attributes={product.currentAttributes} />
+        <BrowseProductActions
+          compareAction={compareAction}
+          detailHref={detailHref}
+          offerHref={offerHref}
+          product={product}
+        />
+      </article>
+    </DataListItem>
+  );
+}
+
+function BrowseProductActions({
+  compareAction,
+  detailHref,
+  offerHref,
+  product
+}: {
+  compareAction: BrowseCompareAction;
+  detailHref: string;
+  offerHref: string;
+  product: BrowseProductNode;
+}): ReactElement {
+  return (
+    <ul aria-label={`Decision actions for ${product.name}`} {...props(styles.actionList)}>
+      <li>
+        <Link to={detailHref}>View details for {product.name}</Link>
+      </li>
+      <BrowseCompareActionItem action={compareAction} product={product} />
+      <li>
+        <Link to={offerHref}>View offers for {product.name}</Link>
+      </li>
+    </ul>
   );
 }
 
@@ -153,5 +193,11 @@ function BrowseCompareActionItem({
           <Link to={action.href}>Add {product.name} to compare</Link>
         </li>
       );
+    default:
+      return assertNever(action);
   }
+}
+
+function assertNever(action: never): never {
+  throw new Error(`Unhandled browse compare action: ${JSON.stringify(action)}`);
 }

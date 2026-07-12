@@ -13,6 +13,15 @@ export type RevenueActiveFilter = { label: string; value: string };
 export type RevenueDatePresetLink = { label: string; to: string };
 export type RevenueSummaryMetric = { label: string; value: string };
 
+type RevenueFilters = RevenueSummaryLoaderData["filters"];
+
+const REVENUE_FILTER_IDS = {
+  currency: "revenue-filter-currency",
+  from: "revenue-filter-from",
+  network: "revenue-filter-network",
+  to: "revenue-filter-to"
+} as const;
+
 const styles = create({
   filters: {
     alignItems: "end",
@@ -39,69 +48,131 @@ export function RevenueSummaryView({
   return (
     <WorkspaceLayout
       context={
-        <ContextRail
-          description="Filter recorded attribution by network, currency, or date range."
-          label="Revenue controls"
-        >
-          <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
-            <label>
-              Network
-              <TextField
-                autoComplete="off"
-                defaultValue={filters.network ?? ""}
-                name="network"
-                type="text"
-              />
-            </label>
-            <label>
-              Currency
-              <TextField
-                autoComplete="off"
-                defaultValue={filters.currency ?? ""}
-                maxLength={3}
-                name="currency"
-                type="text"
-              />
-            </label>
-            <label>
-              From
-              <input defaultValue={filters.from ?? ""} name="from" type="date" />
-            </label>
-            <label>
-              To
-              <input defaultValue={filters.to ?? ""} name="to" type="date" />
-            </label>
-            <Button type="submit">Apply filters</Button>
-            <Link to="/commerce/revenue">Clear filters</Link>
-          </form>
-          {datePresetLinks.length > 0 ? (
-            <ul aria-label="Revenue date presets">
-              {datePresetLinks.map((preset) => (
-                <li key={preset.label}>
-                  <Link to={preset.to}>{preset.label}</Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {activeFilters.length === 0 ? (
-            <p>Aggregate revenue summary</p>
-          ) : (
-            <ul aria-label="Active revenue filters">
-              {activeFilters.map((filter) => (
-                <li key={filter.label}>
-                  <span>{filter.label}</span>
-                  <span>{filter.value}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </ContextRail>
+        <RevenueSummaryControls
+          activeFilters={activeFilters}
+          datePresetLinks={datePresetLinks}
+          filters={filters}
+        />
       }
       label="Revenue report"
     >
       {children}
     </WorkspaceLayout>
   );
+}
+
+function RevenueSummaryControls({
+  activeFilters,
+  datePresetLinks,
+  filters
+}: {
+  activeFilters: readonly RevenueActiveFilter[];
+  datePresetLinks: readonly RevenueDatePresetLink[];
+  filters: RevenueFilters;
+}): ReactElement {
+  return (
+    <ContextRail
+      description="Filter recorded attribution by network, currency, or date range."
+      label="Revenue controls"
+    >
+      <RevenueSummaryFilterForm key={revenueSummaryFilterKey(filters)} filters={filters} />
+      <RevenueDatePresetList links={datePresetLinks} />
+      <RevenueActiveFilterList filters={activeFilters} />
+    </ContextRail>
+  );
+}
+
+function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): ReactElement {
+  return (
+    <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
+      <label htmlFor={REVENUE_FILTER_IDS.network}>
+        Network
+        <TextField
+          autoComplete="off"
+          defaultValue={filters.network ?? ""}
+          id={REVENUE_FILTER_IDS.network}
+          name="network"
+          type="text"
+        />
+      </label>
+      <label htmlFor={REVENUE_FILTER_IDS.currency}>
+        Currency
+        <TextField
+          autoComplete="off"
+          defaultValue={filters.currency ?? ""}
+          id={REVENUE_FILTER_IDS.currency}
+          maxLength={3}
+          name="currency"
+          type="text"
+        />
+      </label>
+      <label htmlFor={REVENUE_FILTER_IDS.from}>
+        From
+        <input
+          defaultValue={filters.from ?? ""}
+          id={REVENUE_FILTER_IDS.from}
+          name="from"
+          type="date"
+        />
+      </label>
+      <label htmlFor={REVENUE_FILTER_IDS.to}>
+        To
+        <input
+          defaultValue={filters.to ?? ""}
+          id={REVENUE_FILTER_IDS.to}
+          name="to"
+          type="date"
+        />
+      </label>
+      <Button type="submit">Apply filters</Button>
+      <Link to="/commerce/revenue">Clear filters</Link>
+    </form>
+  );
+}
+
+function RevenueDatePresetList({
+  links
+}: {
+  links: readonly RevenueDatePresetLink[];
+}): ReactElement | null {
+  if (links.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul aria-label="Revenue date presets">
+      {links.map((preset) => (
+        <li key={preset.label}>
+          <Link to={preset.to}>{preset.label}</Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RevenueActiveFilterList({
+  filters
+}: {
+  filters: readonly RevenueActiveFilter[];
+}): ReactElement {
+  if (filters.length === 0) {
+    return <p>Aggregate revenue summary</p>;
+  }
+
+  return (
+    <ul aria-label="Active revenue filters">
+      {filters.map((filter) => (
+        <li key={filter.label}>
+          <span>{filter.label}</span>
+          <span>{filter.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function revenueSummaryFilterKey(filters: RevenueFilters) {
+  return [filters.network, filters.currency, filters.from, filters.to].join("|");
 }
 
 export function RevenueSummaryMetrics({
