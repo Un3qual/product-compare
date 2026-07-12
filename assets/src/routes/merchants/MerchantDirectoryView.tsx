@@ -2,9 +2,7 @@ import { useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { SectionHeading } from "../../ui/components/layout/SectionHeading";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
@@ -47,18 +45,19 @@ export type MerchantDirectoryViewMerchant = {
 
 export type MerchantDirectoryViewProps = {
   firstHref: string | null;
-  formAction: string;
   merchants: MerchantDirectoryViewMerchant[];
   nextHref: string | null;
+};
+
+export type MerchantDirectoryControlsProps = {
+  formAction: string;
   pagination: MerchantDirectoryPagination;
 };
 
 export function MerchantDirectoryView({
   firstHref,
-  formAction,
   merchants,
-  nextHref,
-  pagination
+  nextHref
 }: MerchantDirectoryViewProps) {
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();
@@ -70,70 +69,67 @@ export function MerchantDirectoryView({
       )
     : merchants;
 
+  if (merchants.length === 0) {
+    return <FeedbackState kind="empty" title="No merchants available yet." />;
+  }
+
   return (
-    <WorkspaceLayout
-      context={
-        <ContextRail
-          description="Adjust how many merchants appear in the current result page."
-          label="Merchant controls"
-        >
-          <form action={formAction} method="get" {...props(styles.controls)}>
-            <label>
-              Page size
-              <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
-                <option value="20">20</option>
-                <option value="35">35</option>
-                <option value="50">50</option>
-              </select>
-            </label>
-            <Button type="submit">Apply</Button>
-          </form>
-        </ContextRail>
-      }
-      label="Merchant results"
-    >
-      {merchants.length === 0 ? (
-        <FeedbackState kind="empty" title="No merchants available yet." />
+    <>
+      <SectionHeading
+        description="Merchant names and destination domains for this result page."
+        title={
+          normalizedFilterText
+            ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
+            : `${merchants.length} merchants on this page`
+        }
+      />
+      <div {...props(styles.filter)}>
+        <span id={filterLabelId}>Filter merchants on this page</span>
+        <TextField
+          aria-labelledby={filterLabelId}
+          autoComplete="off"
+          id={filterInputId}
+          onChange={(event) => setFilterText(event.currentTarget.value)}
+          type="search"
+          value={filterText}
+        />
+      </div>
+      {visibleMerchants.length === 0 ? (
+        <p>No merchants on this page match this filter.</p>
       ) : (
-        <>
-          <SectionHeading
-            description="Merchant names and destination domains for this result page."
-            title={
-              normalizedFilterText
-                ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
-                : `${merchants.length} merchants on this page`
-            }
-          />
-          <div {...props(styles.filter)}>
-            <span id={filterLabelId}>Filter merchants on this page</span>
-            <TextField
-              aria-labelledby={filterLabelId}
-              autoComplete="off"
-              id={filterInputId}
-              onChange={(event) => setFilterText(event.currentTarget.value)}
-              type="search"
-              value={filterText}
-            />
-          </div>
-          {visibleMerchants.length === 0 ? (
-            <p>No merchants on this page match this filter.</p>
-          ) : (
-            <DataList label="Merchants">
-              {visibleMerchants.map((merchant) => (
-                <MerchantDirectoryViewItem key={merchant.id} merchant={merchant} />
-              ))}
-            </DataList>
-          )}
-          <Pagination
-            firstHref={firstHref}
-            firstLabel="First merchants"
-            label="Merchant pages"
-            nextHref={nextHref}
-            nextLabel="Next merchants"
-          />
-        </>
+        <DataList label="Merchants">
+          {visibleMerchants.map((merchant) => (
+            <MerchantDirectoryViewItem key={merchant.id} merchant={merchant} />
+          ))}
+        </DataList>
       )}
-    </WorkspaceLayout>
+      <Pagination
+        firstHref={firstHref}
+        firstLabel="First merchants"
+        label="Merchant pages"
+        nextHref={nextHref}
+        nextLabel="Next merchants"
+      />
+    </>
+  );
+}
+
+export function MerchantDirectoryControls({
+  formAction,
+  pagination
+}: MerchantDirectoryControlsProps) {
+  return (
+    <form action={formAction} method="get" {...props(styles.controls)}>
+      <label>
+        Page size
+        <select key={pagination.first} name="first" defaultValue={String(pagination.first)}>
+          <option value="20">20</option>
+          <option value="35">35</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+      <Button type="submit">Apply</Button>
+    </form>
   );
 }
 

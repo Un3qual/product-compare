@@ -3,7 +3,10 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
-import { MerchantDirectoryView } from "../../../src/routes/merchants/MerchantDirectoryView";
+import {
+  MerchantDirectoryControls,
+  MerchantDirectoryView
+} from "../../../src/routes/merchants/MerchantDirectoryView";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 
 const {
@@ -96,12 +99,21 @@ test("merchant directory renders merchant names and domains", () => {
   );
 });
 
-test("merchant directory view renders controls, safe actions, and page navigation", () => {
-  renderMerchantDirectoryView();
+test("merchant directory controls render the selected page size", () => {
+  render(
+    <MerchantDirectoryControls
+      formAction="/merchants"
+      pagination={{ after: "previous-cursor", first: 35 }}
+    />
+  );
 
   const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
   expect(pageSizeSelect.closest("form")).toHaveAttribute("action", "/merchants");
   expect(pageSizeSelect).toHaveValue("35");
+});
+
+test("merchant directory view renders safe actions and page navigation", () => {
+  renderMerchantDirectoryView();
 
   const safeMerchant = getMerchantListItem("Acme Market");
   expect(
@@ -143,8 +155,6 @@ test("merchant directory view filters names case-insensitively and explains no m
 test("merchant directory view explains when its result page is empty", () => {
   renderMerchantDirectoryView({ merchants: [] });
 
-  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
   expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
   expect(screen.queryByRole("searchbox", { name: "Filter merchants on this page" })).toBeNull();
 });
@@ -310,6 +320,8 @@ test("merchant directory renders an empty state", () => {
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
   expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
 });
 
@@ -467,6 +479,46 @@ test("merchant directory refreshes the page-size selector when pagination change
   expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("50");
 });
 
+test("merchant directory keeps its shell while the Relay query loads", () => {
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Promise<never>(() => undefined);
+  });
+
+  renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading merchants...");
+});
+
+test("merchant directory keeps its shell when the Relay query errors", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Merchant query failed");
+  });
+
+  try {
+    renderMerchantDirectoryRoute();
+
+    expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("merchant directory keeps its shell when merchant data is unavailable", () => {
+  mockedUsePreloadedQuery.mockReturnValue({ merchants: null } as never);
+
+  renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
+});
+
 test("merchant directory renders the loader error state", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "error",
@@ -519,10 +571,8 @@ function renderMerchantDirectoryView({
     <MemoryRouter>
       <MerchantDirectoryView
         firstHref="/merchants?first=35"
-        formAction="/merchants"
         merchants={merchants}
         nextHref="/merchants?first=35&after=next-cursor"
-        pagination={{ after: "previous-cursor", first: 35 }}
       />
     </MemoryRouter>
   );

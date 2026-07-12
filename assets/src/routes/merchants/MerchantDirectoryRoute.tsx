@@ -7,9 +7,14 @@ import merchantDirectoryRouteQuery, {
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
+import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { externalWebsiteHref } from "../external-links";
-import { MerchantDirectoryView } from "./MerchantDirectoryView";
+import {
+  MerchantDirectoryControls,
+  MerchantDirectoryView
+} from "./MerchantDirectoryView";
 import {
   merchantDirectoryLoader,
   type MerchantDirectoryLoaderData,
@@ -41,14 +46,26 @@ function MerchantDirectoryContent({
   loaderData: Extract<MerchantDirectoryLoaderData, { status: "ready" }>;
 }) {
   return (
-    <ResettableErrorBoundary
-      fallback={<MerchantDirectoryUnavailableFallback />}
-      resetToken={loaderData.query}
+    <WorkspaceLayout
+      context={
+        <ContextRail
+          description="Adjust how many merchants appear in the current result page."
+          label="Merchant controls"
+        >
+          <MerchantDirectoryControls formAction="/merchants" pagination={loaderData.pagination} />
+        </ContextRail>
+      }
+      label="Merchant results"
     >
-      <Suspense fallback={<p role="status">Loading merchants...</p>}>
-        <MerchantDirectoryPanel pagination={loaderData.pagination} query={loaderData.query} />
-      </Suspense>
-    </ResettableErrorBoundary>
+      <ResettableErrorBoundary
+        fallback={<MerchantDirectoryUnavailableFallback />}
+        resetToken={loaderData.query}
+      >
+        <Suspense fallback={<p role="status">Loading merchants...</p>}>
+          <MerchantDirectoryPanel pagination={loaderData.pagination} query={loaderData.query} />
+        </Suspense>
+      </ResettableErrorBoundary>
+    </WorkspaceLayout>
   );
 }
 
@@ -79,7 +96,6 @@ function MerchantDirectoryPanel({
           ? merchantDirectoryPagePath(pagination)
           : null
       }
-      formAction="/merchants"
       merchants={data.merchants.edges.map(({ node }) => ({
         id: node.id,
         name: node.name,
@@ -91,7 +107,6 @@ function MerchantDirectoryPanel({
           ? merchantDirectoryPagePath(pagination, data.merchants.pageInfo.endCursor)
           : null
       }
-      pagination={pagination}
     />
   );
 }
