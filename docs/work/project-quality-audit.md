@@ -97,3 +97,8 @@ output, a clean working tree, and an independent whole-branch review.
 - GREEN evidence: focused backend authorization/session suites passed 55 tests;
   focused frontend auth/root suites passed 35 tests. Final milestone gates are
   recorded in the Task 2 report.
+- Independent review found that Relay `node(id:)` still treated affiliate node
+  types as merely authenticated. The follow-up routes those four types through
+  the same operator helper before repository access; anonymous callers now get
+  `UNAUTHENTICATED`, members get `FORBIDDEN`, and session/API-token operators
+  succeed. Public and owner-scoped node behavior is unchanged.
