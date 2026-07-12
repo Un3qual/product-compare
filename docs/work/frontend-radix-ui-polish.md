@@ -30,6 +30,19 @@
   app actually uses, avoiding a large global CSS and JavaScript cost.
 - Kept React component filenames PascalCased to match their primary component.
 
+## Skip Navigation Follow-Up Evidence
+
+- Status: done on 2026-07-11.
+- `AppShell` now renders a keyboard-visible `Skip to main content` link before
+  primary navigation and a stable, programmatically focusable `main-content`
+  target.
+- The focused shell suite covers the accessible link name, target destination,
+  main landmark ID, and focus target.
+- Verification:
+  - `cd assets && bun x vitest run test/ui/app-shell.test.tsx` - 2 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with no output.
+
 ## Boundaries
 
 - Application behavior and GraphQL contracts were not redesigned.

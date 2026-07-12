@@ -12,3 +12,18 @@ test("renders primary nav landmarks with a shared shell separator", () => {
   expect(screen.getByRole("separator")).toBeInTheDocument();
   expect(screen.getByRole("main")).toHaveTextContent("content");
 });
+
+test("lets keyboard users skip primary navigation", () => {
+  render(
+    <AppShell navigation={<div>navigation</div>}>
+      <div>content</div>
+    </AppShell>
+  );
+
+  expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute(
+    "href",
+    "#main-content"
+  );
+  expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+  expect(screen.getByRole("main")).toHaveAttribute("tabindex", "-1");
+});
