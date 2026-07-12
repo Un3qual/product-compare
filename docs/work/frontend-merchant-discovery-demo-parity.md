@@ -34,7 +34,7 @@
   failed because `MerchantDirectoryView` did not exist; the strengthened empty
   page assertion then failed until the page preserved the workspace and controls.
 - GREEN: `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
-  passed with 30 tests; `cd assets && bun run typecheck` and `git diff --check`
+  passed with 27 tests; `cd assets && bun run typecheck` and `git diff --check`
   completed with exit 0.
 - Review follow-up: restored the route-owned workspace shell around the Relay
   suspense and error boundaries, so loading, query-error, and unavailable-data
