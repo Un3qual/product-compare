@@ -2,12 +2,34 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready (credential auth form presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 after Task 4 final verification
+- Last verified: 2026-07-12 after follow-up validation (session route suite
+  included in a 93-test promoted cohort)
 - Implementation plan: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
 - Objective: make the root shell reflect the current GraphQL `viewer` session state and harden browser/backend logout coverage before the logout branch opens a PR.
+
+## Credential Auth Form Presentation Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
+- Next action: replace duplicated login/register shell and credential fields
+  with one explicit typed presentation component while preserving route-owned
+  GraphQL mutations, session results, viewer-cache updates, and navigation.
+- Owned paths:
+  - `assets/src/routes/auth/CredentialAuthForm.tsx`
+  - `assets/src/routes/auth/LoginRoute.tsx`
+  - `assets/src/routes/auth/RegisterRoute.tsx`
+  - `assets/test/routes/auth/session.route.test.tsx`
+  - `docs/work/frontend-auth-state-hardening.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: login and registration share only credential presentation;
+  GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
+  updates, and navigation remain unchanged.
 
 ## Batch Status
 
