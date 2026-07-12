@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e6085be7e5e1f67742112f965b31862d>>
+ * @generated SignedSource<<3d7582fd387418442a18e2edcaa56917>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,7 +21,7 @@ export type CompareRouteQuery$data = {
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    };
+    } | null | undefined;
     readonly currentAttributes: ReadonlyArray<{
       readonly attributeId: string;
       readonly booleanValue: boolean | null | undefined;
@@ -95,7 +95,7 @@ export type CompareRouteQuery$data = {
         readonly brand: {
           readonly id: string;
           readonly name: string;
-        };
+        } | null | undefined;
         readonly id: string;
         readonly name: string;
         readonly slug: string;
@@ -105,7 +105,7 @@ export type CompareRouteQuery$data = {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
     };
-  };
+  } | null | undefined;
 };
 export type CompareRouteQuery = {
   response: CompareRouteQuery$data;
@@ -607,7 +607,7 @@ return {
     "metadata": null,
     "name": "CompareRouteQuery",
     "selections": (v14/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

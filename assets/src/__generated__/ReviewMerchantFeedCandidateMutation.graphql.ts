@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c4c5f52c97e9eb1f70a36017cdc9ef16>>
+ * @generated SignedSource<<a0deef982aed81ce42f837ef6a17410f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -143,7 +143,7 @@ return {
     "metadata": null,
     "name": "ReviewMerchantFeedCandidateMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

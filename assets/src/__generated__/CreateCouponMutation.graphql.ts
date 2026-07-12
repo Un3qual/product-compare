@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2b591d47a01dff95b1155a2496af705d>>
+ * @generated SignedSource<<0ac1a107d1ababab5f21928953c36710>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -186,7 +186,7 @@ return {
     "metadata": null,
     "name": "CreateCouponMutation",
     "selections": (v2/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

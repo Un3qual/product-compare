@@ -93,10 +93,16 @@ function BrowseProducts({
     query
   );
   const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
+  const productConnection = data.products;
+  const location = useLocation();
+
+  if (!productConnection) {
+    return <BrowseProductsErrorFallback />;
+  }
+
   const filterMetadata = data.productFilterMetadata;
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
-  const products = data.products.edges.map(({ node }) => node);
-  const location = useLocation();
+  const products = productConnection.edges.map(({ node }) => node);
   const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
     maxProducts: MAX_COMPARE_PRODUCTS
   });
@@ -115,11 +121,11 @@ function BrowseProducts({
   });
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const nextProductsPath =
-    data.products.pageInfo.hasNextPage && data.products.pageInfo.endCursor
+    productConnection.pageInfo.hasNextPage && productConnection.pageInfo.endCursor
       ? catalogBrowseNextPagePath(
           activeFilters,
           currentPageSize,
-          data.products.pageInfo.endCursor,
+          productConnection.pageInfo.endCursor,
           selectedCompareSlugs
         )
       : null;

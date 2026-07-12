@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9633b93b440e356b0ef594a725fbbfae>>
+ * @generated SignedSource<<6f7454decfb48c994e0a6d5eea9b5c34>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -209,7 +209,7 @@ return {
     "metadata": null,
     "name": "RevenueSummaryRouteQuery",
     "selections": (v2/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

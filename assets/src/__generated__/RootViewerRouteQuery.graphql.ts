@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<897370fbc297c46a06e38e0e3fa2280c>>
+ * @generated SignedSource<<d3e8a87c2eb174223aa3118353247925>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -56,7 +56,7 @@ return {
     "metadata": null,
     "name": "RootViewerRouteQuery",
     "selections": (v0/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

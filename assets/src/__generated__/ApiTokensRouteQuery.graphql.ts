@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9c89da1c480888006747f0f412daec54>>
+ * @generated SignedSource<<78ddb565bf2f87cc12d03a9ee6ee6f61>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -199,7 +199,7 @@ return {
     "metadata": null,
     "name": "ApiTokensRouteQuery",
     "selections": (v3/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

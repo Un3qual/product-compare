@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<8371809f3ade5c7eb24aa46c49de294e>>
+ * @generated SignedSource<<1dde623c14196c409d2d6ab9d22345be>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,7 +20,7 @@ export type CompareProductPickerQuery$data = {
         readonly brand: {
           readonly id: string;
           readonly name: string;
-        };
+        } | null | undefined;
         readonly id: string;
         readonly name: string;
         readonly slug: string;
@@ -30,7 +30,7 @@ export type CompareProductPickerQuery$data = {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
     };
-  };
+  } | null | undefined;
 };
 export type CompareProductPickerQuery = {
   response: CompareProductPickerQuery$data;
@@ -165,7 +165,7 @@ return {
     "metadata": null,
     "name": "CompareProductPickerQuery",
     "selections": (v4/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

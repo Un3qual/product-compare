@@ -1421,6 +1421,47 @@ test("empty compare page lets users choose products without editing the URL", ()
   );
 });
 
+test("product picker keeps brandless products alongside branded results", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    specMode: "shared",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:brandless",
+            name: "Brandless Product",
+            slug: "brandless-product",
+            brand: null
+          }
+        },
+        {
+          node: {
+            id: "Product:branded",
+            name: "Branded Product",
+            slug: "branded-product",
+            brand: { id: "Brand:acme", name: "Acme" }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Compare Brandless Product" })).toBeInTheDocument();
+  expect(screen.getByText("Unknown brand")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Branded Product" })).toBeInTheDocument();
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+});
+
 test("product picker can advance beyond the first picker page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",

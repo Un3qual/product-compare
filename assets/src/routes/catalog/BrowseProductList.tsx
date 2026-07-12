@@ -6,7 +6,7 @@ import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { tokens } from "../../ui/theme/tokens.stylex";
 
 export type BrowseProductNode =
-  BrowseProductsRouteQuery["response"]["products"]["edges"][number]["node"];
+  NonNullable<BrowseProductsRouteQuery["response"]["products"]>["edges"][number]["node"];
 
 export type BrowseCompareAction =
   | { kind: "selected" }
@@ -105,7 +105,7 @@ function BrowseProductListItem({
       <article aria-label={product.name} {...props(styles.product)}>
         <h2 {...props(styles.productHeading)}>{product.name}</h2>
         <div {...props(styles.metadata)}>
-          <p {...props(styles.metadataItem)}>{product.brand.name}</p>
+          <p {...props(styles.metadataItem)}>{product.brand?.name ?? "Unknown brand"}</p>
           <p {...props(styles.metadataItem)}>{product.slug}</p>
         </div>
         <SpecificationHighlights attributes={product.currentAttributes} />

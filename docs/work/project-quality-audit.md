@@ -58,3 +58,21 @@ non-draft PR while preserving the current ready queue.
 Milestone evidence will be appended here with its commit after each reviewed
 task. Final completion requires combined backend/frontend CI, clean analyzer
 output, a clean working tree, and an independent whole-branch review.
+
+### 2026-07-12 — Milestone 1: canonical GraphQL schema and brandless-product safety
+
+- Replaced the handwritten Relay schema snapshot with
+  `Absinthe.Schema.to_sdl(ProductCompareWeb.Schema)` and added a backend
+  snapshot regression.
+- Regenerated every Relay artifact and added `bun run relay:check` for
+  non-writing artifact validation.
+- Preserved explicit `brand_id: nil` fixture intent without creating an
+  orphaned brand; GraphQL now has a regression proving it returns `brand: null`.
+- Browse and compare-picker presentation show `Unknown brand` while retaining
+  the remaining results.
+- Canonical SDL also makes relevant connection and relationship fields nullable.
+  The approved minimal scope expansion adds defensive handling in BrowseRoute
+  and OfferDiscoveryRoute without weakening the live schema.
+- Verification: focused backend 36 tests, focused frontend 217 tests,
+  `bun run relay:check`, `bun run typecheck`, `mix format --check-formatted`,
+  and `git diff --check` all passed.

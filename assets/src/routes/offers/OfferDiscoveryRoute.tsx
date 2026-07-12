@@ -99,7 +99,7 @@ function selectedProductContext(
   }
 
   return {
-    brand: node.brand,
+    brand: node.brand ?? null,
     id: node.id,
     name: node.name,
     slug: node.slug

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7268bc9a1d5a84e868a71a6c5ed52b42>>
+ * @generated SignedSource<<4da02ec5822134d8b47c4ea198cda3b5>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -132,7 +132,7 @@ return {
     "metadata": null,
     "name": "LoginMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

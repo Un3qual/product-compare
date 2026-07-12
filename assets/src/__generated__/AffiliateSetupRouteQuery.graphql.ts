@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3e6089ca0e449cae174ba669b6cc70f0>>
+ * @generated SignedSource<<d77a3970f7fd2c23f6f5072924d3ebc2>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -170,7 +170,7 @@ return {
     "metadata": null,
     "name": "AffiliateSetupRouteQuery",
     "selections": (v2/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<23300b8fbc346ee25ee4dea2bad002e6>>
+ * @generated SignedSource<<1a49db9cc5c6a1e66714ac429edb9dd3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -124,7 +124,7 @@ return {
     "metadata": null,
     "name": "UpsertAffiliateNetworkMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

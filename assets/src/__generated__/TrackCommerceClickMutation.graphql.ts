@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<87207a7d23f918d33b1da9efcfed5c68>>
+ * @generated SignedSource<<baa63cc3aee863a608a92444020c8803>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -103,7 +103,7 @@ return {
     "metadata": null,
     "name": "TrackCommerceClickMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

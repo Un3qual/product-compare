@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
@@ -40,6 +41,34 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
       assert product_id == relay_id(:product, product.id)
       assert brand_id == relay_id(:brand, product.brand_id)
+    end
+
+    test "product returns a null brand when the fixture explicitly sets brand_id to nil", %{
+      conn: conn
+    } do
+      brand_count = Repo.aggregate(Brand, :count, :id)
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          brand_id: nil,
+          name: "Brandless Product",
+          slug: "brandless-product"
+        })
+
+      assert product.brand_id == nil
+      assert Repo.aggregate(Brand, :count, :id) == brand_count
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "id" => product_id,
+                   "name" => "Brandless Product",
+                   "brand" => nil
+                 }
+               }
+             } = graphql(conn, product_query(), %{"slug" => product.slug})
+
+      assert product_id == relay_id(:product, product.id)
     end
 
     test "product batches brand lookups across aliased selections", %{conn: conn} do

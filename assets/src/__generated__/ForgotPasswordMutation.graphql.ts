@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e21b143bad97e10614b7af5d70cae990>>
+ * @generated SignedSource<<515a147677e08f0e132319276289a675>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -100,7 +100,7 @@ return {
     "metadata": null,
     "name": "ForgotPasswordMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
