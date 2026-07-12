@@ -122,36 +122,7 @@ data, mutation, URL, suspense, and error orchestration.
 
 ## Ready Work
 
-### 1. Product Detail Offer List Presentation Extraction
-
-Status: ready
-Lane: Frontend product detail
-Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
-Next action: Extract the active-offer list, merchant action, current price and
-observation, price-history rows, and coupon rows while preserving panel-owned
-normalization, safety checks, snapshot calculation, and pagination.
-Owned paths:
-
-- `assets/src/routes/products/ProductOfferPanel.tsx`
-- `assets/src/routes/products/ProductOfferList.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-product-detail.md`
-
-Prerequisites:
-
-- Existing product-detail route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Normalized active-offer presentation is isolated without
-changing safe-link filtering, price/date formatting, coupon/history output,
-snapshots, mixed-currency behavior, or pagination.
-
-### 2. Root Destination Presentation Extraction
+### 1. Root Destination Presentation Extraction
 
 Status: ready
 Lane: Frontend shopper home and navigation
@@ -180,7 +151,7 @@ Exit condition: Guest/authenticated destination presentation is isolated
 without changing route data, viewer visibility, active states, labels, paths,
 auth actions, SSR, or hydration.
 
-### 3. Compare Product Picker View Extraction
+### 2. Compare Product Picker View Extraction
 
 Status: ready
 Lane: Frontend product comparison
@@ -210,7 +181,7 @@ Exit condition: Picker presentation and local filter state are isolated without
 changing Relay reads, loaded-product accumulation, selected-product exclusion,
 option URLs, empty states, or pagination.
 
-### 4. Affiliate Setup Merchant Pagination
+### 3. Affiliate Setup Merchant Pagination
 
 Status: ready
 Lane: Frontend affiliate setup
@@ -240,7 +211,7 @@ Verification:
 Exit condition: Loaded merchant pages expose correct First/Next links without
 changing merchant selection or any affiliate mutation behavior.
 
-### 5. Merchant Directory View Extraction
+### 4. Merchant Directory View Extraction
 
 Status: ready
 Lane: Frontend merchant discovery
@@ -269,7 +240,7 @@ Verification:
 Exit condition: Merchant presentation is isolated without changing query,
 filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
 
-### 6. Saved Comparison View-State Extraction
+### 5. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -299,7 +270,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 7. Credential Auth Form Presentation Extraction
+### 6. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -338,6 +309,13 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 product-detail offer-list extraction is complete.
+`ProductOfferList` now owns normalized active-offer list, merchant action,
+price observation, history, coupon, and bounded-more presentation while
+`ProductOfferPanel` retains GraphQL normalization, link/number/date safety,
+snapshot and currency decisions, pagination, and route URLs. The focused suite
+passed 49 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 API-token item extraction is complete. `ApiTokenItem` now owns
 per-token details, status, lifecycle errors, rotation controls and presets,
