@@ -9,7 +9,9 @@ export type SavedComparisonSortMode =
   | "product-count-desc"
   | "product-count-asc";
 
-const COMBINING_MARKS = /\p{M}/gu;
+const SAVED_COMPARISON_NAME_COLLATOR = new Intl.Collator("en-US", {
+  sensitivity: "base"
+});
 
 export function buildSavedComparisonsViewState(
   loaderData: SavedComparisonsRouteLoaderData,
@@ -112,7 +114,7 @@ function sortSavedComparisonSets(
   switch (sortMode) {
     case "name-asc":
       sortedSavedSets.sort((left, right) =>
-        compareSavedComparisonNames(left.name, right.name)
+        SAVED_COMPARISON_NAME_COLLATOR.compare(left.name, right.name)
       );
       break;
     case "product-count-desc":
@@ -128,25 +130,6 @@ function sortSavedComparisonSets(
   }
 
   return sortedSavedSets;
-}
-
-function compareSavedComparisonNames(left: string, right: string) {
-  const leftKey = savedComparisonNameSortKey(left);
-  const rightKey = savedComparisonNameSortKey(right);
-
-  if (leftKey < rightKey) {
-    return -1;
-  }
-
-  if (leftKey > rightKey) {
-    return 1;
-  }
-
-  return 0;
-}
-
-function savedComparisonNameSortKey(name: string) {
-  return name.normalize("NFKD").replace(COMBINING_MARKS, "").toLowerCase();
 }
 
 function savedComparisonSetMatchesFilter(
