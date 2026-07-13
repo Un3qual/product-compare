@@ -369,7 +369,7 @@ test.each([
   "revenue presets hydrate without mismatches and then use the %s local day",
   async (timeZone, currentTime, expectedTo) => {
     const originalTimeZone = process.env.TZ;
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     process.env.TZ = "UTC";
     vi.useFakeTimers();
     vi.setSystemTime(new Date(currentTime));
@@ -403,7 +403,7 @@ test.each([
       ).toEqual([]);
     } finally {
       if (root) {
-        await act(async () => root?.unmount());
+        await act(() => root?.unmount());
       }
       container.remove();
       vi.useRealTimers();

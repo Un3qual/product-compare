@@ -3258,9 +3258,9 @@ test("compare route clears stale save feedback when selected products change", a
   expect(getSaveFeedbackStatus()).toHaveTextContent("");
 });
 
-test("compare save completion settles the visible selection when a new selection suspends and is abandoned", async () => {
+test("compare save completion settles the visible selection when a new selection suspends and is abandoned", () => {
   let completeSave: (() => void) | undefined;
-  const suspendedSelection = new Promise<never>(() => {});
+  const suspendedSelection = new Promise<never>(() => undefined);
   const suspendingQueryDescriptor = {
     __relayQuery: {
       ...COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery,

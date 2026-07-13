@@ -109,9 +109,9 @@ if (failures.length > 0) {
   );
 }
 
-console.log(
+process.stdout.write(
   `Client bundle contract passed: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes ` +
-    `across ${initialJavaScriptFiles.length} initial JavaScript file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.`
+    `across ${initialJavaScriptFiles.length} initial JavaScript file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`
 );
 
 function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
@@ -135,7 +135,7 @@ function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
 }
 
 function normalizeSource(source: string) {
-  return source.replaceAll("\\", "/").replace(/^_+/, "");
+  return source.replace(/\\/g, "/").replace(/^_+/, "");
 }
 
 function findManifestEntry(expectedSource: string, relatedScreenSource?: string) {

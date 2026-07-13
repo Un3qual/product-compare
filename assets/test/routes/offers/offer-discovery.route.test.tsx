@@ -900,11 +900,14 @@ test("offer discovery uses product merchant ordering rather than the environment
   const NativeCollator = Intl.Collator;
   const contrastingIntl = Object.create(Intl) as typeof Intl;
 
-  contrastingIntl.Collator = class ContrastingDefaultCollator {
-    constructor(locale?: Intl.LocalesArgument, options?: Intl.CollatorOptions) {
-      return new NativeCollator(locale ?? "sv-SE", options);
-    }
-  } as typeof Intl.Collator;
+  function contrastingDefaultCollator(
+    locale?: Intl.LocalesArgument,
+    options?: Intl.CollatorOptions
+  ) {
+    return new NativeCollator(locale ?? "sv-SE", options);
+  }
+
+  contrastingIntl.Collator = contrastingDefaultCollator as typeof Intl.Collator;
   vi.stubGlobal("Intl", contrastingIntl);
 
   try {

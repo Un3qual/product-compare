@@ -141,9 +141,7 @@ test("root error boundary handles a rejected lazy route", async () => {
         children: [
           {
             path: "broken-chunk",
-            lazy: async () => {
-              throw new Error("chunk import failed");
-            }
+            lazy: () => Promise.reject(new Error("chunk import failed"))
           }
         ]
       }
