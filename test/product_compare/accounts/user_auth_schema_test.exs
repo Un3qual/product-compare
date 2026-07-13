@@ -8,7 +8,7 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
   test "bootstrap_operator_user creates a fresh operator with the trusted password and reputation" do
     email = "  FRESH-OPERATOR@example.com  "
-    password = "trustedpassword123"
+    password = String.duplicate("f", 16)
 
     assert {:ok, operator} = Accounts.bootstrap_operator_user(email, password, 1_000)
 
@@ -19,8 +19,8 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
   end
 
   test "bootstrap_operator_user is idempotent for an existing operator" do
-    original_password = "originalpassword123"
-    attempted_password = "replacementpassword456"
+    original_password = String.duplicate("o", 16)
+    attempted_password = String.duplicate("r", 16)
 
     assert {:ok, operator} =
              Accounts.create_user(%{email: "operator@example.com", password: original_password})
@@ -39,8 +39,8 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
   end
 
   test "bootstrap_operator_user fails closed for a preclaimed non-operator" do
-    attacker_password = "attackerpassword123"
-    seed_password = "trustedseedpassword456"
+    attacker_password = String.duplicate("a", 16)
+    seed_password = String.duplicate("s", 16)
 
     assert {:ok, preclaimed} =
              Accounts.register_user(%{
@@ -64,8 +64,8 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
 
   test "bootstrap_operator_user fails closed when a non-operator wins the create race" do
     email = "race-operator-#{System.unique_integer([:positive])}@example.com"
-    seed_password = "trustedseedpassword456"
-    attacker_password = "attackerpassword123"
+    seed_password = String.duplicate("s", 16)
+    attacker_password = String.duplicate("a", 16)
     original_config = Application.get_env(:product_compare, Accounts, [])
     parent = self()
 

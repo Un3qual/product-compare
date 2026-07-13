@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Accounts.UserReputation
 
   test "seeds stop rather than promote a preclaimed operator email" do
-    attacker_password = "attackerpassword123"
+    attacker_password = String.duplicate("a", 16)
 
     assert {:ok, preclaimed} =
              Accounts.register_user(%{
