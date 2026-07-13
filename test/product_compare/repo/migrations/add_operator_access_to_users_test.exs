@@ -9,9 +9,9 @@ defmodule ProductCompare.Repo.Migrations.AddOperatorAccessToUsersTest do
       adapter: Ecto.Adapters.Postgres
   end
 
-  @migration_path Path.expand(
-                    "../../../../priv/repo/migrations/20260712193000_add_operator_access_to_users.exs",
-                    __DIR__
+  @migration_path Application.app_dir(
+                    :product_compare,
+                    "priv/repo/migrations/20260712193000_add_operator_access_to_users.exs"
                   )
   @migration_version 20_260_712_193_000
   @operator_ids_env "PRODUCT_COMPARE_OPERATOR_USER_IDS"
