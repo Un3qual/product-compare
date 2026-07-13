@@ -23,6 +23,7 @@ import {
 } from "../../../src/routes/compare/saved-data";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
+import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
 import { CompareSpecificationMatrix } from "../../../src/routes/compare/CompareSpecificationMatrix";
 import {
   buildComparePathFromSlugs,
@@ -1316,6 +1317,60 @@ test("compare loader gives combined request failures precedence over missing-pro
       })
     )
   ).rejects.toThrow("Network request failed: boom");
+});
+
+test("product picker view filters loaded options, clears the filter, and keeps resolved actions available", () => {
+  const onShowMore = vi.fn();
+
+  render(
+    <MemoryRouter>
+      <CompareProductPickerView
+        heading="Choose products"
+        onShowMore={onShowMore}
+        options={[
+          {
+            brandName: "DisplayCo",
+            href: "/compare?slug=monitor-alpha",
+            id: "Product:monitor-alpha",
+            name: "Monitor Alpha"
+          },
+          {
+            brandName: "ViewCo",
+            href: "/compare?slug=monitor-beta",
+            id: "Product:monitor-beta",
+            name: "Monitor Beta"
+          }
+        ]}
+      />
+    </MemoryRouter>
+  );
+
+  const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
+
+  expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toHaveAttribute(
+    "href",
+    "/compare?slug=monitor-alpha"
+  );
+  expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
+    "href",
+    "/compare?slug=monitor-beta"
+  );
+
+  fireEvent.change(filter, { target: { value: "beta" } });
+
+  expect(screen.queryByRole("link", { name: "Compare Monitor Alpha" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toBeInTheDocument();
+
+  fireEvent.change(filter, { target: { value: "missing" } });
+
+  expect(screen.getByText("No loaded products match this filter.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+  expect(onShowMore).toHaveBeenCalledOnce();
+
+  fireEvent.change(filter, { target: { value: "" } });
+
+  expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toBeInTheDocument();
 });
 
 test("empty compare page lets users choose products without editing the URL", () => {

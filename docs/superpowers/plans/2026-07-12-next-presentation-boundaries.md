@@ -124,14 +124,14 @@ picker headings, option markup, no-match copy, and the show-more control.
 accumulation, selected-product exclusion, empty-data decisions, and compare URL
 construction.
 
-- [ ] Add direct view assertions for filtering, clearing, no-match behavior,
+- [x] Add direct view assertions for filtering, clearing, no-match behavior,
   option links, and show-more behavior; verify RED.
-- [ ] Build route-resolved option view models in the boundary and move only
+- [x] Build route-resolved option view models in the boundary and move only
   presentation plus local filter state into the sibling.
-- [ ] Keep Relay reads, page accumulation, selected-product exclusion, empty
+- [x] Keep Relay reads, page accumulation, selected-product exclusion, empty
   dataset handling, and path construction in the boundary.
-- [ ] Run the focused compare suite, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Run the focused compare suite, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
 

@@ -1,47 +1,18 @@
-import { Suspense, useEffect, useId, useMemo, useState } from "react";
-import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useLazyLoadQuery } from "react-relay";
 import compareProductPickerQuery, {
   type CompareProductPickerQuery
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { Button } from "../../ui/primitives/Button";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
 import { buildComparePathFromSlugs } from "./paths";
+import {
+  CompareProductPickerView,
+  type CompareProductPickerOption
+} from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
-
-const styles = create({
-  picker: {
-    display: "grid",
-    gap: "1rem"
-  },
-  title: {
-    fontSize: "1.25rem",
-    margin: 0
-  },
-  filter: {
-    display: "grid",
-    gap: "0.35rem",
-    maxWidth: "24rem"
-  },
-  option: {
-    display: "grid",
-    gap: "0.35rem"
-  },
-  optionTitle: {
-    margin: 0
-  },
-  metadata: {
-    color: tokens.textSecondary,
-    margin: 0
-  }
-});
 
 type ComparePickerProduct =
   CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
@@ -84,10 +55,7 @@ function CompareProductPicker({
   selectedSlugs: readonly string[];
 }) {
   const [after, setAfter] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState("");
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
-  const filterInputId = useId();
-  const filterLabelId = `${filterInputId}-label`;
 
   const data = useLazyLoadQuery<CompareProductPickerQuery>(
     compareProductPickerQuery,
@@ -101,13 +69,13 @@ function CompareProductPicker({
   const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
-  const normalizedFilterText = filterText.trim().toLowerCase();
-  const visibleProducts = normalizedFilterText
-    ? availableProducts.filter((product) =>
-        product.name.toLowerCase().includes(normalizedFilterText)
-      )
-    : availableProducts;
   const nextCursor = nextProductPageCursor(data.products.pageInfo);
+  const options = availableProducts.map((product) => ({
+    brandName: product.brand.name,
+    href: buildComparePath(selectedSlugs, product.slug, specMode),
+    id: product.id,
+    name: product.name
+  })) satisfies CompareProductPickerOption[];
 
   useEffect(() => {
     setLoadedProducts((products) => appendUniqueProducts(products, pageProducts));
@@ -118,27 +86,11 @@ function CompareProductPicker({
   }
 
   return (
-    <section {...props(styles.picker)}>
-      <h2 {...props(styles.title)}>{heading}</h2>
-      <div {...props(styles.filter)}>
-        <span id={filterLabelId}>Filter loaded products</span>
-        <TextField
-          aria-labelledby={filterLabelId}
-          autoComplete="off"
-          id={filterInputId}
-          onChange={(event) => setFilterText(event.currentTarget.value)}
-          type="search"
-          value={filterText}
-        />
-      </div>
-      <CompareProductPickerOptions
-        availableProducts={visibleProducts}
-        hasFilter={Boolean(normalizedFilterText)}
-        specMode={specMode}
-        selectedSlugs={selectedSlugs}
-      />
-      <ShowMoreProductsButton nextCursor={nextCursor} onShowMore={setAfter} />
-    </section>
+    <CompareProductPickerView
+      heading={heading}
+      onShowMore={nextCursor ? () => setAfter(nextCursor) : null}
+      options={options}
+    />
   );
 }
 
@@ -159,73 +111,6 @@ function emptyProductPickerMessage(selectedSlugs: readonly string[]) {
   return selectedSlugs.length === 0
     ? "No products are available to compare yet."
     : "No additional products are available to compare yet.";
-}
-
-function CompareProductPickerOptions({
-  availableProducts,
-  hasFilter,
-  specMode,
-  selectedSlugs
-}: {
-  availableProducts: readonly ComparePickerProduct[];
-  hasFilter: boolean;
-  specMode: CompareSpecMode;
-  selectedSlugs: readonly string[];
-}) {
-  if (availableProducts.length === 0) {
-    return (
-      <p>
-        {hasFilter
-          ? "No loaded products match this filter."
-          : "No additional products are available on this page."}
-      </p>
-    );
-  }
-
-  return (
-    <DataList label="Products available to compare">
-      {availableProducts.map((product) => (
-        <DataListItem
-          actions={
-            <Button asChild variant="soft">
-              <Link to={buildComparePath(selectedSlugs, product.slug, specMode)}>
-                Compare {product.name}
-              </Link>
-            </Button>
-          }
-          key={product.id}
-        >
-          <div {...props(styles.option)}>
-            <h3 {...props(styles.optionTitle)}>{product.name}</h3>
-            <p {...props(styles.metadata)}>{product.brand.name}</p>
-          </div>
-        </DataListItem>
-      ))}
-    </DataList>
-  );
-}
-
-function ShowMoreProductsButton({
-  nextCursor,
-  onShowMore
-}: {
-  nextCursor: string | null | undefined;
-  onShowMore: (nextCursor: string) => void;
-}) {
-  if (!nextCursor) {
-    return null;
-  }
-
-  return (
-    <Button
-      onClick={() => {
-        onShowMore(nextCursor);
-      }}
-      type="button"
-    >
-      Show more products
-    </Button>
-  );
 }
 
 function buildComparePath(
