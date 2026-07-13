@@ -46,16 +46,18 @@ test("client router requires Relay context for route loaders", () => {
   );
 });
 
-test("API token navigation lazily resolves its screen, loader, and error boundary", async () => {
+test("API token navigation lazily resolves its screen and loader", async () => {
   const apiTokensRoute = findRoute("account/api-tokens");
   const resolvedRoute = await resolveLazyRoute(apiTokensRoute);
 
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       Component: ApiTokensRoute,
-      loader: apiTokensLoader,
-      ErrorBoundary: expect.any(Function)
+      loader: apiTokensLoader
     })
+  );
+  expect(apiTokensRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
   );
 });
 
@@ -66,9 +68,11 @@ test("revenue summary navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: revenueSummaryLoader,
-      Component: RevenueSummaryRoute,
-      ErrorBoundary: expect.any(Function)
+      Component: RevenueSummaryRoute
     })
+  );
+  expect(revenueSummaryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
   );
 });
 
@@ -79,9 +83,11 @@ test("merchant directory navigation lazily resolves its screen and loader", asyn
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: merchantDirectoryLoader,
-      Component: MerchantDirectoryRoute,
-      ErrorBoundary: expect.any(Function)
+      Component: MerchantDirectoryRoute
     })
+  );
+  expect(merchantDirectoryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
   );
 });
 
@@ -92,9 +98,11 @@ test("affiliate setup navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: affiliateSetupLoader,
-      Component: AffiliateSetupRoute,
-      ErrorBoundary: expect.any(Function)
+      Component: AffiliateSetupRoute
     })
+  );
+  expect(affiliateSetupRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
   );
 });
 
@@ -105,10 +113,43 @@ test("offer discovery navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: offerDiscoveryLoader,
-      Component: OfferDiscoveryRoute,
-      ErrorBoundary: expect.any(Function)
+      Component: OfferDiscoveryRoute
     })
   );
+  expect(offerDiscoveryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+  );
+});
+
+test("product detail lazy import errors render product-specific route feedback", async () => {
+  vi.doMock("../src/routes/products/ProductDetailRoute", () => {
+    throw new Error("product chunk import failed");
+  });
+
+  const productDetailRoute = findRoute("products/:slug");
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <Outlet />,
+        errorElement: routes[0]?.errorElement,
+        children: [productDetailRoute]
+      }
+    ],
+    { initialEntries: ["/products/missing-product"] }
+  );
+
+  try {
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "An unexpected error occurred while loading the product."
+    );
+    expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+  } finally {
+    vi.doUnmock("../src/routes/products/ProductDetailRoute");
+  }
 });
 
 test("product detail loader errors render product-specific route feedback", async () => {
@@ -122,7 +163,7 @@ test("product detail loader errors render product-specific route feedback", asyn
           throw new Error("Relay product read failed");
         },
         Component: resolvedRoute.Component,
-        ErrorBoundary: resolvedRoute.ErrorBoundary
+        errorElement: productDetailRoute.errorElement
       }
     ],
     { initialEntries: ["/products/missing-product"] }
@@ -152,8 +193,8 @@ test("every non-root screen is absent from the initial route graph", () => {
   for (const route of nonRootRoutes) {
     expect(route.lazy, route.path).toEqual(expect.any(Function));
     expect(route, route.path).not.toHaveProperty("element");
+    expect(route, route.path).not.toHaveProperty("Component");
     expect(route, route.path).not.toHaveProperty("loader");
-    expect(route, route.path).not.toHaveProperty("errorElement");
   }
 });
 
