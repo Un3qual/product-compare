@@ -4,7 +4,8 @@
 
 - Status: ready (serial matrix and decision-summary data contracts)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after compare-save and formatting hardening (108 compare tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`

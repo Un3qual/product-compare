@@ -4,7 +4,8 @@
 
 - Status: done (API token item presentation extraction)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after route-location state hardening (45 API-token
   route tests and 7 loader tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`

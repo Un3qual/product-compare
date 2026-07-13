@@ -4,7 +4,8 @@
 
 - Status: ready (product detail decision-actions presentation extraction)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after product not-found HTTP status hardening (49
   product-detail tests and 15 SSR tests).
 - Recently completed usable-product plan:

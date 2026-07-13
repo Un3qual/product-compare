@@ -40,18 +40,22 @@ function UseCaseFiltersFieldset({
   return (
     <fieldset>
       <legend>Use cases</legend>
-      {metadata.useCaseOptions.map((option) => (
-        <label key={option.id}>
-          <input
-            defaultChecked={filters.useCaseTaxonIds.includes(option.id) || option.selected}
-            disabled={option.disabled && !option.selected}
-            name="useCaseTaxonId"
-            type="checkbox"
-            value={option.id}
-          />
-          {option.label} ({option.count})
-        </label>
-      ))}
+      {metadata.useCaseOptions.map((option) => {
+        const selected = filters.useCaseTaxonIds.includes(option.id) || option.selected;
+
+        return (
+          <label key={option.id}>
+            <input
+              defaultChecked={selected}
+              disabled={option.disabled && !selected}
+              name="useCaseTaxonId"
+              type="checkbox"
+              value={option.id}
+            />
+            {option.label} ({option.count})
+          </label>
+        );
+      })}
     </fieldset>
   );
 }
@@ -90,21 +94,25 @@ function NumericFilterFields({
 }) {
   const minValue = selectedNumericFieldValue(selectedFilter?.min, filter.selectedMin);
   const maxValue = selectedNumericFieldValue(selectedFilter?.max, filter.selectedMax);
+  const minInputId = `catalog-numeric-${filter.attributeId}-min`;
+  const maxInputId = `catalog-numeric-${filter.attributeId}-max`;
 
   return (
     <div>
-      <label>
+      <label htmlFor={minInputId}>
         {filter.displayName} minimum
         <TextField
           defaultValue={minValue}
+          id={minInputId}
           inputMode="decimal"
           name={`numeric.${filter.attributeId}.min`}
         />
       </label>
-      <label>
+      <label htmlFor={maxInputId}>
         {filter.displayName} maximum
         <TextField
           defaultValue={maxValue}
+          id={maxInputId}
           inputMode="decimal"
           name={`numeric.${filter.attributeId}.max`}
         />

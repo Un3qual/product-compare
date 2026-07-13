@@ -4,7 +4,8 @@
 
 - Status: ready (revenue summary view-data contract)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after hydration-safe local-date validation (24 focused tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`

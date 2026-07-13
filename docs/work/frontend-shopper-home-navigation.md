@@ -4,10 +4,13 @@
 
 - Status: done (root destination presentation extraction)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after next-boundary validation (200 tests across
   the promoted cohort)
-- Active plans:
+- Active plan:
+  - `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+- Completed plans:
   - `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
   - `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 - Objective: make the root route product-oriented and viewer-aware without
