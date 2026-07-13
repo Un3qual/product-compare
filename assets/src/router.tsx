@@ -330,7 +330,10 @@ function withLazyRouteImportRecovery<T extends LazyRouteModule>(
       return await loadRouteModule();
     } catch (error) {
       return {
-        Component: function LazyRouteImportFailure(): never {
+        Component: function LazyRouteImportFailure() {
+          return null;
+        },
+        loader: function lazyRouteImportFailureLoader(): never {
           throw error;
         }
       };

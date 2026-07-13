@@ -39,6 +39,31 @@ test("server render returns a 404 response for unknown application paths", async
   expect(body).toContain('__relayRecords');
 });
 
+test("server render handles product chunk failures with product-specific feedback", async () => {
+  vi.doMock("../src/routes/products/ProductDetailRoute", () => {
+    throw new Error("product chunk import failed");
+  });
+
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  try {
+    const result = await render("/products/unavailable-product");
+
+    expect(result).toBeInstanceOf(Response);
+
+    const response = result as Response;
+
+    expect(response.status).toBe(500);
+    const body = await response.text();
+
+    expect(body).toContain("Product details");
+    expect(body).toContain("An unexpected error occurred while loading the product.");
+  } finally {
+    consoleError.mockRestore();
+    vi.doUnmock("../src/routes/products/ProductDetailRoute");
+  }
+});
+
 test("server render returns product not-found markup and Relay bootstrap with HTTP 404", async () => {
   const originalFetch = globalThis.fetch;
 
