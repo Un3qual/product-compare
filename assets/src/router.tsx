@@ -67,7 +67,13 @@ export const routes: RouteObject[] = [
             import("./routes/products/ProductDetailRoute"),
             import("./routes/products/loader")
           ]);
-          return { Component: ProductDetailRoute, loader: productDetailLoader };
+          return {
+            Component: ProductDetailRoute,
+            loader: productDetailLoader,
+            ErrorBoundary: function ProductDetailErrorBoundary() {
+              return <RouteErrorBoundary resourceName="product" title="Product details" />;
+            }
+          };
         }
       },
       {

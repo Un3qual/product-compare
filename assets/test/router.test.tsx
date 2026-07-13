@@ -111,6 +111,32 @@ test("offer discovery navigation lazily resolves its screen and loader", async (
   );
 });
 
+test("product detail loader errors render product-specific route feedback", async () => {
+  const productDetailRoute = findRoute("products/:slug");
+  const resolvedRoute = await resolveLazyRoute(productDetailRoute);
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/products/:slug",
+        loader: () => {
+          throw new Error("Relay product read failed");
+        },
+        Component: resolvedRoute.Component,
+        ErrorBoundary: resolvedRoute.ErrorBoundary
+      }
+    ],
+    { initialEntries: ["/products/missing-product"] }
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the product."
+  );
+  expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+});
+
 test("logout navigation lazily resolves its screen", async () => {
   const logoutRoute = findRoute("auth/logout");
   const resolvedRoute = await resolveLazyRoute(logoutRoute);
