@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready (saved comparison view-state extraction)
+- Status: completed (saved comparison view-state extraction)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-12 after follow-up validation (31 saved-comparison
-  tests; 93 tests across the promoted cohort)
+- Last verified: 2026-07-12 after saved comparison view-state extraction (46
+  focused saved-comparison tests)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -21,11 +21,12 @@
 
 ## Saved Comparison View-State Extraction
 
-- Status: ready on 2026-07-12.
+- Status: completed on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Next action: move pure deleted-id hiding, filtering, sorting, and status
-  precedence into a framework-free module while preserving route-owned state,
-  Relay retainers, mutation commits, pagination, and URL construction.
+- Completed: `saved-view-state.ts` now owns deleted-id hiding,
+  case-insensitive name/product/slug filtering, sorting, and status precedence.
+  `SavedComparisonsRoute` retains React state, Relay retainers and mutations,
+  pagination, and comparison URL construction.
 - Owned paths:
   - `assets/src/routes/compare/SavedComparisonsRoute.tsx`
   - `assets/src/routes/compare/saved-view-state.ts`
@@ -33,10 +34,11 @@
   - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
   - `docs/work/frontend-compare-saved-hardening.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: the route consumes one pure view-state contract with exact
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts` - 15 tests, 0 failures.
+  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-state.test.tsx` - 31 tests, 0 failures.
+  - `cd assets && bun run typecheck` - completed with exit 0.
+  - `git diff --check` - completed with no output.
+- Exit condition met: the route consumes one pure view-state contract with exact
   deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
 ## Completed Saved Comparison Set Presentation Extraction

@@ -9,12 +9,7 @@ import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import type { SavedComparisonSetSummary } from "./saved-data";
-
-export type SavedComparisonSortMode =
-  | "current"
-  | "name-asc"
-  | "product-count-desc"
-  | "product-count-asc";
+import type { SavedComparisonSortMode } from "./saved-view-state";
 
 export type SavedComparisonSetPagination = {
   firstHref: string | null;
