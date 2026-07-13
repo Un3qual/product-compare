@@ -36,7 +36,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
   end
 
   test "viewer resolves from session without bearer token", %{conn: conn} do
-    user = operator_fixture(%{password: "supersecretpass123"})
+    user = operator_fixture(%{password: String.duplicate("o", 16)})
     user_email = user.email
 
     conn =
