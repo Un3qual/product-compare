@@ -2,22 +2,23 @@
 
 ## Snapshot
 
-- Status: ready (merchant directory view extraction)
+- Status: done (merchant directory view extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after follow-up validation (23 merchant tests;
-  93 tests across the promoted cohort)
+- Last verified: 2026-07-12 after merchant-directory view extraction review
+  follow-up (27 merchant tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Merchant Directory View Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Next action: extract page-size controls, visible-page filtering, list and safe
-  website presentation, empty states, and pagination while preserving route-
-  owned Relay reads, normalization, URL safety, and path construction.
+- Completed: extracted page-size controls, visible-page filtering, list and
+  safe website presentation, empty states, and pagination into
+  `MerchantDirectoryView` while retaining route-owned Relay reads,
+  normalization, URL safety, and path construction.
 - Owned paths:
   - `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
   - `assets/src/routes/merchants/MerchantDirectoryView.tsx`
@@ -29,6 +30,15 @@
   - `git diff --check`
 - Exit condition: merchant presentation is isolated without changing query,
   filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
+- RED: `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  failed because `MerchantDirectoryView` did not exist; the strengthened empty
+  page assertion then failed until the page preserved the workspace and controls.
+- GREEN: `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  passed with 27 tests; `cd assets && bun run typecheck` and `git diff --check`
+  completed with exit 0.
+- Review follow-up: restored the route-owned workspace shell around the Relay
+  suspense and error boundaries, so loading, query-error, and unavailable-data
+  states retain merchant controls and result context.
 
 ## Completed Visible-Page Name Filter
 

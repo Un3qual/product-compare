@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (revenue summary view-data contract)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27, Task 4 date preset verification
+- Last verified: 2026-07-12 after post-stack validation (22 focused tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
@@ -16,6 +16,27 @@
 - [x] Task 2: render the revenue reporting route.
 - [x] Task 3: wire navigation and close the lane.
 - [x] Task 4: add deterministic revenue date preset links (last 7 days, last 30 days, month to date, clear dates) that preserve `network` and `currency`.
+
+## Revenue Summary View-Data Contract
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
+- Next action: isolate framework-free active-filter, date-preset, and display-
+  metric derivation while preserving route-owned loader, Relay, boundary,
+  fallback, and currency behavior.
+- Owned paths:
+  - `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
+  - `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+  - `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+  - `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+  - `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+  - `docs/work/frontend-revenue-reporting-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/commerce/revenue/revenue-summary-loader.test.ts`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure controls and metric contracts preserve local dates,
+  query ordering, suppression, null, and empty-string display semantics.
 
 ## Current Cross-Project Batch
 

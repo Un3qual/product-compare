@@ -3,6 +3,10 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
+import {
+  MerchantDirectoryControls,
+  MerchantDirectoryView
+} from "../../../src/routes/merchants/MerchantDirectoryView";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 
 const {
@@ -93,6 +97,64 @@ test("merchant directory renders merchant names and domains", () => {
     expect.anything(),
     MERCHANT_DIRECTORY_QUERY_REF
   );
+});
+
+test("merchant directory controls render the selected page size", () => {
+  render(
+    <MerchantDirectoryControls
+      formAction="/merchants"
+      pageSize={35}
+    />
+  );
+
+  const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
+  const pageSizeForm = pageSizeSelect.closest("form");
+
+  expect(pageSizeForm).toHaveAttribute("action", "/merchants");
+  expect(pageSizeForm).toHaveAttribute("method", "get");
+  expect(pageSizeSelect).toHaveValue("35");
+  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
+  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
+  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
+});
+
+test("merchant directory view renders only supplied safe actions", () => {
+  renderMerchantDirectoryView();
+
+  const safeMerchant = getMerchantListItem("Acme Market");
+  expect(
+    within(safeMerchant).getByRole("link", { name: "Visit merchant website" })
+  ).toHaveAttribute("href", "https://acme.example");
+  expect(
+    within(getMerchantListItem("Unsafe Seller")).queryByRole("link", {
+      name: "Visit merchant website"
+    })
+  ).not.toBeInTheDocument();
+});
+
+test("merchant directory view filters names case-insensitively and explains no matches", () => {
+  renderMerchantDirectoryView();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+    target: { value: "aCmE" }
+  });
+
+  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Unsafe Seller" })).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+    target: { value: "missing" }
+  });
+
+  expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
+});
+
+test("merchant directory view explains when its result page is empty", () => {
+  renderMerchantDirectoryView({ merchants: [] });
+
+  expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("searchbox", { name: "Filter merchants on this page" })).toBeNull();
 });
 
 test("merchant directory normalizes domain-only website links to HTTPS", () => {
@@ -250,15 +312,6 @@ test("merchant directory rejects website links with URL userinfo", () => {
   ).not.toBeInTheDocument();
 });
 
-test("merchant directory renders an empty state", () => {
-  mockedUsePreloadedQuery.mockReturnValue(buildMerchantDirectoryData({ merchants: [] }));
-
-  renderMerchantDirectoryRoute();
-
-  expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
-  expect(screen.getByText("No merchants available yet.")).toBeInTheDocument();
-});
-
 test("merchant directory renders next-page navigation when available", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -279,41 +332,6 @@ test("merchant directory renders next-page navigation when available", () => {
     "href",
     "/merchants?first=35&after=next-cursor"
   );
-});
-
-test("merchant directory filters visible-page names without hiding pagination", () => {
-  mockedUsePreloadedQuery.mockReturnValue(
-    buildMerchantDirectoryData({
-      endCursor: "next-cursor",
-      hasNextPage: true
-    })
-  );
-
-  renderMerchantDirectoryRoute();
-
-  const filter = screen.getByRole("searchbox", { name: "Filter merchants on this page" });
-
-  expect(filter.id).not.toBe("");
-  expect(filter).toHaveAttribute("aria-labelledby");
-  expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
-    "Filter merchants on this page"
-  );
-
-  fireEvent.change(filter, { target: { value: "gLoBeX" } });
-
-  expect(screen.queryByRole("heading", { name: "Acme Market" })).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
-
-  fireEvent.change(filter, { target: { value: "missing" } });
-
-  expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
-
-  fireEvent.change(filter, { target: { value: "" } });
-
-  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Globex Supply" })).toBeInTheDocument();
 });
 
 test("merchant filtering is stable when the browser locale has special casing rules", () => {
@@ -371,27 +389,6 @@ test("merchant directory renders first-page navigation when cursor-paged", () =>
   );
 });
 
-test("merchant directory renders a reload-safe page-size selector", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyLoaderData({
-      first: 50,
-      after: null
-    })
-  );
-
-  renderMerchantDirectoryRoute();
-
-  const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
-  const pageSizeForm = pageSizeSelect.closest("form");
-
-  expect(pageSizeForm).toHaveAttribute("action", "/merchants");
-  expect(pageSizeForm).toHaveAttribute("method", "get");
-  expect(pageSizeSelect).toHaveValue("50");
-  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
-  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
-  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
-});
-
 test("merchant directory refreshes the page-size selector when pagination changes", () => {
   const { rerender } = renderMerchantDirectoryRoute();
 
@@ -413,6 +410,46 @@ test("merchant directory refreshes the page-size selector when pagination change
   expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("50");
 });
 
+test("merchant directory keeps its shell while the Relay query loads", () => {
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Promise<never>(() => undefined);
+  });
+
+  renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading merchants...");
+});
+
+test("merchant directory keeps its shell when the Relay query errors", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedUsePreloadedQuery.mockImplementation(() => {
+    throw new Error("Merchant query failed");
+  });
+
+  try {
+    renderMerchantDirectoryRoute();
+
+    expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("merchant directory keeps its shell when merchant data is unavailable", () => {
+  mockedUsePreloadedQuery.mockReturnValue({ merchants: null } as never);
+
+  renderMerchantDirectoryRoute();
+
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
+});
+
 test("merchant directory renders the loader error state", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "error",
@@ -425,6 +462,9 @@ test("merchant directory renders the loader error state", () => {
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("heading", { name: "Merchants" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Merchant results" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Merchant controls" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("20");
   expect(screen.getByRole("alert")).toHaveTextContent("Merchant directory unavailable.");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
@@ -434,6 +474,40 @@ function renderMerchantDirectoryRoute() {
   return render(
     <MemoryRouter>
       <MerchantDirectoryRoute />
+    </MemoryRouter>
+  );
+}
+
+function renderMerchantDirectoryView({
+  merchants = [
+    {
+      id: "merchant-1",
+      name: "Acme Market",
+      domain: "acme.example",
+      websiteHref: "https://acme.example"
+    },
+    {
+      id: "merchant-unsafe",
+      name: "Unsafe Seller",
+      domain: "http://localhost",
+      websiteHref: null
+    }
+  ]
+}: {
+  merchants?: Array<{
+    id: string;
+    name: string;
+    domain: string;
+    websiteHref: string | null;
+  }>;
+} = {}) {
+  return render(
+    <MemoryRouter>
+      <MerchantDirectoryView
+        firstHref="/merchants?first=35"
+        merchants={merchants}
+        nextHref="/merchants?first=35&after=next-cursor"
+      />
     </MemoryRouter>
   );
 }

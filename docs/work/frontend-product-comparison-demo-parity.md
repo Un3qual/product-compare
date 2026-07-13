@@ -2,12 +2,11 @@
 
 ## Snapshot
 
-- Status: done (compare product picker view extraction)
+- Status: ready (specification-matrix data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after compare product picker view extraction
-  (105 compare tests)
+- Last verified: 2026-07-12 after post-stack validation (105 compare tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -18,6 +17,27 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Specification Matrix Data Contract
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
+- Next action: isolate the framework-free row construction and typed comparison
+  policy while keeping titles, empty states, scrolling, and table markup in the
+  presentation component.
+- Owned paths:
+  - `assets/src/routes/compare/specification-matrix-data.ts`
+  - `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+  - `assets/test/routes/compare/specification-matrix-data.test.ts`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/specification-matrix-data.test.ts test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: the pure data contract preserves stable ordering, duplicate-
+  code selection, missing cells, modes, typed values, units, and decimal/
+  exponent normalization.
 
 ## Compare Product Picker View Extraction
 

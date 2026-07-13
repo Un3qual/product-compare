@@ -128,36 +128,7 @@ tests; TypeScript and diff hygiene were green.
 
 ## Ready Work
 
-### 1. Merchant Directory View Extraction
-
-Status: ready
-Lane: Frontend merchant discovery
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: extract page-size controls, visible-page filtering, merchant list
-and safe website presentation, empty states, and pagination while preserving
-route-owned Relay reads, normalization, URL safety, and path construction.
-Owned paths:
-
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/src/routes/merchants/MerchantDirectoryView.tsx`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing merchant directory route suite remains the characterization
-  contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Merchant presentation is isolated without changing query,
-filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
-
-### 2. Saved Comparison View-State Extraction
+### 1. Saved Comparison View-State Extraction
 
 Status: ready
 Lane: Frontend compare and saved hardening
@@ -187,7 +158,7 @@ Verification:
 Exit condition: The route consumes one pure view-state contract with exact
 deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
 
-### 3. Credential Auth Form Presentation Extraction
+### 2. Credential Auth Form Presentation Extraction
 
 Status: ready
 Lane: Frontend auth state hardening
@@ -217,6 +188,93 @@ Exit condition: Login and registration share only credential presentation;
 GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
 updates, and navigation remain unchanged.
 
+### 3. Product Detail Decision Actions Presentation
+
+Status: ready
+Lane: Frontend product detail
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: extract the accessible Next steps presentation behind explicit
+add, selected, and full compare states while preserving route-owned Relay,
+selection, navigation, and URL construction.
+Owned paths:
+
+- `assets/src/routes/products/ProductDecisionActions.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md`
+
+Prerequisites:
+
+- Existing 49-test product-detail characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Decision-action presentation is isolated without changing any
+destination, comparison state, cursor, tab, or tray-return behavior.
+
+### 4. Revenue Summary View-Data Contract
+
+Status: ready
+Lane: Frontend revenue reporting
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: extract framework-free active-filter, date-preset, and metric
+derivation while retaining route-owned loader, Relay, boundary, fallback, and
+currency orchestration.
+Owned paths:
+
+- `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
+- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
+- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/frontend-revenue-reporting-demo-parity.md`
+
+Prerequisites:
+
+- Existing 22-test revenue route and loader characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/commerce/revenue/revenue-summary-loader.test.ts`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
+suppressed values, nulls, and intentional empty-string amount behavior.
+
+### 5. Specification Matrix Data Contract
+
+Status: ready
+Lane: Frontend product comparison
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: move stable row construction and typed comparison normalization
+into a framework-free module while retaining matrix presentation in the
+component.
+Owned paths:
+
+- `assets/src/routes/compare/specification-matrix-data.ts`
+- `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+- `assets/test/routes/compare/specification-matrix-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+
+Prerequisites:
+
+- Existing 105-test compare characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/specification-matrix-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The pure matrix contract preserves ordering, duplicates,
+missing cells, modes, typed values, units, and decimal/exponent behavior.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -226,6 +284,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 merchant-directory view extraction is complete.
+`MerchantDirectoryView` owns visible-page filtering, merchant list and safe-link
+presentation, empty/no-match states, and pagination; its focused controls remain
+presentation-owned while the route retains the workspace around Relay suspense
+and errors, connection normalization, URL safety, and path construction. Review
+follow-up restored the shell during loading, query error, and null-data states.
+The focused suite passed 27 tests with TypeScript and diff hygiene green.
 
 The 2026-07-12 compare picker-view extraction is complete.
 `CompareProductPickerView` now owns the heading, loaded-option filter state,
