@@ -4,7 +4,7 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task.
 
-**Goal:** Preserve three source-backed ready batches after the current eight-PR
+**Goal:** Preserve four source-backed ready batches after the current eight-PR
 stack completes, without reviving deferred work or manufacturing wrapper-only
 components.
 
@@ -104,6 +104,34 @@ table markup.
 - [ ] Run the focused data and compare suites, TypeScript, and diff checks.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 4: Decision Summary Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/decision-summary-data.ts`
+- Modify: `assets/src/routes/compare/DecisionSummary.tsx`
+- Create: `assets/test/routes/compare/decision-summary-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Modify: `docs/work/frontend-product-comparison-demo-parity.md`
+
+**Interface:** Framework-free `buildDecisionSummaryMetricRows(products,
+offerContexts)` returns typed metric cells for relative loaded price, best
+price, offer count, coupon signal, and recency. `DecisionSummary` retains its
+title, loaded-offer disclosure, semantic table markup, and Review offers URL
+construction.
+
+- [ ] Add pure tests for lowest and tied prices, decimal/exponent equality,
+  mixed currencies, malformed and missing values, unavailable products, and
+  exact metric labels; verify RED.
+- [ ] Move only the cohesive metric and loaded-price derivation policy into the
+  framework-free data module.
+- [ ] Preserve the explicit already-loaded-offer scope, same-currency rule,
+  unavailable labels, and `YYYY-MM-DD` recency output.
+- [ ] Run the focused data and compare suites, TypeScript, and diff checks.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - Fresh source and test audits rejected affiliate workflow composition and
@@ -111,4 +139,5 @@ table markup.
 - Product-detail characterization passed 49 tests on 2026-07-12.
 - Revenue route and loader characterization passed 22 tests on 2026-07-12.
 - Compare characterization passed 105 tests on 2026-07-12.
-- The three rows have non-overlapping owned source, test, and lane-doc paths.
+- The first three rows have non-overlapping owned paths. Task 4 shares the
+  compare route test and lane doc with Task 3, so those two dispatch serially.

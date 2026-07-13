@@ -2,21 +2,22 @@
 
 ## Snapshot
 
-- Status: ready (credential auth form presentation extraction)
+- Status: completed (credential auth form presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after follow-up validation (session route suite
-  included in a 93-test promoted cohort)
+- Last verified: 2026-07-12 after credential auth form extraction (focused
+  session route suite: 21 tests; TypeScript and diff hygiene green)
 - Implementation plan: `docs/plans/2026-06-01-frontend-auth-state-hardening-implementation-plan.md`
 - Objective: make the root shell reflect the current GraphQL `viewer` session state and harden browser/backend logout coverage before the logout branch opens a PR.
 
 ## Credential Auth Form Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: completed on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Next action: replace duplicated login/register shell and credential fields
-  with one explicit typed presentation component while preserving route-owned
-  GraphQL mutations, session results, viewer-cache updates, and navigation.
+- Outcome: `CredentialAuthForm` now owns the duplicated login/register shell,
+  credential fields, field errors, footer links, and submit presentation.
+  Login and registration retain form-data extraction, Relay mutations, GraphQL
+  error resolution, viewer-cache updates, and navigation.
 - Owned paths:
   - `assets/src/routes/auth/CredentialAuthForm.tsx`
   - `assets/src/routes/auth/LoginRoute.tsx`
@@ -40,9 +41,11 @@
 
 ## Current Batch
 
-- Task: none.
+- Task: Credential auth form presentation extraction.
 - Status: completed.
-- Next step: no unblocked frontend auth state hardening batch remains; product ingestion remains blocked pending live provider validation and source onboarding compliance signoff.
+- Next step: no unblocked frontend auth state hardening batch remains; product
+  ingestion remains blocked pending live provider validation and source
+  onboarding compliance signoff.
 
 ## Verification
 
@@ -92,6 +95,19 @@
   - `cd assets && bun run check` exited 0: 34 files passed, 307 tests passed.
   - `git diff --check` exited 0.
   - Read-only spec and code-quality subagent reviews both approved the completed auth-state slice.
+- Credential auth form presentation extraction on 2026-07-12:
+  - RED: `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
+    exited 1 because the direct form contract could not resolve the absent
+    `CredentialAuthForm` module.
+  - GREEN: the same focused session suite exited 0 with 1 file and 21 tests
+    passing. Direct semantic coverage verifies login and registration copy,
+    email/password autocomplete, field errors, footer links, pending-state
+    disabling, and submit callback delegation.
+  - `cd assets && bun run typecheck` and `git diff --check` both exited 0.
+  - GraphQL browser-auth migration scope is unchanged: these route-local Relay
+    mutation owners still use the existing GraphQL-over-`/api/graphql`
+    cookie-backed Phoenix-session contract; no browser REST auth endpoint or
+    token flow was introduced.
 
 ## Blockers
 

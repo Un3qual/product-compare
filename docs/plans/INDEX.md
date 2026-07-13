@@ -37,16 +37,15 @@ presentation extractions are complete. API-token controls, compare matrix,
 catalog advanced-filter presentation, and offer-discovery card presentation
 are also complete. API-token item, product-detail offer-list, root destination,
 and compare picker-view presentation completed as the first stack cohort.
-Affiliate merchant pagination, merchant-directory view presentation, and
-saved-comparison pure view state are complete. Credential-auth form
-presentation remains a validated follow-up row in the same execution plan.
-Product-detail decision actions, revenue-summary view data, and specification-
-matrix data are validated post-stack reserve rows that keep the live queue
-truthful after the current stack completes.
+Affiliate merchant pagination, merchant-directory view presentation, saved-
+comparison pure view state, and credential-auth form presentation are complete
+through their dedicated follow-up execution plan.
+Product-detail decision actions, revenue-summary view data, specification-
+matrix data, and decision-summary data are validated post-stack reserve rows
+that keep the live queue dispatchable after the current stack completes.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
@@ -79,12 +78,12 @@ batch and should not be recreated or promoted.
   through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`;
   do not promote them again without fresh scope.
 - Completed reserve: affiliate merchant pagination, merchant-directory view
-  presentation, and saved-comparison pure view state completed through
-  `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Ready reserve: credential-auth form presentation executes through
+  presentation, saved-comparison pure view state, and credential-auth form
+  presentation completed through
   `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
 - Ready reserve: product-detail decision actions, revenue-summary view data,
-  and specification-matrix data execute through
+  specification-matrix data, and the serial decision-summary data follow-up
+  execute through
   `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
@@ -105,6 +104,10 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Frontend affiliate pagination, merchant-directory view, saved-comparison
+  view state, and credential-auth form:
+  `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
 
 - Frontend token-item, product-offer-list, root-destination, and compare-picker
   presentation:

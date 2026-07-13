@@ -120,45 +120,13 @@ navigation, and saved-comparison, catalog-product-list, and revenue-summary
 presentation live in focused sibling components while their route owners retain
 data, mutation, URL, suspense, and error orchestration.
 
-The 2026-07-12 affiliate merchant-choice pagination batch is complete. The
-setup route now exposes truthful First/Next navigation from the loader-owned
-page size and Relay cursor state without changing merchant selection or any of
-the four mutation lifecycles. The focused loader and route suites passed 27
-tests; TypeScript and diff hygiene were green.
+The requested eight-PR stack is complete. Its plan checklists and lane work
+docs hold implementation and verification evidence; this index stays focused
+on dispatchable work.
 
 ## Ready Work
 
-### 1. Credential Auth Form Presentation Extraction
-
-Status: ready
-Lane: Frontend auth state hardening
-Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
-Next action: replace duplicated login/register shell and credential fields
-with one explicit typed presentation component while preserving route-owned
-GraphQL mutations, session results, viewer-cache updates, and navigation.
-Owned paths:
-
-- `assets/src/routes/auth/CredentialAuthForm.tsx`
-- `assets/src/routes/auth/LoginRoute.tsx`
-- `assets/src/routes/auth/RegisterRoute.tsx`
-- `assets/test/routes/auth/session.route.test.tsx`
-- `docs/work/frontend-auth-state-hardening.md`
-
-Prerequisites:
-
-- Existing auth session route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Login and registration share only credential presentation;
-GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
-updates, and navigation remain unchanged.
-
-### 2. Product Detail Decision Actions Presentation
+### 1. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -186,7 +154,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 3. Revenue Summary View-Data Contract
+### 2. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -216,7 +184,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 4. Specification Matrix Data Contract
+### 3. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -245,6 +213,37 @@ Verification:
 Exit condition: The pure matrix contract preserves ordering, duplicates,
 missing cells, modes, typed values, units, and decimal/exponent behavior.
 
+### 4. Decision Summary Data Contract
+
+Status: ready
+Lane: Frontend product comparison
+Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+Next action: move loaded-price safety and decision-metric label derivation into
+a framework-free module while retaining disclosure, table markup, and offer
+review URLs in the presentation component.
+Owned paths:
+
+- `assets/src/routes/compare/decision-summary-data.ts`
+- `assets/src/routes/compare/DecisionSummary.tsx`
+- `assets/test/routes/compare/decision-summary-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+
+Prerequisites:
+
+- Existing 105-test compare characterization remains green.
+- This row conflicts with row 3 through shared compare test and lane-doc paths;
+  dispatch the two rows serially.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The pure summary contract preserves loaded-offer scope,
+decimal and currency safety, unavailable labels, and recency output.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -255,60 +254,13 @@ None.
 
 ## Just Completed
 
-The 2026-07-12 saved-comparison view-state extraction is complete. A framework-
-free module now owns local deletion hiding, case-insensitive name/product/slug
-filtering, stable sorting, and status precedence while the route retains React
-state, Relay retainers, mutations, pagination, and URL construction. Review
-follow-up established one canonical exhaustive sort-mode type and added
-deletion/filter precedence plus stable-tie coverage. The focused suites passed
-46 tests with TypeScript and diff hygiene green.
-
-The 2026-07-12 merchant-directory view extraction is complete.
-`MerchantDirectoryView` owns visible-page filtering, merchant list and safe-link
-presentation, empty/no-match states, and pagination; its focused controls remain
-presentation-owned while the route retains the workspace around Relay suspense
-and errors, connection normalization, URL safety, and path construction. Review
-follow-up restored the shell during loading, query error, and null-data states.
-The focused suite passed 27 tests with TypeScript and diff hygiene green.
-
-The 2026-07-12 compare picker-view extraction is complete.
-`CompareProductPickerView` now owns the heading, loaded-option filter state,
-option and no-match presentation, and show-more control while the boundary
-retains Relay/error/suspense ownership, page accumulation and deduplication,
-selected-product exclusion, empty-dataset decisions, and compare path
-construction. The focused suite passed 105 tests with TypeScript and diff
-hygiene green.
-
-The 2026-07-12 root destination extraction is complete.
-`RootDestinations` now owns public/authenticated destination catalogs, primary
-navigation, shopper paths, secondary actions, auth actions, and active-link
-styles while `RootRoute` retains loader and Relay reads, viewer normalization,
-metadata, providers, shell, outlet context, and page copy. The focused suite
-passed 13 tests with TypeScript and diff hygiene green.
-
-The 2026-07-12 product-detail offer-list extraction is complete.
-`ProductOfferList` now owns normalized active-offer list, merchant action,
-price observation, history, coupon, and bounded-more presentation while
-`ProductOfferPanel` retains GraphQL normalization, link/number/date safety,
-snapshot and currency decisions, pagination, and route URLs. The focused suite
-passed 49 tests with TypeScript and diff hygiene green.
-
-The 2026-07-12 API-token item extraction is complete. `ApiTokenItem` now owns
-per-token details, status, lifecycle errors, rotation controls and presets,
-pending copy, and revocation while `ApiTokenList` retains Relay reads, page and
-local composition, update merging, filtering, and query keys. The direct and
-route characterization suite passed 43 tests with TypeScript and diff hygiene
-green; task review approved the boundary and its test-quality follow-up.
-
 The 2026-07-12 control-and-matrix batch is complete. API-token controls,
 comparison matrix presentation, catalog advanced filters, and per-offer
 discovery cards now live behind focused typed boundaries. Review follow-up
 replaced modal-hidden accessibility queries, concatenated table text
 assertions, and duplicate widened offer fixtures with semantic queries and
 production-owned type contracts. The four focused suites passed 251 tests;
-TypeScript and diff hygiene were green. Four newly validated, non-overlapping
-rows replace the completed cohort, grounded in current source and 200 passing
-characterization tests.
+TypeScript and diff hygiene were green.
 
 The 2026-07-11 four-row follow-up completed skip navigation plus the saved-set,
 catalog product-list, and revenue-summary presentation extractions. Focused

@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready (merchant-choice pagination)
+- Status: completed (merchant-choice pagination)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after follow-up validation (affiliate loader and
-  route suites included in a 93-test promoted cohort)
+- Last verified: 2026-07-12 after merchant-choice pagination completion (27
+  focused affiliate loader and route tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.

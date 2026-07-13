@@ -6,12 +6,11 @@ import loginMutation, { type LoginMutation } from "../../__generated__/LoginMuta
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
-  findMutationError,
   type MutationError,
   resolveSessionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
+import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
 export function LoginRoute() {
@@ -54,33 +53,18 @@ export function LoginRoute() {
   }
 
   return (
-    <AuthFormShell
+    <CredentialAuthForm
+      credentialAutoComplete="current-password"
       description="Use your email and password to continue through the GraphQL auth flow."
       errors={errors}
-      fieldNames={["email", "password"]}
       footerLinks={[
         { label: "Create account", to: "/auth/register" },
         { label: "Forgot password?", to: "/auth/forgot-password" }
       ]}
+      isSubmitting={isSubmitting}
+      onSubmit={handleSubmit}
+      submitLabel="Sign in"
       title="Sign in"
-    >
-      <form onSubmit={handleSubmit}>
-        <AuthField
-          autoComplete="email"
-          error={findMutationError(errors, "email")}
-          label="Email"
-          name="email"
-          type="email"
-        />
-        <AuthField
-          autoComplete="current-password"
-          error={findMutationError(errors, "password")}
-          label="Password"
-          name="password"
-          type="password"
-        />
-        <AuthSubmitButton disabled={isSubmitting}>Sign in</AuthSubmitButton>
-      </form>
-    </AuthFormShell>
+    />
   );
 }

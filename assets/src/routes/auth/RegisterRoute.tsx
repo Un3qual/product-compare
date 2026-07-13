@@ -8,12 +8,11 @@ import registerMutation, {
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
-  findMutationError,
   type MutationError,
   resolveSessionMutationResult,
   transportMutationErrors
 } from "./errors";
-import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
+import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
 export function RegisterRoute() {
@@ -56,33 +55,18 @@ export function RegisterRoute() {
   }
 
   return (
-    <AuthFormShell
+    <CredentialAuthForm
+      credentialAutoComplete="new-password"
       description="Create an email/password account and let Phoenix establish the browser session."
       errors={errors}
-      fieldNames={["email", "password"]}
       footerLinks={[
         { label: "Sign in instead", to: "/auth/login" },
         { label: "Forgot password?", to: "/auth/forgot-password" }
       ]}
+      isSubmitting={isSubmitting}
+      onSubmit={handleSubmit}
+      submitLabel="Create account"
       title="Create your account"
-    >
-      <form onSubmit={handleSubmit}>
-        <AuthField
-          autoComplete="email"
-          error={findMutationError(errors, "email")}
-          label="Email"
-          name="email"
-          type="email"
-        />
-        <AuthField
-          autoComplete="new-password"
-          error={findMutationError(errors, "password")}
-          label="Password"
-          name="password"
-          type="password"
-        />
-        <AuthSubmitButton disabled={isSubmitting}>Create account</AuthSubmitButton>
-      </form>
-    </AuthFormShell>
+    />
   );
 }
