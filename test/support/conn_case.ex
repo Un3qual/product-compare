@@ -44,12 +44,41 @@ defmodule ProductCompareWeb.ConnCase do
     |> Plug.Conn.put_session(:user_token, user_token)
   end
 
+  def operator_conn(conn, auth_method \\ :session) do
+    authenticated_conn(
+      conn,
+      ProductCompare.Fixtures.AccountsFixtures.operator_fixture(),
+      auth_method
+    )
+  end
+
+  def member_conn(conn, auth_method \\ :session) do
+    authenticated_conn(
+      conn,
+      ProductCompare.Fixtures.AccountsFixtures.user_fixture(),
+      auth_method
+    )
+  end
+
   def put_req_header_same_origin(conn) do
     Plug.Conn.put_req_header(conn, "origin", request_origin(conn))
   end
 
   def relay_id(type, local_id) when is_atom(type) do
     ProductCompareWeb.GraphQL.GlobalId.encode(type, local_id)
+  end
+
+  defp authenticated_conn(conn, user, :session) do
+    conn
+    |> log_in_user(user)
+    |> put_req_header_same_origin()
+  end
+
+  defp authenticated_conn(conn, user, :api_token) do
+    {:ok, %{plain_text_token: token}} =
+      ProductCompare.Accounts.create_api_token(user.id, %{label: "test authentication"})
+
+    Plug.Conn.put_req_header(conn, "authorization", "Bearer #{token}")
   end
 
   defp request_origin(conn) do

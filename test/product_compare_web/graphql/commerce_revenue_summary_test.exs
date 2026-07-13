@@ -2,18 +2,12 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.CommerceAttribution
-  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
 
   setup %{conn: conn} do
-    operator_conn =
-      conn
-      |> log_in_user(AccountsFixtures.operator_fixture())
-      |> put_req_header_same_origin()
-
-    {:ok, conn: operator_conn, anonymous_conn: conn}
+    {:ok, conn: operator_conn(conn), anonymous_conn: conn}
   end
 
   describe "/api/graphql commerce revenue summary" do
@@ -26,13 +20,10 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                "errors" => [%{"extensions" => %{"code" => "UNAUTHENTICATED"}} | _]
              } = graphql(anonymous_conn, revenue_summary_query(), %{})
 
-      member_conn =
-        conn |> log_in_user(AccountsFixtures.user_fixture()) |> put_req_header_same_origin()
-
       assert %{
                "data" => %{"revenueSummary" => nil},
                "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
-             } = graphql(member_conn, revenue_summary_query(), %{})
+             } = graphql(member_conn(conn), revenue_summary_query(), %{})
     end
 
     test "returns an empty dashboard summary shape", %{conn: conn} do

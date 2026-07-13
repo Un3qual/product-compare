@@ -2,6 +2,7 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
   use ProductCompare.DataCase, async: false
 
   import ProductCompare.Fixtures.CJIngestionFixtures
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.Ingestion.CJMerchantIdentityQuality
   alias ProductCompare.Repo
@@ -286,46 +287,6 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
         assert identity_keys == MapSet.new([:id, :merchant_name, :merchant_domain])
       end)
     end)
-  end
-
-  defp capture_select_queries(fun) do
-    handler_id = {__MODULE__, System.unique_integer([:positive])}
-    ref = make_ref()
-    test_pid = self()
-
-    :ok =
-      :telemetry.attach(
-        handler_id,
-        [:product_compare, :repo, :query],
-        fn _event, _measurements, metadata, {pid, message_ref} ->
-          if select_query?(metadata.query) do
-            send(pid, {message_ref, metadata.query})
-          end
-        end,
-        {test_pid, ref}
-      )
-
-    try do
-      result = fun.()
-      {result, drain_queries(ref, [])}
-    after
-      :telemetry.detach(handler_id)
-    end
-  end
-
-  defp drain_queries(ref, acc) do
-    receive do
-      {^ref, query} -> drain_queries(ref, [query | acc])
-    after
-      0 -> Enum.reverse(acc)
-    end
-  end
-
-  defp select_query?(query) when is_binary(query) do
-    query
-    |> String.trim_leading()
-    |> String.upcase()
-    |> String.starts_with?("SELECT")
   end
 
   defp windowed_identity_query?(query) do

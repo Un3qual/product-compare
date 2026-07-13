@@ -44,7 +44,7 @@ test("server render handles product chunk failures with product-specific feedbac
     throw new Error("product chunk import failed");
   });
 
-  const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   try {
     const result = await render("/products/unavailable-product");

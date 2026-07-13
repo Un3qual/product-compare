@@ -13,6 +13,8 @@ import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirector
 import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
 import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
 import { offerDiscoveryLoader } from "../src/routes/offers/loader";
+import { ProductDetailRoute } from "../src/routes/products/ProductDetailRoute";
+import { productDetailLoader } from "../src/routes/products/loader";
 import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
 import { notFoundLoader } from "../src/routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "../src/routes/RouteMetadata";
@@ -118,6 +120,21 @@ test("offer discovery navigation lazily resolves its screen and loader", async (
   );
   expect(offerDiscoveryRoute.errorElement).toEqual(
     <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+  );
+});
+
+test("product detail navigation lazily resolves its screen and loader", async () => {
+  const productDetailRoute = findRoute("products/:slug");
+  const resolvedRoute = await resolveLazyRoute(productDetailRoute);
+
+  expect(resolvedRoute).toEqual(
+    expect.objectContaining({
+      Component: ProductDetailRoute,
+      loader: productDetailLoader
+    })
+  );
+  expect(productDetailRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="product" title="Product details" />
   );
 });
 

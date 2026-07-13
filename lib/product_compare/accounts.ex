@@ -92,7 +92,7 @@ defmodule ProductCompare.Accounts do
         Repo.rollback(:existing_non_operator)
 
       nil ->
-        run_before_bootstrap_operator_create_hook(normalized_email)
+        run_before_user_create_hook(@bootstrap_operator_before_create_hook, normalized_email)
 
         %User{}
         |> User.registration_changeset(%{email: normalized_email, password: password})
@@ -163,7 +163,10 @@ defmodule ProductCompare.Accounts do
   defp ensure_user_with_password_transaction(normalized_email, password) do
     case lock_user_by_email(normalized_email) do
       nil ->
-        run_before_ensure_user_with_password_create_hook(normalized_email)
+        run_before_user_create_hook(
+          @ensure_user_with_password_before_create_hook,
+          normalized_email
+        )
 
         case create_user(%{email: normalized_email, password: password}) do
           {:ok, %User{} = user} ->
@@ -232,19 +235,10 @@ defmodule ProductCompare.Accounts do
     |> User.normalize_email()
   end
 
-  # Test-only hook for deterministically exercising the create-vs-create race branch.
-  defp run_before_ensure_user_with_password_create_hook(email) do
+  # Test-only hook for deterministically exercising create-vs-create race branches.
+  defp run_before_user_create_hook(hook_key, email) do
     case Application.get_env(:product_compare, __MODULE__, [])
-         |> Keyword.get(@ensure_user_with_password_before_create_hook) do
-      fun when is_function(fun, 1) -> fun.(email)
-      _other -> :ok
-    end
-  end
-
-  # Test-only hook for deterministically exercising the operator create race branch.
-  defp run_before_bootstrap_operator_create_hook(email) do
-    case Application.get_env(:product_compare, __MODULE__, [])
-         |> Keyword.get(@bootstrap_operator_before_create_hook) do
+         |> Keyword.get(hook_key) do
       fun when is_function(fun, 1) -> fun.(email)
       _other -> :ok
     end

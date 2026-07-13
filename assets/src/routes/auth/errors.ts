@@ -5,16 +5,12 @@ import {
   isRouteMutationError,
   type RouteMutationError
 } from "../route-errors";
+import type { RootViewer } from "../root/loader";
 
 export type MutationError = RouteMutationError;
 
-interface Viewer {
-  id: string;
-  email: string;
-}
-
 export interface AuthSessionResult {
-  viewer: Viewer | null;
+  viewer: RootViewer | null;
   errors: MutationError[];
 }
 
@@ -137,10 +133,11 @@ function ensureFailureErrors(errors: MutationError[]) {
   ];
 }
 
-function isViewer(value: unknown): value is Viewer {
+function isViewer(value: unknown): value is RootViewer {
   return Boolean(
     isRouteRecord(value) &&
       typeof value.id === "string" &&
-      typeof value.email === "string"
+      typeof value.email === "string" &&
+      typeof value.isOperator === "boolean"
   );
 }

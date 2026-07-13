@@ -2,7 +2,6 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Ingestion
-  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
@@ -11,7 +10,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     test "merchantFeedCandidates returns review-safe candidate fields with pagination", %{
       conn: conn
     } do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
       first_seen_at = ~U[2026-06-04 20:00:00Z]
       second_seen_at = ~U[2026-06-04 21:00:00Z]
@@ -149,7 +148,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates rejects invalid cursors", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
@@ -164,7 +163,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates filters review status and ranks product counts", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       _shortlisted_large =
@@ -235,7 +234,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates ranks candidates by fit score", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       _trail =
@@ -325,7 +324,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "reviewMerchantFeedCandidate updates candidate review status", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       {:ok, candidate} =
@@ -364,7 +363,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     test "reviewMerchantFeedCandidate preserves an existing note when note is omitted", %{
       conn: conn
     } do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       {:ok, candidate} =
@@ -465,7 +464,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "reviewMerchantFeedCandidate returns payload errors for invalid ids", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{
@@ -627,17 +626,5 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp authed_conn(conn) do
-    conn
-    |> log_in_user(AccountsFixtures.operator_fixture())
-    |> put_req_header_same_origin()
-  end
-
-  defp member_conn(conn) do
-    conn
-    |> log_in_user(AccountsFixtures.user_fixture())
-    |> put_req_header_same_origin()
   end
 end

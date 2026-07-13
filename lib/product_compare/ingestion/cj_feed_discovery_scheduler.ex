@@ -31,7 +31,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def init(opts) do
     state = %{
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
-      cursor: cursor_option(opts),
+      cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -127,13 +127,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
       _other ->
         default
-    end
-  end
-
-  defp cursor_option(opts) do
-    case Keyword.get(opts, :cursor) do
-      value when is_integer(value) and value >= 0 -> value
-      _invalid -> nil
     end
   end
 end

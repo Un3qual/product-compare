@@ -35,9 +35,7 @@ export async function productDetailLoader({
   const offersAfter = offersAfterFromUrl(new URL(request.url));
 
   if (slug === "") {
-    return {
-      status: "not_found"
-    };
+    return productNotFoundResult();
   }
 
   const environment = getRelayEnvironmentFromRouterContext(context);
@@ -58,12 +56,7 @@ export async function productDetailLoader({
     if (!productRouteQuery.data.product) {
       productRouteQuery.dispose();
 
-      return data<ProductDetailLoaderData>(
-        {
-          status: "not_found"
-        },
-        { status: 404 }
-      );
+      return productNotFoundResult();
     }
 
     return {
@@ -93,6 +86,15 @@ export async function productDetailLoader({
       }
     );
   }
+}
+
+function productNotFoundResult() {
+  return data<ProductDetailLoaderData>(
+    {
+      status: "not_found"
+    },
+    { status: 404 }
+  );
 }
 
 function offersAfterFromUrl(url: URL): string | null {

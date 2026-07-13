@@ -33,7 +33,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   def init(opts) do
     state = %{
       currency: uppercase_string_option(opts, :currency, @default_currency),
-      cursor: cursor_option(opts),
+      cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -199,11 +199,4 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
 
   defp default_empty_list([], default), do: default
   defp default_empty_list(values, _default), do: values
-
-  defp cursor_option(opts) do
-    case Keyword.get(opts, :cursor) do
-      value when is_integer(value) and value >= 0 -> value
-      _invalid -> nil
-    end
-  end
 end

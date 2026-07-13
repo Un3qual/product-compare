@@ -378,8 +378,13 @@ test("product detail loader treats blank slugs as not found", async () => {
         slug: "   "
       })
     )
-  ).resolves.toEqual({
-    status: "not_found"
+  ).resolves.toMatchObject({
+    data: {
+      status: "not_found"
+    },
+    init: {
+      status: 404
+    }
   });
 
   expect(mockedFetchRouteQuery).not.toHaveBeenCalled();

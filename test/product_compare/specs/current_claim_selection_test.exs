@@ -1,6 +1,9 @@
 defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [assert_blocked_by: 2, capture_select_queries: 1]
+
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -302,75 +305,6 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
 
       assert [row] = rows
       assert row.claim_id in [claim_a.id, claim_b.id]
-    end
-  end
-
-  defp capture_select_queries(fun) do
-    handler_id = {__MODULE__, System.unique_integer([:positive])}
-    ref = make_ref()
-    test_pid = self()
-
-    :ok =
-      :telemetry.attach(
-        handler_id,
-        [:product_compare, :repo, :query],
-        fn _event, _measurements, metadata, {pid, message_ref} ->
-          if select_query?(metadata.query) do
-            send(pid, {message_ref, metadata.query})
-          end
-        end,
-        {test_pid, ref}
-      )
-
-    try do
-      result = fun.()
-      {result, drain_queries(ref, [])}
-    after
-      :telemetry.detach(handler_id)
-    end
-  end
-
-  defp drain_queries(ref, acc) do
-    receive do
-      {^ref, query} -> drain_queries(ref, [query | acc])
-    after
-      0 -> Enum.reverse(acc)
-    end
-  end
-
-  defp select_query?(query) when is_binary(query) do
-    query
-    |> String.trim_leading()
-    |> String.upcase()
-    |> String.starts_with?("SELECT")
-  end
-
-  defp assert_blocked_by(waiting_backend_pid, blocking_backend_pid) do
-    deadline = System.monotonic_time(:millisecond) + 2_000
-    wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
-  end
-
-  defp wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
-    blocked? =
-      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-        Repo.query!("SELECT $1 = ANY(pg_blocking_pids($2))", [
-          blocking_backend_pid,
-          waiting_backend_pid
-        ])
-        |> then(&(&1.rows == [[true]]))
-      end)
-
-    cond do
-      blocked? ->
-        :ok
-
-      System.monotonic_time(:millisecond) < deadline ->
-        wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
-
-      true ->
-        flunk(
-          "expected database backend #{waiting_backend_pid} to wait for #{blocking_backend_pid}"
-        )
     end
   end
 

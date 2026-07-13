@@ -1,7 +1,6 @@
 defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   use ProductCompareWeb.ConnCase, async: true
 
-  alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -19,7 +18,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
          %{
            conn: conn
          } do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -444,7 +443,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     test "affiliate mutations and activeCoupons reject authenticated members without writes", %{
       conn: conn
     } do
-      member_conn = member_conn(conn)
+      member_conn = member_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant})
       {:ok, network} = Affiliate.upsert_network(%{name: "Member Boundary Network"})
@@ -497,7 +496,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "affiliate mutations reject raw affiliate network IDs", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_id = relay_id(:merchant, merchant.id)
 
@@ -531,7 +530,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "affiliate mutations reject raw merchant IDs", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
 
       {:ok, existing_network} =
@@ -566,7 +565,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "createCoupon returns validation errors for invalid discount shape", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_id = relay_id(:merchant, merchant.id)
 
@@ -597,7 +596,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "activeCoupons rejects invalid cursor input", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_id = relay_id(:merchant, merchant.id)
 
@@ -613,7 +612,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "activeCoupons rejects invalid first input", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
       merchant_id = relay_id(:merchant, merchant.id)
 
@@ -629,7 +628,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
     end
 
     test "activeCoupons rejects raw merchant IDs", %{conn: conn} do
-      authed_conn = authed_conn(conn)
+      authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
 
       response =
@@ -787,21 +786,6 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                %{"code" => "UNAUTHENTICATED", "message" => "unauthorized", "field" => nil}
              ]
            } = Map.fetch!(data, root_field)
-  end
-
-  defp authed_conn(conn) do
-    user = operator_fixture()
-
-    {:ok, %{plain_text_token: plain_text_token}} =
-      Accounts.create_api_token(user.id, %{label: "bootstrap"})
-
-    put_req_header(conn, "authorization", "Bearer #{plain_text_token}")
-  end
-
-  defp member_conn(conn) do
-    user = user_fixture()
-    {:ok, %{plain_text_token: token}} = Accounts.create_api_token(user.id, %{label: "member"})
-    put_req_header(conn, "authorization", "Bearer #{token}")
   end
 
   defp merchant_fixture(attrs \\ %{}) do

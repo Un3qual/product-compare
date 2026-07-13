@@ -87,7 +87,11 @@ function expectLatestMutationHasNoUnconditionalUpdater() {
   expect(latestMutationOptions()).not.toHaveProperty("updater");
 }
 
-function expectNextLocalUpdateSetsRootViewer(viewer: { email: string; id: string }) {
+function expectNextLocalUpdateSetsRootViewer(viewer: {
+  email: string;
+  id: string;
+  isOperator: boolean;
+}) {
   const viewerRecord = { setValue: vi.fn() };
   const rootRecord = { setLinkedRecord: vi.fn() };
   const store = {
@@ -108,6 +112,7 @@ function expectNextLocalUpdateSetsRootViewer(viewer: { email: string; id: string
     expect(store.create).not.toHaveBeenCalled();
     expect(viewerRecord.setValue).toHaveBeenCalledWith(viewer.id, "id");
     expect(viewerRecord.setValue).toHaveBeenCalledWith(viewer.email, "email");
+    expect(viewerRecord.setValue).toHaveBeenCalledWith(viewer.isOperator, "isOperator");
     expect(store.getRoot).toHaveBeenCalled();
     expect(rootRecord.setLinkedRecord).toHaveBeenCalledWith(viewerRecord, "viewer");
   };
@@ -316,12 +321,13 @@ test("login route commits credentials through Relay and redirects after a succes
   expectLatestMutationHasNoUnconditionalUpdater();
   const expectRootViewerUpdated = expectNextLocalUpdateSetsRootViewer({
     id: "1",
-    email: "person@example.com"
+    email: "person@example.com",
+    isOperator: false
   });
 
   completeMutation({
     login: {
-      viewer: { id: "1", email: "person@example.com" },
+      viewer: { id: "1", email: "person@example.com", isOperator: false },
       errors: []
     }
   });
@@ -518,12 +524,13 @@ test("register route updates root viewer after a successful session response", a
   expectLatestMutationHasNoUnconditionalUpdater();
   const expectRootViewerUpdated = expectNextLocalUpdateSetsRootViewer({
     id: "1",
-    email: "person@example.com"
+    email: "person@example.com",
+    isOperator: false
   });
 
   completeMutation({
     register: {
-      viewer: { id: "1", email: "person@example.com" },
+      viewer: { id: "1", email: "person@example.com", isOperator: false },
       errors: []
     }
   });

@@ -290,8 +290,6 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     end
 
     test "node returns affiliate entities for a session operator", %{conn: conn} do
-      viewer = AccountsFixtures.operator_fixture()
-
       %{
         merchant: merchant,
         merchant_product: merchant_product,
@@ -301,10 +299,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
         coupon: coupon
       } = affiliate_node_records()
 
-      conn =
-        conn
-        |> log_in_user(viewer)
-        |> put_req_header_same_origin()
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{
@@ -408,12 +403,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     end
 
     test "node rejects affiliate entity ids for an authenticated member", %{conn: conn} do
-      member = AccountsFixtures.user_fixture()
-
       %{network: network, program: program, link: link, coupon: coupon} =
         affiliate_node_records()
 
-      conn = conn |> log_in_user(member) |> put_req_header_same_origin()
+      conn = member_conn(conn)
 
       for global_id <- [
             relay_id(:affiliate_network, network.id),
@@ -431,15 +424,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     end
 
     test "node returns affiliate entities for an API-token operator", %{conn: conn} do
-      operator = AccountsFixtures.operator_fixture()
-
       %{network: network, program: program, link: link, coupon: coupon} =
         affiliate_node_records()
 
-      assert {:ok, %{plain_text_token: token}} =
-               Accounts.create_api_token(operator.id, %{label: "Affiliate node operator"})
-
-      conn = put_req_header(conn, "authorization", "Bearer #{token}")
+      conn = operator_conn(conn, :api_token)
 
       for {global_id, typename} <- [
             {relay_id(:affiliate_network, network.id), "AffiliateNetwork"},

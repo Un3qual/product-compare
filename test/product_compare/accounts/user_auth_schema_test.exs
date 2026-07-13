@@ -49,6 +49,7 @@ defmodule ProductCompare.Accounts.UserAuthSchemaTest do
                is_operator: true
              })
 
+    refute preclaimed.is_operator
     original_hash = preclaimed.hashed_password
 
     assert {:error, :existing_non_operator} =
