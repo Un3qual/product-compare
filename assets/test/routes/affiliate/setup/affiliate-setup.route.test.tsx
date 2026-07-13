@@ -149,6 +149,47 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   );
 });
 
+test("affiliate setup route renders merchant-choice pagination from loaded cursors", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData(AFFILIATE_SETUP_QUERY_DESCRIPTOR, {
+      first: 35,
+      after: "previous merchant cursor"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildAffiliateSetupData({
+      hasNextPage: true,
+      hasPreviousPage: true,
+      endCursor: "next merchant cursor/+"
+    }) as never
+  );
+
+  renderAffiliateSetupRoute();
+
+  expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
+    "href",
+    "/affiliate/setup?first=35"
+  );
+  expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
+    "href",
+    "/affiliate/setup?first=35&after=next+merchant+cursor%2F%2B"
+  );
+});
+
+test("affiliate setup route hides merchant-choice pagination without valid destinations", () => {
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildAffiliateSetupData({
+      hasNextPage: true,
+      hasPreviousPage: true,
+      endCursor: null
+    }) as never
+  );
+
+  renderAffiliateSetupRoute();
+
+  expect(screen.queryByRole("navigation", { name: "Merchant choice pages" })).not.toBeInTheDocument();
+});
+
 test("affiliate setup forms preserve submission callbacks and controlled merchant selections", () => {
   const onNetworkSubmit = vi.fn();
   const onProgramSubmit = vi.fn();
@@ -828,14 +869,15 @@ function renderAffiliateSetupRoute() {
 }
 
 function buildReadyLoaderData(
-  merchantQuery = AFFILIATE_SETUP_QUERY_DESCRIPTOR
+  merchantQuery = AFFILIATE_SETUP_QUERY_DESCRIPTOR,
+  merchantPagination: Extract<
+    AffiliateSetupLoaderData,
+    { status: "ready" }
+  >["merchantPagination"] = { first: 20, after: null }
 ): AffiliateSetupLoaderData {
   return {
     status: "ready",
-    merchantPagination: {
-      first: 20,
-      after: null
-    },
+    merchantPagination,
     merchantQuery
   };
 }
@@ -844,8 +886,14 @@ function buildAffiliateSetupData({
   merchants = [
     { id: MERCHANT_ID, name: "Acme Market", domain: "acme.example" },
     { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" }
-  ]
+  ],
+  hasNextPage = false,
+  hasPreviousPage = false,
+  endCursor = merchants.length > 0 ? `merchant-cursor-${merchants.length - 1}` : null
 }: {
+  endCursor?: string | null;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
   merchants?: Array<{ id: string; name: string; domain: string }>;
 } = {}) {
   return {
@@ -855,10 +903,10 @@ function buildAffiliateSetupData({
         node: merchant
       })),
       pageInfo: {
-        hasNextPage: false,
-        hasPreviousPage: false,
+        hasNextPage,
+        hasPreviousPage,
         startCursor: merchants.length > 0 ? "merchant-cursor-0" : null,
-        endCursor: merchants.length > 0 ? `merchant-cursor-${merchants.length - 1}` : null
+        endCursor
       }
     }
   };
