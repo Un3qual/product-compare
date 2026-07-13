@@ -433,6 +433,37 @@ test("advanced catalog filters directly preserve field names and selected values
   expect(screen.getByRole("radio", { name: "Red (2)" })).toBeChecked();
 });
 
+test("route-selected disabled use cases remain enabled and submitted", () => {
+  const metadata = buildProductFilterMetadataResponse().productFilterMetadata;
+  const metadataWithDisabledGaming = {
+    ...metadata,
+    useCaseOptions: metadata.useCaseOptions.map((option) =>
+      option.id === "use-gaming" ? { ...option, disabled: true } : option
+    )
+  };
+
+  render(
+    <form aria-label="Advanced catalog filters">
+      <CatalogAdvancedFilters
+        filters={{
+          ...emptyCatalogFilters,
+          useCaseTaxonIds: ["use-gaming"]
+        }}
+        metadata={metadataWithDisabledGaming}
+      />
+    </form>
+  );
+
+  const form = screen.getByRole("form", {
+    name: "Advanced catalog filters"
+  }) as HTMLFormElement;
+  const gamingFilter = screen.getByRole("checkbox", { name: "Gaming (4)" });
+
+  expect(gamingFilter).toBeChecked();
+  expect(gamingFilter).toBeEnabled();
+  expect(new FormData(form).getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
+});
+
 test("browse loader preloads and returns the Relay browse route query", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/products");

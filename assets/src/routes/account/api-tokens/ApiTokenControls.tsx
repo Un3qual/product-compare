@@ -1,4 +1,4 @@
-import { type FormEvent, type RefObject } from "react";
+import type { FormEvent, RefObject } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { ActionDialog } from "../../../ui/components/overlays/ActionDialog";

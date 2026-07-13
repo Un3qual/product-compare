@@ -4,7 +4,8 @@
 
 - Status: ready (compare product picker view extraction)
 - Priority: P1
-- Source of truth: this file
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
 - Last verified: 2026-07-12 after compare matrix extraction and next-boundary
   validation (104 compare tests; 200 tests across the promoted cohort)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
