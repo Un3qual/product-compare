@@ -97,14 +97,14 @@ active-link styling, shopper path cards, secondary actions, and auth actions.
 `RootRoute` keeps loader/query reads, viewer normalization, providers, shell,
 metadata, outlet context, and page copy.
 
-- [ ] Add direct destination assertions for guest/authenticated visibility,
+- [x] Add direct destination assertions for guest/authenticated visibility,
   active links, shopper paths, and auth actions; verify RED.
-- [ ] Move destination constants and presentation into the typed sibling
+- [x] Move destination constants and presentation into the typed sibling
   without changing labels, paths, or responsive styles.
-- [ ] Keep route data, providers, metadata, shell, and outlet ownership in
+- [x] Keep route data, providers, metadata, shell, and outlet ownership in
   `RootRoute`.
-- [ ] Run the focused root suite, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Run the focused root suite, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

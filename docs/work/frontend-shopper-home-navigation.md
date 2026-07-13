@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (root destination presentation extraction)
+- Status: done (root destination presentation extraction)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -18,7 +18,7 @@
 
 ## Root Destination Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
 - Next action: Extract primary navigation and home destination presentation
   while preserving route-owned Relay reads, viewer normalization, providers,
@@ -37,6 +37,20 @@
 - Exit condition: guest/authenticated destination presentation is isolated
   without changing route data, viewer visibility, active states, labels, paths,
   auth actions, SSR, or hydration.
+
+Completion evidence:
+
+- RED: `cd assets && bun x vitest run test/routes/root.route.test.tsx` failed
+  before any production change because Vite could not resolve the intended
+  `RootDestinations` sibling module.
+- GREEN: the focused suite passed 13 tests, including direct guest and
+  authenticated destination rendering, exact active-link state, shopper paths,
+  and auth actions. `cd assets && bun run typecheck` exited 0.
+- `RootDestinations.tsx` now owns the destination catalogs, responsive
+  destination presentation, active state, shopper cards, secondary actions,
+  and auth actions. `RootRoute.tsx` retains the Relay loader/query reads,
+  viewer normalization, route metadata, providers, shell, outlet context, and
+  PageShell copy.
 
 ## Verified Current State
 
