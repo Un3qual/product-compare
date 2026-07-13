@@ -33,13 +33,15 @@ The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
 affiliate-setup and feed-candidate presentation extractions are also complete.
 Skip navigation plus the saved-comparison, catalog product-list, and revenue
-presentation extractions are complete. API-token controls, compare matrix, and
+presentation extractions are complete. API-token controls, compare matrix,
 catalog advanced-filter presentation, and offer-discovery card presentation
-are validated `ready` work with a dedicated execution plan.
+are also complete. API-token item, product-detail offer-list, root destination,
+and compare picker-view presentation are validated `ready` work with a
+dedicated execution plan.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
+- `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -66,12 +68,16 @@ batch and should not be recreated or promoted.
 - Merchant discovery: add a local merchant-name filter explicitly scoped to the
   visible Relay page.
 - Route foundations: add a real wildcard 404 and shared route document metadata.
-- Frontend route maintainability: extract API-token controls, the compare
-  specification matrix, catalog advanced filters, and the per-offer discovery
-  card through the active control-and-matrix plan.
-- Ready reserve: API-token controls, compare specification matrix, catalog
-  advanced-filter presentation, and offer-discovery card presentation execute
-  through `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
+- Frontend route maintainability: extract API-token item presentation,
+  product-detail offer-list presentation, root destinations, and the compare
+  picker view through the active presentation-boundaries plan.
+- Ready reserve: the four non-overlapping presentation boundaries execute
+  through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Completed reserve: API-token controls, compare specification matrix, catalog
+  advanced-filter presentation, and offer-discovery card presentation are
+  complete through
+  `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`; do not
+  promote them again without fresh scope.
 - Completed reserve: skip navigation plus saved-comparison, catalog product-
   list, and revenue-summary presentation extractions are complete; do not
   promote them again without fresh scope.
@@ -86,6 +92,9 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Frontend control, matrix, advanced-filter, and offer-card presentation:
+  `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 
 - Bounded local-filter polish:
   `docs/plans/2026-07-10-compare-loaded-price-scope-copy-implementation-plan.md`,

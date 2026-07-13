@@ -2,10 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (compare specification matrix extraction)
+- Status: ready (compare product picker view extraction)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-11 after exact loaded-price review follow-up
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-12 after compare matrix extraction and next-boundary
+  validation (104 compare tests; 200 tests across the promoted cohort)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -17,9 +19,32 @@
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
 
-## Ready Next Batch
+## Compare Product Picker View Extraction
 
-- Status: ready.
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Next action: Extract picker headings, loaded-product filtering, option
+  presentation, no-match copy, and show-more controls while preserving
+  boundary-owned Relay reads, page accumulation, selection exclusion, empty
+  dataset decisions, and compare path construction.
+- Owned paths:
+  - `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+  - `assets/src/routes/compare/CompareProductPickerView.tsx`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Prerequisite: the existing compare route suite is green and remains the
+  characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: picker presentation and local filter state are isolated
+  without changing Relay reads, loaded-product accumulation, selected-product
+  exclusion, option URLs, empty states, or pagination.
+
+## Compare Specification Matrix Extraction
+
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`.
 - Next action: Extract matrix rendering and row-comparison semantics into
   `CompareSpecificationMatrix` while leaving decision summary and individual
@@ -37,6 +62,17 @@
   - `git diff --check`
 - Exit condition: matrix presentation and exact row comparison are isolated
   without changing mode, ordering, missing-cell, or numeric/unit behavior.
+- Completion evidence:
+  - RED: the focused suite failed because `CompareSpecificationMatrix.tsx`
+    did not exist.
+  - `CompareSpecificationMatrix` now owns matrix titles and empty states,
+    horizontal scrolling, table markup, stable row construction and ordering,
+    duplicate-code handling, and exact typed comparison normalization.
+  - `CompareProductList` retains decision-summary and individual-product-card
+    presentation.
+  - `cd assets && bun x vitest run test/routes/compare/compare.route.test.tsx`
+    passed 104 tests.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## Completed Bounded Local-Filter Batch
 

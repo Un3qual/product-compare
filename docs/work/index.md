@@ -122,16 +122,18 @@ data, mutation, URL, suspense, and error orchestration.
 
 ## Ready Work
 
-### 1. API Token Control Presentation Extraction
+### 1. API Token Item Presentation Extraction
 
 Status: ready
 Lane: Frontend API token management
-Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
-Next action: Extract API-token status filters, create dialog/form/presets, create-error presentation, and one-time secret disclosure while preserving route-owned mutation and token lifecycle state.
+Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+Next action: Extract per-token details, status, lifecycle errors, rotation form
+and presets, and revoke action while preserving list-owned Relay reads, update
+merging, status filtering, and list composition.
 Owned paths:
 
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
+- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
 - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `docs/work/frontend-api-token-management-demo-parity.md`
 
@@ -145,18 +147,81 @@ Verification:
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Creation/control presentation is isolated while mutation, secret lifecycle, status filtering, rotation/revocation, and pagination behavior remain green.
+Exit condition: Per-token presentation is isolated without changing Relay
+reads, status filtering, rotation/revocation behavior, pending states, dates,
+or pagination.
 
-### 2. Compare Specification Matrix Extraction
+### 2. Product Detail Offer List Presentation Extraction
+
+Status: ready
+Lane: Frontend product detail
+Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+Next action: Extract the active-offer list, merchant action, current price and
+observation, price-history rows, and coupon rows while preserving panel-owned
+normalization, safety checks, snapshot calculation, and pagination.
+Owned paths:
+
+- `assets/src/routes/products/ProductOfferPanel.tsx`
+- `assets/src/routes/products/ProductOfferList.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md`
+
+Prerequisites:
+
+- Existing product-detail route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Normalized active-offer presentation is isolated without
+changing safe-link filtering, price/date formatting, coupon/history output,
+snapshots, mixed-currency behavior, or pagination.
+
+### 3. Root Destination Presentation Extraction
+
+Status: ready
+Lane: Frontend shopper home and navigation
+Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+Next action: Extract primary navigation and home destination presentation while
+preserving route-owned Relay reads, viewer normalization, providers, metadata,
+shell, outlet context, and page copy.
+Owned paths:
+
+- `assets/src/routes/RootRoute.tsx`
+- `assets/src/routes/RootDestinations.tsx`
+- `assets/test/routes/root.route.test.tsx`
+- `docs/work/frontend-shopper-home-navigation.md`
+
+Prerequisites:
+
+- Existing root route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/root.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Guest/authenticated destination presentation is isolated
+without changing route data, viewer visibility, active states, labels, paths,
+auth actions, SSR, or hydration.
+
+### 4. Compare Product Picker View Extraction
 
 Status: ready
 Lane: Frontend product comparison
-Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
-Next action: Extract matrix rendering, row construction, exact comparison normalization, and table presentation while leaving decision summary and product cards in the current owner.
+Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+Next action: Extract picker headings, loaded-product filtering, option
+presentation, no-match copy, and show-more controls while preserving
+boundary-owned Relay reads, page accumulation, selection exclusion, empty
+dataset decisions, and compare path construction.
 Owned paths:
 
-- `assets/src/routes/compare/CompareProductList.tsx`
-- `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- `assets/src/routes/compare/CompareProductPickerView.tsx`
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-product-comparison-demo-parity.md`
 
@@ -170,63 +235,9 @@ Verification:
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Matrix presentation and exact row comparison are isolated without changing mode, ordering, missing-cell, or numeric/unit behavior.
-
-### 3. Catalog Advanced Filter Presentation Extraction
-
-Status: ready
-Lane: Frontend catalog browse
-Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
-Next action: Extract use-case, numeric, boolean, and enum fieldsets while preserving form-owned search, sort, page size, compare selection, product-type/descendant, collapsible, and submission behavior.
-Owned paths:
-
-- `assets/src/routes/catalog/CatalogFilterForm.tsx`
-- `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-browse.md`
-
-Prerequisites:
-
-- Existing catalog browse route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Advanced facet presentation is isolated without changing field names, selected values, filtering semantics, or URL serialization.
-
-### 4. Offer Discovery Card Presentation Extraction
-
-Status: ready
-Lane: Frontend offer discovery
-Plan: `docs/superpowers/plans/2026-07-11-next-control-and-matrix-batches.md`
-Next action: Extract the per-offer card, merchant action, observation context,
-price-history summary, and coupon summary while leaving page-local ordering,
-visible-page snapshot, merchant quick filters, and pagination in the current
-list owner.
-Owned paths:
-
-- `assets/src/routes/offers/OfferDiscoveryList.tsx`
-- `assets/src/routes/offers/OfferDiscoveryCard.tsx`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing offer-discovery route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Per-offer presentation is isolated without changing offer
-ordering, tracked or direct merchant actions, observation labels, latest-price
-display, coupon and price-history summaries, empty states, filters, or
-pagination.
+Exit condition: Picker presentation and local filter state are isolated without
+changing Relay reads, loaded-product accumulation, selected-product exclusion,
+option URLs, empty states, or pagination.
 
 ## Needs Decision Work
 
@@ -237,6 +248,16 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 control-and-matrix batch is complete. API-token controls,
+comparison matrix presentation, catalog advanced filters, and per-offer
+discovery cards now live behind focused typed boundaries. Review follow-up
+replaced modal-hidden accessibility queries, concatenated table text
+assertions, and duplicate widened offer fixtures with semantic queries and
+production-owned type contracts. The four focused suites passed 251 tests;
+TypeScript and diff hygiene were green. Four newly validated, non-overlapping
+rows replace the completed cohort, grounded in current source and 200 passing
+characterization tests.
 
 The 2026-07-11 four-row follow-up completed skip navigation plus the saved-set,
 catalog product-list, and revenue-summary presentation extractions. Focused

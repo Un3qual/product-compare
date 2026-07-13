@@ -2,16 +2,41 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (root destination presentation extraction)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-10 against `assets/src/routes/root.tsx` and
-  `assets/test/routes/root.route.test.tsx`
-- Active plans:
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-12 after next-boundary validation (200 tests across
+  the promoted cohort)
+- Active plan:
+  - `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+- Completed plans:
   - `docs/plans/2026-07-10-shopper-home-content-implementation-plan.md`
   - `docs/plans/2026-07-10-viewer-aware-navigation-implementation-plan.md`
 - Objective: make the root route product-oriented and viewer-aware without
   changing its GraphQL viewer contract or direct-route authorization.
+
+## Root Destination Presentation Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Next action: Extract primary navigation and home destination presentation
+  while preserving route-owned Relay reads, viewer normalization, providers,
+  metadata, shell, outlet context, and page copy.
+- Owned paths:
+  - `assets/src/routes/RootRoute.tsx`
+  - `assets/src/routes/RootDestinations.tsx`
+  - `assets/test/routes/root.route.test.tsx`
+  - `docs/work/frontend-shopper-home-navigation.md`
+- Prerequisite: the existing root route suite is green and remains the
+  characterization contract.
+- Verification:
+  - `cd assets && bun x vitest run test/routes/root.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: guest/authenticated destination presentation is isolated
+  without changing route data, viewer visibility, active states, labels, paths,
+  auth actions, SSR, or hydration.
 
 ## Verified Current State
 

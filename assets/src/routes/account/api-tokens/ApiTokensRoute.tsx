@@ -1,5 +1,4 @@
-import { type FormEvent, type RefObject, useMemo, useRef, useState } from "react";
-import { create, props } from "@stylexjs/stylex";
+import { type FormEvent, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import createApiTokenMutation, {
@@ -16,10 +15,6 @@ import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../../ui/components/navigation/Pagination";
-import { ActionDialog } from "../../../ui/components/overlays/ActionDialog";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
 import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
@@ -27,34 +22,14 @@ import {
   routeMutationErrorMessage
 } from "../../route-errors";
 import {
-  API_TOKEN_EXPIRES_AT_PRESETS,
-  buildApiTokenExpiresAtInputValue
-} from "./date-presets";
-import {
   ApiTokenList,
   RelayApiTokenList,
   apiTokenIsActive,
   applyApiTokenUpdates
 } from "./ApiTokenList";
+import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import type { apiTokensLoader } from "./loader";
-
-const STATUS_FILTERS = [
-  { label: "All", status: "all" },
-  { label: "Active", status: "active" },
-  { label: "Revoked", status: "revoked" }
-] as const;
-
-const styles = create({
-  createForm: {
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--pc-radius-large)",
-    display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1.15rem"
-  }
-});
 
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
@@ -304,33 +279,21 @@ export function ApiTokensRoute() {
               description="Filter credentials by status or create an API token."
               label="API token controls"
             >
-              <ApiTokenStatusFilters tokenStatus={loaderData.tokenStatus} />
-              <ActionDialog
-                description="Choose a clear label and expiration for this credential."
-                onOpenChange={setCreateDialogOpen}
-                open={createDialogOpen}
-                title="Create API token"
-                trigger={<Button>Create API token</Button>}
-              >
-                <CreateApiTokenForm
-                  expiresAtInputRef={createExpiresAtInputRef}
-                  expiresAtPresetInputRef={createExpiresAtPresetInputRef}
-                  onSubmit={handleCreate}
-                  submitting={createSubmitting}
-                />
-                {createError ? <p role="alert">{createError}</p> : null}
-              </ActionDialog>
+              <ApiTokenControls
+                createDialogOpen={createDialogOpen}
+                createError={createError}
+                expiresAtInputRef={createExpiresAtInputRef}
+                expiresAtPresetInputRef={createExpiresAtPresetInputRef}
+                onCreate={handleCreate}
+                onCreateDialogOpenChange={setCreateDialogOpen}
+                submitting={createSubmitting}
+                tokenStatus={loaderData.tokenStatus}
+              />
             </ContextRail>
           }
           label="API token records"
         >
-          {oneTimeToken ? (
-            <section aria-labelledby="api-token-one-time-heading">
-              <h2 id="api-token-one-time-heading">One-time API token</h2>
-              <p>Visible only once. Copy this token now before leaving the page.</p>
-              <code>{oneTimeToken}</code>
-            </section>
-          ) : null}
+          {oneTimeToken ? <OneTimeApiToken token={oneTimeToken} /> : null}
 
           {viewState.tokens.length > 0 && tokenQueries.length > 0 ? (
             <ResettableErrorBoundary
@@ -382,95 +345,6 @@ export function ApiTokensRoute() {
         </WorkspaceLayout>
       )}
     </PageShell>
-  );
-}
-
-function CreateApiTokenForm({
-  expiresAtInputRef,
-  expiresAtPresetInputRef,
-  onSubmit,
-  submitting
-}: {
-  expiresAtInputRef: RefObject<HTMLInputElement | null>;
-  expiresAtPresetInputRef: RefObject<HTMLInputElement | null>;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  submitting: boolean;
-}) {
-  return (
-    <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
-      <div>
-        <span id="api-token-label">Label</span>
-        <TextField
-          aria-labelledby="api-token-label"
-          autoComplete="off"
-          name="label"
-          type="text"
-        />
-      </div>
-      <label>
-        Expires at
-        <input
-          name="expiresAt"
-          onChange={() => {
-            if (expiresAtPresetInputRef.current) {
-              expiresAtPresetInputRef.current.value = "";
-            }
-          }}
-          ref={expiresAtInputRef}
-          type="datetime-local"
-        />
-      </label>
-      <input name="expiresAtPreset" ref={expiresAtPresetInputRef} type="hidden" />
-      <div>
-        {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-          <Button
-            size="1"
-            variant="soft"
-            key={preset.label}
-            onClick={() => {
-              if (expiresAtInputRef.current) {
-                expiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
-                  preset.label,
-                  new Date(Date.now())
-                );
-              }
-              if (expiresAtPresetInputRef.current) {
-                expiresAtPresetInputRef.current.value = preset.label;
-              }
-            }}
-            type="button"
-          >
-            {preset.label}
-          </Button>
-        ))}
-      </div>
-      <Button disabled={submitting} type="submit">
-        {submitting ? "Creating API token..." : "Create API token"}
-      </Button>
-    </form>
-  );
-}
-
-function ApiTokenStatusFilters({
-  tokenStatus
-}: {
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
-}) {
-  return (
-    <nav aria-label="API token status filters">
-      <ul>
-        {STATUS_FILTERS.map((filter) => (
-          <li key={filter.status}>
-            <Link
-              aria-current={tokenStatus === filter.status ? "page" : undefined}
-              to={`/account/api-tokens?status=${filter.status}`}
-            >
-              {filter.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
   );
 }
 

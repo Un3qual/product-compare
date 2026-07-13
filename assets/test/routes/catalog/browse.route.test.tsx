@@ -15,6 +15,7 @@ import {
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { browseLoader } from "../../../src/routes/catalog/loader";
 import { BrowseRoute } from "../../../src/routes/catalog/BrowseRoute";
+import { CatalogAdvancedFilters } from "../../../src/routes/catalog/CatalogAdvancedFilters";
 import {
   BrowseProductList,
   type BrowseProductNode
@@ -400,6 +401,67 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
+});
+
+test("advanced catalog filters directly preserve field names and selected values", () => {
+  const metadata = buildProductFilterMetadataResponse().productFilterMetadata;
+
+  render(
+    <form aria-label="Advanced catalog filters">
+      <CatalogAdvancedFilters
+        filters={{
+          ...emptyCatalogFilters,
+          useCaseTaxonIds: ["use-gaming"],
+          numeric: [{ attributeId: "attr-refresh", min: "120", max: "240" }],
+          booleans: [{ attributeId: "attr-wireless", value: true }],
+          enums: [{ attributeId: "attr-color", enumOptionId: "enum-red" }]
+        }}
+        metadata={metadata}
+      />
+    </form>
+  );
+
+  expect(screen.getByRole("group", { name: "Use cases" })).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: "Gaming (4)" })).toBeChecked();
+  expect(screen.getByLabelText("Refresh Rate minimum")).toHaveAttribute(
+    "name",
+    "numeric.attr-refresh.min"
+  );
+  expect(screen.getByLabelText("Refresh Rate minimum")).toHaveValue("120");
+  expect(screen.getByLabelText("Refresh Rate maximum")).toHaveValue("240");
+  expect(screen.getByRole("combobox", { name: "Wireless" })).toHaveValue("true");
+  expect(screen.getByRole("radio", { name: "Red (2)" })).toBeChecked();
+});
+
+test("route-selected disabled use cases remain enabled and submitted", () => {
+  const metadata = buildProductFilterMetadataResponse().productFilterMetadata;
+  const metadataWithDisabledGaming = {
+    ...metadata,
+    useCaseOptions: metadata.useCaseOptions.map((option) =>
+      option.id === "use-gaming" ? { ...option, disabled: true } : option
+    )
+  };
+
+  render(
+    <form aria-label="Advanced catalog filters">
+      <CatalogAdvancedFilters
+        filters={{
+          ...emptyCatalogFilters,
+          useCaseTaxonIds: ["use-gaming"]
+        }}
+        metadata={metadataWithDisabledGaming}
+      />
+    </form>
+  );
+
+  const form = screen.getByRole("form", {
+    name: "Advanced catalog filters"
+  }) as HTMLFormElement;
+  const gamingFilter = screen.getByRole("checkbox", { name: "Gaming (4)" });
+
+  expect(gamingFilter).toBeChecked();
+  expect(gamingFilter).toBeEnabled();
+  expect(new FormData(form).getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
 });
 
 test("browse loader preloads and returns the Relay browse route query", async () => {
