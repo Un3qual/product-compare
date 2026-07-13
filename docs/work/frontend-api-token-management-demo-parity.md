@@ -2,25 +2,27 @@
 
 ## Snapshot
 
-- Status: ready (API token item presentation extraction)
+- Status: done (API token item presentation extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-12 after API-token control presentation extraction and
-  next-boundary validation (37 API-token tests; 200 tests across the promoted cohort).
+- Last verified: 2026-07-12 after API-token item presentation extraction (43
+  API-token tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## API Token Item Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-12.
 - Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
-- Next action: Extract per-token details, status, lifecycle errors, rotation
-  controls and presets, and revoke action while preserving list-owned Relay
-  reads, update merging, status filtering, and composition.
+- Completed: extracted per-token details, status, lifecycle errors, rotation
+  controls and presets, and revoke action into `ApiTokenItem` while preserving
+  list-owned Relay reads, update merging, status filtering, and composition.
 - Owned paths:
+  - `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
   - `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
   - `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+  - `assets/src/routes/account/api-tokens/api-token-status.ts`
   - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
   - `docs/work/frontend-api-token-management-demo-parity.md`
 - Prerequisite: the existing API-token route suite is green and remains the
@@ -32,6 +34,17 @@
 - Exit condition: per-token presentation is isolated without changing Relay
   reads, status filtering, rotation/revocation behavior, pending states, dates,
   or pagination.
+- Completion evidence:
+  - RED: `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
+    failed because `ApiTokenItem.tsx` did not exist.
+  - GREEN: the focused suite passed 43 tests after `ApiTokenItem` received the
+    token, lifecycle pending/error values, and rotate/revoke callbacks.
+  - `ApiTokenList` retains Relay page reads, local/remote list composition,
+    update merging, status filtering, and query-key construction.
+  - Review follow-up moved the shared active-token predicate into the
+    framework-free `api-token-status.ts` boundary and added a five-case
+    lifecycle truth table.
+  - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
 
 ## API Token Control Presentation Extraction
 

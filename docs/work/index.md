@@ -122,36 +122,7 @@ data, mutation, URL, suspense, and error orchestration.
 
 ## Ready Work
 
-### 1. API Token Item Presentation Extraction
-
-Status: ready
-Lane: Frontend API token management
-Plan: `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
-Next action: Extract per-token details, status, lifecycle errors, rotation form
-and presets, and revoke action while preserving list-owned Relay reads, update
-merging, status filtering, and list composition.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-management-demo-parity.md`
-
-Prerequisites:
-
-- Existing API-token route suite remains the characterization contract.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Per-token presentation is isolated without changing Relay
-reads, status filtering, rotation/revocation behavior, pending states, dates,
-or pagination.
-
-### 2. Product Detail Offer List Presentation Extraction
+### 1. Product Detail Offer List Presentation Extraction
 
 Status: ready
 Lane: Frontend product detail
@@ -180,7 +151,7 @@ Exit condition: Normalized active-offer presentation is isolated without
 changing safe-link filtering, price/date formatting, coupon/history output,
 snapshots, mixed-currency behavior, or pagination.
 
-### 3. Root Destination Presentation Extraction
+### 2. Root Destination Presentation Extraction
 
 Status: ready
 Lane: Frontend shopper home and navigation
@@ -209,7 +180,7 @@ Exit condition: Guest/authenticated destination presentation is isolated
 without changing route data, viewer visibility, active states, labels, paths,
 auth actions, SSR, or hydration.
 
-### 4. Compare Product Picker View Extraction
+### 3. Compare Product Picker View Extraction
 
 Status: ready
 Lane: Frontend product comparison
@@ -239,6 +210,125 @@ Exit condition: Picker presentation and local filter state are isolated without
 changing Relay reads, loaded-product accumulation, selected-product exclusion,
 option URLs, empty states, or pagination.
 
+### 4. Affiliate Setup Merchant Pagination
+
+Status: ready
+Lane: Frontend affiliate setup
+Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
+Next action: expose truthful First/Next navigation for merchant choices using
+the loader's existing normalized `first`/`after` state and the Relay
+connection's `pageInfo`.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/pagination.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-demo-parity.md`
+
+Prerequisites:
+
+- Existing affiliate setup loader and route suites remain the characterization
+  contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Loaded merchant pages expose correct First/Next links without
+changing merchant selection or any affiliate mutation behavior.
+
+### 5. Merchant Directory View Extraction
+
+Status: ready
+Lane: Frontend merchant discovery
+Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
+Next action: extract page-size controls, visible-page filtering, merchant list
+and safe website presentation, empty states, and pagination while preserving
+route-owned Relay reads, normalization, URL safety, and path construction.
+Owned paths:
+
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/src/routes/merchants/MerchantDirectoryView.tsx`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-discovery-demo-parity.md`
+
+Prerequisites:
+
+- Existing merchant directory route suite remains the characterization
+  contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Merchant presentation is isolated without changing query,
+filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
+
+### 6. Saved Comparison View-State Extraction
+
+Status: ready
+Lane: Frontend compare and saved hardening
+Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
+Next action: move pure deleted-id hiding, filtering, sorting, and status
+precedence into a framework-free module while preserving route-owned state,
+Relay retainers, mutation commits, pagination, and URLs.
+Owned paths:
+
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/src/routes/compare/saved-view-state.ts`
+- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-compare-saved-hardening.md`
+
+Prerequisites:
+
+- Existing saved-comparison route-state suite remains the characterization
+  contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: The route consumes one pure view-state contract with exact
+deleted/filter/sort/status behavior and no Relay, mutation, URL, or UI changes.
+
+### 7. Credential Auth Form Presentation Extraction
+
+Status: ready
+Lane: Frontend auth state hardening
+Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
+Next action: replace duplicated login/register shell and credential fields
+with one explicit typed presentation component while preserving route-owned
+GraphQL mutations, session results, viewer-cache updates, and navigation.
+Owned paths:
+
+- `assets/src/routes/auth/CredentialAuthForm.tsx`
+- `assets/src/routes/auth/LoginRoute.tsx`
+- `assets/src/routes/auth/RegisterRoute.tsx`
+- `assets/test/routes/auth/session.route.test.tsx`
+- `docs/work/frontend-auth-state-hardening.md`
+
+Prerequisites:
+
+- Existing auth session route suite remains the characterization contract.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/auth/session.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Login and registration share only credential presentation;
+GraphQL-over-`/api/graphql`, Phoenix session authority, error handling, viewer
+updates, and navigation remain unchanged.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -248,6 +338,13 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The 2026-07-12 API-token item extraction is complete. `ApiTokenItem` now owns
+per-token details, status, lifecycle errors, rotation controls and presets,
+pending copy, and revocation while `ApiTokenList` retains Relay reads, page and
+local composition, update merging, filtering, and query keys. The direct and
+route characterization suite passed 43 tests with TypeScript and diff hygiene
+green; task review approved the boundary and its test-quality follow-up.
 
 The 2026-07-12 control-and-matrix batch is complete. API-token controls,
 comparison matrix presentation, catalog advanced filters, and per-offer

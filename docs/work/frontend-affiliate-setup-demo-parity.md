@@ -2,13 +2,34 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (merchant-choice pagination)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-07-11, presentation extraction verification
+- Last verified: 2026-07-12 after follow-up validation (affiliate loader and
+  route suites included in a 93-test promoted cohort)
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
+
+## Merchant-Choice Pagination
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
+- Next action: expose truthful First/Next navigation for the merchant choices
+  already paginated by the loader and Relay query, preserving page size and
+  encoded cursor state.
+- Owned paths:
+  - `assets/src/routes/affiliate/setup/pagination.ts`
+  - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+  - `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
+  - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `docs/work/frontend-affiliate-setup-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: loaded merchant pages expose correct First/Next links without
+  changing merchant selection or any affiliate mutation behavior.
 
 ## Batch Status
 

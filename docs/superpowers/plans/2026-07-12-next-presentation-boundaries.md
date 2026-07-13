@@ -45,15 +45,15 @@ rotation form and presets, lifecycle errors, and revoke action. `ApiTokenList`
 keeps Relay page reads, local/remote list composition, update merging, status
 filtering, query keys, and list markup.
 
-- [ ] Add direct item assertions for details, status, rotation presets,
+- [x] Add direct item assertions for details, status, rotation presets,
   lifecycle errors, pending copy, and revoke behavior; verify RED against the
   missing component.
-- [ ] Move only per-token presentation and date/status formatting into the
+- [x] Move only per-token presentation and date/status formatting into the
   typed sibling component.
-- [ ] Keep update merging, status filtering, Relay reads, and list composition
+- [x] Keep update merging, status filtering, Relay reads, and list composition
   in `ApiTokenList`.
-- [ ] Run the focused API-token suite, TypeScript, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Run the focused API-token suite, TypeScript, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

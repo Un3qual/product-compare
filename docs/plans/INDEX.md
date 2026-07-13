@@ -36,12 +36,15 @@ Skip navigation plus the saved-comparison, catalog product-list, and revenue
 presentation extractions are complete. API-token controls, compare matrix,
 catalog advanced-filter presentation, and offer-discovery card presentation
 are also complete. API-token item, product-detail offer-list, root destination,
-and compare picker-view presentation are validated `ready` work with a
-dedicated execution plan.
+and compare picker-view presentation are the first active stack cohort.
+Affiliate merchant pagination, merchant-directory view presentation, saved-
+comparison pure view state, and credential-auth form presentation are freshly
+validated follow-up rows with a second dedicated execution plan.
 
 Active implementation plans:
 
 - `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`
+- `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -73,6 +76,10 @@ batch and should not be recreated or promoted.
   picker view through the active presentation-boundaries plan.
 - Ready reserve: the four non-overlapping presentation boundaries execute
   through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`.
+- Ready reserve: affiliate merchant pagination, merchant-directory view
+  presentation, saved-comparison pure view state, and credential-auth form
+  presentation execute through
+  `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

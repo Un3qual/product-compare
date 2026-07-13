@@ -9,6 +9,8 @@ import {
   ApiTokenControls,
   OneTimeApiToken
 } from "../../../../src/routes/account/api-tokens/ApiTokenControls";
+import { ApiTokenItem } from "../../../../src/routes/account/api-tokens/ApiTokenItem";
+import { apiTokenIsActive } from "../../../../src/routes/account/api-tokens/api-token-status";
 import { buildApiTokenExpiresAtInputValue } from "../../../../src/routes/account/api-tokens/date-presets";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
@@ -158,6 +160,85 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+test.each([
+  ["without an expiration", BUILD_BOT_TOKEN, true],
+  ["before expiration", ACTIVE_TOKEN, true],
+  ["after expiration", EXPIRED_TOKEN, false],
+  ["after revocation", REVOKED_TOKEN, false],
+  ["with an invalid expiration", { ...ACTIVE_TOKEN, expiresAt: "invalid" }, true]
+])("API token lifecycle reports the expected state %s", (_caseName, token, expected) => {
+  expect(apiTokenIsActive(token)).toBe(expected);
+});
+
+test("API token item presents token lifecycle details and delegates actions", () => {
+  const onRevoke = vi.fn();
+  const onRotate = vi.fn();
+  const view = render(
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError="Token cannot be revoked."
+        revokePending={false}
+        rotateError="Token rotation failed."
+        rotatePending
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
+  );
+
+  expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
+  expect(screen.getByText(ACTIVE_TOKEN_PREFIX)).toBeInTheDocument();
+  expect(screen.getByText("2026-08-29 12:00 UTC")).toBeInTheDocument();
+  expect(screen.getByText("Never used")).toBeInTheDocument();
+  expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
+  expect(screen.getByText("Active token")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: /30 days|90 days|1 year|No expiration/ })).toHaveLength(
+    4
+  );
+  expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Token rotation failed.");
+  expect(screen.getByText("Token cannot be revoked.")).toHaveAttribute("role", "alert");
+  expect(screen.getByRole("button", { name: "Rotating token..." })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Revoke token" })).toBeDisabled();
+
+  view.rerender(
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError={null}
+        revokePending
+        rotateError={null}
+        rotatePending={false}
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
+  );
+
+  expect(screen.getByRole("button", { name: "Revoking token..." })).toBeDisabled();
+
+  view.rerender(
+    <ul>
+      <ApiTokenItem
+        onRevoke={onRevoke}
+        onRotate={onRotate}
+        revokeError={null}
+        revokePending={false}
+        rotateError={null}
+        rotatePending={false}
+        token={ACTIVE_TOKEN}
+      />
+    </ul>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  expect(onRevoke).toHaveBeenCalledWith(ACTIVE_TOKEN.id);
+
+  const rotateForm = screen.getByRole("form", { name: "Rotate CLI API token" });
+  fireEvent.submit(rotateForm);
+  expect(onRotate).toHaveBeenCalledWith(ACTIVE_TOKEN, rotateForm);
 });
 
 test("API token controls render status navigation, creation state, and expiration presets", () => {

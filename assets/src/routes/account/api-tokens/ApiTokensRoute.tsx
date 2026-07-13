@@ -24,10 +24,10 @@ import {
 import {
   ApiTokenList,
   RelayApiTokenList,
-  apiTokenIsActive,
   applyApiTokenUpdates
 } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
+import { apiTokenIsActive } from "./api-token-status";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import type { apiTokensLoader } from "./loader";
 

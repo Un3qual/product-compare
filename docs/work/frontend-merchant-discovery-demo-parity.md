@@ -2,13 +2,33 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (merchant directory view extraction)
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-27, merchant page-size control parity
+- Last verified: 2026-07-12 after follow-up validation (23 merchant tests;
+  93 tests across the promoted cohort)
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
+
+## Merchant Directory View Extraction
+
+- Status: ready on 2026-07-12.
+- Plan: `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
+- Next action: extract page-size controls, visible-page filtering, list and safe
+  website presentation, empty states, and pagination while preserving route-
+  owned Relay reads, normalization, URL safety, and path construction.
+- Owned paths:
+  - `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+  - `assets/src/routes/merchants/MerchantDirectoryView.tsx`
+  - `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+  - `docs/work/frontend-merchant-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/merchants/merchant-directory.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: merchant presentation is isolated without changing query,
+  filtering, link safety, empty/error, page-size, cursor, or pagination behavior.
 
 ## Completed Visible-Page Name Filter
 
