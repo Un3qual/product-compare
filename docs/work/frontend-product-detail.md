@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: active (product-detail route data contract)
+- Status: done (product-detail route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after product-detail route-data candidate
-  verification (55 route tests).
+- Last verified: 2026-07-14 after product-detail route-data completion and
+  review follow-up (67 focused tests).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -26,7 +26,7 @@
 
 ## Product Detail Route Data Contract
 
-- Status: active on 2026-07-14 on `codex/route-policy-data-contracts`.
+- Status: done on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: isolate selected-tab, overview-summary, encoded product-path,
   compare-action, and selected-item removal policy in a framework-free module
@@ -48,7 +48,7 @@
 - Candidate evidence: the existing product-detail route suite passed 55 tests,
   and current source inspection confirmed the cohesive deterministic policy
   remains embedded in the 376-line React route owner.
-- Completed implementation evidence (awaiting coordinator dispatch closeout):
+- Completed implementation evidence:
   - `product-detail-route-data.ts` now owns framework-free detail-tab
     selection, offer-cursor fallback, overview summaries, encoded product and
     compare paths, compare-action states, and selected-item removal. The route
@@ -64,6 +64,11 @@
   - The direct/transitive import scan of `product-detail-route-data.ts` and its
     `compare/paths.ts` dependency found no React, Relay, router, StyleX, or
     Radix imports.
+  - Review follow-up removed the falsely configurable maximum from the detail
+    contract and reused `compare/paths.ts`'s canonical
+    `MAX_COMPARE_PRODUCTS` for parsing, paths, and action state. The expanded
+    maximum-selection case verifies the ordered three-product compare path.
+  - Independent re-review found no remaining actionable findings.
 
 ## Product Community Data Contract
 

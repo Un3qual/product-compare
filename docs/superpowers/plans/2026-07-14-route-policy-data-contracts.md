@@ -8,7 +8,8 @@
 **Goal:** Keep six established frontend route surfaces maintainable by
 extracting their deterministic form, summary, path, normalization, and view-
 state policy into small, framework-free contracts without changing user
-behavior.
+behavior, and directly characterize the shared external-destination safety
+boundary used by offer and merchant surfaces.
 
 **Architecture:** Each task creates one pure TypeScript module beside its React
 owner. React components retain Relay reads and mutations, router integration,
@@ -140,15 +141,21 @@ add/selected/full compare action. `ProductDetailRoute` retains Relay reads,
 router location and navigation, Suspense and error boundaries, detail-tab
 presentation, layout, and child panels.
 
-- [ ] Write pure tests for explicit and fallback tabs, offer-cursor fallback,
+- [x] Write pure tests for explicit and fallback tabs, offer-cursor fallback,
   overview counts, encoded product paths, preserved unrelated search and hash
   state, compare selection order, add/selected/full states, maximum selection,
   and selected-item removal; verify RED.
-- [ ] Extract only deterministic route policy and keep Relay-derived product
+- [x] Extract only deterministic route policy and keep Relay-derived product
   availability and router side effects in the route owner.
-- [ ] Run the pure and existing detail suites, TypeScript, the framework-import
+- [x] Run the pure and existing detail suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
+- [x] Review fix: remove the falsely configurable detail compare maximum and
+  use `compare/paths.ts`'s canonical `MAX_COMPARE_PRODUCTS` for selection,
+  actions, compare links, browse links, and removal links.
+- [x] Review fix verification: the pure and existing detail suites passed 67
+  tests, TypeScript and the transitive framework scan passed, and independent
+  re-review found no remaining actionable issues.
 
 ---
 
@@ -207,6 +214,33 @@ presentation and tracked commerce actions.
   scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 7: External Destination Safety Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/external-links.ts`
+- Create: `assets/test/routes/external-links.test.ts`
+- Create: `docs/work/frontend-external-destination-safety.md`
+
+**Interfaces:** The existing framework-free module remains the single owner of
+external HTTP URL and bare website-domain normalization. The batch adds direct
+behavioral coverage and changes production code only where that contract
+reveals duplicated or unsafe behavior; offer, product, and merchant consumers
+remain unchanged.
+
+- [ ] Write direct tests for trimming and exact href preservation, safe public
+  HTTP(S), bare-domain HTTPS promotion, credentials, malformed authorities,
+  unsupported schemes, hostname and port validation, localhost, reserved IPv4
+  ranges, and reserved or IPv4-embedded IPv6 destinations; verify the current
+  behavior before changing production code.
+- [ ] Simplify or correct the policy only where direct evidence requires it,
+  without weakening consumer safety or introducing runtime dependencies.
+- [ ] Run the direct contract and existing offer-discovery and merchant
+  consumer suites, TypeScript, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -222,3 +256,11 @@ presentation and tracked commerce actions.
   while the new contract owns connection normalization, snapshot values, and
   pagination policy. Its existing route characterization passed 55 tests on
   2026-07-14.
+- The external-destination candidate is a non-overlapping safety hardening
+  batch over the existing 410-line framework-free policy. Offer-discovery and
+  merchant consumer suites passed 80 tests on 2026-07-14, while source and test
+  inspection found no direct contract suite for its HTTP(S), credential,
+  hostname, port, localhost, or reserved-address decisions.
+- The completed product-detail contract and route characterization passed 67
+  focused tests on 2026-07-14. The contract shares the canonical compare limit
+  and path utilities, and independent re-review found no actionable issues.

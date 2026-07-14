@@ -236,41 +236,20 @@ existing product-detail suite passes 55 tests. Catalog browse then completed:
 one framework-free contract now owns canonical browse paths, encoded product-
 detail links, normalized compare selection, add/selected/full actions, and
 ordered removal paths. Its pure and route suites passed 68 tests. Product
-detail, compare picker, and product-offer panel data remain ready.
+detail then completed: one framework-free contract now owns the canonical
+detail tab, overview summaries, encoded paths, compare action, and ordered
+selection removal while the route retains Relay, navigation, boundaries, and
+presentation. Review follow-up removed a falsely configurable compare maximum
+and reused the canonical shared limit; 67 focused tests pass. Compare picker,
+product-offer panel data, and a newly validated external-destination safety
+contract remain ready. The latter is a shared product-critical boundary used
+by offers and merchant pages; its existing consumer suites pass 80 tests, but
+the 410-line framework-free policy has no direct contract suite for public
+HTTP(S), credential, hostname, port, or reserved-address behavior.
 
 ## Ready Work
 
-### 1. Product Detail Route Data Contract
-
-Status: ready
-Lane: Frontend product detail
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free tab, overview-summary, product-path, and
-compare-action policy while preserving Relay reads, location/navigation,
-boundaries, detail tabs, layout, and presentation.
-Owned paths:
-
-- `assets/src/routes/products/product-detail-route-data.ts`
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/test/routes/products/product-detail-route-data.test.ts`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-product-detail.md`
-
-Prerequisites:
-
-- Existing 55-test product-detail route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-detail-route-data.test.ts test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure product-detail policy preserves tab selection, offer-
-cursor fallback, overview counts, encoded product paths, compare selection
-order, add/selected/full states, hashes, and unrelated search parameters.
-
-### 2. Compare Picker Data Contract
+### 1. Compare Picker Data Contract
 
 Status: ready
 Lane: Frontend compare and saved routes
@@ -300,7 +279,7 @@ Exit condition: Pure picker policy preserves reset identity, stable unique page
 accumulation, selected-product exclusion, unknown-brand fallback, next-cursor
 rules, empty copy, maximum selection, encoded paths, and specification mode.
 
-### 3. Product Offer Panel Data Contract
+### 2. Product Offer Panel Data Contract
 
 Status: ready
 Lane: Frontend product offers
@@ -329,6 +308,35 @@ Verification:
 Exit condition: Pure offer-panel data preserves unsafe-URL exclusion, merchant
 fallbacks, price/currency validation, coupon and price-history semantics,
 snapshot values, compare-slug ordering, and offer pagination paths.
+
+### 3. External Destination Safety Contract
+
+Status: ready
+Lane: Frontend external destination safety
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: add a direct behavioral contract for the shared external HTTP and
+website destination policy, then simplify or correct the implementation only
+where those tests expose duplicated or unsafe normalization behavior.
+Owned paths:
+
+- `assets/src/routes/external-links.ts`
+- `assets/test/routes/external-links.test.ts`
+- `docs/work/frontend-external-destination-safety.md`
+
+Prerequisites:
+
+- Existing offer-discovery and merchant consumer suites remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: the shared contract directly preserves safe public HTTP(S)
+destinations, optional bare-domain HTTPS promotion, and exact safe hrefs while
+rejecting credentials, malformed authorities, unsupported schemes, invalid
+hostnames and ports, localhost, and reserved IPv4/IPv6 destinations.
 
 ## Needs Decision Work
 
