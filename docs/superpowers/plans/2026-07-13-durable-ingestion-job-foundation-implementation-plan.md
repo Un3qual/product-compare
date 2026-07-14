@@ -41,3 +41,9 @@ observable without changing provider parsing or import semantics.
 Complete-run offer reconciliation is the next ingestion milestone; it does not
 land in this dependency-foundation slice.
 
+## Completion Evidence
+
+- Completed 2026-07-13 on `codex/product-trust-and-discovery`.
+- Focused durable worker, health, and scheduler suite: 24 tests, 0 failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed.

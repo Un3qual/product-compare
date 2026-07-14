@@ -149,50 +149,16 @@ Complete offer truth completed on 2026-07-13. Price observations now expose
 shipping, stock, and safe source provenance. Product-level truth considers
 every active database offer, groups currencies independently, classifies
 freshness, and selects a best offer only from complete in-stock landed prices.
-Durable ingestion jobs are the active successor.
+Durable ingestion jobs completed on 2026-07-13. CJ feed discovery and product
+imports now run as unique, database-backed Oban jobs with bounded retries,
+redacted terminal/transient failure categories, enqueue-only timer schedulers,
+and a safe operational-health read model. Complete-run offer reconciliation is
+the next coordinator planning target.
 
 ## Active Work
 
-### Durable Ingestion Job Foundation
-
-Status: active
-Lane: Backend ingestion operations
-Plan: `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
-Next action: add database-backed unique CJ import jobs with bounded retries and
-change timer schedulers to enqueue jobs rather than performing imports inline.
-Owned paths:
-
-- `mix.exs`
-- `mix.lock`
-- `config/config.exs`
-- `config/test.exs`
-- `config/runtime.exs`
-- `lib/product_compare/application.ex`
-- `lib/product_compare/ingestion/jobs/**`
-- `lib/product_compare/ingestion/cj_feed_discovery_scheduler.ex`
-- `lib/product_compare/ingestion/cj_product_import_scheduler.ex`
-- `priv/repo/migrations/*_add_oban_jobs.exs`
-- `test/product_compare/ingestion/jobs/**`
-- `test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
-- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- PostgreSQL remains the runtime database; current bounded CJ task functions
-  and scheduler option normalization remain green.
-
-Verification:
-
-- `mix test test/product_compare/ingestion/jobs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: scheduled work survives process loss, unique schedule windows do
-not duplicate jobs, retry/terminal failures are classified safely, and existing
-disabled-by-default runtime controls remain intact.
+None. The coordinator is validating the complete-run offer-reconciliation
+slice before promotion; the independent ready reserve remains dispatchable.
 
 ## Ready Work
 

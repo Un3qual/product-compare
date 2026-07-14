@@ -2,14 +2,14 @@
 
 ## Snapshot
 
-- Status: active (durable ingestion job foundation)
+- Status: coordinating complete-run offer reconciliation
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
   `docs/superpowers/specs/2026-07-13-product-trust-and-discovery-program-design.md`
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
-- Active implementation plan:
+- Latest completed implementation plan:
   `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
@@ -51,7 +51,7 @@ Recommendations are deterministic and evidence-backed.
 
 - Specification provenance read contract: complete.
 - Complete offer truth read contract: complete.
-- Durable ingestion job foundation: active.
+- Durable ingestion job foundation: complete.
 - Enrichment, corrections, reconciliation, alerts, recommendations, sharing,
   community, merchant pages, and SEO are promoted only as their dependencies
   become green.
@@ -92,5 +92,27 @@ Recommendations are deterministic and evidence-backed.
   live schema snapshot passed 21 tests.
 - Relay schema validation compiled 30 reader, 29 normalization, and 29 operation
   documents successfully.
+- Final gates: `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.
+
+## Durable Ingestion Job Evidence
+
+- Added Oban 2.23 with its PostgreSQL migration, supervised ingestion queue,
+  bounded concurrency, daily pruning, and manual test mode.
+- CJ product imports and feed discovery now enqueue normalized, non-secret jobs
+  keyed by an explicit schedule window. Duplicate windows resolve to the
+  existing job instead of executing twice.
+- Jobs call the existing bounded runners, retry transient provider failures,
+  stop safely on configuration/auth failures, and persist only redacted failure
+  categories.
+- Existing timer schedulers now enqueue by default. Injected legacy runners
+  remain available for focused scheduler characterization, while an explicit
+  enqueuer always wins and prevents inline provider work.
+- Added a database-backed health summary with state counts, oldest pending,
+  latest success, and latest safe failure category. Job arguments and raw Oban
+  errors are not returned.
+- RED: the focused run reported 24 tests and 7 failures because the worker,
+  health, and enqueue-first scheduler contracts did not exist.
+- GREEN: the durable-job and scheduler run passed 24 tests with 0 failures.
 - Final gates: `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.

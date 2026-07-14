@@ -7,7 +7,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
   require Logger
 
-  alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker
   alias ProductCompare.Ingestion.OptionNormalization
 
   @default_advertiser_country "US"
@@ -42,7 +42,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
         OptionNormalization.positive_integer_option(opts, :interval_ms, @default_interval_ms),
       limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
       pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
-      runner: Keyword.get(opts, :runner, &CJFeedDiscovery.run/1)
+      enqueuer:
+        Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJFeedDiscoveryWorker.enqueue/1))
     }
 
     schedule_run(state.initial_delay_ms)
@@ -54,7 +55,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def handle_info(:run_discovery, state) do
     opts = discovery_opts(state)
 
-    result = run_discovery(state.runner, opts)
+    result = run_discovery(state.enqueuer, opts)
 
     log_result(result, opts)
 

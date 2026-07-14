@@ -34,6 +34,34 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
     GenServer.stop(pid)
   end
 
+  test "prefers an enqueue callback so scheduled work does not execute discovery inline" do
+    parent = self()
+
+    enqueuer = fn opts ->
+      send(parent, {:enqueued, opts})
+      {:ok, %{id: 123}}
+    end
+
+    inline_runner = fn _opts -> raise "must not execute inline" end
+
+    pid =
+      start_supervised!(
+        {CJFeedDiscoveryScheduler,
+         [
+           enqueuer: enqueuer,
+           initial_delay_ms: 0,
+           interval_ms: 1_000,
+           runner: inline_runner
+         ]}
+      )
+
+    assert_receive {:enqueued, opts}
+    assert opts[:advertiser_country] == "US"
+    refute_receive {:run, _opts}, 50
+
+    GenServer.stop(pid)
+  end
+
   test "schedules the next run after a successful discovery" do
     parent = self()
 
