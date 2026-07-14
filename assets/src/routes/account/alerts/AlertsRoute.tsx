@@ -76,7 +76,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   }
 
   function toggleWatch(watch: WatchSummary) {
-    void run(watch.id, async () => {
+    return run(watch.id, async () => {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
         variables: { input: { id: watch.id, enabled: !watch.enabled } }
       });
@@ -85,7 +85,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   }
 
   function deleteWatch(watch: WatchSummary) {
-    void run(watch.id, async () => {
+    return run(watch.id, async () => {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, { variables: { id: watch.id } });
       return response.deletePriceWatch?.deletedWatchId ? null : routeMutationErrorMessage(response.deletePriceWatch?.errors, graphQLErrors);
     });
@@ -150,8 +150,8 @@ function WatchList({
   ariaLabel: string;
   watches: WatchSummary[];
   pendingIds: ReadonlySet<string>;
-  onDelete: (watch: WatchSummary) => void;
-  onToggle: (watch: WatchSummary) => void;
+  onDelete: (watch: WatchSummary) => Promise<void>;
+  onToggle: (watch: WatchSummary) => Promise<void>;
 }) {
   return (
     <ul aria-label={ariaLabel} {...props(styles.list)}>

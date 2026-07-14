@@ -44,62 +44,81 @@ export function ShareComparisonControl({
   products: readonly CompareProductSummary[];
 }) {
   const location = useLocation();
-  const titleId = useId();
-  const searchIndexableId = useId();
   const [open, setOpen] = useState(false);
   const [published, setPublished] = useState<PublishedComparisonSnapshot[]>([]);
   const [revokedSnapshotIds, setRevokedSnapshotIds] = useState<Set<string>>(
     () => new Set()
   );
   const [message, setMessage] = useState<string | null>(null);
-  const [commitPublish, publishing] = useMutation<PublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
-  const [commitRevoke, revoking] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
   const recommendationProfile = recommendationProfileFromUrl(
     `${location.pathname}${location.search}`
   );
 
-  async function handlePublish(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage(null);
-    const form = new FormData(event.currentTarget);
-
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: { input: publishInput(products, recommendationProfile, form) }
-      });
-      const payload = response.publishComparisonSnapshot;
-      const publishedSnapshot = publishedSnapshotFromPayload(payload, normalizedTitle(form));
-      if (publishedSnapshot) {
-        setPublished((current) => [publishedSnapshot, ...current.filter((snapshot) => snapshot.id !== publishedSnapshot.id)]);
-        setRevokedSnapshotIds((current) => withoutId(current, publishedSnapshot.id));
-        setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
-      } else {
-        setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
-      }
-    } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-    }
+  function recordPublished(snapshot: PublishedComparisonSnapshot) {
+    setPublished((current) => [snapshot, ...current.filter(({ id }) => id !== snapshot.id)]);
+    setRevokedSnapshotIds((current) => withoutId(current, snapshot.id));
+    setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
   }
 
-  async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, { variables: { snapshotId: snapshot.id } });
-      const payload = response.revokeComparisonSnapshot;
-      if (payload?.revokedSnapshotId) {
-        setPublished((current) => current.filter((item) => item.id !== snapshot.id));
-        setRevokedSnapshotIds((current) => new Set(current).add(snapshot.id));
-        setMessage("Public snapshot revoked. The old link now returns not found.");
-      } else {
-        setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
-      }
-    } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-    }
+  function recordRevoked(snapshot: PublishedComparisonSnapshot) {
+    setPublished((current) => current.filter(({ id }) => id !== snapshot.id));
+    setRevokedSnapshotIds((current) => new Set(current).add(snapshot.id));
+    setMessage("Public snapshot revoked. The old link now returns not found.");
   }
+
+  const [handlePublish, publishing] = useSnapshotPublisher(
+    products,
+    recommendationProfile,
+    recordPublished,
+    setMessage
+  );
+  const [handleRevoke, revoking] = useSnapshotRevoker(recordRevoked, setMessage);
+
+  return <SnapshotControlView
+    handlePublish={handlePublish}
+    handleRevoke={handleRevoke}
+    message={message}
+    onOpenChange={setOpen}
+    open={open}
+    products={products}
+    published={published}
+    publishing={publishing}
+    revokedSnapshotIds={revokedSnapshotIds}
+    revoking={revoking}
+  />;
+}
+
+interface SnapshotControlViewProps {
+  handlePublish: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  handleRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
+  message: string | null;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  products: readonly CompareProductSummary[];
+  published: readonly PublishedComparisonSnapshot[];
+  publishing: boolean;
+  revokedSnapshotIds: ReadonlySet<string>;
+  revoking: boolean;
+}
+
+function SnapshotControlView({
+  handlePublish,
+  handleRevoke,
+  message,
+  onOpenChange,
+  open,
+  products,
+  published,
+  publishing,
+  revokedSnapshotIds,
+  revoking
+}: SnapshotControlViewProps) {
+  const titleId = useId();
+  const searchIndexableId = useId();
 
   return (
     <details
-      onToggle={(event) => setOpen(event.currentTarget.open)}
+      onToggle={(event) => onOpenChange(event.currentTarget.open)}
       {...props(styles.control)}
     >
       <summary {...props(styles.summary)}>Share a fixed comparison snapshot</summary>
@@ -113,25 +132,101 @@ export function ShareComparisonControl({
           <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
         </label>
         <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>
-        {open ? (
-          <ResettableErrorBoundary
-            resetToken={products.map(({ id }) => id).join("|")}
-            fallback={<p role="alert">Published snapshots unavailable.</p>}
-          >
-            <Suspense fallback={<p role="status">Loading published snapshots...</p>}>
-              <PublishedSnapshots
-                localSnapshots={published}
-                onRevoke={handleRevoke}
-                revokedSnapshotIds={revokedSnapshotIds}
-                revoking={revoking}
-              />
-            </Suspense>
-          </ResettableErrorBoundary>
-        ) : null}
+        <SnapshotHistory
+          localSnapshots={published}
+          onRevoke={handleRevoke}
+          open={open}
+          resetToken={products.map(({ id }) => id).join("|")}
+          revokedSnapshotIds={revokedSnapshotIds}
+          revoking={revoking}
+        />
         {message ? <p role="status" {...props(styles.message)}>{message}</p> : null}
       </form>
     </details>
   );
+}
+
+function SnapshotHistory({
+  localSnapshots,
+  onRevoke,
+  open,
+  resetToken,
+  revokedSnapshotIds,
+  revoking
+}: {
+  localSnapshots: readonly PublishedComparisonSnapshot[];
+  onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
+  open: boolean;
+  resetToken: string;
+  revokedSnapshotIds: ReadonlySet<string>;
+  revoking: boolean;
+}) {
+  if (!open) return null;
+
+  return <ResettableErrorBoundary
+    resetToken={resetToken}
+    fallback={<p role="alert">Published snapshots unavailable.</p>}
+  >
+    <Suspense fallback={<p role="status">Loading published snapshots...</p>}>
+      <PublishedSnapshots
+        localSnapshots={localSnapshots}
+        onRevoke={onRevoke}
+        revokedSnapshotIds={revokedSnapshotIds}
+        revoking={revoking}
+      />
+    </Suspense>
+  </ResettableErrorBoundary>;
+}
+
+function useSnapshotPublisher(
+  products: readonly CompareProductSummary[],
+  recommendationProfile: "lowest_current_cost" | "best_value",
+  onPublished: (snapshot: PublishedComparisonSnapshot) => void,
+  onMessage: (message: string | null) => void
+) {
+  const [commitPublish, publishing] = useMutation<PublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
+
+  async function handlePublish(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onMessage(null);
+    const form = new FormData(event.currentTarget);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
+        variables: { input: publishInput(products, recommendationProfile, form) }
+      });
+      const payload = response.publishComparisonSnapshot;
+      const snapshot = publishedSnapshotFromPayload(payload, normalizedTitle(form));
+
+      if (snapshot) onPublished(snapshot);
+      else onMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+    } catch {
+      onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return [handlePublish, publishing] as const;
+}
+
+function useSnapshotRevoker(
+  onRevoked: (snapshot: PublishedComparisonSnapshot) => void,
+  onMessage: (message: string) => void
+) {
+  const [commitRevoke, revoking] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+
+  async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, { variables: { snapshotId: snapshot.id } });
+      const payload = response.revokeComparisonSnapshot;
+
+      if (payload?.revokedSnapshotId) onRevoked(snapshot);
+      else onMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+    } catch {
+      onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return [handleRevoke, revoking] as const;
 }
 
 function PublishedSnapshots({
@@ -141,7 +236,7 @@ function PublishedSnapshots({
   revoking
 }: {
   localSnapshots: readonly PublishedComparisonSnapshot[];
-  onRevoke: (snapshot: PublishedComparisonSnapshot) => void;
+  onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
   revokedSnapshotIds: ReadonlySet<string>;
   revoking: boolean;
 }) {

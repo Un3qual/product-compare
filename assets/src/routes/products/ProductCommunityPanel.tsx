@@ -43,6 +43,36 @@ export function ProductCommunityPanel({
   productId: string;
   productSlug: string;
 }) {
+  const {
+    product,
+    questions,
+    reviews,
+    setQuestionsAfter,
+    setReviewsAfter
+  } = useCommunityPages(productSlug);
+
+  if (!product) {
+    return <p role="alert">Reviews and Q&amp;A unavailable.</p>;
+  }
+
+  return (
+    <section aria-label="Reviews and product questions" {...props(styles.content)}>
+      <ReviewSection
+        onShowMore={nextCursor(product.reviews.pageInfo, setReviewsAfter)}
+        productId={productId}
+        reviews={reviews}
+        summary={product.reviewSummary}
+      />
+      <QuestionSection
+        onShowMore={nextCursor(product.questions.pageInfo, setQuestionsAfter)}
+        productId={productId}
+        questions={questions}
+      />
+    </section>
+  );
+}
+
+function useCommunityPages(productSlug: string) {
   const [reviewsAfter, setReviewsAfter] = useState<string | null>(null);
   const [questionsAfter, setQuestionsAfter] = useState<string | null>(null);
   const [loadedReviews, setLoadedReviews] = useState<Review[]>([]);
@@ -59,16 +89,15 @@ export function ProductCommunityPanel({
     },
     { fetchPolicy: "store-or-network" }
   );
+  const product = data.product;
   const pageReviews = useMemo(
-    () => data.product?.reviews.edges.map(({ node }) => node) ?? [],
-    [data.product?.reviews]
+    () => product?.reviews.edges.map(({ node }) => node) ?? [],
+    [product?.reviews]
   );
   const pageQuestions = useMemo(
-    () => data.product?.questions.edges.map(({ node }) => node) ?? [],
-    [data.product?.questions]
+    () => product?.questions.edges.map(({ node }) => node) ?? [],
+    [product?.questions]
   );
-  const reviews = appendUnique(loadedReviews, pageReviews);
-  const questions = appendUnique(loadedQuestions, pageQuestions);
 
   useEffect(() => {
     setLoadedReviews((current) => appendUnique(current, pageReviews));
@@ -78,25 +107,13 @@ export function ProductCommunityPanel({
     setLoadedQuestions((current) => appendUnique(current, pageQuestions));
   }, [pageQuestions]);
 
-  if (!data.product) {
-    return <p role="alert">Reviews and Q&amp;A unavailable.</p>;
-  }
-
-  return (
-    <section aria-label="Reviews and product questions" {...props(styles.content)}>
-      <ReviewSection
-        onShowMore={nextCursor(data.product.reviews.pageInfo, setReviewsAfter)}
-        productId={productId}
-        reviews={reviews}
-        summary={data.product.reviewSummary}
-      />
-      <QuestionSection
-        onShowMore={nextCursor(data.product.questions.pageInfo, setQuestionsAfter)}
-        productId={productId}
-        questions={questions}
-      />
-    </section>
-  );
+  return {
+    product,
+    questions: appendUnique(loadedQuestions, pageQuestions),
+    reviews: appendUnique(loadedReviews, pageReviews),
+    setQuestionsAfter,
+    setReviewsAfter
+  };
 }
 
 function ReviewSection({
@@ -153,6 +170,19 @@ function reviewInput(
   };
 }
 
+function questionInput(
+  productId: string,
+  form: FormData
+): AskProductQuestionMutation["variables"]["input"] {
+  const body = String(form.get("body") ?? "").trim();
+
+  return {
+    productId,
+    title: String(form.get("title") ?? "").trim(),
+    ...(body ? { body } : {})
+  };
+}
+
 function QuestionSection({
   onShowMore,
   productId,
@@ -167,11 +197,13 @@ function QuestionSection({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input: { productId, title: String(form.get("title") ?? "").trim(), body: String(form.get("body") ?? "").trim() || undefined } } });
+      const input = questionInput(productId, new FormData(event.currentTarget));
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input } });
       const payload = response.askProductQuestion;
-      setMessage(payload?.question ? "Question submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors));
+
+      if (payload?.question) setMessage("Question submitted for moderation.");
+      else setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
     } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
   }
 
