@@ -33,33 +33,6 @@ export const productDetailRouteQuery = graphql`
         enumOptionId
         unitSymbol
       }
-      reviewSummary {
-        count
-        averageRating
-      }
-      reviews(first: 20) {
-        id
-        rating
-        title
-        body
-        verifiedPurchase
-        authorLabel
-        createdAt
-      }
-      questions(first: 20) {
-        id
-        title
-        body
-        authorLabel
-        acceptedAnswerId
-        createdAt
-        answers {
-          id
-          body
-          authorLabel
-          createdAt
-        }
-      }
       merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {
         edges {
           cursor

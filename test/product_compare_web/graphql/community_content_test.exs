@@ -60,8 +60,8 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
              "averageRating" => "5.00"
            }
 
-    assert [%{"authorLabel" => "Community member", "body" => "Simple and reliable."}] =
-             get_in(public, ["data", "product", "reviews"])
+    assert [%{"node" => %{"authorLabel" => "Community member", "body" => "Simple and reliable."}}] =
+             get_in(public, ["data", "product", "reviews", "edges"])
 
     refute inspect(public) =~ user.email
   end
@@ -109,22 +109,62 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
              ["data", "acceptProductAnswer", "errors"]
            ) == []
 
-    assert [question] =
+    assert [%{"node" => question}] =
              get_in(graphql(conn, product_community_query(), %{"slug" => product.slug}), [
                "data",
                "product",
-               "questions"
+               "questions",
+               "edges"
              ])
 
     assert question["acceptedAnswerId"] == answer_id
 
-    assert question["answers"] == [
+    assert question["answers"]["edges"] == [
              %{
-               "id" => answer_id,
-               "body" => "Yes, it fits in a small case.",
-               "authorLabel" => "Community member"
+               "node" => %{
+                 "id" => answer_id,
+                 "body" => "Yes, it fits in a small case.",
+                 "authorLabel" => "Community member"
+               }
              }
            ]
+  end
+
+  test "public community connections expose bounded cursor pagination", %{conn: conn} do
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    Enum.each(1..2, fn rating ->
+      user = AccountsFixtures.user_fixture()
+      {:ok, review} = Discussions.submit_review(user.id, product.id, %{rating: rating + 3})
+
+      {:ok, _published} =
+        Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+    end)
+
+    first_page =
+      graphql(conn, paginated_reviews_query(), %{
+        "slug" => product.slug,
+        "first" => 1,
+        "after" => nil
+      })
+
+    assert %{
+             "edges" => [%{"cursor" => cursor, "node" => %{"rating" => 5}}],
+             "pageInfo" => %{"hasNextPage" => true, "endCursor" => cursor}
+           } = get_in(first_page, ["data", "product", "reviews"])
+
+    second_page =
+      graphql(conn, paginated_reviews_query(), %{
+        "slug" => product.slug,
+        "first" => 1,
+        "after" => cursor
+      })
+
+    assert %{
+             "edges" => [%{"node" => %{"rating" => 4}}],
+             "pageInfo" => %{"hasNextPage" => false}
+           } = get_in(second_page, ["data", "product", "reviews"])
   end
 
   test "community writes require authentication", %{conn: conn} do
@@ -147,8 +187,35 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     query Community($slug: String!) {
       product(slug: $slug) {
         reviewSummary { count averageRating }
-        reviews { id rating title body verifiedPurchase authorLabel }
-        questions { id title body authorLabel acceptedAnswerId answers { id body authorLabel } }
+        reviews(first: 10) {
+          edges { node { id rating title body verifiedPurchase authorLabel } }
+          pageInfo { hasNextPage endCursor }
+        }
+        questions(first: 10) {
+          edges {
+            node {
+              id title body authorLabel acceptedAnswerId
+              answers(first: 5) {
+                edges { node { id body authorLabel } }
+                pageInfo { hasNextPage endCursor }
+              }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp paginated_reviews_query do
+    """
+    query PaginatedReviews($slug: String!, $first: Int!, $after: String) {
+      product(slug: $slug) {
+        reviews(first: $first, after: $after) {
+          edges { cursor node { id rating } }
+          pageInfo { hasNextPage endCursor }
+        }
       }
     }
     """

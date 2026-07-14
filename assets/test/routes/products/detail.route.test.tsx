@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
   createRelayEnvironment,
   RouteLoaderGraphQLError
@@ -27,6 +27,7 @@ const {
   loadQueryMock,
   preloadRouteQueryMock,
   useLoaderDataMock,
+  useLazyLoadQueryMock,
   useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
@@ -37,6 +38,7 @@ const {
   loadQueryMock: vi.fn(),
   preloadRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
@@ -62,6 +64,7 @@ vi.mock("react-relay", async () => {
     ...actual,
     graphql: graphqlMock,
     loadQuery: loadQueryMock,
+    useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock
   };
@@ -79,6 +82,7 @@ vi.mock("react-router-dom", async () => {
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -187,6 +191,7 @@ beforeEach(() => {
   loadQueryMock.mockReset();
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
+  useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
@@ -600,6 +605,47 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
+});
+
+test("loads bounded community data only when the Reviews & Q&A tab is opened", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]));
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: DETAIL_PRODUCT.id,
+      reviewSummary: { count: 0, averageRating: null },
+      reviews: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } }
+    }
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(mockedUseLazyLoadQuery).not.toHaveBeenCalled();
+
+  openProductDetailTab("Reviews & Q&A");
+
+  expect(mockedUseLazyLoadQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    {
+      slug: DETAIL_PRODUCT.slug,
+      reviewFirst: 10,
+      reviewsAfter: null,
+      questionFirst: 10,
+      questionsAfter: null,
+      answerFirst: 5
+    },
+    { fetchPolicy: "store-or-network" }
+  );
+  expect(screen.getByRole("region", { name: "Reviews and product questions" })).toBeVisible();
 });
 
 test.each([
@@ -2087,7 +2133,7 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
   });
 }
 
-function openProductDetailTab(name: "Offers" | "Specifications") {
+function openProductDetailTab(name: "Offers" | "Reviews & Q&A" | "Specifications") {
   const tabList = screen.getByRole("tablist", { name: "Product details" });
   fireEvent.mouseDown(within(tabList).getByRole("tab", { name }), {
     button: 0,

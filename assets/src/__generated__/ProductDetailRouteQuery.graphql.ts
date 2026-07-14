@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1ffdfe06ea5cb421de18201208f9e0bb>>
+ * @generated SignedSource<<66cdc5531679eccc4d0e3f318c0b8fcb>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -90,33 +90,6 @@ export type ProductDetailRouteQuery$data = {
       };
     } | null | undefined;
     readonly name: string;
-    readonly questions: ReadonlyArray<{
-      readonly acceptedAnswerId: string | null | undefined;
-      readonly answers: ReadonlyArray<{
-        readonly authorLabel: string;
-        readonly body: string;
-        readonly createdAt: any;
-        readonly id: string;
-      }>;
-      readonly authorLabel: string;
-      readonly body: string | null | undefined;
-      readonly createdAt: any;
-      readonly id: string;
-      readonly title: string;
-    }>;
-    readonly reviewSummary: {
-      readonly averageRating: any | null | undefined;
-      readonly count: number;
-    };
-    readonly reviews: ReadonlyArray<{
-      readonly authorLabel: string;
-      readonly body: string | null | undefined;
-      readonly createdAt: any;
-      readonly id: string;
-      readonly rating: number;
-      readonly title: string | null | undefined;
-      readonly verifiedPurchase: boolean;
-    }>;
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
@@ -170,67 +143,32 @@ v5 = {
   "name": "description",
   "storageKey": null
 },
-v6 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "title",
-  "storageKey": null
-},
-v7 = [
+v6 = [
   (v3/*: any*/),
   (v4/*: any*/)
 ],
-v8 = {
+v7 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "code",
   "storageKey": null
 },
-v9 = [
-  {
-    "kind": "Literal",
-    "name": "first",
-    "value": 20
-  }
-],
-v10 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "body",
-  "storageKey": null
-},
-v11 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "authorLabel",
-  "storageKey": null
-},
-v12 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "createdAt",
-  "storageKey": null
-},
-v13 = {
+v8 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "cursor",
   "storageKey": null
 },
-v14 = {
+v9 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "currency",
   "storageKey": null
 },
-v15 = [
+v10 = [
   (v3/*: any*/),
   {
     "alias": null,
@@ -247,14 +185,14 @@ v15 = [
     "storageKey": null
   }
 ],
-v16 = {
+v11 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "hasNextPage",
   "storageKey": null
 },
-v17 = {
+v12 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -262,11 +200,11 @@ v17 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v16/*: any*/)
+    (v11/*: any*/)
   ],
   "storageKey": null
 },
-v18 = [
+v13 = [
   {
     "alias": null,
     "args": [
@@ -299,7 +237,13 @@ v18 = [
         "name": "seo",
         "plural": false,
         "selections": [
-          (v6/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
           (v5/*: any*/),
           {
             "alias": null,
@@ -339,7 +283,7 @@ v18 = [
         "kind": "LinkedField",
         "name": "brand",
         "plural": false,
-        "selections": (v7/*: any*/),
+        "selections": (v6/*: any*/),
         "storageKey": null
       },
       {
@@ -357,7 +301,7 @@ v18 = [
             "name": "attributeId",
             "storageKey": null
           },
-          (v8/*: any*/),
+          (v7/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -433,99 +377,6 @@ v18 = [
       },
       {
         "alias": null,
-        "args": null,
-        "concreteType": "ProductReviewSummary",
-        "kind": "LinkedField",
-        "name": "reviewSummary",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "count",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "averageRating",
-            "storageKey": null
-          }
-        ],
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": (v9/*: any*/),
-        "concreteType": "ProductReview",
-        "kind": "LinkedField",
-        "name": "reviews",
-        "plural": true,
-        "selections": [
-          (v3/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "rating",
-            "storageKey": null
-          },
-          (v6/*: any*/),
-          (v10/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "verifiedPurchase",
-            "storageKey": null
-          },
-          (v11/*: any*/),
-          (v12/*: any*/)
-        ],
-        "storageKey": "reviews(first:20)"
-      },
-      {
-        "alias": null,
-        "args": (v9/*: any*/),
-        "concreteType": "ProductQuestion",
-        "kind": "LinkedField",
-        "name": "questions",
-        "plural": true,
-        "selections": [
-          (v3/*: any*/),
-          (v6/*: any*/),
-          (v10/*: any*/),
-          (v11/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "acceptedAnswerId",
-            "storageKey": null
-          },
-          (v12/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "ProductAnswer",
-            "kind": "LinkedField",
-            "name": "answers",
-            "plural": true,
-            "selections": [
-              (v3/*: any*/),
-              (v10/*: any*/),
-              (v11/*: any*/),
-              (v12/*: any*/)
-            ],
-            "storageKey": null
-          }
-        ],
-        "storageKey": "questions(first:20)"
-      },
-      {
-        "alias": null,
         "args": [
           {
             "kind": "Literal",
@@ -556,7 +407,7 @@ v18 = [
             "name": "edges",
             "plural": true,
             "selections": [
-              (v13/*: any*/),
+              (v8/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -573,7 +424,7 @@ v18 = [
                     "name": "url",
                     "storageKey": null
                   },
-                  (v14/*: any*/),
+                  (v9/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -581,7 +432,7 @@ v18 = [
                     "kind": "LinkedField",
                     "name": "merchant",
                     "plural": false,
-                    "selections": (v7/*: any*/),
+                    "selections": (v6/*: any*/),
                     "storageKey": null
                   },
                   {
@@ -591,7 +442,7 @@ v18 = [
                     "kind": "LinkedField",
                     "name": "latestPrice",
                     "plural": false,
-                    "selections": (v15/*: any*/),
+                    "selections": (v10/*: any*/),
                     "storageKey": null
                   },
                   {
@@ -616,7 +467,7 @@ v18 = [
                         "name": "edges",
                         "plural": true,
                         "selections": [
-                          (v13/*: any*/),
+                          (v8/*: any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -625,7 +476,7 @@ v18 = [
                             "name": "node",
                             "plural": false,
                             "selections": [
-                              (v8/*: any*/),
+                              (v7/*: any*/),
                               (v5/*: any*/),
                               {
                                 "alias": null,
@@ -641,7 +492,7 @@ v18 = [
                                 "name": "discountValue",
                                 "storageKey": null
                               },
-                              (v14/*: any*/),
+                              (v9/*: any*/),
                               {
                                 "alias": null,
                                 "args": null,
@@ -662,7 +513,7 @@ v18 = [
                         ],
                         "storageKey": null
                       },
-                      (v17/*: any*/)
+                      (v12/*: any*/)
                     ],
                     "storageKey": "activeCoupons(first:2)"
                   },
@@ -695,13 +546,13 @@ v18 = [
                             "kind": "LinkedField",
                             "name": "node",
                             "plural": false,
-                            "selections": (v15/*: any*/),
+                            "selections": (v10/*: any*/),
                             "storageKey": null
                           }
                         ],
                         "storageKey": null
                       },
-                      (v17/*: any*/)
+                      (v12/*: any*/)
                     ],
                     "storageKey": "priceHistory(first:3)"
                   }
@@ -726,7 +577,7 @@ v18 = [
                 "name": "endCursor",
                 "storageKey": null
               },
-              (v16/*: any*/)
+              (v11/*: any*/)
             ],
             "storageKey": null
           }
@@ -747,7 +598,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductDetailRouteQuery",
-    "selections": (v18/*: any*/),
+    "selections": (v13/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -760,19 +611,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ProductDetailRouteQuery",
-    "selections": (v18/*: any*/)
+    "selections": (v13/*: any*/)
   },
   "params": {
-    "cacheID": "4e57ab39cd8fb1b3ccc07b32330f0c02",
+    "cacheID": "11186773e15a446a6ce3ad56f3671eb0",
     "id": null,
     "metadata": {},
     "name": "ProductDetailRouteQuery",
     "operationKind": "query",
-    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: 20) {\n      id\n      rating\n      title\n      body\n      verifiedPurchase\n      authorLabel\n      createdAt\n    }\n    questions(first: 20) {\n      id\n      title\n      body\n      authorLabel\n      acceptedAnswerId\n      createdAt\n      answers {\n        id\n        body\n        authorLabel\n        createdAt\n      }\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n        node {\n          id\n          url\n          currency\n          merchant {\n            id\n            name\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              cursor\n              node {\n                code\n                description\n                discountType\n                discountValue\n                currency\n                validTo\n                terms\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n        node {\n          id\n          url\n          currency\n          merchant {\n            id\n            name\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              cursor\n              node {\n                code\n                description\n                discountType\n                discountValue\n                currency\n                validTo\n                terms\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "9113073dcec7c65b53de7c289cb87671";
+(node as any).hash = "4d07657131ae299603f929275c24937e";
 
 export default node;

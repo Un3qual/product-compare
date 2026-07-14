@@ -40,6 +40,9 @@ type RootQueryType {
   "Returns one product or null for each requested comparison slug, in requested order."
   comparisonProducts(slugs: [String!]!): [Product]!
 
+  "Returns a published product question by global ID."
+  productQuestion(id: ID!): ProductQuestion
+
   "Returns deterministic source-backed guidance for two or three products."
   comparisonRecommendation(slugs: [String!]!, profile: RecommendationProfile!): ComparisonRecommendation!
 
@@ -951,8 +954,8 @@ type Product implements Node {
   currentAttributes: [ProductAttributeValue!]!
   offerTruth: ProductOfferTruth!
   reviewSummary: ProductReviewSummary!
-  reviews(first: Int): [ProductReview!]!
-  questions(first: Int): [ProductQuestion!]!
+  reviews(first: Int, after: String): ProductReviewConnection!
+  questions(first: Int, after: String): ProductQuestionConnection!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
 }
 
@@ -972,6 +975,16 @@ type ProductReview {
   createdAt: DateTime!
 }
 
+type ProductReviewConnection {
+  edges: [ProductReviewEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductReviewEdge {
+  cursor: String!
+  node: ProductReview!
+}
+
 type ProductQuestion {
   id: ID!
   title: String!
@@ -979,8 +992,18 @@ type ProductQuestion {
   moderationStatus: CommunityModerationStatus!
   authorLabel: String!
   acceptedAnswerId: ID
-  answers: [ProductAnswer!]!
+  answers(first: Int, after: String): ProductAnswerConnection!
   createdAt: DateTime!
+}
+
+type ProductQuestionConnection {
+  edges: [ProductQuestionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductQuestionEdge {
+  cursor: String!
+  node: ProductQuestion!
 }
 
 type ProductAnswer {
@@ -991,13 +1014,23 @@ type ProductAnswer {
   createdAt: DateTime!
 }
 
+type ProductAnswerConnection {
+  edges: [ProductAnswerEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductAnswerEdge {
+  cursor: String!
+  node: ProductAnswer!
+}
+
 type ProductMedia {
   url: String!
   role: String!
   position: Int!
   altText: String
   observedAt: DateTime!
-  sourceArtifact: SourceArtifact!
+  sourceArtifact: SourceArtifact
 }
 
 type ProductAttributeValue {

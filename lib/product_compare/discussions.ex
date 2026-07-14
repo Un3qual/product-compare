@@ -155,13 +155,18 @@ defmodule ProductCompare.Discussions do
   def list_public_reviews(product_id, opts \\ []) do
     {limit, offset} = normalize_pagination(opts)
 
-    Repo.all(
-      from review in ProductReview,
-        where: review.product_id == ^product_id and review.moderation_status == :published,
-        order_by: [desc: review.inserted_at, desc: review.id],
-        limit: ^limit,
-        offset: ^offset
-    )
+    product_id
+    |> public_reviews_query()
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+  end
+
+  @spec public_reviews_query(pos_integer()) :: Ecto.Query.t()
+  def public_reviews_query(product_id) do
+    from review in ProductReview,
+      where: review.product_id == ^product_id and review.moderation_status == :published,
+      order_by: [desc: review.inserted_at, desc: review.id]
   end
 
   @spec review_summary(pos_integer()) :: %{
@@ -232,6 +237,31 @@ defmodule ProductCompare.Discussions do
         offset: ^offset,
         preload: [posts: ^published_posts]
     )
+  end
+
+  @spec public_questions_query(pos_integer()) :: Ecto.Query.t()
+  def public_questions_query(product_id) do
+    from thread in ProductThread,
+      where:
+        thread.product_id == ^product_id and thread.kind == :question and
+          thread.moderation_status == :published,
+      order_by: [desc: thread.inserted_at, desc: thread.id],
+      preload: [:accepted_post]
+  end
+
+  @spec public_answers_query(pos_integer()) :: Ecto.Query.t()
+  def public_answers_query(question_id) do
+    from post in ThreadPost,
+      where: post.thread_id == ^question_id and post.moderation_status == :published,
+      order_by: [asc: post.inserted_at, asc: post.id]
+  end
+
+  @spec get_public_question(Ecto.UUID.t()) :: ProductThread.t() | nil
+  def get_public_question(entropy_id) do
+    case public_question_by_entropy(entropy_id) do
+      %ProductThread{} = question -> Repo.preload(question, :accepted_post)
+      nil -> nil
+    end
   end
 
   @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::

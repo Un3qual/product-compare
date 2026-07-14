@@ -143,6 +143,12 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.comparison_products/3)
     end
 
+    @desc "Returns a published product question by global ID."
+    field :product_question, :product_question do
+      arg(:id, non_null(:id))
+      resolve(&DiscussionsResolver.question/3)
+    end
+
     @desc "Returns deterministic source-backed guidance for two or three products."
     field :comparison_recommendation, non_null(:comparison_recommendation) do
       arg(:slugs, non_null(list_of(non_null(:string))))
@@ -1447,13 +1453,15 @@ defmodule ProductCompareWeb.Schema do
     field :review_summary, non_null(:product_review_summary),
       resolve: &DiscussionsResolver.review_summary/3
 
-    field :reviews, non_null(list_of(non_null(:product_review))) do
-      arg(:first, :integer, default_value: 20)
+    field :reviews, non_null(:product_review_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
       resolve(&DiscussionsResolver.reviews/3)
     end
 
-    field :questions, non_null(list_of(non_null(:product_question))) do
-      arg(:first, :integer, default_value: 20)
+    field :questions, non_null(:product_question_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
       resolve(&DiscussionsResolver.questions/3)
     end
 
@@ -1488,6 +1496,16 @@ defmodule ProductCompareWeb.Schema do
       resolve: fn review, _, _ -> {:ok, review.inserted_at} end
   end
 
+  object :product_review_connection do
+    field :edges, non_null(list_of(non_null(:product_review_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_review_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_review)
+  end
+
   object :product_question do
     field :id, non_null(:id) do
       resolve(fn question, _, _ ->
@@ -1503,8 +1521,15 @@ defmodule ProductCompareWeb.Schema do
     field :accepted_answer_id, :id do
       resolve(fn question, _, _ ->
         accepted_answer =
-          if Ecto.assoc_loaded?(question.posts) do
-            Enum.find(question.posts, &(&1.id == question.accepted_post_id))
+          cond do
+            Ecto.assoc_loaded?(question.accepted_post) ->
+              question.accepted_post
+
+            Ecto.assoc_loaded?(question.posts) ->
+              Enum.find(question.posts, &(&1.id == question.accepted_post_id))
+
+            true ->
+              nil
           end
 
         GlobalId.encode_optional(
@@ -1514,14 +1539,24 @@ defmodule ProductCompareWeb.Schema do
       end)
     end
 
-    field :answers, non_null(list_of(non_null(:product_answer))) do
-      resolve(fn question, _, _ ->
-        {:ok, (Ecto.assoc_loaded?(question.posts) && question.posts) || []}
-      end)
+    field :answers, non_null(:product_answer_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&DiscussionsResolver.answers/3)
     end
 
     field :created_at, non_null(:datetime),
       resolve: fn question, _, _ -> {:ok, question.inserted_at} end
+  end
+
+  object :product_question_connection do
+    field :edges, non_null(list_of(non_null(:product_question_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_question_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_question)
   end
 
   object :product_answer do
@@ -1535,6 +1570,16 @@ defmodule ProductCompareWeb.Schema do
 
     field :created_at, non_null(:datetime),
       resolve: fn answer, _, _ -> {:ok, answer.inserted_at} end
+  end
+
+  object :product_answer_connection do
+    field :edges, non_null(list_of(non_null(:product_answer_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_answer_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_answer)
   end
 
   object :product_media do

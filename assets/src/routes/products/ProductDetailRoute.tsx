@@ -207,7 +207,22 @@ function ProductDetail({
             },
             { content: offers, label: "Offers", value: "offers" },
             {
-              content: <ProductCommunityPanel product={product} />,
+              content: (
+                <ResettableErrorBoundary
+                  resetToken={product.slug}
+                  fallback={<FeedbackState kind="error" title="Reviews and Q&A unavailable." />}
+                >
+                  <Suspense
+                    fallback={<FeedbackState kind="loading" title="Loading reviews and Q&A..." />}
+                  >
+                    <ProductCommunityPanel
+                      key={product.id}
+                      productId={product.id}
+                      productSlug={product.slug}
+                    />
+                  </Suspense>
+                </ResettableErrorBoundary>
+              ),
               label: "Reviews & Q&A",
               value: "community"
             }

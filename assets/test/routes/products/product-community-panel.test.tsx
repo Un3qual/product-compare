@@ -1,27 +1,44 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useMutation } from "react-relay";
+import { useLazyLoadQuery, useMutation } from "react-relay";
 import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
 import submitProductReviewMutation from "../../../src/routes/products/queries/SubmitProductReviewMutation";
 
-const { answerMock, askMock, reviewMock, useMutationMock } = vi.hoisted(() => ({
+const { answerMock, askMock, reviewMock, useLazyLoadQueryMock, useMutationMock } = vi.hoisted(() => ({
   answerMock: vi.fn(),
   askMock: vi.fn(),
   reviewMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn()
 }));
 
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, useMutation: useMutationMock };
+  return { ...actual, useLazyLoadQuery: useLazyLoadQueryMock, useMutation: useMutationMock };
 });
 
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 
 beforeEach(() => {
   answerMock.mockReset();
   askMock.mockReset();
   reviewMock.mockReset();
+  useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: "product-1",
+      reviewSummary: { count: 1, averageRating: "4.00" },
+      reviews: {
+        edges: [{ node: productReview }],
+        pageInfo: { endCursor: null, hasNextPage: false }
+      },
+      questions: {
+        edges: [{ node: productQuestion }],
+        pageInfo: { endCursor: null, hasNextPage: false }
+      }
+    }
+  } as never);
   mockedUseMutation.mockImplementation((mutation) =>
     (mutation === submitProductReviewMutation
       ? [reviewMock, false]
@@ -31,48 +48,37 @@ beforeEach(() => {
   );
 });
 
-const product = {
-  id: "product-1",
-  name: "Field camera",
-  slug: "field-camera",
-  description: null,
-  brand: null,
-  currentAttributes: [],
-  merchantProducts: null,
-  reviewSummary: { count: 1, averageRating: "4.00" },
-  reviews: [
-    {
-      id: "review-1",
-      rating: 4,
-      title: "Useful outdoors",
-      body: "<img src=x onerror=alert(1)> held up in rain.",
-      verifiedPurchase: false,
-      authorLabel: "Community member",
-      createdAt: "2026-07-13T20:00:00Z"
-    }
-  ],
-  questions: [
-    {
-      id: "question-1",
-      title: "Weather sealed?",
-      body: "Can it handle rain?",
-      authorLabel: "Community member",
-      acceptedAnswerId: "answer-1",
-      createdAt: "2026-07-13T20:00:00Z",
-      answers: [
-        {
-          id: "answer-1",
-          body: "Yes, with the port cover closed.",
-          authorLabel: "Community member",
-          createdAt: "2026-07-13T21:00:00Z"
-        }
-      ]
-    }
-  ]
-} as never;
+const productReview = {
+  id: "review-1",
+  rating: 4,
+  title: "Useful outdoors",
+  body: "<img src=x onerror=alert(1)> held up in rain.",
+  verifiedPurchase: false,
+  authorLabel: "Community member"
+};
+
+const productQuestion = {
+  id: "question-1",
+  title: "Weather sealed?",
+  body: "Can it handle rain?",
+  authorLabel: "Community member",
+  acceptedAnswerId: "answer-1",
+  answers: {
+    edges: [{
+      node: {
+        id: "answer-1",
+        body: "Yes, with the port cover closed.",
+        authorLabel: "Community member"
+      }
+    }],
+    pageInfo: { endCursor: null, hasNextPage: false }
+  }
+};
 
 test("ProductCommunityPanel shows published trust signals and renders authored text without HTML injection", () => {
-  const { container } = render(<ProductCommunityPanel product={product} />);
+  const { container } = render(
+    <ProductCommunityPanel productId="product-1" productSlug="field-camera" />
+  );
   expect(screen.getByText(/4.00 out of 5 from 1 published review/)).toBeVisible();
   expect(screen.getByText("Purchase not verified", { exact: false })).toBeVisible();
   expect(screen.getByText("<img src=x onerror=alert(1)> held up in rain.")).toBeVisible();
@@ -81,7 +87,7 @@ test("ProductCommunityPanel shows published trust signals and renders authored t
 });
 
 test("ProductCommunityPanel submits an authenticated review into moderation", async () => {
-  render(<ProductCommunityPanel product={product} />);
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
   fireEvent.click(screen.getByText("Write a review"));
   fireEvent.change(screen.getByLabelText("Rating"), { target: { value: "3" } });
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Balanced" } });

@@ -2,6 +2,8 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   @moduledoc false
 
   alias ProductCompare.Discussions
+  alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
@@ -10,11 +12,29 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     do: {:ok, Discussions.review_summary(product.id)}
 
   def reviews(product, args, _resolution) do
-    {:ok, Discussions.list_public_reviews(product.id, limit: bounded_first(args))}
+    product.id
+    |> Discussions.public_reviews_query()
+    |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
   def questions(product, args, _resolution) do
-    {:ok, Discussions.list_public_questions(product.id, limit: bounded_first(args))}
+    product.id
+    |> Discussions.public_questions_query()
+    |> Connection.from_query_result(Input.connection_args(args), Repo)
+  end
+
+  def answers(question, args, _resolution) do
+    question.id
+    |> Discussions.public_answers_query()
+    |> Connection.from_query_result(Input.connection_args(args), Repo)
+  end
+
+  def question(_parent, %{id: id}, _resolution) do
+    with {:ok, entropy_id} <- GlobalId.decode_uuid(id, :product_question) do
+      {:ok, Discussions.get_public_question(entropy_id)}
+    else
+      :error -> {:error, "invalid product question id"}
+    end
   end
 
   def submit_review(_parent, %{input: input}, %{context: %{current_user: user}}) do
@@ -123,10 +143,6 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
 
   def body(content, _args, _resolution), do: {:ok, content.body_md}
   def author_label(_content, _args, _resolution), do: {:ok, "Community member"}
-
-  defp bounded_first(args) do
-    args |> Input.fetch_value(:first, 20) |> max(0) |> min(50)
-  end
 
   defp decode_id(input, field, type, label) do
     Input.decode_required_integer_id(Input.fetch_value(input, field), type, label)
