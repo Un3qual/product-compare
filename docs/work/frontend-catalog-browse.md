@@ -31,16 +31,23 @@
 
 - Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Completion: `browse-route-data.ts` now owns canonical browse paths,
-  encoded product-detail links, normalized compare selection, add/selected/full
-  actions, and ordered selected-item removal paths. `BrowseRoute` retains
-  Relay reads, location access, boundaries, layout, and presentation.
+- Completion: `browse-route-data.ts` owns canonical browse paths and delegates
+  normalized compare selection, add/selected/full actions, and ordered
+  selected-item removal paths to the shared framework-free compare policy.
+  `BrowseRoute` retains Relay reads, location access, boundaries, layout, and
+  presentation.
 - Owned paths:
   - `assets/src/routes/catalog/browse-route-data.ts`
   - `assets/src/routes/catalog/BrowseRoute.tsx`
   - `assets/test/routes/catalog/browse-route-data.test.ts`
   - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/loader.ts`
   - `docs/work/frontend-catalog-browse.md`
+  - `docs/work/frontend-product-offers.md`
+  - `docs/work/index.md`
+  - `docs/plans/INDEX.md`
+  - `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 - Verification:
   - `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
   - `cd assets && bun run typecheck`
@@ -57,8 +64,15 @@
   - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
     passed 68 tests.
   - `cd assets && bun run typecheck` completed with exit 0.
-  - The direct/transitive import scan confirmed the pure module has no imports,
-    so its dependency graph contains no React, Relay, router, or StyleX code.
+  - Review fix: compare normalization, compare addition, and compare-path
+    serialization are centralized in `compare/paths.ts`; the loader re-exports
+    its maximum-selection constant and specification-mode type for compatibility.
+  - Review GREEN: the catalog pure plus route suites passed 69 tests and the
+    compare route suite passed 109 tests; whitespace trimming, blank removal,
+    duplicate removal, ordering, and maximum selection are directly covered.
+  - The direct/transitive import scan confirms `browse-route-data.ts` and its
+    `compare/paths.ts` dependency contain no React, Relay, router, or StyleX
+    code.
   - `git diff --check` completed with exit 0.
 
 ## Catalog Advanced Filter Presentation Extraction

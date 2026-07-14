@@ -59,9 +59,12 @@
 
 ## Closure
 
-- This work item is complete.
-- No next active frontend batch is queued yet under `docs/work/index.md`.
-- The repo-level fallback for creating the next plan is currently blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
+- The historical offer baseline is complete; the Product Offer Panel Data
+  Contract is the current ready successor in `docs/work/index.md`.
+- The live queue also retains the ready Product Detail Route Data Contract and
+  Compare Picker Data Contract, satisfying the maintained successor set.
+- `docs/plans/INDEX.md` and `ARCHITECTURE.md` are present; no fallback planning
+  blocker applies.
 
 ## Verification Commands
 

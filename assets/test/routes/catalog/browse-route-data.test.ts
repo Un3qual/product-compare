@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { createBrowseRouteData } from "../../../src/routes/catalog/browse-route-data";
+import { normalizedCompareSlugs } from "../../../src/routes/compare/paths";
 
 describe("createBrowseRouteData", () => {
   test("normalizes the root browse pathname", () => {
@@ -63,7 +64,14 @@ describe("createBrowseRouteData", () => {
       maxCompareProducts: 3,
       pathname: "/products",
       search: "",
-      selectedCompareSlugs: ["first-product", "second-product", "third-product", "fourth-product"]
+      selectedCompareSlugs: [
+        " first-product ",
+        "",
+        "first-product",
+        "second-product",
+        "third-product",
+        "fourth-product"
+      ]
     });
 
     expect(routeData.selectedCompareSlugs).toEqual([
@@ -85,5 +93,14 @@ describe("createBrowseRouteData", () => {
     expect(routeData.removeSelectedPathForIndex(1)).toBe(
       "/products?first=24&q=oled&slug=first-product&slug=third-product"
     );
+  });
+
+  test("shares whitespace, blank, duplicate, order, and maximum normalization", () => {
+    expect(
+      normalizedCompareSlugs(
+        [" first-product ", "", "first-product", "second-product", " third-product ", "fourth-product"],
+        { maxProducts: 3 }
+      )
+    ).toEqual(["first-product", "second-product", "third-product"]);
   });
 });

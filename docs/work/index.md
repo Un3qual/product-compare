@@ -217,7 +217,7 @@ three source-verified, non-overlapping route-policy data contracts backed by
 22 affiliate, 51 offer-discovery, and 62 catalog tests.
 
 After PR #98 merged on 2026-07-14, the coordinator validated product-detail
-route policy as a fourth non-overlapping successor backed by 60 existing route
+route policy as a fourth non-overlapping successor backed by 55 existing route
 tests. Affiliate setup then completed on
 `codex/route-policy-data-contracts`: merchant choice, summaries, and all four
 mutation-variable shapes now live in a framework-free contract with 28 focused

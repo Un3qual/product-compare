@@ -7,12 +7,13 @@ import {
 } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
+import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
-export const MAX_COMPARE_PRODUCTS = 3;
+export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
+
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
 
-export type CompareSpecMode = "shared" | "differences" | "all";
 export type RecommendationProfile = "lowest_current_cost" | "best_value";
 
 export interface CompareProductSummary {

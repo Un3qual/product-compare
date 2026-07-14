@@ -110,8 +110,8 @@ batch and should not be recreated or promoted.
 - Completed reserve: affiliate setup route data and offer-discovery filter data
   executed through
   `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Ready reserve: catalog browse route data, product-detail route data, and
-  compare-picker data execute through that same plan.
+- Ready reserve: product-detail route data, compare-picker data, and
+  product-offer panel data execute through that same plan.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

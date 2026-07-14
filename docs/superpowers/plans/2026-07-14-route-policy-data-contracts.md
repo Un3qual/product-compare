@@ -91,9 +91,13 @@ links, controls, and StyleX.
 
 - Create: `assets/src/routes/catalog/browse-route-data.ts`
 - Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Modify: `assets/src/routes/compare/paths.ts`
+- Modify: `assets/src/routes/compare/loader.ts`
 - Create: `assets/test/routes/catalog/browse-route-data.test.ts`
 - Test: `assets/test/routes/catalog/browse.route.test.tsx`
 - Modify: `docs/work/frontend-catalog-browse.md`
+- Review fix docs: `docs/work/index.md`, `docs/plans/INDEX.md`, and
+  `docs/work/frontend-product-offers.md`
 
 **Interfaces:** The pure module derives the canonical browse pathname, product
 detail path, add/selected/full compare actions, and selected-item removal paths
@@ -108,6 +112,15 @@ reads, route location, Suspense and error boundaries, layout, and presentation.
 - [x] Run the pure and existing browse suites, TypeScript, the framework-import
   scan, and `git diff --check`.
 - [x] Record lane evidence and commit the milestone.
+- [x] Review fix: centralize compare slug normalization, addition, and path
+  serialization in the framework-free `compare/paths.ts` owner; preserve
+  loader exports for existing route consumers and add direct whitespace, blank,
+  duplicate, ordering, and maximum-selection coverage.
+- [x] Review fix verification: RED failed because `normalizedCompareSlugs` was
+  not exported; GREEN passed 69 catalog tests and 109 compare-route tests,
+  TypeScript, the `browse-route-data.ts` -> `compare/paths.ts` framework scan,
+  and `git diff --check`. `mix work_queue.validate` was sandbox-blocked by
+  Mix PubSub TCP permission (`:eperm`).
 
 ---
 
