@@ -20,6 +20,7 @@ defmodule ProductCompare.Pricing.OfferTruth do
   def summarize(%MerchantProduct{} = merchant_product, nil, %DateTime{} = _now, _opts) do
     %{
       merchant_product_id: merchant_product.id,
+      price_point_id: nil,
       currency: merchant_product.currency,
       item_price: nil,
       shipping: nil,
@@ -46,6 +47,7 @@ defmodule ProductCompare.Pricing.OfferTruth do
 
     %{
       merchant_product_id: merchant_product.id,
+      price_point_id: price_point.id,
       currency: merchant_product.currency,
       item_price: price_point.price,
       shipping: price_point.shipping,

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (price watchlists and alerts)
+- Status: coordinating deterministic source-backed recommendations
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-authenticated-specification-corrections-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-price-watchlists-and-alerts-implementation-plan.md`
+- Active implementation plan: none while the recommendation slice is being
+  planned.
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -60,7 +60,37 @@ Recommendations are deterministic and evidence-backed.
 - Complete-run offer reconciliation: complete.
 - Specification-rich enrichment and media: complete.
 - Authenticated specification corrections: complete.
-- Price watchlists and alerts: active.
+- Price watchlists and alerts: complete.
+
+## Price Watchlists And Alerts Evidence
+
+- Authenticated users can create product or offer watches for target landed
+  price, percentage drop, back-in-stock, and newly available conditions. Offer
+  scope must match product and currency; percentage rules capture an eligible
+  baseline.
+- Newly persisted price points enqueue unique Oban evaluation jobs in the same
+  database transaction for both direct pricing and ingestion paths. Replayed
+  observations and jobs cannot duplicate events.
+- Evaluation locks each rule, uses only active in-stock fresh/aging offers with
+  complete shipping-inclusive prices, records false/true state, and creates an
+  event only on a new edge or a new qualifying observation after cooldown.
+- Events retain the exact price-point reference and immutable safe fact
+  snapshot. In-app delivery attempts are stored independently for future email
+  or webhook adapters; read state, watch updates, and deletion are owner-scoped.
+- Product detail contains one focused rule form. `/account/alerts` presents
+  unread changes before active watch controls and supports read, pause, and
+  delete actions without a dashboard-card layout.
+- RED: five context tests failed because alert contexts and jobs did not exist;
+  three GraphQL tests then failed because owner queries and mutations were
+  absent.
+- GREEN: the focused context and GraphQL run passed 8 tests. Pricing, ingestion,
+  durable-job, pricing GraphQL, and alert regressions passed 165 tests. Product
+  detail and alerts frontend suites passed 52 tests.
+- Relay validation compiled 35 reader, 34 normalization, and 34 operation
+  documents. Frontend TypeScript, client/SSR builds, and the client bundle
+  contract passed.
+- Final gates: `mix format --check-formatted`, `mix typecheck`,
+  `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.
 
 ## Authenticated Specification Correction Evidence
 

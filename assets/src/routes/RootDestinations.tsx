@@ -101,6 +101,7 @@ const PUBLIC_DESTINATIONS = [
 ] as const satisfies readonly Destination[];
 
 const AUTHENTICATED_DESTINATIONS = [
+  { label: "Price alerts", to: "/account/alerts" },
   { label: "Saved comparisons", to: "/compare/saved" },
   { label: "API tokens", to: "/account/api-tokens" }
 ] as const satisfies readonly Destination[];

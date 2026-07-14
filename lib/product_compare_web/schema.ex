@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Resolvers.AffiliateResolver
+  alias ProductCompareWeb.Resolvers.AlertsResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
@@ -71,6 +72,24 @@ defmodule ProductCompareWeb.Schema do
       arg(:status, :specification_correction_status)
 
       resolve(&SpecsResolver.my_specification_corrections/3)
+    end
+
+    @desc "Returns price watches owned by the current authenticated user."
+    field :my_price_watches, non_null(:price_watch_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:enabled, :boolean)
+
+      resolve(&AlertsResolver.my_price_watches/3)
+    end
+
+    @desc "Returns in-app price alert events owned by the current user."
+    field :my_alert_events, non_null(:alert_event_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:unread_only, :boolean)
+
+      resolve(&AlertsResolver.my_alert_events/3)
     end
 
     @desc "Returns the operator-only specification correction moderation queue."
@@ -261,6 +280,30 @@ defmodule ProductCompareWeb.Schema do
       resolve(&SpecsResolver.moderate_specification_correction/3)
     end
 
+    @desc "Creates a product or offer price watch for the current user."
+    field :create_price_watch, non_null(:price_watch_payload) do
+      arg(:input, non_null(:create_price_watch_input))
+      resolve(&AlertsResolver.create_price_watch/3)
+    end
+
+    @desc "Updates one of the current user's price watches."
+    field :update_price_watch, non_null(:price_watch_payload) do
+      arg(:input, non_null(:update_price_watch_input))
+      resolve(&AlertsResolver.update_price_watch/3)
+    end
+
+    @desc "Deletes one of the current user's price watches."
+    field :delete_price_watch, non_null(:delete_price_watch_payload) do
+      arg(:id, non_null(:id))
+      resolve(&AlertsResolver.delete_price_watch/3)
+    end
+
+    @desc "Marks one of the current user's in-app alert events as read."
+    field :mark_alert_read, non_null(:alert_event_payload) do
+      arg(:id, non_null(:id))
+      resolve(&AlertsResolver.mark_alert_read/3)
+    end
+
     @desc "Upserts an affiliate network by name."
     field :upsert_affiliate_network, :upsert_affiliate_network_payload do
       arg(:input, non_null(:upsert_affiliate_network_input))
@@ -419,6 +462,31 @@ defmodule ProductCompareWeb.Schema do
     field :moderation_note, :string
   end
 
+  enum :price_watch_rule_type do
+    value(:target_price)
+    value(:percentage_drop)
+    value(:back_in_stock)
+    value(:newly_available)
+  end
+
+  input_object :create_price_watch_input do
+    field :product_id, non_null(:id)
+    field :merchant_product_id, :id
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :cooldown_seconds, :integer
+  end
+
+  input_object :update_price_watch_input do
+    field :id, non_null(:id)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :enabled, :boolean
+    field :cooldown_seconds, :integer
+  end
+
   input_object :merchant_products_input do
     field :product_id, non_null(:id)
     field :merchant_id, :id
@@ -561,6 +629,21 @@ defmodule ProductCompareWeb.Schema do
 
   object :specification_correction_payload do
     field :correction, :specification_correction
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :price_watch_payload do
+    field :watch, :price_watch
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :delete_price_watch_payload do
+    field :deleted_watch_id, :id
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :alert_event_payload do
+    field :event, :alert_event
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -1064,6 +1147,103 @@ defmodule ProductCompareWeb.Schema do
   object :specification_correction_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:specification_correction)
+  end
+
+  object :price_watch do
+    field :id, non_null(:id) do
+      resolve(fn watch, _, _ -> GlobalId.encode_required(:price_watch, watch.entropy_id) end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn watch, _, _ -> GlobalId.encode_required(:product, watch.product_id) end)
+    end
+
+    field :merchant_product_id, :id do
+      resolve(fn watch, _, _ ->
+        GlobalId.encode_optional(:merchant_product, watch.merchant_product_id)
+      end)
+    end
+
+    field :product_name, non_null(:string),
+      resolve: fn watch, _, _ -> {:ok, watch.product.name} end
+
+    field :product_slug, non_null(:string),
+      resolve: fn watch, _, _ -> {:ok, watch.product.slug} end
+
+    field :merchant_name, :string,
+      resolve: fn watch, _, _ ->
+        {:ok, watch.merchant_product && watch.merchant_product.merchant.name}
+      end
+
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :baseline_landed_price, :decimal
+    field :enabled, non_null(:boolean)
+    field :cooldown_seconds, non_null(:integer)
+    field :last_evaluated_at, :datetime
+
+    field :created_at, non_null(:datetime),
+      resolve: fn watch, _, _ -> {:ok, watch.inserted_at} end
+  end
+
+  object :price_watch_connection do
+    field :edges, non_null(list_of(non_null(:price_watch_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :price_watch_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:price_watch)
+  end
+
+  object :alert_event do
+    field :id, non_null(:id) do
+      resolve(fn event, _, _ -> GlobalId.encode_required(:alert_event, event.entropy_id) end)
+    end
+
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :item_price, non_null(:decimal)
+    field :shipping, non_null(:decimal)
+    field :landed_price, non_null(:decimal)
+    field :observed_at, non_null(:datetime)
+    field :read_at, :datetime
+
+    field :created_at, non_null(:datetime),
+      resolve: fn event, _, _ -> {:ok, event.inserted_at} end
+
+    field :triggering_price_point_id, non_null(:id) do
+      resolve(fn event, _, _ ->
+        GlobalId.encode_required(:price_point, event.triggering_price_point_id)
+      end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn event, _, _ ->
+        GlobalId.encode_required(:merchant_product, event.merchant_product_id)
+      end)
+    end
+
+    field :product_name, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.product.name} end
+
+    field :product_slug, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.product.slug} end
+
+    field :merchant_name, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.merchant.name} end
+  end
+
+  object :alert_event_connection do
+    field :edges, non_null(list_of(non_null(:alert_event_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :alert_event_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:alert_event)
   end
 
   object :product_attribute_evidence do

@@ -208,6 +208,21 @@ export const routes: RouteObject[] = [
         })
       },
       {
+        path: "account/alerts",
+        handle: routeMetadata(
+          "Price alerts | Product Compare",
+          "Manage product price watches and review qualifying price or availability changes."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="price alerts" title="Price alerts" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ AlertsRoute }, { alertsLoader }] = await Promise.all([
+            import("./routes/account/alerts/AlertsRoute"),
+            import("./routes/account/alerts/loader")
+          ]);
+          return { Component: AlertsRoute, loader: alertsLoader };
+        })
+      },
+      {
         path: "account/api-tokens",
         handle: routeMetadata(
           "API tokens | Product Compare",

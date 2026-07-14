@@ -6,6 +6,7 @@ defmodule ProductCompare.Pricing do
   import Ecto.Query
 
   alias ProductCompare.ChangesetErrors
+  alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
   alias ProductCompare.Pricing.OfferTruth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
@@ -118,9 +119,17 @@ defmodule ProductCompare.Pricing do
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs) do
-    %PricePoint{}
-    |> PricePoint.changeset(attrs)
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      with {:ok, price_point} <-
+             %PricePoint{}
+             |> PricePoint.changeset(attrs)
+             |> Repo.insert(),
+           {:ok, _job} <- AlertEvaluationWorker.enqueue(price_point.id) do
+        price_point
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @spec latest_price(pos_integer()) :: PricePoint.t() | nil

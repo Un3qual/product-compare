@@ -8,6 +8,7 @@ defmodule ProductCompare.Ingestion do
 
   alias ProductCompare.ChangesetErrors
   alias ProductCompare.Catalog
+  alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
   alias ProductCompare.Catalog.GTIN
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Ingestion.Reconciliation
@@ -913,7 +914,10 @@ defmodule ProductCompare.Ingestion do
         fetch_price_point(merchant_product.id, listing.observed_at, source_artifact.id)
 
       {:ok, %PricePoint{} = price_point} ->
-        {:ok, price_point}
+        case AlertEvaluationWorker.enqueue(price_point.id) do
+          {:ok, _job} -> {:ok, price_point}
+          {:error, reason} -> {:error, reason}
+        end
 
       {:error, reason} ->
         {:error, reason}

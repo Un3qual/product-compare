@@ -16,6 +16,12 @@ type RootQueryType {
   "Returns specification corrections submitted by the current user."
   mySpecificationCorrections(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
 
+  "Returns price watches owned by the current authenticated user."
+  myPriceWatches(first: Int, after: String, enabled: Boolean): PriceWatchConnection!
+
+  "Returns in-app price alert events owned by the current user."
+  myAlertEvents(first: Int, after: String, unreadOnly: Boolean): AlertEventConnection!
+
   "Returns the operator-only specification correction moderation queue."
   specificationCorrectionModerationQueue(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
 
@@ -91,6 +97,18 @@ type RootMutationType {
 
   "Accepts or rejects a specification correction as an operator."
   moderateSpecificationCorrection(input: ModerateSpecificationCorrectionInput!): SpecificationCorrectionPayload!
+
+  "Creates a product or offer price watch for the current user."
+  createPriceWatch(input: CreatePriceWatchInput!): PriceWatchPayload!
+
+  "Updates one of the current user's price watches."
+  updatePriceWatch(input: UpdatePriceWatchInput!): PriceWatchPayload!
+
+  "Deletes one of the current user's price watches."
+  deletePriceWatch(id: ID!): DeletePriceWatchPayload!
+
+  "Marks one of the current user's in-app alert events as read."
+  markAlertRead(id: ID!): AlertEventPayload!
 
   "Upserts an affiliate network by name."
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
@@ -222,6 +240,31 @@ input ModerateSpecificationCorrectionInput {
   moderationNote: String
 }
 
+enum PriceWatchRuleType {
+  TARGET_PRICE
+  PERCENTAGE_DROP
+  BACK_IN_STOCK
+  NEWLY_AVAILABLE
+}
+
+input CreatePriceWatchInput {
+  productId: ID!
+  merchantProductId: ID
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  cooldownSeconds: Int
+}
+
+input UpdatePriceWatchInput {
+  id: ID!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  enabled: Boolean
+  cooldownSeconds: Int
+}
+
 input MerchantProductsInput {
   productId: ID!
   merchantId: ID
@@ -346,6 +389,21 @@ type SavedComparisonSetPayload {
 
 type SpecificationCorrectionPayload {
   correction: SpecificationCorrection
+  errors: [MutationError!]!
+}
+
+type PriceWatchPayload {
+  watch: PriceWatch
+  errors: [MutationError!]!
+}
+
+type DeletePriceWatchPayload {
+  deletedWatchId: ID
+  errors: [MutationError!]!
+}
+
+type AlertEventPayload {
+  event: AlertEvent
   errors: [MutationError!]!
 }
 
@@ -691,6 +749,61 @@ type SpecificationCorrectionConnection {
 type SpecificationCorrectionEdge {
   cursor: String!
   node: SpecificationCorrection!
+}
+
+type PriceWatch {
+  id: ID!
+  productId: ID!
+  merchantProductId: ID
+  productName: String!
+  productSlug: String!
+  merchantName: String
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  baselineLandedPrice: Decimal
+  enabled: Boolean!
+  cooldownSeconds: Int!
+  lastEvaluatedAt: DateTime
+  createdAt: DateTime!
+}
+
+type PriceWatchConnection {
+  edges: [PriceWatchEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PriceWatchEdge {
+  cursor: String!
+  node: PriceWatch!
+}
+
+type AlertEvent {
+  id: ID!
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  itemPrice: Decimal!
+  shipping: Decimal!
+  landedPrice: Decimal!
+  observedAt: DateTime!
+  readAt: DateTime
+  createdAt: DateTime!
+  triggeringPricePointId: ID!
+  merchantProductId: ID!
+  productName: String!
+  productSlug: String!
+  merchantName: String!
+}
+
+type AlertEventConnection {
+  edges: [AlertEventEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AlertEventEdge {
+  cursor: String!
+  node: AlertEvent!
 }
 
 type ProductAttributeEvidence {

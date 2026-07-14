@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
 
   @type type ::
           :user
+          | :alert_event
           | :api_token
           | :saved_comparison_set
           | :affiliate_network
@@ -17,6 +18,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :specification_correction
           | :product_attribute_claim
           | :product
+          | :price_watch
           | :brand
           | :attribute
           | :enum_option
@@ -25,6 +27,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
 
   @type_names %{
     user: "User",
+    alert_event: "AlertEvent",
     api_token: "ApiToken",
     saved_comparison_set: "SavedComparisonSet",
     affiliate_network: "AffiliateNetwork",
@@ -39,6 +42,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     specification_correction: "SpecificationCorrection",
     product_attribute_claim: "ProductAttributeClaim",
     product: "Product",
+    price_watch: "PriceWatch",
     brand: "Brand",
     attribute: "Attribute",
     enum_option: "EnumOption",

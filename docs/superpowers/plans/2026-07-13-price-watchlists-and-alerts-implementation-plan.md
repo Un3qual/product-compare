@@ -67,3 +67,13 @@ surfaces without alerting from stale or incomplete offer data.
 
 Deterministic source-backed recommendations are the next milestone after alert
 truth is green.
+
+## Completion Evidence
+
+- The focused alert context and GraphQL run passed 8 tests; affected pricing,
+  ingestion, durable-job, pricing GraphQL, and alert regressions passed 165.
+- Product detail and alert route suites passed 52 tests. Relay validation
+  compiled 35 reader, 34 normalization, and 34 operation documents.
+- Frontend TypeScript, client/SSR production builds, the client bundle budget,
+  backend format/type checks, queue validation with four ready rows, and diff
+  hygiene passed.

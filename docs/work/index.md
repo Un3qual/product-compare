@@ -171,62 +171,17 @@ specification corrections completed on 2026-07-13. Typed user proposals are
 owner-scoped and operator-moderated; acceptance atomically supersedes and
 selects current truth, while duplicate pending proposals and stale-current
 acceptance fail closed. Public product reads expose counts only, and private
-moderation notes remain operator-only. Price watchlists and alerts are now
-active.
+moderation notes remain operator-only. Price watchlists and alerts completed
+on 2026-07-13. Owner-scoped product and offer rules evaluate durably from
+eligible same-currency landed prices, persist immutable observation facts and
+transport-neutral delivery attempts, and suppress replay and premature repeat
+events. Product detail now creates watches, and the authenticated inbox manages
+unread events and active rules. Deterministic source-backed recommendations are
+the next coordinator planning target.
 
 ## Active Work
 
-### Price Watchlists And Alerts
-
-Status: active
-Lane: Full-stack shopper retention
-Plan: `docs/superpowers/plans/2026-07-13-price-watchlists-and-alerts-implementation-plan.md`
-Next action: persist owner-scoped watch rules and durable edge-triggered events
-from eligible current offer truth, then add focused product-detail and inbox
-surfaces.
-Owned paths:
-
-- `lib/product_compare/alerts.ex`
-- `lib/product_compare/alerts/**`
-- `lib/product_compare_schemas/alerts/**`
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/pricing/offer_truth.ex`
-- `lib/product_compare/ingestion.ex`
-- `lib/product_compare_web/graphql/global_id.ex`
-- `lib/product_compare_web/resolvers/alerts_resolver.ex`
-- `lib/product_compare_web/schema.ex`
-- `config/config.exs`
-- `priv/repo/migrations/*_add_price_watches_and_alerts.exs`
-- `test/product_compare/alerts/**`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `test/product_compare/pricing/pricing_test.exs`
-- `assets/schema.graphql`
-- `assets/src/router.tsx`
-- `assets/src/routes/RootDestinations.tsx`
-- `assets/src/routes/products/**`
-- `assets/src/routes/account/alerts/**`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `assets/test/routes/account/alerts/**`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- Complete offer truth, reconciliation, Oban, GraphQL session auth, and product
-  detail route contracts remain green.
-
-Verification:
-
-- `mix test test/product_compare/alerts test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare/pricing/pricing_test.exs test/product_compare/ingestion`
-- `mix absinthe.schema.sdl --schema ProductCompareWeb.Schema assets/schema.graphql`
-- `cd assets && bun run relay && bun x vitest run test/routes/products/detail.route.test.tsx test/routes/account/alerts && bun run typecheck && bun run build`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: eligible observations produce replay-safe, edge-triggered,
-owner-readable in-app alerts, and shoppers can create/manage watches and read
-events from accessible app surfaces.
+None while deterministic recommendations are being planned.
 
 ## Ready Work
 

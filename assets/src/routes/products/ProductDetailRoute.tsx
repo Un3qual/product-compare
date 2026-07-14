@@ -28,6 +28,7 @@ import {
   type ProductAttributeListItem
 } from "./ProductAttributeList";
 import { ProductOfferPanel } from "./ProductOfferPanel";
+import { PriceWatchControl } from "./PriceWatchControl";
 
 const styles = create({
   description: {
@@ -180,6 +181,7 @@ function ProductDetail({
               productSlug={product.slug}
               selectedCompareSlugs={selectedCompareSlugs}
             />
+            <PriceWatchControl productId={product.id} />
           </ContextRail>
         }
         label="Product detail workspace"
