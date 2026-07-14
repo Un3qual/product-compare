@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (serial matrix and decision-summary data contracts)
+- Status: ready (decision-summary data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after compare-save and formatting hardening (108 compare tests)
+- Last verified: 2026-07-14 after specification-matrix data extraction (113
+  focused tests and TypeScript)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -36,7 +37,7 @@
 
 ## Specification Matrix Data Contract
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: isolate the framework-free row construction and typed comparison
   policy while keeping titles, empty states, scrolling, and table markup in the
@@ -54,6 +55,21 @@
 - Exit condition: the pure data contract preserves stable ordering, duplicate-
   code selection, missing cells, modes, typed values, units, and decimal/
   exponent normalization.
+- Completed: framework-free `buildSpecificationMatrixRows()` now owns stable
+  row construction, first-occurrence duplicate selection, missing-cell values,
+  mode filtering, explicit `en-US` ordering, and bounded typed comparison
+  normalization. `CompareSpecificationMatrix` retains Radix scrolling, titles,
+  empty-state copy, and semantic table markup.
+- Completed evidence:
+  - Baseline: the compare route suite passed 109 tests before extraction.
+  - RED: those 109 tests remained green while the new pure suite failed because
+    `specification-matrix-data` did not exist.
+  - GREEN: the focused data and compare suites passed 113 tests, including all
+    modes, first-write duplicate behavior, missing cells, typed booleans,
+    normalized units, decimal exponents, and the 1,000-place expansion bound.
+  - The pure module has no React, Relay, router, Radix, or StyleX imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Decision Summary Data Contract
 
