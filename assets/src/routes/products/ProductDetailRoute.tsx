@@ -14,26 +14,22 @@ import { DetailTabs } from "../../ui/components/layout/DetailTabs";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
-import {
-  buildComparePathFromSlugs,
-  buildCurrentRoutePathWithCompareSlugs,
-  selectedCompareSlugsAfterAdding,
-  selectedCompareSlugsFromSearch
-} from "../compare/paths";
+import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
   type ProductAttributeListItem
 } from "./ProductAttributeList";
-import {
-  ProductDecisionActions,
-  type ProductDecisionCompareAction
-} from "./ProductDecisionActions";
+import { ProductDecisionActions } from "./ProductDecisionActions";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
 import { ProductCommunityPanel } from "./ProductCommunityPanel";
+import {
+  createProductDetailRouteData,
+  overviewSummaryItems,
+  type ProductOverviewSummaryItem
+} from "./product-detail-route-data";
 
 const styles = create({
   description: {
@@ -100,17 +96,19 @@ function ProductDetail({
   const location = useLocation();
   const navigate = useNavigate();
   const offersTitleId = useId();
-  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
-    maxProducts: MAX_COMPARE_PRODUCTS
-  });
-
   if (!data.product) {
     return <ProductNotFoundFallback />;
   }
 
   const { product } = data;
+  const routeData = createProductDetailRouteData({
+    hash: location.hash,
+    maxCompareProducts: MAX_COMPARE_PRODUCTS,
+    productSlug: product.slug,
+    search: location.search
+  });
   const selectionTray =
-    selectedCompareSlugs.length > 0 ? (
+    routeData.selectedCompareSlugs.length > 0 ? (
       <CompareSelectionTray
         items={[
           {
@@ -119,16 +117,9 @@ function ProductDetail({
           }
         ]}
         maxProducts={MAX_COMPARE_PRODUCTS}
-        openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
-        removePathForIndex={(index) =>
-          productDetailPathWithCompareSlugs(
-            product.slug,
-            location.search,
-            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
-            location.hash
-          )
-        }
-        selectedSlugs={selectedCompareSlugs}
+        openComparePath={routeData.comparePath}
+        removePathForIndex={routeData.removeSelectedPathForIndex}
+        selectedSlugs={routeData.selectedCompareSlugs}
       />
     ) : null;
   const offers = (
@@ -139,12 +130,11 @@ function ProductDetail({
       <ProductOfferPanel
         connection={product.merchantProducts}
         productSlug={product.slug}
-        offersAfter={new URLSearchParams(location.search).get("offersAfter")}
-        selectedCompareSlugs={selectedCompareSlugs}
+        offersAfter={routeData.offersAfter}
+        selectedCompareSlugs={routeData.selectedCompareSlugs}
       />
     </section>
   );
-  const detailView = detailViewFromLocation(location.hash, location.search);
 
   return (
     <PageShell
@@ -169,17 +159,8 @@ function ProductDetail({
           >
             {selectionTray}
             <ProductDecisionActions
-              browseHref={buildCurrentRoutePathWithCompareSlugs(
-                "/products",
-                "",
-                selectedCompareSlugs
-              )}
-              compareAction={productDecisionCompareAction(
-                product.slug,
-                location.search,
-                location.hash,
-                selectedCompareSlugs
-              )}
+              browseHref={routeData.browsePath}
+              compareAction={routeData.compareAction}
               offerHref={`/offers?productId=${encodeURIComponent(product.id)}`}
             />
             <PriceWatchControl productId={product.id} />
@@ -192,9 +173,11 @@ function ProductDetail({
             {
               content: (
                 <ProductOverview
-                  attributeCount={product.currentAttributes.length}
-                  loadedOfferCount={product.merchantProducts?.edges.length ?? 0}
-                  hasMoreOffers={product.merchantProducts?.pageInfo.hasNextPage ?? false}
+                  summaryItems={overviewSummaryItems({
+                    attributeCount: product.currentAttributes.length,
+                    loadedOfferCount: product.merchantProducts?.edges.length ?? 0,
+                    hasMoreOffers: product.merchantProducts?.pageInfo.hasNextPage ?? false
+                  })}
                 />
               ),
               label: "Overview",
@@ -238,7 +221,7 @@ function ProductDetail({
               { replace: true }
             )
           }
-          value={detailView}
+          value={routeData.detailView}
         />
       </WorkspaceLayout>
     </PageShell>
@@ -246,24 +229,14 @@ function ProductDetail({
 }
 
 function ProductOverview({
-  attributeCount,
-  hasMoreOffers,
-  loadedOfferCount
+  summaryItems
 }: {
-  attributeCount: number;
-  hasMoreOffers: boolean;
-  loadedOfferCount: number;
+  summaryItems: readonly ProductOverviewSummaryItem[];
 }) {
   return (
     <section aria-label="Product overview" {...props(styles.overview)}>
       <SummaryStrip
-        items={[
-          { label: "Specifications available", value: attributeCount },
-          {
-            label: "Active offers loaded",
-            value: hasMoreOffers ? `${loadedOfferCount}+` : loadedOfferCount
-          }
-        ]}
+        items={summaryItems}
         label="At a glance"
       />
       <p {...props(styles.overviewCopy)}>
@@ -272,37 +245,6 @@ function ProductOverview({
       </p>
     </section>
   );
-}
-
-function productDecisionCompareAction(
-  productSlug: string,
-  currentSearch: string,
-  currentHash: string,
-  selectedCompareSlugs: readonly string[]
-): ProductDecisionCompareAction {
-  if (selectedCompareSlugs.includes(productSlug)) {
-    return { kind: "selected" };
-  }
-
-  if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
-    return { kind: "full" };
-  }
-
-  const nextCompareSlugs = selectedCompareSlugsAfterAdding(
-    selectedCompareSlugs,
-    productSlug,
-    MAX_COMPARE_PRODUCTS
-  );
-
-  return {
-    kind: "add",
-    href: productDetailPathWithCompareSlugs(
-      productSlug,
-      currentSearch,
-      nextCompareSlugs,
-      currentHash
-    )
-  };
 }
 
 function ProductSpecifications({
@@ -339,38 +281,4 @@ function ProductNotFoundFallback() {
       <FeedbackState kind="empty" title="Product not found." />
     </PageShell>
   );
-}
-
-function productDetailPath(productSlug: string) {
-  return `/products/${encodeURIComponent(productSlug)}`;
-}
-
-function detailViewFromLocation(hash: string, search: string) {
-  const view = hash.replace(/^#/, "");
-
-  if (
-    view === "overview" ||
-    view === "specifications" ||
-    view === "offers" ||
-    view === "community"
-  ) {
-    return view;
-  }
-
-  return new URLSearchParams(search).has("offersAfter") ? "offers" : "overview";
-}
-
-function productDetailPathWithCompareSlugs(
-  productSlug: string,
-  search: string,
-  selectedCompareSlugs: readonly string[],
-  hash = ""
-) {
-  const path = buildCurrentRoutePathWithCompareSlugs(
-    productDetailPath(productSlug),
-    search,
-    selectedCompareSlugs
-  );
-
-  return `${path}${hash}`;
 }

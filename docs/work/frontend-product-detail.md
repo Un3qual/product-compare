@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (product-detail route data contract)
+- Status: active (product-detail route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -26,7 +26,7 @@
 
 ## Product Detail Route Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: active on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: isolate selected-tab, overview-summary, encoded product-path,
   compare-action, and selected-item removal policy in a framework-free module
@@ -48,6 +48,22 @@
 - Candidate evidence: the existing product-detail route suite passed 55 tests,
   and current source inspection confirmed the cohesive deterministic policy
   remains embedded in the 376-line React route owner.
+- Completed implementation evidence (awaiting coordinator dispatch closeout):
+  - `product-detail-route-data.ts` now owns framework-free detail-tab
+    selection, offer-cursor fallback, overview summaries, encoded product and
+    compare paths, compare-action states, and selected-item removal. The route
+    owner retains Relay reads, router navigation, boundaries, layout, and
+    presentation.
+  - RED: `cd assets && bun x vitest run
+    test/routes/products/product-detail-route-data.test.ts` failed as expected
+    because `product-detail-route-data` did not exist.
+  - GREEN: `cd assets && bun x vitest run
+    test/routes/products/product-detail-route-data.test.ts
+    test/routes/products/detail.route.test.tsx` passed 67 tests.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - The direct/transitive import scan of `product-detail-route-data.ts` and its
+    `compare/paths.ts` dependency found no React, Relay, router, StyleX, or
+    Radix imports.
 
 ## Product Community Data Contract
 
