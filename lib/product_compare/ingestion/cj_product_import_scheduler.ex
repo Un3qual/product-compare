@@ -10,6 +10,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   alias ProductCompare.Ingestion.Jobs.CJProductImportWorker
   alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Ingestion.ScheduledCursor
+  alias ProductCompare.Ingestion.SchedulerSupport
 
   @default_currency "USD"
   @default_initial_delay_ms 60_000
@@ -20,15 +21,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @default_serviceable_areas ["US"]
 
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    genserver_opts =
-      case Keyword.get(opts, :name) do
-        nil -> []
-        name -> [name: name]
-      end
-
-    GenServer.start_link(__MODULE__, opts, genserver_opts)
-  end
+  def start_link(opts), do: SchedulerSupport.start_link(__MODULE__, opts)
 
   @impl GenServer
   def init(opts) do
@@ -53,22 +46,23 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       serviceable_areas: serviceable_areas_option(opts)
     }
 
-    schedule_run(state.initial_delay_ms)
+    SchedulerSupport.schedule(:run_import, state.initial_delay_ms)
 
     {:ok, state}
   end
 
   @impl GenServer
   def handle_info(:run_import, state) do
-    opts = resolve_cursor(import_opts(state), state.cursor_resolver, state.cursor)
+    opts =
+      SchedulerSupport.resolve_cursor(import_opts(state), state.cursor_resolver, state.cursor)
 
-    result = run_import(state.enqueuer, opts)
+    result = SchedulerSupport.run(state.enqueuer, opts)
 
     log_result(result, opts)
 
     state = %{state | cursor: opts[:cursor]}
 
-    schedule_run(state.interval_ms)
+    SchedulerSupport.schedule(:run_import, state.interval_ms)
 
     {:noreply, state}
   end
@@ -84,30 +78,6 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
     ]
 
     if state.complete_scope, do: Keyword.put(opts, :complete_scope, true), else: opts
-  end
-
-  defp schedule_run(delay_ms) do
-    Process.send_after(self(), :run_import, delay_ms)
-  end
-
-  defp run_import(runner, opts) do
-    runner.(opts)
-  rescue
-    _exception -> {:error, :runner_exception}
-  catch
-    _kind, _reason -> {:error, :runner_exception}
-  end
-
-  defp resolve_cursor(opts, resolver, fallback) do
-    case resolver.(opts) do
-      cursor when is_integer(cursor) and cursor >= 0 -> Keyword.replace!(opts, :cursor, cursor)
-      nil -> Keyword.replace!(opts, :cursor, nil)
-      _invalid -> Keyword.replace!(opts, :cursor, fallback)
-    end
-  rescue
-    _exception -> Keyword.replace!(opts, :cursor, fallback)
-  catch
-    _kind, _reason -> Keyword.replace!(opts, :cursor, fallback)
   end
 
   defp log_result({:ok, report}, opts) do
