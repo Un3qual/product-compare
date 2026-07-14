@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (SEO and acquisition surfaces)
+- Status: complete
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,8 +10,6 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-merchant-detail-pages-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
@@ -65,7 +63,43 @@ Recommendations are deterministic and evidence-backed.
 - Immutable shareable comparison snapshots: complete.
 - Reviews and product Q&A: complete.
 - Merchant detail pages: complete.
-- SEO and acquisition surfaces: active.
+- SEO and acquisition surfaces: complete.
+
+## SEO And Acquisition Evidence
+
+- Added one backend qualification policy shared by GraphQL page metadata,
+  category inventory, and sitemap reads. Products require adequate accepted
+  specifications, useful copy or source-backed media, and an eligible current
+  landed-price observation; merchants require eligible current inventory;
+  curated categories require descriptive copy and at least three qualifying
+  products.
+- Product, merchant, category, and public snapshot loaders now emit unique
+  server-rendered titles, descriptions, absolute canonicals, robots policies,
+  Open Graph/Twitter fields, and injection-safe schema.org JSON-LD. Cursor,
+  filter, and other parameterized variants keep the canonical base but become
+  `noindex,follow`.
+- Comparison publication has an explicit owner-controlled search-discovery
+  checkbox that is off by default. Opt-in alone is insufficient: the immutable
+  capture must also contain specification and current-offer evidence, and
+  revocation removes both the public read and sitemap entry.
+- Added curated category GraphQL reads and landing pages with real qualifying
+  inventory, specification highlights, and a handoff into the complete browse
+  filters. Seeded TV, monitor, and projector metadata provides an operable local
+  curation baseline; thin categories remain `noindex`.
+- Phoenix now serves cached `robots.txt`, a partitioned sitemap index, and
+  deterministic bounded product, merchant, category, and comparison sitemaps.
+  Account, auth, ingestion, affiliate, and commerce tooling is excluded.
+- Product slug changes persist the prior slug as a collision-safe alias. Legacy
+  detail URLs resolve the canonical product and return a permanent redirect;
+  merchant slugs and published category slugs remain stable.
+- GREEN: backend qualification, controllers, GraphQL, snapshots, catalog,
+  schema, and global-ID regressions passed 60 focused tests. The complete
+  backend gate passed 752 tests at 83.02% coverage with Credo, ExDNA (`6/6`),
+  strict smell analysis, and Dialyzer green.
+- Relay compiled 43 reader, 42 normalization, and 42 operation documents. The
+  complete frontend gate passed TypeScript, 56 test files with 748 tests,
+  client and SSR production builds, and the client bundle contract at 181,856
+  gzip bytes against the 200,000-byte budget.
 
 ## Merchant Detail Page Evidence
 

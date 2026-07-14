@@ -109,6 +109,17 @@ defmodule ProductCompare.Taxonomy do
     end
   end
 
+  @spec update_taxon(Taxon.t(), map()) :: {:ok, Taxon.t()} | {:error, Ecto.Changeset.t()}
+  def update_taxon(%Taxon{} = taxon, attrs) when is_map(attrs) do
+    taxon
+    |> Taxon.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @spec get_taxon_by_seo_slug(String.t()) :: Taxon.t() | nil
+  def get_taxon_by_seo_slug(slug) when is_binary(slug), do: Repo.get_by(Taxon, seo_slug: slug)
+  def get_taxon_by_seo_slug(_slug), do: nil
+
   @spec move_taxon(pos_integer(), pos_integer() | nil) :: {:ok, Taxon.t()} | {:error, term()}
   def move_taxon(taxon_id, new_parent_id) do
     with {:ok, taxon} <- fetch_taxon(taxon_id),

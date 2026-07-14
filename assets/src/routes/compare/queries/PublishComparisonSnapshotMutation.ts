@@ -6,6 +6,7 @@ export default graphql`
       snapshot {
         id
         title
+        searchIndexable
         capturedAt
       }
       sharePath

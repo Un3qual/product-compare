@@ -595,7 +595,7 @@ defmodule ProductCompare.Specs do
     update_claim_status(claim_id, moderator_user_id, :rejected)
   end
 
-  @spec select_current_claim(pos_integer(), pos_integer(), pos_integer(), pos_integer()) ::
+  @spec select_current_claim(pos_integer(), pos_integer(), pos_integer(), pos_integer() | nil) ::
           {:ok, ProductAttributeCurrent.t()} | {:error, term()}
   def select_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
     Multi.new()

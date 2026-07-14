@@ -27,7 +27,7 @@ defmodule ProductCompare.Catalog.GTIN do
       body
       |> String.graphemes()
       |> Enum.reverse()
-      |> Enum.with_index()
+      |> Stream.with_index()
       |> Enum.reduce(0, fn {digit, index}, total ->
         weight = if rem(index, 2) == 0, do: 3, else: 1
         total + String.to_integer(digit) * weight

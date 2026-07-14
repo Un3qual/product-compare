@@ -9,6 +9,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
     field :title, :string
     field :payload, :map
     field :revoked_at, :utc_datetime_usec
+    field :search_indexable, :boolean, default: false
 
     belongs_to :user, ProductCompareSchemas.Accounts.User
 
@@ -18,7 +19,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
   @spec publish_changeset(t(), map()) :: Ecto.Changeset.t()
   def publish_changeset(snapshot, attrs) do
     snapshot
-    |> cast(attrs, [:public_token, :user_id, :title, :payload])
+    |> cast(attrs, [:public_token, :user_id, :title, :payload, :search_indexable])
     |> validate_required([:public_token, :user_id, :payload])
     |> validate_length(:public_token, is: 43)
     |> validate_format(:public_token, ~r/^[A-Za-z0-9_-]+$/)

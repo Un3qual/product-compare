@@ -111,6 +111,21 @@ export const routes: RouteObject[] = [
         })
       },
       {
+        path: "categories/:slug",
+        handle: routeMetadata(
+          "Product category | Product Compare",
+          "Compare trusted product specifications and current offer evidence by category."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="category" title="Product category" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ CategoryRoute }, { categoryLoader }] = await Promise.all([
+            import("./routes/categories/CategoryRoute"),
+            import("./routes/categories/loader")
+          ]);
+          return { Component: CategoryRoute, loader: categoryLoader };
+        })
+      },
+      {
         path: "affiliate/setup",
         handle: routeMetadata(
           "Affiliate setup | Product Compare",

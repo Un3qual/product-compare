@@ -19,6 +19,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareWeb.Resolvers.RecommendationsResolver
+  alias ProductCompareWeb.Resolvers.SeoResolver
   alias ProductCompareWeb.Resolvers.SpecsResolver
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Affiliate.AffiliateLink
@@ -191,6 +192,12 @@ defmodule ProductCompareWeb.Schema do
     field :merchant, :merchant do
       arg(:slug, non_null(:string))
       resolve(&PricingResolver.merchant/3)
+    end
+
+    @desc "Returns a curated public product category by canonical search slug."
+    field :category, :seo_category do
+      arg(:slug, non_null(:string))
+      resolve(&SeoResolver.category/3)
     end
 
     @desc "Returns captured merchant feed candidates with review-safe metadata."
@@ -733,6 +740,7 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :publish_comparison_snapshot_input do
     field :title, :string
+    field :search_indexable, :boolean, default_value: false
     field :product_ids, non_null(list_of(non_null(:id)))
     field :recommendation_profile, non_null(:recommendation_profile)
   end
@@ -1121,13 +1129,15 @@ defmodule ProductCompareWeb.Schema do
     end
 
     field :title, :string
+    field :search_indexable, non_null(:boolean)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.snapshot_metadata/3
     field :captured_at, non_null(:datetime), resolve: &ComparisonSnapshotsResolver.captured_at/3
     field :disclaimer, non_null(:string), resolve: &ComparisonSnapshotsResolver.disclaimer/3
 
     field :products, non_null(list_of(non_null(:comparison_snapshot_product))),
       resolve: &ComparisonSnapshotsResolver.snapshot_products/3
 
-    field :recommendation, non_null(:snapshot_recommendation),
+    field :recommendation, non_null(:comparison_recommendation),
       resolve: &ComparisonSnapshotsResolver.recommendation/3
   end
 
@@ -1206,66 +1216,6 @@ defmodule ProductCompareWeb.Schema do
       resolve: &ComparisonSnapshotsResolver.offer_observed_at/3
   end
 
-  object :snapshot_recommendation do
-    field :profile, non_null(:recommendation_profile) do
-      resolve(fn recommendation, _, _ ->
-        {:ok, String.to_existing_atom(recommendation.profile)}
-      end)
-    end
-
-    field :algorithm_version, non_null(:string)
-
-    field :evaluated_at, non_null(:datetime),
-      resolve: &ComparisonSnapshotsResolver.recommendation_evaluated_at/3
-
-    field :status, non_null(:recommendation_status) do
-      resolve(fn recommendation, _, _ ->
-        {:ok, String.to_existing_atom(recommendation.status)}
-      end)
-    end
-
-    field :currency, :string
-    field :missing_inputs, non_null(list_of(non_null(:string)))
-
-    field :winner_product_id, :id do
-      resolve(fn recommendation, _, _ ->
-        GlobalId.encode_optional(:product, recommendation.winner_product_id)
-      end)
-    end
-
-    field :rankings, non_null(list_of(non_null(:snapshot_recommendation_ranking)))
-  end
-
-  object :snapshot_recommendation_ranking do
-    field :rank, non_null(:integer)
-    field :product_name, non_null(:string)
-    field :landed_price, non_null(:decimal)
-    field :currency, non_null(:string)
-    field :reasons, non_null(list_of(non_null(:string)))
-
-    field :product_id, non_null(:id) do
-      resolve(fn ranking, _, _ -> GlobalId.encode_required(:product, ranking.product_id) end)
-    end
-
-    field :price_point_id, non_null(:id) do
-      resolve(fn ranking, _, _ ->
-        GlobalId.encode_required(:price_point, ranking.price_point_id)
-      end)
-    end
-
-    field :merchant_product_id, non_null(:id) do
-      resolve(fn ranking, _, _ ->
-        GlobalId.encode_required(:merchant_product, ranking.merchant_product_id)
-      end)
-    end
-
-    field :claim_ids, non_null(list_of(non_null(:id))) do
-      resolve(fn ranking, _, _ ->
-        {:ok, Enum.map(ranking.claim_ids, &GlobalId.encode(:product_attribute_claim, &1))}
-      end)
-    end
-  end
-
   object :saved_comparison_item do
     field :position, non_null(:integer)
     field :product, non_null(:product), resolve: dataloader(Catalog, use_parent: true)
@@ -1340,6 +1290,7 @@ defmodule ProductCompareWeb.Schema do
     field :name, non_null(:string)
     field :domain, non_null(:string)
     field :slug, non_null(:string)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.merchant_metadata/3
 
     field :detail_summary, non_null(:merchant_detail_summary),
       resolve: &PricingResolver.merchant_detail_summary/3
@@ -1364,6 +1315,34 @@ defmodule ProductCompareWeb.Schema do
     field :stale_offer_count, non_null(:integer)
     field :unobserved_offer_count, non_null(:integer)
     field :last_observed_at, :datetime
+  end
+
+  object :seo_metadata do
+    field :title, non_null(:string)
+    field :description, non_null(:string)
+    field :canonical_path, non_null(:string)
+    field :indexable, non_null(:boolean)
+    field :image_url, :string
+    field :structured_data, :string
+  end
+
+  object :seo_category do
+    field :id, non_null(:id) do
+      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.entropy_id) end)
+    end
+
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
+    field :description, non_null(:string)
+    field :qualified_product_count, non_null(:integer)
+    field :indexable, non_null(:boolean)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.category_metadata/3
+
+    field :products, non_null(:product_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&SeoResolver.category_products/3)
+    end
   end
 
   object :merchant_connection do
@@ -1435,6 +1414,7 @@ defmodule ProductCompareWeb.Schema do
     field :model_number, :string
     field :description, :string
     field :brand, :brand, resolve: dataloader(Catalog, use_parent: true)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.product_metadata/3
 
     field :media, non_null(list_of(non_null(:product_media))),
       resolve: dataloader(Catalog, use_parent: true)

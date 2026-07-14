@@ -20,6 +20,8 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
                  "snapshot" => %{
                    "id" => snapshot_id,
                    "title" => "Lens shortlist",
+                   "searchIndexable" => true,
+                   "seo" => %{"indexable" => false},
                    "products" => products,
                    "disclaimer" => disclaimer
                  },
@@ -32,7 +34,8 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
                "input" => %{
                  "title" => "Lens shortlist",
                  "productIds" => [relay_id(:product, second.id), relay_id(:product, first.id)],
-                 "recommendationProfile" => "LOWEST_CURRENT_COST"
+                 "recommendationProfile" => "LOWEST_CURRENT_COST",
+                 "searchIndexable" => true
                }
              })
 
@@ -160,7 +163,8 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
     mutation PublishSnapshot($input: PublishComparisonSnapshotInput!) {
       publishComparisonSnapshot(input: $input) {
         snapshot {
-          id title capturedAt disclaimer
+          id title searchIndexable capturedAt disclaimer
+          seo { title canonicalPath indexable structuredData }
           products { id name slug brandName attributes { claimId displayName valueText } offers { pricePointId landedPrice currency observedAt merchantName } }
           recommendation { profile algorithmVersion status winnerProductId missingInputs rankings { productId pricePointId claimIds reasons } }
         }

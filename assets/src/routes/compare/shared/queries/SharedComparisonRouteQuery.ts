@@ -5,6 +5,8 @@ export default graphql`
     comparisonSnapshot(token: $token) {
       id
       title
+      searchIndexable
+      seo { title description canonicalPath indexable imageUrl structuredData }
       capturedAt
       disclaimer
       products {

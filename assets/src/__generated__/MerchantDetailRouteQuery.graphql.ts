@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<8c12ea794bcdb6972ef87105a0117bcf>>
+ * @generated SignedSource<<118144f562c8888036eea078d8e79dfc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -54,6 +54,14 @@ export type MerchantDetailRouteQuery$data = {
       };
     };
     readonly name: string;
+    readonly seo: {
+      readonly canonicalPath: string;
+      readonly description: string;
+      readonly imageUrl: string | null | undefined;
+      readonly indexable: boolean;
+      readonly structuredData: string | null | undefined;
+      readonly title: string;
+    };
     readonly slug: string;
   } | null | undefined;
 };
@@ -122,6 +130,59 @@ v6 = [
         "args": null,
         "kind": "ScalarField",
         "name": "domain",
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "SeoMetadata",
+        "kind": "LinkedField",
+        "name": "seo",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "description",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "canonicalPath",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "indexable",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "imageUrl",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "structuredData",
+            "storageKey": null
+          }
+        ],
         "storageKey": null
       },
       {
@@ -359,16 +420,16 @@ return {
     "selections": (v6/*: any*/)
   },
   "params": {
-    "cacheID": "0ef50e0fdaa0346ffc438d2dd2cb4fe3",
+    "cacheID": "0780d52cc5fe3d954708358c67068533",
     "id": null,
     "metadata": {},
     "name": "MerchantDetailRouteQuery",
     "operationKind": "query",
-    "text": "query MerchantDetailRouteQuery(\n  $slug: String!\n  $first: Int!\n  $after: String\n) {\n  merchant(slug: $slug) {\n    id\n    name\n    slug\n    domain\n    detailSummary {\n      activeOfferCount\n      distinctProductCount\n      observedOfferCount\n      eligibleOfferCount\n      freshOfferCount\n      agingOfferCount\n      staleOfferCount\n      unobservedOfferCount\n      lastObservedAt\n    }\n    merchantProducts(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          currency\n          product {\n            id\n            name\n            slug\n          }\n          latestPrice {\n            id\n            price\n            shipping\n            inStock\n            observedAt\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n}\n"
+    "text": "query MerchantDetailRouteQuery(\n  $slug: String!\n  $first: Int!\n  $after: String\n) {\n  merchant(slug: $slug) {\n    id\n    name\n    slug\n    domain\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    detailSummary {\n      activeOfferCount\n      distinctProductCount\n      observedOfferCount\n      eligibleOfferCount\n      freshOfferCount\n      agingOfferCount\n      staleOfferCount\n      unobservedOfferCount\n      lastObservedAt\n    }\n    merchantProducts(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          currency\n          product {\n            id\n            name\n            slug\n          }\n          latestPrice {\n            id\n            price\n            shipping\n            inStock\n            observedAt\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8b7264232c0fcecaea758d7bac6f9257";
+(node as any).hash = "f5606ac3d6bcea3e1bd8d13d0ad9fcf4";
 
 export default node;

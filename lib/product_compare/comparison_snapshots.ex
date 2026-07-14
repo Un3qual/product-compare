@@ -6,10 +6,13 @@ defmodule ProductCompare.ComparisonSnapshots do
 
   import Ecto.Query
 
+  alias ProductCompare.Input
   alias ProductCompare.Pricing
   alias ProductCompare.Recommendations
+  alias ProductCompare.Recommendations.Result, as: RecommendationResult
   alias ProductCompare.Repo
   alias ProductCompare.Specs
+  alias ProductCompare.Specs.ClaimValue
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -21,12 +24,9 @@ defmodule ProductCompare.ComparisonSnapshots do
           | {:error,
              :invalid_products | :product_not_found | :invalid_profile | Ecto.Changeset.t()}
   def publish(user_id, attrs, opts \\ []) when is_integer(user_id) and is_map(attrs) do
-    product_ids = Map.get(attrs, :product_ids) || Map.get(attrs, "product_ids") || []
+    product_ids = Input.fetch_attr(attrs, :product_ids) || []
 
-    profile =
-      Map.get(attrs, :recommendation_profile) ||
-        Map.get(attrs, "recommendation_profile") ||
-        :lowest_current_cost
+    profile = Input.fetch_attr(attrs, :recommendation_profile) || :lowest_current_cost
 
     now = Keyword.get(opts, :now, DateTime.utc_now()) |> DateTime.truncate(:microsecond)
 
@@ -39,7 +39,8 @@ defmodule ProductCompare.ComparisonSnapshots do
       |> ComparisonSnapshot.publish_changeset(%{
         public_token: public_token(),
         user_id: user_id,
-        title: normalize_title(Map.get(attrs, :title) || Map.get(attrs, "title")),
+        title: normalize_title(Input.fetch_attr(attrs, :title)),
+        search_indexable: Input.fetch_attr(attrs, :search_indexable) || false,
         payload: payload
       })
       |> Repo.insert()
@@ -147,7 +148,7 @@ defmodule ProductCompare.ComparisonSnapshots do
       claim_id: claim.id,
       code: attribute.code,
       display_name: attribute.display_name,
-      value_text: format_claim_value(claim),
+      value_text: ClaimValue.format(claim),
       source_type: Atom.to_string(claim.source_type),
       confidence: decimal(claim.confidence),
       evidence: Enum.map(claim.evidence_links, &capture_evidence/1)
@@ -209,48 +210,32 @@ defmodule ProductCompare.ComparisonSnapshots do
   end
 
   defp capture_recommendation(result) do
-    %{
-      profile: Atom.to_string(result.profile),
-      algorithm_version: result.algorithm_version,
-      evaluated_at: DateTime.to_iso8601(result.evaluated_at),
-      status: Atom.to_string(result.status),
-      winner_product_id: result.winner_product_id,
-      currency: result.currency,
-      missing_inputs: result.missing_inputs,
-      rankings:
-        Enum.map(result.rankings, fn ranking ->
-          %{
-            rank: ranking.rank,
-            product_id: ranking.product_id,
-            product_name: ranking.product_name,
-            landed_price: decimal(ranking.landed_price),
-            currency: ranking.currency,
-            price_point_id: ranking.price_point_id,
-            merchant_product_id: ranking.merchant_product_id,
-            claim_ids: ranking.claim_ids,
-            reasons: ranking.reasons
-          }
-        end)
-    }
+    rankings =
+      Enum.map(result.rankings, fn ranking ->
+        %{
+          rank: ranking.rank,
+          product_id: ranking.product_id,
+          product_name: ranking.product_name,
+          landed_price: decimal(ranking.landed_price),
+          currency: ranking.currency,
+          price_point_id: ranking.price_point_id,
+          merchant_product_id: ranking.merchant_product_id,
+          claim_ids: ranking.claim_ids,
+          reasons: ranking.reasons
+        }
+      end)
+
+    RecommendationResult.new(
+      Atom.to_string(result.profile),
+      result.algorithm_version,
+      DateTime.to_iso8601(result.evaluated_at),
+      Atom.to_string(result.status),
+      result.winner_product_id,
+      result.currency,
+      rankings,
+      result.missing_inputs
+    )
   end
-
-  defp format_claim_value(%{value_bool: value}) when is_boolean(value),
-    do: if(value, do: "Yes", else: "No")
-
-  defp format_claim_value(%{value_int: value}) when is_integer(value),
-    do: Integer.to_string(value)
-
-  defp format_claim_value(%{value_num: %Decimal{} = value, unit: unit}) do
-    suffix = unit && (unit.symbol || unit.code)
-    [decimal(value), suffix] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
-  end
-
-  defp format_claim_value(%{value_text: value}) when is_binary(value), do: value
-  defp format_claim_value(%{value_date: %Date{} = value}), do: Date.to_iso8601(value)
-  defp format_claim_value(%{value_ts: %DateTime{} = value}), do: DateTime.to_iso8601(value)
-  defp format_claim_value(%{enum_option: %{label: value}}) when is_binary(value), do: value
-  defp format_claim_value(%{value_json: value}) when is_map(value), do: Jason.encode!(value)
-  defp format_claim_value(_claim), do: ""
 
   defp normalize_title(nil), do: nil
   defp normalize_title(title) when is_binary(title), do: String.trim(title)
@@ -348,6 +333,9 @@ defmodule ProductCompare.ComparisonSnapshots do
       ],
       &{&1, value(recommendation, &1)}
     )
+    |> Map.update!(:profile, &decode_recommendation_profile/1)
+    |> Map.update!(:evaluated_at, &decode_datetime/1)
+    |> Map.update!(:status, &decode_recommendation_status/1)
     |> Map.put(:rankings, Enum.map(value(recommendation, :rankings, []), &decode_ranking/1))
   end
 
@@ -372,6 +360,25 @@ defmodule ProductCompare.ComparisonSnapshots do
   defp decode_decimal(nil), do: nil
   defp decode_decimal(%Decimal{} = value), do: value
   defp decode_decimal(value) when is_binary(value), do: Decimal.new(value)
+
+  defp decode_datetime(%DateTime{} = value), do: value
+
+  defp decode_datetime(value) when is_binary(value) do
+    {:ok, datetime, _offset} = DateTime.from_iso8601(value)
+    datetime
+  end
+
+  defp decode_recommendation_profile(:lowest_current_cost), do: :lowest_current_cost
+  defp decode_recommendation_profile(:best_value), do: :best_value
+  defp decode_recommendation_profile("lowest_current_cost"), do: :lowest_current_cost
+  defp decode_recommendation_profile("best_value"), do: :best_value
+
+  defp decode_recommendation_status(:winner), do: :winner
+  defp decode_recommendation_status(:tie), do: :tie
+  defp decode_recommendation_status(:insufficient_evidence), do: :insufficient_evidence
+  defp decode_recommendation_status("winner"), do: :winner
+  defp decode_recommendation_status("tie"), do: :tie
+  defp decode_recommendation_status("insufficient_evidence"), do: :insufficient_evidence
 
   defp value(map, key, default \\ nil),
     do: Map.get(map, key, Map.get(map, Atom.to_string(key), default))

@@ -61,6 +61,9 @@ type RootQueryType {
   "Returns one merchant by canonical slug."
   merchant(slug: String!): Merchant
 
+  "Returns a curated public product category by canonical search slug."
+  category(slug: String!): SeoCategory
+
   "Returns captured merchant feed candidates with review-safe metadata."
   merchantFeedCandidates(
     first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort
@@ -431,6 +434,7 @@ input CreateSavedComparisonSetInput {
 
 input PublishComparisonSnapshotInput {
   title: String
+  searchIndexable: Boolean
   productIds: [ID!]!
   recommendationProfile: RecommendationProfile!
 }
@@ -731,10 +735,12 @@ type SavedComparisonSet implements Node {
 type ComparisonSnapshot {
   id: ID!
   title: String
+  searchIndexable: Boolean!
+  seo: SeoMetadata!
   capturedAt: DateTime!
   disclaimer: String!
   products: [ComparisonSnapshotProduct!]!
-  recommendation: SnapshotRecommendation!
+  recommendation: ComparisonRecommendation!
 }
 
 type ComparisonSnapshotProduct {
@@ -780,29 +786,6 @@ type ComparisonSnapshotOffer {
   landedPrice: Decimal!
   freshness: String!
   observedAt: DateTime!
-}
-
-type SnapshotRecommendation {
-  profile: RecommendationProfile!
-  algorithmVersion: String!
-  evaluatedAt: DateTime!
-  status: RecommendationStatus!
-  currency: String
-  missingInputs: [String!]!
-  winnerProductId: ID
-  rankings: [SnapshotRecommendationRanking!]!
-}
-
-type SnapshotRecommendationRanking {
-  rank: Int!
-  productName: String!
-  landedPrice: Decimal!
-  currency: String!
-  reasons: [String!]!
-  productId: ID!
-  pricePointId: ID!
-  merchantProductId: ID!
-  claimIds: [ID!]!
 }
 
 type SavedComparisonItem {
@@ -853,6 +836,7 @@ type Merchant implements Node {
   name: String!
   domain: String!
   slug: String!
+  seo: SeoMetadata!
   detailSummary: MerchantDetailSummary!
   merchantProducts(first: Int, after: String): MerchantProductConnection!
   insertedAt: DateTime!
@@ -869,6 +853,26 @@ type MerchantDetailSummary {
   staleOfferCount: Int!
   unobservedOfferCount: Int!
   lastObservedAt: DateTime
+}
+
+type SeoMetadata {
+  title: String!
+  description: String!
+  canonicalPath: String!
+  indexable: Boolean!
+  imageUrl: String
+  structuredData: String
+}
+
+type SeoCategory {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String!
+  qualifiedProductCount: Int!
+  indexable: Boolean!
+  seo: SeoMetadata!
+  products(first: Int, after: String): ProductConnection!
 }
 
 type MerchantConnection {
@@ -930,6 +934,7 @@ type Product implements Node {
   modelNumber: String
   description: String
   brand: Brand
+  seo: SeoMetadata!
   media: [ProductMedia!]!
   currentAttributes: [ProductAttributeValue!]!
   offerTruth: ProductOfferTruth!

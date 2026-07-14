@@ -22,16 +22,12 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
          {:ok, snapshot} <-
            ComparisonSnapshots.publish(current_user.id, %{
              title: Input.fetch_value(input, :title),
+             search_indexable: Input.fetch_value(input, :search_indexable, false),
              product_ids: product_ids,
              recommendation_profile:
                Input.fetch_value(input, :recommendation_profile, :lowest_current_cost)
            }) do
-      {:ok,
-       %{
-         snapshot: snapshot,
-         share_path: "/compare/shared/#{snapshot.public_token}",
-         errors: []
-       }}
+      {:ok, publish_payload(snapshot, "/compare/shared/#{snapshot.public_token}", [])}
     else
       {:error, message} when is_binary(message) ->
         {:ok, error_payload("INVALID_ID", message, "productIds")}
@@ -56,12 +52,7 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
          )}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:ok,
-         %{
-           snapshot: nil,
-           share_path: nil,
-           errors: GraphQLErrors.changeset_mutation_errors(changeset)
-         }}
+        {:ok, publish_payload(nil, nil, GraphQLErrors.changeset_mutation_errors(changeset))}
     end
   end
 
@@ -91,9 +82,6 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
   def recommendation(snapshot, _args, _resolution), do: {:ok, snapshot.payload.recommendation}
   def disclaimer(_snapshot, _args, _resolution), do: {:ok, @disclaimer}
 
-  def recommendation_evaluated_at(recommendation, _args, _resolution),
-    do: iso_datetime(recommendation.evaluated_at)
-
   def offer_observed_at(offer, _args, _resolution), do: iso_datetime(offer.observed_at)
   def evidence_fetched_at(evidence, _args, _resolution), do: iso_datetime(evidence.fetched_at)
 
@@ -105,14 +93,13 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
   end
 
   defp error_payload(code, message, field) do
-    %{
-      snapshot: nil,
-      share_path: nil,
-      errors: [GraphQLErrors.mutation_error(code, message, field)]
-    }
+    publish_payload(nil, nil, [GraphQLErrors.mutation_error(code, message, field)])
   end
 
-  defp error_payload(error), do: %{snapshot: nil, share_path: nil, errors: [error]}
+  defp error_payload(error), do: publish_payload(nil, nil, [error])
+
+  defp publish_payload(snapshot, share_path, errors),
+    do: %{snapshot: snapshot, share_path: share_path, errors: errors}
 
   defp revoke_error_payload(code, message) do
     %{revoked_snapshot_id: nil, errors: [GraphQLErrors.mutation_error(code, message)]}

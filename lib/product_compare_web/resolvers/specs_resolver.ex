@@ -1,8 +1,9 @@
 defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   @moduledoc false
 
-  alias ProductCompare.Specs
   alias ProductCompare.Repo
+  alias ProductCompare.Specs
+  alias ProductCompare.Specs.ClaimValue
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
@@ -132,7 +133,7 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
           {:ok, String.t()}
   def correction_value_text(correction, _args, _resolution) do
     claim = loaded_claim(correction)
-    {:ok, format_claim_value(claim)}
+    {:ok, ClaimValue.format(claim)}
   end
 
   @spec moderation_note(SpecificationCorrection.t(), map(), Absinthe.Resolution.t()) ::
@@ -164,22 +165,24 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
 
     present_fields = Enum.filter(value_fields, &(not is_nil(Input.fetch_value(value, &1))))
 
-    if length(present_fields) == 1 do
-      with {:ok, unit_id} <- decode_optional_id(value, :unit_id, :unit),
-           {:ok, enum_option_id} <- decode_optional_id(value, :enum_option_id, :enum_option) do
-        typed_value =
-          value
-          |> Input.take([:value_bool, :value_int, :value_num, :value_text, :value_date])
-          |> Map.put(:value_ts, Input.fetch_value(value, :value_timestamp))
-          |> Map.put(:unit_id, unit_id)
-          |> Map.put(:enum_option_id, enum_option_id)
-          |> Enum.reject(fn {_key, item} -> is_nil(item) end)
-          |> Map.new()
+    case present_fields do
+      [_present_field] ->
+        with {:ok, unit_id} <- decode_optional_id(value, :unit_id, :unit),
+             {:ok, enum_option_id} <- decode_optional_id(value, :enum_option_id, :enum_option) do
+          typed_value =
+            value
+            |> Input.take([:value_bool, :value_int, :value_num, :value_text, :value_date])
+            |> Map.put(:value_ts, Input.fetch_value(value, :value_timestamp))
+            |> Map.put(:unit_id, unit_id)
+            |> Map.put(:enum_option_id, enum_option_id)
+            |> Enum.reject(fn {_key, item} -> is_nil(item) end)
+            |> Map.new()
 
-        {:ok, typed_value}
-      end
-    else
-      {:error, :invalid_typed_value}
+          {:ok, typed_value}
+        end
+
+      _invalid_fields ->
+        {:error, :invalid_typed_value}
     end
   end
 
@@ -211,25 +214,6 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   end
 
   defp loaded_claim(%SpecificationCorrection{claim: claim}), do: claim
-
-  defp format_claim_value(%{value_bool: value}) when is_boolean(value),
-    do: if(value, do: "Yes", else: "No")
-
-  defp format_claim_value(%{value_int: value}) when is_integer(value),
-    do: Integer.to_string(value)
-
-  defp format_claim_value(%{value_num: %Decimal{} = value, unit: unit}) do
-    suffix = unit && (unit.symbol || unit.code)
-    value = value |> Decimal.normalize() |> Decimal.to_string(:normal)
-    if is_binary(suffix) and suffix != "", do: "#{value} #{suffix}", else: value
-  end
-
-  defp format_claim_value(%{value_text: value}) when is_binary(value), do: value
-  defp format_claim_value(%{value_date: %Date{} = value}), do: Date.to_iso8601(value)
-  defp format_claim_value(%{value_ts: %DateTime{} = value}), do: DateTime.to_iso8601(value)
-  defp format_claim_value(%{enum_option: %{label: value}}) when is_binary(value), do: value
-  defp format_claim_value(%{value_json: value}) when not is_nil(value), do: Jason.encode!(value)
-  defp format_claim_value(_claim), do: ""
 
   defp camelize(field), do: field |> Atom.to_string() |> Absinthe.Utils.camelize(lower: true)
 end

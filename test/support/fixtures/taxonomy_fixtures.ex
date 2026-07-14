@@ -7,6 +7,9 @@ defmodule ProductCompare.Fixtures.TaxonomyFixtures do
     "code" => :code,
     "name" => :name,
     "parent_id" => :parent_id,
+    "seo_description" => :seo_description,
+    "seo_indexable" => :seo_indexable,
+    "seo_slug" => :seo_slug,
     "taxonomy_id" => :taxonomy_id
   }
 

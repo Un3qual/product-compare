@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Repo
   alias ProductCompare.Specs
+  alias ProductCompare.Specs.ClaimValue
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -550,7 +551,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       code: attribute.code,
       display_name: attribute.display_name,
       data_type: Atom.to_string(attribute.data_type),
-      value_text: format_claim_value(claim),
+      value_text: ClaimValue.format(claim),
       sort_order: taxon_attribute && taxon_attribute.sort_order,
       group_label: taxon_attribute && taxon_attribute.compare_group_label,
       is_required: (taxon_attribute && taxon_attribute.is_required) || false,
@@ -589,35 +590,6 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   defp boolean_claim_value(%{value_bool: value}) when is_boolean(value), do: value
   defp boolean_claim_value(_claim), do: nil
-
-  defp format_claim_value(%{value_bool: value}) when is_boolean(value) do
-    if value, do: "Yes", else: "No"
-  end
-
-  defp format_claim_value(%{value_int: value}) when is_integer(value),
-    do: Integer.to_string(value)
-
-  defp format_claim_value(%{value_num: %Decimal{} = value, unit: unit}) do
-    value
-    |> Decimal.normalize()
-    |> Decimal.to_string(:normal)
-    |> append_unit(unit)
-  end
-
-  defp format_claim_value(%{value_text: value}) when is_binary(value), do: value
-  defp format_claim_value(%{value_date: %Date{} = value}), do: Date.to_iso8601(value)
-  defp format_claim_value(%{value_ts: %DateTime{} = value}), do: DateTime.to_iso8601(value)
-  defp format_claim_value(%{enum_option: %{label: value}}) when is_binary(value), do: value
-  defp format_claim_value(%{value_json: value}) when is_map(value), do: Jason.encode!(value)
-  defp format_claim_value(_claim), do: ""
-
-  defp append_unit(value, %{symbol: symbol}) when is_binary(symbol) and symbol != "",
-    do: "#{value} #{symbol}"
-
-  defp append_unit(value, %{code: code}) when is_binary(code) and code != "",
-    do: "#{value} #{code}"
-
-  defp append_unit(value, _unit), do: value
 
   defp attribute_unit_symbol(
          %{data_type: :numeric, dimension_id: dimension_id},

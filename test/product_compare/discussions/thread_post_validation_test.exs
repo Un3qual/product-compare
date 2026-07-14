@@ -185,7 +185,9 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       user = AccountsFixtures.user_fixture()
 
       product =
-        SpecsFixtures.product_fixture(%{slug: "concurrent-cycle-#{System.unique_integer()}"})
+        SpecsFixtures.product_fixture(%{
+          slug: "concurrent-cycle-#{System.unique_integer([:positive])}"
+        })
 
       taxon = Repo.get!(Taxon, product.primary_type_taxon_id)
 

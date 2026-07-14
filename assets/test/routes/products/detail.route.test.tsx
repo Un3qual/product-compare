@@ -115,6 +115,14 @@ type DetailProduct = {
   name: string;
   slug: string;
   description: string;
+  seo: {
+    title: string;
+    description: string;
+    canonicalPath: string;
+    indexable: boolean;
+    imageUrl: string | null;
+    structuredData: string | null;
+  };
   brand: {
     id: string;
     name: string;
@@ -140,6 +148,14 @@ const DETAIL_PRODUCT: DetailProduct = {
   name: "Detail Product",
   slug: "detail-product",
   description: "A narrow product detail baseline.",
+  seo: {
+    title: "Detail Product specifications and prices | Product Compare",
+    description: "Compare Detail Product.",
+    canonicalPath: "/products/detail-product",
+    indexable: true,
+    imageUrl: null,
+    structuredData: '{"@context":"https://schema.org","@type":"Product","url":"/products/detail-product"}'
+  },
   brand: {
     id: "brand-1",
     name: "Acme"
@@ -263,7 +279,7 @@ test("product detail loader preloads product detail and active offers through Re
 
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
+  ).resolves.toMatchObject({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR
   });
@@ -292,7 +308,7 @@ test("product detail loader forwards offersAfter to offers query pagination", as
   });
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
+  ).resolves.toMatchObject({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR
   });
@@ -305,6 +321,25 @@ test("product detail loader forwards offersAfter to offers query pagination", as
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
+});
+
+test("product detail loader permanently redirects legacy aliases to the canonical slug", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/products/legacy-product?compare=1");
+
+  mockedFetchRouteQuery.mockResolvedValue({
+    data: { product: DETAIL_PRODUCT },
+    descriptor: PRODUCT_QUERY_DESCRIPTOR,
+    dispose: vi.fn()
+  });
+
+  const result = await productDetailLoader(
+    buildProductDetailLoaderArgs({ environment, request, slug: "legacy-product" })
+  );
+
+  expect(result).toBeInstanceOf(Response);
+  expect((result as Response).status).toBe(301);
+  expect((result as Response).headers.get("location")).toBe("/products/detail-product?compare=1");
 });
 
 test("product detail loader preserves opaque offersAfter cursor characters", async () => {
@@ -322,7 +357,7 @@ test("product detail loader preserves opaque offersAfter cursor characters", asy
   });
   await expect(
     productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
+  ).resolves.toMatchObject({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR
   });

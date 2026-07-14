@@ -23,7 +23,6 @@ defmodule ProductCompare.Alerts.Jobs.AlertEvaluationWorker do
     case Alerts.evaluate_price_point(price_point_id) do
       {:ok, _summary} -> :ok
       {:error, :price_point_not_found} -> {:cancel, "price_point_not_found"}
-      {:error, _reason} -> {:error, "alert_evaluation_failed"}
     end
   end
 

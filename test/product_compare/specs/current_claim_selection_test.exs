@@ -313,7 +313,9 @@ defmodule ProductCompare.Specs.CurrentClaimSelectionTest do
       moderator = AccountsFixtures.user_fixture()
 
       product =
-        SpecsFixtures.product_fixture(%{slug: "locked-claim-#{System.unique_integer()}"})
+        SpecsFixtures.product_fixture(%{
+          slug: "locked-claim-#{System.unique_integer([:positive])}"
+        })
 
       taxon = Repo.get!(Taxon, product.primary_type_taxon_id)
 

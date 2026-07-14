@@ -86,9 +86,25 @@ end
 # Type tree: Electronics -> Displays -> TV / Monitor / Projector
 electronics = upsert_taxon.(type_taxonomy, "electronics", "Electronics", nil)
 displays = upsert_taxon.(type_taxonomy, "displays", "Displays", electronics)
-_tv = upsert_taxon.(type_taxonomy, "tv", "TV", displays)
+tv = upsert_taxon.(type_taxonomy, "tv", "TV", displays)
 monitor = upsert_taxon.(type_taxonomy, "monitor", "Monitor", displays)
-_projector = upsert_taxon.(type_taxonomy, "projector", "Projector", displays)
+projector = upsert_taxon.(type_taxonomy, "projector", "Projector", displays)
+
+for {taxon, slug, description} <- [
+      {tv, "tvs",
+       "Compare television display specifications, accepted source evidence, and complete current offer observations."},
+      {monitor, "monitors",
+       "Compare monitor display specifications, accepted source evidence, and complete current offer observations."},
+      {projector, "projectors",
+       "Compare projector image specifications, accepted source evidence, and complete current offer observations."}
+    ] do
+  {:ok, _taxon} =
+    Taxonomy.update_taxon(taxon, %{
+      seo_slug: slug,
+      seo_description: description,
+      seo_indexable: true
+    })
+end
 
 # Use-case tree: Desktop Setup -> Gaming / Office / Creative; Home Theater
 desktop_setup = upsert_taxon.(use_case_taxonomy, "desktop_setup", "Desktop Setup", nil)

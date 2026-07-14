@@ -1,4 +1,4 @@
-import { data, type LoaderFunctionArgs } from "react-router-dom";
+import { data, redirect, type LoaderFunctionArgs } from "react-router-dom";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
@@ -10,12 +10,15 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
+import { routeMetadataFromSeo } from "../seo";
+import type { RouteDocumentMetadata } from "../RouteMetadata";
 
 const PRODUCT_OFFERS_PAGE_SIZE = 6;
 
 export type ProductDetailLoaderData =
   | {
       status: "ready";
+      metadata: RouteDocumentMetadata;
       productQuery: RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>;
     }
   | {
@@ -24,7 +27,8 @@ export type ProductDetailLoaderData =
 
 export type ProductDetailLoaderResult =
   | ProductDetailLoaderData
-  | ReturnType<typeof data<ProductDetailLoaderData>>;
+  | ReturnType<typeof data<ProductDetailLoaderData>>
+  | Response;
 
 export async function productDetailLoader({
   context,
@@ -59,8 +63,18 @@ export async function productDetailLoader({
       return productNotFoundResult();
     }
 
+    if (productRouteQuery.data.product.slug !== slug) {
+      productRouteQuery.dispose();
+      const canonicalUrl = new URL(request.url);
+      canonicalUrl.pathname = `/products/${encodeURIComponent(productRouteQuery.data.product.slug)}`;
+      return redirect(`${canonicalUrl.pathname}${canonicalUrl.search}`, 301);
+    }
+
     return {
       status: "ready",
+      metadata: routeMetadataFromSeo(productRouteQuery.data.product.seo, request.url, {
+        allowIndexing: new URL(request.url).search === ""
+      }),
       productQuery: productRouteQuery.descriptor
     };
   } catch (error) {
@@ -69,6 +83,9 @@ export async function productDetailLoader({
     if (partialData) {
       return {
         status: "ready",
+        metadata: routeMetadataFromSeo(partialData.product!.seo, request.url, {
+          allowIndexing: new URL(request.url).search === ""
+        }),
         productQuery: cacheRouteQueryData<ProductDetailRouteQuery>(
           environment,
           productDetailRouteQuery,

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a45f04110d1c078bb9f392e4fbdcac3c>>
+ * @generated SignedSource<<dbb38ef413110841a59c690b973e0009>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -72,6 +72,15 @@ export type SharedComparisonRouteQuery$data = {
       readonly status: RecommendationStatus;
       readonly winnerProductId: string | null | undefined;
     };
+    readonly searchIndexable: boolean;
+    readonly seo: {
+      readonly canonicalPath: string;
+      readonly description: string;
+      readonly imageUrl: string | null | undefined;
+      readonly indexable: boolean;
+      readonly structuredData: string | null | undefined;
+      readonly title: string;
+    };
     readonly title: string | null | undefined;
   } | null | undefined;
 };
@@ -99,24 +108,38 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "pricePointId",
+  "name": "title",
   "storageKey": null
 },
 v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "currency",
+  "name": "description",
   "storageKey": null
 },
 v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
+  "name": "pricePointId",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "currency",
+  "storageKey": null
+},
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
   "name": "landedPrice",
   "storageKey": null
 },
-v5 = [
+v7 = [
   {
     "alias": null,
     "args": [
@@ -132,11 +155,53 @@ v5 = [
     "plural": false,
     "selections": [
       (v1/*: any*/),
+      (v2/*: any*/),
       {
         "alias": null,
         "args": null,
         "kind": "ScalarField",
-        "name": "title",
+        "name": "searchIndexable",
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "SeoMetadata",
+        "kind": "LinkedField",
+        "name": "seo",
+        "plural": false,
+        "selections": [
+          (v2/*: any*/),
+          (v3/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "canonicalPath",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "indexable",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "imageUrl",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "structuredData",
+            "storageKey": null
+          }
+        ],
         "storageKey": null
       },
       {
@@ -176,13 +241,7 @@ v5 = [
             "name": "slug",
             "storageKey": null
           },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "description",
-            "storageKey": null
-          },
+          (v3/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -297,7 +356,7 @@ v5 = [
             "name": "offers",
             "plural": true,
             "selections": [
-              (v2/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -319,7 +378,7 @@ v5 = [
                 "name": "merchantDomain",
                 "storageKey": null
               },
-              (v3/*: any*/),
+              (v5/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -334,7 +393,7 @@ v5 = [
                 "name": "shipping",
                 "storageKey": null
               },
-              (v4/*: any*/),
+              (v6/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -358,7 +417,7 @@ v5 = [
       {
         "alias": null,
         "args": null,
-        "concreteType": "SnapshotRecommendation",
+        "concreteType": "ComparisonRecommendation",
         "kind": "LinkedField",
         "name": "recommendation",
         "plural": false,
@@ -398,7 +457,7 @@ v5 = [
             "name": "winnerProductId",
             "storageKey": null
           },
-          (v3/*: any*/),
+          (v5/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -409,7 +468,7 @@ v5 = [
           {
             "alias": null,
             "args": null,
-            "concreteType": "SnapshotRecommendationRanking",
+            "concreteType": "RecommendationRanking",
             "kind": "LinkedField",
             "name": "rankings",
             "plural": true,
@@ -435,9 +494,9 @@ v5 = [
                 "name": "productName",
                 "storageKey": null
               },
+              (v6/*: any*/),
+              (v5/*: any*/),
               (v4/*: any*/),
-              (v3/*: any*/),
-              (v2/*: any*/),
               {
                 "alias": null,
                 "args": null,
@@ -468,7 +527,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "SharedComparisonRouteQuery",
-    "selections": (v5/*: any*/),
+    "selections": (v7/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -477,19 +536,19 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
     "name": "SharedComparisonRouteQuery",
-    "selections": (v5/*: any*/)
+    "selections": (v7/*: any*/)
   },
   "params": {
-    "cacheID": "b7ca840c7f7804088dc1e1da93ce5db6",
+    "cacheID": "4467a09d20d5d3d16b8dfc547fd7a9e5",
     "id": null,
     "metadata": {},
     "name": "SharedComparisonRouteQuery",
     "operationKind": "query",
-    "text": "query SharedComparisonRouteQuery(\n  $token: String!\n) {\n  comparisonSnapshot(token: $token) {\n    id\n    title\n    capturedAt\n    disclaimer\n    products {\n      id\n      name\n      slug\n      description\n      modelNumber\n      brandName\n      attributes {\n        claimId\n        displayName\n        valueText\n        sourceType\n        evidence {\n          artifactId\n          excerpt\n          sourceName\n          sourceDomain\n          url\n          fetchedAt\n        }\n      }\n      offers {\n        pricePointId\n        merchantProductId\n        merchantName\n        merchantDomain\n        currency\n        itemPrice\n        shipping\n        landedPrice\n        observedAt\n        freshness\n      }\n    }\n    recommendation {\n      profile\n      algorithmVersion\n      evaluatedAt\n      status\n      winnerProductId\n      currency\n      missingInputs\n      rankings {\n        rank\n        productId\n        productName\n        landedPrice\n        currency\n        pricePointId\n        claimIds\n        reasons\n      }\n    }\n  }\n}\n"
+    "text": "query SharedComparisonRouteQuery(\n  $token: String!\n) {\n  comparisonSnapshot(token: $token) {\n    id\n    title\n    searchIndexable\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    capturedAt\n    disclaimer\n    products {\n      id\n      name\n      slug\n      description\n      modelNumber\n      brandName\n      attributes {\n        claimId\n        displayName\n        valueText\n        sourceType\n        evidence {\n          artifactId\n          excerpt\n          sourceName\n          sourceDomain\n          url\n          fetchedAt\n        }\n      }\n      offers {\n        pricePointId\n        merchantProductId\n        merchantName\n        merchantDomain\n        currency\n        itemPrice\n        shipping\n        landedPrice\n        observedAt\n        freshness\n      }\n    }\n    recommendation {\n      profile\n      algorithmVersion\n      evaluatedAt\n      status\n      winnerProductId\n      currency\n      missingInputs\n      rankings {\n        rank\n        productId\n        productName\n        landedPrice\n        currency\n        pricePointId\n        claimIds\n        reasons\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "62b1287ab6747299aedc6dba8351aa5b";
+(node as any).hash = "cbf2bd2ea06f9d8de57c6a62eacc9e0f";
 
 export default node;

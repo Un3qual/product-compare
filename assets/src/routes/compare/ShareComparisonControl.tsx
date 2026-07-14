@@ -22,6 +22,7 @@ const styles = create({
 
 export function ShareComparisonControl({ products, recommendation }: { products: readonly CompareProductSummary[]; recommendation?: CompareRecommendationSummary }) {
   const titleId = useId();
+  const searchIndexableId = useId();
   const [published, setPublished] = useState<{ id: string; path: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [commitPublish, publishing] = useMutation<PublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
@@ -31,6 +32,7 @@ export function ShareComparisonControl({ products, recommendation }: { products:
     event.preventDefault();
     setMessage(null);
     const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
+    const searchIndexable = new FormData(event.currentTarget).get("searchIndexable") === "on";
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
@@ -38,6 +40,7 @@ export function ShareComparisonControl({ products, recommendation }: { products:
           input: {
             productIds: products.map((product) => product.id),
             recommendationProfile: recommendation?.profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
+            searchIndexable,
             ...(title ? { title } : {})
           }
         }
@@ -77,6 +80,10 @@ export function ShareComparisonControl({ products, recommendation }: { products:
         <label htmlFor={titleId} {...props(styles.field)}>
           Optional title
           <input id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+        </label>
+        <label htmlFor={searchIndexableId} {...props(styles.field)}>
+          <span><input id={searchIndexableId} name="searchIndexable" type="checkbox" /> Allow search engines to discover this immutable snapshot</span>
+          <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
         </label>
         <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>
         {published ? (

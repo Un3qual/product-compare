@@ -46,7 +46,7 @@ defmodule ProductCompare.RecommendationsTest do
              second_claim.id
            ]
 
-    assert Enum.all?(result.rankings, &(length(&1.reasons) == 2))
+    assert Enum.all?(result.rankings, &match?([_price_reason, _claim_reason], &1.reasons))
   end
 
   test "mixed currencies, incomplete products, and exact ties return no winner" do

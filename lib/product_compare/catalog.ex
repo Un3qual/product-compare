@@ -16,6 +16,7 @@ defmodule ProductCompare.Catalog do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Catalog.ProductMedia
+  alias ProductCompareSchemas.Catalog.ProductSlugAlias
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
@@ -65,7 +66,8 @@ defmodule ProductCompare.Catalog do
 
   @spec create_product(map()) :: {:ok, Product.t()} | {:error, term()}
   def create_product(attrs) do
-    with :ok <- validate_primary_type_taxon(attrs) do
+    with :ok <- validate_primary_type_taxon(attrs),
+         :ok <- ensure_slug_not_reserved(Input.fetch_attr(attrs, :slug)) do
       %Product{}
       |> Product.changeset(attrs)
       |> Repo.insert()
@@ -74,10 +76,30 @@ defmodule ProductCompare.Catalog do
 
   @spec update_product(Product.t(), map()) :: {:ok, Product.t()} | {:error, term()}
   def update_product(%Product{} = product, attrs) do
-    with :ok <- validate_primary_type_taxon(attrs, product) do
-      product
-      |> Product.changeset(drop_nil_primary_type_taxon(attrs))
-      |> Repo.update()
+    next_slug = Input.fetch_attr(attrs, :slug)
+
+    with :ok <- validate_primary_type_taxon(attrs, product),
+         :ok <- ensure_slug_not_reserved(next_slug, product.id) do
+      changeset = Product.changeset(product, drop_nil_primary_type_taxon(attrs))
+
+      if is_binary(next_slug) and next_slug != product.slug do
+        Repo.transaction(fn ->
+          with {:ok, updated} <- Repo.update(changeset),
+               {:ok, _alias} <-
+                 %ProductSlugAlias{}
+                 |> ProductSlugAlias.changeset(%{
+                   product_id: product.id,
+                   slug: product.slug
+                 })
+                 |> Repo.insert() do
+            updated
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
+        end)
+      else
+        Repo.update(changeset)
+      end
     end
   end
 
@@ -96,8 +118,32 @@ defmodule ProductCompare.Catalog do
   def get_product_by_slug(nil), do: nil
 
   def get_product_by_slug(slug) when is_binary(slug) do
-    Repo.get_by(Product, slug: slug)
+    case Repo.get_by(Product, slug: slug) do
+      %Product{} = product ->
+        product
+
+      nil ->
+        Product
+        |> join(:inner, [product], slug_alias in ProductSlugAlias,
+          on: slug_alias.product_id == product.id
+        )
+        |> where([_product, slug_alias], slug_alias.slug == ^slug)
+        |> Repo.one()
+    end
   end
+
+  defp ensure_slug_not_reserved(slug, product_id \\ nil)
+  defp ensure_slug_not_reserved(nil, _product_id), do: :ok
+
+  defp ensure_slug_not_reserved(slug, product_id) when is_binary(slug) do
+    case Repo.get_by(ProductSlugAlias, slug: slug) do
+      nil -> :ok
+      %ProductSlugAlias{product_id: ^product_id} -> {:error, :slug_reserved}
+      %ProductSlugAlias{} -> {:error, :slug_reserved}
+    end
+  end
+
+  defp ensure_slug_not_reserved(_slug, _product_id), do: :ok
 
   @spec get_product_by_identifier(String.t(), String.t()) :: Product.t() | nil
   def get_product_by_identifier(scheme, normalized_value)

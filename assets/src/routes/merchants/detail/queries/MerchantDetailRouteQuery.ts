@@ -7,6 +7,7 @@ export default graphql`
       name
       slug
       domain
+      seo { title description canonicalPath indexable imageUrl structuredData }
       detailSummary {
         activeOfferCount
         distinctProductCount

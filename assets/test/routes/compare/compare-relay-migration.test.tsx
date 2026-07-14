@@ -136,7 +136,8 @@ const compareRouteQueryDescriptor = {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,
       pickerFirst: 24,
-      pickerAfter: null
+      pickerAfter: null,
+      recommendationProfile: "LOWEST_CURRENT_COST"
     }
   }
 };
@@ -264,7 +265,8 @@ test("compare loader preloads the batched comparison query through Relay", async
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,
       pickerFirst: 24,
-      pickerAfter: null
+      pickerAfter: null,
+      recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }
   );

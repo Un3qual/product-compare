@@ -7,6 +7,7 @@ defmodule ProductCompare.Recommendations do
   import Ecto.Query
 
   alias ProductCompare.Pricing
+  alias ProductCompare.Recommendations.Result
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -96,27 +97,27 @@ defmodule ProductCompare.Recommendations do
         [first, second | _rest] = rankings
 
         if Decimal.eq?(first.landed_price, second.landed_price) do
-          %{
-            profile: profile,
-            algorithm_version: Map.fetch!(@profiles, profile),
-            evaluated_at: now,
-            status: :tie,
-            winner_product_id: nil,
-            currency: currency,
-            rankings: rankings,
-            missing_inputs: ["Top products have the same eligible landed price."]
-          }
+          Result.new(
+            profile,
+            Map.fetch!(@profiles, profile),
+            now,
+            :tie,
+            nil,
+            currency,
+            rankings,
+            ["Top products have the same eligible landed price."]
+          )
         else
-          %{
-            profile: profile,
-            algorithm_version: Map.fetch!(@profiles, profile),
-            evaluated_at: now,
-            status: :winner,
-            winner_product_id: first.product_id,
-            currency: currency,
-            rankings: rankings,
-            missing_inputs: []
-          }
+          Result.new(
+            profile,
+            Map.fetch!(@profiles, profile),
+            now,
+            :winner,
+            first.product_id,
+            currency,
+            rankings,
+            []
+          )
         end
     end
   end
@@ -164,23 +165,17 @@ defmodule ProductCompare.Recommendations do
   end
 
   defp reasons(:best_value, offer, currency, claim_ids) do
+    claim_count = Enum.count(claim_ids)
+    claim_label = if match?([_claim], claim_ids), do: "claim", else: "claims"
+
     [
       "Eligible landed price: #{decimal(offer.landed_price)} #{currency}.",
-      "Backed by #{length(claim_ids)} accepted specification #{if(length(claim_ids) == 1, do: "claim", else: "claims")}."
+      "Backed by #{claim_count} accepted specification #{claim_label}."
     ]
   end
 
   defp empty_result(profile, version, now, missing_inputs) do
-    %{
-      profile: profile,
-      algorithm_version: version,
-      evaluated_at: now,
-      status: :insufficient_evidence,
-      winner_product_id: nil,
-      currency: nil,
-      rankings: [],
-      missing_inputs: missing_inputs
-    }
+    Result.new(profile, version, now, :insufficient_evidence, nil, nil, [], missing_inputs)
   end
 
   defp decimal(value), do: value |> Decimal.normalize() |> Decimal.to_string(:normal)

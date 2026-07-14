@@ -192,26 +192,14 @@ accepted answers are durable, and merchant-offer association no longer claims
 purchase verification. Merchant detail pages completed on 2026-07-13. Stable
 canonical merchant slugs now lead to database-complete offer coverage and
 freshness summaries, bounded current product listings, and safe merchant
-destinations. SEO and acquisition surfaces are now active.
-
-## Active Work
-
-### SEO And Acquisition Surfaces
-
-Status: active
-Lane: Full-stack acquisition
-Plan: `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
-Next action: add qualification-aware canonical metadata and structured data,
-curated category landing pages, privacy-safe comparison indexing controls, and
-bounded deterministic robots/sitemap output.
-Owned paths: taxonomy and snapshot SEO migrations/read models, public GraphQL
-SEO fields and tests, route metadata/category/shared controls and tests, Phoenix
-robots/sitemap controllers and tests, generated artifacts, and this lane doc.
-
-Exit condition: product, merchant, qualified category, and explicitly
-indexable comparison pages emit unique canonical metadata and truthful
-structured data; unqualified/private/parameterized pages emit `noindex`; and
-robots/sitemaps expose only bounded, qualifying canonical URLs.
+destinations. SEO and acquisition surfaces completed on 2026-07-13. Product,
+merchant, curated category, and explicitly opted-in comparison pages now share
+one qualification policy, emit canonical SSR metadata and factual structured
+data, and enter bounded partitioned sitemaps only when their accepted
+specification, content, and current-offer evidence qualifies. Thin, stale,
+parameterized, private, and revoked pages stay `noindex`; legacy product slugs
+redirect permanently to their canonical page. The selected Product Trust and
+Discovery program is complete.
 
 ## Ready Work
 

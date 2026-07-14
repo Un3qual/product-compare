@@ -77,13 +77,13 @@ defmodule ProductCompare.Alerts do
 
       watch ->
         watch
+        |> PriceWatchRule.update_changeset(atomize_watch_attrs(attrs))
         |> Changeset.change(%{
           last_condition_met: false,
           last_evaluated_price_point_id: nil,
           last_evaluated_at: nil,
           last_event_at: nil
         })
-        |> PriceWatchRule.update_changeset(atomize_watch_attrs(attrs))
         |> Repo.update()
     end
   end

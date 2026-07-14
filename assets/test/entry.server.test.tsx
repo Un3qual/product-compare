@@ -21,6 +21,60 @@ test("server render emits route document metadata", async () => {
   );
 });
 
+test("server render emits qualified product canonical, robots, social, and safe JSON-LD metadata", async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = vi.fn((_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { query: string };
+    const payload = body.query.includes("ProductDetailRouteQuery")
+      ? {
+          data: {
+            product: {
+              id: "product-seo-1",
+              name: "Field Camera",
+              slug: "field-camera",
+              description: "A detailed field camera.",
+              seo: {
+                title: "Field Camera specifications and prices | Product Compare",
+                description: "Compare accepted Field Camera specifications and current offers.",
+                canonicalPath: "/products/field-camera",
+                indexable: true,
+                imageUrl: null,
+                structuredData: '{"@context":"https://schema.org","@type":"Product","name":"Field Camera","url":"/products/field-camera"}'
+              },
+              brand: { id: "brand-1", name: "Acme" },
+              currentAttributes: [],
+              reviewSummary: { count: 0, averageRating: null },
+              reviews: [],
+              questions: [],
+              merchantProducts: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } }
+            }
+          }
+        }
+      : { data: { viewer: null } };
+
+    return Promise.resolve(new Response(JSON.stringify(payload), {
+      headers: { "content-type": "application/json" },
+      status: 200
+    }));
+  }) as typeof fetch;
+
+  try {
+    const html = await render("/products/field-camera", {
+      request: new Request("https://app.example/products/field-camera")
+    });
+
+    expect(typeof html).toBe("string");
+    expect(html).toContain("<title>Field Camera specifications and prices | Product Compare</title>");
+    expect(html).toContain('<link rel="canonical" href="https://app.example/products/field-camera"/>');
+    expect(html).toContain('<meta name="robots" content="index,follow"/>');
+    expect(html).toContain('https://app.example/products/field-camera');
+    expect(html).toContain('type="application/ld+json"');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("server render returns a 404 response for unknown application paths", async () => {
   const result = await render("/missing-page");
 

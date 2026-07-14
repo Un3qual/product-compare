@@ -69,7 +69,10 @@ defmodule ProductCompare.Fixtures.SpecsFixtures do
           end
       end
 
-    slug = Map.get(attrs, :slug, "product-#{System.unique_integer([:positive])}")
+    slug =
+      attrs
+      |> Map.get(:slug, "product-#{System.unique_integer([:positive])}")
+      |> canonical_slug()
 
     {:ok, product} =
       attrs
@@ -77,9 +80,16 @@ defmodule ProductCompare.Fixtures.SpecsFixtures do
       |> Map.put_new(:brand_id, brand_id)
       |> Map.put_new(:primary_type_taxon_id, primary_type_taxon.id)
       |> Map.put_new(:name, "Product #{slug}")
-      |> Map.put_new(:slug, slug)
+      |> Map.put(:slug, slug)
       |> Catalog.create_product()
 
     product
+  end
+
+  defp canonical_slug(value) do
+    value
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/u, "-")
+    |> String.trim("-")
   end
 end

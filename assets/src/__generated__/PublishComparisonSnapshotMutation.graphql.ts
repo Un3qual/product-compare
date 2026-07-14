@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2ebf84eb23f77521a677745e474a4898>>
+ * @generated SignedSource<<e44c17551be793d659ca0419262e47b3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,6 +13,7 @@ export type RecommendationProfile = "BEST_VALUE" | "LOWEST_CURRENT_COST" | "%fut
 export type PublishComparisonSnapshotInput = {
   productIds: ReadonlyArray<string>;
   recommendationProfile: RecommendationProfile;
+  searchIndexable?: boolean | null | undefined;
   title?: string | null | undefined;
 };
 export type PublishComparisonSnapshotMutation$variables = {
@@ -29,6 +30,7 @@ export type PublishComparisonSnapshotMutation$data = {
     readonly snapshot: {
       readonly capturedAt: any;
       readonly id: string;
+      readonly searchIndexable: boolean;
       readonly title: string | null | undefined;
     } | null | undefined;
   };
@@ -81,6 +83,13 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "searchIndexable",
             "storageKey": null
           },
           {
@@ -154,16 +163,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "c6eb6722cd7112b6e277b8c706bb4eb2",
+    "cacheID": "71f93eb50f29de6ee7e1152cd78d557d",
     "id": null,
     "metadata": {},
     "name": "PublishComparisonSnapshotMutation",
     "operationKind": "mutation",
-    "text": "mutation PublishComparisonSnapshotMutation(\n  $input: PublishComparisonSnapshotInput!\n) {\n  publishComparisonSnapshot(input: $input) {\n    snapshot {\n      id\n      title\n      capturedAt\n    }\n    sharePath\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation PublishComparisonSnapshotMutation(\n  $input: PublishComparisonSnapshotInput!\n) {\n  publishComparisonSnapshot(input: $input) {\n    snapshot {\n      id\n      title\n      searchIndexable\n      capturedAt\n    }\n    sharePath\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8f0f7f2593e6cc98dcd87cbfd1e5a320";
+(node as any).hash = "65496f2a2bad6ab263c9b53012a260d4";
 
 export default node;

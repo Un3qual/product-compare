@@ -78,10 +78,11 @@ test("ShareComparisonControl publishes the ordered products and selected profile
 
   fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
   fireEvent.change(screen.getByLabelText("Optional title"), { target: { value: "Travel kit" } });
+  fireEvent.click(screen.getByLabelText(/Allow search engines/));
   fireEvent.click(screen.getByRole("button", { name: "Publish snapshot" }));
 
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalledTimes(1));
-  expect(publishMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { input: { productIds: ["product-2", "product-1"], recommendationProfile: "BEST_VALUE", title: "Travel kit" } } }));
+  expect(publishMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { input: { productIds: ["product-2", "product-1"], recommendationProfile: "BEST_VALUE", searchIndexable: true, title: "Travel kit" } } }));
 
   await act(async () => {
     publishMutationMock.mock.calls[0]?.[0]?.onCompleted({ publishComparisonSnapshot: { snapshot: { id: "snapshot-1" }, sharePath: "/compare/shared/public-token", errors: [] } }, []);

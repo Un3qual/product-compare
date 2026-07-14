@@ -173,7 +173,4 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     do: [GraphQLErrors.mutation_error("NOT_FOUND", "community content not found")]
 
   defp errors(:error), do: [GraphQLErrors.mutation_error("INVALID_ID", "invalid content id")]
-
-  defp errors(_error),
-    do: [GraphQLErrors.mutation_error("INVALID_ARGUMENT", "invalid community content")]
 end
