@@ -599,6 +599,16 @@ type ProductAttributeValue {
   booleanValue: Boolean
   enumOptionId: ID
   unitSymbol: String
+  claimId: ID!
+  claimStatus: String!
+  sourceType: String!
+  confidence: Decimal
+  evidence: [ProductAttributeEvidence!]!
+}
+
+type ProductAttributeEvidence {
+  excerpt: String
+  sourceArtifact: SourceArtifact!
 }
 
 type MerchantProduct implements Node {

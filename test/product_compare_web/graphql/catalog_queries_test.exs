@@ -13,6 +13,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Specs.TaxonAttribute
+  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   describe "/api/graphql catalog queries" do
@@ -223,6 +225,91 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "valueText" => "144 Hz"
                }
              ] = attributes
+    end
+
+    test "product current attributes expose bounded safe provenance", %{conn: conn} do
+      moderator = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: unique_code("provenance-product")})
+
+      attribute =
+        text_attribute_fixture(%{
+          code: unique_code("provenance-panel"),
+          display_name: "Panel technology"
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "manufacturer",
+          name: unique_code("Acme manufacturer"),
+          domain: "acme.example"
+        })
+        |> Repo.insert!()
+
+      fetched_at = ~U[2026-07-13 18:00:00Z]
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://acme.example/specifications/model-1",
+          fetched_at: fetched_at,
+          content_hash: unique_code("provenance"),
+          raw_json: %{"secret" => "must not be queryable"},
+          raw_text: "private source body"
+        })
+        |> Repo.insert!()
+
+      long_excerpt = String.duplicate("e", 520)
+
+      assert {:ok, claim} =
+               Specs.propose_claim(product.id, attribute.id, %{value_text: "OLED"}, %{
+                 source_type: :import,
+                 confidence: Decimal.new("0.95"),
+                 artifact_id: artifact.id,
+                 excerpt: long_excerpt
+               })
+
+      assert {:ok, claim} = Specs.accept_claim(claim.id, moderator.id)
+
+      assert {:ok, _current} =
+               Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "currentAttributes" => [
+                     %{
+                       "claimId" => claim_id,
+                       "claimStatus" => "accepted",
+                       "sourceType" => "import",
+                       "confidence" => "0.95",
+                       "evidence" => [
+                         %{
+                           "excerpt" => excerpt,
+                           "sourceArtifact" => %{
+                             "id" => artifact_id,
+                             "sourceKind" => "manufacturer",
+                             "sourceName" => source_name,
+                             "sourceDomain" => "acme.example",
+                             "url" => "https://acme.example/specifications/model-1",
+                             "fetchedAt" => fetched_at_value
+                           }
+                         }
+                       ]
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, product_attribute_provenance_query(), %{"slug" => product.slug})
+
+      assert claim_id == relay_id(:product_attribute_claim, claim.id)
+      assert artifact_id == relay_id(:source_artifact, artifact.id)
+      assert source_name == source.name
+      assert excerpt == String.duplicate("e", 500)
+      assert {:ok, parsed_fetched_at, 0} = DateTime.from_iso8601(fetched_at_value)
+      assert DateTime.compare(parsed_fetched_at, fetched_at) == :eq
     end
 
     test "product exposes typed current attribute metadata for comparisons", %{conn: conn} do
@@ -1470,6 +1557,32 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
           booleanValue
           enumOptionId
           unitSymbol
+        }
+      }
+    }
+    """
+  end
+
+  defp product_attribute_provenance_query do
+    """
+    query ProductAttributeProvenance($slug: String!) {
+      product(slug: $slug) {
+        currentAttributes {
+          claimId
+          claimStatus
+          sourceType
+          confidence
+          evidence {
+            excerpt
+            sourceArtifact {
+              id
+              sourceKind
+              sourceName
+              sourceDomain
+              url
+              fetchedAt
+            }
+          }
         }
       }
     }

@@ -436,7 +436,10 @@ defmodule ProductCompare.Specs do
     |> where([current], current.product_id == ^product_id)
     |> join(:inner, [current], attribute in assoc(current, :attribute))
     |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
-    |> preload([_current, attribute], attribute: attribute, claim: [:unit, :enum_option])
+    |> preload([_current, attribute],
+      attribute: attribute,
+      claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
+    )
   end
 
   defp taxon_attribute_metadata_by_attribute_id(_attribute_ids, nil), do: %{}

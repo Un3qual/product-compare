@@ -12,6 +12,7 @@ offer summary that is not limited to one browser page.
 - `lib/product_compare/pricing/offer_truth.ex`
 - `lib/product_compare_web/resolvers/pricing_resolver.ex`
 - `lib/product_compare_web/schema.ex`
+- `assets/schema.graphql`
 - `test/product_compare/pricing_test.exs`
 - `test/product_compare_web/graphql/pricing_queries_test.exs`
 - `test/product_compare_web/graphql/schema_snapshot_test.exs`
@@ -31,4 +32,3 @@ offer summary that is not limited to one browser page.
 
 Tax quoting, currency conversion, reconciliation, and frontend rendering are
 separate dependent slices.
-

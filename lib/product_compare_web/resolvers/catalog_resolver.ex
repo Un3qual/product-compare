@@ -17,6 +17,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
   @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
+  @max_evidence_excerpt_length 500
   @max_comparison_products 3
   @max_search_query_length 100
 
@@ -542,9 +543,30 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       numeric_value: numeric_claim_value(claim),
       boolean_value: boolean_claim_value(claim),
       enum_option_id: GlobalId.encode_optional_value(:enum_option, claim.enum_option_id),
-      unit_symbol: attribute_unit_symbol(attribute, claim, base_unit_symbols_by_dimension)
+      unit_symbol: attribute_unit_symbol(attribute, claim, base_unit_symbols_by_dimension),
+      claim_id: GlobalId.encode(:product_attribute_claim, claim.id),
+      claim_status: Atom.to_string(claim.status),
+      source_type: Atom.to_string(claim.source_type),
+      confidence: claim.confidence,
+      evidence: format_claim_evidence(claim.evidence_links)
     }
   end
+
+  defp format_claim_evidence(evidence_links) when is_list(evidence_links) do
+    Enum.map(evidence_links, fn evidence ->
+      %{
+        excerpt: bounded_evidence_excerpt(evidence.excerpt),
+        source_artifact: evidence.artifact
+      }
+    end)
+  end
+
+  defp format_claim_evidence(_evidence_links), do: []
+
+  defp bounded_evidence_excerpt(excerpt) when is_binary(excerpt),
+    do: String.slice(excerpt, 0, @max_evidence_excerpt_length)
+
+  defp bounded_evidence_excerpt(_excerpt), do: nil
 
   defp numeric_claim_value(%{value_num_base: %Decimal{} = value}), do: value
   defp numeric_claim_value(_claim), do: nil

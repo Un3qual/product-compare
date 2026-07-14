@@ -921,6 +921,16 @@ defmodule ProductCompareWeb.Schema do
     field :boolean_value, :boolean
     field :enum_option_id, :id
     field :unit_symbol, :string
+    field :claim_id, non_null(:id)
+    field :claim_status, non_null(:string)
+    field :source_type, non_null(:string)
+    field :confidence, :decimal
+    field :evidence, non_null(list_of(non_null(:product_attribute_evidence)))
+  end
+
+  object :product_attribute_evidence do
+    field :excerpt, :string
+    field :source_artifact, non_null(:source_artifact)
   end
 
   object :merchant_product do

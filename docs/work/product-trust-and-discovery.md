@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (specification provenance read contract)
+- Status: active (complete offer truth read contract)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,7 +10,7 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Active implementation plan:
-  `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
+  `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -49,9 +49,28 @@ Recommendations are deterministic and evidence-backed.
 
 ## Foundation Successors
 
-- Specification provenance read contract: active.
-- Complete offer truth read contract: ready.
+- Specification provenance read contract: complete.
+- Complete offer truth read contract: active.
 - Durable ingestion job foundation: ready.
 - Enrichment, corrections, reconciliation, alerts, recommendations, sharing,
   community, merchant pages, and SEO are promoted only as their dependencies
   become green.
+
+## Specification Provenance Evidence
+
+- Current attribute reads preload claim evidence, source artifacts, and source
+  identity through both direct context reads and the request-scoped Dataloader.
+- GraphQL exposes stable claim IDs, accepted status, source type, confidence,
+  bounded 500-character evidence excerpts, and the existing safe
+  `SourceArtifact` metadata object.
+- Raw JSON, raw text, content hashes, and other stored artifact payload fields
+  remain absent from the public schema.
+- RED: the focused run reported 52 tests and 3 failures because evidence was
+  not preloaded, claim IDs had no stable type, and the provenance fields were
+  absent from GraphQL.
+- GREEN: the focused provenance/global-ID/catalog run passed 52 tests; the same
+  run with the regenerated live schema snapshot passed 53 tests.
+- Relay schema validation compiled 30 reader, 29 normalization, and 29 operation
+  documents with no changes required to existing operations.
+- Final gates: `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (`5 ready rows`), and `git diff --check` passed.

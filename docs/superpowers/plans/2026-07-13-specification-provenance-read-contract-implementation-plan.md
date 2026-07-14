@@ -9,10 +9,14 @@ every current specification without exposing raw source artifacts.
 **Owned paths:**
 
 - `lib/product_compare/specs.ex`
+- `lib/product_compare_web/graphql/global_id.ex`
+- `lib/product_compare_web/graphql/loader.ex`
 - `lib/product_compare_web/resolvers/catalog_resolver.ex`
 - `lib/product_compare_web/schema.ex`
-- `test/product_compare/specs_test.exs`
+- `assets/schema.graphql`
+- `test/product_compare/specs/read_helpers_test.exs`
 - `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/global_id_test.exs`
 - `test/product_compare_web/graphql/schema_snapshot_test.exs`
 - `docs/work/product-trust-and-discovery.md`
 
@@ -29,4 +33,3 @@ every current specification without exposing raw source artifacts.
 
 No correction mutation, imported-claim acceptance policy, or frontend redesign
 is part of this read-contract slice.
-

@@ -14,6 +14,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :merchant_product
           | :price_point
           | :source_artifact
+          | :product_attribute_claim
           | :product
           | :brand
           | :attribute
@@ -33,6 +34,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     merchant_product: "MerchantProduct",
     price_point: "PricePoint",
     source_artifact: "SourceArtifact",
+    product_attribute_claim: "ProductAttributeClaim",
     product: "Product",
     brand: "Brand",
     attribute: "Attribute",
