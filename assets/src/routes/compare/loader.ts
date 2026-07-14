@@ -7,7 +7,11 @@ import {
 } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
-import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
+import {
+  MAX_COMPARE_PRODUCTS,
+  selectedCompareSlugsFromSearch,
+  type CompareSpecMode
+} from "./paths";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
@@ -96,7 +100,7 @@ export async function compareLoader({
   context,
   request
 }: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
-  const slugs = parseSelectedSlugs(request.url);
+  const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
   const specMode = compareSpecModeFromUrl(request.url);
 
   if (slugs.length === 0) {
@@ -193,21 +197,6 @@ export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
     default:
       return "shared";
   }
-}
-
-function parseSelectedSlugs(requestUrl: string) {
-  const url = new URL(requestUrl);
-  const selected = new Set<string>();
-
-  for (const rawSlug of url.searchParams.getAll("slug")) {
-    const slug = rawSlug.trim();
-
-    if (slug !== "") {
-      selected.add(slug);
-    }
-  }
-
-  return Array.from(selected);
 }
 
 function orderProductsByRequestedSlugs(

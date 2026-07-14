@@ -7,7 +7,7 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-14 after product-detail route-data candidate
-  verification (60 route tests).
+  verification (55 route tests).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -45,7 +45,7 @@
 - Exit condition: pure route policy preserves tab selection, offer-cursor
   fallback, overview counts, encoded product paths, compare selection order,
   add/selected/full states, hashes, and unrelated search parameters.
-- Candidate evidence: the existing product-detail route suite passed 60 tests,
+- Candidate evidence: the existing product-detail route suite passed 55 tests,
   and current source inspection confirmed the cohesive deterministic policy
   remains embedded in the 376-line React route owner.
 

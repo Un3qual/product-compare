@@ -7,7 +7,7 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-14 after catalog route-data contract verification
-  (68 focused tests)
+  (69 focused tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
