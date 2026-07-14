@@ -3,10 +3,24 @@ defmodule ProductCompare.Ingestion.Jobs.CJProductImportWorker do
   Runs one bounded CJ product import as a durable, retryable job.
   """
 
+  @unique_args [
+    :complete_scope,
+    :currency,
+    :cursor,
+    :keywords,
+    :limit,
+    :pages,
+    :serviceable_areas
+  ]
+
   use Oban.Worker,
     queue: :ingestion,
     max_attempts: 5,
-    unique: [period: :infinity, fields: [:worker, :queue, :args]]
+    unique: [
+      period: :infinity,
+      fields: [:worker, :queue, :args],
+      keys: @unique_args
+    ]
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Ingestion.Jobs.Arguments

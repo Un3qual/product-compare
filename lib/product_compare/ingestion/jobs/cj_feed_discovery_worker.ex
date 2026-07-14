@@ -3,10 +3,16 @@ defmodule ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker do
   Runs one bounded CJ feed-discovery pass as a durable, retryable job.
   """
 
+  @unique_args [:advertiser_country, :cursor, :limit, :pages]
+
   use Oban.Worker,
     queue: :ingestion,
     max_attempts: 5,
-    unique: [period: :infinity, fields: [:worker, :queue, :args]]
+    unique: [
+      period: :infinity,
+      fields: [:worker, :queue, :args],
+      keys: @unique_args
+    ]
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjFeeds
   alias ProductCompare.Ingestion.Jobs.Arguments

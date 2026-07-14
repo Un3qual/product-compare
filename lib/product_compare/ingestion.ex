@@ -625,7 +625,7 @@ defmodule ProductCompare.Ingestion do
   defp get_or_create_listing_product_by_slug(listing) do
     slug = product_slug(listing)
 
-    case Repo.get_by(Product, slug: slug) do
+    case Catalog.get_product_by_slug(slug) do
       nil -> create_listing_product(slug, listing)
       %Product{} = product -> {:ok, product, false}
     end

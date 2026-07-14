@@ -76,6 +76,24 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 
+  test "a complete-scope run starting after the first page never reconciles unseen offers" do
+    source = source_fixture()
+    query = %{"providerFeedId" => "feed-offset-safe"}
+
+    baseline = start_complete_scope_run!(source, query)
+    persist!(source, listing("A", 0), baseline)
+    offer_b = persist!(source, listing("B", 0), baseline).merchant_product
+    complete!(baseline)
+
+    offset_run = start_complete_scope_run!(source, query, cursor_start: 25)
+    persist!(source, listing("A", 60), offset_run)
+    completed = complete!(offset_run)
+
+    assert completed.reconciliation_status == "skipped_partial"
+    assert completed.offers_deactivated == 0
+    assert Repo.get!(MerchantProduct, offer_b.id).is_active
+  end
+
   test "bounded or differently scoped runs cannot hide offers and a fresh observation reactivates" do
     source = source_fixture()
     shoe_scope = %{"providerFeedId" => "feed-shoes"}
@@ -185,11 +203,11 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 
-  defp start_complete_scope_run!(source, query) do
+  defp start_complete_scope_run!(source, query, opts \\ []) do
     {:ok, run} =
       Ingestion.start_import_run(%{
         complete_scope: true,
-        cursor_start: 0,
+        cursor_start: Keyword.get(opts, :cursor_start, 0),
         page_size: 25,
         pages_requested: 5,
         provider: "cj",

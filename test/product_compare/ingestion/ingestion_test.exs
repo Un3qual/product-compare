@@ -1,6 +1,7 @@
 defmodule ProductCompare.IngestionTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
@@ -692,6 +693,22 @@ defmodule ProductCompare.IngestionTest do
   end
 
   describe "persist_normalized_listing/2" do
+    test "resolves a historical product slug to its canonical product" do
+      source = source_fixture()
+      historical_slug = "acme-trail-running-shoe-cj-cj-12345"
+      product = ProductCompare.Fixtures.SpecsFixtures.product_fixture(%{slug: historical_slug})
+
+      assert {:ok, canonical_product} =
+               Catalog.update_product(product, %{slug: "canonical-trail-running-shoe"})
+
+      listing = normalized_listing(%{gtin: nil})
+
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+      assert persisted.product.id == canonical_product.id
+      assert persisted.product.slug == "canonical-trail-running-shoe"
+      assert Repo.aggregate(Product, :count, :id) == 1
+    end
+
     test "resolves listings from different sources and merchants by validated GTIN" do
       cj_source = source_fixture()
       awin_source = source_fixture(%{name: "Awin", domain: "awin.example"})
