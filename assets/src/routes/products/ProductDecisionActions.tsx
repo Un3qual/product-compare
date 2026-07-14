@@ -62,5 +62,13 @@ function CompareAction({ action }: { action: ProductDecisionCompareAction }) {
       return <li>This product is selected for comparison</li>;
     case "full":
       return <li>Compare selection full</li>;
+    default:
+      return unexpectedCompareAction(action);
   }
+}
+
+function unexpectedCompareAction(action: never): never {
+  throw new TypeError(
+    `Unexpected product decision compare action: ${JSON.stringify(action)}`
+  );
 }

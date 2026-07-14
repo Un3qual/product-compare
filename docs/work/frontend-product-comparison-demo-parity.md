@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: done
+- Status: ready (share-comparison snapshot data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after decision-summary data extraction (114 focused
-  tests and TypeScript)
+- Last verified: 2026-07-14 after share-snapshot contract candidate
+  verification (6 snapshot tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -18,6 +18,31 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Share Comparison Snapshot Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+- Next action: isolate publish-input, snapshot merge, revoked-item, and label
+  policy in a framework-free module while retaining Relay operations, form and
+  open state, paging, feedback, links, and revoke actions in
+  `ShareComparisonControl`.
+- Owned paths:
+  - `assets/src/routes/compare/share-comparison-data.ts`
+  - `assets/src/routes/compare/ShareComparisonControl.tsx`
+  - `assets/test/routes/compare/share-comparison-data.test.ts`
+  - `assets/test/routes/compare/comparison-snapshots.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure snapshot policy preserves ordered product IDs, profile
+  mapping, title/search opt-in behavior, first-occurrence deduplication,
+  revoked items, labels, and pagination order.
+- Candidate evidence: the existing snapshot suite passed 6 tests, and current
+  source inspection confirmed the named deterministic helpers remain embedded
+  in the 350-line React control.
 
 ## Compare Save And Deterministic Formatting Hardening
 

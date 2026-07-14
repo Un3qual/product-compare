@@ -14,7 +14,10 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
-import { ProductDecisionActions } from "../../../src/routes/products/ProductDecisionActions";
+import {
+  ProductDecisionActions,
+  type ProductDecisionCompareAction
+} from "../../../src/routes/products/ProductDecisionActions";
 import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
 import {
   ProductOfferList,
@@ -272,6 +275,24 @@ test("ProductDecisionActions renders the full compare state", () => {
   ).not.toBeInTheDocument();
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toBeVisible();
   expect(within(actions).getByRole("link", { name: "Browse products" })).toBeVisible();
+});
+
+test("ProductDecisionActions fails closed for an unsupported compare state", () => {
+  const unsupportedAction = {
+    kind: "unsupported"
+  } as unknown as ProductDecisionCompareAction;
+
+  expect(() =>
+    render(
+      <MemoryRouter>
+        <ProductDecisionActions
+          browseHref="/products"
+          compareAction={unsupportedAction}
+          offerHref="/offers?productId=product-id"
+        />
+      </MemoryRouter>
+    )
+  ).toThrow("Unexpected product decision compare action");
 });
 
 test("ProductOfferList renders normalized offer details with bounded-more messages", () => {
