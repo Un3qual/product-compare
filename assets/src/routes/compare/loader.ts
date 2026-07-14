@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from "react-router-dom";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import {
   fetchRouteQuery,
@@ -11,29 +11,9 @@ import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export const MAX_COMPARE_PRODUCTS = 3;
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
-const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
 export type RecommendationProfile = "lowest_current_cost" | "best_value";
-
-export interface CompareRecommendationSummary {
-  profile: RecommendationProfile;
-  algorithmVersion: string;
-  status: "WINNER" | "TIE" | "INSUFFICIENT_EVIDENCE";
-  winnerProductId: string | null;
-  currency: string | null;
-  missingInputs: readonly string[];
-  rankings: ReadonlyArray<{
-    rank: number;
-    productId: string;
-    productName: string;
-    landedPrice: string;
-    currency: string;
-    pricePointId: string;
-    claimIds: readonly string[];
-    reasons: readonly string[];
-  }>;
-}
 
 export interface CompareProductSummary {
   id: string;
@@ -86,12 +66,6 @@ export interface CompareBestCurrentPriceSummary {
   price: string;
 }
 
-export interface PublishedComparisonSnapshotSummary {
-  id: string;
-  path: string;
-  title: string | null;
-}
-
 export type CompareRouteLoaderData =
   | {
       status: "empty";
@@ -110,8 +84,6 @@ export type CompareRouteLoaderData =
       query: RelayRouteQueryDescriptor<CompareRouteQuery["variables"]>;
       offerContexts: CompareOfferContextsByProductId;
       products: CompareProductSummary[];
-      publishedSnapshots: PublishedComparisonSnapshotSummary[];
-      recommendation?: CompareRecommendationSummary;
     };
 
 type CompareProduct = CompareRouteQuery["response"]["comparisonProducts"][number];
@@ -125,7 +97,6 @@ export async function compareLoader({
 }: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
   const slugs = parseSelectedSlugs(request.url);
   const specMode = compareSpecModeFromUrl(request.url);
-  const recommendationProfile = recommendationProfileFromUrl(request.url);
 
   if (slugs.length === 0) {
     return {
@@ -151,12 +122,7 @@ export async function compareLoader({
       compareRouteQuery,
       {
         slugs,
-        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-        pickerFirst: COMPARE_PRODUCT_PICKER_PAGE_SIZE,
-        pickerAfter: null,
-        includeRecommendation: slugs.length >= 2,
-        recommendationProfile:
-          recommendationProfile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST"
+        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE
       },
       { signal: request.signal }
     );
@@ -183,60 +149,36 @@ export async function compareLoader({
       slugs,
       query: fetchedQuery.descriptor,
       offerContexts: summarizeOfferContexts(presentProducts),
-      products: presentProducts.map(summarizeProduct),
-      publishedSnapshots: summarizePublishedSnapshots(fetchedQuery.data.viewer),
-      recommendation: summarizeRecommendation(fetchedQuery.data.comparisonRecommendation)
+      products: presentProducts.map(summarizeProduct)
     };
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
   }
 }
 
-function summarizePublishedSnapshots(
-  viewer: CompareRouteQuery["response"]["viewer"] | null | undefined
-): PublishedComparisonSnapshotSummary[] {
-  return viewer?.comparisonSnapshots.edges.map(({ node }) => ({
-    id: node.id,
-    path: node.sharePath,
-    title: node.title ?? null
-  })) ?? [];
-}
-
 export function recommendationProfileFromUrl(requestUrl: string): RecommendationProfile {
-  return new URL(requestUrl).searchParams.get("recommend") === "best_value"
+  return new URL(requestUrl, "http://product-compare.local").searchParams.get("recommend") === "best_value"
     ? "best_value"
     : "lowest_current_cost";
 }
 
-function summarizeRecommendation(
-  value: CompareRouteQuery["response"]["comparisonRecommendation"] | null | undefined
-): CompareRecommendationSummary | undefined {
-  if (!value) {
-    return undefined;
-  }
+export function shouldRevalidateCompareLoader({
+  currentUrl,
+  defaultShouldRevalidate,
+  nextUrl
+}: ShouldRevalidateFunctionArgs) {
+  const current = new URL(currentUrl);
+  const next = new URL(nextUrl);
+  const recommendationChanged =
+    current.searchParams.get("recommend") !== next.searchParams.get("recommend");
+  current.searchParams.delete("recommend");
+  next.searchParams.delete("recommend");
 
-  return {
-    profile: value.profile === "BEST_VALUE" ? "best_value" : "lowest_current_cost",
-    algorithmVersion: value.algorithmVersion,
-    status: supportedRecommendationStatus(value.status),
-    winnerProductId: value.winnerProductId ?? null,
-    currency: value.currency ?? null,
-    missingInputs: value.missingInputs,
-    rankings: value.rankings.map((ranking) => ({
-      rank: ranking.rank,
-      productId: ranking.productId,
-      productName: ranking.productName,
-      landedPrice: ranking.landedPrice,
-      currency: ranking.currency,
-      pricePointId: ranking.pricePointId,
-      claimIds: ranking.claimIds,
-      reasons: ranking.reasons
-    }))
-  };
-}
-
-function supportedRecommendationStatus(value: string): CompareRecommendationSummary["status"] {
-  return value === "WINNER" || value === "TIE" ? value : "INSUFFICIENT_EVIDENCE";
+  return recommendationChanged &&
+    current.pathname === next.pathname &&
+    current.search === next.search
+    ? false
+    : defaultShouldRevalidate;
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {

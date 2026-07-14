@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
 import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";
@@ -14,6 +14,7 @@ const {
   publishMutationMock,
   revokeMutationMock,
   useLoaderDataMock,
+  useLazyLoadQueryMock,
   useMutationMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock
@@ -22,6 +23,7 @@ const {
   publishMutationMock: vi.fn(),
   revokeMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn()
@@ -39,11 +41,12 @@ vi.mock("react-router-dom", async () => {
 
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, useMutation: useMutationMock, usePreloadedQuery: usePreloadedQueryMock };
+  return { ...actual, useLazyLoadQuery: useLazyLoadQueryMock, useMutation: useMutationMock, usePreloadedQuery: usePreloadedQueryMock };
 });
 
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -53,9 +56,11 @@ beforeEach(() => {
   publishMutationMock.mockReset();
   revokeMutationMock.mockReset();
   useLoaderDataMock.mockReset();
+  useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({ viewer: null } as never);
   mockedUseMutation.mockImplementation((mutation) =>
     (mutation === publishComparisonSnapshotMutation
       ? [publishMutationMock, false]
@@ -65,13 +70,12 @@ beforeEach(() => {
 
 test("ShareComparisonControl publishes the ordered products and selected profile", async () => {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
       <ShareComparisonControl
         products={[
           { id: "product-2", name: "Second", slug: "second", description: null, brandName: null, currentAttributes: [] },
           { id: "product-1", name: "First", slug: "first", description: null, brandName: null, currentAttributes: [] }
         ]}
-        recommendation={{ profile: "best_value", algorithmVersion: "v1", status: "INSUFFICIENT_EVIDENCE", winnerProductId: null, currency: null, missingInputs: [], rankings: [] }}
       />
     </MemoryRouter>
   );
@@ -109,21 +113,68 @@ test("ShareComparisonControl revokes the just-published public link", async () =
 });
 
 test("ShareComparisonControl manages snapshots discovered after a reload", async () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    viewer: {
+      comparisonSnapshots: {
+        edges: [{ node: { id: "snapshot-existing", sharePath: "/compare/shared/existing-token", title: "Existing shortlist" } }],
+        pageInfo: { endCursor: null, hasNextPage: false }
+      }
+    }
+  } as never);
   render(<MemoryRouter><ShareComparisonControl
     products={[
       { id: "product-1", name: "First", slug: "first", description: null, brandName: null, currentAttributes: [] },
       { id: "product-2", name: "Second", slug: "second", description: null, brandName: null, currentAttributes: [] }
     ]}
-    publishedSnapshots={[{ id: "snapshot-existing", path: "/compare/shared/existing-token", title: "Existing shortlist" }]}
   /></MemoryRouter>);
 
   fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
-  expect(screen.getByRole("link", { name: "Existing shortlist" })).toHaveAttribute("href", "/compare/shared/existing-token");
+  expect(await screen.findByRole("link", { name: "Existing shortlist" })).toHaveAttribute("href", "/compare/shared/existing-token");
   fireEvent.click(screen.getByRole("button", { name: "Revoke public link: Existing shortlist" }));
 
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { snapshotId: "snapshot-existing" } })));
   await act(async () => revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({ revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-existing", errors: [] } }, []));
   expect(screen.queryByRole("link", { name: "Existing shortlist" })).not.toBeInTheDocument();
+});
+
+test("ShareComparisonControl reaches snapshots beyond the first page", async () => {
+  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
+    const after = (variables as { after?: string | null }).after;
+    return (after
+      ? {
+          viewer: {
+            comparisonSnapshots: {
+              edges: [{ node: { id: "snapshot-21", sharePath: "/compare/shared/21", title: "Snapshot 21" } }],
+              pageInfo: { endCursor: null, hasNextPage: false }
+            }
+          }
+        }
+      : {
+          viewer: {
+            comparisonSnapshots: {
+              edges: [{ node: { id: "snapshot-1", sharePath: "/compare/shared/1", title: "Snapshot 1" } }],
+              pageInfo: { endCursor: "cursor-20", hasNextPage: true }
+            }
+          }
+        }) as never;
+  });
+
+  render(<MemoryRouter><ShareComparisonControl products={[
+    { id: "product-1", name: "First", slug: "first", description: null, brandName: null, currentAttributes: [] },
+    { id: "product-2", name: "Second", slug: "second", description: null, brandName: null, currentAttributes: [] }
+  ]} /></MemoryRouter>);
+
+  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+  expect(await screen.findByRole("link", { name: "Snapshot 1" })).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Show more snapshots" }));
+
+  expect(await screen.findByRole("link", { name: "Snapshot 21" })).toBeVisible();
+  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { first: 20, after: "cursor-20" },
+    { fetchPolicy: "store-or-network" }
+  );
 });
 
 test("shared snapshot loader returns an HTTP 404 for invalid or revoked tokens", async () => {

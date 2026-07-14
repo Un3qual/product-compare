@@ -4,30 +4,7 @@ export const compareRouteQuery = graphql`
   query CompareRouteQuery(
     $slugs: [String!]!
     $offerFirst: Int!
-    $pickerFirst: Int!
-    $pickerAfter: String
-    $includeRecommendation: Boolean!
-    $recommendationProfile: RecommendationProfile = LOWEST_CURRENT_COST
   ) {
-    comparisonRecommendation(slugs: $slugs, profile: $recommendationProfile)
-      @include(if: $includeRecommendation) {
-      profile
-      algorithmVersion
-      status
-      winnerProductId
-      currency
-      missingInputs
-      rankings {
-        rank
-        productId
-        productName
-        landedPrice
-        currency
-        pricePointId
-        claimIds
-        reasons
-      }
-    }
     comparisonProducts(slugs: $slugs) {
       id
       name
@@ -97,34 +74,6 @@ export const compareRouteQuery = graphql`
         pageInfo {
           endCursor
           hasNextPage
-        }
-      }
-    }
-    products(first: $pickerFirst, after: $pickerAfter) {
-      edges {
-        node {
-          id
-          name
-          slug
-          brand {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-    viewer {
-      comparisonSnapshots(first: 20) {
-        edges {
-          node {
-            id
-            title
-            sharePath
-          }
         }
       }
     }

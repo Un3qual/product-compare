@@ -191,13 +191,14 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ CompareRoute }, { compareLoader }] = await Promise.all([
+          const [{ CompareRoute }, { compareLoader, shouldRevalidateCompareLoader }] = await Promise.all([
             import("./routes/compare/CompareRoute"),
             import("./routes/compare/loader")
           ]);
           return {
             Component: CompareRoute,
-            loader: compareLoader
+            loader: compareLoader,
+            shouldRevalidate: shouldRevalidateCompareLoader
           };
         })
       },

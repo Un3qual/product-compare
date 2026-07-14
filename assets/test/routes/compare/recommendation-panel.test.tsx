@@ -1,13 +1,25 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { useLazyLoadQuery } from "react-relay";
 import { RecommendationPanel } from "../../../src/routes/compare/RecommendationPanel";
 import {
   recommendationProfileFromUrl,
-  type CompareRecommendationSummary
+  shouldRevalidateCompareLoader
 } from "../../../src/routes/compare/loader";
 
-const WINNER: CompareRecommendationSummary = {
-  profile: "best_value",
+const { useLazyLoadQueryMock } = vi.hoisted(() => ({
+  useLazyLoadQueryMock: vi.fn()
+}));
+
+vi.mock("react-relay", async () => {
+  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
+  return { ...actual, useLazyLoadQuery: useLazyLoadQueryMock };
+});
+
+const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
+
+const WINNER = {
+  profile: "BEST_VALUE",
   algorithmVersion: "best-supported-current-cost-v1",
   status: "WINNER",
   winnerProductId: "product-1",
@@ -25,20 +37,32 @@ const WINNER: CompareRecommendationSummary = {
       reasons: ["Lowest eligible landed price: USD 119.00"]
     }
   ]
-};
+} as const;
+
+beforeEach(() => {
+  useLazyLoadQueryMock.mockReset();
+  mockedUseLazyLoadQuery.mockReturnValue({ comparisonRecommendation: WINNER } as never);
+});
 
 describe("RecommendationPanel", () => {
-  it("shows the winner with exact evidence and preserves comparison controls", () => {
+  it("loads the selected profile and shows exact source evidence", () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
         <RecommendationPanel
-          recommendation={WINNER}
           slugs={["evidence-camera", "other-camera"]}
           specMode="differences"
         />
       </MemoryRouter>
     );
 
+    expect(mockedUseLazyLoadQuery).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        slugs: ["evidence-camera", "other-camera"],
+        profile: "BEST_VALUE"
+      },
+      { fetchPolicy: "store-or-network" }
+    );
     expect(screen.getByText("Evidence Camera")).toBeVisible();
     expect(screen.getByText(/price observation price-point-4/)).toBeVisible();
     expect(screen.getByText(/2 accepted claim references/)).toBeVisible();
@@ -53,19 +77,19 @@ describe("RecommendationPanel", () => {
   });
 
   it("explains why no supported winner is available", () => {
+    mockedUseLazyLoadQuery.mockReturnValue({
+      comparisonRecommendation: {
+        ...WINNER,
+        status: "INSUFFICIENT_EVIDENCE",
+        winnerProductId: null,
+        rankings: [],
+        missingInputs: ["Products do not share one eligible offer currency."]
+      }
+    } as never);
+
     render(
       <MemoryRouter>
-        <RecommendationPanel
-          recommendation={{
-            ...WINNER,
-            status: "INSUFFICIENT_EVIDENCE",
-            winnerProductId: null,
-            rankings: [],
-            missingInputs: ["Products do not share one eligible offer currency."]
-          }}
-          slugs={["one", "two"]}
-          specMode="shared"
-        />
+        <RecommendationPanel slugs={["one", "two"]} specMode="shared" />
       </MemoryRouter>
     );
 
@@ -76,7 +100,7 @@ describe("RecommendationPanel", () => {
   });
 });
 
-describe("recommendationProfileFromUrl", () => {
+describe("recommendation profile navigation", () => {
   it("defaults unknown profiles to lowest current cost", () => {
     expect(recommendationProfileFromUrl("https://example.test/compare?recommend=unknown")).toBe(
       "lowest_current_cost"
@@ -87,5 +111,33 @@ describe("recommendationProfileFromUrl", () => {
     expect(
       recommendationProfileFromUrl("https://example.test/compare?recommend=best_value")
     ).toBe("best_value");
+  });
+
+  it("does not refetch the core comparison when only the profile changes", () => {
+    expect(
+      shouldRevalidateCompareLoader({
+        currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
+        nextUrl: new URL(
+          "https://example.test/compare?slug=one&slug=two&recommend=best_value"
+        ),
+        defaultShouldRevalidate: true
+      } as never)
+    ).toBe(false);
+
+    expect(
+      shouldRevalidateCompareLoader({
+        currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
+        nextUrl: new URL("https://example.test/compare?slug=one&slug=three"),
+        defaultShouldRevalidate: true
+      } as never)
+    ).toBe(true);
+
+    expect(
+      shouldRevalidateCompareLoader({
+        currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
+        nextUrl: new URL("https://example.test/compare?slug=one&slug=two"),
+        defaultShouldRevalidate: true
+      } as never)
+    ).toBe(true);
   });
 });

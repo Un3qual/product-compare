@@ -38,7 +38,7 @@ export function CompareProductList({
 }) {
   return (
     <>
-      <RecommendationPanel recommendation={loaderData.recommendation} slugs={loaderData.slugs} specMode={loaderData.specMode} />
+      <RecommendationPanel slugs={loaderData.slugs} specMode={loaderData.specMode} />
       <DecisionSummary
         offerContexts={loaderData.offerContexts}
         products={loaderData.products}

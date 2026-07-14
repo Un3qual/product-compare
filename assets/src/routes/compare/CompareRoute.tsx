@@ -205,11 +205,7 @@ function CompareSelectionRoute({
               <Button disabled={saveInFlight} onClick={handleSave} type="button">
                 {saveInFlight ? "Saving comparison..." : "Save comparison"}
               </Button>
-              <ShareComparisonControl
-                products={loaderData.products}
-                publishedSnapshots={loaderData.publishedSnapshots}
-                recommendation={loaderData.recommendation}
-              />
+              <ShareComparisonControl products={loaderData.products} />
               <p aria-label="Save comparison status" aria-live="polite" role="status">
                 {saveFeedback.message ?? ""}
               </p>
