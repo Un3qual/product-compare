@@ -898,6 +898,10 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.current_attributes/3)
     end
 
+    field :offer_truth, non_null(:product_offer_truth) do
+      resolve(&PricingResolver.product_offer_truth/3)
+    end
+
     field :merchant_products, :merchant_product_connection do
       arg(:first, :integer)
       arg(:after, :string)
@@ -998,8 +1002,65 @@ defmodule ProductCompareWeb.Schema do
 
     field :observed_at, non_null(:datetime)
     field :price, non_null(:decimal)
+    field :shipping, :decimal
+    field :in_stock, :boolean
+
+    field :source_artifact, :source_artifact do
+      resolve(&PricingResolver.source_artifact/3)
+    end
+
     field :inserted_at, non_null(:datetime)
     field :updated_at, :datetime
+  end
+
+  object :product_offer_truth do
+    field :as_of, non_null(:datetime)
+    field :fresh_for_seconds, non_null(:integer)
+    field :stale_after_seconds, non_null(:integer)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :currency_summaries, non_null(list_of(non_null(:offer_currency_summary)))
+  end
+
+  object :offer_currency_summary do
+    field :currency, non_null(:string)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :best_offer, :current_offer
+  end
+
+  object :current_offer do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn offer, _, _ ->
+        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
+      end)
+    end
+
+    field :currency, non_null(:string)
+    field :item_price, :decimal
+    field :shipping, :decimal
+    field :landed_price, :decimal
+    field :landed_price_complete, non_null(:boolean)
+    field :stock_status, non_null(:offer_stock_status)
+    field :freshness, non_null(:offer_freshness)
+    field :observed_at, :datetime
+    field :eligible, non_null(:boolean)
+    field :source_artifact, :source_artifact
+  end
+
+  enum :offer_stock_status do
+    value(:in_stock)
+    value(:out_of_stock)
+    value(:unknown)
+  end
+
+  enum :offer_freshness do
+    value(:fresh)
+    value(:aging)
+    value(:stale)
+    value(:unobserved)
   end
 
   object :price_point_connection do

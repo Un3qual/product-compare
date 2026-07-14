@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (complete offer truth read contract)
+- Status: active (durable ingestion job foundation)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,7 +10,7 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Active implementation plan:
-  `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
+  `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -50,8 +50,8 @@ Recommendations are deterministic and evidence-backed.
 ## Foundation Successors
 
 - Specification provenance read contract: complete.
-- Complete offer truth read contract: active.
-- Durable ingestion job foundation: ready.
+- Complete offer truth read contract: complete.
+- Durable ingestion job foundation: active.
 - Enrichment, corrections, reconciliation, alerts, recommendations, sharing,
   community, merchant pages, and SEO are promoted only as their dependencies
   become green.
@@ -74,3 +74,23 @@ Recommendations are deterministic and evidence-backed.
   documents with no changes required to existing operations.
 - Final gates: `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate` (`5 ready rows`), and `git diff --check` passed.
+
+## Complete Offer Truth Evidence
+
+- Added a pure offer-truth policy with `fresh`, `aging`, `stale`, and
+  `unobserved` states plus explicit in-stock, out-of-stock, and unknown stock.
+- Landed price is present only when shipping is known. Eligibility requires an
+  active offer, an in-stock fresh/aging observation, and complete landed price.
+- Product truth reads all active database offers, not one Relay page, and
+  selects a deterministic best complete landed price independently per currency.
+- GraphQL price points now expose shipping, stock, and batched safe source
+  artifacts. Product GraphQL exposes counts, policy thresholds, currency
+  summaries, and the source-backed best offer.
+- RED: the focused run reported 20 tests and 3 failures because the offer policy,
+  global aggregate, and GraphQL fields did not exist.
+- GREEN: pricing and GraphQL passed 20 tests; the same run with the regenerated
+  live schema snapshot passed 21 tests.
+- Relay schema validation compiled 30 reader, 29 normalization, and 29 operation
+  documents successfully.
+- Final gates: `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.

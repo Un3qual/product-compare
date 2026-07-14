@@ -583,6 +583,7 @@ type Product implements Node {
   description: String
   brand: Brand
   currentAttributes: [ProductAttributeValue!]!
+  offerTruth: ProductOfferTruth!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
 }
 
@@ -634,8 +635,56 @@ type PricePoint implements Node {
   merchantProductId: ID!
   observedAt: DateTime!
   price: Decimal!
+  shipping: Decimal
+  inStock: Boolean
+  sourceArtifact: SourceArtifact
   insertedAt: DateTime!
   updatedAt: DateTime
+}
+
+type ProductOfferTruth {
+  asOf: DateTime!
+  freshForSeconds: Int!
+  staleAfterSeconds: Int!
+  offerCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  currencySummaries: [OfferCurrencySummary!]!
+}
+
+type OfferCurrencySummary {
+  currency: String!
+  offerCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  bestOffer: CurrentOffer
+}
+
+type CurrentOffer {
+  merchantProductId: ID!
+  currency: String!
+  itemPrice: Decimal
+  shipping: Decimal
+  landedPrice: Decimal
+  landedPriceComplete: Boolean!
+  stockStatus: OfferStockStatus!
+  freshness: OfferFreshness!
+  observedAt: DateTime
+  eligible: Boolean!
+  sourceArtifact: SourceArtifact
+}
+
+enum OfferStockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  UNKNOWN
+}
+
+enum OfferFreshness {
+  FRESH
+  AGING
+  STALE
+  UNOBSERVED
 }
 
 type PricePointConnection {

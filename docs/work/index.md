@@ -145,48 +145,17 @@ their accepted claim identity, status, source type, confidence, bounded
 evidence excerpts, and the existing safe source-artifact view through batched
 preloads. Complete offer truth is the active successor.
 
+Complete offer truth completed on 2026-07-13. Price observations now expose
+shipping, stock, and safe source provenance. Product-level truth considers
+every active database offer, groups currencies independently, classifies
+freshness, and selects a best offer only from complete in-stock landed prices.
+Durable ingestion jobs are the active successor.
+
 ## Active Work
 
-### Complete Offer Truth Read Contract
+### Durable Ingestion Job Foundation
 
 Status: active
-Lane: Backend pricing and GraphQL
-Plan: `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
-Next action: expose shipping, stock, observation freshness, landed-price
-completeness, and a database-wide same-currency eligible best-offer summary.
-Owned paths:
-
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/pricing/offer_truth.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/schema.ex`
-- `assets/schema.graphql`
-- `test/product_compare/pricing_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- Existing price history, merchant product, and Relay connection contracts
-  remain green.
-
-Verification:
-
-- `mix test test/product_compare/pricing_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: GraphQL describes known and unknown offer components explicitly,
-and best-offer truth is not limited to the browser's loaded Relay page.
-
-## Ready Work
-
-### 1. Durable Ingestion Job Foundation
-
-Status: ready
 Lane: Backend ingestion operations
 Plan: `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 Next action: add database-backed unique CJ import jobs with bounded retries and
@@ -225,7 +194,9 @@ Exit condition: scheduled work survives process loss, unique schedule windows do
 not duplicate jobs, retry/terminal failures are classified safely, and existing
 disabled-by-default runtime controls remain intact.
 
-### 2. Product Detail Decision Actions Presentation
+## Ready Work
+
+### 1. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -253,7 +224,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 3. Revenue Summary View-Data Contract
+### 2. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -283,7 +254,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 4. Specification Matrix Data Contract
+### 3. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -312,7 +283,7 @@ Verification:
 Exit condition: The pure matrix contract preserves ordering, duplicates,
 missing cells, modes, typed values, units, and decimal/exponent behavior.
 
-### 5. Decision Summary Data Contract
+### 4. Decision Summary Data Contract
 
 Status: ready
 Lane: Frontend product comparison

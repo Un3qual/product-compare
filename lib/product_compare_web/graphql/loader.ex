@@ -3,11 +3,14 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   Builds the request-scoped GraphQL dataloader sources.
   """
 
+  import Ecto.Query
+
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -29,8 +32,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   end
 
   defp catalog_query(ProductAttributeCurrent, _params) do
-    import Ecto.Query
-
     ProductAttributeCurrent
     |> join(:inner, [current], attribute in assoc(current, :attribute))
     |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
@@ -41,6 +42,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   end
 
   defp catalog_query(queryable, _params), do: queryable
+  defp pricing_query(SourceArtifact, _params), do: preload(SourceArtifact, :source)
   defp pricing_query(queryable, _params), do: queryable
 
   defp pricing_run_batch(PricePoint, query, :latest_price, merchant_product_ids, repo_opts) do

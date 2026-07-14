@@ -6,6 +6,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "/api/graphql pricing discovery queries" do
     test "merchants returns a paginated connection with stable ordering", %{conn: conn} do
@@ -773,6 +776,149 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
       assert [_, _, _, _] = queries
     end
+
+    test "product and price observations expose complete source-backed offer truth", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-truth-product"})
+
+      higher_item_merchant =
+        merchant_fixture(%{
+          name: unique_name("Free Shipping Merchant"),
+          domain: unique_domain("free-shipping")
+        })
+
+      lower_item_merchant =
+        merchant_fixture(%{
+          name: unique_name("Paid Shipping Merchant"),
+          domain: unique_domain("paid-shipping")
+        })
+
+      higher_item_offer =
+        merchant_product_fixture(%{
+          merchant: higher_item_merchant,
+          product: product,
+          is_active: true
+        })
+
+      lower_item_offer =
+        merchant_product_fixture(%{
+          merchant: lower_item_merchant,
+          product: product,
+          is_active: true
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: unique_name("CJ price source"),
+          domain: "cj.example"
+        })
+        |> Repo.insert!()
+
+      fetched_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://merchant.example/product-feed",
+          fetched_at: fetched_at,
+          content_hash: "offer-truth-#{System.unique_integer([:positive])}",
+          raw_json: %{"private" => "payload"}
+        })
+        |> Repo.insert!()
+
+      {:ok, higher_item_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: higher_item_offer.id,
+          observed_at: fetched_at,
+          price: Decimal.new("60"),
+          shipping: Decimal.new("0"),
+          in_stock: true,
+          artifact_id: artifact.id
+        })
+
+      {:ok, _lower_item_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: lower_item_offer.id,
+          observed_at: fetched_at,
+          price: Decimal.new("50"),
+          shipping: Decimal.new("20"),
+          in_stock: true
+        })
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "offerTruth" => %{
+                     "offerCount" => 2,
+                     "observedOfferCount" => 2,
+                     "eligibleOfferCount" => 2,
+                     "currencySummaries" => [
+                       %{
+                         "currency" => "USD",
+                         "offerCount" => 2,
+                         "observedOfferCount" => 2,
+                         "eligibleOfferCount" => 2,
+                         "bestOffer" => %{
+                           "merchantProductId" => best_offer_id,
+                           "itemPrice" => "60",
+                           "shipping" => "0",
+                           "landedPrice" => "60",
+                           "landedPriceComplete" => true,
+                           "stockStatus" => "IN_STOCK",
+                           "freshness" => "FRESH",
+                           "eligible" => true,
+                           "sourceArtifact" => %{
+                             "id" => source_artifact_id,
+                             "sourceName" => source_name,
+                             "fetchedAt" => fetched_at_value
+                           }
+                         }
+                       }
+                     ]
+                   }
+                 },
+                 "merchantProducts" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "latestPrice" => %{
+                           "id" => latest_price_id,
+                           "shipping" => "0",
+                           "inStock" => true,
+                           "sourceArtifact" => %{
+                             "id" => latest_source_artifact_id,
+                             "sourceName" => latest_source_name
+                           }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, complete_offer_truth_query(), %{
+                 "slug" => product.slug,
+                 "input" => %{
+                   "productId" => relay_id(:product, product.id),
+                   "merchantId" => relay_id(:merchant, higher_item_merchant.id),
+                   "first" => 1
+                 }
+               })
+
+      assert best_offer_id == relay_id(:merchant_product, higher_item_offer.id)
+      assert latest_price_id == relay_id(:price_point, higher_item_price.id)
+      assert source_artifact_id == relay_id(:source_artifact, artifact.id)
+      assert latest_source_artifact_id == relay_id(:source_artifact, artifact.id)
+      assert source_name == source.name
+      assert latest_source_name == source.name
+      assert {:ok, parsed_fetched_at, 0} = DateTime.from_iso8601(fetched_at_value)
+      assert DateTime.compare(parsed_fetched_at, fetched_at) == :eq
+    end
   end
 
   defp merchant_fixture(attrs \\ %{}) do
@@ -1016,6 +1162,56 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
             latestPrice {
               id
               price
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp complete_offer_truth_query do
+    """
+    query CompleteOfferTruth($slug: String!, $input: MerchantProductsInput!) {
+      product(slug: $slug) {
+        offerTruth {
+          offerCount
+          observedOfferCount
+          eligibleOfferCount
+          currencySummaries {
+            currency
+            offerCount
+            observedOfferCount
+            eligibleOfferCount
+            bestOffer {
+              merchantProductId
+              itemPrice
+              shipping
+              landedPrice
+              landedPriceComplete
+              stockStatus
+              freshness
+              eligible
+              sourceArtifact {
+                id
+                sourceName
+                fetchedAt
+              }
+            }
+          }
+        }
+      }
+      merchantProducts(input: $input) {
+        edges {
+          node {
+            latestPrice {
+              id
+              shipping
+              inStock
+              sourceArtifact {
+                id
+                sourceName
+              }
             }
           }
         }

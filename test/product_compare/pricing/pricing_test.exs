@@ -3,8 +3,11 @@ defmodule ProductCompare.PricingTest do
 
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompare.Pricing.OfferTruth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
+  alias ProductCompareSchemas.Pricing.MerchantProduct
+  alias ProductCompareSchemas.Pricing.PricePoint
 
   describe "upsert_merchant/1" do
     test "updates existing merchant when matching domain" do
@@ -272,5 +275,201 @@ defmodule ProductCompare.PricingTest do
       assert oldest.id < tie_a.id
       assert tie_a.id < tie_b.id
     end
+  end
+
+  describe "complete current offer truth" do
+    test "classifies completeness, stock, freshness, and eligibility" do
+      now = ~U[2026-07-13 18:00:00Z]
+
+      merchant_product = %MerchantProduct{
+        id: 1,
+        currency: "USD",
+        is_active: true
+      }
+
+      complete_price = %PricePoint{
+        observed_at: DateTime.add(now, -3600, :second),
+        price: Decimal.new("100"),
+        shipping: Decimal.new("5"),
+        in_stock: true
+      }
+
+      assert %{
+               item_price: item_price,
+               shipping: shipping,
+               landed_price: landed_price,
+               landed_price_complete: true,
+               stock_status: :in_stock,
+               freshness: :fresh,
+               eligible: true
+             } = OfferTruth.summarize(merchant_product, complete_price, now)
+
+      assert Decimal.eq?(item_price, Decimal.new("100"))
+      assert Decimal.eq?(shipping, Decimal.new("5"))
+      assert Decimal.eq?(landed_price, Decimal.new("105"))
+
+      assert %{
+               landed_price: nil,
+               landed_price_complete: false,
+               eligible: false
+             } =
+               OfferTruth.summarize(
+                 merchant_product,
+                 %{complete_price | shipping: nil},
+                 now
+               )
+
+      assert %{stock_status: :unknown, eligible: false} =
+               OfferTruth.summarize(
+                 merchant_product,
+                 %{complete_price | in_stock: nil},
+                 now
+               )
+
+      assert %{stock_status: :out_of_stock, eligible: false} =
+               OfferTruth.summarize(
+                 merchant_product,
+                 %{complete_price | in_stock: false},
+                 now
+               )
+
+      assert %{freshness: :aging, eligible: true} =
+               OfferTruth.summarize(
+                 merchant_product,
+                 %{complete_price | observed_at: DateTime.add(now, -48, :hour)},
+                 now
+               )
+
+      assert %{freshness: :stale, eligible: false} =
+               OfferTruth.summarize(
+                 merchant_product,
+                 %{complete_price | observed_at: DateTime.add(now, -73, :hour)},
+                 now
+               )
+
+      assert %{
+               item_price: nil,
+               freshness: :unobserved,
+               stock_status: :unknown,
+               eligible: false
+             } = OfferTruth.summarize(merchant_product, nil, now)
+    end
+
+    test "selects the database-wide best complete landed price per currency", %{
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-offer-truth-product"})
+      now = ~U[2026-07-13 18:00:00Z]
+
+      lower_item =
+        offer_fixture(product, "USD", "lower-item", true, %{
+          price: "50",
+          shipping: "20",
+          in_stock: true,
+          observed_at: DateTime.add(now, -1, :hour)
+        })
+
+      lower_landed =
+        offer_fixture(product, "USD", "lower-landed", true, %{
+          price: "60",
+          shipping: "0",
+          in_stock: true,
+          observed_at: DateTime.add(now, -2, :hour)
+        })
+
+      _unknown_shipping =
+        offer_fixture(product, "USD", "unknown-shipping", true, %{
+          price: "40",
+          shipping: nil,
+          in_stock: true,
+          observed_at: DateTime.add(now, -1, :hour)
+        })
+
+      _stale =
+        offer_fixture(product, "USD", "stale", true, %{
+          price: "1",
+          shipping: "0",
+          in_stock: true,
+          observed_at: DateTime.add(now, -4, :day)
+        })
+
+      _unobserved = offer_fixture(product, "USD", "unobserved", true, nil)
+
+      euro =
+        offer_fixture(product, "EUR", "euro", true, %{
+          price: "70",
+          shipping: "5",
+          in_stock: true,
+          observed_at: DateTime.add(now, -1, :hour)
+        })
+
+      _inactive =
+        offer_fixture(product, "USD", "inactive", false, %{
+          price: "0.01",
+          shipping: "0",
+          in_stock: true,
+          observed_at: now
+        })
+
+      assert %{
+               offer_count: 6,
+               observed_offer_count: 5,
+               eligible_offer_count: 3,
+               currency_summaries: [eur_summary, usd_summary]
+             } = Pricing.current_offer_truth(product.id, now: now)
+
+      assert %{
+               currency: "EUR",
+               offer_count: 1,
+               observed_offer_count: 1,
+               eligible_offer_count: 1,
+               best_offer: %{merchant_product_id: euro_id, landed_price: euro_landed}
+             } = eur_summary
+
+      assert euro_id == euro.id
+      assert Decimal.eq?(euro_landed, Decimal.new("75"))
+
+      assert %{
+               currency: "USD",
+               offer_count: 5,
+               observed_offer_count: 4,
+               eligible_offer_count: 2,
+               best_offer: %{merchant_product_id: best_id, landed_price: best_landed}
+             } = usd_summary
+
+      assert lower_item.id != lower_landed.id
+      assert best_id == lower_landed.id
+      assert Decimal.eq?(best_landed, Decimal.new("60"))
+    end
+  end
+
+  defp offer_fixture(product, currency, suffix, is_active, price_attrs) do
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{
+        name: "Offer truth #{suffix} #{System.unique_integer([:positive])}",
+        domain: "#{suffix}-#{System.unique_integer([:positive])}.example"
+      })
+
+    {:ok, merchant_product} =
+      Pricing.upsert_merchant_product(%{
+        merchant_id: merchant.id,
+        product_id: product.id,
+        url: "https://#{merchant.domain}/product",
+        currency: currency,
+        is_active: is_active
+      })
+
+    if price_attrs do
+      {:ok, _price_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: price_attrs.observed_at,
+          price: Decimal.new(price_attrs.price),
+          shipping: price_attrs.shipping && Decimal.new(price_attrs.shipping),
+          in_stock: price_attrs.in_stock
+        })
+    end
+
+    merchant_product
   end
 end

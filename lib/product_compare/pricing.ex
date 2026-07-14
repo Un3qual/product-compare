@@ -6,6 +6,7 @@ defmodule ProductCompare.Pricing do
   import Ecto.Query
 
   alias ProductCompare.ChangesetErrors
+  alias ProductCompare.Pricing.OfferTruth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -160,6 +161,54 @@ defmodule ProductCompare.Pricing do
     merchant_product_id
     |> price_history_query(filters)
     |> Repo.all()
+  end
+
+  @spec current_offer_truth(term(), keyword()) :: map()
+  def current_offer_truth(product_id, opts \\ [])
+
+  def current_offer_truth(product_id, opts)
+      when is_integer(product_id) and product_id > 0 and product_id <= @max_bigint_id do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    merchant_products =
+      MerchantProduct
+      |> where(
+        [merchant_product],
+        merchant_product.product_id == ^product_id and merchant_product.is_active == true
+      )
+      |> order_by([merchant_product], asc: merchant_product.id)
+      |> Repo.all()
+
+    price_points_by_merchant_product =
+      merchant_products
+      |> Enum.map(& &1.id)
+      |> latest_offer_truth_prices()
+
+    offers =
+      Enum.map(merchant_products, fn merchant_product ->
+        OfferTruth.summarize(
+          merchant_product,
+          Map.get(price_points_by_merchant_product, merchant_product.id),
+          now,
+          opts
+        )
+      end)
+
+    OfferTruth.summarize_product(offers, now, opts)
+  end
+
+  def current_offer_truth(_product_id, opts) do
+    OfferTruth.summarize_product([], Keyword.get(opts, :now, DateTime.utc_now()), opts)
+  end
+
+  defp latest_offer_truth_prices([]), do: %{}
+
+  defp latest_offer_truth_prices(merchant_product_ids) do
+    PricePoint
+    |> latest_prices_query(merchant_product_ids)
+    |> preload([price_point], artifact: [:source])
+    |> Repo.all()
+    |> Map.new(&{&1.merchant_product_id, &1})
   end
 
   defp upsert_merchant_on_name(changeset, now) do
