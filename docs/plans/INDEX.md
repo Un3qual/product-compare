@@ -107,7 +107,8 @@ batch and should not be recreated or promoted.
 - Active reserve: comparison snapshot data, product-community data, price-alert
   view data, and API-token route data execute through
   `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`;
-  comparison snapshot data is complete on the active branch.
+  comparison snapshot and product-community data are complete on the active
+  branch.
 - Ready reserve: affiliate setup route data, offer-discovery filter data, and
   catalog browse route data execute through
   `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.

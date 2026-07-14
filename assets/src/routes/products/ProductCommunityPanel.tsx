@@ -15,6 +15,15 @@ import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
 import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
 import submitProductReviewMutation from "./queries/SubmitProductReviewMutation";
+import {
+  acceptedAnswerAuthorLabel,
+  appendUniqueCommunityItems,
+  buildProductAnswerInput,
+  buildProductQuestionInput,
+  buildProductReviewInput,
+  nextCommunityPageCursor,
+  publishedReviewSummary
+} from "./product-community-data";
 
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
@@ -100,17 +109,17 @@ function useCommunityPages(productSlug: string) {
   );
 
   useEffect(() => {
-    setLoadedReviews((current) => appendUnique(current, pageReviews));
+    setLoadedReviews((current) => appendUniqueCommunityItems(current, pageReviews));
   }, [pageReviews]);
 
   useEffect(() => {
-    setLoadedQuestions((current) => appendUnique(current, pageQuestions));
+    setLoadedQuestions((current) => appendUniqueCommunityItems(current, pageQuestions));
   }, [pageQuestions]);
 
   return {
     product,
-    questions: appendUnique(loadedQuestions, pageQuestions),
-    reviews: appendUnique(loadedReviews, pageReviews),
+    questions: appendUniqueCommunityItems(loadedQuestions, pageQuestions),
+    reviews: appendUniqueCommunityItems(loadedReviews, pageReviews),
     setQuestionsAfter,
     setReviewsAfter
   };
@@ -134,7 +143,13 @@ function ReviewSection({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      const input = reviewInput(productId, new FormData(event.currentTarget));
+      const form = new FormData(event.currentTarget);
+      const input = buildProductReviewInput({
+        body: form.get("body"),
+        productId,
+        rating: form.get("rating"),
+        title: form.get("title")
+      });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input } });
       const payload = response.submitProductReview;
       setMessage(payload?.review ? "Review submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -143,7 +158,7 @@ function ReviewSection({
 
   return <section aria-labelledby="reviews-heading" {...props(styles.content)}>
     <h2 id="reviews-heading" {...props(styles.title)}>Reviews</h2>
-    <p {...props(styles.metadata)}>{summary.count ? `${summary.averageRating} out of 5 from ${summary.count} published review${summary.count === 1 ? "" : "s"}.` : "No published reviews yet."}</p>
+    <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
     <ul aria-label="Published product reviews" {...props(styles.list)}>{reviews.map((review) => <li key={review.id} {...props(styles.item)}><strong>{review.title ?? `${review.rating} out of 5`}</strong><span>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span>{review.body ? <p>{review.body}</p> : null}<p {...props(styles.metadata)}>{review.authorLabel}{review.verifiedPurchase ? " · Verified purchase" : " · Purchase not verified"}</p></li>)}</ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
@@ -153,34 +168,6 @@ function ReviewSection({
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>{message ? <p role="status">{message}</p> : null}
     </form></details>
   </section>;
-}
-
-function reviewInput(
-  productId: string,
-  form: FormData
-): SubmitProductReviewMutation["variables"]["input"] {
-  const title = String(form.get("title") ?? "").trim();
-  const body = String(form.get("body") ?? "").trim();
-
-  return {
-    productId,
-    rating: Number(form.get("rating")),
-    ...(title ? { title } : {}),
-    ...(body ? { body } : {})
-  };
-}
-
-function questionInput(
-  productId: string,
-  form: FormData
-): AskProductQuestionMutation["variables"]["input"] {
-  const body = String(form.get("body") ?? "").trim();
-
-  return {
-    productId,
-    title: String(form.get("title") ?? "").trim(),
-    ...(body ? { body } : {})
-  };
 }
 
 function QuestionSection({
@@ -198,7 +185,12 @@ function QuestionSection({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      const input = questionInput(productId, new FormData(event.currentTarget));
+      const form = new FormData(event.currentTarget);
+      const input = buildProductQuestionInput({
+        body: form.get("body"),
+        productId,
+        title: form.get("title")
+      });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input } });
       const payload = response.askProductQuestion;
 
@@ -255,10 +247,10 @@ function AdditionalAnswers({
     () => connection?.edges.map(({ node }) => node) ?? [],
     [connection]
   );
-  const answers = appendUnique(loadedAnswers, pageAnswers);
+  const answers = appendUniqueCommunityItems(loadedAnswers, pageAnswers);
 
   useEffect(() => {
-    setLoadedAnswers((current) => appendUnique(current, pageAnswers));
+    setLoadedAnswers((current) => appendUniqueCommunityItems(current, pageAnswers));
   }, [pageAnswers]);
 
   const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
@@ -276,13 +268,13 @@ function AnswerView({
   acceptedAnswerId: string | null | undefined;
   answer: Answer;
 }) {
-  return <div {...props(styles.answer)}><p>{answer.body}</p><p {...props(styles.metadata)}>{answer.id === acceptedAnswerId ? "Accepted answer · " : ""}{answer.authorLabel}</p></div>;
+  return <div {...props(styles.answer)}><p>{answer.body}</p><p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p></div>;
 }
 
 function AnswerForm({ questionId }: { questionId: string }) {
   const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: { questionId, body: String(form.get("body") ?? "").trim() } } }); const payload = response.answerProductQuestion; setMessage(payload?.answer ? "Answer submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: buildProductAnswerInput({ questionId, body: form.get("body") }) } }); const payload = response.answerProductQuestion; setMessage(payload?.answer ? "Answer submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
   return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>;
 }
 
@@ -290,19 +282,6 @@ function nextCursor(
   pageInfo: { readonly endCursor: string | null | undefined; readonly hasNextPage: boolean },
   setAfter: (cursor: string) => void
 ) {
-  const cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+  const cursor = nextCommunityPageCursor(pageInfo);
   return cursor ? () => setAfter(cursor) : null;
-}
-
-function appendUnique<T extends { readonly id: string }>(
-  existing: T[],
-  incoming: readonly T[]
-): T[] {
-  if (incoming.length === 0) {
-    return existing;
-  }
-
-  const seen = new Set(existing.map(({ id }) => id));
-  const appended = incoming.filter(({ id }) => !seen.has(id));
-  return appended.length ? [...existing, ...appended] : existing;
 }

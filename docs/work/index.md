@@ -210,28 +210,14 @@ non-overlapping trust-surface view-data contracts. Their existing snapshot,
 community, alert, and API-token characterization suites passed 59 tests.
 
 The user claimed all four trust-surface rows on 2026-07-14 for serial execution
-on `codex/trust-surface-data-contracts`. Share-comparison snapshot policy is
-complete with 11 focused tests; product-community, price-alert, and API-token
-route contracts remain active on the same branch. The coordinator replenished
-the ready floor with three source-verified, non-overlapping route-policy data
-contracts backed by 22 affiliate, 51 offer-discovery, and 62 catalog tests.
+on `codex/trust-surface-data-contracts`. Share-comparison snapshot and product-
+community policy are complete with 11 and 8 focused tests; price-alert and API-
+token route contracts remain active on the same branch. The coordinator
+replenished the ready floor with three source-verified, non-overlapping route-
+policy data contracts backed by 22 affiliate, 51 offer-discovery, and 62
+catalog tests.
 
 ## Active Work
-
-### Product Community Data Contract
-
-Status: active
-Owner: `codex/trust-surface-data-contracts`
-Lane: Frontend product detail
-Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next checkpoint: complete the pure community contract and focused verification.
-Owned paths:
-
-- `assets/src/routes/products/product-community-data.ts`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- `assets/test/routes/products/product-community-data.test.ts`
-- `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-detail.md`
 
 ### Price Alert View-Data Contract
 

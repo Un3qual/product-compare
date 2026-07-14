@@ -70,14 +70,14 @@ first-occurrence item merges. `ProductCommunityPanel` retains Relay reads and
 mutations, paging state, moderation feedback, forms, suspense, and semantic
 review/Q&A presentation.
 
-- [ ] Add pure tests for trimmed optional fields, rating values, empty review
+- [x] Add pure tests for trimmed optional fields, rating values, empty review
   summaries, singular/plural copy, accepted answers, missing cursors, and
   duplicate page items; verify RED.
-- [ ] Extract only deterministic community policy without widening moderation
+- [x] Extract only deterministic community policy without widening moderation
   or authentication behavior.
-- [ ] Run the pure and existing community suites, TypeScript, the framework-
+- [x] Run the pure and existing community suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 

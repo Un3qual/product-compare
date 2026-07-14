@@ -2,13 +2,12 @@
 
 ## Snapshot
 
-- Status: active (product-community data contract)
+- Status: done (product-community data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after product-community contract candidate
-  verification and decision-action review follow-up (2 community tests and 55
-  product-detail tests).
+- Last verified: 2026-07-14 after product-community data extraction (8 focused
+  tests and TypeScript).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -27,7 +26,7 @@
 
 ## Product Community Data Contract
 
-- Status: active on `codex/trust-surface-data-contracts`.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 - Next action: isolate review/question inputs, summary and accepted-answer
   labels, page cursors, and item merging in a framework-free module while
@@ -49,6 +48,20 @@
 - Candidate evidence: the existing product-community suite passed 2 tests, and
   current source inspection confirmed its deterministic input, summary,
   cursor, and merge policy remains embedded in the 308-line React panel.
+- Completed: framework-free community data now owns review, question, and
+  answer input normalization; published-review summary and accepted-answer
+  copy; next-page cursor selection; and first-occurrence item merging.
+  `ProductCommunityPanel` retains Relay reads and mutations, moderation
+  feedback, forms, paging state, suspense, and semantic presentation.
+- Completed evidence:
+  - RED: the new pure suite failed because `product-community-data` did not
+    exist.
+  - GREEN: the pure and existing community suites passed 8 tests.
+  - Incoming pages now avoid duplicate IDs within the same page while
+    preserving existing-first and page ordering.
+  - The pure module has no React, Relay, router, StyleX, or Radix imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Product Detail Decision Actions Presentation Extraction
 
