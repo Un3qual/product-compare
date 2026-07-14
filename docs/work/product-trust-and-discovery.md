@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: coordinating authenticated specification corrections
+- Status: active (authenticated specification corrections)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -11,8 +11,8 @@
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
   `docs/superpowers/plans/2026-07-13-specification-rich-enrichment-and-media-implementation-plan.md`
-- Active implementation plan: none while the corrections slice is being
-  planned.
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-authenticated-specification-corrections-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -59,6 +59,7 @@ Recommendations are deterministic and evidence-backed.
   green.
 - Complete-run offer reconciliation: complete.
 - Specification-rich enrichment and media: complete.
+- Authenticated specification corrections: active.
 
 ## Specification-Rich Enrichment And Media Evidence
 
