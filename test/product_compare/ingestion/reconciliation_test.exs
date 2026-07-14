@@ -1,5 +1,5 @@
 defmodule ProductCompare.Ingestion.ReconciliationTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
   import ProductCompare.Fixtures.CJIngestionFixtures
 
