@@ -14,6 +14,7 @@ defmodule ProductCompare.Catalog do
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
@@ -95,6 +96,42 @@ defmodule ProductCompare.Catalog do
 
   def get_product_by_slug(slug) when is_binary(slug) do
     Repo.get_by(Product, slug: slug)
+  end
+
+  @spec get_product_by_identifier(String.t(), String.t()) :: Product.t() | nil
+  def get_product_by_identifier(scheme, normalized_value)
+      when is_binary(scheme) and is_binary(normalized_value) do
+    Product
+    |> join(:inner, [product], identifier in ProductIdentifier,
+      on: identifier.product_id == product.id
+    )
+    |> where(
+      [_product, identifier],
+      identifier.scheme == ^scheme and
+        identifier.normalized_value == ^normalized_value and
+        identifier.verification_status == "validated"
+    )
+    |> Repo.one()
+  end
+
+  @spec list_product_identifiers(pos_integer(), String.t()) :: [ProductIdentifier.t()]
+  def list_product_identifiers(product_id, scheme)
+      when is_integer(product_id) and is_binary(scheme) do
+    ProductIdentifier
+    |> where(
+      [identifier],
+      identifier.product_id == ^product_id and identifier.scheme == ^scheme
+    )
+    |> order_by([identifier], asc: identifier.id)
+    |> Repo.all()
+  end
+
+  @spec create_product_identifier(map()) ::
+          {:ok, ProductIdentifier.t()} | {:error, Ecto.Changeset.t()}
+  def create_product_identifier(attrs) do
+    %ProductIdentifier{}
+    |> ProductIdentifier.changeset(attrs)
+    |> Repo.insert()
   end
 
   @spec list_products_by_slugs([String.t()]) :: [Product.t() | nil]

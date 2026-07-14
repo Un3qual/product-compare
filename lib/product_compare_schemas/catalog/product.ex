@@ -15,6 +15,7 @@ defmodule ProductCompareSchemas.Catalog.Product do
 
     has_many :claims, ProductCompareSchemas.Specs.ProductAttributeClaim
     has_many :current_claims, ProductCompareSchemas.Specs.ProductAttributeCurrent
+    has_many :identifiers, ProductCompareSchemas.Catalog.ProductIdentifier
 
     timestamps()
   end

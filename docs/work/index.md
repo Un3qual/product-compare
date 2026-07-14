@@ -134,47 +134,17 @@ independent foundation contracts are ready behind it, and the existing
 validated presentation reserve remains available after those product-critical
 rows.
 
-## Ready Work
+Canonical GTIN identity completed on 2026-07-13. Validated GTIN-8, UPC-A,
+EAN-13, and GTIN-14 values now resolve listings across sources and merchants to
+one product, while invalid identifiers, conflicting updates to an attached
+source listing, and replay fail closed. Specification provenance is the active
+successor.
 
-### 1. Canonical Product Identity
+## Active Work
+
+### Specification Provenance Read Contract
 
 Status: active
-Lane: Backend catalog and ingestion
-Plan: `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
-Next action: persist validated GTIN identifiers and resolve fresh listings with
-the same GTIN to one canonical product without rebinding existing source
-listings or merging invalid identifiers.
-Owned paths:
-
-- `priv/repo/migrations/20260713120000_create_product_identifiers.exs`
-- `lib/product_compare_schemas/catalog/product_identifier.ex`
-- `lib/product_compare_schemas/catalog/product.ex`
-- `lib/product_compare/catalog/gtin.ex`
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare/ingestion.ex`
-- `test/product_compare/catalog/gtin_test.exs`
-- `test/product_compare/ingestion/ingestion_test.exs`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- Current listing replay and stale-observation tests remain green.
-
-Verification:
-
-- `mix test test/product_compare/catalog/gtin_test.exs test/product_compare/ingestion/ingestion_test.exs`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: valid GTINs are replay-safe canonical identifiers, same-GTIN
-listings share one product, and missing/invalid/conflicting identifiers never
-cause an unsafe merge.
-
-### 2. Specification Provenance Read Contract
-
-Status: ready
 Lane: Backend specifications and GraphQL
 Plan: `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
 Next action: extend current specification values with their accepted claim,
@@ -206,7 +176,9 @@ Verification:
 Exit condition: every public current attribute can identify safe supporting
 evidence, and GraphQL never returns raw artifact payloads.
 
-### 3. Complete Offer Truth Read Contract
+## Ready Work
+
+### 1. Complete Offer Truth Read Contract
 
 Status: ready
 Lane: Backend pricing and GraphQL
@@ -240,7 +212,7 @@ Verification:
 Exit condition: GraphQL describes known and unknown offer components explicitly,
 and best-offer truth is not limited to the browser's loaded Relay page.
 
-### 4. Durable Ingestion Job Foundation
+### 2. Durable Ingestion Job Foundation
 
 Status: ready
 Lane: Backend ingestion operations
@@ -281,7 +253,7 @@ Exit condition: scheduled work survives process loss, unique schedule windows do
 not duplicate jobs, retry/terminal failures are classified safely, and existing
 disabled-by-default runtime controls remain intact.
 
-### 5. Product Detail Decision Actions Presentation
+### 3. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -309,7 +281,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 6. Revenue Summary View-Data Contract
+### 4. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -339,7 +311,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 7. Specification Matrix Data Contract
+### 5. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -368,7 +340,7 @@ Verification:
 Exit condition: The pure matrix contract preserves ordering, duplicates,
 missing cells, modes, typed values, units, and decimal/exponent behavior.
 
-### 8. Decision Summary Data Contract
+### 6. Decision Summary Data Contract
 
 Status: ready
 Lane: Frontend product comparison
