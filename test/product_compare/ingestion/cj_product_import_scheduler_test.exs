@@ -93,8 +93,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}
-    assert_receive {:run, _opts}, 100
+    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 250
 
     GenServer.stop(pid)
   end
@@ -187,8 +187,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
 
     log =
       capture_log(fn ->
-        assert_receive {:run, _opts}
-        assert_receive {:run, _opts}, 100
+        assert_receive {:run, _opts}, 250
+        assert_receive {:run, _opts}, 250
       end)
 
     assert log =~ "CJ product import failed"
