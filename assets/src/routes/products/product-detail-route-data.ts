@@ -1,4 +1,5 @@
 import {
+  MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
@@ -30,17 +31,15 @@ export interface ProductDetailRouteData {
 
 export function createProductDetailRouteData({
   hash,
-  maxCompareProducts,
   productSlug,
   search
 }: {
   hash: string;
-  maxCompareProducts: number;
   productSlug: string;
   search: string;
 }): ProductDetailRouteData {
   const selectedCompareSlugs = selectedCompareSlugsFromSearch(search, {
-    maxProducts: maxCompareProducts
+    maxProducts: MAX_COMPARE_PRODUCTS
   });
   const productPath = productDetailPath(productSlug);
 
@@ -49,11 +48,10 @@ export function createProductDetailRouteData({
       "/products",
       "",
       selectedCompareSlugs,
-      { maxProducts: maxCompareProducts }
+      { maxProducts: MAX_COMPARE_PRODUCTS }
     ),
     compareAction: productDetailCompareAction({
       hash,
-      maxCompareProducts,
       productPath,
       productSlug,
       search,
@@ -69,8 +67,7 @@ export function createProductDetailRouteData({
         productPath,
         search,
         selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
-        hash,
-        maxCompareProducts
+        hash
       );
     }
   };
@@ -100,14 +97,12 @@ export function productDetailPath(productSlug: string) {
 
 function productDetailCompareAction({
   hash,
-  maxCompareProducts,
   productPath,
   productSlug,
   search,
   selectedCompareSlugs
 }: {
   hash: string;
-  maxCompareProducts: number;
   productPath: string;
   productSlug: string;
   search: string;
@@ -117,7 +112,7 @@ function productDetailCompareAction({
     return { kind: "selected" };
   }
 
-  if (selectedCompareSlugs.length >= maxCompareProducts) {
+  if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
     return { kind: "full" };
   }
 
@@ -128,10 +123,9 @@ function productDetailCompareAction({
       selectedCompareSlugsAfterAdding(
         selectedCompareSlugs,
         productSlug,
-        maxCompareProducts
+        MAX_COMPARE_PRODUCTS
       ),
-      hash,
-      maxCompareProducts
+      hash
     ),
     kind: "add"
   };
@@ -156,14 +150,13 @@ function productPathWithCompareSlugs(
   productPath: string,
   search: string,
   selectedCompareSlugs: readonly string[],
-  hash: string,
-  maxCompareProducts: number
+  hash: string
 ) {
   const path = buildCurrentRoutePathWithCompareSlugs(
     productPath,
     search,
     selectedCompareSlugs,
-    { maxProducts: maxCompareProducts }
+    { maxProducts: MAX_COMPARE_PRODUCTS }
   );
 
   return `${path}${hash}`;

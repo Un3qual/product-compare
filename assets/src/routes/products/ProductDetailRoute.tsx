@@ -103,7 +103,6 @@ function ProductDetail({
   const { product } = data;
   const routeData = createProductDetailRouteData({
     hash: location.hash,
-    maxCompareProducts: MAX_COMPARE_PRODUCTS,
     productSlug: product.slug,
     search: location.search
   });

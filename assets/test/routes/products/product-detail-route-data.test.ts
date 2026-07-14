@@ -13,7 +13,6 @@ describe("createProductDetailRouteData", () => {
     expect(
       createProductDetailRouteData({
         hash,
-        maxCompareProducts: 3,
         productSlug: "detail-product",
         search
       }).detailView
@@ -36,7 +35,6 @@ describe("createProductDetailRouteData", () => {
   test("builds encoded product paths and preserves compare selections", () => {
     const routeData = createProductDetailRouteData({
       hash: "#specifications",
-      maxCompareProducts: 3,
       productSlug: "reserved/product?variant=1",
       search: "?offersAfter=next-page&slug=first-product&slug=second+product"
     });
@@ -49,7 +47,6 @@ describe("createProductDetailRouteData", () => {
   test("adds an unselected product while preserving unrelated search state and hash", () => {
     const routeData = createProductDetailRouteData({
       hash: "#specifications",
-      maxCompareProducts: 3,
       productSlug: "detail-product",
       search: "?offersAfter=cursor-next-page&q=oled&slug=second-product"
     });
@@ -63,13 +60,11 @@ describe("createProductDetailRouteData", () => {
   test("reports selected and full compare states", () => {
     const selectedRouteData = createProductDetailRouteData({
       hash: "",
-      maxCompareProducts: 3,
       productSlug: "detail-product",
       search: "?slug=detail-product"
     });
     const fullRouteData = createProductDetailRouteData({
       hash: "",
-      maxCompareProducts: 3,
       productSlug: "detail-product",
       search: "?slug=first-product&slug=second-product&slug=third-product"
     });
@@ -78,10 +73,9 @@ describe("createProductDetailRouteData", () => {
     expect(fullRouteData.compareAction).toEqual({ kind: "full" });
   });
 
-  test("clamps selections to the maximum before deriving compare paths", () => {
+  test("clamps selections to the canonical three-product maximum before deriving compare paths", () => {
     const routeData = createProductDetailRouteData({
       hash: "",
-      maxCompareProducts: 3,
       productSlug: "detail-product",
       search:
         "?slug=first-product&slug=&slug=first-product&slug=second-product&slug=third-product&slug=fourth-product"
@@ -92,13 +86,15 @@ describe("createProductDetailRouteData", () => {
       "second-product",
       "third-product"
     ]);
+    expect(routeData.comparePath).toBe(
+      "/compare?slug=first-product&slug=second-product&slug=third-product"
+    );
     expect(routeData.compareAction).toEqual({ kind: "full" });
   });
 
   test("removes selected items by index while preserving order, unrelated search state, and hash", () => {
     const routeData = createProductDetailRouteData({
       hash: "#offers",
-      maxCompareProducts: 3,
       productSlug: "detail-product",
       search: "?offersAfter=cursor-next-page&q=oled&slug=first-product&slug=second-product&slug=third-product"
     });
