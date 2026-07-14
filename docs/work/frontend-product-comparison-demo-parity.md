@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (decision-summary data contract)
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after specification-matrix data extraction (113
-  focused tests and TypeScript)
+- Last verified: 2026-07-14 after decision-summary data extraction (114 focused
+  tests and TypeScript)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -73,8 +73,8 @@
 
 ## Decision Summary Data Contract
 
-- Status: ready on 2026-07-12; dispatch serially with the specification-matrix
-  data contract because both own this lane doc and the compare route suite.
+- Status: done on 2026-07-14; dispatched after the specification-matrix data
+  contract because both own this lane doc and the compare route suite.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: isolate loaded-price safety and decision-metric label derivation
   in a framework-free module while retaining disclosure, table presentation,
@@ -91,6 +91,22 @@
   - `git diff --check`
 - Exit condition: pure metric contracts preserve loaded-offer scope, decimal
   and currency safety, unavailable labels, and recency output.
+- Completed: framework-free `buildDecisionSummaryMetricRows()` now owns the
+  ordered metric contract, exact relative loaded-price comparison, same-
+  currency safety, unavailable values, and offer-context label derivation.
+  `DecisionSummary` retains its scope disclosure, semantic table markup, and
+  encoded Review offers URLs.
+- Completed evidence:
+  - Baseline: the compare route suite passed 109 tests before extraction.
+  - RED: the new pure suite failed because `decision-summary-data` did not
+    exist.
+  - GREEN: the focused data and compare suites passed 114 tests, covering
+    lowest and tied prices, decimal/exponent equality, mixed currencies,
+    malformed and missing values, unavailable products, exact metric labels,
+    and `YYYY-MM-DD` recency output.
+  - The pure module has no React, router, StyleX, or Radix imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Compare Product Picker View Extraction
 
