@@ -2,10 +2,12 @@
 
 ## Snapshot
 
-- Status: done (offer card presentation extraction)
+- Status: ready (offer-discovery filter data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after offer-card extraction (50 tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-14 after offer-filter candidate verification (51
+  route tests)
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -18,6 +20,31 @@
   - `docs/plans/2026-07-09-visible-offer-snapshot-implementation-plan.md`
 - Objective:
   - Make the existing top-level GraphQL `merchantProducts(input:)` contract demoable from a dedicated frontend route without requiring manual GraphQL queries or URL ID editing.
+
+## Offer Discovery Filter Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate form reset identity, active-filter summary, reset and
+  merchant-clear visibility, selected-product paths, and sort labels in a
+  framework-free module while retaining form/list markup, links, controls, and
+  styling in `OfferDiscoveryFilterForm`.
+- Owned paths:
+  - `assets/src/routes/offers/offer-discovery-filter-data.ts`
+  - `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+  - `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+  - `assets/test/routes/offers/offer-discovery.route.test.tsx`
+  - `docs/work/frontend-offer-discovery-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure filter data preserves form reset identity, summary
+  ordering and copy, default detection, encoded product paths, merchant
+  clearing, and sort fallbacks.
+- Candidate evidence: the existing route suite passed 51 tests, and current
+  source inspection confirmed the deterministic filter policy remains in the
+  React form owner.
 
 ## 2026-07-11 Route Decomposition
 

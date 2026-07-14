@@ -51,8 +51,10 @@ through their dedicated follow-up execution plan.
 Product-detail decision actions, revenue-summary view data, specification-
 matrix data, and decision-summary data completed on
 `codex/frontend-view-contracts` in PR #97. The live queue now carries four
-source-verified data-contract successors for comparison sharing, product
-community, price alerts, and API-token route state.
+claimed data-contract successors for comparison sharing, product community,
+price alerts, and API-token route state. Three source-verified route-policy
+successors keep the ready floor intact across affiliate setup, offer discovery,
+and catalog browse.
 
 Active implementation plans:
 
@@ -63,6 +65,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 - `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+- `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -101,9 +104,13 @@ batch and should not be recreated or promoted.
   data, specification-matrix data, and decision-summary data completed through
   `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`; do not
   promote them again without fresh scope.
-- Ready reserve: comparison snapshot data, product-community data, price-alert
+- Active reserve: comparison snapshot data, product-community data, price-alert
   view data, and API-token route data execute through
-  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`;
+  comparison snapshot data is complete on the active branch.
+- Ready reserve: affiliate setup route data, offer-discovery filter data, and
+  catalog browse route data execute through
+  `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

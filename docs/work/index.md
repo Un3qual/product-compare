@@ -209,46 +209,22 @@ replenished in the same coordinator handoff with four source-verified,
 non-overlapping trust-surface view-data contracts. Their existing snapshot,
 community, alert, and API-token characterization suites passed 59 tests.
 
-## Ready Work
+The user claimed all four trust-surface rows on 2026-07-14 for serial execution
+on `codex/trust-surface-data-contracts`. Share-comparison snapshot policy is
+complete with 11 focused tests; product-community, price-alert, and API-token
+route contracts remain active on the same branch. The coordinator replenished
+the ready floor with three source-verified, non-overlapping route-policy data
+contracts backed by 22 affiliate, 51 offer-discovery, and 62 catalog tests.
 
-### 1. Share Comparison Snapshot Data Contract
+## Active Work
 
-Status: ready
-Lane: Frontend product comparison
-Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next action: extract framework-free publish-input, snapshot merge, and label
-policy while preserving Relay mutations and reads, form events, local state,
-paging, feedback, links, and revoke actions.
-Owned paths:
+### Product Community Data Contract
 
-- `assets/src/routes/compare/share-comparison-data.ts`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/share-comparison-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
-
-Prerequisites:
-
-- Existing 6-test comparison-snapshot characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure snapshot policy preserves ordered product IDs, profile
-mapping, title/search opt-in behavior, first-occurrence deduplication, revoked
-items, labels, and pagination order.
-
-### 2. Product Community Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/trust-surface-data-contracts`
 Lane: Frontend product detail
 Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next action: extract framework-free review/question input, summary, accepted-
-answer, cursor, and page-merge policy while preserving Relay operations,
-moderation feedback, forms, paging state, suspense, and presentation.
+Next checkpoint: complete the pure community contract and focused verification.
 Owned paths:
 
 - `assets/src/routes/products/product-community-data.ts`
@@ -257,28 +233,13 @@ Owned paths:
 - `assets/test/routes/products/product-community-panel.test.tsx`
 - `docs/work/frontend-product-detail.md`
 
-Prerequisites:
+### Price Alert View-Data Contract
 
-- Existing 2-test product-community characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure community policy preserves trimmed inputs, rating values,
-summary copy, accepted-answer labels, page cursors, and first-occurrence item
-ordering.
-
-### 3. Price Alert View-Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/trust-surface-data-contracts`
 Lane: Product trust and discovery
 Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next action: extract framework-free active/paused watch grouping and rule,
-watch, and observation labels while preserving loader reads, mutations,
-revalidation, pending/error state, links, and list presentation.
+Next checkpoint: complete the pure alert view-data contract and focused verification.
 Owned paths:
 
 - `assets/src/routes/account/alerts/alerts-view-data.ts`
@@ -287,29 +248,13 @@ Owned paths:
 - `assets/test/routes/account/alerts/alerts.route.test.tsx`
 - `docs/work/product-trust-and-discovery.md`
 
-Prerequisites:
+### API Token Route Data Contract
 
-- Existing 6-test alert and watch characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure alert view data preserves stable grouping, every known
-rule label, missing-value copy, malformed-date behavior, and unknown-rule
-fallbacks.
-
-### 4. API Token Route Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/trust-surface-data-contracts`
 Lane: Frontend API-token management
 Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next action: extract framework-free route identity, pagination, form-variable,
-mutation-summary, rotation, and local/server view-state policy while retaining
-Relay mutations, in-flight guards, one-time-secret lifecycle, errors,
-boundaries, and presentation.
+Next checkpoint: complete the pure API-token route contract and focused verification.
 Owned paths:
 
 - `assets/src/routes/account/api-tokens/api-token-route-data.ts`
@@ -318,19 +263,97 @@ Owned paths:
 - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `docs/work/frontend-api-token-management-demo-parity.md`
 
+## Ready Work
+
+### 1. Affiliate Setup Route Data Contract
+
+Status: ready
+Lane: Frontend affiliate setup
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: extract framework-free merchant-choice, summary, and mutation-
+variable policy while preserving Relay operations, request guards, form reset
+behavior, local selection, feedback, boundaries, and presentation.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-demo-parity.md`
+
 Prerequisites:
 
-- Existing 45-test API-token route characterization remains green.
+- Existing 22-test affiliate-setup route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Pure route data preserves auth/location identity, cursor paths,
-expiry semantics, mutation nullability, rotation state, deduplication, and
-local/server token precedence.
+Exit condition: Pure affiliate setup policy preserves merchant filtering and
+summaries, field trimming, optional nulls, currency casing, date normalization,
+and every mutation-variable shape.
+
+### 2. Offer Discovery Filter Data Contract
+
+Status: ready
+Lane: Frontend offer discovery
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: extract framework-free form-key, active-filter summary, reset,
+merchant-clear, product-detail, and sort-label policy while preserving form
+markup, links, controls, and styling.
+Owned paths:
+
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-demo-parity.md`
+
+Prerequisites:
+
+- Existing 51-test offer-discovery route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure offer-filter policy preserves form reset identity, summary
+ordering and copy, default detection, encoded product paths, merchant clearing,
+and sort fallbacks.
+
+### 3. Catalog Browse Route Data Contract
+
+Status: ready
+Lane: Frontend catalog browse
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: extract framework-free browse-path, product-detail, compare-action,
+and selected-item removal policy while preserving Relay reads, location access,
+boundaries, layout, and presentation.
+Owned paths:
+
+- `assets/src/routes/catalog/browse-route-data.ts`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/test/routes/catalog/browse-route-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-browse.md`
+
+Prerequisites:
+
+- Existing 62-test catalog browse characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure catalog route policy preserves root-path normalization,
+encoded detail links, compare selection order, add/selected/full states,
+maximum selection, and item-removal paths.
 
 ## Needs Decision Work
 

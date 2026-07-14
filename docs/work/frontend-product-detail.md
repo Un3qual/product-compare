@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (product-community data contract)
+- Status: active (product-community data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -27,7 +27,7 @@
 
 ## Product Community Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: active on `codex/trust-surface-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 - Next action: isolate review/question inputs, summary and accepted-answer
   labels, page cursors, and item merging in a framework-free module while

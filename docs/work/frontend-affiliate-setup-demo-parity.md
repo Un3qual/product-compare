@@ -2,14 +2,40 @@
 
 ## Snapshot
 
-- Status: completed (merchant-choice pagination)
+- Status: ready (affiliate-setup route data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after merchant-choice pagination completion (27
-  focused affiliate loader and route tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-14 after affiliate route-data candidate verification
+  (22 route tests)
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
+
+## Affiliate Setup Route Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate merchant-choice, summary, and network/program/link/coupon
+  mutation-variable policy in a framework-free module while retaining Relay
+  operations, request guards, form resets, selection state, feedback,
+  boundaries, and presentation in `AffiliateSetupRoute`.
+- Owned paths:
+  - `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+  - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+  - `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+  - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `docs/work/frontend-affiliate-setup-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure route data preserves merchant filtering and summaries,
+  field trimming, optional nulls, currency casing, date normalization, and
+  every mutation-variable shape.
+- Candidate evidence: the existing route suite passed 22 tests, and current
+  source inspection confirmed the named deterministic helpers remain embedded
+  in the 480-line route owner.
 
 ## Merchant-Choice Pagination
 

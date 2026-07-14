@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready (price-alert view-data contract)
+- Status: active (price-alert view-data contract)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -13,7 +13,7 @@
   `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
 - Active follow-up plan:
   `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-- Owner: `codex/product-trust-and-discovery`
+- Owner: `codex/trust-surface-data-contracts`
 - Last verified: 2026-07-14 after price-alert contract candidate verification
   (6 alert and watch tests).
 
@@ -30,7 +30,7 @@ Recommendations are deterministic and evidence-backed.
 
 ## Price Alert View-Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: active on `codex/trust-surface-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 - Next action: isolate active/paused watch grouping and rule, watch, and
   observation labels in a framework-free module while retaining loader reads,

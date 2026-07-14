@@ -43,14 +43,14 @@ snapshot labels; and merge local, loaded, and current-page snapshots by first
 occurrence. `ShareComparisonControl` retains Relay mutations and reads, form
 events, open state, paging state, feedback, links, and revoke actions.
 
-- [ ] Add pure tests for ordered product IDs, profile mapping, trimmed and
+- [x] Add pure tests for ordered product IDs, profile mapping, trimmed and
   omitted titles, search opt-in, first-occurrence deduplication, revoked-ID
   removal, and fallback labels; verify RED.
-- [ ] Move only the cohesive deterministic publish and collection policy into
+- [x] Move only the cohesive deterministic publish and collection policy into
   the data module.
-- [ ] Run the pure and existing snapshot suites, TypeScript, the framework-
+- [x] Run the pure and existing snapshot suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 
