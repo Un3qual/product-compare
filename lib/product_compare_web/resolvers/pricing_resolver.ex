@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -19,11 +20,17 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   def merchant(_parent, %{slug: slug}, _resolution), do: {:ok, Pricing.get_merchant_by_slug(slug)}
 
-  def merchant_detail_summary(%{slug: slug}, _args, _resolution) do
-    case Pricing.merchant_detail(slug) do
-      %{summary: summary} -> {:ok, summary}
-      nil -> {:error, "merchant not found"}
-    end
+  def merchant_detail_summary(merchant, _args, %{context: %{loader: loader}}) do
+    source = Loader.merchant_detail_source()
+
+    loader
+    |> Dataloader.load(source, :summary, merchant)
+    |> on_load(fn loader ->
+      case Dataloader.get(loader, source, :summary, merchant) do
+        %{summary: summary} -> {:ok, summary}
+        nil -> {:error, "merchant not found"}
+      end
+    end)
   end
 
   def merchant_offers(%{id: merchant_id}, args, _resolution) do

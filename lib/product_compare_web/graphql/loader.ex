@@ -14,12 +14,21 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   alias ProductCompareSchemas.Specs.SpecificationCorrection
   alias ProductCompareSchemas.Specs.SourceArtifact
 
+  @merchant_detail_source {__MODULE__, :merchant_detail}
+
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
     Dataloader.new()
     |> Dataloader.add_source(Catalog, catalog_source(params))
     |> Dataloader.add_source(Pricing, pricing_source(params))
+    |> Dataloader.add_source(
+      @merchant_detail_source,
+      Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
+    )
   end
+
+  @spec merchant_detail_source() :: {module(), :merchant_detail}
+  def merchant_detail_source, do: @merchant_detail_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -73,5 +82,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   defp pricing_run_batch(queryable, query, col, inputs, repo_opts) do
     Dataloader.Ecto.run_batch(Repo, queryable, query, col, inputs, repo_opts)
+  end
+
+  defp merchant_detail_batch(:summary, merchants) do
+    Map.new(merchants, fn merchant -> {merchant, Pricing.merchant_detail(merchant)} end)
   end
 end

@@ -1,10 +1,13 @@
 defmodule ProductCompareWeb.Resolvers.SeoResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Repo
   alias ProductCompare.Seo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
 
   def category(_parent, args, _resolution) do
     {:ok, Seo.get_category(Input.fetch_value(args, :slug))}
@@ -19,8 +22,16 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
   def product_metadata(product, _args, _resolution),
     do: {:ok, serialized_metadata(Seo.product_metadata(product))}
 
-  def merchant_metadata(merchant, _args, _resolution),
-    do: {:ok, serialized_metadata(Seo.merchant_metadata(merchant))}
+  def merchant_metadata(merchant, _args, %{context: %{loader: loader}}) do
+    source = Loader.merchant_detail_source()
+
+    loader
+    |> Dataloader.load(source, :summary, merchant)
+    |> on_load(fn loader ->
+      detail = Dataloader.get(loader, source, :summary, merchant)
+      {:ok, serialized_metadata(Seo.merchant_metadata(merchant, detail: detail))}
+    end)
+  end
 
   def category_metadata(category, _args, _resolution),
     do: {:ok, serialized_metadata(Seo.category_metadata(category))}

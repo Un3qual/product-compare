@@ -1,5 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
+
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -26,6 +28,9 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
         in_stock: true
       })
 
+    {response, queries} =
+      capture_select_queries(fn -> graphql(conn, query(), %{"slug" => merchant.slug}) end)
+
     assert %{
              "data" => %{
                "merchant" => %{
@@ -48,10 +53,12 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
                  }
                }
              }
-           } = graphql(conn, query(), %{"slug" => merchant.slug})
+           } = response
 
     assert slug == merchant.slug
     assert point_id == relay_id(:price_point, point.id)
+    assert count_queries_targeting(queries, "merchant_products") == 2
+    assert count_queries_targeting(queries, "price_points") == 2
   end
 
   test "unknown merchant slug returns null", %{conn: conn} do
@@ -67,6 +74,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
     query MerchantDetail($slug: String!) {
       merchant(slug: $slug) {
         id name slug domain
+        seo { indexable }
         detailSummary { activeOfferCount distinctProductCount eligibleOfferCount lastObservedAt }
         merchantProducts(first: 10) {
           edges { node { id currency product { id name slug } latestPrice { id price observedAt } } }
@@ -75,5 +83,9 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
       }
     }
     """
+  end
+
+  defp count_queries_targeting(queries, table) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 end

@@ -67,7 +67,7 @@ defmodule ProductCompare.Seo do
 
   @spec merchant_metadata(Merchant.t(), keyword()) :: metadata()
   def merchant_metadata(%Merchant{} = merchant, opts \\ []) do
-    detail = Pricing.merchant_detail(merchant.slug, opts)
+    detail = Keyword.get_lazy(opts, :detail, fn -> Pricing.merchant_detail(merchant, opts) end)
     summary = detail && detail.summary
     indexable = not is_nil(summary) and summary.eligible_offer_count > 0
 

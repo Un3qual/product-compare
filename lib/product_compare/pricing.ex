@@ -59,45 +59,53 @@ defmodule ProductCompare.Pricing do
   def get_merchant_by_slug(slug) when is_binary(slug), do: Repo.get_by(Merchant, slug: slug)
   def get_merchant_by_slug(_slug), do: nil
 
-  @spec merchant_detail(String.t(), keyword()) :: %{merchant: Merchant.t(), summary: map()} | nil
-  def merchant_detail(slug, opts \\ []) do
-    with %Merchant{} = merchant <- get_merchant_by_slug(slug) do
-      now = Keyword.get(opts, :now, DateTime.utc_now())
+  @spec merchant_detail(String.t() | Merchant.t(), keyword()) ::
+          %{merchant: Merchant.t(), summary: map()} | nil
+  def merchant_detail(merchant_or_slug, opts \\ [])
 
-      merchant_products =
-        MerchantProduct
-        |> where([offer], offer.merchant_id == ^merchant.id and offer.is_active == true)
-        |> order_by([offer], asc: offer.id)
-        |> Repo.all()
-
-      latest_by_offer =
-        merchant_products
-        |> Enum.map(& &1.id)
-        |> latest_offer_truth_prices()
-
-      offers =
-        Enum.map(merchant_products, fn offer ->
-          OfferTruth.summarize(offer, Map.get(latest_by_offer, offer.id), now, opts)
-        end)
-
-      freshness_counts = Enum.frequencies_by(offers, & &1.freshness)
-
-      %{
-        merchant: merchant,
-        summary: %{
-          active_offer_count: length(offers),
-          distinct_product_count:
-            merchant_products |> Enum.map(& &1.product_id) |> Enum.uniq() |> length(),
-          observed_offer_count: Enum.count(offers, & &1.observed_at),
-          eligible_offer_count: Enum.count(offers, & &1.eligible),
-          fresh_offer_count: Map.get(freshness_counts, :fresh, 0),
-          aging_offer_count: Map.get(freshness_counts, :aging, 0),
-          stale_offer_count: Map.get(freshness_counts, :stale, 0),
-          unobserved_offer_count: Map.get(freshness_counts, :unobserved, 0),
-          last_observed_at: latest_observed_at(offers)
-        }
-      }
+  def merchant_detail(slug, opts) when is_binary(slug) do
+    case get_merchant_by_slug(slug) do
+      %Merchant{} = merchant -> merchant_detail(merchant, opts)
+      nil -> nil
     end
+  end
+
+  def merchant_detail(%Merchant{} = merchant, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    merchant_products =
+      MerchantProduct
+      |> where([offer], offer.merchant_id == ^merchant.id and offer.is_active == true)
+      |> order_by([offer], asc: offer.id)
+      |> Repo.all()
+
+    latest_by_offer =
+      merchant_products
+      |> Enum.map(& &1.id)
+      |> latest_offer_truth_prices()
+
+    offers =
+      Enum.map(merchant_products, fn offer ->
+        OfferTruth.summarize(offer, Map.get(latest_by_offer, offer.id), now, opts)
+      end)
+
+    freshness_counts = Enum.frequencies_by(offers, & &1.freshness)
+
+    %{
+      merchant: merchant,
+      summary: %{
+        active_offer_count: length(offers),
+        distinct_product_count:
+          merchant_products |> Enum.map(& &1.product_id) |> Enum.uniq() |> length(),
+        observed_offer_count: Enum.count(offers, & &1.observed_at),
+        eligible_offer_count: Enum.count(offers, & &1.eligible),
+        fresh_offer_count: Map.get(freshness_counts, :fresh, 0),
+        aging_offer_count: Map.get(freshness_counts, :aging, 0),
+        stale_offer_count: Map.get(freshness_counts, :stale, 0),
+        unobserved_offer_count: Map.get(freshness_counts, :unobserved, 0),
+        last_observed_at: latest_observed_at(offers)
+      }
+    }
   end
 
   @spec list_merchant_offers_query(pos_integer(), boolean()) :: Ecto.Query.t()

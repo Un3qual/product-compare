@@ -12,7 +12,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
   alias ProductCompareWeb.Resolvers.CatalogResolver
-  alias ProductCompareSchemas.Catalog.Brand
+  alias ProductCompareSchemas.Catalog.{Brand, ProductMedia}
   alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
@@ -145,6 +145,41 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
       refute inspect(response) =~ "must stay private"
       refute inspect(response) =~ "rawJson"
+    end
+
+    test "product media remains queryable after its source artifact is removed", %{conn: conn} do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "media-without-artifact",
+          name: "Media Without Artifact"
+        })
+
+      %ProductMedia{}
+      |> ProductMedia.changeset(%{
+        product_id: product.id,
+        url: "https://cdn.test/orphaned-source.jpg",
+        role: "primary",
+        position: 0,
+        observed_at: ~U[2026-07-13 18:00:00.000000Z]
+      })
+      |> Repo.insert!()
+
+      response = graphql(conn, product_media_query(), %{"slug" => product.slug})
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "media" => [
+                     %{
+                       "url" => "https://cdn.test/orphaned-source.jpg",
+                       "sourceArtifact" => nil
+                     }
+                   ]
+                 }
+               }
+             } = response
+
+      refute Map.has_key?(response, "errors")
     end
 
     test "product batches brand lookups across aliased selections", %{conn: conn} do

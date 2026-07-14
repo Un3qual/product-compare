@@ -1543,7 +1543,7 @@ defmodule ProductCompareWeb.Schema do
     field :position, non_null(:integer)
     field :alt_text, :string
     field :observed_at, non_null(:datetime)
-    field :source_artifact, non_null(:source_artifact)
+    field :source_artifact, :source_artifact
   end
 
   object :product_attribute_value do
