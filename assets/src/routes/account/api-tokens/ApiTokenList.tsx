@@ -6,7 +6,7 @@ import apiTokensRouteQuery, {
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ApiTokenItem } from "./ApiTokenItem";
-import { apiTokenIsActive } from "./api-token-status";
+import { applyApiTokenUpdates } from "./api-token-route-data";
 import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import { summarizeApiTokensPage } from "./loader";
 
@@ -157,44 +157,4 @@ function apiTokenQueryKey(tokenQuery: ApiTokenQueryDescriptor) {
   return `${tokenQuery.__relayQuery.operationName}:${JSON.stringify(
     stableJsonValue(tokenQuery.__relayQuery.variables)
   )}`;
-}
-
-function apiTokenMatchesStatus(
-  token: ApiTokenSummary,
-  status: ApiTokensRouteLoaderData["tokenStatus"]
-) {
-  if (status === "all") {
-    return true;
-  }
-
-  if (status === "active") {
-    return apiTokenIsActive(token);
-  }
-
-  return token.revokedAt !== null;
-}
-
-export function applyApiTokenUpdates(
-  tokens: ApiTokenSummary[],
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>,
-  status: ApiTokensRouteLoaderData["tokenStatus"]
-) {
-  return tokens.flatMap((token) => {
-    const updatedToken = mergeApiTokenUpdate(token, apiTokenUpdates.get(token.id));
-    return apiTokenMatchesStatus(updatedToken, status) ? [updatedToken] : [];
-  });
-}
-
-function mergeApiTokenUpdate(
-  token: ApiTokenSummary,
-  updatedToken: ApiTokenSummary | undefined
-) {
-  if (!updatedToken) {
-    return token;
-  }
-
-  return {
-    ...token,
-    revokedAt: token.revokedAt ?? updatedToken.revokedAt
-  } satisfies ApiTokenSummary;
 }

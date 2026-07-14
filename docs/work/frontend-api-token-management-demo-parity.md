@@ -2,40 +2,41 @@
 
 ## Snapshot
 
-- Status: active (API-token route data contract)
+- Status: complete (API-token route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after API-token route-data candidate verification
-  (45 route tests).
+- Last verified: 2026-07-14 after API-token route-data completion (55 focused
+  tests plus TypeScript).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
 
 ## API Token Route Data Contract
 
-- Status: active on `codex/trust-surface-data-contracts`.
+- Status: complete on `codex/trust-surface-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
-- Next action: isolate route identity, pagination, form variables, mutation
-  summaries, rotation state, and local/server view state in a framework-free
-  module while retaining Relay mutations, in-flight guards, one-time-secret
-  lifecycle, errors, boundaries, and presentation in `ApiTokensRoute`.
+- Result: route identity, pagination, form variables, mutation summaries,
+  rotation state, token update filtering, and local/server view state now live
+  in a framework-free module. `ApiTokensRoute` retains Relay mutations, in-
+  flight guards, one-time-secret lifecycle, errors, boundaries, and
+  presentation.
 - Owned paths:
   - `assets/src/routes/account/api-tokens/api-token-route-data.ts`
   - `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+  - `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
   - `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
   - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
   - `docs/work/frontend-api-token-management-demo-parity.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: pure route data preserves auth/location identity, cursor
-  paths, expiry semantics, mutation nullability, rotation state,
-  deduplication, and local/server token precedence.
-- Candidate evidence: the existing route suite passed 45 tests, and current
-  source inspection confirmed the deterministic route-data policy remains
-  embedded below mutation orchestration in the 599-line route owner.
+  - `cd assets && bun run test -- test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+    passed 55 tests.
+  - `cd assets && bun run typecheck` passed.
+  - The framework-import scan and `git diff --check` passed.
+- Evidence: pure route data preserves auth/location identity, cursor paths,
+  expiry semantics, mutation nullability, rotation state, deduplication, token
+  status filtering, and local/server precedence. The route owner decreased
+  from 599 to 427 lines while retaining all lifecycle effects.
 
 ## API Token Item Presentation Extraction
 

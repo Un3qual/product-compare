@@ -211,28 +211,10 @@ community, alert, and API-token characterization suites passed 59 tests.
 
 The user claimed all four trust-surface rows on 2026-07-14 for serial execution
 on `codex/trust-surface-data-contracts`. Share-comparison snapshot, product-
-community, and price-alert policy are complete with 11, 8, and 15 focused
-tests; the API-token route contract remains active on the same branch. The
-coordinator replenished the ready floor with three source-verified, non-
-overlapping route-policy data contracts backed by 22 affiliate, 51 offer-
-discovery, and 62 catalog tests.
-
-## Active Work
-
-### API Token Route Data Contract
-
-Status: active
-Owner: `codex/trust-surface-data-contracts`
-Lane: Frontend API-token management
-Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next checkpoint: complete the pure API-token route contract and focused verification.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-management-demo-parity.md`
+community, price-alert, and API-token route policy are complete with 11, 8,
+15, and 55 focused tests. The coordinator replenished the ready floor with
+three source-verified, non-overlapping route-policy data contracts backed by
+22 affiliate, 51 offer-discovery, and 62 catalog tests.
 
 ## Ready Work
 

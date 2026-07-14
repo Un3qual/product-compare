@@ -23,10 +23,20 @@ import {
 } from "../../route-errors";
 import {
   ApiTokenList,
-  RelayApiTokenList,
-  applyApiTokenUpdates
+  RelayApiTokenList
 } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
+import {
+  apiTokenPagePath,
+  apiTokensRouteLocationIdentity,
+  buildApiTokensViewState,
+  buildCreateApiTokenVariables,
+  buildRotateApiTokenVariables,
+  markTokenRotated,
+  summarizeMutationApiToken,
+  upsertApiTokenSummary,
+  upsertApiTokenSummaryMap
+} from "./api-token-route-data";
 import { apiTokenIsActive } from "./api-token-status";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import type { apiTokensLoader } from "./loader";
@@ -358,18 +368,6 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
   );
 }
 
-function apiTokensRouteLocationIdentity(loaderData: ApiTokensRouteLoaderData) {
-  const searchParams = new URLSearchParams({ status: loaderData.tokenStatus });
-
-  if (loaderData.status !== "unauthorized" && loaderData.after) {
-    searchParams.set("after", loaderData.after);
-  }
-
-  const access = loaderData.status === "unauthorized" ? "unauthorized" : "authorized";
-
-  return `${access}?${searchParams.toString()}`;
-}
-
 function ApiTokenPagination({
   after,
   endCursor,
@@ -388,176 +386,6 @@ function ApiTokenPagination({
       nextHref={hasNextPage && endCursor ? apiTokenPagePath(tokenStatus, endCursor) : null}
     />
   );
-}
-
-function apiTokenPagePath(
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"],
-  after: string | null
-) {
-  const searchParams = new URLSearchParams({ status: tokenStatus });
-
-  if (after) {
-    searchParams.set("after", after);
-  }
-
-  return `/account/api-tokens?${searchParams.toString()}`;
-}
-
-function buildApiTokensViewState(
-  loaderData: ApiTokensRouteLoaderData,
-  createdTokens: ApiTokenSummary[] = [],
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary> = new Map()
-) {
-  if (loaderData.status === "unauthorized") {
-    return {
-      localTokens: [],
-      statusMessage: "Sign in to manage API tokens.",
-      tokens: []
-    };
-  }
-
-  const loaderTokens = applyApiTokenUpdates(
-    loaderData.tokens,
-    apiTokenUpdates,
-    loaderData.tokenStatus
-  );
-  const loaderTokenIds = new Set(loaderTokens.map((token) => token.id));
-  const localTokens = applyApiTokenUpdates(
-    createdTokens,
-    apiTokenUpdates,
-    loaderData.tokenStatus
-  ).filter((token) => !loaderTokenIds.has(token.id));
-  const tokens = mergeApiTokenSummaries(localTokens, loaderTokens);
-
-  if (tokens.length === 0) {
-    return {
-      localTokens,
-      statusMessage: "No API tokens yet.",
-      tokens: []
-    };
-  }
-
-  return {
-    localTokens,
-    statusMessage: localTokens.length > 0 ? "API token created." : "",
-    tokens
-  };
-}
-
-function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenMutation["variables"] {
-  const expiresAt = normalizeExpiresAtFormValue(formData);
-  const variables: CreateApiTokenMutation["variables"] = {
-    label: optionalFormText(formData.get("label"))
-  };
-
-  if (expiresAt !== undefined) {
-    variables.expiresAt = expiresAt;
-  }
-
-  return variables;
-}
-
-function buildRotateApiTokenVariables(
-  token: ApiTokenSummary,
-  formData: FormData
-): RotateApiTokenMutation["variables"] {
-  const expiresAt = normalizeExpiresAtFormValue(formData);
-  const variables: RotateApiTokenMutation["variables"] = {
-    tokenId: token.id,
-    label: optionalFormText(formData.get("label")) ?? token.label
-  };
-
-  if (expiresAt !== undefined) {
-    variables.expiresAt = expiresAt;
-  }
-
-  return variables;
-}
-
-function normalizeExpiresAtFormValue(formData: FormData) {
-  const preset = optionalFormText(formData.get("expiresAtPreset"));
-
-  if (preset === "No expiration") {
-    return null;
-  }
-
-  return normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
-}
-
-function optionalFormText(value: FormDataEntryValue | null) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-  return trimmedValue.length > 0 ? trimmedValue : null;
-}
-
-function normalizeDateTimeLocalValue(value: string | null) {
-  if (!value) {
-    return undefined;
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-type MutationApiToken = {
-  readonly id: string;
-  readonly label: string | null | undefined;
-  readonly tokenPrefix: string;
-  readonly lastUsedAt: string | null | undefined;
-  readonly expiresAt: string | null | undefined;
-  readonly revokedAt: string | null | undefined;
-  readonly insertedAt: string;
-};
-
-function summarizeMutationApiToken(token: MutationApiToken | null | undefined) {
-  if (!token) {
-    return null;
-  }
-
-  return {
-    id: token.id,
-    label: token.label ?? null,
-    tokenPrefix: token.tokenPrefix,
-    lastUsedAt: token.lastUsedAt ?? null,
-    expiresAt: token.expiresAt ?? null,
-    revokedAt: token.revokedAt ?? null,
-    insertedAt: token.insertedAt
-  } satisfies ApiTokenSummary;
-}
-
-function markTokenRotated(previousToken: ApiTokenSummary, rotatedToken: ApiTokenSummary) {
-  return {
-    ...previousToken,
-    revokedAt: previousToken.revokedAt ?? rotatedToken.insertedAt
-  } satisfies ApiTokenSummary;
-}
-
-function mergeApiTokenSummaries(
-  localTokens: ApiTokenSummary[],
-  loaderTokens: ApiTokenSummary[]
-) {
-  if (localTokens.length === 0) {
-    return loaderTokens;
-  }
-
-  const localTokenIds = new Set(localTokens.map((token) => token.id));
-  return [...localTokens, ...loaderTokens.filter((token) => !localTokenIds.has(token.id))];
-}
-
-function upsertApiTokenSummary(tokens: ApiTokenSummary[], nextToken: ApiTokenSummary) {
-  return [nextToken, ...tokens.filter((token) => token.id !== nextToken.id)];
-}
-
-function upsertApiTokenSummaryMap(
-  tokens: ReadonlyMap<string, ApiTokenSummary>,
-  nextToken: ApiTokenSummary
-) {
-  const nextTokens = new Map(tokens);
-  nextTokens.set(nextToken.id, nextToken);
-  return nextTokens;
 }
 
 function upsertMapValue<K, V>(
