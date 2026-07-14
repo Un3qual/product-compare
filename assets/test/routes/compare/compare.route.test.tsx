@@ -734,7 +734,8 @@ test("compare loader requests selected product details and preserves URL order",
       slugs: ["detail-product", "second-product"],
       offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
       pickerFirst: 24,
-      pickerAfter: null
+      pickerAfter: null,
+      recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }
   );
@@ -1261,7 +1262,8 @@ test("compare loader forwards the route abort signal to the combined Relay prelo
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
       pickerFirst: 24,
-      pickerAfter: null
+      pickerAfter: null,
+      recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }
   );

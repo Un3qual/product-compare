@@ -40,6 +40,9 @@ type RootQueryType {
   "Returns one product or null for each requested comparison slug, in requested order."
   comparisonProducts(slugs: [String!]!): [Product]!
 
+  "Returns deterministic source-backed guidance for two or three products."
+  comparisonRecommendation(slugs: [String!]!, profile: RecommendationProfile!): ComparisonRecommendation!
+
   "Returns products in a deterministic requested order with cursor pagination."
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection
 
@@ -300,6 +303,40 @@ enum ProductSort {
   NAME_ASC
   BRAND_NAME_ASC
   NEWEST
+}
+
+enum RecommendationProfile {
+  LOWEST_CURRENT_COST
+  BEST_VALUE
+}
+
+enum RecommendationStatus {
+  WINNER
+  TIE
+  INSUFFICIENT_EVIDENCE
+}
+
+type ComparisonRecommendation {
+  profile: RecommendationProfile!
+  algorithmVersion: String!
+  evaluatedAt: DateTime!
+  status: RecommendationStatus!
+  currency: String
+  missingInputs: [String!]!
+  winnerProductId: ID
+  rankings: [RecommendationRanking!]!
+}
+
+type RecommendationRanking {
+  rank: Int!
+  productName: String!
+  landedPrice: Decimal!
+  currency: String!
+  reasons: [String!]!
+  productId: ID!
+  pricePointId: ID!
+  merchantProductId: ID!
+  claimIds: [ID!]!
 }
 
 input ProductFiltersInput {

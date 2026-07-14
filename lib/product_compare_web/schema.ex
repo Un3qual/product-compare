@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.RecommendationsResolver
   alias ProductCompareWeb.Resolvers.SpecsResolver
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Affiliate.AffiliateLink
@@ -137,6 +138,13 @@ defmodule ProductCompareWeb.Schema do
       arg(:slugs, non_null(list_of(non_null(:string))))
 
       resolve(&CatalogResolver.comparison_products/3)
+    end
+
+    @desc "Returns deterministic source-backed guidance for two or three products."
+    field :comparison_recommendation, non_null(:comparison_recommendation) do
+      arg(:slugs, non_null(list_of(non_null(:string))))
+      arg(:profile, non_null(:recommendation_profile))
+      resolve(&RecommendationsResolver.comparison_recommendation/3)
     end
 
     @desc "Returns products in a deterministic requested order with cursor pagination."
@@ -522,6 +530,64 @@ defmodule ProductCompareWeb.Schema do
     value(:name_asc)
     value(:brand_name_asc)
     value(:newest)
+  end
+
+  enum :recommendation_profile do
+    value(:lowest_current_cost)
+    value(:best_value)
+  end
+
+  enum :recommendation_status do
+    value(:winner)
+    value(:tie)
+    value(:insufficient_evidence)
+  end
+
+  object :comparison_recommendation do
+    field :profile, non_null(:recommendation_profile)
+    field :algorithm_version, non_null(:string)
+    field :evaluated_at, non_null(:datetime)
+    field :status, non_null(:recommendation_status)
+    field :currency, :string
+    field :missing_inputs, non_null(list_of(non_null(:string)))
+
+    field :winner_product_id, :id do
+      resolve(fn recommendation, _, _ ->
+        GlobalId.encode_optional(:product, recommendation.winner_product_id)
+      end)
+    end
+
+    field :rankings, non_null(list_of(non_null(:recommendation_ranking)))
+  end
+
+  object :recommendation_ranking do
+    field :rank, non_null(:integer)
+    field :product_name, non_null(:string)
+    field :landed_price, non_null(:decimal)
+    field :currency, non_null(:string)
+    field :reasons, non_null(list_of(non_null(:string)))
+
+    field :product_id, non_null(:id) do
+      resolve(fn ranking, _, _ -> GlobalId.encode_required(:product, ranking.product_id) end)
+    end
+
+    field :price_point_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:price_point, ranking.price_point_id)
+      end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:merchant_product, ranking.merchant_product_id)
+      end)
+    end
+
+    field :claim_ids, non_null(list_of(non_null(:id))) do
+      resolve(fn ranking, _, _ ->
+        {:ok, Enum.map(ranking.claim_ids, &GlobalId.encode(:product_attribute_claim, &1))}
+      end)
+    end
   end
 
   input_object :product_filters_input do

@@ -6,7 +6,26 @@ export const compareRouteQuery = graphql`
     $offerFirst: Int!
     $pickerFirst: Int!
     $pickerAfter: String
+    $recommendationProfile: RecommendationProfile = LOWEST_CURRENT_COST
   ) {
+    comparisonRecommendation(slugs: $slugs, profile: $recommendationProfile) {
+      profile
+      algorithmVersion
+      status
+      winnerProductId
+      currency
+      missingInputs
+      rankings {
+        rank
+        productId
+        productName
+        landedPrice
+        currency
+        pricePointId
+        claimIds
+        reasons
+      }
+    }
     comparisonProducts(slugs: $slugs) {
       id
       name

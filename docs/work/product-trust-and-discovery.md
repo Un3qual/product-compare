@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (source-backed recommendations)
+- Status: active (immutable comparison snapshots)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-price-watchlists-and-alerts-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-source-backed-recommendations-implementation-plan.md`
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-shareable-comparison-snapshots-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -61,7 +61,28 @@ Recommendations are deterministic and evidence-backed.
 - Specification-rich enrichment and media: complete.
 - Authenticated specification corrections: complete.
 - Price watchlists and alerts: complete.
-- Source-backed recommendations: active.
+- Source-backed recommendations: complete.
+- Immutable shareable comparison snapshots: active.
+
+## Source-Backed Recommendation Evidence
+
+- Added two deterministic, versioned profiles. `lowest_current_cost` ranks only
+  eligible complete landed prices in one shared currency; `best_value` adds a
+  requirement that every product have accepted specification claims.
+- Missing products, stale or incomplete offer truth, mixed currencies, missing
+  accepted evidence, and exact top-price ties return an explicit no-winner
+  result instead of guessing.
+- Every ranking retains the exact price-point ID, merchant-offer ID, accepted
+  claim IDs, algorithm version, and structured reasons used by the decision.
+- GraphQL accepts product slugs, resolves products without reordering them, and
+  exposes globally encoded evidence references without raw source payloads.
+- Compare now offers URL-backed profile controls and shows either the supported
+  winner with exact evidence references or the reasons no winner is supportable.
+- GREEN: recommendation context and GraphQL passed 4 tests. The comparison route
+  and focused recommendation panel passed 112 tests; Relay compiled 35 reader,
+  34 normalization, and 34 operation documents.
+- Frontend TypeScript, client and SSR production builds, the client bundle
+  contract, backend formatting, and warning-free compilation passed.
 
 ## Price Watchlists And Alerts Evidence
 

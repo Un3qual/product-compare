@@ -37,3 +37,12 @@ one.
   queue validation, and diff hygiene.
 
 Immutable comparison snapshots are next after this evidence contract is green.
+
+## Completion Evidence
+
+- Recommendation context and GraphQL: 4 tests passed.
+- Compare route and focused recommendation panel: 112 tests passed.
+- Relay: 35 reader, 34 normalization, and 34 operation documents compiled.
+- TypeScript, client build, SSR build, bundle contract, backend formatting, and
+  warning-free compilation passed.
+- Completed 2026-07-13; immutable comparison snapshots promoted next.
