@@ -52,3 +52,12 @@ moderated, auditable, and private where appropriate.
 
 Price watchlists and alerts are the next program milestone after this trusted-
 catalog dependency is green.
+
+## Completion Evidence
+
+- The focused correction context and GraphQL run passed 9 tests; the affected
+  Specs, catalog, node, global-ID, and correction GraphQL run passed 127 tests.
+- The generated schema is current. Relay validation compiled 30 reader, 29
+  normalization, and 29 operation documents, and frontend TypeScript passed.
+- Formatting, backend type checking, queue validation with four ready rows,
+  and diff hygiene passed.

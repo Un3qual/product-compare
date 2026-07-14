@@ -167,49 +167,16 @@ and typed specification observations while isolating malformed optional data.
 Imports fill only missing canonical copy, exact configured aliases may replace
 only the generic ingestion type, unmapped paths remain review candidates, and
 media and claims are replay-safe and retain artifact provenance. Authenticated
-specification corrections are now active.
+specification corrections completed on 2026-07-13. Typed user proposals are
+owner-scoped and operator-moderated; acceptance atomically supersedes and
+selects current truth, while duplicate pending proposals and stale-current
+acceptance fail closed. Public product reads expose counts only, and private
+moderation notes remain operator-only. Price watchlists and alerts are the next
+coordinator planning target.
 
 ## Active Work
 
-### Authenticated Specification Corrections
-
-Status: active
-Lane: Backend trusted catalog
-Plan: `docs/superpowers/plans/2026-07-13-authenticated-specification-corrections-implementation-plan.md`
-Next action: add an authenticated typed proposal workflow and operator-only
-atomic moderation without exposing submitter or private moderation data on
-public product reads.
-Owned paths:
-
-- `lib/product_compare/specs.ex`
-- `lib/product_compare_schemas/specs/product_attribute_claim.ex`
-- `lib/product_compare_schemas/specs/specification_correction.ex`
-- `lib/product_compare_web/graphql/global_id.ex`
-- `lib/product_compare_web/resolvers/specs_resolver.ex`
-- `lib/product_compare_web/schema.ex`
-- `priv/repo/migrations/*_add_specification_corrections.exs`
-- `test/product_compare/specs/corrections_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `assets/schema.graphql`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- Specification enrichment, current-claim provenance, and GraphQL session auth
-  remain green.
-
-Verification:
-
-- `mix test test/product_compare/specs/corrections_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/catalog_queries_test.exs`
-- `mix absinthe.schema.sdl --schema ProductCompareWeb.Schema assets/schema.graphql`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: authenticated typed proposals are owner-readable, public state
-is aggregate-only, and operator decisions update claim/current truth atomically
-with private audit data retained.
+None while price watchlists and alerts are being planned.
 
 ## Ready Work
 

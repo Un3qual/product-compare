@@ -45,6 +45,10 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
 
     has_many :evidence_links, ProductCompareSchemas.Specs.ClaimEvidence, foreign_key: :claim_id
 
+    has_one :specification_correction,
+            ProductCompareSchemas.Specs.SpecificationCorrection,
+            foreign_key: :claim_id
+
     timestamps(updated_at: false)
   end
 

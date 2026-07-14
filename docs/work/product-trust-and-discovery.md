@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (authenticated specification corrections)
+- Status: coordinating price watchlists and alerts
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,8 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-specification-rich-enrichment-and-media-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-authenticated-specification-corrections-implementation-plan.md`
+- Active implementation plan: none while the alerts slice is being planned.
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -59,7 +58,32 @@ Recommendations are deterministic and evidence-backed.
   green.
 - Complete-run offer reconciliation: complete.
 - Specification-rich enrichment and media: complete.
-- Authenticated specification corrections: active.
+- Authenticated specification corrections: complete.
+
+## Authenticated Specification Correction Evidence
+
+- Authenticated users can propose a typed replacement with a bounded reason and
+  either a safe HTTP(S) source URL or explanation. The proposed user claim
+  records the current claim it supersedes but cannot select itself.
+- Owner queries expose only the submitting user's proposals. The moderation
+  queue and decisions require an operator, and moderation notes resolve only
+  for operators.
+- Acceptance locks the proposal, claim, and current row; refuses stale-current
+  proposals; supersedes prior truth; accepts the replacement; selects it; and
+  records the decision in one transaction. Rejection leaves current truth
+  unchanged, and terminal replay cannot reverse a decision.
+- A partial unique constraint limits each user to one pending correction per
+  product attribute. Public current attributes expose pending and accepted
+  correction counts without user identity, explanations, or moderation data.
+- RED: six context tests failed because proposal, moderation, owner/moderator
+  reads, and aggregate contracts were absent; three GraphQL tests then failed
+  because the public API was absent.
+- GREEN: the focused context and GraphQL run passed 9 tests. The affected Specs,
+  catalog, node, global-ID, and correction GraphQL run passed 127 tests.
+- The live schema snapshot was regenerated. Relay validation compiled 30 reader,
+  29 normalization, and 29 operation documents; frontend TypeScript passed.
+- Final gates: `mix format --check-formatted`, `mix typecheck`,
+  `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.
 
 ## Specification-Rich Enrichment And Media Evidence
 

@@ -13,6 +13,12 @@ type RootQueryType {
   "Returns safe display metadata for a source artifact."
   sourceArtifact(id: ID!): SourceArtifact
 
+  "Returns specification corrections submitted by the current user."
+  mySpecificationCorrections(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
+
+  "Returns the operator-only specification correction moderation queue."
+  specificationCorrectionModerationQueue(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
+
   "Returns API tokens owned by the current authenticated user."
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
 
@@ -79,6 +85,12 @@ type RootMutationType {
 
   "Creates a first-party tracked outbound commerce click."
   trackCommerceClick(input: TrackCommerceClickInput!): TrackCommerceClickPayload!
+
+  "Proposes an authenticated, typed replacement for a product specification."
+  proposeSpecificationCorrection(input: ProposeSpecificationCorrectionInput!): SpecificationCorrectionPayload!
+
+  "Accepts or rejects a specification correction as an operator."
+  moderateSpecificationCorrection(input: ModerateSpecificationCorrectionInput!): SpecificationCorrectionPayload!
 
   "Upserts an affiliate network by name."
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
@@ -182,6 +194,32 @@ input ActiveCouponsInput {
   at: DateTime
   first: Int
   after: String
+}
+
+input SpecificationCorrectionValueInput {
+  valueBool: Boolean
+  valueInt: Int
+  valueNum: Decimal
+  valueText: String
+  valueDate: Date
+  valueTimestamp: DateTime
+  unitId: ID
+  enumOptionId: ID
+}
+
+input ProposeSpecificationCorrectionInput {
+  productId: ID!
+  attributeId: ID!
+  value: SpecificationCorrectionValueInput!
+  reason: String!
+  sourceUrl: String
+  explanation: String
+}
+
+input ModerateSpecificationCorrectionInput {
+  id: ID!
+  decision: SpecificationCorrectionStatus!
+  moderationNote: String
 }
 
 input MerchantProductsInput {
@@ -303,6 +341,11 @@ type CreateCouponPayload {
 
 type SavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
+}
+
+type SpecificationCorrectionPayload {
+  correction: SpecificationCorrection
   errors: [MutationError!]!
 }
 
@@ -614,7 +657,40 @@ type ProductAttributeValue {
   claimStatus: String!
   sourceType: String!
   confidence: Decimal
+  pendingCorrectionCount: Int!
+  acceptedCorrectionCount: Int!
   evidence: [ProductAttributeEvidence!]!
+}
+
+enum SpecificationCorrectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+type SpecificationCorrection {
+  id: ID!
+  productId: ID!
+  attributeId: ID!
+  claimId: ID!
+  status: SpecificationCorrectionStatus!
+  reason: String!
+  sourceUrl: String
+  explanation: String
+  valueText: String!
+  moderationNote: String
+  submittedAt: DateTime!
+  reviewedAt: DateTime
+}
+
+type SpecificationCorrectionConnection {
+  edges: [SpecificationCorrectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SpecificationCorrectionEdge {
+  cursor: String!
+  node: SpecificationCorrection!
 }
 
 type ProductAttributeEvidence {
@@ -734,6 +810,12 @@ string, including UTC timezone ("Z"). The parsed date and time string will
 be converted to UTC if there is an offset.
 """
 scalar DateTime
+
+"""
+The `Date` scalar type represents a date. The Date appears in a JSON
+response as an ISO8601 formatted string, without a time component.
+"""
+scalar Date
 
 """
 The `Decimal` scalar type represents signed double-precision fractional

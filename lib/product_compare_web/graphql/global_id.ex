@@ -14,12 +14,14 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :merchant_product
           | :price_point
           | :source_artifact
+          | :specification_correction
           | :product_attribute_claim
           | :product
           | :brand
           | :attribute
           | :enum_option
           | :taxon
+          | :unit
 
   @type_names %{
     user: "User",
@@ -34,12 +36,14 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     merchant_product: "MerchantProduct",
     price_point: "PricePoint",
     source_artifact: "SourceArtifact",
+    specification_correction: "SpecificationCorrection",
     product_attribute_claim: "ProductAttributeClaim",
     product: "Product",
     brand: "Brand",
     attribute: "Attribute",
     enum_option: "EnumOption",
-    taxon: "Taxon"
+    taxon: "Taxon",
+    unit: "Unit"
   }
   @type_atoms Map.new(@type_names, fn {type_atom, type_name} -> {type_name, type_atom} end)
   @max_bigint_id 9_223_372_036_854_775_807

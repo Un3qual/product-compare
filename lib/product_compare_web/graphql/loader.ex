@@ -11,6 +11,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SpecificationCorrection
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @spec new(map()) :: Dataloader.t()
@@ -46,6 +47,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     ProductMedia
     |> order_by([media], asc: media.position, asc: media.url, asc: media.id)
     |> preload([media], source_artifact: [:source])
+  end
+
+  defp catalog_query(SpecificationCorrection, _params) do
+    SpecificationCorrection
+    |> where([correction], correction.status in [:pending, :accepted])
+    |> order_by([correction], asc: correction.attribute_id, asc: correction.id)
   end
 
   defp catalog_query(queryable, _params), do: queryable

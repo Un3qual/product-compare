@@ -64,6 +64,25 @@ defmodule ProductCompareWeb.Schema do
       resolve(&SpecsResolver.source_artifact/3)
     end
 
+    @desc "Returns specification corrections submitted by the current user."
+    field :my_specification_corrections, non_null(:specification_correction_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:status, :specification_correction_status)
+
+      resolve(&SpecsResolver.my_specification_corrections/3)
+    end
+
+    @desc "Returns the operator-only specification correction moderation queue."
+    field :specification_correction_moderation_queue,
+          non_null(:specification_correction_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:status, :specification_correction_status)
+
+      resolve(&SpecsResolver.specification_correction_moderation_queue/3)
+    end
+
     @desc "Returns API tokens owned by the current authenticated user."
     field :my_api_tokens, non_null(:api_token_connection) do
       arg(:first, :integer)
@@ -226,6 +245,22 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CommerceAttributionResolver.track_commerce_click/3)
     end
 
+    @desc "Proposes an authenticated, typed replacement for a product specification."
+    field :propose_specification_correction,
+          non_null(:specification_correction_payload) do
+      arg(:input, non_null(:propose_specification_correction_input))
+
+      resolve(&SpecsResolver.propose_specification_correction/3)
+    end
+
+    @desc "Accepts or rejects a specification correction as an operator."
+    field :moderate_specification_correction,
+          non_null(:specification_correction_payload) do
+      arg(:input, non_null(:moderate_specification_correction_input))
+
+      resolve(&SpecsResolver.moderate_specification_correction/3)
+    end
+
     @desc "Upserts an affiliate network by name."
     field :upsert_affiliate_network, :upsert_affiliate_network_payload do
       arg(:input, non_null(:upsert_affiliate_network_input))
@@ -356,6 +391,32 @@ defmodule ProductCompareWeb.Schema do
     field :at, :datetime
     field :first, :integer
     field :after, :string
+  end
+
+  input_object :specification_correction_value_input do
+    field :value_bool, :boolean
+    field :value_int, :integer
+    field :value_num, :decimal
+    field :value_text, :string
+    field :value_date, :date
+    field :value_timestamp, :datetime
+    field :unit_id, :id
+    field :enum_option_id, :id
+  end
+
+  input_object :propose_specification_correction_input do
+    field :product_id, non_null(:id)
+    field :attribute_id, non_null(:id)
+    field :value, non_null(:specification_correction_value_input)
+    field :reason, non_null(:string)
+    field :source_url, :string
+    field :explanation, :string
+  end
+
+  input_object :moderate_specification_correction_input do
+    field :id, non_null(:id)
+    field :decision, non_null(:specification_correction_status)
+    field :moderation_note, :string
   end
 
   input_object :merchant_products_input do
@@ -495,6 +556,11 @@ defmodule ProductCompareWeb.Schema do
 
   object :saved_comparison_set_payload do
     field :saved_comparison_set, :saved_comparison_set
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :specification_correction_payload do
+    field :correction, :specification_correction
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -941,7 +1007,63 @@ defmodule ProductCompareWeb.Schema do
     field :claim_status, non_null(:string)
     field :source_type, non_null(:string)
     field :confidence, :decimal
+    field :pending_correction_count, non_null(:integer)
+    field :accepted_correction_count, non_null(:integer)
     field :evidence, non_null(list_of(non_null(:product_attribute_evidence)))
+  end
+
+  enum :specification_correction_status do
+    value(:pending)
+    value(:accepted)
+    value(:rejected)
+  end
+
+  object :specification_correction do
+    field :id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:specification_correction, correction.id)
+      end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:product, correction.product_id)
+      end)
+    end
+
+    field :attribute_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:attribute, correction.attribute_id)
+      end)
+    end
+
+    field :claim_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:product_attribute_claim, correction.claim_id)
+      end)
+    end
+
+    field :status, non_null(:specification_correction_status)
+    field :reason, non_null(:string)
+    field :source_url, :string
+    field :explanation, :string
+    field :value_text, non_null(:string), resolve: &SpecsResolver.correction_value_text/3
+    field :moderation_note, :string, resolve: &SpecsResolver.moderation_note/3
+
+    field :submitted_at, non_null(:datetime),
+      resolve: fn correction, _, _ -> {:ok, correction.inserted_at} end
+
+    field :reviewed_at, :datetime
+  end
+
+  object :specification_correction_connection do
+    field :edges, non_null(list_of(non_null(:specification_correction_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :specification_correction_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:specification_correction)
   end
 
   object :product_attribute_evidence do

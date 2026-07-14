@@ -14,6 +14,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SpecificationCorrection
   alias ProductCompareSchemas.Specs.TaxonAttribute
 
   @base_unit_symbol_cache_context_key :catalog_base_unit_symbol_cache_key
@@ -69,6 +70,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       when is_integer(product_id) do
     loader
     |> Dataloader.load(Catalog, {:many, ProductAttributeCurrent}, product_id: product_id)
+    |> Dataloader.load(Catalog, {:many, SpecificationCorrection}, product_id: product_id)
     |> load_taxon_attributes(product.primary_type_taxon_id)
     |> on_load(fn loader ->
       attributes =
@@ -77,7 +79,12 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
         |> Specs.with_current_attribute_metadata_from_taxon_attributes(
           loaded_taxon_attributes(loader, product.primary_type_taxon_id)
         )
-        |> format_current_attributes(resolution)
+        |> format_current_attributes(
+          resolution,
+          loader
+          |> Dataloader.get(Catalog, {:many, SpecificationCorrection}, product_id: product_id)
+          |> Specs.correction_counts()
+        )
 
       {:ok, attributes}
     end)
@@ -87,7 +94,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
     attributes =
       product_id
       |> Specs.list_current_attributes_for_product()
-      |> format_current_attributes()
+      |> format_current_attributes(nil, Specs.correction_counts_for_product(product_id))
 
     {:ok, attributes}
   end
@@ -459,13 +466,16 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   defp reverse_ok_list({:ok, items}), do: {:ok, Enum.reverse(items)}
   defp reverse_ok_list({:error, _message} = error), do: error
 
-  defp format_current_attributes(current_attributes, resolution \\ nil) do
+  defp format_current_attributes(current_attributes, resolution, correction_counts) do
     base_unit_symbols_by_dimension =
       current_attributes
       |> Enum.flat_map(&non_base_numeric_dimension_id/1)
       |> unit_symbols_for_dimensions(resolution)
 
-    Enum.map(current_attributes, &format_current_attribute(&1, base_unit_symbols_by_dimension))
+    Enum.map(
+      current_attributes,
+      &format_current_attribute(&1, base_unit_symbols_by_dimension, correction_counts)
+    )
   end
 
   defp unit_symbols_for_dimensions(dimension_ids, nil),
@@ -527,9 +537,13 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   defp format_current_attribute(
          %{attribute: attribute, claim: claim} = current_attribute,
-         base_unit_symbols_by_dimension
+         base_unit_symbols_by_dimension,
+         correction_counts
        ) do
     taxon_attribute = Map.get(current_attribute, :taxon_attribute)
+
+    attribute_correction_counts =
+      Map.get(correction_counts, attribute.id, %{pending: 0, accepted: 0})
 
     %{
       attribute_id: GlobalId.encode(:attribute, attribute.id),
@@ -548,6 +562,8 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       claim_status: Atom.to_string(claim.status),
       source_type: Atom.to_string(claim.source_type),
       confidence: claim.confidence,
+      pending_correction_count: attribute_correction_counts.pending,
+      accepted_correction_count: attribute_correction_counts.accepted,
       evidence: format_claim_evidence(claim.evidence_links)
     }
   end
