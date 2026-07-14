@@ -210,29 +210,14 @@ non-overlapping trust-surface view-data contracts. Their existing snapshot,
 community, alert, and API-token characterization suites passed 59 tests.
 
 The user claimed all four trust-surface rows on 2026-07-14 for serial execution
-on `codex/trust-surface-data-contracts`. Share-comparison snapshot and product-
-community policy are complete with 11 and 8 focused tests; price-alert and API-
-token route contracts remain active on the same branch. The coordinator
-replenished the ready floor with three source-verified, non-overlapping route-
-policy data contracts backed by 22 affiliate, 51 offer-discovery, and 62
-catalog tests.
+on `codex/trust-surface-data-contracts`. Share-comparison snapshot, product-
+community, and price-alert policy are complete with 11, 8, and 15 focused
+tests; the API-token route contract remains active on the same branch. The
+coordinator replenished the ready floor with three source-verified, non-
+overlapping route-policy data contracts backed by 22 affiliate, 51 offer-
+discovery, and 62 catalog tests.
 
 ## Active Work
-
-### Price Alert View-Data Contract
-
-Status: active
-Owner: `codex/trust-surface-data-contracts`
-Lane: Product trust and discovery
-Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
-Next checkpoint: complete the pure alert view-data contract and focused verification.
-Owned paths:
-
-- `assets/src/routes/account/alerts/alerts-view-data.ts`
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/product-trust-and-discovery.md`
 
 ### API Token Route Data Contract
 

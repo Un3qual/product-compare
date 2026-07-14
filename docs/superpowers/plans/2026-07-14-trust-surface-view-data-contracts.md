@@ -96,12 +96,12 @@ active and paused watch groups plus display-safe rule, watch, and observation
 labels. `AlertsRoute` retains loader reads, mutation orchestration, revalidation,
 pending/error state, links, and list presentation.
 
-- [ ] Add pure tests for stable watch grouping, every rule type, missing target
+- [x] Add pure tests for stable watch grouping, every rule type, missing target
   and baseline values, malformed dates, and unknown rule fallback; verify RED.
-- [ ] Extract only deterministic grouping and label policy.
-- [ ] Run the pure and existing alert suites, TypeScript, the framework-import
+- [x] Extract only deterministic grouping and label policy.
+- [x] Run the pure and existing alert suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 
@@ -132,8 +132,9 @@ boundaries, and presentation.
 
 ## Validation Evidence
 
-- The snapshot, community, and alert characterization suites passed 14 tests on
-  2026-07-14.
+- The completed snapshot, community, and alert contract suites passed 11, 8,
+  and 15 focused tests respectively on 2026-07-14, with TypeScript and their
+  framework-import scans green.
 - The API-token route characterization suite passed 45 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies still
   embedded in their React owners; none of the four rows overlap code, test, or

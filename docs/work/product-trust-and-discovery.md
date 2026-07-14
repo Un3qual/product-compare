@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (price-alert view-data contract)
+- Status: complete (price-alert view-data contract)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -14,8 +14,8 @@
 - Active follow-up plan:
   `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
 - Owner: `codex/trust-surface-data-contracts`
-- Last verified: 2026-07-14 after price-alert contract candidate verification
-  (6 alert and watch tests).
+- Last verified: 2026-07-14 after price-alert contract completion (15 focused
+  alert and watch tests plus TypeScript).
 
 ## Selected Program
 
@@ -30,12 +30,11 @@ Recommendations are deterministic and evidence-backed.
 
 ## Price Alert View-Data Contract
 
-- Status: active on `codex/trust-surface-data-contracts`.
+- Status: complete on `codex/trust-surface-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
-- Next action: isolate active/paused watch grouping and rule, watch, and
-  observation labels in a framework-free module while retaining loader reads,
-  mutations, revalidation, pending/error state, links, and presentation in
-  `AlertsRoute`.
+- Result: active/paused watch grouping and rule, watch, and observation labels
+  now live in a framework-free module. `AlertsRoute` retains loader reads,
+  mutations, revalidation, pending/error state, links, and presentation.
 - Owned paths:
   - `assets/src/routes/account/alerts/alerts-view-data.ts`
   - `assets/src/routes/account/alerts/AlertsRoute.tsx`
@@ -43,15 +42,14 @@ Recommendations are deterministic and evidence-backed.
   - `assets/test/routes/account/alerts/alerts.route.test.tsx`
   - `docs/work/product-trust-and-discovery.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: pure alert view data preserves stable grouping, every known
-  rule label, missing-value copy, malformed-date behavior, and unknown-rule
-  fallbacks.
-- Candidate evidence: the existing alert and watch suite passed 6 tests, and
-  current source inspection confirmed grouping and label policy remain
-  embedded in the React route.
+  - `cd assets && bun run test -- test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+    passed 15 tests.
+  - `cd assets && bun run typecheck` passed.
+  - The framework-import scan and `git diff --check` passed.
+- Evidence: pure alert view data preserves stable grouping, all known rule
+  labels, missing-value copy, malformed-date behavior, and unknown-rule
+  fallbacks. The React route consumes that contract without changing its
+  lifecycle ownership.
 
 ## Canonical Product Identity Evidence
 
