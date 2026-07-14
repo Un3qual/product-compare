@@ -2,10 +2,12 @@
 
 ## Snapshot
 
-- Status: done (catalog advanced filter presentation extraction)
+- Status: ready (catalog browse route data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after catalog advanced-filter extraction (60 tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-14 after catalog route-data candidate verification
+  (62 route tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -24,6 +26,31 @@
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Catalog Browse Route Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate canonical browse paths, product-detail links,
+  add/selected/full compare actions, and selected-item removal paths in a
+  framework-free module while retaining Relay reads, location access,
+  boundaries, layout, and presentation in `BrowseRoute`.
+- Owned paths:
+  - `assets/src/routes/catalog/browse-route-data.ts`
+  - `assets/src/routes/catalog/BrowseRoute.tsx`
+  - `assets/test/routes/catalog/browse-route-data.test.ts`
+  - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `docs/work/frontend-catalog-browse.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure route policy preserves root-path normalization, encoded
+  detail links, compare selection order, add/selected/full states, maximum
+  selection, and item-removal paths.
+- Candidate evidence: the existing browse suite passed 62 tests, and current
+  source inspection confirmed browse pathname, product/detail, compare action,
+  and selected-item removal policy remain embedded in the React route.
 
 ## Catalog Advanced Filter Presentation Extraction
 

@@ -14,14 +14,16 @@ import { recommendationProfileFromUrl } from "./loader";
 import ownedComparisonSnapshotsQuery from "./queries/OwnedComparisonSnapshotsQuery";
 import publishComparisonSnapshotMutation from "./queries/PublishComparisonSnapshotMutation";
 import revokeComparisonSnapshotMutation from "./queries/RevokeComparisonSnapshotMutation";
+import {
+  appendComparisonSnapshotPage,
+  buildComparisonSnapshotPublishInput,
+  comparisonSnapshotLabel,
+  mergeComparisonSnapshots,
+  removeComparisonSnapshotId,
+  type PublishedComparisonSnapshot
+} from "./share-comparison-data";
 
 const SNAPSHOT_PAGE_SIZE = 20;
-
-interface PublishedComparisonSnapshot {
-  id: string;
-  path: string;
-  title: string | null;
-}
 
 type OwnedSnapshotNode = NonNullable<
   OwnedComparisonSnapshotsQuery["response"]["viewer"]
@@ -56,7 +58,7 @@ export function ShareComparisonControl({
 
   function recordPublished(snapshot: PublishedComparisonSnapshot) {
     setPublished((current) => [snapshot, ...current.filter(({ id }) => id !== snapshot.id)]);
-    setRevokedSnapshotIds((current) => withoutId(current, snapshot.id));
+    setRevokedSnapshotIds((current) => removeComparisonSnapshotId(current, snapshot.id));
     setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
   }
 
@@ -190,13 +192,19 @@ function useSnapshotPublisher(
     event.preventDefault();
     onMessage(null);
     const form = new FormData(event.currentTarget);
+    const input = buildComparisonSnapshotPublishInput({
+      productIds: products.map(({ id }) => id),
+      recommendationProfile,
+      searchIndexable: form.get("searchIndexable") === "on",
+      title: form.get("title")
+    });
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: { input: publishInput(products, recommendationProfile, form) }
+        variables: { input }
       });
       const payload = response.publishComparisonSnapshot;
-      const snapshot = publishedSnapshotFromPayload(payload, normalizedTitle(form));
+      const snapshot = publishedSnapshotFromPayload(payload, input.title ?? null);
 
       if (snapshot) onPublished(snapshot);
       else onMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -252,12 +260,14 @@ function PublishedSnapshots({
     () => connection?.edges.map(({ node }) => snapshotFromNode(node)) ?? [],
     [connection]
   );
-  const snapshots = appendUniqueSnapshots(localSnapshots, loadedSnapshots, pageSnapshots)
-    .filter(({ id }) => !revokedSnapshotIds.has(id));
+  const snapshots = mergeComparisonSnapshots(
+    [localSnapshots, loadedSnapshots, pageSnapshots],
+    revokedSnapshotIds
+  );
   const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
 
   useEffect(() => {
-    setLoadedSnapshots((current) => appendSnapshotPage(current, pageSnapshots));
+    setLoadedSnapshots((current) => appendComparisonSnapshotPage(current, pageSnapshots));
   }, [pageSnapshots]);
 
   if (snapshots.length === 0 && !next) {
@@ -269,29 +279,14 @@ function PublishedSnapshots({
       <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
         {snapshots.map((snapshot) => (
           <li key={snapshot.id} {...props(styles.listItem)}>
-            <Link to={snapshot.path}>{snapshotLabel(snapshot)}</Link>
-            <Button aria-label={`Revoke public link: ${snapshotLabel(snapshot)}`} disabled={revoking} onClick={() => onRevoke(snapshot)} tone="danger" type="button" variant="soft">{revoking ? "Revoking…" : "Revoke public link"}</Button>
+            <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
+            <Button aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`} disabled={revoking} onClick={() => onRevoke(snapshot)} tone="danger" type="button" variant="soft">{revoking ? "Revoking…" : "Revoke public link"}</Button>
           </li>
         ))}
       </ul>
     ) : null}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more snapshots</Button> : null}
   </>;
-}
-
-function publishInput(
-  products: readonly CompareProductSummary[],
-  recommendationProfile: "lowest_current_cost" | "best_value",
-  form: FormData
-): PublishComparisonSnapshotMutation["variables"]["input"] {
-  const title = normalizedTitle(form);
-
-  return {
-    productIds: products.map((product) => product.id),
-    recommendationProfile: recommendationProfile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
-    searchIndexable: form.get("searchIndexable") === "on",
-    ...(title ? { title } : {})
-  };
 }
 
 function publishedSnapshotFromPayload(
@@ -305,46 +300,4 @@ function publishedSnapshotFromPayload(
 
 function snapshotFromNode(node: OwnedSnapshotNode): PublishedComparisonSnapshot {
   return { id: node.id, path: node.sharePath, title: node.title ?? null };
-}
-
-function appendUniqueSnapshots(
-  ...groups: ReadonlyArray<readonly PublishedComparisonSnapshot[]>
-) {
-  const snapshots: PublishedComparisonSnapshot[] = [];
-  const seen = new Set<string>();
-
-  for (const group of groups) {
-    for (const snapshot of group) {
-      if (!seen.has(snapshot.id)) {
-        seen.add(snapshot.id);
-        snapshots.push(snapshot);
-      }
-    }
-  }
-
-  return snapshots;
-}
-
-function appendSnapshotPage(
-  current: PublishedComparisonSnapshot[],
-  page: readonly PublishedComparisonSnapshot[]
-) {
-  const seen = new Set(current.map(({ id }) => id));
-  const additions = page.filter(({ id }) => !seen.has(id));
-  return additions.length ? [...current, ...additions] : current;
-}
-
-function withoutId(ids: ReadonlySet<string>, id: string) {
-  const next = new Set(ids);
-  next.delete(id);
-  return next;
-}
-
-function normalizedTitle(form: FormData) {
-  const title = String(form.get("title") ?? "").trim();
-  return title || null;
-}
-
-function snapshotLabel(snapshot: PublishedComparisonSnapshot) {
-  return snapshot.title || "Open public snapshot";
 }

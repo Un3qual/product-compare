@@ -14,6 +14,12 @@ import deletePriceWatchMutation from "./queries/DeletePriceWatchMutation";
 import markAlertReadMutation from "./queries/MarkAlertReadMutation";
 import updatePriceWatchMutation from "./queries/UpdatePriceWatchMutation";
 import type { AlertsRouteLoaderData, AlertSummary, WatchSummary } from "./loader";
+import {
+  alertRuleLabel,
+  buildAlertsViewData,
+  observationDateLabel,
+  priceWatchLabel
+} from "./alerts-view-data";
 
 const styles = create({
   actions: { display: "flex", flexWrap: "wrap", gap: "0.6rem" },
@@ -54,8 +60,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   const [commitMarkRead] = useMutation<MarkAlertReadMutation>(markAlertReadMutation);
   const [commitUpdate] = useMutation<UpdatePriceWatchMutation>(updatePriceWatchMutation);
   const [commitDelete] = useMutation<DeletePriceWatchMutation>(deletePriceWatchMutation);
-  const activeWatches = watches.filter((watch) => watch.enabled);
-  const pausedWatches = watches.filter((watch) => !watch.enabled);
+  const viewData = buildAlertsViewData(alerts, watches);
 
   async function run(id: string, operation: () => Promise<string | null>) {
     setPendingIds((current) => new Set(current).add(id));
@@ -97,16 +102,16 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
         {error ? <FeedbackState kind="error" title={error} /> : null}
         <section aria-labelledby="alert-events-title" {...props(styles.section)}>
           <h2 id="alert-events-title" {...props(styles.sectionTitle)}>Recent changes</h2>
-          {alerts.length === 0 ? <p {...props(styles.aside)}>No qualifying price or availability changes yet.</p> : (
+          {viewData.alerts.length === 0 ? <p {...props(styles.aside)}>No qualifying price or availability changes yet.</p> : (
             <ol aria-label="Price alert events" {...props(styles.list)}>
-              {alerts.map((alert) => (
+              {viewData.alerts.map((alert) => (
                 <li key={alert.id} {...props(styles.item, alert.readAt ? null : styles.unread)}>
                   <strong><Link to={`/products/${encodeURIComponent(alert.productSlug)}`}>{alert.productName}</Link></strong>
                   <p {...props(styles.meta)}>
-                    <span>{ruleLabel(alert.ruleType)}</span>
+                    <span>{alertRuleLabel(alert.ruleType)}</span>
                     <span>{alert.landedPrice} {alert.currency} landed</span>
                     <span>{alert.merchantName}</span>
-                    <time dateTime={alert.observedAt}>{dateLabel(alert.observedAt)}</time>
+                    <time dateTime={alert.observedAt}>{observationDateLabel(alert.observedAt)}</time>
                   </p>
                   {!alert.readAt ? (
                     <div {...props(styles.actions)}>
@@ -124,15 +129,15 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
         </section>
         <section aria-labelledby="active-watches-title" {...props(styles.section)}>
           <h2 id="active-watches-title" {...props(styles.sectionTitle)}>Active watches</h2>
-          {activeWatches.length === 0 ? <p {...props(styles.aside)}>Create a watch from any product detail page, or resume one below.</p> : (
-            <WatchList ariaLabel="Active price watches" watches={activeWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
+          {viewData.activeWatches.length === 0 ? <p {...props(styles.aside)}>Create a watch from any product detail page, or resume one below.</p> : (
+            <WatchList ariaLabel="Active price watches" watches={viewData.activeWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
           )}
           {hasMoreWatches ? <p {...props(styles.aside)}>Showing the 50 newest watches.</p> : null}
         </section>
-        {pausedWatches.length > 0 ? (
+        {viewData.pausedWatches.length > 0 ? (
           <section aria-labelledby="paused-watches-title" {...props(styles.section)}>
             <h2 id="paused-watches-title" {...props(styles.sectionTitle)}>Paused watches</h2>
-            <WatchList ariaLabel="Paused price watches" watches={pausedWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
+            <WatchList ariaLabel="Paused price watches" watches={viewData.pausedWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
           </section>
         ) : null}
       </div>
@@ -148,7 +153,7 @@ function WatchList({
   onToggle
 }: {
   ariaLabel: string;
-  watches: WatchSummary[];
+  watches: readonly WatchSummary[];
   pendingIds: ReadonlySet<string>;
   onDelete: (watch: WatchSummary) => Promise<void>;
   onToggle: (watch: WatchSummary) => Promise<void>;
@@ -158,7 +163,7 @@ function WatchList({
       {watches.map((watch) => (
         <li key={watch.id} {...props(styles.item)}>
           <strong><Link to={`/products/${encodeURIComponent(watch.productSlug)}`}>{watch.productName}</Link></strong>
-          <p {...props(styles.meta)}><span>{watchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
+          <p {...props(styles.meta)}><span>{priceWatchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
           <div {...props(styles.actions)}>
             <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{watch.enabled ? "Pause" : "Resume"}</Button>
             <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
@@ -167,19 +172,4 @@ function WatchList({
       ))}
     </ul>
   );
-}
-
-function ruleLabel(ruleType: string) {
-  return ({ TARGET_PRICE: "Target reached", PERCENTAGE_DROP: "Price drop reached", BACK_IN_STOCK: "Back in stock", NEWLY_AVAILABLE: "Newly available" } as Record<string, string>)[ruleType] ?? "Watch matched";
-}
-
-function watchLabel(watch: WatchSummary) {
-  if (watch.ruleType === "TARGET_PRICE") return `Target ${watch.targetAmount ?? "—"} ${watch.currency}`;
-  if (watch.ruleType === "PERCENTAGE_DROP") return `${watch.percentageDrop ?? "—"}% below ${watch.baselineLandedPrice ?? "baseline"} ${watch.currency}`;
-  return ruleLabel(watch.ruleType);
-}
-
-function dateLabel(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? value : date.toISOString().slice(0, 10);
 }

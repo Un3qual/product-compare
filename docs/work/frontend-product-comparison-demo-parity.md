@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (share-comparison snapshot data contract)
+- Status: done (share-comparison snapshot data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after share-snapshot contract candidate
-  verification (6 snapshot tests)
+- Last verified: 2026-07-14 after share-snapshot data extraction (11 focused
+  tests and TypeScript)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -21,7 +21,7 @@
 
 ## Share Comparison Snapshot Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 - Next action: isolate publish-input, snapshot merge, revoked-item, and label
   policy in a framework-free module while retaining Relay operations, form and
@@ -43,6 +43,20 @@
 - Candidate evidence: the existing snapshot suite passed 6 tests, and current
   source inspection confirmed the named deterministic helpers remain embedded
   in the 350-line React control.
+- Completed: framework-free snapshot data now owns ordered publish input,
+  profile mapping, title normalization, first-occurrence collection merging,
+  revoked-ID removal, page accumulation, and fallback labels.
+  `ShareComparisonControl` retains Relay reads and mutations, form events,
+  open and paging state, feedback, links, and revoke actions.
+- Completed evidence:
+  - RED: the new pure suite failed because `share-comparison-data` did not
+    exist.
+  - GREEN: the pure and existing snapshot suites passed 11 tests.
+  - Duplicate IDs within a newly loaded page no longer accumulate redundant
+    state; first-occurrence presentation and page order remain unchanged.
+  - The pure module has no React, Relay, router, StyleX, or Radix imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Compare Save And Deterministic Formatting Hardening
 

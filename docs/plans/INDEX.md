@@ -50,9 +50,10 @@ comparison pure view state, and credential-auth form presentation are complete
 through their dedicated follow-up execution plan.
 Product-detail decision actions, revenue-summary view data, specification-
 matrix data, and decision-summary data completed on
-`codex/frontend-view-contracts` in PR #97. The live queue now carries four
-source-verified data-contract successors for comparison sharing, product
-community, price alerts, and API-token route state.
+`codex/frontend-view-contracts` in PR #97. Comparison sharing, product
+community, price alerts, and API-token route-state contracts are also complete.
+Three source-verified route-policy successors keep the ready floor intact
+across affiliate setup, offer discovery, and catalog browse.
 
 Active implementation plans:
 
@@ -62,7 +63,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
-- `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+- `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -101,9 +102,13 @@ batch and should not be recreated or promoted.
   data, specification-matrix data, and decision-summary data completed through
   `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`; do not
   promote them again without fresh scope.
-- Ready reserve: comparison snapshot data, product-community data, price-alert
+- Completed reserve: comparison snapshot data, product-community data, price-alert
   view data, and API-token route data execute through
-  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`;
+  all four contracts are complete on `codex/trust-surface-data-contracts`.
+- Ready reserve: affiliate setup route data, offer-discovery filter data, and
+  catalog browse route data execute through
+  `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through
@@ -123,6 +128,10 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Frontend comparison-snapshot, product-community, price-alert, and API-token
+  route data contracts:
+  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 
 - Frontend affiliate pagination, merchant-directory view, saved-comparison
   view state, and credential-auth form:

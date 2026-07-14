@@ -43,14 +43,14 @@ snapshot labels; and merge local, loaded, and current-page snapshots by first
 occurrence. `ShareComparisonControl` retains Relay mutations and reads, form
 events, open state, paging state, feedback, links, and revoke actions.
 
-- [ ] Add pure tests for ordered product IDs, profile mapping, trimmed and
+- [x] Add pure tests for ordered product IDs, profile mapping, trimmed and
   omitted titles, search opt-in, first-occurrence deduplication, revoked-ID
   removal, and fallback labels; verify RED.
-- [ ] Move only the cohesive deterministic publish and collection policy into
+- [x] Move only the cohesive deterministic publish and collection policy into
   the data module.
-- [ ] Run the pure and existing snapshot suites, TypeScript, the framework-
+- [x] Run the pure and existing snapshot suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 
@@ -70,14 +70,14 @@ first-occurrence item merges. `ProductCommunityPanel` retains Relay reads and
 mutations, paging state, moderation feedback, forms, suspense, and semantic
 review/Q&A presentation.
 
-- [ ] Add pure tests for trimmed optional fields, rating values, empty review
+- [x] Add pure tests for trimmed optional fields, rating values, empty review
   summaries, singular/plural copy, accepted answers, missing cursors, and
   duplicate page items; verify RED.
-- [ ] Extract only deterministic community policy without widening moderation
+- [x] Extract only deterministic community policy without widening moderation
   or authentication behavior.
-- [ ] Run the pure and existing community suites, TypeScript, the framework-
+- [x] Run the pure and existing community suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 
@@ -96,12 +96,12 @@ active and paused watch groups plus display-safe rule, watch, and observation
 labels. `AlertsRoute` retains loader reads, mutation orchestration, revalidation,
 pending/error state, links, and list presentation.
 
-- [ ] Add pure tests for stable watch grouping, every rule type, missing target
+- [x] Add pure tests for stable watch grouping, every rule type, missing target
   and baseline values, malformed dates, and unknown rule fallback; verify RED.
-- [ ] Extract only deterministic grouping and label policy.
-- [ ] Run the pure and existing alert suites, TypeScript, the framework-import
+- [x] Extract only deterministic grouping and label policy.
+- [x] Run the pure and existing alert suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ---
 
@@ -111,6 +111,7 @@ pending/error state, links, and list presentation.
 
 - Create: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
 - Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
 - Create: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
 - Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - Modify: `docs/work/frontend-api-token-management-demo-parity.md`
@@ -121,20 +122,22 @@ and local/server token view state. `ApiTokensRoute` retains Relay mutations,
 in-flight guards, state ownership, one-time secret lifecycle, error routing,
 boundaries, and presentation.
 
-- [ ] Add pure tests for auth/location identity, cursor paths, blank/manual/no-
+- [x] Add pure tests for auth/location identity, cursor paths, blank/manual/no-
   expiry values, invalid dates, rotation labels, mutation nullability,
   deduplication, and local/server precedence; verify RED.
-- [ ] Extract only deterministic route-data policy and keep lifecycle effects in
+- [x] Extract only deterministic route-data policy and keep lifecycle effects in
   the route owner.
-- [ ] Run the pure and existing API-token suites, TypeScript, the framework-
+- [x] Run the pure and existing API-token suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record completion evidence and commit the milestone.
+- [x] Record completion evidence and commit the milestone.
 
 ## Validation Evidence
 
-- The snapshot, community, and alert characterization suites passed 14 tests on
-  2026-07-14.
-- The API-token route characterization suite passed 45 tests on 2026-07-14.
-- Current source inspection found the named deterministic policies still
-  embedded in their React owners; none of the four rows overlap code, test, or
-  lane-doc ownership.
+- The completed snapshot, community, and alert contract suites passed 11, 8,
+  and 15 focused tests respectively on 2026-07-14, with TypeScript and their
+  framework-import scans green.
+- The completed API-token contract and route suites passed 55 focused tests on
+  2026-07-14, with TypeScript and the framework-import scan green.
+- All four deterministic policy boundaries are now outside their React owners;
+  Relay, router, state, lifecycle, and presentation responsibilities remain in
+  the components.
