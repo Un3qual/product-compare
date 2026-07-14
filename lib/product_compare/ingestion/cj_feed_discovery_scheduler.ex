@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
   alias ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker
   alias ProductCompare.Ingestion.OptionNormalization
+  alias ProductCompare.Ingestion.ScheduledCursor
 
   @default_advertiser_country "US"
   @default_initial_delay_ms 60_000
@@ -32,6 +33,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
     state = %{
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
+      cursor_resolver: Keyword.get(opts, :cursor_resolver, &ScheduledCursor.feed/1),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -53,13 +55,13 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
   @impl GenServer
   def handle_info(:run_discovery, state) do
-    opts = discovery_opts(state)
+    opts = resolve_cursor(discovery_opts(state), state.cursor_resolver, state.cursor)
 
     result = run_discovery(state.enqueuer, opts)
 
     log_result(result, opts)
 
-    state = %{state | cursor: OptionNormalization.next_cursor(state.cursor, result)}
+    state = %{state | cursor: opts[:cursor]}
 
     schedule_run(state.interval_ms)
 
@@ -85,6 +87,18 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
     _exception -> {:error, :runner_exception}
   catch
     _kind, _reason -> {:error, :runner_exception}
+  end
+
+  defp resolve_cursor(opts, resolver, fallback) do
+    case resolver.(opts) do
+      cursor when is_integer(cursor) and cursor >= 0 -> Keyword.replace!(opts, :cursor, cursor)
+      nil -> Keyword.replace!(opts, :cursor, nil)
+      _invalid -> Keyword.replace!(opts, :cursor, fallback)
+    end
+  rescue
+    _exception -> Keyword.replace!(opts, :cursor, fallback)
+  catch
+    _kind, _reason -> Keyword.replace!(opts, :cursor, fallback)
   end
 
   defp log_result({:ok, report}, opts) do

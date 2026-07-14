@@ -160,6 +160,31 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 
+  test "a newer pending run restores offers deactivated by an older finalization" do
+    source = source_fixture()
+    query = %{"providerFeedId" => "feed-overlap"}
+
+    baseline = start_complete_scope_run!(source, query)
+    persist!(source, listing("A", 0), baseline)
+    offer_b = persist!(source, listing("B", 0), baseline).merchant_product
+    complete!(baseline)
+
+    older = start_complete_scope_run!(source, query)
+    persist!(source, listing("A", 60), older)
+
+    newer = start_complete_scope_run!(source, query)
+    persist!(source, listing("A", 120), newer)
+    persist!(source, listing("B", 120), newer)
+
+    older = complete!(older)
+    assert older.reconciliation_status == "succeeded"
+    refute Repo.get!(MerchantProduct, offer_b.id).is_active
+
+    newer = complete!(newer)
+    assert newer.reconciliation_status == "succeeded"
+    assert Repo.get!(MerchantProduct, offer_b.id).is_active
+  end
+
   defp start_complete_scope_run!(source, query) do
     {:ok, run} =
       Ingestion.start_import_run(%{

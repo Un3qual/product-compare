@@ -68,10 +68,16 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   end
 
   def finalize(%ImportRun{} = run) do
+    lock_scope!(run)
+
     if superseded?(run) do
       update_outcome(run, "skipped_superseded", 0, nil)
     else
       now = DateTime.utc_now()
+
+      run
+      |> observed_offers_query()
+      |> Repo.update_all(set: [is_active: true, updated_at: now])
 
       {deactivated, _rows} =
         run
@@ -80,6 +86,16 @@ defmodule ProductCompare.Ingestion.Reconciliation do
 
       update_outcome(run, "succeeded", deactivated, now)
     end
+  end
+
+  defp lock_scope!(run) do
+    lock_name =
+      Enum.join(
+        [run.source_id, run.provider, run.surface, run.scope_fingerprint],
+        ":"
+      )
+
+    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [lock_name])
   end
 
   defp superseded?(run) do
@@ -95,12 +111,6 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   end
 
   defp unseen_historical_offers_query(run) do
-    current_offer_ids =
-      from(observation in ImportObservation,
-        where: observation.import_run_id == ^run.id,
-        select: observation.merchant_product_id
-      )
-
     historical_offer_ids =
       from(observation in ImportObservation,
         join: previous_run in ImportRun,
@@ -116,7 +126,21 @@ defmodule ProductCompare.Ingestion.Reconciliation do
     from(merchant_product in MerchantProduct,
       where: merchant_product.is_active == true,
       where: merchant_product.id in subquery(historical_offer_ids),
-      where: merchant_product.id not in subquery(current_offer_ids)
+      where: merchant_product.id not in subquery(current_offer_ids_query(run))
+    )
+  end
+
+  defp observed_offers_query(run) do
+    from(merchant_product in MerchantProduct,
+      where: merchant_product.is_active == false,
+      where: merchant_product.id in subquery(current_offer_ids_query(run))
+    )
+  end
+
+  defp current_offer_ids_query(run) do
+    from(observation in ImportObservation,
+      where: observation.import_run_id == ^run.id,
+      select: observation.merchant_product_id
     )
   end
 

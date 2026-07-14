@@ -88,11 +88,18 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
 
   test "advances the cursor after a successful discovery" do
     parent = self()
+    resolution_count = :counters.new(1, [])
 
-    runner = fn opts ->
-      send(parent, {:run, opts})
+    cursor_resolver = fn opts ->
+      :counters.add(resolution_count, 1, 1)
+      send(parent, {:resolved, opts})
 
-      {:ok, Map.put(report(), :next_cursor, 80)}
+      if :counters.get(resolution_count, 1) == 1, do: 40, else: 80
+    end
+
+    enqueuer = fn opts ->
+      send(parent, {:enqueued, opts})
+      {:ok, %{id: 123}}
     end
 
     pid =
@@ -100,16 +107,19 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
         {CJFeedDiscoveryScheduler,
          [
            cursor: 40,
+           cursor_resolver: cursor_resolver,
+           enqueuer: enqueuer,
            initial_delay_ms: 0,
-           interval_ms: 20,
-           runner: runner
+           interval_ms: 20
          ]}
       )
 
-    assert_receive {:run, first_opts}
+    assert_receive {:resolved, _first_resolution_opts}
+    assert_receive {:enqueued, first_opts}
     assert first_opts[:cursor] == 40
 
-    assert_receive {:run, second_opts}, 250
+    assert_receive {:resolved, _second_resolution_opts}, 250
+    assert_receive {:enqueued, second_opts}, 250
     assert second_opts[:cursor] == 80
 
     GenServer.stop(pid)
@@ -146,21 +156,13 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
     end
   end
 
-  test "does not advance to an invalid cursor from a successful report" do
+  test "keeps the last cursor when the durable cursor resolver returns invalid data" do
     for invalid_cursor <- [-1, 1.5, "80", %{value: 80}] do
       parent = self()
-      run_count = :counters.new(1, [])
 
-      runner = fn opts ->
-        :counters.add(run_count, 1, 1)
-        count = :counters.get(run_count, 1)
-        send(parent, {:run, invalid_cursor, opts})
-
-        if count == 1 do
-          {:ok, Map.put(report(), :next_cursor, invalid_cursor)}
-        else
-          {:ok, report()}
-        end
+      enqueuer = fn opts ->
+        send(parent, {:enqueued, invalid_cursor, opts})
+        {:ok, %{id: 123}}
       end
 
       pid =
@@ -169,19 +171,20 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
             {CJFeedDiscoveryScheduler,
              [
                cursor: 40,
+               cursor_resolver: fn _opts -> invalid_cursor end,
+               enqueuer: enqueuer,
                initial_delay_ms: 0,
-               interval_ms: 20,
-               runner: runner
+               interval_ms: 20
              ]},
             id: {:invalid_advanced_cursor, inspect(invalid_cursor)},
             restart: :temporary
           )
         )
 
-      assert_receive {:run, ^invalid_cursor, first_opts}
+      assert_receive {:enqueued, ^invalid_cursor, first_opts}
       assert first_opts[:cursor] == 40
 
-      assert_receive {:run, ^invalid_cursor, second_opts}, 250
+      assert_receive {:enqueued, ^invalid_cursor, second_opts}, 250
       assert second_opts[:cursor] == 40
 
       GenServer.stop(pid)

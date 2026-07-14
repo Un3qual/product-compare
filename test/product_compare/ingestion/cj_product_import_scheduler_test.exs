@@ -101,11 +101,18 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
 
   test "advances the cursor after a successful import" do
     parent = self()
+    resolution_count = :counters.new(1, [])
 
-    runner = fn opts ->
-      send(parent, {:run, opts})
+    cursor_resolver = fn opts ->
+      :counters.add(resolution_count, 1, 1)
+      send(parent, {:resolved, opts})
 
-      {:ok, Map.put(report(), :next_cursor, 80)}
+      if :counters.get(resolution_count, 1) == 1, do: 40, else: 80
+    end
+
+    enqueuer = fn opts ->
+      send(parent, {:enqueued, opts})
+      {:ok, %{id: 123}}
     end
 
     pid =
@@ -113,28 +120,30 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
         {CJProductImportScheduler,
          [
            cursor: 40,
+           cursor_resolver: cursor_resolver,
+           enqueuer: enqueuer,
            initial_delay_ms: 0,
-           interval_ms: 20,
-           runner: runner
+           interval_ms: 20
          ]}
       )
 
-    assert_receive {:run, first_opts}
+    assert_receive {:resolved, _first_resolution_opts}
+    assert_receive {:enqueued, first_opts}
     assert first_opts[:cursor] == 40
 
-    assert_receive {:run, second_opts}, 250
+    assert_receive {:resolved, _second_resolution_opts}, 250
+    assert_receive {:enqueued, second_opts}, 250
     assert second_opts[:cursor] == 80
 
     GenServer.stop(pid)
   end
 
-  test "ignores invalid next cursors returned by the runner" do
+  test "keeps the last cursor when the durable cursor resolver returns invalid data" do
     parent = self()
 
-    runner = fn opts ->
-      send(parent, {:run, opts})
-
-      {:ok, Map.put(report(), :next_cursor, "80")}
+    enqueuer = fn opts ->
+      send(parent, {:enqueued, opts})
+      {:ok, %{id: 123}}
     end
 
     pid =
@@ -142,16 +151,17 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
         {CJProductImportScheduler,
          [
            cursor: 40,
+           cursor_resolver: fn _opts -> "80" end,
+           enqueuer: enqueuer,
            initial_delay_ms: 0,
-           interval_ms: 20,
-           runner: runner
+           interval_ms: 20
          ]}
       )
 
-    assert_receive {:run, first_opts}
+    assert_receive {:enqueued, first_opts}
     assert first_opts[:cursor] == 40
 
-    assert_receive {:run, second_opts}, 250
+    assert_receive {:enqueued, second_opts}, 250
     assert second_opts[:cursor] == 40
 
     GenServer.stop(pid)
