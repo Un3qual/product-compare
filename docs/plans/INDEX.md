@@ -29,13 +29,13 @@ readiness. Email delivery, live conversion-provider ingestion, production
 privacy and attribution controls, and production-readiness proof remain outside
 that milestone by product decision.
 
-The 2026-07-13 Product Trust and Discovery program is active. It reopens and
-expands the data-product boundary with canonical specification-rich ingestion,
-complete and fresh offers, durable ingestion, watches and in-app alerts, public
+The 2026-07-13 Product Trust and Discovery program is complete. It expanded the
+data-product boundary with canonical specification-rich ingestion, complete
+and fresh offers, durable ingestion, watches and in-app alerts, public
 comparison snapshots, source-backed recommendations, provenance/corrections,
 reviews and Q&A, merchant pages, and SEO/acquisition surfaces. The live queue
-contains the validated foundation slices; dependent product surfaces are
-promoted only after their truth contracts are green.
+now carries bounded frontend maintainability follow-ups over those completed
+truth contracts.
 
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
@@ -49,8 +49,10 @@ Affiliate merchant pagination, merchant-directory view presentation, saved-
 comparison pure view state, and credential-auth form presentation are complete
 through their dedicated follow-up execution plan.
 Product-detail decision actions, revenue-summary view data, specification-
-matrix data, and decision-summary data are validated post-stack reserve rows
-that keep the live queue dispatchable after the current stack completes.
+matrix data, and decision-summary data completed on
+`codex/frontend-view-contracts` in PR #97. The live queue now carries four
+source-verified data-contract successors for comparison sharing, product
+community, price alerts, and API-token route state.
 
 Active implementation plans:
 
@@ -60,6 +62,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
+- `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
@@ -94,10 +97,13 @@ batch and should not be recreated or promoted.
   presentation, saved-comparison pure view state, and credential-auth form
   presentation completed through
   `docs/superpowers/plans/2026-07-12-next-stack-follow-up-batches.md`.
-- Ready reserve: product-detail decision actions, revenue-summary view data,
-  specification-matrix data, and the serial decision-summary data follow-up
-  execute through
-  `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
+- Completed reserve: product-detail decision actions, revenue-summary view
+  data, specification-matrix data, and decision-summary data completed through
+  `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`; do not
+  promote them again without fresh scope.
+- Ready reserve: comparison snapshot data, product-community data, price-alert
+  view data, and API-token route data execute through
+  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

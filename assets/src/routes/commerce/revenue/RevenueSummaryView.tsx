@@ -7,13 +7,14 @@ import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
-import type { RevenueSummaryLoaderData } from "./loader";
+import type {
+  RevenueActiveFilter,
+  RevenueDatePresetLink,
+  RevenueSummaryFilters,
+  RevenueSummaryMetric
+} from "./revenue-summary-view-data";
 
-export type RevenueActiveFilter = { label: string; value: string };
-export type RevenueDatePresetLink = { label: string; to: string };
-export type RevenueSummaryMetric = { label: string; value: string };
-
-type RevenueFilters = RevenueSummaryLoaderData["filters"];
+type RevenueFilters = RevenueSummaryFilters;
 
 const REVENUE_FILTER_LABEL_IDS = {
   currency: "revenue-filter-currency-label",
@@ -47,7 +48,7 @@ export function RevenueSummaryView({
   activeFilters: readonly RevenueActiveFilter[];
   children: ReactNode;
   datePresetLinks: readonly RevenueDatePresetLink[];
-  filters: RevenueSummaryLoaderData["filters"];
+  filters: RevenueFilters;
 }): ReactElement {
   return (
     <WorkspaceLayout

@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (serial matrix and decision-summary data contracts)
+- Status: ready (share-comparison snapshot data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after compare-save and formatting hardening (108 compare tests)
+- Last verified: 2026-07-14 after share-snapshot contract candidate
+  verification (6 snapshot tests)
 - Implementation plan: `docs/plans/2026-05-31-frontend-product-comparison-demo-parity-implementation-plan.md`
 - Active promotion plan: `docs/plans/2026-07-01-persistent-compare-tray-promotion-implementation-plan.md`
 - Active implementation plan: `docs/plans/2026-07-01-persistent-compare-tray-implementation-plan.md`
@@ -17,6 +18,31 @@
   - `docs/plans/2026-06-30-compare-attribute-metadata-implementation-plan.md`
   - `docs/plans/2026-06-30-compare-offer-decision-helpers-implementation-plan.md`
 - Objective: make product comparison demoable from the UI by exposing current product attributes and adding visible compare selection paths.
+
+## Share Comparison Snapshot Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+- Next action: isolate publish-input, snapshot merge, revoked-item, and label
+  policy in a framework-free module while retaining Relay operations, form and
+  open state, paging, feedback, links, and revoke actions in
+  `ShareComparisonControl`.
+- Owned paths:
+  - `assets/src/routes/compare/share-comparison-data.ts`
+  - `assets/src/routes/compare/ShareComparisonControl.tsx`
+  - `assets/test/routes/compare/share-comparison-data.test.ts`
+  - `assets/test/routes/compare/comparison-snapshots.test.tsx`
+  - `docs/work/frontend-product-comparison-demo-parity.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure snapshot policy preserves ordered product IDs, profile
+  mapping, title/search opt-in behavior, first-occurrence deduplication,
+  revoked items, labels, and pagination order.
+- Candidate evidence: the existing snapshot suite passed 6 tests, and current
+  source inspection confirmed the named deterministic helpers remain embedded
+  in the 350-line React control.
 
 ## Compare Save And Deterministic Formatting Hardening
 
@@ -36,7 +62,7 @@
 
 ## Specification Matrix Data Contract
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: isolate the framework-free row construction and typed comparison
   policy while keeping titles, empty states, scrolling, and table markup in the
@@ -54,11 +80,26 @@
 - Exit condition: the pure data contract preserves stable ordering, duplicate-
   code selection, missing cells, modes, typed values, units, and decimal/
   exponent normalization.
+- Completed: framework-free `buildSpecificationMatrixRows()` now owns stable
+  row construction, first-occurrence duplicate selection, missing-cell values,
+  mode filtering, explicit `en-US` ordering, and bounded typed comparison
+  normalization. `CompareSpecificationMatrix` retains Radix scrolling, titles,
+  empty-state copy, and semantic table markup.
+- Completed evidence:
+  - Baseline: the compare route suite passed 109 tests before extraction.
+  - RED: those 109 tests remained green while the new pure suite failed because
+    `specification-matrix-data` did not exist.
+  - GREEN: the focused data and compare suites passed 113 tests, including all
+    modes, first-write duplicate behavior, missing cells, typed booleans,
+    normalized units, decimal exponents, and the 1,000-place expansion bound.
+  - The pure module has no React, Relay, router, Radix, or StyleX imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Decision Summary Data Contract
 
-- Status: ready on 2026-07-12; dispatch serially with the specification-matrix
-  data contract because both own this lane doc and the compare route suite.
+- Status: done on 2026-07-14; dispatched after the specification-matrix data
+  contract because both own this lane doc and the compare route suite.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: isolate loaded-price safety and decision-metric label derivation
   in a framework-free module while retaining disclosure, table presentation,
@@ -75,6 +116,22 @@
   - `git diff --check`
 - Exit condition: pure metric contracts preserve loaded-offer scope, decimal
   and currency safety, unavailable labels, and recency output.
+- Completed: framework-free `buildDecisionSummaryMetricRows()` now owns the
+  ordered metric contract, exact relative loaded-price comparison, same-
+  currency safety, unavailable values, and offer-context label derivation.
+  `DecisionSummary` retains its scope disclosure, semantic table markup, and
+  encoded Review offers URLs.
+- Completed evidence:
+  - Baseline: the compare route suite passed 109 tests before extraction.
+  - RED: the new pure suite failed because `decision-summary-data` did not
+    exist.
+  - GREEN: the focused data and compare suites passed 114 tests, covering
+    lowest and tied prices, decimal/exponent equality, mixed currencies,
+    malformed and missing values, unavailable products, exact metric labels,
+    and `YYYY-MM-DD` recency output.
+  - The pure module has no React, router, StyleX, or Radix imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Compare Product Picker View Extraction
 

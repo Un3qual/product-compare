@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-13
+Updated: 2026-07-14
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -201,125 +201,136 @@ parameterized, private, and revoked pages stay `noindex`; legacy product slugs
 redirect permanently to their canonical page. The selected Product Trust and
 Discovery program is complete.
 
+On 2026-07-14, the four post-stack frontend contract rows completed on
+`codex/frontend-view-contracts` in PR #97. Product-detail decision actions,
+revenue-summary view data, specification-matrix data, and decision-summary
+data now have focused boundaries and green lane evidence. The queue was
+replenished in the same coordinator handoff with four source-verified,
+non-overlapping trust-surface view-data contracts. Their existing snapshot,
+community, alert, and API-token characterization suites passed 59 tests.
+
 ## Ready Work
 
-### 1. Product Detail Decision Actions Presentation
+### 1. Share Comparison Snapshot Data Contract
+
+Status: ready
+Lane: Frontend product comparison
+Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+Next action: extract framework-free publish-input, snapshot merge, and label
+policy while preserving Relay mutations and reads, form events, local state,
+paging, feedback, links, and revoke actions.
+Owned paths:
+
+- `assets/src/routes/compare/share-comparison-data.ts`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/share-comparison-data.test.ts`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-product-comparison-demo-parity.md`
+
+Prerequisites:
+
+- Existing 6-test comparison-snapshot characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure snapshot policy preserves ordered product IDs, profile
+mapping, title/search opt-in behavior, first-occurrence deduplication, revoked
+items, labels, and pagination order.
+
+### 2. Product Community Data Contract
 
 Status: ready
 Lane: Frontend product detail
-Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
-Next action: extract the accessible Next steps presentation behind explicit
-add, selected, and full compare states while preserving route-owned Relay,
-selection, navigation, and URL construction.
+Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+Next action: extract framework-free review/question input, summary, accepted-
+answer, cursor, and page-merge policy while preserving Relay operations,
+moderation feedback, forms, paging state, suspense, and presentation.
 Owned paths:
 
-- `assets/src/routes/products/ProductDecisionActions.tsx`
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
 - `docs/work/frontend-product-detail.md`
 
 Prerequisites:
 
-- Existing 49-test product-detail characterization remains green.
+- Existing 2-test product-community characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/products/detail.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Decision-action presentation is isolated without changing any
-destination, comparison state, cursor, tab, or tray-return behavior.
+Exit condition: Pure community policy preserves trimmed inputs, rating values,
+summary copy, accepted-answer labels, page cursors, and first-occurrence item
+ordering.
 
-### 2. Revenue Summary View-Data Contract
+### 3. Price Alert View-Data Contract
 
 Status: ready
-Lane: Frontend revenue reporting
-Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
-Next action: extract framework-free active-filter, date-preset, and metric
-derivation while retaining route-owned loader, Relay, boundary, fallback, and
-currency orchestration.
+Lane: Product trust and discovery
+Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+Next action: extract framework-free active/paused watch grouping and rule,
+watch, and observation labels while preserving loader reads, mutations,
+revalidation, pending/error state, links, and list presentation.
 Owned paths:
 
-- `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
-- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
-- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
-- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `docs/work/frontend-revenue-reporting-demo-parity.md`
+- `assets/src/routes/account/alerts/alerts-view-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/product-trust-and-discovery.md`
 
 Prerequisites:
 
-- Existing 22-test revenue route and loader characterization remains green.
+- Existing 6-test alert and watch characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/commerce/revenue/revenue-summary-loader.test.ts`
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
-suppressed values, nulls, and intentional empty-string amount behavior.
+Exit condition: Pure alert view data preserves stable grouping, every known
+rule label, missing-value copy, malformed-date behavior, and unknown-rule
+fallbacks.
 
-### 3. Specification Matrix Data Contract
+### 4. API Token Route Data Contract
 
 Status: ready
-Lane: Frontend product comparison
-Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
-Next action: move stable row construction and typed comparison normalization
-into a framework-free module while retaining matrix presentation in the
-component.
+Lane: Frontend API-token management
+Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
+Next action: extract framework-free route identity, pagination, form-variable,
+mutation-summary, rotation, and local/server view-state policy while retaining
+Relay mutations, in-flight guards, one-time-secret lifecycle, errors,
+boundaries, and presentation.
 Owned paths:
 
-- `assets/src/routes/compare/specification-matrix-data.ts`
-- `assets/src/routes/compare/CompareSpecificationMatrix.tsx`
-- `assets/test/routes/compare/specification-matrix-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-management-demo-parity.md`
 
 Prerequisites:
 
-- Existing 105-test compare characterization remains green.
+- Existing 45-test API-token route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/specification-matrix-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: The pure matrix contract preserves ordering, duplicates,
-missing cells, modes, typed values, units, and decimal/exponent behavior.
-
-### 4. Decision Summary Data Contract
-
-Status: ready
-Lane: Frontend product comparison
-Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
-Next action: move loaded-price safety and decision-metric label derivation into
-a framework-free module while retaining disclosure, table markup, and offer
-review URLs in the presentation component.
-Owned paths:
-
-- `assets/src/routes/compare/decision-summary-data.ts`
-- `assets/src/routes/compare/DecisionSummary.tsx`
-- `assets/test/routes/compare/decision-summary-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-comparison-demo-parity.md`
-
-Prerequisites:
-
-- Existing 105-test compare characterization remains green.
-- This row conflicts with row 3 through shared compare test and lane-doc paths;
-  dispatch the two rows serially.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: The pure summary contract preserves loaded-offer scope,
-decimal and currency safety, unavailable labels, and recency output.
+Exit condition: Pure route data preserves auth/location identity, cursor paths,
+expiry semantics, mutation nullability, rotation state, deduplication, and
+local/server token precedence.
 
 ## Needs Decision Work
 

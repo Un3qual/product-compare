@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: complete
+- Status: ready (price-alert view-data contract)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -11,9 +11,11 @@
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
   `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
+- Active follow-up plan:
+  `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`
 - Owner: `codex/product-trust-and-discovery`
-- Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
-  Discussions, GraphQL, Relay route, and migration contracts.
+- Last verified: 2026-07-14 after price-alert contract candidate verification
+  (6 alert and watch tests).
 
 ## Selected Program
 
@@ -25,6 +27,31 @@ and Q&A, SEO/acquisition, and merchant pages.
 The implementation order and safety boundaries are recorded in the program
 design. In-app alerts are the first delivery transport; email stays deferred.
 Recommendations are deterministic and evidence-backed.
+
+## Price Alert View-Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+- Next action: isolate active/paused watch grouping and rule, watch, and
+  observation labels in a framework-free module while retaining loader reads,
+  mutations, revalidation, pending/error state, links, and presentation in
+  `AlertsRoute`.
+- Owned paths:
+  - `assets/src/routes/account/alerts/alerts-view-data.ts`
+  - `assets/src/routes/account/alerts/AlertsRoute.tsx`
+  - `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+  - `assets/test/routes/account/alerts/alerts.route.test.tsx`
+  - `docs/work/product-trust-and-discovery.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure alert view data preserves stable grouping, every known
+  rule label, missing-value copy, malformed-date behavior, and unknown-rule
+  fallbacks.
+- Candidate evidence: the existing alert and watch suite passed 6 tests, and
+  current source inspection confirmed grouping and label policy remain
+  embedded in the React route.
 
 ## Canonical Product Identity Evidence
 

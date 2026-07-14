@@ -2,12 +2,13 @@
 
 ## Snapshot
 
-- Status: ready (product detail decision-actions presentation extraction)
+- Status: ready (product-community data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after product not-found HTTP status hardening (49
-  product-detail tests and 15 SSR tests).
+- Last verified: 2026-07-14 after product-community contract candidate
+  verification and decision-action review follow-up (2 community tests and 55
+  product-detail tests).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -24,9 +25,34 @@
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
 
+## Product Community Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`.
+- Next action: isolate review/question inputs, summary and accepted-answer
+  labels, page cursors, and item merging in a framework-free module while
+  retaining Relay operations, moderation feedback, forms, paging state,
+  suspense, and presentation in `ProductCommunityPanel`.
+- Owned paths:
+  - `assets/src/routes/products/product-community-data.ts`
+  - `assets/src/routes/products/ProductCommunityPanel.tsx`
+  - `assets/test/routes/products/product-community-data.test.ts`
+  - `assets/test/routes/products/product-community-panel.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure community policy preserves trimmed inputs, rating
+  values, summary copy, accepted-answer labels, page cursors, and first-
+  occurrence item ordering.
+- Candidate evidence: the existing product-community suite passed 2 tests, and
+  current source inspection confirmed its deterministic input, summary,
+  cursor, and merge policy remains embedded in the 308-line React panel.
+
 ## Product Detail Decision Actions Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: extract the accessible Next steps presentation behind explicit
   add, selected, and full compare states while preserving route-owned Relay,
@@ -43,6 +69,22 @@
 - Exit condition: decision-action presentation is isolated without changing
   encoded destinations, comparison state, offer cursors, tab hashes, or
   tray-return behavior.
+- Completed: `ProductDecisionActions` now owns the accessible `Next steps`
+  region, compare-state copy, and offer/catalog links behind an explicit
+  `add`, `selected`, or `full` presentation contract. `ProductDetailRoute`
+  retains compare selection parsing, maximum enforcement, encoded URL
+  construction, Relay reads, navigation, and tray behavior.
+- Completed evidence:
+  - Baseline: the focused product-detail suite passed 51 tests before the
+    extraction.
+  - RED: the focused suite failed because the direct component tests could not
+    resolve the not-yet-created `ProductDecisionActions` module.
+  - GREEN: the focused suite passed 54 tests, including direct semantic
+    coverage for all three compare states and the shared offer/catalog links.
+  - Review follow-up added an exhaustive default that fails closed for invalid
+    runtime states; the expanded focused suite passed 55 tests.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Product Not-Found HTTP Status Hardening
 
