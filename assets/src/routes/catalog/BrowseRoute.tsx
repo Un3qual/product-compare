@@ -13,18 +13,16 @@ import { PageShell } from "../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import {
-  buildComparePathFromSlugs,
-  buildCurrentRoutePathWithCompareSlugs,
-  selectedCompareSlugsAfterAdding,
-  selectedCompareSlugsFromSearch
+  buildComparePathFromSlugs
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
+import { createBrowseRouteData } from "./browse-route-data";
 import {
   hasActiveCatalogFilters,
   type CatalogFilters
 } from "./filters";
 import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterForm";
-import { BrowseProductList, type BrowseCompareAction } from "./BrowseProductList";
+import { BrowseProductList } from "./BrowseProductList";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   catalogBrowseFirstPagePath,
@@ -103,14 +101,17 @@ function BrowseProducts({
   const filterMetadata = data.productFilterMetadata;
   const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
   const products = productConnection.edges.map(({ node }) => node);
-  const selectedCompareSlugs = selectedCompareSlugsFromSearch(location.search, {
-    maxProducts: MAX_COMPARE_PRODUCTS
-  });
-  const currentBrowsePathname = browseRoutePathname(location.pathname);
   const currentCompareSearch = catalogBrowseSearchWithNormalizedSort(
     location.search,
     activeFilters.sort
   );
+  const browseRouteData = createBrowseRouteData({
+    maxCompareProducts: MAX_COMPARE_PRODUCTS,
+    pathname: location.pathname,
+    search: currentCompareSearch,
+    selectedCompareSlugs: new URLSearchParams(location.search).getAll("slug")
+  });
+  const selectedCompareSlugs = browseRouteData.selectedCompareSlugs;
   const currentAfter = query.__relayQuery.variables.after;
   const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
@@ -151,13 +152,7 @@ function BrowseProducts({
         }))}
         maxProducts={MAX_COMPARE_PRODUCTS}
         openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
-        removePathForIndex={(index) =>
-          buildCurrentRoutePathWithCompareSlugs(
-            currentBrowsePathname,
-            currentCompareSearch,
-            selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index)
-          )
-        }
+        removePathForIndex={browseRouteData.removeSelectedPathForIndex}
         selectedSlugs={selectedCompareSlugs}
       />
     ) : null;
@@ -196,60 +191,13 @@ function BrowseProducts({
       {selectionTray}
       <BrowseProductList
         compareActionFor={(product) =>
-          browseCompareAction(
-            product.slug,
-            currentBrowsePathname,
-            currentCompareSearch,
-            selectedCompareSlugs
-          )
+          browseRouteData.compareActionFor(product.slug)
         }
-        detailHrefFor={(product) =>
-          browseProductDetailPath(product.slug, selectedCompareSlugs)
-        }
+        detailHrefFor={(product) => browseRouteData.productDetailPathFor(product.slug)}
         offerHrefFor={(product) => `/offers?productId=${encodeURIComponent(product.id)}`}
         products={products}
       />
       {paginationLinks}
     </WorkspaceLayout>
   );
-}
-
-function browseCompareAction(
-  productSlug: string,
-  currentPathname: string,
-  currentSearch: string,
-  selectedCompareSlugs: readonly string[]
-): BrowseCompareAction {
-  if (selectedCompareSlugs.includes(productSlug)) {
-    return { kind: "selected" };
-  }
-
-  if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
-    return { kind: "full" };
-  }
-
-  return {
-    href: buildCurrentRoutePathWithCompareSlugs(
-      currentPathname,
-      currentSearch,
-      selectedCompareSlugsAfterAdding(
-        selectedCompareSlugs,
-        productSlug,
-        MAX_COMPARE_PRODUCTS
-      )
-    ),
-    kind: "add"
-  };
-}
-
-function browseProductDetailPath(slug: string, selectedCompareSlugs: readonly string[]) {
-  return buildCurrentRoutePathWithCompareSlugs(
-    `/products/${encodeURIComponent(slug)}`,
-    "",
-    selectedCompareSlugs
-  );
-}
-
-function browseRoutePathname(pathname: string) {
-  return pathname === "/" ? "/products" : pathname;
 }

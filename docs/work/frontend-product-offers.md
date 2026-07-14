@@ -2,10 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready (product offer panel data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-03-18 at `a9f7a7f` + working tree
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-14 after product-offer panel candidate verification
+  (55 product-detail route tests)
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -15,6 +17,30 @@
   - The detail route preserves product-level ready/not-found/unavailable behavior while distinguishing offers ready, empty, and unavailable states locally.
   - Route-level tests cover offer success, empty, and unavailable states without widening the route beyond the current pricing baseline.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Product Offer Panel Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate offer normalization, coupon and price-history row
+  construction, snapshot values, and pagination paths in a framework-free
+  module while retaining panel markup, accessibility, and list presentation.
+- Owned paths:
+  - `assets/src/routes/products/product-offer-panel-data.ts`
+  - `assets/src/routes/products/ProductOfferPanel.tsx`
+  - `assets/src/routes/products/ProductOfferList.tsx`
+  - `assets/test/routes/products/product-offer-panel-data.test.ts`
+  - `docs/work/frontend-product-offers.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure offer-panel data preserves unsafe-URL exclusion,
+  merchant fallbacks, price and currency validation, coupon and price-history
+  semantics, snapshot values, compare-slug ordering, and pagination paths.
+- Candidate evidence: current source inspection found the deterministic data
+  transformation and path policy embedded in the 300-line React panel, and the
+  existing product-detail route suite passed 55 tests.
 
 ## Verified Current State
 

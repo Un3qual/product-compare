@@ -52,9 +52,9 @@ Product-detail decision actions, revenue-summary view data, specification-
 matrix data, and decision-summary data completed on
 `codex/frontend-view-contracts` in PR #97. Comparison sharing, product
 community, price alerts, and API-token route-state contracts are also complete.
-Affiliate setup and offer-discovery route policy are complete. Three source-
-verified route-policy successors keep the ready floor intact across catalog
-browse, product detail, and compare picker data.
+Affiliate setup, offer-discovery filter policy, and catalog browse route data
+are complete. Three source-verified successors keep the ready floor intact
+across product detail, compare picker, and product-offer panel data.
 
 Active implementation plans:
 

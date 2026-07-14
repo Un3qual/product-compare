@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (catalog browse route data contract)
+- Status: done (catalog browse route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after catalog route-data candidate verification
-  (62 route tests)
+- Last verified: 2026-07-14 after catalog route-data contract verification
+  (68 focused tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -29,12 +29,12 @@
 
 ## Catalog Browse Route Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate canonical browse paths, product-detail links,
-  add/selected/full compare actions, and selected-item removal paths in a
-  framework-free module while retaining Relay reads, location access,
-  boundaries, layout, and presentation in `BrowseRoute`.
+- Completion: `browse-route-data.ts` now owns canonical browse paths,
+  encoded product-detail links, normalized compare selection, add/selected/full
+  actions, and ordered selected-item removal paths. `BrowseRoute` retains
+  Relay reads, location access, boundaries, layout, and presentation.
 - Owned paths:
   - `assets/src/routes/catalog/browse-route-data.ts`
   - `assets/src/routes/catalog/BrowseRoute.tsx`
@@ -51,6 +51,15 @@
 - Candidate evidence: the existing browse suite passed 62 tests, and current
   source inspection confirmed browse pathname, product/detail, compare action,
   and selected-item removal policy remain embedded in the React route.
+- Completion evidence:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts`
+    failed as expected because `browse-route-data.ts` did not exist.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
+    passed 68 tests.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - The direct/transitive import scan confirmed the pure module has no imports,
+    so its dependency graph contains no React, Relay, router, or StyleX code.
+  - `git diff --check` completed with exit 0.
 
 ## Catalog Advanced Filter Presentation Extraction
 

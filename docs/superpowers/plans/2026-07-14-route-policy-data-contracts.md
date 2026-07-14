@@ -5,9 +5,10 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep five established frontend routes maintainable by extracting
-their deterministic form, summary, path, and view-state policy into small,
-framework-free contracts without changing user behavior.
+**Goal:** Keep six established frontend route surfaces maintainable by
+extracting their deterministic form, summary, path, normalization, and view-
+state policy into small, framework-free contracts without changing user
+behavior.
 
 **Architecture:** Each task creates one pure TypeScript module beside its React
 owner. React components retain Relay reads and mutations, router integration,
@@ -99,14 +100,14 @@ detail path, add/selected/full compare actions, and selected-item removal paths
 from the current filters and compare selection. `BrowseRoute` retains Relay
 reads, route location, Suspense and error boundaries, layout, and presentation.
 
-- [ ] Write pure tests for root-path normalization, encoded detail paths,
+- [x] Write pure tests for root-path normalization, encoded detail paths,
   preserved compare selection, add/selected/full actions, maximum selection,
   and removal ordering; verify RED.
-- [ ] Extract only deterministic route/path policy and keep Relay-derived
+- [x] Extract only deterministic route/path policy and keep Relay-derived
   availability decisions in the route owner.
-- [ ] Run the pure and existing browse suites, TypeScript, the framework-import
+- [x] Run the pure and existing browse suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -163,6 +164,36 @@ state transitions, Suspense and error boundaries, while
   import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 6: Product Offer Panel Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/products/product-offer-panel-data.ts`
+- Modify: `assets/src/routes/products/ProductOfferPanel.tsx`
+- Modify: `assets/src/routes/products/ProductOfferList.tsx`
+- Create: `assets/test/routes/products/product-offer-panel-data.test.ts`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Modify: `docs/work/frontend-product-offers.md`
+
+**Interfaces:** The pure module derives visible offer rows, coupon and price-
+history rows, snapshot display values, and first/next pagination paths from a
+transport-neutral offer connection. `ProductOfferPanel` retains error, empty,
+snapshot, list, and pagination markup; `ProductOfferList` retains offer-row
+presentation and tracked commerce actions.
+
+- [ ] Write pure tests for unsafe URL exclusion, merchant fallback, numeric and
+  currency validation, coupon discount/date semantics, price-history filtering,
+  mixed-currency snapshots, compare-slug ordering, and first/next pagination;
+  verify RED.
+- [ ] Extract only deterministic offer-panel data and path policy while keeping
+  React identifiers, markup, accessibility, and tracked commerce presentation
+  in the component owners.
+- [ ] Run the pure and existing detail suites, TypeScript, the framework-import
+  scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -173,3 +204,8 @@ state transitions, Suspense and error boundaries, while
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,
   and path policy.
+- The product-offer panel candidate is distinct from its completed offer-list
+  presentation extraction: the list owns markup and tracked commerce actions,
+  while the new contract owns connection normalization, snapshot values, and
+  pagination policy. Its existing route characterization passed 55 tests on
+  2026-07-14.
