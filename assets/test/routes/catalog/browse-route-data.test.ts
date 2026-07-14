@@ -5,7 +5,6 @@ import { normalizedCompareSlugs } from "../../../src/routes/compare/paths";
 describe("createBrowseRouteData", () => {
   test("normalizes the root browse pathname", () => {
     const routeData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/",
       search: "",
       selectedCompareSlugs: []
@@ -16,7 +15,6 @@ describe("createBrowseRouteData", () => {
 
   test("builds encoded product detail paths while preserving the selection", () => {
     const routeData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "?first=24",
       selectedCompareSlugs: ["first-product", "second product"]
@@ -29,7 +27,6 @@ describe("createBrowseRouteData", () => {
 
   test("adds an unselected product after the preserved compare selection", () => {
     const routeData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "?first=24&q=oled&slug=stale-product&slug=another-stale-product",
       selectedCompareSlugs: ["first-product", "second-product"]
@@ -43,13 +40,11 @@ describe("createBrowseRouteData", () => {
 
   test("reports selected and full compare states", () => {
     const selectedRouteData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "",
       selectedCompareSlugs: ["first-product"]
     });
     const fullRouteData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "",
       selectedCompareSlugs: ["first-product", "second-product", "third-product"]
@@ -59,9 +54,8 @@ describe("createBrowseRouteData", () => {
     expect(fullRouteData.compareActionFor("fourth-product")).toEqual({ kind: "full" });
   });
 
-  test("clamps the selection to the maximum before deriving actions", () => {
+  test("clamps selections to the canonical three-product maximum before deriving paths and actions", () => {
     const routeData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "",
       selectedCompareSlugs: [
@@ -79,12 +73,14 @@ describe("createBrowseRouteData", () => {
       "second-product",
       "third-product"
     ]);
+    expect(routeData.productDetailPathFor("reserved/product")).toBe(
+      "/products/reserved%2Fproduct?slug=first-product&slug=second-product&slug=third-product"
+    );
     expect(routeData.compareActionFor("fourth-product")).toEqual({ kind: "full" });
   });
 
   test("removes the selected item at its index while preserving order and filters", () => {
     const routeData = createBrowseRouteData({
-      maxCompareProducts: 3,
       pathname: "/products",
       search: "?first=24&q=oled&slug=stale-product",
       selectedCompareSlugs: ["first-product", "second-product", "third-product"]

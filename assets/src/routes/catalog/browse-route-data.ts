@@ -1,4 +1,5 @@
 import {
+  MAX_COMPARE_PRODUCTS,
   buildCurrentRoutePathWithCompareSlugs,
   normalizedCompareSlugs,
   selectedCompareSlugsAfterAdding
@@ -18,19 +19,17 @@ export interface BrowseRouteData {
 }
 
 export function createBrowseRouteData({
-  maxCompareProducts,
   pathname,
   search,
   selectedCompareSlugs
 }: {
-  maxCompareProducts: number;
   pathname: string;
   search: string;
   selectedCompareSlugs: readonly string[];
 }): BrowseRouteData {
   const normalizedSelectedCompareSlugs = normalizedCompareSlugs(
     selectedCompareSlugs,
-    { maxProducts: maxCompareProducts }
+    { maxProducts: MAX_COMPARE_PRODUCTS }
   );
   const canonicalPathname = pathname === "/" ? "/products" : pathname;
 
@@ -42,7 +41,7 @@ export function createBrowseRouteData({
         return { kind: "selected" };
       }
 
-      if (normalizedSelectedCompareSlugs.length >= maxCompareProducts) {
+      if (normalizedSelectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
         return { kind: "full" };
       }
 
@@ -53,9 +52,9 @@ export function createBrowseRouteData({
           selectedCompareSlugsAfterAdding(
             normalizedSelectedCompareSlugs,
             productSlug,
-            maxCompareProducts
+            MAX_COMPARE_PRODUCTS
           ),
-          { maxProducts: maxCompareProducts }
+          { maxProducts: MAX_COMPARE_PRODUCTS }
         ),
         kind: "add"
       };
@@ -65,7 +64,7 @@ export function createBrowseRouteData({
         `/products/${encodeURIComponent(productSlug)}`,
         "",
         normalizedSelectedCompareSlugs,
-        { maxProducts: maxCompareProducts }
+        { maxProducts: MAX_COMPARE_PRODUCTS }
       );
     },
     removeSelectedPathForIndex(index) {
@@ -73,7 +72,7 @@ export function createBrowseRouteData({
         canonicalPathname,
         search,
         normalizedSelectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
-        { maxProducts: maxCompareProducts }
+        { maxProducts: MAX_COMPARE_PRODUCTS }
       );
     }
   };

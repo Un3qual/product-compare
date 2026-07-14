@@ -6,13 +6,13 @@ import browseProductsRouteQuery, {
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { MAX_COMPARE_PRODUCTS } from "../compare/loader";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import {
+  MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
@@ -106,7 +106,6 @@ function BrowseProducts({
     activeFilters.sort
   );
   const browseRouteData = createBrowseRouteData({
-    maxCompareProducts: MAX_COMPARE_PRODUCTS,
     pathname: location.pathname,
     search: currentCompareSearch,
     selectedCompareSlugs: new URLSearchParams(location.search).getAll("slug")
