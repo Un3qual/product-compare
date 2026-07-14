@@ -219,43 +219,21 @@ three source-verified, non-overlapping route-policy data contracts backed by
 After PR #98 merged on 2026-07-14, the coordinator validated product-detail
 route policy as a fourth non-overlapping successor backed by 60 existing route
 tests. Affiliate setup then completed on
-`codex/affiliate-setup-data-contract`: merchant choice, summaries, and all four
+`codex/route-policy-data-contracts`: merchant choice, summaries, and all four
 mutation-variable shapes now live in a framework-free contract with 28 focused
-tests. Offer discovery, catalog browse, and product detail remain ready.
+tests. Before claiming the next row, the coordinator freshly validated the
+compare picker as a fourth non-overlapping route-policy successor: its
+deterministic pagination, accumulation, option, empty-state, and compare-path
+policy is characterized by 109 passing route tests. Offer discovery then
+completed on `codex/route-policy-data-contracts`: one framework-free owner now
+provides filter types, defaults, ordered sort options, normalization, form
+identity, summaries, and paths without changing route behavior. Its pure,
+route, and loader suites passed 70 tests. Catalog browse, product detail, and
+compare picker data remain ready.
 
 ## Ready Work
 
-### 1. Offer Discovery Filter Data Contract
-
-Status: ready
-Lane: Frontend offer discovery
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free form-key, active-filter summary, reset,
-merchant-clear, product-detail, and sort-label policy while preserving form
-markup, links, controls, and styling.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-filter-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
-- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing 51-test offer-discovery route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure offer-filter policy preserves form reset identity, summary
-ordering and copy, default detection, encoded product paths, merchant clearing,
-and sort fallbacks.
-
-### 2. Catalog Browse Route Data Contract
+### 1. Catalog Browse Route Data Contract
 
 Status: ready
 Lane: Frontend catalog browse
@@ -285,7 +263,7 @@ Exit condition: Pure catalog route policy preserves root-path normalization,
 encoded detail links, compare selection order, add/selected/full states,
 maximum selection, and item-removal paths.
 
-### 3. Product Detail Route Data Contract
+### 2. Product Detail Route Data Contract
 
 Status: ready
 Lane: Frontend product detail
@@ -314,6 +292,36 @@ Verification:
 Exit condition: Pure product-detail policy preserves tab selection, offer-
 cursor fallback, overview counts, encoded product paths, compare selection
 order, add/selected/full states, hashes, and unrelated search parameters.
+
+### 3. Compare Picker Data Contract
+
+Status: ready
+Lane: Frontend compare and saved routes
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: extract framework-free picker reset, page accumulation, available-
+option, cursor, empty-state, and compare-path policy while preserving Relay
+reads, effects, Suspense/error boundaries, and picker presentation.
+Owned paths:
+
+- `assets/src/routes/compare/compare-picker-data.ts`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- `assets/test/routes/compare/compare-picker-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-compare-saved-hardening.md`
+
+Prerequisites:
+
+- Existing 109-test compare route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure picker policy preserves reset identity, stable unique page
+accumulation, selected-product exclusion, unknown-brand fallback, next-cursor
+rules, empty copy, maximum selection, encoded paths, and specification mode.
 
 ## Needs Decision Work
 

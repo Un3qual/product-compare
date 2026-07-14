@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: completed (saved comparison view-state extraction)
+- Status: ready (compare picker data contract)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-12 after saved comparison view-state extraction (46
-  focused saved-comparison tests)
+- Last verified: 2026-07-14 after compare-picker candidate verification (109
+  compare route tests)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -18,6 +18,32 @@
   - Save/delete feedback is exposed through accessible route-local status messaging.
   - Compare and saved-comparisons routes register route-level error boundaries for unexpected loader/render failures.
   - Focused frontend tests cover the hardened shell and error-boundary fallbacks without reopening unrelated route work.
+
+## Compare Picker Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate reset identity, unique loaded-page accumulation,
+  available options, cursor and empty-state rules, and compare paths in a
+  framework-free module. Keep Relay reads, effects, Suspense/error boundaries,
+  state transitions, and picker presentation in their current owners.
+- Owned paths:
+  - `assets/src/routes/compare/compare-picker-data.ts`
+  - `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+  - `assets/test/routes/compare/compare-picker-data.test.ts`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-compare-saved-hardening.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure picker policy preserves reset identity, stable unique
+  accumulation, selected-product exclusion, unknown-brand fallback, next-
+  cursor behavior, empty copy, maximum selection, encoded paths, and
+  specification mode.
+- Candidate evidence: current source inspection found a cohesive deterministic
+  policy in `CompareProductPickerBoundary`, distinct from the completed picker
+  presentation boundary, and the existing route suite passed 109 tests.
 
 ## Saved Comparison View-State Extraction
 

@@ -5,7 +5,7 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep four established frontend routes maintainable by extracting
+**Goal:** Keep five established frontend routes maintainable by extracting
 their deterministic form, summary, path, and view-state policy into small,
 framework-free contracts without changing user behavior.
 
@@ -60,6 +60,8 @@ selection state, feedback, boundaries, and presentation.
 
 - Create: `assets/src/routes/offers/offer-discovery-filter-data.ts`
 - Modify: `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+- Modify: `assets/src/routes/offers/loader.ts`
+- Modify: `assets/src/routes/offers/paths.ts`
 - Create: `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
 - Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
 - Modify: `docs/work/frontend-offer-discovery-demo-parity.md`
@@ -69,14 +71,16 @@ summary items, selected-product detail path, reset visibility, merchant-clear
 path, and sort label. The component retains form and semantic list markup,
 links, controls, and StyleX.
 
-- [ ] Write pure tests for default and selected product summaries, optional
+- [x] Write pure tests for default and selected product summaries, optional
   brand and merchant rows, status/page/sort labels, reset visibility, encoded
   product paths, merchant clearing, and future sort fallbacks; verify RED.
-- [ ] Extract the cohesive deterministic filter policy without changing form
-  defaults or URL construction.
-- [ ] Run the pure and existing route suites, TypeScript, the framework-import
+- [x] Extract the cohesive deterministic filter policy without changing form
+  defaults or URL construction. Keep page-size defaults, ordered sort options,
+  sort types, and unknown-sort normalization in one framework-free owner shared
+  by the loader, path builder, and form.
+- [x] Run the pure and existing route suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -132,9 +136,40 @@ presentation, layout, and child panels.
   scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 5: Compare Picker Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/compare-picker-data.ts`
+- Modify: `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- Create: `assets/test/routes/compare/compare-picker-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Modify: `docs/work/frontend-compare-saved-hardening.md`
+
+**Interfaces:** The pure module derives picker reset identity, stable unique
+page accumulation, available options, next cursor, empty-state copy, and
+compare paths. `CompareProductPickerBoundary` retains Relay reads, effects,
+state transitions, Suspense and error boundaries, while
+`CompareProductPickerView` retains presentation and loaded-option filtering.
+
+- [ ] Write pure tests for reset identity, duplicate page rows, selected-item
+  exclusion, unknown-brand fallback, next-cursor rules, empty copy, maximum
+  selection, encoded paths, and specification mode; verify RED.
+- [ ] Extract only deterministic picker policy and preserve existing state and
+  Relay request timing.
+- [ ] Run the pure and existing compare suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
-- The existing affiliate setup, offer discovery, catalog browse, and product
-  detail route suites passed 195 tests on 2026-07-14.
-- Current source inspection found the named deterministic policies in four
+- The existing affiliate setup, offer discovery, catalog browse, product
+  detail, and compare route suites passed 304 tests on 2026-07-14.
+- Current source inspection found the named deterministic policies in five
   separate React owners with no code, test, or lane-doc ownership overlap.
+- The compare picker candidate is distinct from its completed presentation
+  extraction: the view owns markup and loaded-option filtering, while the new
+  contract owns route reset, page accumulation, option, cursor, empty-state,
+  and path policy.
