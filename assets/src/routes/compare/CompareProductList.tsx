@@ -13,6 +13,7 @@ import type {
 import { DecisionSummary } from "./DecisionSummary";
 import { CompareSpecificationMatrix } from "./CompareSpecificationMatrix";
 import { buildComparePathAfterRemovingSlugIndex } from "./paths";
+import { RecommendationPanel } from "./RecommendationPanel";
 
 const styles = create({
   product: {
@@ -37,6 +38,7 @@ export function CompareProductList({
 }) {
   return (
     <>
+      <RecommendationPanel slugs={loaderData.slugs} specMode={loaderData.specMode} />
       <DecisionSummary
         offerContexts={loaderData.offerContexts}
         products={loaderData.products}

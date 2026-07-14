@@ -20,6 +20,8 @@ defmodule ProductCompare.Ingestion.NormalizedListing do
     :external_product_id,
     :merchant_identifier,
     :product_title,
+    :model_number,
+    :description,
     :brand_name,
     :gtin,
     :merchant_name,
@@ -29,7 +31,10 @@ defmodule ProductCompare.Ingestion.NormalizedListing do
     :amount,
     :availability,
     :observed_at,
-    :raw_payload
+    :raw_payload,
+    manufacturer_category_path: [],
+    media: [],
+    specifications: []
   ]
 
   @type availability :: :in_stock | :out_of_stock | :unknown
@@ -39,6 +44,8 @@ defmodule ProductCompare.Ingestion.NormalizedListing do
           external_product_id: String.t(),
           merchant_identifier: String.t(),
           product_title: String.t(),
+          model_number: String.t() | nil,
+          description: String.t() | nil,
           brand_name: String.t() | nil,
           gtin: String.t() | nil,
           merchant_name: String.t() | nil,
@@ -48,6 +55,9 @@ defmodule ProductCompare.Ingestion.NormalizedListing do
           amount: Decimal.t(),
           availability: availability(),
           observed_at: DateTime.t(),
-          raw_payload: map()
+          raw_payload: map(),
+          manufacturer_category_path: [String.t()],
+          media: [ProductCompare.Ingestion.MediaObservation.t()],
+          specifications: [ProductCompare.Ingestion.SpecificationObservation.t()]
         }
 end

@@ -7,6 +7,14 @@ export const productDetailRouteQuery = graphql`
       name
       slug
       description
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
       brand {
         id
         name

@@ -96,6 +96,36 @@ export const routes: RouteObject[] = [
         })
       },
       {
+        path: "merchants/:slug",
+        handle: routeMetadata(
+          "Merchant details | Product Compare",
+          "Review a merchant's current product and offer evidence."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="merchant" title="Merchant details" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ MerchantDetailRoute }, { merchantDetailLoader }] = await Promise.all([
+            import("./routes/merchants/detail/MerchantDetailRoute"),
+            import("./routes/merchants/detail/loader")
+          ]);
+          return { Component: MerchantDetailRoute, loader: merchantDetailLoader };
+        })
+      },
+      {
+        path: "categories/:slug",
+        handle: routeMetadata(
+          "Product category | Product Compare",
+          "Compare trusted product specifications and current offer evidence by category."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="category" title="Product category" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ CategoryRoute }, { categoryLoader }] = await Promise.all([
+            import("./routes/categories/CategoryRoute"),
+            import("./routes/categories/loader")
+          ]);
+          return { Component: CategoryRoute, loader: categoryLoader };
+        })
+      },
+      {
         path: "affiliate/setup",
         handle: routeMetadata(
           "Affiliate setup | Product Compare",
@@ -161,14 +191,30 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ CompareRoute }, { compareLoader }] = await Promise.all([
+          const [{ CompareRoute }, { compareLoader, shouldRevalidateCompareLoader }] = await Promise.all([
             import("./routes/compare/CompareRoute"),
             import("./routes/compare/loader")
           ]);
           return {
             Component: CompareRoute,
-            loader: compareLoader
+            loader: compareLoader,
+            shouldRevalidate: shouldRevalidateCompareLoader
           };
+        })
+      },
+      {
+        path: "compare/shared/:token",
+        handle: routeMetadata(
+          "Shared comparison | Product Compare",
+          "Review a fixed, source-backed product comparison snapshot."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="shared comparison" title="Shared comparison" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ SharedComparisonRoute }, { sharedComparisonLoader }] = await Promise.all([
+            import("./routes/compare/shared/SharedComparisonRoute"),
+            import("./routes/compare/shared/loader")
+          ]);
+          return { Component: SharedComparisonRoute, loader: sharedComparisonLoader };
         })
       },
       {
@@ -205,6 +251,21 @@ export const routes: RouteObject[] = [
             Component: RevenueSummaryRoute,
             loader: revenueSummaryLoader
           };
+        })
+      },
+      {
+        path: "account/alerts",
+        handle: routeMetadata(
+          "Price alerts | Product Compare",
+          "Manage product price watches and review qualifying price or availability changes."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="price alerts" title="Price alerts" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ AlertsRoute }, { alertsLoader }] = await Promise.all([
+            import("./routes/account/alerts/AlertsRoute"),
+            import("./routes/account/alerts/loader")
+          ]);
+          return { Component: AlertsRoute, loader: alertsLoader };
         })
       },
       {

@@ -72,8 +72,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     pages = page_count(opts)
 
     with {:ok, source} <- import_source(opts),
-         {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
-      case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
+         {:ok, import_run} <-
+           start_import_run(
+             source,
+             cursor,
+             fetch_opts,
+             pages,
+             Keyword.get(opts, :complete_scope, false)
+           ) do
+      case fetch_pages(source, fetcher, cursor, fetch_opts, pages, import_run) do
         {:ok, report, next_cursor} ->
           with {:ok, _completed_run} <- complete_import_run(import_run, report, next_cursor) do
             report = Map.put(report, :next_cursor, next_cursor)
@@ -97,6 +104,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       OptionParser.parse(argv,
         switches: [
           currency: :string,
+          complete_scope: :boolean,
           keywords: :string,
           limit: :integer,
           offset: :integer,
@@ -116,6 +124,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.put_new(:limit, 25)
     |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
     |> Keyword.put_new(:currency, "USD")
+    |> Keyword.put_new(:complete_scope, false)
     |> Keyword.put_new(:pages, 1)
     |> Keyword.put_new(:check_credentials, false)
     |> Keyword.put_new(:require_ready, false)
@@ -164,8 +173,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end
   end
 
-  defp start_import_run(source, cursor, fetch_opts, pages) do
+  defp start_import_run(source, cursor, fetch_opts, pages, complete_scope) do
     Ingestion.start_import_run(%{
+      complete_scope: complete_scope,
       source_id: source.id,
       provider: "cj",
       surface: "shoppingProducts",
@@ -243,11 +253,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end
   end
 
-  defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
+  defp fetch_pages(source, fetcher, cursor, fetch_opts, pages, import_run) do
     Enum.reduce_while(1..pages, {:ok, initial_aggregate_report(), cursor}, fn _page,
                                                                               {:ok, report,
                                                                                current_cursor} ->
-      case fetch_page(source, fetcher, current_cursor, fetch_opts) do
+      case fetch_page(source, fetcher, current_cursor, fetch_opts, import_run) do
         {:ok, page_report, next_cursor} ->
           report =
             report
@@ -266,10 +276,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end)
   end
 
-  defp fetch_page(source, fetcher, current_cursor, fetch_opts) do
+  defp fetch_page(source, fetcher, current_cursor, fetch_opts, import_run) do
     case fetcher.(current_cursor, fetch_opts) do
       {:ok, records, next_cursor} ->
-        {:ok, persist_records(source, records), next_cursor}
+        {:ok, persist_records(source, records, import_run), next_cursor}
 
       {:error, reason} ->
         {:error, reason}
@@ -298,13 +308,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Map.update!(:persisted, &(&1 + page_report.persisted))
   end
 
-  defp persist_records(source, records) do
+  defp persist_records(source, records, import_run) do
     Enum.reduce(records, initial_report(records), fn record, report ->
       case ProductParser.normalize(record) do
         {:ok, listing} ->
           report = Map.update!(report, :normalized, &(&1 + 1))
 
-          case Ingestion.persist_normalized_listing(source, listing) do
+          case Ingestion.persist_normalized_listing(source, listing, import_run: import_run) do
             {:ok, _persisted} -> Map.update!(report, :persisted, &(&1 + 1))
             {:error, _reason} -> Map.update!(report, :failed, &(&1 + 1))
           end

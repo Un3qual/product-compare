@@ -2,7 +2,11 @@ defmodule ProductCompare.Specs.ReadHelpersTest do
   use ProductCompare.DataCase, async: true
 
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Fixtures.AccountsFixtures
+  alias ProductCompare.Repo
   alias ProductCompare.Specs
+  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   @overflow_id 9_223_372_036_854_775_808
   @invalid_ids [nil, "1", 0, -1, @overflow_id]
@@ -71,6 +75,79 @@ defmodule ProductCompare.Specs.ReadHelpersTest do
       assert Specs.filterable_enum_option_pairs(@invalid_ids, @invalid_ids) == MapSet.new()
       assert Specs.list_enum_options_for_sets(@invalid_ids) == %{}
       assert Specs.unit_symbols_for_dimensions(@invalid_ids) == %{}
+    end
+  end
+
+  describe "list_current_attributes_for_product/1 provenance" do
+    test "preloads accepted claim evidence and its safe source identity" do
+      moderator = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          data_type: :text,
+          display_name: "Panel",
+          code: unique_code("provenance-panel")
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "manufacturer",
+          name: unique_code("Acme source"),
+          domain: "acme.example"
+        })
+        |> Repo.insert!()
+
+      fetched_at = ~U[2026-07-13 18:00:00Z]
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://acme.example/specifications/model-1",
+          fetched_at: fetched_at,
+          raw_json: %{"private" => "payload"}
+        })
+        |> Repo.insert!()
+
+      assert {:ok, claim} =
+               Specs.propose_claim(product.id, attribute.id, %{value_text: "OLED"}, %{
+                 source_type: :import,
+                 confidence: Decimal.new("0.95"),
+                 artifact_id: artifact.id,
+                 excerpt: "Panel technology: OLED"
+               })
+
+      assert {:ok, claim} = Specs.accept_claim(claim.id, moderator.id)
+
+      assert {:ok, _current} =
+               Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
+
+      assert [
+               %{
+                 claim: %{
+                   id: claim_id,
+                   confidence: confidence,
+                   evidence_links: [
+                     %{
+                       excerpt: "Panel technology: OLED",
+                       artifact: %{
+                         id: artifact_id,
+                         fetched_at: loaded_fetched_at,
+                         source: %{name: source_name, domain: "acme.example"}
+                       }
+                     }
+                   ]
+                 }
+               }
+             ] = Specs.list_current_attributes_for_product(product.id)
+
+      assert claim_id == claim.id
+      assert Decimal.eq?(confidence, Decimal.new("0.95"))
+      assert artifact_id == artifact.id
+      assert source_name == source.name
+      assert DateTime.compare(loaded_fetched_at, fetched_at) == :eq
     end
   end
 

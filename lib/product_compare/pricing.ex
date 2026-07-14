@@ -6,6 +6,8 @@ defmodule ProductCompare.Pricing do
   import Ecto.Query
 
   alias ProductCompare.ChangesetErrors
+  alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
+  alias ProductCompare.Pricing.OfferTruth
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -16,7 +18,7 @@ defmodule ProductCompare.Pricing do
   @spec upsert_merchant(map()) :: {:ok, Merchant.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant(attrs) do
     now = DateTime.utc_now()
-    changeset = Merchant.changeset(%Merchant{}, attrs)
+    changeset = Merchant.changeset(%Merchant{}, merchant_attrs_with_slug(attrs))
 
     # Merchants are identified by either key in existing data flows:
     # name-based imports and domain-based imports should converge to one row.
@@ -52,6 +54,67 @@ defmodule ProductCompare.Pricing do
   def get_merchant(merchant_id)
       when is_integer(merchant_id) and merchant_id > 0 and merchant_id <= @max_bigint_id,
       do: Repo.get(Merchant, merchant_id)
+
+  @spec get_merchant_by_slug(String.t()) :: Merchant.t() | nil
+  def get_merchant_by_slug(slug) when is_binary(slug), do: Repo.get_by(Merchant, slug: slug)
+  def get_merchant_by_slug(_slug), do: nil
+
+  @spec merchant_detail(String.t() | Merchant.t(), keyword()) ::
+          %{merchant: Merchant.t(), summary: map()} | nil
+  def merchant_detail(merchant_or_slug, opts \\ [])
+
+  def merchant_detail(slug, opts) when is_binary(slug) do
+    case get_merchant_by_slug(slug) do
+      %Merchant{} = merchant -> merchant_detail(merchant, opts)
+      nil -> nil
+    end
+  end
+
+  def merchant_detail(%Merchant{} = merchant, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    merchant_products =
+      MerchantProduct
+      |> where([offer], offer.merchant_id == ^merchant.id and offer.is_active == true)
+      |> order_by([offer], asc: offer.id)
+      |> Repo.all()
+
+    latest_by_offer =
+      merchant_products
+      |> Enum.map(& &1.id)
+      |> latest_offer_truth_prices()
+
+    offers =
+      Enum.map(merchant_products, fn offer ->
+        OfferTruth.summarize(offer, Map.get(latest_by_offer, offer.id), now, opts)
+      end)
+
+    freshness_counts = Enum.frequencies_by(offers, & &1.freshness)
+
+    %{
+      merchant: merchant,
+      summary: %{
+        active_offer_count: length(offers),
+        distinct_product_count:
+          merchant_products |> Enum.map(& &1.product_id) |> Enum.uniq() |> length(),
+        observed_offer_count: Enum.count(offers, & &1.observed_at),
+        eligible_offer_count: Enum.count(offers, & &1.eligible),
+        fresh_offer_count: Map.get(freshness_counts, :fresh, 0),
+        aging_offer_count: Map.get(freshness_counts, :aging, 0),
+        stale_offer_count: Map.get(freshness_counts, :stale, 0),
+        unobserved_offer_count: Map.get(freshness_counts, :unobserved, 0),
+        last_observed_at: latest_observed_at(offers)
+      }
+    }
+  end
+
+  @spec list_merchant_offers_query(pos_integer(), boolean()) :: Ecto.Query.t()
+  def list_merchant_offers_query(merchant_id, active_only \\ true) do
+    MerchantProduct
+    |> where([offer], offer.merchant_id == ^merchant_id)
+    |> maybe_where_active_only(active_only)
+    |> order_by([offer], asc: offer.id)
+  end
 
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
@@ -117,9 +180,17 @@ defmodule ProductCompare.Pricing do
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs) do
-    %PricePoint{}
-    |> PricePoint.changeset(attrs)
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      with {:ok, price_point} <-
+             %PricePoint{}
+             |> PricePoint.changeset(attrs)
+             |> Repo.insert(),
+           {:ok, _job} <- AlertEvaluationWorker.enqueue(price_point.id) do
+        price_point
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @spec latest_price(pos_integer()) :: PricePoint.t() | nil
@@ -160,6 +231,85 @@ defmodule ProductCompare.Pricing do
     merchant_product_id
     |> price_history_query(filters)
     |> Repo.all()
+  end
+
+  @spec current_offer_truth(term(), keyword()) :: map()
+  def current_offer_truth(product_id, opts \\ [])
+
+  def current_offer_truth(product_id, opts)
+      when is_integer(product_id) and product_id > 0 and product_id <= @max_bigint_id do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    merchant_products =
+      MerchantProduct
+      |> where(
+        [merchant_product],
+        merchant_product.product_id == ^product_id and merchant_product.is_active == true
+      )
+      |> order_by([merchant_product], asc: merchant_product.id)
+      |> Repo.all()
+
+    price_points_by_merchant_product =
+      merchant_products
+      |> Enum.map(& &1.id)
+      |> latest_offer_truth_prices()
+
+    offers =
+      Enum.map(merchant_products, fn merchant_product ->
+        OfferTruth.summarize(
+          merchant_product,
+          Map.get(price_points_by_merchant_product, merchant_product.id),
+          now,
+          opts
+        )
+      end)
+
+    OfferTruth.summarize_product(offers, now, opts)
+  end
+
+  def current_offer_truth(_product_id, opts) do
+    OfferTruth.summarize_product([], Keyword.get(opts, :now, DateTime.utc_now()), opts)
+  end
+
+  defp latest_offer_truth_prices([]), do: %{}
+
+  defp latest_offer_truth_prices(merchant_product_ids) do
+    PricePoint
+    |> latest_prices_query(merchant_product_ids)
+    |> preload([price_point], artifact: [:source])
+    |> Repo.all()
+    |> Map.new(&{&1.merchant_product_id, &1})
+  end
+
+  defp merchant_attrs_with_slug(attrs) do
+    name = get_filter_value(attrs, :name)
+    domain = get_filter_value(attrs, :domain)
+
+    %{
+      name: name,
+      domain: domain,
+      slug: merchant_slug(name, domain)
+    }
+  end
+
+  defp merchant_slug(name, domain) when is_binary(name) and is_binary(domain) do
+    base =
+      name
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/u, "-")
+      |> String.trim("-")
+
+    hash = :crypto.hash(:md5, domain) |> Base.encode16(case: :lower) |> binary_part(0, 8)
+    "#{if(base == "", do: "merchant", else: base)}-#{hash}"
+  end
+
+  defp merchant_slug(_name, _domain), do: nil
+
+  defp latest_observed_at(offers) do
+    offers
+    |> Enum.map(& &1.observed_at)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.max_by(&DateTime.to_unix(&1, :microsecond), fn -> nil end)
   end
 
   defp upsert_merchant_on_name(changeset, now) do

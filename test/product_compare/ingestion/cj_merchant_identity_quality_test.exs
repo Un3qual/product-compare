@@ -239,7 +239,8 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQualityTest do
       Map.merge(
         %{
           name: "Merchant #{suffix}",
-          domain: "merchant-#{suffix}.example"
+          domain: "merchant-#{suffix}.example",
+          slug: "merchant-#{suffix}"
         },
         attrs
       )

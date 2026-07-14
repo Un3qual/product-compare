@@ -82,6 +82,7 @@ config :product_compare, :cj_feed_discovery_scheduler,
 
 config :product_compare, :cj_product_import_scheduler,
   enabled: truthy_env?.("CJ_PRODUCT_IMPORT_SCHEDULE_ENABLED"),
+  complete_scope: truthy_env?.("CJ_PRODUCT_IMPORT_COMPLETE_SCOPE"),
   interval_minutes: positive_integer_env.("CJ_PRODUCT_IMPORT_INTERVAL_MINUTES", 1440),
   initial_delay_ms: non_negative_integer_env.("CJ_PRODUCT_IMPORT_INITIAL_DELAY_MS", 60_000),
   keywords: string_env.("CJ_PRODUCT_IMPORT_KEYWORDS", "shoe"),
@@ -136,6 +137,10 @@ if config_env() == :prod do
     end
 
   config :product_compare, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+
+  config :product_compare,
+         :public_site_url,
+         ProductCompareWeb.RuntimeConfig.public_site_url!(System.get_env("PUBLIC_SITE_URL"))
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],

@@ -13,6 +13,18 @@ type RootQueryType {
   "Returns safe display metadata for a source artifact."
   sourceArtifact(id: ID!): SourceArtifact
 
+  "Returns specification corrections submitted by the current user."
+  mySpecificationCorrections(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
+
+  "Returns price watches owned by the current authenticated user."
+  myPriceWatches(first: Int, after: String, enabled: Boolean): PriceWatchConnection!
+
+  "Returns in-app price alert events owned by the current user."
+  myAlertEvents(first: Int, after: String, unreadOnly: Boolean): AlertEventConnection!
+
+  "Returns the operator-only specification correction moderation queue."
+  specificationCorrectionModerationQueue(first: Int, after: String, status: SpecificationCorrectionStatus): SpecificationCorrectionConnection!
+
   "Returns API tokens owned by the current authenticated user."
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
 
@@ -28,6 +40,15 @@ type RootQueryType {
   "Returns one product or null for each requested comparison slug, in requested order."
   comparisonProducts(slugs: [String!]!): [Product]!
 
+  "Returns a published product question by global ID."
+  productQuestion(id: ID!): ProductQuestion
+
+  "Returns deterministic source-backed guidance for two or three products."
+  comparisonRecommendation(slugs: [String!]!, profile: RecommendationProfile!): ComparisonRecommendation!
+
+  "Returns a published, non-revoked immutable comparison snapshot."
+  comparisonSnapshot(token: String!): ComparisonSnapshot
+
   "Returns products in a deterministic requested order with cursor pagination."
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection
 
@@ -39,6 +60,12 @@ type RootQueryType {
 
   "Returns merchants ordered by primary key with cursor pagination."
   merchants(first: Int, after: String): MerchantConnection
+
+  "Returns one merchant by canonical slug."
+  merchant(slug: String!): Merchant
+
+  "Returns a curated public product category by canonical search slug."
+  category(slug: String!): SeoCategory
 
   "Returns captured merchant feed candidates with review-safe metadata."
   merchantFeedCandidates(
@@ -80,6 +107,24 @@ type RootMutationType {
   "Creates a first-party tracked outbound commerce click."
   trackCommerceClick(input: TrackCommerceClickInput!): TrackCommerceClickPayload!
 
+  "Proposes an authenticated, typed replacement for a product specification."
+  proposeSpecificationCorrection(input: ProposeSpecificationCorrectionInput!): SpecificationCorrectionPayload!
+
+  "Accepts or rejects a specification correction as an operator."
+  moderateSpecificationCorrection(input: ModerateSpecificationCorrectionInput!): SpecificationCorrectionPayload!
+
+  "Creates a product or offer price watch for the current user."
+  createPriceWatch(input: CreatePriceWatchInput!): PriceWatchPayload!
+
+  "Updates one of the current user's price watches."
+  updatePriceWatch(input: UpdatePriceWatchInput!): PriceWatchPayload!
+
+  "Deletes one of the current user's price watches."
+  deletePriceWatch(id: ID!): DeletePriceWatchPayload!
+
+  "Marks one of the current user's in-app alert events as read."
+  markAlertRead(id: ID!): AlertEventPayload!
+
   "Upserts an affiliate network by name."
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
 
@@ -100,6 +145,30 @@ type RootMutationType {
 
   "Deletes one of the current authenticated user's saved comparison sets."
   deleteSavedComparisonSet(savedComparisonSetId: ID!): SavedComparisonSetPayload!
+
+  "Publishes an immutable comparison snapshot for the current user."
+  publishComparisonSnapshot(input: PublishComparisonSnapshotInput!): PublishComparisonSnapshotPayload!
+
+  "Revokes one of the current user's public comparison snapshots."
+  revokeComparisonSnapshot(snapshotId: ID!): RevokeComparisonSnapshotPayload!
+
+  "Submits one authenticated product review for moderation."
+  submitProductReview(input: SubmitProductReviewInput!): ProductReviewPayload!
+
+  "Submits an authenticated product question for moderation."
+  askProductQuestion(input: AskProductQuestionInput!): ProductQuestionPayload!
+
+  "Submits an authenticated answer to a published question."
+  answerProductQuestion(input: AnswerProductQuestionInput!): ProductAnswerPayload!
+
+  "Marks one published answer as accepted by the question owner."
+  acceptProductAnswer(questionId: ID!, answerId: ID!): ProductQuestionPayload!
+
+  "Reports review or Q&A content for operator moderation."
+  reportCommunityContent(input: ReportCommunityContentInput!): CommunityReportPayload!
+
+  "Publishes, hides, or rejects community content as an operator."
+  moderateCommunityContent(input: ModerateCommunityContentInput!): CommunityModerationPayload!
 }
 
 input UpsertAffiliateNetworkInput {
@@ -184,6 +253,57 @@ input ActiveCouponsInput {
   after: String
 }
 
+input SpecificationCorrectionValueInput {
+  valueBool: Boolean
+  valueInt: Int
+  valueNum: Decimal
+  valueText: String
+  valueDate: Date
+  valueTimestamp: DateTime
+  unitId: ID
+  enumOptionId: ID
+}
+
+input ProposeSpecificationCorrectionInput {
+  productId: ID!
+  attributeId: ID!
+  value: SpecificationCorrectionValueInput!
+  reason: String!
+  sourceUrl: String
+  explanation: String
+}
+
+input ModerateSpecificationCorrectionInput {
+  id: ID!
+  decision: SpecificationCorrectionStatus!
+  moderationNote: String
+}
+
+enum PriceWatchRuleType {
+  TARGET_PRICE
+  PERCENTAGE_DROP
+  BACK_IN_STOCK
+  NEWLY_AVAILABLE
+}
+
+input CreatePriceWatchInput {
+  productId: ID!
+  merchantProductId: ID
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  cooldownSeconds: Int
+}
+
+input UpdatePriceWatchInput {
+  id: ID!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  enabled: Boolean
+  cooldownSeconds: Int
+}
+
 input MerchantProductsInput {
   productId: ID!
   merchantId: ID
@@ -219,6 +339,40 @@ enum ProductSort {
   NAME_ASC
   BRAND_NAME_ASC
   NEWEST
+}
+
+enum RecommendationProfile {
+  LOWEST_CURRENT_COST
+  BEST_VALUE
+}
+
+enum RecommendationStatus {
+  WINNER
+  TIE
+  INSUFFICIENT_EVIDENCE
+}
+
+type ComparisonRecommendation {
+  profile: RecommendationProfile!
+  algorithmVersion: String!
+  evaluatedAt: DateTime!
+  status: RecommendationStatus!
+  currency: String
+  missingInputs: [String!]!
+  winnerProductId: ID
+  rankings: [RecommendationRanking!]!
+}
+
+type RecommendationRanking {
+  rank: Int!
+  productName: String!
+  landedPrice: Decimal!
+  currency: String!
+  reasons: [String!]!
+  productId: ID!
+  pricePointId: ID!
+  merchantProductId: ID!
+  claimIds: [ID!]!
 }
 
 input ProductFiltersInput {
@@ -281,6 +435,58 @@ input CreateSavedComparisonSetInput {
   productIds: [ID!]!
 }
 
+input PublishComparisonSnapshotInput {
+  title: String
+  searchIndexable: Boolean
+  productIds: [ID!]!
+  recommendationProfile: RecommendationProfile!
+}
+
+input SubmitProductReviewInput {
+  productId: ID!
+  rating: Int!
+  title: String
+  body: String
+  merchantProductId: ID
+}
+
+input AskProductQuestionInput {
+  productId: ID!
+  title: String!
+  body: String
+}
+
+input AnswerProductQuestionInput {
+  questionId: ID!
+  body: String!
+}
+
+enum CommunityContentType {
+  REVIEW
+  QUESTION
+  ANSWER
+}
+
+enum CommunityModerationStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+  REJECTED
+}
+
+input ReportCommunityContentInput {
+  contentType: CommunityContentType!
+  contentId: ID!
+  reason: String!
+}
+
+input ModerateCommunityContentInput {
+  contentType: CommunityContentType!
+  contentId: ID!
+  status: CommunityModerationStatus!
+  note: String
+}
+
 type UpsertAffiliateNetworkPayload {
   network: AffiliateNetwork
   errors: [MutationError!]!
@@ -303,6 +509,63 @@ type CreateCouponPayload {
 
 type SavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
+}
+
+type PublishComparisonSnapshotPayload {
+  snapshot: ComparisonSnapshot
+  sharePath: String
+  errors: [MutationError!]!
+}
+
+type RevokeComparisonSnapshotPayload {
+  revokedSnapshotId: ID
+  errors: [MutationError!]!
+}
+
+type ProductReviewPayload {
+  review: ProductReview
+  errors: [MutationError!]!
+}
+
+type ProductQuestionPayload {
+  question: ProductQuestion
+  errors: [MutationError!]!
+}
+
+type ProductAnswerPayload {
+  answer: ProductAnswer
+  errors: [MutationError!]!
+}
+
+type CommunityReportPayload {
+  reportId: ID
+  errors: [MutationError!]!
+}
+
+type CommunityModerationPayload {
+  contentId: ID
+  moderationStatus: CommunityModerationStatus
+  errors: [MutationError!]!
+}
+
+type SpecificationCorrectionPayload {
+  correction: SpecificationCorrection
+  errors: [MutationError!]!
+}
+
+type PriceWatchPayload {
+  watch: PriceWatch
+  errors: [MutationError!]!
+}
+
+type DeletePriceWatchPayload {
+  deletedWatchId: ID
+  errors: [MutationError!]!
+}
+
+type AlertEventPayload {
+  event: AlertEvent
   errors: [MutationError!]!
 }
 
@@ -447,6 +710,7 @@ type User {
   id: ID!
   email: String!
   isOperator: Boolean!
+  comparisonSnapshots(first: Int, after: String): ComparisonSnapshotConnection!
 }
 
 type ApiToken implements Node {
@@ -470,6 +734,73 @@ type SavedComparisonSet implements Node {
   items: [SavedComparisonItem!]!
   insertedAt: DateTime!
   updatedAt: DateTime!
+}
+
+type ComparisonSnapshot {
+  id: ID!
+  title: String
+  sharePath: String!
+  searchIndexable: Boolean!
+  seo: SeoMetadata!
+  capturedAt: DateTime!
+  disclaimer: String!
+  products: [ComparisonSnapshotProduct!]!
+  recommendation: ComparisonRecommendation!
+}
+
+type ComparisonSnapshotProduct {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  modelNumber: String
+  brandName: String
+  attributes: [ComparisonSnapshotAttribute!]!
+  offers: [ComparisonSnapshotOffer!]!
+}
+
+type ComparisonSnapshotConnection {
+  edges: [ComparisonSnapshotEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ComparisonSnapshotEdge {
+  cursor: String!
+  node: ComparisonSnapshot!
+}
+
+type ComparisonSnapshotAttribute {
+  attributeId: ID!
+  claimId: ID!
+  code: String!
+  displayName: String!
+  valueText: String!
+  sourceType: String!
+  confidence: Decimal
+  evidence: [ComparisonSnapshotEvidence!]!
+}
+
+type ComparisonSnapshotEvidence {
+  artifactId: ID!
+  excerpt: String
+  sourceKind: String!
+  sourceName: String!
+  sourceDomain: String
+  url: String
+  fetchedAt: DateTime!
+}
+
+type ComparisonSnapshotOffer {
+  merchantProductId: ID!
+  pricePointId: ID!
+  merchantName: String!
+  merchantDomain: String
+  currency: String!
+  itemPrice: Decimal!
+  shipping: Decimal!
+  landedPrice: Decimal!
+  freshness: String!
+  observedAt: DateTime!
 }
 
 type SavedComparisonItem {
@@ -519,8 +850,44 @@ type Merchant implements Node {
   id: ID!
   name: String!
   domain: String!
+  slug: String!
+  seo: SeoMetadata!
+  detailSummary: MerchantDetailSummary!
+  merchantProducts(first: Int, after: String): MerchantProductConnection!
   insertedAt: DateTime!
   updatedAt: DateTime!
+}
+
+type MerchantDetailSummary {
+  activeOfferCount: Int!
+  distinctProductCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  freshOfferCount: Int!
+  agingOfferCount: Int!
+  staleOfferCount: Int!
+  unobservedOfferCount: Int!
+  lastObservedAt: DateTime
+}
+
+type SeoMetadata {
+  title: String!
+  description: String!
+  canonicalPath: String!
+  indexable: Boolean!
+  imageUrl: String
+  structuredData: String
+}
+
+type SeoCategory {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String!
+  qualifiedProductCount: Int!
+  indexable: Boolean!
+  seo: SeoMetadata!
+  products(first: Int, after: String): ProductConnection!
 }
 
 type MerchantConnection {
@@ -582,8 +949,88 @@ type Product implements Node {
   modelNumber: String
   description: String
   brand: Brand
+  seo: SeoMetadata!
+  media: [ProductMedia!]!
   currentAttributes: [ProductAttributeValue!]!
+  offerTruth: ProductOfferTruth!
+  reviewSummary: ProductReviewSummary!
+  reviews(first: Int, after: String): ProductReviewConnection!
+  questions(first: Int, after: String): ProductQuestionConnection!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
+}
+
+type ProductReviewSummary {
+  count: Int!
+  averageRating: Decimal
+}
+
+type ProductReview {
+  id: ID!
+  rating: Int!
+  title: String
+  body: String
+  verifiedPurchase: Boolean!
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  createdAt: DateTime!
+}
+
+type ProductReviewConnection {
+  edges: [ProductReviewEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductReviewEdge {
+  cursor: String!
+  node: ProductReview!
+}
+
+type ProductQuestion {
+  id: ID!
+  title: String!
+  body: String
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  acceptedAnswerId: ID
+  answers(first: Int, after: String): ProductAnswerConnection!
+  createdAt: DateTime!
+}
+
+type ProductQuestionConnection {
+  edges: [ProductQuestionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductQuestionEdge {
+  cursor: String!
+  node: ProductQuestion!
+}
+
+type ProductAnswer {
+  id: ID!
+  body: String!
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  createdAt: DateTime!
+}
+
+type ProductAnswerConnection {
+  edges: [ProductAnswerEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductAnswerEdge {
+  cursor: String!
+  node: ProductAnswer!
+}
+
+type ProductMedia {
+  url: String!
+  role: String!
+  position: Int!
+  altText: String
+  observedAt: DateTime!
+  sourceArtifact: SourceArtifact
 }
 
 type ProductAttributeValue {
@@ -599,6 +1046,104 @@ type ProductAttributeValue {
   booleanValue: Boolean
   enumOptionId: ID
   unitSymbol: String
+  claimId: ID!
+  claimStatus: String!
+  sourceType: String!
+  confidence: Decimal
+  pendingCorrectionCount: Int!
+  acceptedCorrectionCount: Int!
+  evidence: [ProductAttributeEvidence!]!
+}
+
+enum SpecificationCorrectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+type SpecificationCorrection {
+  id: ID!
+  productId: ID!
+  attributeId: ID!
+  claimId: ID!
+  status: SpecificationCorrectionStatus!
+  reason: String!
+  sourceUrl: String
+  explanation: String
+  valueText: String!
+  moderationNote: String
+  submittedAt: DateTime!
+  reviewedAt: DateTime
+}
+
+type SpecificationCorrectionConnection {
+  edges: [SpecificationCorrectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SpecificationCorrectionEdge {
+  cursor: String!
+  node: SpecificationCorrection!
+}
+
+type PriceWatch {
+  id: ID!
+  productId: ID!
+  merchantProductId: ID
+  productName: String!
+  productSlug: String!
+  merchantName: String
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  targetAmount: Decimal
+  percentageDrop: Decimal
+  baselineLandedPrice: Decimal
+  enabled: Boolean!
+  cooldownSeconds: Int!
+  lastEvaluatedAt: DateTime
+  createdAt: DateTime!
+}
+
+type PriceWatchConnection {
+  edges: [PriceWatchEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PriceWatchEdge {
+  cursor: String!
+  node: PriceWatch!
+}
+
+type AlertEvent {
+  id: ID!
+  ruleType: PriceWatchRuleType!
+  currency: String!
+  itemPrice: Decimal!
+  shipping: Decimal!
+  landedPrice: Decimal!
+  observedAt: DateTime!
+  readAt: DateTime
+  createdAt: DateTime!
+  triggeringPricePointId: ID!
+  merchantProductId: ID!
+  productName: String!
+  productSlug: String!
+  merchantName: String!
+}
+
+type AlertEventConnection {
+  edges: [AlertEventEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AlertEventEdge {
+  cursor: String!
+  node: AlertEvent!
+}
+
+type ProductAttributeEvidence {
+  excerpt: String
+  sourceArtifact: SourceArtifact!
 }
 
 type MerchantProduct implements Node {
@@ -624,8 +1169,56 @@ type PricePoint implements Node {
   merchantProductId: ID!
   observedAt: DateTime!
   price: Decimal!
+  shipping: Decimal
+  inStock: Boolean
+  sourceArtifact: SourceArtifact
   insertedAt: DateTime!
   updatedAt: DateTime
+}
+
+type ProductOfferTruth {
+  asOf: DateTime!
+  freshForSeconds: Int!
+  staleAfterSeconds: Int!
+  offerCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  currencySummaries: [OfferCurrencySummary!]!
+}
+
+type OfferCurrencySummary {
+  currency: String!
+  offerCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  bestOffer: CurrentOffer
+}
+
+type CurrentOffer {
+  merchantProductId: ID!
+  currency: String!
+  itemPrice: Decimal
+  shipping: Decimal
+  landedPrice: Decimal
+  landedPriceComplete: Boolean!
+  stockStatus: OfferStockStatus!
+  freshness: OfferFreshness!
+  observedAt: DateTime
+  eligible: Boolean!
+  sourceArtifact: SourceArtifact
+}
+
+enum OfferStockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  UNKNOWN
+}
+
+enum OfferFreshness {
+  FRESH
+  AGING
+  STALE
+  UNOBSERVED
 }
 
 type PricePointConnection {
@@ -665,6 +1258,12 @@ string, including UTC timezone ("Z"). The parsed date and time string will
 be converted to UTC if there is an offset.
 """
 scalar DateTime
+
+"""
+The `Date` scalar type represents a date. The Date appears in a JSON
+response as an ISO8601 formatted string, without a time component.
+"""
+scalar Date
 
 """
 The `Decimal` scalar type represents signed double-precision fractional

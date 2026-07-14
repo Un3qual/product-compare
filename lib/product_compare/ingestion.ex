@@ -8,12 +8,18 @@ defmodule ProductCompare.Ingestion do
 
   alias ProductCompare.ChangesetErrors
   alias ProductCompare.Catalog
+  alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
+  alias ProductCompare.Catalog.GTIN
   alias ProductCompare.Ingestion.NormalizedListing
+  alias ProductCompare.Ingestion.Reconciliation
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompare.Specs
   alias ProductCompare.Taxonomy, as: TaxonomyContext
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.CategoryMappingCandidate
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -49,6 +55,7 @@ defmodule ProductCompare.Ingestion do
     attrs =
       attrs
       |> Map.new()
+      |> prepare_reconciliation()
       |> Map.put_new(:status, "running")
       |> Map.put_new(:started_at, DateTime.utc_now())
 
@@ -65,10 +72,39 @@ defmodule ProductCompare.Ingestion do
       |> Map.new()
       |> Map.put_new(:finished_at, DateTime.utc_now())
 
-    import_run
-    |> ImportRun.changeset(attrs)
-    |> Repo.update()
+    Repo.transaction(fn ->
+      with {:ok, completed_run} <-
+             import_run
+             |> ImportRun.changeset(attrs)
+             |> Repo.update(),
+           {:ok, reconciled_run} <- Reconciliation.finalize(completed_run) do
+        reconciled_run
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
+
+  defp prepare_reconciliation(attrs) do
+    {complete_scope, attrs} = Map.pop(attrs, :complete_scope, false)
+
+    attrs
+    |> normalize_complete_scope_cursor(complete_scope)
+    |> Map.put_new(:scope_fingerprint, Reconciliation.scope_fingerprint(attrs))
+    |> Map.put_new(
+      :reconciliation_status,
+      if(complete_scope == true, do: "pending", else: "not_requested")
+    )
+  end
+
+  defp normalize_complete_scope_cursor(attrs, true) do
+    Map.update(attrs, :cursor_start, 0, fn
+      nil -> 0
+      cursor -> cursor
+    end)
+  end
+
+  defp normalize_complete_scope_cursor(attrs, _complete_scope), do: attrs
 
   @spec upsert_merchant_feed_candidate(Source.t(), map()) ::
           {:ok, MerchantFeedCandidate.t()} | {:error, Ecto.Changeset.t()}
@@ -198,12 +234,22 @@ defmodule ProductCompare.Ingestion do
 
   @spec persist_normalized_listing(Source.t(), NormalizedListing.t()) ::
           {:ok, persisted_listing()} | {:error, term()}
-  def persist_normalized_listing(%Source{id: source_id} = source, %NormalizedListing{} = listing) do
+  def persist_normalized_listing(source, listing),
+    do: persist_normalized_listing(source, listing, [])
+
+  @spec persist_normalized_listing(Source.t(), NormalizedListing.t(), keyword()) ::
+          {:ok, persisted_listing()} | {:error, term()}
+  def persist_normalized_listing(
+        %Source{id: source_id} = source,
+        %NormalizedListing{} = listing,
+        opts
+      ) do
     Repo.transaction(fn ->
       with {:ok, merchant_identity} <-
              resolve_merchant_identity_in_transaction(source_id, listing),
            {:ok, persisted_listing} <-
-             persist_listing_in_transaction(source, listing, merchant_identity) do
+             persist_listing_in_transaction(source, listing, merchant_identity),
+           :ok <- maybe_record_import_observation(opts, persisted_listing) do
         persisted_listing
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -212,6 +258,13 @@ defmodule ProductCompare.Ingestion do
     |> case do
       {:ok, persisted_listing} -> {:ok, persisted_listing}
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp maybe_record_import_observation(opts, persisted_listing) do
+    case Keyword.get(opts, :import_run) do
+      %ImportRun{} = import_run -> Reconciliation.observe(import_run, persisted_listing)
+      _other -> :ok
     end
   end
 
@@ -242,11 +295,24 @@ defmodule ProductCompare.Ingestion do
          merchant_identity,
          listing
        ) do
-    with {:ok, product} <- ensure_listing_product(external_product, listing),
+    with {:ok, product} <-
+           ensure_listing_product(external_product, source_artifact, listing),
+         {:ok, product} <- fill_missing_product_enrichment(product, listing),
+         {:ok, product, taxonomy} <- apply_category_mapping(source_artifact, product, listing),
          {:ok, external_product} <- attach_external_product(external_product, product, listing),
          {:ok, merchant_product} <-
            upsert_listing_merchant_product(merchant_identity, product, listing),
          {:ok, price_point} <- persist_price_point(merchant_product, source_artifact, listing) do
+      media =
+        Catalog.upsert_product_media(
+          product,
+          source_artifact.id,
+          listing.media || [],
+          listing.observed_at
+        )
+
+      specifications = persist_specifications(product, source_artifact, listing)
+
       {:ok,
        %{
          source_artifact: source_artifact,
@@ -254,7 +320,10 @@ defmodule ProductCompare.Ingestion do
          product: product,
          merchant_identity: merchant_identity,
          merchant_product: merchant_product,
-         price_point: price_point
+         price_point: price_point,
+         media: media,
+         specifications: specifications,
+         taxonomy: taxonomy
        }}
     end
   end
@@ -279,6 +348,140 @@ defmodule ProductCompare.Ingestion do
        price_point: merchant_product && Pricing.latest_price(merchant_product.id)
      }}
   end
+
+  defp fill_missing_product_enrichment(product, listing) do
+    attrs =
+      %{}
+      |> put_missing_product_field(:model_number, product.model_number, listing.model_number)
+      |> put_missing_product_field(:description, product.description, listing.description)
+
+    case map_size(attrs) do
+      0 -> {:ok, product}
+      _count -> Catalog.update_product(product, attrs)
+    end
+  end
+
+  defp put_missing_product_field(attrs, _field, current, _incoming)
+       when is_binary(current) and current != "",
+       do: attrs
+
+  defp put_missing_product_field(attrs, field, _current, incoming) when is_binary(incoming) do
+    case String.trim(incoming) do
+      "" -> attrs
+      value -> Map.put(attrs, field, value)
+    end
+  end
+
+  defp put_missing_product_field(attrs, _field, _current, _incoming), do: attrs
+
+  defp apply_category_mapping(_source_artifact, product, %{manufacturer_category_path: path})
+       when path in [nil, []],
+       do: {:ok, product, %{status: :none}}
+
+  defp apply_category_mapping(source_artifact, product, listing) do
+    path = listing.manufacturer_category_path
+
+    case TaxonomyContext.resolve_type_alias(path) do
+      %Taxon{} = taxon ->
+        maybe_assign_mapped_type(product, taxon)
+
+      nil ->
+        case upsert_category_mapping_candidate(
+               source_artifact.source_id,
+               path,
+               listing.observed_at
+             ) do
+          {:ok, _candidate} -> {:ok, product, %{status: :candidate}}
+          {:error, _reason} -> {:ok, product, %{status: :candidate_rejected}}
+        end
+    end
+  end
+
+  defp maybe_assign_mapped_type(product, taxon) do
+    current_taxon = Repo.get(Taxon, product.primary_type_taxon_id)
+
+    if current_taxon && current_taxon.code == "ingested-product" do
+      case Catalog.update_product(product, %{primary_type_taxon_id: taxon.id}) do
+        {:ok, updated_product} ->
+          {:ok, updated_product, %{status: :mapped, taxon_id: taxon.id}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:ok, product, %{status: :mapped_not_applied, taxon_id: taxon.id}}
+    end
+  end
+
+  defp upsert_category_mapping_candidate(source_id, path, observed_at) do
+    normalized_path = TaxonomyContext.normalize_category_path(path)
+    display_path = display_category_path(path)
+    now = DateTime.utc_now()
+
+    attrs = %{
+      source_id: source_id,
+      display_path: display_path,
+      normalized_path: normalized_path,
+      status: "pending",
+      observation_count: 1,
+      last_seen_at: observed_at
+    }
+
+    conflict_query =
+      from candidate in CategoryMappingCandidate,
+        update: [
+          set: [display_path: ^display_path, last_seen_at: ^observed_at, updated_at: ^now],
+          inc: [observation_count: 1]
+        ]
+
+    %CategoryMappingCandidate{}
+    |> CategoryMappingCandidate.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: conflict_query,
+      conflict_target: [:source_id, :normalized_path],
+      returning: true
+    )
+  end
+
+  defp display_category_path(path) when is_binary(path) do
+    path
+    |> String.split(">", trim: true)
+    |> display_category_path()
+  end
+
+  defp display_category_path(path) when is_list(path) do
+    path
+    |> Enum.filter(&is_binary/1)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" > ")
+  end
+
+  defp persist_specifications(product, source_artifact, listing) do
+    Enum.reduce(
+      listing.specifications || [],
+      %{accepted: 0, persisted: 0, rejected: 0, replayed: 0},
+      fn observation, result ->
+        case Specs.import_observation(
+               product.id,
+               source_artifact.id,
+               to_string(listing.source),
+               observation
+             ) do
+          {:ok, %{accepted: accepted, replayed: replayed}} ->
+            result
+            |> Map.update!(if(replayed, do: :replayed, else: :persisted), &(&1 + 1))
+            |> maybe_increment_accepted(accepted)
+
+          {:error, _reason} ->
+            Map.update!(result, :rejected, &(&1 + 1))
+        end
+      end
+    )
+  end
+
+  defp maybe_increment_accepted(result, true), do: Map.update!(result, :accepted, &(&1 + 1))
+  defp maybe_increment_accepted(result, false), do: result
 
   defp fetch_stale_listing_product(%ExternalProduct{product_id: nil}), do: nil
 
@@ -381,23 +584,60 @@ defmodule ProductCompare.Ingestion do
     end
   end
 
-  defp ensure_listing_product(%ExternalProduct{product_id: product_id}, listing)
+  defp ensure_listing_product(
+         %ExternalProduct{product_id: product_id},
+         source_artifact,
+         listing
+       )
        when not is_nil(product_id) do
     case Repo.get(Product, product_id) do
-      nil -> get_or_create_listing_product(listing)
-      %Product{} = product -> {:ok, product}
+      nil ->
+        get_or_create_listing_product(source_artifact, listing)
+
+      %Product{} = product ->
+        preserve_external_product_identity(product, source_artifact, listing)
     end
   end
 
-  defp ensure_listing_product(%ExternalProduct{}, listing),
-    do: get_or_create_listing_product(listing)
+  defp ensure_listing_product(%ExternalProduct{}, source_artifact, listing),
+    do: get_or_create_listing_product(source_artifact, listing)
 
-  defp get_or_create_listing_product(listing) do
+  defp get_or_create_listing_product(source_artifact, listing) do
+    case GTIN.normalize(listing.gtin) do
+      {:ok, normalized_gtin} ->
+        get_or_create_listing_product_by_gtin(normalized_gtin, source_artifact, listing)
+
+      {:error, :invalid_gtin} ->
+        listing
+        |> get_or_create_listing_product_by_slug()
+        |> drop_created_marker()
+    end
+  end
+
+  defp get_or_create_listing_product_by_gtin(normalized_gtin, source_artifact, listing) do
+    case Catalog.get_product_by_identifier("gtin", normalized_gtin) do
+      %Product{} = product ->
+        {:ok, product}
+
+      nil ->
+        with {:ok, product, created?} <- get_or_create_listing_product_by_slug(listing) do
+          attach_gtin_to_new_product(
+            product,
+            created?,
+            normalized_gtin,
+            source_artifact,
+            listing
+          )
+        end
+    end
+  end
+
+  defp get_or_create_listing_product_by_slug(listing) do
     slug = product_slug(listing)
 
-    case Repo.get_by(Product, slug: slug) do
+    case Catalog.get_product_by_slug(slug) do
       nil -> create_listing_product(slug, listing)
-      %Product{} = product -> {:ok, product}
+      %Product{} = product -> {:ok, product, false}
     end
   end
 
@@ -406,6 +646,8 @@ defmodule ProductCompare.Ingestion do
          {:ok, brand_id} <- maybe_upsert_brand_id(listing.brand_name) do
       %{
         name: listing.product_title,
+        model_number: listing.model_number,
+        description: listing.description,
         slug: slug,
         brand_id: brand_id,
         primary_type_taxon_id: primary_type_taxon.id
@@ -413,11 +655,11 @@ defmodule ProductCompare.Ingestion do
       |> Catalog.create_product()
       |> case do
         {:ok, %Product{} = product} ->
-          {:ok, product}
+          {:ok, product, true}
 
         {:error, %Ecto.Changeset{} = changeset} ->
           if ChangesetErrors.unique_error_on_field?(changeset, :slug) do
-            {:ok, Repo.get_by!(Product, slug: slug)}
+            {:ok, Repo.get_by!(Product, slug: slug), false}
           else
             {:error, changeset}
           end
@@ -426,6 +668,94 @@ defmodule ProductCompare.Ingestion do
           {:error, reason}
       end
     end
+  end
+
+  defp drop_created_marker({:ok, product, _created?}), do: {:ok, product}
+  defp drop_created_marker({:error, _reason} = error), do: error
+
+  defp attach_gtin_to_new_product(
+         product,
+         created?,
+         normalized_gtin,
+         source_artifact,
+         listing
+       ) do
+    attrs =
+      validated_gtin_attrs(product, normalized_gtin, source_artifact, listing)
+
+    case Catalog.create_product_identifier(attrs) do
+      {:ok, %ProductIdentifier{}} ->
+        {:ok, product}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        resolve_identifier_insert_error(
+          changeset,
+          product,
+          created?,
+          normalized_gtin
+        )
+    end
+  end
+
+  defp resolve_identifier_insert_error(changeset, product, created?, normalized_gtin) do
+    if ChangesetErrors.unique_error_on_any_field?(changeset, [:scheme, :normalized_value]) do
+      winner = Catalog.get_product_by_identifier("gtin", normalized_gtin)
+
+      if (created? and winner) && winner.id != product.id do
+        {:ok, _deleted_product} = Repo.delete(product)
+      end
+
+      case winner do
+        %Product{} -> {:ok, winner}
+        nil -> {:error, changeset}
+      end
+    else
+      {:error, changeset}
+    end
+  end
+
+  defp preserve_external_product_identity(product, source_artifact, listing) do
+    case {Catalog.list_product_identifiers(product.id, "gtin"), GTIN.normalize(listing.gtin)} do
+      {[], {:ok, normalized_gtin}} ->
+        maybe_attach_gtin_to_existing_product(
+          product,
+          normalized_gtin,
+          source_artifact,
+          listing
+        )
+
+      _existing_or_invalid ->
+        {:ok, product}
+    end
+  end
+
+  defp maybe_attach_gtin_to_existing_product(product, normalized_gtin, source_artifact, listing) do
+    product
+    |> validated_gtin_attrs(normalized_gtin, source_artifact, listing)
+    |> Catalog.create_product_identifier()
+    |> case do
+      {:ok, %ProductIdentifier{}} ->
+        {:ok, product}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        if ChangesetErrors.unique_error_on_any_field?(changeset, [:scheme, :normalized_value]) do
+          {:ok, product}
+        else
+          {:error, changeset}
+        end
+    end
+  end
+
+  defp validated_gtin_attrs(product, normalized_gtin, source_artifact, listing) do
+    %{
+      product_id: product.id,
+      scheme: "gtin",
+      normalized_value: normalized_gtin,
+      display_value: listing.gtin,
+      verification_status: "validated",
+      source_artifact_id: source_artifact.id,
+      verified_at: listing.observed_at
+    }
   end
 
   defp ensure_ingested_type_taxon do
@@ -594,7 +924,10 @@ defmodule ProductCompare.Ingestion do
         fetch_price_point(merchant_product.id, listing.observed_at, source_artifact.id)
 
       {:ok, %PricePoint{} = price_point} ->
-        {:ok, price_point}
+        case AlertEvaluationWorker.enqueue(price_point.id) do
+          {:ok, _job} -> {:ok, price_point}
+          {:error, reason} -> {:error, reason}
+        end
 
       {:error, reason} ->
         {:error, reason}

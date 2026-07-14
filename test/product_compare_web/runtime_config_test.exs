@@ -22,6 +22,21 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
            ]
   end
 
+  test "public_site_url!/1 requires an explicit canonical origin" do
+    assert_raise ArgumentError, ~r/PUBLIC_SITE_URL/, fn ->
+      RuntimeConfig.public_site_url!(nil)
+    end
+
+    assert_raise ArgumentError, ~r/PUBLIC_SITE_URL/, fn ->
+      RuntimeConfig.public_site_url!("internal.service.local")
+    end
+  end
+
+  test "public_site_url!/1 normalizes an explicit canonical origin" do
+    assert RuntimeConfig.public_site_url!("https://shop.example.net/") ==
+             "https://shop.example.net"
+  end
+
   test "endpoint_host/1 falls back to example.com for nil" do
     assert RuntimeConfig.endpoint_host(nil) == "example.com"
   end

@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from "react-router-dom";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import {
   fetchRouteQuery,
@@ -11,9 +11,9 @@ import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export const MAX_COMPARE_PRODUCTS = 3;
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
-const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 export type CompareSpecMode = "shared" | "differences" | "all";
+export type RecommendationProfile = "lowest_current_cost" | "best_value";
 
 export interface CompareProductSummary {
   id: string;
@@ -122,9 +122,7 @@ export async function compareLoader({
       compareRouteQuery,
       {
         slugs,
-        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-        pickerFirst: COMPARE_PRODUCT_PICKER_PAGE_SIZE,
-        pickerAfter: null
+        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE
       },
       { signal: request.signal }
     );
@@ -156,6 +154,31 @@ export async function compareLoader({
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
   }
+}
+
+export function recommendationProfileFromUrl(requestUrl: string): RecommendationProfile {
+  return new URL(requestUrl, "http://product-compare.local").searchParams.get("recommend") === "best_value"
+    ? "best_value"
+    : "lowest_current_cost";
+}
+
+export function shouldRevalidateCompareLoader({
+  currentUrl,
+  defaultShouldRevalidate,
+  nextUrl
+}: ShouldRevalidateFunctionArgs) {
+  const current = new URL(currentUrl);
+  const next = new URL(nextUrl);
+  const recommendationChanged =
+    current.searchParams.get("recommend") !== next.searchParams.get("recommend");
+  current.searchParams.delete("recommend");
+  next.searchParams.delete("recommend");
+
+  return recommendationChanged &&
+    current.pathname === next.pathname &&
+    current.search === next.search
+    ? false
+    : defaultShouldRevalidate;
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {

@@ -15,6 +15,9 @@ defmodule ProductCompareSchemas.Catalog.Product do
 
     has_many :claims, ProductCompareSchemas.Specs.ProductAttributeClaim
     has_many :current_claims, ProductCompareSchemas.Specs.ProductAttributeCurrent
+    has_many :identifiers, ProductCompareSchemas.Catalog.ProductIdentifier
+    has_many :media, ProductCompareSchemas.Catalog.ProductMedia
+    has_many :slug_aliases, ProductCompareSchemas.Catalog.ProductSlugAlias
 
     timestamps()
   end
@@ -24,6 +27,7 @@ defmodule ProductCompareSchemas.Catalog.Product do
     product
     |> cast(attrs, [:brand_id, :primary_type_taxon_id, :name, :model_number, :slug, :description])
     |> validate_required([:name, :slug])
+    |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     |> unique_constraint(:slug)
   end
 end

@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
@@ -104,7 +105,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       output =
         capture_io(fn ->
           assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
-                   CjImport.run_import(fetcher: fetcher, keywords: ["shoe"], limit: 1)
+                   CjImport.run_import(
+                     complete_scope: true,
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1
+                   )
         end)
 
       assert_receive {:fetch, nil, opts}
@@ -132,8 +138,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_fetched: 1,
                records_normalized: 1,
                records_persisted: 1,
-               records_failed: 0
+               records_failed: 0,
+               reconciliation_status: "succeeded",
+               offers_deactivated: 0,
+               reconciled_at: %DateTime{},
+               scope_fingerprint: scope_fingerprint
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
+
+      assert scope_fingerprint =~ ~r/^[a-f0-9]{64}$/
+      assert Repo.aggregate(ImportObservation, :count, :id) == 1
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
@@ -197,8 +210,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_fetched: 2,
                records_normalized: 2,
                records_persisted: 2,
-               records_failed: 0
+               records_failed: 0,
+               reconciliation_status: "not_requested",
+               offers_deactivated: 0,
+               reconciled_at: nil
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
+
+      assert Repo.aggregate(ImportObservation, :count, :id) == 2
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 2
       assert Repo.aggregate(ExternalProduct, :count, :id) == 2

@@ -7,8 +7,10 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
 
   require Logger
 
-  alias Mix.Tasks.ProductCompare.Ingestion.CjImport
+  alias ProductCompare.Ingestion.Jobs.CJProductImportWorker
   alias ProductCompare.Ingestion.OptionNormalization
+  alias ProductCompare.Ingestion.ScheduledCursor
+  alias ProductCompare.Ingestion.SchedulerSupport
 
   @default_currency "USD"
   @default_initial_delay_ms 60_000
@@ -19,21 +21,15 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @default_serviceable_areas ["US"]
 
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    genserver_opts =
-      case Keyword.get(opts, :name) do
-        nil -> []
-        name -> [name: name]
-      end
-
-    GenServer.start_link(__MODULE__, opts, genserver_opts)
-  end
+  def start_link(opts), do: SchedulerSupport.start_link(__MODULE__, opts)
 
   @impl GenServer
   def init(opts) do
     state = %{
+      complete_scope: Keyword.get(opts, :complete_scope, false) == true,
       currency: uppercase_string_option(opts, :currency, @default_currency),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
+      cursor_resolver: Keyword.get(opts, :cursor_resolver, &ScheduledCursor.product/1),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -45,32 +41,34 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       keywords: keywords_option(opts),
       limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
       pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
-      runner: Keyword.get(opts, :runner, &run_default_import/1),
+      enqueuer:
+        Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJProductImportWorker.enqueue/1)),
       serviceable_areas: serviceable_areas_option(opts)
     }
 
-    schedule_run(state.initial_delay_ms)
+    SchedulerSupport.schedule(:run_import, state.initial_delay_ms)
 
     {:ok, state}
   end
 
   @impl GenServer
   def handle_info(:run_import, state) do
-    opts = import_opts(state)
+    opts =
+      SchedulerSupport.resolve_cursor(import_opts(state), state.cursor_resolver, state.cursor)
 
-    result = run_import(state.runner, opts)
+    result = SchedulerSupport.run(state.enqueuer, opts)
 
     log_result(result, opts)
 
-    state = %{state | cursor: OptionNormalization.next_cursor(state.cursor, result)}
+    state = %{state | cursor: opts[:cursor]}
 
-    schedule_run(state.interval_ms)
+    SchedulerSupport.schedule(:run_import, state.interval_ms)
 
     {:noreply, state}
   end
 
   defp import_opts(state) do
-    [
+    opts = [
       currency: state.currency,
       keywords: state.keywords,
       limit: state.limit,
@@ -78,24 +76,8 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       serviceable_areas: state.serviceable_areas,
       cursor: state.cursor
     ]
-  end
 
-  defp schedule_run(delay_ms) do
-    Process.send_after(self(), :run_import, delay_ms)
-  end
-
-  defp run_import(runner, opts) do
-    runner.(opts)
-  rescue
-    _exception -> {:error, :runner_exception}
-  catch
-    _kind, _reason -> {:error, :runner_exception}
-  end
-
-  defp run_default_import(opts) do
-    opts
-    |> Keyword.put(:print_report, false)
-    |> CjImport.run_import()
+    if state.complete_scope, do: Keyword.put(opts, :complete_scope, true), else: opts
   end
 
   defp log_result({:ok, report}, opts) do

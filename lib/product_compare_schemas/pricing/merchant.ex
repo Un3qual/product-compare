@@ -7,6 +7,7 @@ defmodule ProductCompareSchemas.Pricing.Merchant do
     field :entropy_id, Ecto.UUID
     field :name, :string
     field :domain, :string
+    field :slug, :string
 
     has_many :merchant_products, ProductCompareSchemas.Pricing.MerchantProduct
 
@@ -16,9 +17,11 @@ defmodule ProductCompareSchemas.Pricing.Merchant do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(merchant, attrs) do
     merchant
-    |> cast(attrs, [:name, :domain])
-    |> validate_required([:name, :domain])
+    |> cast(attrs, [:name, :domain, :slug])
+    |> validate_required([:name, :domain, :slug])
+    |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     |> unique_constraint(:name)
     |> unique_constraint(:domain)
+    |> unique_constraint(:slug)
   end
 end

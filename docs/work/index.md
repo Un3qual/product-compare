@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-12
+Updated: 2026-07-13
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -123,6 +123,83 @@ data, mutation, URL, suspense, and error orchestration.
 The requested eight-PR stack is complete. Its plan checklists and lane work
 docs hold implementation and verification evidence; this index stays focused
 on dispatchable work.
+
+On 2026-07-13, the user selected the Product Trust and Discovery program:
+canonical specification-rich ingestion, complete and fresh offer truth,
+durable ingestion, price watches and alerts, public comparison snapshots,
+source-backed recommendations, provenance and corrections, reviews and Q&A,
+merchant detail pages, and SEO/acquisition surfaces. The dependency-ordered
+program design is committed. Canonical GTIN identity is claimed first; three
+independent foundation contracts are ready behind it, and the existing
+validated presentation reserve remains available after those product-critical
+rows.
+
+Canonical GTIN identity completed on 2026-07-13. Validated GTIN-8, UPC-A,
+EAN-13, and GTIN-14 values now resolve listings across sources and merchants to
+one product, while invalid identifiers, conflicting updates to an attached
+source listing, and replay fail closed. Specification provenance is the active
+successor.
+
+Specification provenance completed on 2026-07-13. Current attributes now carry
+their accepted claim identity, status, source type, confidence, bounded
+evidence excerpts, and the existing safe source-artifact view through batched
+preloads. Complete offer truth is the active successor.
+
+Complete offer truth completed on 2026-07-13. Price observations now expose
+shipping, stock, and safe source provenance. Product-level truth considers
+every active database offer, groups currencies independently, classifies
+freshness, and selects a best offer only from complete in-stock landed prices.
+Durable ingestion jobs completed on 2026-07-13. CJ feed discovery and product
+imports now run as unique, database-backed Oban jobs with bounded retries,
+redacted terminal/transient failure categories, enqueue-only timer schedulers,
+and a safe operational-health read model. Complete-run offer reconciliation is
+the next coordinator planning target.
+
+Complete-run offer reconciliation completed on 2026-07-13. Every successfully
+persisted listing now records run membership. Only an explicitly complete,
+end-of-cursor, zero-failure run can deactivate historically observed offers
+from the identical hashed scope; partial, failed, bounded, differently scoped,
+and superseded runs fail closed. Fresh observations reactivate offers, and safe
+health reads expose reconciliation status and counts without query values.
+Specification-rich enrichment and media completed on 2026-07-13. The
+source-neutral listing contract now accepts evidence-backed category, media,
+and typed specification observations while isolating malformed optional data.
+Imports fill only missing canonical copy, exact configured aliases may replace
+only the generic ingestion type, unmapped paths remain review candidates, and
+media and claims are replay-safe and retain artifact provenance. Authenticated
+specification corrections completed on 2026-07-13. Typed user proposals are
+owner-scoped and operator-moderated; acceptance atomically supersedes and
+selects current truth, while duplicate pending proposals and stale-current
+acceptance fail closed. Public product reads expose counts only, and private
+moderation notes remain operator-only. Price watchlists and alerts completed
+on 2026-07-13. Owner-scoped product and offer rules evaluate durably from
+eligible same-currency landed prices, persist immutable observation facts and
+transport-neutral delivery attempts, and suppress replay and premature repeat
+events. Product detail now creates watches, and the authenticated inbox manages
+unread events and active rules. Source-backed recommendations completed on
+2026-07-13. Versioned profiles use only complete same-currency landed prices,
+the best-value profile additionally requires accepted specification evidence,
+and the comparison UI cites exact observations and claims or explains why it
+cannot support a winner. Immutable comparison snapshots completed on
+2026-07-13. Authenticated owners can publish two- or three-product captured
+fact records behind 256-bit public tokens; links retain ordered product,
+accepted specification, offer observation, and recommendation evidence, expose
+no owner identity, and return 404 after one-way owner revocation. Reviews and
+product Q&A completed on 2026-07-13. Reviews, questions, and answers require
+authenticated attribution and operator publication; only published reviews
+affect rating summaries, public author labels never reveal email, reporting and
+accepted answers are durable, and merchant-offer association no longer claims
+purchase verification. Merchant detail pages completed on 2026-07-13. Stable
+canonical merchant slugs now lead to database-complete offer coverage and
+freshness summaries, bounded current product listings, and safe merchant
+destinations. SEO and acquisition surfaces completed on 2026-07-13. Product,
+merchant, curated category, and explicitly opted-in comparison pages now share
+one qualification policy, emit canonical SSR metadata and factual structured
+data, and enter bounded partitioned sitemaps only when their accepted
+specification, content, and current-offer evidence qualifies. Thin, stale,
+parameterized, private, and revoked pages stay `noindex`; legacy product slugs
+redirect permanently to their canonical page. The selected Product Trust and
+Discovery program is complete.
 
 ## Ready Work
 

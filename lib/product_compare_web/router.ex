@@ -31,6 +31,12 @@ defmodule ProductCompareWeb.Router do
   end
 
   scope "/", ProductCompareWeb do
+    get "/robots.txt", SeoController, :robots
+    get "/sitemap.xml", SeoController, :sitemap_index
+    get "/sitemaps/products.xml", SeoController, :products
+    get "/sitemaps/merchants.xml", SeoController, :merchants
+    get "/sitemaps/categories.xml", SeoController, :categories
+    get "/sitemaps/comparisons.xml", SeoController, :comparisons
     get "/r/merchant-product", CommerceRedirectController, :merchant_product
     get "/r/:click_id", CommerceRedirectController, :show
   end

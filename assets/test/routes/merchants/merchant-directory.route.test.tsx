@@ -484,12 +484,14 @@ function renderMerchantDirectoryView({
       id: "merchant-1",
       name: "Acme Market",
       domain: "acme.example",
+      detailHref: "/merchants/acme-market",
       websiteHref: "https://acme.example"
     },
     {
       id: "merchant-unsafe",
       name: "Unsafe Seller",
       domain: "http://localhost",
+      detailHref: "/merchants/unsafe-seller",
       websiteHref: null
     }
   ]
@@ -498,6 +500,7 @@ function renderMerchantDirectoryView({
     id: string;
     name: string;
     domain: string;
+    detailHref: string;
     websiteHref: string | null;
   }>;
 } = {}) {

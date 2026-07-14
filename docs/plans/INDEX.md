@@ -29,6 +29,14 @@ readiness. Email delivery, live conversion-provider ingestion, production
 privacy and attribution controls, and production-readiness proof remain outside
 that milestone by product decision.
 
+The 2026-07-13 Product Trust and Discovery program is active. It reopens and
+expands the data-product boundary with canonical specification-rich ingestion,
+complete and fresh offers, durable ingestion, watches and in-app alerts, public
+comparison snapshots, source-backed recommendations, provenance/corrections,
+reviews and Q&A, merchant pages, and SEO/acquisition surfaces. The live queue
+contains the validated foundation slices; dependent product surfaces are
+promoted only after their truth contracts are green.
+
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
 affiliate-setup and feed-candidate presentation extractions are also complete.
@@ -46,6 +54,11 @@ that keep the live queue dispatchable after the current stack completes.
 
 Active implementation plans:
 
+- `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
+- `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live

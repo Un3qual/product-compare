@@ -7,6 +7,11 @@ defmodule ProductCompareWeb.GraphQL.GlobalIdTest do
     test "encodes integer local IDs without caller-side string conversion" do
       assert GlobalId.encode(:product, 123) == GlobalId.encode(:product, "123")
     end
+
+    test "encodes product attribute claims with their own stable type" do
+      assert GlobalId.encode(:product_attribute_claim, 123) ==
+               Base.encode64("ProductAttributeClaim:123")
+    end
   end
 
   describe "encode_required/2" do

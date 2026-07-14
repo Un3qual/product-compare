@@ -3,7 +3,13 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
 
   @type type ::
           :user
+          | :alert_event
           | :api_token
+          | :comparison_snapshot
+          | :community_report
+          | :product_answer
+          | :product_question
+          | :product_review
           | :saved_comparison_set
           | :affiliate_network
           | :affiliate_program
@@ -14,15 +20,25 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :merchant_product
           | :price_point
           | :source_artifact
+          | :specification_correction
+          | :product_attribute_claim
           | :product
+          | :price_watch
           | :brand
           | :attribute
           | :enum_option
           | :taxon
+          | :unit
 
   @type_names %{
     user: "User",
+    alert_event: "AlertEvent",
     api_token: "ApiToken",
+    comparison_snapshot: "ComparisonSnapshot",
+    community_report: "CommunityReport",
+    product_answer: "ProductAnswer",
+    product_question: "ProductQuestion",
+    product_review: "ProductReview",
     saved_comparison_set: "SavedComparisonSet",
     affiliate_network: "AffiliateNetwork",
     affiliate_program: "AffiliateProgram",
@@ -33,11 +49,15 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     merchant_product: "MerchantProduct",
     price_point: "PricePoint",
     source_artifact: "SourceArtifact",
+    specification_correction: "SpecificationCorrection",
+    product_attribute_claim: "ProductAttributeClaim",
     product: "Product",
+    price_watch: "PriceWatch",
     brand: "Brand",
     attribute: "Attribute",
     enum_option: "EnumOption",
-    taxon: "Taxon"
+    taxon: "Taxon",
+    unit: "Unit"
   }
   @type_atoms Map.new(@type_names, fn {type_atom, type_name} -> {type_name, type_atom} end)
   @max_bigint_id 9_223_372_036_854_775_807

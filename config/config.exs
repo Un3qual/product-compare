@@ -20,6 +20,13 @@ config :product_compare, ProductCompare.Repo,
 
 config :product_compare, ProductCompare.Accounts, api_token_default_ttl_days: 90
 
+config :product_compare, :public_site_url, "http://localhost:5173"
+
+config :product_compare, Oban,
+  repo: ProductCompare.Repo,
+  queues: [ingestion: 2, alerts: 2],
+  plugins: [{Oban.Plugins.Pruner, max_age: 86_400}]
+
 # Configure the endpoint
 config :product_compare, ProductCompareWeb.Endpoint,
   url: [host: "localhost"],

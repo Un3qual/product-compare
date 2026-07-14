@@ -7,12 +7,34 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   @spec merchants(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def merchants(_parent, args, _resolution) do
     query = Pricing.list_merchants_query()
+    Connection.from_query_result(query, Input.connection_args(args), Repo)
+  end
+
+  def merchant(_parent, %{slug: slug}, _resolution), do: {:ok, Pricing.get_merchant_by_slug(slug)}
+
+  def merchant_detail_summary(merchant, _args, %{context: %{loader: loader}}) do
+    source = Loader.merchant_detail_source()
+
+    loader
+    |> Dataloader.load(source, :summary, merchant)
+    |> on_load(fn loader ->
+      case Dataloader.get(loader, source, :summary, merchant) do
+        %{summary: summary} -> {:ok, summary}
+        nil -> {:error, "merchant not found"}
+      end
+    end)
+  end
+
+  def merchant_offers(%{id: merchant_id}, args, _resolution) do
+    query = Pricing.list_merchant_offers_query(merchant_id, true)
     Connection.from_query_result(query, Input.connection_args(args), Repo)
   end
 
@@ -64,6 +86,31 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   end
 
   def latest_price(_merchant_product, _args, _resolution), do: {:ok, nil}
+
+  @spec source_artifact(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, SourceArtifact.t() | nil} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def source_artifact(%{artifact_id: nil}, _args, _resolution), do: {:ok, nil}
+
+  def source_artifact(%{artifact_id: artifact_id}, _args, %{context: %{loader: loader}})
+      when is_integer(artifact_id) do
+    loader
+    |> Dataloader.load(Pricing, {:one, SourceArtifact}, id: artifact_id)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, Pricing, {:one, SourceArtifact}, id: artifact_id)}
+    end)
+  end
+
+  def source_artifact(_price_point, _args, _resolution), do: {:ok, nil}
+
+  @spec product_offer_truth(map(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
+  def product_offer_truth(%{id: product_id}, _args, _resolution)
+      when is_integer(product_id) do
+    {:ok, Pricing.current_offer_truth(product_id)}
+  end
+
+  def product_offer_truth(_product, _args, _resolution) do
+    {:ok, Pricing.current_offer_truth(nil)}
+  end
 
   @spec price_history(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}

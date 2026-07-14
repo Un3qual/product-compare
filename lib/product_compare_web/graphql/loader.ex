@@ -3,18 +3,32 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   Builds the request-scoped GraphQL dataloader sources.
   """
 
+  import Ecto.Query
+
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SpecificationCorrection
+  alias ProductCompareSchemas.Specs.SourceArtifact
+
+  @merchant_detail_source {__MODULE__, :merchant_detail}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
     Dataloader.new()
     |> Dataloader.add_source(Catalog, catalog_source(params))
     |> Dataloader.add_source(Pricing, pricing_source(params))
+    |> Dataloader.add_source(
+      @merchant_detail_source,
+      Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
+    )
   end
+
+  @spec merchant_detail_source() :: {module(), :merchant_detail}
+  def merchant_detail_source, do: @merchant_detail_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -29,15 +43,29 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   end
 
   defp catalog_query(ProductAttributeCurrent, _params) do
-    import Ecto.Query
-
     ProductAttributeCurrent
     |> join(:inner, [current], attribute in assoc(current, :attribute))
     |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
-    |> preload([_current, attribute], attribute: attribute, claim: [:unit, :enum_option])
+    |> preload([_current, attribute],
+      attribute: attribute,
+      claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
+    )
+  end
+
+  defp catalog_query(ProductMedia, _params) do
+    ProductMedia
+    |> order_by([media], asc: media.position, asc: media.url, asc: media.id)
+    |> preload([media], source_artifact: [:source])
+  end
+
+  defp catalog_query(SpecificationCorrection, _params) do
+    SpecificationCorrection
+    |> where([correction], correction.status in [:pending, :accepted])
+    |> order_by([correction], asc: correction.attribute_id, asc: correction.id)
   end
 
   defp catalog_query(queryable, _params), do: queryable
+  defp pricing_query(SourceArtifact, _params), do: preload(SourceArtifact, :source)
   defp pricing_query(queryable, _params), do: queryable
 
   defp pricing_run_batch(PricePoint, query, :latest_price, merchant_product_ids, repo_opts) do
@@ -54,5 +82,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   defp pricing_run_batch(queryable, query, col, inputs, repo_opts) do
     Dataloader.Ecto.run_batch(Repo, queryable, query, col, inputs, repo_opts)
+  end
+
+  defp merchant_detail_batch(:summary, merchants) do
+    Map.new(merchants, fn merchant -> {merchant, Pricing.merchant_detail(merchant)} end)
   end
 end

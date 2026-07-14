@@ -7,8 +7,10 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
   require Logger
 
-  alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker
   alias ProductCompare.Ingestion.OptionNormalization
+  alias ProductCompare.Ingestion.ScheduledCursor
+  alias ProductCompare.Ingestion.SchedulerSupport
 
   @default_advertiser_country "US"
   @default_initial_delay_ms 60_000
@@ -17,21 +19,14 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   @default_pages 1
 
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    genserver_opts =
-      case Keyword.get(opts, :name) do
-        nil -> []
-        name -> [name: name]
-      end
-
-    GenServer.start_link(__MODULE__, opts, genserver_opts)
-  end
+  def start_link(opts), do: SchedulerSupport.start_link(__MODULE__, opts)
 
   @impl GenServer
   def init(opts) do
     state = %{
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
+      cursor_resolver: Keyword.get(opts, :cursor_resolver, &ScheduledCursor.feed/1),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -42,25 +37,27 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
         OptionNormalization.positive_integer_option(opts, :interval_ms, @default_interval_ms),
       limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
       pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
-      runner: Keyword.get(opts, :runner, &CJFeedDiscovery.run/1)
+      enqueuer:
+        Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJFeedDiscoveryWorker.enqueue/1))
     }
 
-    schedule_run(state.initial_delay_ms)
+    SchedulerSupport.schedule(:run_discovery, state.initial_delay_ms)
 
     {:ok, state}
   end
 
   @impl GenServer
   def handle_info(:run_discovery, state) do
-    opts = discovery_opts(state)
+    opts =
+      SchedulerSupport.resolve_cursor(discovery_opts(state), state.cursor_resolver, state.cursor)
 
-    result = run_discovery(state.runner, opts)
+    result = SchedulerSupport.run(state.enqueuer, opts)
 
     log_result(result, opts)
 
-    state = %{state | cursor: OptionNormalization.next_cursor(state.cursor, result)}
+    state = %{state | cursor: opts[:cursor]}
 
-    schedule_run(state.interval_ms)
+    SchedulerSupport.schedule(:run_discovery, state.interval_ms)
 
     {:noreply, state}
   end
@@ -72,18 +69,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
       pages: state.pages,
       cursor: state.cursor
     ]
-  end
-
-  defp schedule_run(delay_ms) do
-    Process.send_after(self(), :run_discovery, delay_ms)
-  end
-
-  defp run_discovery(runner, opts) do
-    runner.(opts)
-  rescue
-    _exception -> {:error, :runner_exception}
-  catch
-    _kind, _reason -> {:error, :runner_exception}
   end
 
   defp log_result({:ok, report}, opts) do

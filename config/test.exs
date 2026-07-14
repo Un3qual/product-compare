@@ -23,6 +23,8 @@ config :product_compare, ProductCompareWeb.Endpoint,
 # Print only warnings and errors during test
 config :logger, level: :warning
 
+config :product_compare, Oban, testing: :manual
+
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 

@@ -11,6 +11,7 @@ defmodule ProductCompare.Application do
       [
         ProductCompareWeb.Telemetry,
         ProductCompare.Repo,
+        {Oban, Application.fetch_env!(:product_compare, Oban)},
         {DNSCluster, query: Application.get_env(:product_compare, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: ProductCompare.PubSub},
         # Start a worker by calling: ProductCompare.Worker.start_link(arg)
@@ -63,6 +64,7 @@ defmodule ProductCompare.Application do
       interval_ms = Keyword.get(config, :interval_minutes, 1440) * 60_000
 
       scheduler_opts = [
+        complete_scope: Keyword.get(config, :complete_scope, false),
         currency: Keyword.get(config, :currency, "USD"),
         initial_delay_ms: Keyword.get(config, :initial_delay_ms, 60_000),
         interval_ms: interval_ms,

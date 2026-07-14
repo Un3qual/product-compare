@@ -131,12 +131,10 @@ const secondProductQueryRef = {
 const compareRouteQueryDescriptor = {
   __relayQuery: {
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!, $pickerFirst: Int!, $pickerAfter: String) { comparisonProducts(slugs: $slugs) { id } }",
+    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3,
-      pickerFirst: 24,
-      pickerAfter: null
+      offerFirst: 3
     }
   }
 };
@@ -158,14 +156,7 @@ function buildCombinedCompareQuery() {
             endCursor: null
           }
         }
-      })),
-      products: {
-        edges: [],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null
-        }
-      }
+      }))
     },
     descriptor: compareRouteQueryDescriptor,
     dispose: vi.fn()
@@ -211,10 +202,20 @@ beforeEach(() => {
   secondProductQueryRef.dispose.mockReset();
   savedComparisonsQueryRef.dispose.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
+    comparisonRecommendation: {
+      algorithmVersion: "test-v1",
+      currency: null,
+      missingInputs: ["No shared currency."],
+      profile: "LOWEST_CURRENT_COST",
+      rankings: [],
+      status: "INSUFFICIENT_EVIDENCE",
+      winnerProductId: null
+    },
     products: {
-      edges: []
+      edges: [],
+      pageInfo: { endCursor: null, hasNextPage: false }
     }
-  });
+  } as never);
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
 
@@ -262,9 +263,7 @@ test("compare loader preloads the batched comparison query through Relay", async
     expect.anything(),
     {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3,
-      pickerFirst: 24,
-      pickerAfter: null
+      offerFirst: 3
     },
     { signal: request.signal }
   );

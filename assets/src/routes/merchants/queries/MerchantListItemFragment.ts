@@ -5,5 +5,6 @@ export default graphql`
     id
     name
     domain
+    slug
   }
 `;

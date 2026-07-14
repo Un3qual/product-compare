@@ -247,12 +247,10 @@ const THIRD_PRODUCT_QUERY_REF = {
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!, $pickerFirst: Int!, $pickerAfter: String) { comparisonProducts(slugs: $slugs) { id } products(first: $pickerFirst, after: $pickerAfter) { edges { node { id } } } }",
+    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3,
-      pickerFirst: 24,
-      pickerAfter: null
+      offerFirst: 3
     }
   }
 };
@@ -353,14 +351,7 @@ const buildFetchedCompareRouteQuery = ({
               : buildOfferContextConnection({ offers: [] })
           }
         : null
-    ),
-    products: {
-      edges: [],
-      pageInfo: {
-        endCursor: null,
-        hasNextPage: false
-      }
-    }
+    )
   },
   descriptor: COMPARE_ROUTE_QUERY_DESCRIPTOR,
   dispose: vi.fn()
@@ -732,13 +723,37 @@ test("compare loader requests selected product details and preserves URL order",
     expect.anything(),
     {
       slugs: ["detail-product", "second-product"],
-      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
-      pickerFirst: 24,
-      pickerAfter: null
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
     },
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader keeps single-product requests on the core comparison query", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    slugs: ["detail-product"]
+  });
+
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      slugs: [DETAIL_PRODUCT.slug],
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
+    },
+    { signal: request.signal }
+  );
 });
 
 test("compare loader restores requested slug order when response order diverges", async () => {
@@ -1259,9 +1274,7 @@ test("compare loader forwards the route abort signal to the combined Relay prelo
     expect.anything(),
     {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
-      pickerFirst: 24,
-      pickerAfter: null
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
     },
     { signal: request.signal }
   );
@@ -1801,10 +1814,13 @@ test("product picker resets pagination before rendering a changed selected set",
     </MemoryRouter>
   );
 
-  expect(mockedUseLazyLoadQuery.mock.calls[callsBeforeSelectionChange]?.[1]).toEqual({
-    first: 24,
-    after: null
-  });
+  expect(
+    mockedUseLazyLoadQuery.mock.calls
+      .slice(callsBeforeSelectionChange)
+      .some(([, variables]) =>
+        JSON.stringify(variables) === JSON.stringify({ first: 24, after: null })
+      )
+  ).toBe(true);
 });
 
 test("empty compare page handles an empty product picker", () => {

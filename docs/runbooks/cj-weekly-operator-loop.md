@@ -32,6 +32,11 @@ weekly flow below. Set runtime values outside source control.
 - Product import query scope remains controlled by
   `CJ_PRODUCT_IMPORT_KEYWORDS`, `CJ_PRODUCT_IMPORT_CURRENCY`, and
   `CJ_PRODUCT_IMPORT_SERVICEABLE_AREAS`.
+- `CJ_PRODUCT_IMPORT_COMPLETE_SCOPE=true` opts the exact configured query into
+  unseen-offer reconciliation. Leave it false unless the operator has verified
+  that the query is intended as a stable membership scope and the configured
+  page bound can reach the provider's end cursor. A partial, failed, or
+  superseded run is still fail-closed and cannot deactivate offers.
 
 After both schedules are enabled and each surface has completed a successful
 bounded run, require scheduled readiness:
@@ -150,6 +155,8 @@ account-manager automation, credential persistence, or CSV export.
   performs bounded manual feed discovery.
 - `mix product_compare.ingestion.cj_import`
   performs bounded manual product import, including from reviewed candidates.
+  Add `--complete-scope` only after verifying the exact query is an intended
+  stable membership scope and the page bound can reach its end cursor.
 
 ## Decision Records
 

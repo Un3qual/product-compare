@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d6df4ea177bd9c5da372a07fc4b7d084>>
+ * @generated SignedSource<<106c97c81d25cb2c3116c175f90d44c3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,6 +14,7 @@ export type MerchantListItemFragment$data = {
   readonly domain: string;
   readonly id: string;
   readonly name: string;
+  readonly slug: string;
   readonly " $fragmentType": "MerchantListItemFragment";
 };
 export type MerchantListItemFragment$key = {
@@ -47,12 +48,19 @@ const node: ReaderFragment = {
       "kind": "ScalarField",
       "name": "domain",
       "storageKey": null
+    },
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "slug",
+      "storageKey": null
     }
   ],
   "type": "Merchant",
   "abstractKey": null
 };
 
-(node as any).hash = "05b8ecfa14afa6f2b88517c990384a5b";
+(node as any).hash = "b26225c5f03f33347a612bd2004f7faa";
 
 export default node;

@@ -9,12 +9,17 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Resolvers.AffiliateResolver
+  alias ProductCompareWeb.Resolvers.AlertsResolver
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
+  alias ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver
+  alias ProductCompareWeb.Resolvers.DiscussionsResolver
   alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.RecommendationsResolver
+  alias ProductCompareWeb.Resolvers.SeoResolver
   alias ProductCompareWeb.Resolvers.SpecsResolver
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Affiliate.AffiliateLink
@@ -64,6 +69,43 @@ defmodule ProductCompareWeb.Schema do
       resolve(&SpecsResolver.source_artifact/3)
     end
 
+    @desc "Returns specification corrections submitted by the current user."
+    field :my_specification_corrections, non_null(:specification_correction_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:status, :specification_correction_status)
+
+      resolve(&SpecsResolver.my_specification_corrections/3)
+    end
+
+    @desc "Returns price watches owned by the current authenticated user."
+    field :my_price_watches, non_null(:price_watch_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:enabled, :boolean)
+
+      resolve(&AlertsResolver.my_price_watches/3)
+    end
+
+    @desc "Returns in-app price alert events owned by the current user."
+    field :my_alert_events, non_null(:alert_event_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:unread_only, :boolean)
+
+      resolve(&AlertsResolver.my_alert_events/3)
+    end
+
+    @desc "Returns the operator-only specification correction moderation queue."
+    field :specification_correction_moderation_queue,
+          non_null(:specification_correction_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      arg(:status, :specification_correction_status)
+
+      resolve(&SpecsResolver.specification_correction_moderation_queue/3)
+    end
+
     @desc "Returns API tokens owned by the current authenticated user."
     field :my_api_tokens, non_null(:api_token_connection) do
       arg(:first, :integer)
@@ -101,6 +143,25 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CatalogResolver.comparison_products/3)
     end
 
+    @desc "Returns a published product question by global ID."
+    field :product_question, :product_question do
+      arg(:id, non_null(:id))
+      resolve(&DiscussionsResolver.question/3)
+    end
+
+    @desc "Returns deterministic source-backed guidance for two or three products."
+    field :comparison_recommendation, non_null(:comparison_recommendation) do
+      arg(:slugs, non_null(list_of(non_null(:string))))
+      arg(:profile, non_null(:recommendation_profile))
+      resolve(&RecommendationsResolver.comparison_recommendation/3)
+    end
+
+    @desc "Returns a published, non-revoked immutable comparison snapshot."
+    field :comparison_snapshot, :comparison_snapshot do
+      arg(:token, non_null(:string))
+      resolve(&ComparisonSnapshotsResolver.comparison_snapshot/3)
+    end
+
     @desc "Returns products in a deterministic requested order with cursor pagination."
     field :products, :product_connection do
       arg(:first, :integer)
@@ -131,6 +192,18 @@ defmodule ProductCompareWeb.Schema do
       arg(:after, :string)
 
       resolve(&PricingResolver.merchants/3)
+    end
+
+    @desc "Returns one merchant by canonical slug."
+    field :merchant, :merchant do
+      arg(:slug, non_null(:string))
+      resolve(&PricingResolver.merchant/3)
+    end
+
+    @desc "Returns a curated public product category by canonical search slug."
+    field :category, :seo_category do
+      arg(:slug, non_null(:string))
+      resolve(&SeoResolver.category/3)
     end
 
     @desc "Returns captured merchant feed candidates with review-safe metadata."
@@ -226,6 +299,46 @@ defmodule ProductCompareWeb.Schema do
       resolve(&CommerceAttributionResolver.track_commerce_click/3)
     end
 
+    @desc "Proposes an authenticated, typed replacement for a product specification."
+    field :propose_specification_correction,
+          non_null(:specification_correction_payload) do
+      arg(:input, non_null(:propose_specification_correction_input))
+
+      resolve(&SpecsResolver.propose_specification_correction/3)
+    end
+
+    @desc "Accepts or rejects a specification correction as an operator."
+    field :moderate_specification_correction,
+          non_null(:specification_correction_payload) do
+      arg(:input, non_null(:moderate_specification_correction_input))
+
+      resolve(&SpecsResolver.moderate_specification_correction/3)
+    end
+
+    @desc "Creates a product or offer price watch for the current user."
+    field :create_price_watch, non_null(:price_watch_payload) do
+      arg(:input, non_null(:create_price_watch_input))
+      resolve(&AlertsResolver.create_price_watch/3)
+    end
+
+    @desc "Updates one of the current user's price watches."
+    field :update_price_watch, non_null(:price_watch_payload) do
+      arg(:input, non_null(:update_price_watch_input))
+      resolve(&AlertsResolver.update_price_watch/3)
+    end
+
+    @desc "Deletes one of the current user's price watches."
+    field :delete_price_watch, non_null(:delete_price_watch_payload) do
+      arg(:id, non_null(:id))
+      resolve(&AlertsResolver.delete_price_watch/3)
+    end
+
+    @desc "Marks one of the current user's in-app alert events as read."
+    field :mark_alert_read, non_null(:alert_event_payload) do
+      arg(:id, non_null(:id))
+      resolve(&AlertsResolver.mark_alert_read/3)
+    end
+
     @desc "Upserts an affiliate network by name."
     field :upsert_affiliate_network, :upsert_affiliate_network_payload do
       arg(:input, non_null(:upsert_affiliate_network_input))
@@ -273,6 +386,55 @@ defmodule ProductCompareWeb.Schema do
       arg(:saved_comparison_set_id, non_null(:id))
 
       resolve(&CatalogResolver.delete_saved_comparison_set/3)
+    end
+
+    @desc "Publishes an immutable comparison snapshot for the current user."
+    field :publish_comparison_snapshot, non_null(:publish_comparison_snapshot_payload) do
+      arg(:input, non_null(:publish_comparison_snapshot_input))
+      resolve(&ComparisonSnapshotsResolver.publish/3)
+    end
+
+    @desc "Revokes one of the current user's public comparison snapshots."
+    field :revoke_comparison_snapshot, non_null(:revoke_comparison_snapshot_payload) do
+      arg(:snapshot_id, non_null(:id))
+      resolve(&ComparisonSnapshotsResolver.revoke/3)
+    end
+
+    @desc "Submits one authenticated product review for moderation."
+    field :submit_product_review, non_null(:product_review_payload) do
+      arg(:input, non_null(:submit_product_review_input))
+      resolve(&DiscussionsResolver.submit_review/3)
+    end
+
+    @desc "Submits an authenticated product question for moderation."
+    field :ask_product_question, non_null(:product_question_payload) do
+      arg(:input, non_null(:ask_product_question_input))
+      resolve(&DiscussionsResolver.ask_question/3)
+    end
+
+    @desc "Submits an authenticated answer to a published question."
+    field :answer_product_question, non_null(:product_answer_payload) do
+      arg(:input, non_null(:answer_product_question_input))
+      resolve(&DiscussionsResolver.answer_question/3)
+    end
+
+    @desc "Marks one published answer as accepted by the question owner."
+    field :accept_product_answer, non_null(:product_question_payload) do
+      arg(:question_id, non_null(:id))
+      arg(:answer_id, non_null(:id))
+      resolve(&DiscussionsResolver.accept_answer/3)
+    end
+
+    @desc "Reports review or Q&A content for operator moderation."
+    field :report_community_content, non_null(:community_report_payload) do
+      arg(:input, non_null(:report_community_content_input))
+      resolve(&DiscussionsResolver.report/3)
+    end
+
+    @desc "Publishes, hides, or rejects community content as an operator."
+    field :moderate_community_content, non_null(:community_moderation_payload) do
+      arg(:input, non_null(:moderate_community_content_input))
+      resolve(&DiscussionsResolver.moderate/3)
     end
   end
 
@@ -358,6 +520,57 @@ defmodule ProductCompareWeb.Schema do
     field :after, :string
   end
 
+  input_object :specification_correction_value_input do
+    field :value_bool, :boolean
+    field :value_int, :integer
+    field :value_num, :decimal
+    field :value_text, :string
+    field :value_date, :date
+    field :value_timestamp, :datetime
+    field :unit_id, :id
+    field :enum_option_id, :id
+  end
+
+  input_object :propose_specification_correction_input do
+    field :product_id, non_null(:id)
+    field :attribute_id, non_null(:id)
+    field :value, non_null(:specification_correction_value_input)
+    field :reason, non_null(:string)
+    field :source_url, :string
+    field :explanation, :string
+  end
+
+  input_object :moderate_specification_correction_input do
+    field :id, non_null(:id)
+    field :decision, non_null(:specification_correction_status)
+    field :moderation_note, :string
+  end
+
+  enum :price_watch_rule_type do
+    value(:target_price)
+    value(:percentage_drop)
+    value(:back_in_stock)
+    value(:newly_available)
+  end
+
+  input_object :create_price_watch_input do
+    field :product_id, non_null(:id)
+    field :merchant_product_id, :id
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :cooldown_seconds, :integer
+  end
+
+  input_object :update_price_watch_input do
+    field :id, non_null(:id)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :enabled, :boolean
+    field :cooldown_seconds, :integer
+  end
+
   input_object :merchant_products_input do
     field :product_id, non_null(:id)
     field :merchant_id, :id
@@ -393,6 +606,64 @@ defmodule ProductCompareWeb.Schema do
     value(:name_asc)
     value(:brand_name_asc)
     value(:newest)
+  end
+
+  enum :recommendation_profile do
+    value(:lowest_current_cost)
+    value(:best_value)
+  end
+
+  enum :recommendation_status do
+    value(:winner)
+    value(:tie)
+    value(:insufficient_evidence)
+  end
+
+  object :comparison_recommendation do
+    field :profile, non_null(:recommendation_profile)
+    field :algorithm_version, non_null(:string)
+    field :evaluated_at, non_null(:datetime)
+    field :status, non_null(:recommendation_status)
+    field :currency, :string
+    field :missing_inputs, non_null(list_of(non_null(:string)))
+
+    field :winner_product_id, :id do
+      resolve(fn recommendation, _, _ ->
+        GlobalId.encode_optional(:product, recommendation.winner_product_id)
+      end)
+    end
+
+    field :rankings, non_null(list_of(non_null(:recommendation_ranking)))
+  end
+
+  object :recommendation_ranking do
+    field :rank, non_null(:integer)
+    field :product_name, non_null(:string)
+    field :landed_price, non_null(:decimal)
+    field :currency, non_null(:string)
+    field :reasons, non_null(list_of(non_null(:string)))
+
+    field :product_id, non_null(:id) do
+      resolve(fn ranking, _, _ -> GlobalId.encode_required(:product, ranking.product_id) end)
+    end
+
+    field :price_point_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:price_point, ranking.price_point_id)
+      end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:merchant_product, ranking.merchant_product_id)
+      end)
+    end
+
+    field :claim_ids, non_null(list_of(non_null(:id))) do
+      resolve(fn ranking, _, _ ->
+        {:ok, Enum.map(ranking.claim_ids, &GlobalId.encode(:product_attribute_claim, &1))}
+      end)
+    end
   end
 
   input_object :product_filters_input do
@@ -473,6 +744,58 @@ defmodule ProductCompareWeb.Schema do
     field :product_ids, non_null(list_of(non_null(:id)))
   end
 
+  input_object :publish_comparison_snapshot_input do
+    field :title, :string
+    field :search_indexable, :boolean, default_value: false
+    field :product_ids, non_null(list_of(non_null(:id)))
+    field :recommendation_profile, non_null(:recommendation_profile)
+  end
+
+  input_object :submit_product_review_input do
+    field :product_id, non_null(:id)
+    field :rating, non_null(:integer)
+    field :title, :string
+    field :body, :string
+    field :merchant_product_id, :id
+  end
+
+  input_object :ask_product_question_input do
+    field :product_id, non_null(:id)
+    field :title, non_null(:string)
+    field :body, :string
+  end
+
+  input_object :answer_product_question_input do
+    field :question_id, non_null(:id)
+    field :body, non_null(:string)
+  end
+
+  enum :community_content_type do
+    value(:review)
+    value(:question)
+    value(:answer)
+  end
+
+  enum :community_moderation_status do
+    value(:pending)
+    value(:published)
+    value(:hidden)
+    value(:rejected)
+  end
+
+  input_object :report_community_content_input do
+    field :content_type, non_null(:community_content_type)
+    field :content_id, non_null(:id)
+    field :reason, non_null(:string)
+  end
+
+  input_object :moderate_community_content_input do
+    field :content_type, non_null(:community_content_type)
+    field :content_id, non_null(:id)
+    field :status, non_null(:community_moderation_status)
+    field :note, :string
+  end
+
   object :upsert_affiliate_network_payload do
     field :network, :affiliate_network
     field :errors, non_null(list_of(non_null(:mutation_error)))
@@ -495,6 +818,63 @@ defmodule ProductCompareWeb.Schema do
 
   object :saved_comparison_set_payload do
     field :saved_comparison_set, :saved_comparison_set
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :publish_comparison_snapshot_payload do
+    field :snapshot, :comparison_snapshot
+    field :share_path, :string
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :revoke_comparison_snapshot_payload do
+    field :revoked_snapshot_id, :id
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :product_review_payload do
+    field :review, :product_review
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :product_question_payload do
+    field :question, :product_question
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :product_answer_payload do
+    field :answer, :product_answer
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :community_report_payload do
+    field :report_id, :id
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :community_moderation_payload do
+    field :content_id, :id
+    field :moderation_status, :community_moderation_status
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :specification_correction_payload do
+    field :correction, :specification_correction
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :price_watch_payload do
+    field :watch, :price_watch
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :delete_price_watch_payload do
+    field :deleted_watch_id, :id
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :alert_event_payload do
+    field :event, :alert_event
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -707,6 +1087,12 @@ defmodule ProductCompareWeb.Schema do
 
     field :email, non_null(:string)
     field :is_operator, non_null(:boolean)
+
+    field :comparison_snapshots, non_null(:comparison_snapshot_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&ComparisonSnapshotsResolver.owned_snapshots/3)
+    end
   end
 
   object :api_token do
@@ -745,6 +1131,112 @@ defmodule ProductCompareWeb.Schema do
 
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :comparison_snapshot do
+    field :id, non_null(:id) do
+      resolve(fn snapshot, _, _ ->
+        GlobalId.encode_required(:comparison_snapshot, snapshot.entropy_id)
+      end)
+    end
+
+    field :title, :string
+    field :share_path, non_null(:string), resolve: &ComparisonSnapshotsResolver.share_path/3
+    field :search_indexable, non_null(:boolean)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.snapshot_metadata/3
+    field :captured_at, non_null(:datetime), resolve: &ComparisonSnapshotsResolver.captured_at/3
+    field :disclaimer, non_null(:string), resolve: &ComparisonSnapshotsResolver.disclaimer/3
+
+    field :products, non_null(list_of(non_null(:comparison_snapshot_product))),
+      resolve: &ComparisonSnapshotsResolver.snapshot_products/3
+
+    field :recommendation, non_null(:comparison_recommendation),
+      resolve: &ComparisonSnapshotsResolver.recommendation/3
+  end
+
+  object :comparison_snapshot_product do
+    field :id, non_null(:id) do
+      resolve(fn product, _, _ -> GlobalId.encode_required(:product, product.id) end)
+    end
+
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
+    field :description, :string
+    field :model_number, :string
+    field :brand_name, :string
+    field :attributes, non_null(list_of(non_null(:comparison_snapshot_attribute)))
+    field :offers, non_null(list_of(non_null(:comparison_snapshot_offer)))
+  end
+
+  object :comparison_snapshot_connection do
+    field :edges, non_null(list_of(non_null(:comparison_snapshot_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :comparison_snapshot_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:comparison_snapshot)
+  end
+
+  object :comparison_snapshot_attribute do
+    field :attribute_id, non_null(:id) do
+      resolve(fn attribute, _, _ ->
+        GlobalId.encode_required(:attribute, attribute.attribute_id)
+      end)
+    end
+
+    field :claim_id, non_null(:id) do
+      resolve(fn attribute, _, _ ->
+        GlobalId.encode_required(:product_attribute_claim, attribute.claim_id)
+      end)
+    end
+
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :value_text, non_null(:string)
+    field :source_type, non_null(:string)
+    field :confidence, :decimal
+    field :evidence, non_null(list_of(non_null(:comparison_snapshot_evidence)))
+  end
+
+  object :comparison_snapshot_evidence do
+    field :artifact_id, non_null(:id) do
+      resolve(fn evidence, _, _ ->
+        GlobalId.encode_required(:source_artifact, evidence.artifact_id)
+      end)
+    end
+
+    field :excerpt, :string
+    field :source_kind, non_null(:string)
+    field :source_name, non_null(:string)
+    field :source_domain, :string
+    field :url, :string
+
+    field :fetched_at, non_null(:datetime),
+      resolve: &ComparisonSnapshotsResolver.evidence_fetched_at/3
+  end
+
+  object :comparison_snapshot_offer do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn offer, _, _ ->
+        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
+      end)
+    end
+
+    field :price_point_id, non_null(:id) do
+      resolve(fn offer, _, _ -> GlobalId.encode_required(:price_point, offer.price_point_id) end)
+    end
+
+    field :merchant_name, non_null(:string)
+    field :merchant_domain, :string
+    field :currency, non_null(:string)
+    field :item_price, non_null(:decimal)
+    field :shipping, non_null(:decimal)
+    field :landed_price, non_null(:decimal)
+    field :freshness, non_null(:string)
+
+    field :observed_at, non_null(:datetime),
+      resolve: &ComparisonSnapshotsResolver.offer_observed_at/3
   end
 
   object :saved_comparison_item do
@@ -820,8 +1312,60 @@ defmodule ProductCompareWeb.Schema do
 
     field :name, non_null(:string)
     field :domain, non_null(:string)
+    field :slug, non_null(:string)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.merchant_metadata/3
+
+    field :detail_summary, non_null(:merchant_detail_summary),
+      resolve: &PricingResolver.merchant_detail_summary/3
+
+    field :merchant_products, non_null(:merchant_product_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&PricingResolver.merchant_offers/3)
+    end
+
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :merchant_detail_summary do
+    field :active_offer_count, non_null(:integer)
+    field :distinct_product_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :fresh_offer_count, non_null(:integer)
+    field :aging_offer_count, non_null(:integer)
+    field :stale_offer_count, non_null(:integer)
+    field :unobserved_offer_count, non_null(:integer)
+    field :last_observed_at, :datetime
+  end
+
+  object :seo_metadata do
+    field :title, non_null(:string)
+    field :description, non_null(:string)
+    field :canonical_path, non_null(:string)
+    field :indexable, non_null(:boolean)
+    field :image_url, :string
+    field :structured_data, :string
+  end
+
+  object :seo_category do
+    field :id, non_null(:id) do
+      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.id) end)
+    end
+
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
+    field :description, non_null(:string)
+    field :qualified_product_count, non_null(:integer)
+    field :indexable, non_null(:boolean)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.category_metadata/3
+
+    field :products, non_null(:product_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&SeoResolver.category_products/3)
+    end
   end
 
   object :merchant_connection do
@@ -893,9 +1437,32 @@ defmodule ProductCompareWeb.Schema do
     field :model_number, :string
     field :description, :string
     field :brand, :brand, resolve: dataloader(Catalog, use_parent: true)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.product_metadata/3
+
+    field :media, non_null(list_of(non_null(:product_media))),
+      resolve: dataloader(Catalog, use_parent: true)
 
     field :current_attributes, non_null(list_of(non_null(:product_attribute_value))) do
       resolve(&CatalogResolver.current_attributes/3)
+    end
+
+    field :offer_truth, non_null(:product_offer_truth) do
+      resolve(&PricingResolver.product_offer_truth/3)
+    end
+
+    field :review_summary, non_null(:product_review_summary),
+      resolve: &DiscussionsResolver.review_summary/3
+
+    field :reviews, non_null(:product_review_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&DiscussionsResolver.reviews/3)
+    end
+
+    field :questions, non_null(:product_question_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&DiscussionsResolver.questions/3)
     end
 
     field :merchant_products, :merchant_product_connection do
@@ -906,6 +1473,122 @@ defmodule ProductCompareWeb.Schema do
 
       resolve(&PricingResolver.product_merchant_products/3)
     end
+  end
+
+  object :product_review_summary do
+    field :count, non_null(:integer)
+    field :average_rating, :decimal
+  end
+
+  object :product_review do
+    field :id, non_null(:id) do
+      resolve(fn review, _, _ -> GlobalId.encode_required(:product_review, review.entropy_id) end)
+    end
+
+    field :rating, non_null(:integer)
+    field :title, :string
+    field :body, :string, resolve: &DiscussionsResolver.body/3
+    field :verified_purchase, non_null(:boolean)
+    field :moderation_status, non_null(:community_moderation_status)
+    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+
+    field :created_at, non_null(:datetime),
+      resolve: fn review, _, _ -> {:ok, review.inserted_at} end
+  end
+
+  object :product_review_connection do
+    field :edges, non_null(list_of(non_null(:product_review_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_review_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_review)
+  end
+
+  object :product_question do
+    field :id, non_null(:id) do
+      resolve(fn question, _, _ ->
+        GlobalId.encode_required(:product_question, question.entropy_id)
+      end)
+    end
+
+    field :title, non_null(:string)
+    field :body, :string, resolve: &DiscussionsResolver.body/3
+    field :moderation_status, non_null(:community_moderation_status)
+    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+
+    field :accepted_answer_id, :id do
+      resolve(fn question, _, _ ->
+        accepted_answer =
+          cond do
+            Ecto.assoc_loaded?(question.accepted_post) ->
+              question.accepted_post
+
+            Ecto.assoc_loaded?(question.posts) ->
+              Enum.find(question.posts, &(&1.id == question.accepted_post_id))
+
+            true ->
+              nil
+          end
+
+        GlobalId.encode_optional(
+          :product_answer,
+          accepted_answer && accepted_answer.entropy_id
+        )
+      end)
+    end
+
+    field :answers, non_null(:product_answer_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&DiscussionsResolver.answers/3)
+    end
+
+    field :created_at, non_null(:datetime),
+      resolve: fn question, _, _ -> {:ok, question.inserted_at} end
+  end
+
+  object :product_question_connection do
+    field :edges, non_null(list_of(non_null(:product_question_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_question_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_question)
+  end
+
+  object :product_answer do
+    field :id, non_null(:id) do
+      resolve(fn answer, _, _ -> GlobalId.encode_required(:product_answer, answer.entropy_id) end)
+    end
+
+    field :body, non_null(:string), resolve: &DiscussionsResolver.body/3
+    field :moderation_status, non_null(:community_moderation_status)
+    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+
+    field :created_at, non_null(:datetime),
+      resolve: fn answer, _, _ -> {:ok, answer.inserted_at} end
+  end
+
+  object :product_answer_connection do
+    field :edges, non_null(list_of(non_null(:product_answer_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :product_answer_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:product_answer)
+  end
+
+  object :product_media do
+    field :url, non_null(:string)
+    field :role, non_null(:string)
+    field :position, non_null(:integer)
+    field :alt_text, :string
+    field :observed_at, non_null(:datetime)
+    field :source_artifact, :source_artifact
   end
 
   object :product_attribute_value do
@@ -921,6 +1604,169 @@ defmodule ProductCompareWeb.Schema do
     field :boolean_value, :boolean
     field :enum_option_id, :id
     field :unit_symbol, :string
+    field :claim_id, non_null(:id)
+    field :claim_status, non_null(:string)
+    field :source_type, non_null(:string)
+    field :confidence, :decimal
+    field :pending_correction_count, non_null(:integer)
+    field :accepted_correction_count, non_null(:integer)
+    field :evidence, non_null(list_of(non_null(:product_attribute_evidence)))
+  end
+
+  enum :specification_correction_status do
+    value(:pending)
+    value(:accepted)
+    value(:rejected)
+  end
+
+  object :specification_correction do
+    field :id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:specification_correction, correction.id)
+      end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:product, correction.product_id)
+      end)
+    end
+
+    field :attribute_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:attribute, correction.attribute_id)
+      end)
+    end
+
+    field :claim_id, non_null(:id) do
+      resolve(fn correction, _, _ ->
+        GlobalId.encode_required(:product_attribute_claim, correction.claim_id)
+      end)
+    end
+
+    field :status, non_null(:specification_correction_status)
+    field :reason, non_null(:string)
+    field :source_url, :string
+    field :explanation, :string
+    field :value_text, non_null(:string), resolve: &SpecsResolver.correction_value_text/3
+    field :moderation_note, :string, resolve: &SpecsResolver.moderation_note/3
+
+    field :submitted_at, non_null(:datetime),
+      resolve: fn correction, _, _ -> {:ok, correction.inserted_at} end
+
+    field :reviewed_at, :datetime
+  end
+
+  object :specification_correction_connection do
+    field :edges, non_null(list_of(non_null(:specification_correction_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :specification_correction_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:specification_correction)
+  end
+
+  object :price_watch do
+    field :id, non_null(:id) do
+      resolve(fn watch, _, _ -> GlobalId.encode_required(:price_watch, watch.entropy_id) end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn watch, _, _ -> GlobalId.encode_required(:product, watch.product_id) end)
+    end
+
+    field :merchant_product_id, :id do
+      resolve(fn watch, _, _ ->
+        GlobalId.encode_optional(:merchant_product, watch.merchant_product_id)
+      end)
+    end
+
+    field :product_name, non_null(:string),
+      resolve: fn watch, _, _ -> {:ok, watch.product.name} end
+
+    field :product_slug, non_null(:string),
+      resolve: fn watch, _, _ -> {:ok, watch.product.slug} end
+
+    field :merchant_name, :string,
+      resolve: fn watch, _, _ ->
+        {:ok, watch.merchant_product && watch.merchant_product.merchant.name}
+      end
+
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
+    field :baseline_landed_price, :decimal
+    field :enabled, non_null(:boolean)
+    field :cooldown_seconds, non_null(:integer)
+    field :last_evaluated_at, :datetime
+
+    field :created_at, non_null(:datetime),
+      resolve: fn watch, _, _ -> {:ok, watch.inserted_at} end
+  end
+
+  object :price_watch_connection do
+    field :edges, non_null(list_of(non_null(:price_watch_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :price_watch_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:price_watch)
+  end
+
+  object :alert_event do
+    field :id, non_null(:id) do
+      resolve(fn event, _, _ -> GlobalId.encode_required(:alert_event, event.entropy_id) end)
+    end
+
+    field :rule_type, non_null(:price_watch_rule_type)
+    field :currency, non_null(:string)
+    field :item_price, non_null(:decimal)
+    field :shipping, non_null(:decimal)
+    field :landed_price, non_null(:decimal)
+    field :observed_at, non_null(:datetime)
+    field :read_at, :datetime
+
+    field :created_at, non_null(:datetime),
+      resolve: fn event, _, _ -> {:ok, event.inserted_at} end
+
+    field :triggering_price_point_id, non_null(:id) do
+      resolve(fn event, _, _ ->
+        GlobalId.encode_required(:price_point, event.triggering_price_point_id)
+      end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn event, _, _ ->
+        GlobalId.encode_required(:merchant_product, event.merchant_product_id)
+      end)
+    end
+
+    field :product_name, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.product.name} end
+
+    field :product_slug, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.product.slug} end
+
+    field :merchant_name, non_null(:string),
+      resolve: fn event, _, _ -> {:ok, event.merchant_product.merchant.name} end
+  end
+
+  object :alert_event_connection do
+    field :edges, non_null(list_of(non_null(:alert_event_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :alert_event_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:alert_event)
+  end
+
+  object :product_attribute_evidence do
+    field :excerpt, :string
+    field :source_artifact, non_null(:source_artifact)
   end
 
   object :merchant_product do
@@ -988,8 +1834,65 @@ defmodule ProductCompareWeb.Schema do
 
     field :observed_at, non_null(:datetime)
     field :price, non_null(:decimal)
+    field :shipping, :decimal
+    field :in_stock, :boolean
+
+    field :source_artifact, :source_artifact do
+      resolve(&PricingResolver.source_artifact/3)
+    end
+
     field :inserted_at, non_null(:datetime)
     field :updated_at, :datetime
+  end
+
+  object :product_offer_truth do
+    field :as_of, non_null(:datetime)
+    field :fresh_for_seconds, non_null(:integer)
+    field :stale_after_seconds, non_null(:integer)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :currency_summaries, non_null(list_of(non_null(:offer_currency_summary)))
+  end
+
+  object :offer_currency_summary do
+    field :currency, non_null(:string)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :best_offer, :current_offer
+  end
+
+  object :current_offer do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn offer, _, _ ->
+        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
+      end)
+    end
+
+    field :currency, non_null(:string)
+    field :item_price, :decimal
+    field :shipping, :decimal
+    field :landed_price, :decimal
+    field :landed_price_complete, non_null(:boolean)
+    field :stock_status, non_null(:offer_stock_status)
+    field :freshness, non_null(:offer_freshness)
+    field :observed_at, :datetime
+    field :eligible, non_null(:boolean)
+    field :source_artifact, :source_artifact
+  end
+
+  enum :offer_stock_status do
+    value(:in_stock)
+    value(:out_of_stock)
+    value(:unknown)
+  end
+
+  enum :offer_freshness do
+    value(:fresh)
+    value(:aging)
+    value(:stale)
+    value(:unobserved)
   end
 
   object :price_point_connection do

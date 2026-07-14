@@ -21,6 +21,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     field :source_type, Ecto.Enum, values: @source_types
     field :status, Ecto.Enum, values: @statuses
     field :confidence, :decimal
+    field :fingerprint, :string
 
     field :value_bool, :boolean
     field :value_int, :integer
@@ -44,6 +45,10 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
 
     has_many :evidence_links, ProductCompareSchemas.Specs.ClaimEvidence, foreign_key: :claim_id
 
+    has_one :specification_correction,
+            ProductCompareSchemas.Specs.SpecificationCorrection,
+            foreign_key: :claim_id
+
     timestamps(updated_at: false)
   end
 
@@ -63,6 +68,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
       :status,
       :created_by,
       :confidence,
+      :fingerprint,
       :value_bool,
       :value_int,
       :value_num,
@@ -80,6 +86,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     ])
     |> validate_required([:product_id, :attribute_id, :source_type, :status])
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    |> unique_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_uq)
     |> validate_single_typed_value()
     |> validate_numeric_fields()
     |> validate_numeric_range_order()

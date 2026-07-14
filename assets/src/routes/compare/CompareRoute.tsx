@@ -37,6 +37,7 @@ import {
   buildComparePathFromSlugs
 } from "./paths";
 import { CompareSelectionTray } from "./CompareSelectionTray";
+import { ShareComparisonControl } from "./ShareComparisonControl";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{
@@ -204,6 +205,7 @@ function CompareSelectionRoute({
               <Button disabled={saveInFlight} onClick={handleSave} type="button">
                 {saveInFlight ? "Saving comparison..." : "Save comparison"}
               </Button>
+              <ShareComparisonControl products={loaderData.products} />
               <p aria-label="Save comparison status" aria-live="polite" role="status">
                 {saveFeedback.message ?? ""}
               </p>

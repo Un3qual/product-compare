@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<351724ab0391273e35112934d82eca2d>>
+ * @generated SignedSource<<66cdc5531679eccc4d0e3f318c0b8fcb>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -90,6 +90,14 @@ export type ProductDetailRouteQuery$data = {
       };
     } | null | undefined;
     readonly name: string;
+    readonly seo: {
+      readonly canonicalPath: string;
+      readonly description: string;
+      readonly imageUrl: string | null | undefined;
+      readonly indexable: boolean;
+      readonly structuredData: string | null | undefined;
+      readonly title: string;
+    };
     readonly slug: string;
   } | null | undefined;
 };
@@ -221,6 +229,53 @@ v13 = [
         "storageKey": null
       },
       (v5/*: any*/),
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "SeoMetadata",
+        "kind": "LinkedField",
+        "name": "seo",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          (v5/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "canonicalPath",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "indexable",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "imageUrl",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "structuredData",
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
       {
         "alias": null,
         "args": null,
@@ -559,16 +614,16 @@ return {
     "selections": (v13/*: any*/)
   },
   "params": {
-    "cacheID": "700e83eed1be4ad4b6106b19505af46a",
+    "cacheID": "11186773e15a446a6ce3ad56f3671eb0",
     "id": null,
     "metadata": {},
     "name": "ProductDetailRouteQuery",
     "operationKind": "query",
-    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n        node {\n          id\n          url\n          currency\n          merchant {\n            id\n            name\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              cursor\n              node {\n                code\n                description\n                discountType\n                discountValue\n                currency\n                validTo\n                terms\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    description\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n        node {\n          id\n          url\n          currency\n          merchant {\n            id\n            name\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              cursor\n              node {\n                code\n                description\n                discountType\n                discountValue\n                currency\n                validTo\n                terms\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "44d357e409cb6a0535beaefd517dbf57";
+(node as any).hash = "4d07657131ae299603f929275c24937e";
 
 export default node;

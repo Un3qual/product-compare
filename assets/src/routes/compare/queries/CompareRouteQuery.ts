@@ -4,8 +4,6 @@ export const compareRouteQuery = graphql`
   query CompareRouteQuery(
     $slugs: [String!]!
     $offerFirst: Int!
-    $pickerFirst: Int!
-    $pickerAfter: String
   ) {
     comparisonProducts(slugs: $slugs) {
       id
@@ -77,23 +75,6 @@ export const compareRouteQuery = graphql`
           endCursor
           hasNextPage
         }
-      }
-    }
-    products(first: $pickerFirst, after: $pickerAfter) {
-      edges {
-        node {
-          id
-          name
-          slug
-          brand {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
       }
     }
   }

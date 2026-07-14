@@ -106,6 +106,7 @@ function MerchantDirectoryPanel({
         id: node.id,
         name: node.name,
         domain: node.domain,
+        detailHref: `/merchants/${node.slug}`,
         websiteHref: externalWebsiteHref(node.domain)
       }))}
       nextHref={

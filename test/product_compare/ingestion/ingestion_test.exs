@@ -1,11 +1,13 @@
 defmodule ProductCompare.IngestionTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
@@ -691,6 +693,137 @@ defmodule ProductCompare.IngestionTest do
   end
 
   describe "persist_normalized_listing/2" do
+    test "resolves a historical product slug to its canonical product" do
+      source = source_fixture()
+      historical_slug = "acme-trail-running-shoe-cj-cj-12345"
+      product = ProductCompare.Fixtures.SpecsFixtures.product_fixture(%{slug: historical_slug})
+
+      assert {:ok, canonical_product} =
+               Catalog.update_product(product, %{slug: "canonical-trail-running-shoe"})
+
+      listing = normalized_listing(%{gtin: nil})
+
+      assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+      assert persisted.product.id == canonical_product.id
+      assert persisted.product.slug == "canonical-trail-running-shoe"
+      assert Repo.aggregate(Product, :count, :id) == 1
+    end
+
+    test "resolves listings from different sources and merchants by validated GTIN" do
+      cj_source = source_fixture()
+      awin_source = source_fixture(%{name: "Awin", domain: "awin.example"})
+
+      cj_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-CANONICAL-1",
+          merchant_identifier: "cj-merchant",
+          merchant_name: "CJ Merchant",
+          merchant_domain: "cj-merchant.example",
+          listing_url: "https://cj-merchant.example/products/trail-shoe",
+          raw_payload: %{"id" => "CJ-CANONICAL-1"}
+        })
+
+      awin_listing =
+        normalized_listing(%{
+          source: :awin,
+          external_product_id: "AWIN-CANONICAL-9",
+          merchant_identifier: "awin-merchant",
+          merchant_name: "Awin Merchant",
+          merchant_domain: "awin-merchant.example",
+          listing_url: "https://awin-merchant.example/products/acme-running-shoe",
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "AWIN-CANONICAL-9"}
+        })
+
+      assert {:ok, cj_persisted} =
+               Ingestion.persist_normalized_listing(cj_source, cj_listing)
+
+      assert {:ok, awin_persisted} =
+               Ingestion.persist_normalized_listing(awin_source, awin_listing)
+
+      assert awin_persisted.product.id == cj_persisted.product.id
+      refute awin_persisted.external_product.id == cj_persisted.external_product.id
+      refute awin_persisted.merchant_product.id == cj_persisted.merchant_product.id
+
+      assert %ProductIdentifier{
+               product_id: product_id,
+               scheme: "gtin",
+               normalized_value: "00012345678905",
+               display_value: "00012345678905",
+               verification_status: "validated",
+               source_artifact_id: source_artifact_id
+             } = Repo.one!(ProductIdentifier)
+
+      assert product_id == cj_persisted.product.id
+      assert source_artifact_id == cj_persisted.source_artifact.id
+      assert Repo.aggregate(Product, :count, :id) == 1
+      assert Repo.aggregate(ProductIdentifier, :count, :id) == 1
+      assert Repo.aggregate(ExternalProduct, :count, :id) == 2
+      assert Repo.aggregate(MerchantProduct, :count, :id) == 2
+    end
+
+    test "does not merge or persist blank and invalid GTIN values" do
+      source = source_fixture()
+
+      blank_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-BLANK-GTIN",
+          gtin: " ",
+          listing_url: "https://trail.example/products/blank-gtin",
+          raw_payload: %{"id" => "CJ-BLANK-GTIN"}
+        })
+
+      invalid_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-INVALID-GTIN",
+          gtin: "00012345678906",
+          listing_url: "https://trail.example/products/invalid-gtin",
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-INVALID-GTIN"}
+        })
+
+      assert {:ok, blank_persisted} =
+               Ingestion.persist_normalized_listing(source, blank_listing)
+
+      assert {:ok, invalid_persisted} =
+               Ingestion.persist_normalized_listing(source, invalid_listing)
+
+      refute invalid_persisted.product.id == blank_persisted.product.id
+      assert Repo.aggregate(Product, :count, :id) == 2
+      assert Repo.aggregate(ProductIdentifier, :count, :id) == 0
+    end
+
+    test "does not rebind an existing external product or add a conflicting GTIN" do
+      source = source_fixture()
+
+      original_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-STABLE-IDENTITY",
+          gtin: "00012345678905",
+          raw_payload: %{"id" => "CJ-STABLE-IDENTITY", "gtin" => "00012345678905"}
+        })
+
+      conflicting_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-STABLE-IDENTITY",
+          gtin: "4006381333931",
+          observed_at: ~U[2026-05-24 15:00:00Z],
+          raw_payload: %{"id" => "CJ-STABLE-IDENTITY", "gtin" => "4006381333931"}
+        })
+
+      assert {:ok, original_persisted} =
+               Ingestion.persist_normalized_listing(source, original_listing)
+
+      assert {:ok, conflicting_persisted} =
+               Ingestion.persist_normalized_listing(source, conflicting_listing)
+
+      assert conflicting_persisted.product.id == original_persisted.product.id
+      assert conflicting_persisted.external_product.id == original_persisted.external_product.id
+
+      assert [%ProductIdentifier{normalized_value: "00012345678905"}] =
+               Repo.all(ProductIdentifier)
+    end
+
     test "persists a normalized listing into artifact, external product, merchant product, and price point rows" do
       source = source_fixture()
       observed_at = ~U[2026-05-24 15:00:00Z]
@@ -774,6 +907,7 @@ defmodule ProductCompare.IngestionTest do
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
+      assert Repo.aggregate(ProductIdentifier, :count, :id) == 1
       assert Repo.aggregate(MerchantSourceIdentity, :count, :id) == 1
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
       assert Repo.aggregate(PricePoint, :count, :id) == 1
@@ -1049,6 +1183,7 @@ defmodule ProductCompare.IngestionTest do
         normalized_listing(%{
           external_product_id: "CJ-ORIGINAL",
           product_title: "Acme Trail Running Shoe",
+          gtin: nil,
           listing_url: reused_url,
           raw_payload: %{"id" => "CJ-ORIGINAL", "price" => "129.99"}
         })
@@ -1057,6 +1192,7 @@ defmodule ProductCompare.IngestionTest do
         normalized_listing(%{
           external_product_id: "CJ-REUSED",
           product_title: "Different Trail Running Shoe",
+          gtin: nil,
           listing_url: reused_url,
           observed_at: ~U[2026-05-24 15:00:00Z],
           raw_payload: %{"id" => "CJ-REUSED", "price" => "139.99"}
@@ -1100,6 +1236,7 @@ defmodule ProductCompare.IngestionTest do
         normalized_listing(%{
           external_product_id: "CJ-BROKEN",
           product_title: nil,
+          gtin: nil,
           merchant_name: "Trail Shop Outlet",
           merchant_domain: "outlet.example",
           listing_url: "https://trail.example/products/broken",

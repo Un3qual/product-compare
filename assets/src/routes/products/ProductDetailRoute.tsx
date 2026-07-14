@@ -28,6 +28,8 @@ import {
   type ProductAttributeListItem
 } from "./ProductAttributeList";
 import { ProductOfferPanel } from "./ProductOfferPanel";
+import { PriceWatchControl } from "./PriceWatchControl";
+import { ProductCommunityPanel } from "./ProductCommunityPanel";
 
 const styles = create({
   description: {
@@ -180,6 +182,7 @@ function ProductDetail({
               productSlug={product.slug}
               selectedCompareSlugs={selectedCompareSlugs}
             />
+            <PriceWatchControl productId={product.id} />
           </ContextRail>
         }
         label="Product detail workspace"
@@ -202,7 +205,27 @@ function ProductDetail({
               label: "Specifications",
               value: "specifications"
             },
-            { content: offers, label: "Offers", value: "offers" }
+            { content: offers, label: "Offers", value: "offers" },
+            {
+              content: (
+                <ResettableErrorBoundary
+                  resetToken={product.slug}
+                  fallback={<FeedbackState kind="error" title="Reviews and Q&A unavailable." />}
+                >
+                  <Suspense
+                    fallback={<FeedbackState kind="loading" title="Loading reviews and Q&A..." />}
+                  >
+                    <ProductCommunityPanel
+                      key={product.id}
+                      productId={product.id}
+                      productSlug={product.slug}
+                    />
+                  </Suspense>
+                </ResettableErrorBoundary>
+              ),
+              label: "Reviews & Q&A",
+              value: "community"
+            }
           ]}
           label="Product details"
           onValueChange={(value) =>
@@ -373,7 +396,12 @@ function productDetailPath(productSlug: string) {
 function detailViewFromLocation(hash: string, search: string) {
   const view = hash.replace(/^#/, "");
 
-  if (view === "overview" || view === "specifications" || view === "offers") {
+  if (
+    view === "overview" ||
+    view === "specifications" ||
+    view === "offers" ||
+    view === "community"
+  ) {
     return view;
   }
 
