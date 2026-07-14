@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-12
+Updated: 2026-07-13
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -124,9 +124,164 @@ The requested eight-PR stack is complete. Its plan checklists and lane work
 docs hold implementation and verification evidence; this index stays focused
 on dispatchable work.
 
+On 2026-07-13, the user selected the Product Trust and Discovery program:
+canonical specification-rich ingestion, complete and fresh offer truth,
+durable ingestion, price watches and alerts, public comparison snapshots,
+source-backed recommendations, provenance and corrections, reviews and Q&A,
+merchant detail pages, and SEO/acquisition surfaces. The dependency-ordered
+program design is committed. Canonical GTIN identity is claimed first; three
+independent foundation contracts are ready behind it, and the existing
+validated presentation reserve remains available after those product-critical
+rows.
+
 ## Ready Work
 
-### 1. Product Detail Decision Actions Presentation
+### 1. Canonical Product Identity
+
+Status: active
+Lane: Backend catalog and ingestion
+Plan: `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
+Next action: persist validated GTIN identifiers and resolve fresh listings with
+the same GTIN to one canonical product without rebinding existing source
+listings or merging invalid identifiers.
+Owned paths:
+
+- `priv/repo/migrations/20260713120000_create_product_identifiers.exs`
+- `lib/product_compare_schemas/catalog/product_identifier.ex`
+- `lib/product_compare_schemas/catalog/product.ex`
+- `lib/product_compare/catalog/gtin.ex`
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare/ingestion.ex`
+- `test/product_compare/catalog/gtin_test.exs`
+- `test/product_compare/ingestion/ingestion_test.exs`
+- `docs/work/product-trust-and-discovery.md`
+
+Prerequisites:
+
+- Current listing replay and stale-observation tests remain green.
+
+Verification:
+
+- `mix test test/product_compare/catalog/gtin_test.exs test/product_compare/ingestion/ingestion_test.exs`
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: valid GTINs are replay-safe canonical identifiers, same-GTIN
+listings share one product, and missing/invalid/conflicting identifiers never
+cause an unsafe merge.
+
+### 2. Specification Provenance Read Contract
+
+Status: ready
+Lane: Backend specifications and GraphQL
+Plan: `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
+Next action: extend current specification values with their accepted claim,
+confidence, safe source label/link, fetched time, and bounded evidence excerpt
+without exposing raw artifacts or adding per-row queries.
+Owned paths:
+
+- `lib/product_compare/specs.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/schema.ex`
+- `test/product_compare/specs_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `docs/work/product-trust-and-discovery.md`
+
+Prerequisites:
+
+- Existing accepted-current claim and public source-artifact contracts remain
+  green.
+
+Verification:
+
+- `mix test test/product_compare/specs_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every public current attribute can identify safe supporting
+evidence, and GraphQL never returns raw artifact payloads.
+
+### 3. Complete Offer Truth Read Contract
+
+Status: ready
+Lane: Backend pricing and GraphQL
+Plan: `docs/superpowers/plans/2026-07-13-offer-truth-read-contract-implementation-plan.md`
+Next action: expose shipping, stock, observation freshness, landed-price
+completeness, and a database-wide same-currency eligible best-offer summary.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare/pricing/offer_truth.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/schema.ex`
+- `test/product_compare/pricing_test.exs`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `docs/work/product-trust-and-discovery.md`
+
+Prerequisites:
+
+- Existing price history, merchant product, and Relay connection contracts
+  remain green.
+
+Verification:
+
+- `mix test test/product_compare/pricing_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: GraphQL describes known and unknown offer components explicitly,
+and best-offer truth is not limited to the browser's loaded Relay page.
+
+### 4. Durable Ingestion Job Foundation
+
+Status: ready
+Lane: Backend ingestion operations
+Plan: `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
+Next action: add database-backed unique CJ import jobs with bounded retries and
+change timer schedulers to enqueue jobs rather than performing imports inline.
+Owned paths:
+
+- `mix.exs`
+- `mix.lock`
+- `config/config.exs`
+- `config/test.exs`
+- `config/runtime.exs`
+- `lib/product_compare/application.ex`
+- `lib/product_compare/ingestion/jobs/**`
+- `lib/product_compare/ingestion/cj_feed_discovery_scheduler.ex`
+- `lib/product_compare/ingestion/cj_product_import_scheduler.ex`
+- `priv/repo/migrations/*_add_oban_jobs.exs`
+- `test/product_compare/ingestion/jobs/**`
+- `test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+- `docs/work/product-trust-and-discovery.md`
+
+Prerequisites:
+
+- PostgreSQL remains the runtime database; current bounded CJ task functions
+  and scheduler option normalization remain green.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/jobs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: scheduled work survives process loss, unique schedule windows do
+not duplicate jobs, retry/terminal failures are classified safely, and existing
+disabled-by-default runtime controls remain intact.
+
+### 5. Product Detail Decision Actions Presentation
 
 Status: ready
 Lane: Frontend product detail
@@ -154,7 +309,7 @@ Verification:
 Exit condition: Decision-action presentation is isolated without changing any
 destination, comparison state, cursor, tab, or tray-return behavior.
 
-### 2. Revenue Summary View-Data Contract
+### 6. Revenue Summary View-Data Contract
 
 Status: ready
 Lane: Frontend revenue reporting
@@ -184,7 +339,7 @@ Verification:
 Exit condition: Pure view data preserves local-calendar URLs, filter ordering,
 suppressed values, nulls, and intentional empty-string amount behavior.
 
-### 3. Specification Matrix Data Contract
+### 7. Specification Matrix Data Contract
 
 Status: ready
 Lane: Frontend product comparison
@@ -213,7 +368,7 @@ Verification:
 Exit condition: The pure matrix contract preserves ordering, duplicates,
 missing cells, modes, typed values, units, and decimal/exponent behavior.
 
-### 4. Decision Summary Data Contract
+### 8. Decision Summary Data Contract
 
 Status: ready
 Lane: Frontend product comparison
