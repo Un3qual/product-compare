@@ -4,15 +4,15 @@ import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import {
-  RevenueSummaryRoute,
-  buildRevenueDatePresetLinks
-} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
+import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   RevenueSummaryMetrics,
   RevenueSummaryView
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
+import {
+  buildRevenueDatePresetLinks
+} from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 const {
   useLoaderDataMock,

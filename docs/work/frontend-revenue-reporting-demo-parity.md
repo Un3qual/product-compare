@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (revenue summary view-data contract)
+- Status: done (revenue summary view-data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after hydration-safe local-date validation (24 focused tests)
+- Last verified: 2026-07-14 after revenue summary view-data extraction (29
+  focused tests and TypeScript)
 - Implementation plan: `docs/plans/2026-06-01-frontend-revenue-reporting-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-revenue-date-presets-implementation-plan.md`
 - Objective: make the existing public-safe `revenueSummary` GraphQL contract demoable from the browser UI without adding REST endpoints.
@@ -35,7 +36,7 @@
 
 ## Revenue Summary View-Data Contract
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: isolate framework-free active-filter, date-preset, and display-
   metric derivation while preserving route-owned loader, Relay, boundary,
@@ -53,6 +54,22 @@
   - `git diff --check`
 - Exit condition: pure controls and metric contracts preserve local dates,
   query ordering, suppression, null, and empty-string display semantics.
+- Completed: framework-free `buildRevenueSummaryControls()` now derives active
+  filters and hydration-safe date-preset links, while
+  `buildRevenueSummaryMetrics()` derives the five display metrics. The route
+  retains loader and Relay reads, Suspense/error boundaries, status fallbacks,
+  hydration timing, and currency fallback selection; the view retains form,
+  control, and metric presentation.
+- Completed evidence:
+  - Baseline: the route and loader suites passed 24 tests before extraction.
+  - RED: the focused command retained those 24 passes and failed the new pure
+    suite because `revenue-summary-view-data` did not exist.
+  - GREEN: the focused data, route, and loader suites passed 29 tests, including
+    local-calendar URL ordering, invalid-range display, hydration-safe null
+    dates, suppression, nulls, and intentional empty-string amounts.
+  - The pure module has no React, Relay, router, or StyleX imports.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Current Cross-Project Batch
 
