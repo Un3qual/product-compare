@@ -2,6 +2,8 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
   @moduledoc false
 
   alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
@@ -11,6 +13,15 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
   def comparison_snapshot(_parent, %{token: token}, _resolution) do
     {:ok, ComparisonSnapshots.get_public(token)}
   end
+
+  def owned_snapshots(%{id: user_id}, args, %{context: %{current_user: %{id: user_id}}}) do
+    user_id
+    |> ComparisonSnapshots.active_for_owner_query()
+    |> Connection.from_query_result(Input.connection_args(args), Repo)
+  end
+
+  def owned_snapshots(_parent, _args, _resolution),
+    do: {:error, GraphQLErrors.unauthenticated()}
 
   def publish(_parent, %{input: input}, %{context: %{current_user: current_user}}) do
     with {:ok, product_ids} <-
@@ -77,10 +88,19 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
     {:ok, revoke_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
   end
 
-  def captured_at(snapshot, _args, _resolution), do: iso_datetime(snapshot.payload.captured_at)
-  def snapshot_products(snapshot, _args, _resolution), do: {:ok, snapshot.payload.products}
-  def recommendation(snapshot, _args, _resolution), do: {:ok, snapshot.payload.recommendation}
+  def captured_at(snapshot, _args, _resolution),
+    do: snapshot |> snapshot_payload() |> Map.fetch!(:captured_at) |> iso_datetime()
+
+  def snapshot_products(snapshot, _args, _resolution),
+    do: {:ok, snapshot |> snapshot_payload() |> Map.fetch!(:products)}
+
+  def recommendation(snapshot, _args, _resolution),
+    do: {:ok, snapshot |> snapshot_payload() |> Map.fetch!(:recommendation)}
+
   def disclaimer(_snapshot, _args, _resolution), do: {:ok, @disclaimer}
+
+  def share_path(snapshot, _args, _resolution),
+    do: {:ok, "/compare/shared/#{snapshot.public_token}"}
 
   def offer_observed_at(offer, _args, _resolution), do: iso_datetime(offer.observed_at)
   def evidence_fetched_at(evidence, _args, _resolution), do: iso_datetime(evidence.fetched_at)
@@ -91,6 +111,9 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
       _ -> {:error, "invalid captured datetime"}
     end
   end
+
+  defp snapshot_payload(%{payload: %{captured_at: _captured_at} = payload}), do: payload
+  defp snapshot_payload(snapshot), do: ComparisonSnapshots.hydrate(snapshot).payload
 
   defp error_payload(code, message, field) do
     publish_payload(nil, nil, [GraphQLErrors.mutation_error(code, message, field)])

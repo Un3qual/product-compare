@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<23f6331d92c8ee90cfd5f839d66e4f7b>>
+ * @generated SignedSource<<8870fa87ec6b72776b48c681746b94d8>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -65,11 +65,13 @@ var v0 = [
     "name": "first"
   }
 ],
-v1 = {
-  "kind": "Variable",
-  "name": "first",
-  "variableName": "first"
-},
+v1 = [
+  {
+    "kind": "Variable",
+    "name": "first",
+    "variableName": "first"
+  }
+],
 v2 = {
   "alias": null,
   "args": null,
@@ -133,9 +135,7 @@ v8 = {
 v9 = [
   {
     "alias": null,
-    "args": [
-      (v1/*: any*/)
-    ],
+    "args": (v1/*: any*/),
     "concreteType": "AlertEventConnection",
     "kind": "LinkedField",
     "name": "myAlertEvents",
@@ -196,14 +196,7 @@ v9 = [
   },
   {
     "alias": null,
-    "args": [
-      {
-        "kind": "Literal",
-        "name": "enabled",
-        "value": true
-      },
-      (v1/*: any*/)
-    ],
+    "args": (v1/*: any*/),
     "concreteType": "PriceWatchConnection",
     "kind": "LinkedField",
     "name": "myPriceWatches",
@@ -288,16 +281,16 @@ return {
     "selections": (v9/*: any*/)
   },
   "params": {
-    "cacheID": "a3d2192f8c7159742a24607dbf36cd37",
+    "cacheID": "f8213f65a3ad18fa2801999b47fb6eec",
     "id": null,
     "metadata": {},
     "name": "AlertsRouteQuery",
     "operationKind": "query",
-    "text": "query AlertsRouteQuery(\n  $first: Int!\n) {\n  myAlertEvents(first: $first) {\n    edges {\n      node {\n        id\n        productName\n        productSlug\n        merchantName\n        ruleType\n        currency\n        landedPrice\n        observedAt\n        readAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  myPriceWatches(first: $first, enabled: true) {\n    edges {\n      node {\n        id\n        productName\n        productSlug\n        merchantName\n        ruleType\n        currency\n        targetAmount\n        percentageDrop\n        baselineLandedPrice\n        enabled\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query AlertsRouteQuery(\n  $first: Int!\n) {\n  myAlertEvents(first: $first) {\n    edges {\n      node {\n        id\n        productName\n        productSlug\n        merchantName\n        ruleType\n        currency\n        landedPrice\n        observedAt\n        readAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  myPriceWatches(first: $first) {\n    edges {\n      node {\n        id\n        productName\n        productSlug\n        merchantName\n        ruleType\n        currency\n        targetAmount\n        percentageDrop\n        baselineLandedPrice\n        enabled\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "37ba30a8f141dfca1b594fdf8a0a9883";
+(node as any).hash = "f100dcc868627257615e2d8096607008";
 
 export default node;

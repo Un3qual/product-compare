@@ -54,11 +54,18 @@ defmodule ProductCompare.ComparisonSnapshots do
       ComparisonSnapshot
       |> where([snapshot], snapshot.public_token == ^token and is_nil(snapshot.revoked_at))
       |> Repo.one()
-      |> present()
+      |> hydrate()
     end
   end
 
   def get_public(_token), do: nil
+
+  @spec active_for_owner_query(pos_integer()) :: Ecto.Query.t()
+  def active_for_owner_query(user_id) when is_integer(user_id) do
+    ComparisonSnapshot
+    |> where([snapshot], snapshot.user_id == ^user_id and is_nil(snapshot.revoked_at))
+    |> order_by([snapshot], desc: snapshot.inserted_at, desc: snapshot.id)
+  end
 
   @spec revoke(pos_integer(), Ecto.UUID.t(), keyword()) ::
           {:ok, ComparisonSnapshot.t()} | {:error, :not_found | Ecto.Changeset.t()}
@@ -251,14 +258,15 @@ defmodule ProductCompare.ComparisonSnapshots do
 
   defp map_snapshot({:ok, snapshot}) do
     snapshot = Repo.get!(ComparisonSnapshot, snapshot.id)
-    {:ok, present(snapshot)}
+    {:ok, hydrate(snapshot)}
   end
 
   defp map_snapshot(error), do: error
 
-  defp present(nil), do: nil
+  @spec hydrate(ComparisonSnapshot.t() | nil) :: ComparisonSnapshot.t() | nil
+  def hydrate(nil), do: nil
 
-  defp present(%ComparisonSnapshot{} = snapshot),
+  def hydrate(%ComparisonSnapshot{} = snapshot),
     do: %{snapshot | payload: decode_payload(snapshot.payload)}
 
   defp decode_payload(payload) do

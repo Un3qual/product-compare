@@ -1762,7 +1762,8 @@ test("product picker resets pagination before rendering a changed selected set",
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id)
     },
-    products: [buildProductSummary(DETAIL_PRODUCT)]
+    products: [buildProductSummary(DETAIL_PRODUCT)],
+    publishedSnapshots: []
   };
   mockedUseLoaderData.mockImplementation(() => loaderData);
   mockedUseLazyLoadQuery
@@ -1821,7 +1822,8 @@ test("product picker resets pagination before rendering a changed selected set",
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
       [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
     },
-    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)]
+    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
+    publishedSnapshots: []
   };
 
   rerender(

@@ -707,6 +707,7 @@ type User {
   id: ID!
   email: String!
   isOperator: Boolean!
+  comparisonSnapshots(first: Int, after: String): ComparisonSnapshotConnection!
 }
 
 type ApiToken implements Node {
@@ -735,6 +736,7 @@ type SavedComparisonSet implements Node {
 type ComparisonSnapshot {
   id: ID!
   title: String
+  sharePath: String!
   searchIndexable: Boolean!
   seo: SeoMetadata!
   capturedAt: DateTime!
@@ -752,6 +754,16 @@ type ComparisonSnapshotProduct {
   brandName: String
   attributes: [ComparisonSnapshotAttribute!]!
   offers: [ComparisonSnapshotOffer!]!
+}
+
+type ComparisonSnapshotConnection {
+  edges: [ComparisonSnapshotEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ComparisonSnapshotEdge {
+  cursor: String!
+  node: ComparisonSnapshot!
 }
 
 type ComparisonSnapshotAttribute {

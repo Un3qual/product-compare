@@ -124,6 +124,60 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
            ]) == nil
   end
 
+  test "viewer can rediscover active snapshots for later revocation", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    other = AccountsFixtures.user_fixture()
+    first = SpecsFixtures.product_fixture()
+    second = SpecsFixtures.product_fixture()
+    owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+
+    response =
+      graphql(owner_conn, publish_mutation(), %{
+        "input" => %{
+          "title" => "Durable shortlist",
+          "productIds" => [relay_id(:product, first.id), relay_id(:product, second.id)],
+          "recommendationProfile" => "LOWEST_CURRENT_COST"
+        }
+      })
+
+    snapshot_id = get_in(response, ["data", "publishComparisonSnapshot", "snapshot", "id"])
+    share_path = get_in(response, ["data", "publishComparisonSnapshot", "sharePath"])
+
+    assert [%{"node" => owned_snapshot}] =
+             get_in(graphql(owner_conn, viewer_snapshots_query(), %{}), [
+               "data",
+               "viewer",
+               "comparisonSnapshots",
+               "edges"
+             ])
+
+    assert Map.take(owned_snapshot, ["id", "title", "sharePath"]) == %{
+             "id" => snapshot_id,
+             "title" => "Durable shortlist",
+             "sharePath" => share_path
+           }
+
+    assert is_binary(owned_snapshot["capturedAt"])
+
+    other_conn = conn |> log_in_user(other) |> put_req_header_same_origin()
+
+    assert get_in(graphql(other_conn, viewer_snapshots_query(), %{}), [
+             "data",
+             "viewer",
+             "comparisonSnapshots",
+             "edges"
+           ]) == []
+
+    graphql(owner_conn, revoke_mutation(), %{"id" => snapshot_id})
+
+    assert get_in(graphql(owner_conn, viewer_snapshots_query(), %{}), [
+             "data",
+             "viewer",
+             "comparisonSnapshots",
+             "edges"
+           ]) == []
+  end
+
   defp graphql(conn, query, variables) do
     conn |> post("/api/graphql", %{query: query, variables: variables}) |> json_response(200)
   end
@@ -193,6 +247,18 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
       revokeComparisonSnapshot(snapshotId: $id) {
         revokedSnapshotId
         errors { code message field }
+      }
+    }
+    """
+  end
+
+  defp viewer_snapshots_query do
+    """
+    query ViewerSnapshots {
+      viewer {
+        comparisonSnapshots(first: 10) {
+          edges { node { id title sharePath capturedAt } }
+        }
       }
     }
     """

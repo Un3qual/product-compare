@@ -207,6 +207,7 @@ function CompareSelectionRoute({
               </Button>
               <ShareComparisonControl
                 products={loaderData.products}
+                publishedSnapshots={loaderData.publishedSnapshots}
                 recommendation={loaderData.recommendation}
               />
               <p aria-label="Save comparison status" aria-live="polite" role="status">

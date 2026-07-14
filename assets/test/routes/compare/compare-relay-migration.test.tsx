@@ -151,6 +151,19 @@ const compareRouteQueryRef = {
 function buildCombinedCompareQuery() {
   return {
     data: {
+      viewer: {
+        comparisonSnapshots: {
+          edges: [
+            {
+              node: {
+                id: "snapshot-existing",
+                title: "Existing shortlist",
+                sharePath: "/compare/shared/existing-token"
+              }
+            }
+          ]
+        }
+      },
       comparisonProducts: [DETAIL_PRODUCT, SECOND_PRODUCT].map((product) => ({
         ...product,
         merchantProducts: {
@@ -255,6 +268,13 @@ test("compare loader preloads the batched comparison query through Relay", async
         description: SECOND_PRODUCT.description,
         brandName: SECOND_PRODUCT.brand.name,
         currentAttributes: []
+      }
+    ],
+    publishedSnapshots: [
+      {
+        id: "snapshot-existing",
+        title: "Existing shortlist",
+        path: "/compare/shared/existing-token"
       }
     ]
   });

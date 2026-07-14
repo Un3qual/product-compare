@@ -88,7 +88,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
     publishMutationMock.mock.calls[0]?.[0]?.onCompleted({ publishComparisonSnapshot: { snapshot: { id: "snapshot-1" }, sharePath: "/compare/shared/public-token", errors: [] } }, []);
   });
 
-  expect(await screen.findByRole("link", { name: "Open public snapshot" })).toHaveAttribute("href", "/compare/shared/public-token");
+  expect(await screen.findByRole("link", { name: "Travel kit" })).toHaveAttribute("href", "/compare/shared/public-token");
   expect(screen.getByRole("status")).toHaveTextContent("facts unchanged");
 });
 
@@ -101,11 +101,29 @@ test("ShareComparisonControl revokes the just-published public link", async () =
   fireEvent.click(screen.getByRole("button", { name: "Publish snapshot" }));
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalled());
   await act(async () => publishMutationMock.mock.calls[0]?.[0]?.onCompleted({ publishComparisonSnapshot: { snapshot: { id: "snapshot-1" }, sharePath: "/compare/shared/token", errors: [] } }, []));
-  fireEvent.click(await screen.findByRole("button", { name: "Revoke public link" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Revoke public link: Open public snapshot" }));
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { snapshotId: "snapshot-1" } })));
   await act(async () => revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({ revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-1", errors: [] } }, []));
   expect(await screen.findByRole("status")).toHaveTextContent("old link now returns not found");
   expect(screen.queryByRole("link", { name: "Open public snapshot" })).not.toBeInTheDocument();
+});
+
+test("ShareComparisonControl manages snapshots discovered after a reload", async () => {
+  render(<MemoryRouter><ShareComparisonControl
+    products={[
+      { id: "product-1", name: "First", slug: "first", description: null, brandName: null, currentAttributes: [] },
+      { id: "product-2", name: "Second", slug: "second", description: null, brandName: null, currentAttributes: [] }
+    ]}
+    publishedSnapshots={[{ id: "snapshot-existing", path: "/compare/shared/existing-token", title: "Existing shortlist" }]}
+  /></MemoryRouter>);
+
+  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+  expect(screen.getByRole("link", { name: "Existing shortlist" })).toHaveAttribute("href", "/compare/shared/existing-token");
+  fireEvent.click(screen.getByRole("button", { name: "Revoke public link: Existing shortlist" }));
+
+  await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { snapshotId: "snapshot-existing" } })));
+  await act(async () => revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({ revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-existing", errors: [] } }, []));
+  expect(screen.queryByRole("link", { name: "Existing shortlist" })).not.toBeInTheDocument();
 });
 
 test("shared snapshot loader returns an HTTP 404 for invalid or revoked tokens", async () => {

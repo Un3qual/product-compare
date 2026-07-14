@@ -117,5 +117,16 @@ export const compareRouteQuery = graphql`
         endCursor
       }
     }
+    viewer {
+      comparisonSnapshots(first: 20) {
+        edges {
+          node {
+            id
+            title
+            sharePath
+          }
+        }
+      }
+    }
   }
 `;

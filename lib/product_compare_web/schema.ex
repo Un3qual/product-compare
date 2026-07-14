@@ -1081,6 +1081,12 @@ defmodule ProductCompareWeb.Schema do
 
     field :email, non_null(:string)
     field :is_operator, non_null(:boolean)
+
+    field :comparison_snapshots, non_null(:comparison_snapshot_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&ComparisonSnapshotsResolver.owned_snapshots/3)
+    end
   end
 
   object :api_token do
@@ -1129,6 +1135,7 @@ defmodule ProductCompareWeb.Schema do
     end
 
     field :title, :string
+    field :share_path, non_null(:string), resolve: &ComparisonSnapshotsResolver.share_path/3
     field :search_indexable, non_null(:boolean)
     field :seo, non_null(:seo_metadata), resolve: &SeoResolver.snapshot_metadata/3
     field :captured_at, non_null(:datetime), resolve: &ComparisonSnapshotsResolver.captured_at/3
@@ -1153,6 +1160,16 @@ defmodule ProductCompareWeb.Schema do
     field :brand_name, :string
     field :attributes, non_null(list_of(non_null(:comparison_snapshot_attribute)))
     field :offers, non_null(list_of(non_null(:comparison_snapshot_offer)))
+  end
+
+  object :comparison_snapshot_connection do
+    field :edges, non_null(list_of(non_null(:comparison_snapshot_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :comparison_snapshot_edge do
+    field :cursor, non_null(:string)
+    field :node, non_null(:comparison_snapshot)
   end
 
   object :comparison_snapshot_attribute do

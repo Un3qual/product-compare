@@ -20,7 +20,7 @@ export default graphql`
         hasNextPage
       }
     }
-    myPriceWatches(first: $first, enabled: true) {
+    myPriceWatches(first: $first) {
       edges {
         node {
           id

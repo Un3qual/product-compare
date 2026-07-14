@@ -7,7 +7,7 @@ import type { RevokeComparisonSnapshotMutation } from "../../__generated__/Revok
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
-import type { CompareRecommendationSummary, CompareProductSummary } from "./loader";
+import type { CompareRecommendationSummary, CompareProductSummary, PublishedComparisonSnapshotSummary } from "./loader";
 import publishComparisonSnapshotMutation from "./queries/PublishComparisonSnapshotMutation";
 import revokeComparisonSnapshotMutation from "./queries/RevokeComparisonSnapshotMutation";
 
@@ -16,14 +16,24 @@ const styles = create({
   field: { display: "grid", gap: "0.35rem" },
   form: { display: "grid", gap: "0.75rem", paddingBlockStart: "0.8rem" },
   input: { backgroundColor: "var(--pc-surface)", border: "1px solid var(--pc-border-emphasized)", borderRadius: "0.4rem", color: "var(--pc-text)", minHeight: "2.6rem", paddingInline: "0.7rem" },
+  list: { display: "grid", gap: "0.65rem", listStyle: "none", margin: 0, padding: 0 },
+  listItem: { alignItems: "center", display: "flex", flexWrap: "wrap", gap: "0.6rem", justifyContent: "space-between" },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
   summary: { cursor: "pointer", fontWeight: 650 }
 });
 
-export function ShareComparisonControl({ products, recommendation }: { products: readonly CompareProductSummary[]; recommendation?: CompareRecommendationSummary }) {
+export function ShareComparisonControl({
+  products,
+  publishedSnapshots = [],
+  recommendation
+}: {
+  products: readonly CompareProductSummary[];
+  publishedSnapshots?: readonly PublishedComparisonSnapshotSummary[];
+  recommendation?: CompareRecommendationSummary;
+}) {
   const titleId = useId();
   const searchIndexableId = useId();
-  const [published, setPublished] = useState<{ id: string; path: string } | null>(null);
+  const [published, setPublished] = useState<PublishedComparisonSnapshotSummary[]>(() => [...publishedSnapshots]);
   const [message, setMessage] = useState<string | null>(null);
   const [commitPublish, publishing] = useMutation<PublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
   const [commitRevoke, revoking] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
@@ -31,15 +41,16 @@ export function ShareComparisonControl({ products, recommendation }: { products:
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
+    const form = new FormData(event.currentTarget);
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: { input: publishInput(products, recommendation, new FormData(event.currentTarget)) }
+        variables: { input: publishInput(products, recommendation, form) }
       });
       const payload = response.publishComparisonSnapshot;
-      const publishedSnapshot = publishedSnapshotFromPayload(payload);
+      const publishedSnapshot = publishedSnapshotFromPayload(payload, normalizedTitle(form));
       if (publishedSnapshot) {
-        setPublished(publishedSnapshot);
+        setPublished((current) => [publishedSnapshot, ...current.filter((snapshot) => snapshot.id !== publishedSnapshot.id)]);
         setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
       } else {
         setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -49,13 +60,12 @@ export function ShareComparisonControl({ products, recommendation }: { products:
     }
   }
 
-  async function handleRevoke() {
-    if (!published) return;
+  async function handleRevoke(snapshot: PublishedComparisonSnapshotSummary) {
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, { variables: { snapshotId: published.id } });
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, { variables: { snapshotId: snapshot.id } });
       const payload = response.revokeComparisonSnapshot;
       if (payload?.revokedSnapshotId) {
-        setPublished(null);
+        setPublished((current) => current.filter((item) => item.id !== snapshot.id));
         setMessage("Public snapshot revoked. The old link now returns not found.");
       } else {
         setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -78,11 +88,15 @@ export function ShareComparisonControl({ products, recommendation }: { products:
           <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
         </label>
         <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>
-        {published ? (
-          <>
-            <Link to={published.path}>Open public snapshot</Link>
-            <Button disabled={revoking} onClick={handleRevoke} tone="danger" type="button" variant="soft">{revoking ? "Revoking…" : "Revoke public link"}</Button>
-          </>
+        {published.length > 0 ? (
+          <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
+            {published.map((snapshot) => (
+              <li key={snapshot.id} {...props(styles.listItem)}>
+                <Link to={snapshot.path}>{snapshotLabel(snapshot)}</Link>
+                <Button aria-label={`Revoke public link: ${snapshotLabel(snapshot)}`} disabled={revoking} onClick={() => handleRevoke(snapshot)} tone="danger" type="button" variant="soft">{revoking ? "Revoking…" : "Revoke public link"}</Button>
+              </li>
+            ))}
+          </ul>
         ) : null}
         {message ? <p role="status" {...props(styles.message)}>{message}</p> : null}
       </form>
@@ -95,7 +109,7 @@ function publishInput(
   recommendation: CompareRecommendationSummary | undefined,
   form: FormData
 ): PublishComparisonSnapshotMutation["variables"]["input"] {
-  const title = String(form.get("title") ?? "").trim();
+  const title = normalizedTitle(form);
 
   return {
     productIds: products.map((product) => product.id),
@@ -106,9 +120,19 @@ function publishInput(
 }
 
 function publishedSnapshotFromPayload(
-  payload: PublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"]
+  payload: PublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"],
+  title: string | null
 ) {
   return payload?.snapshot?.id && payload.sharePath
-    ? { id: payload.snapshot.id, path: payload.sharePath }
+    ? { id: payload.snapshot.id, path: payload.sharePath, title }
     : null;
+}
+
+function normalizedTitle(form: FormData) {
+  const title = String(form.get("title") ?? "").trim();
+  return title || null;
+}
+
+function snapshotLabel(snapshot: PublishedComparisonSnapshotSummary) {
+  return snapshot.title || "Open public snapshot";
 }

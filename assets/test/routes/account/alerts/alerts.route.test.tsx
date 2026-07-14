@@ -72,6 +72,26 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
   expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
 });
 
+test("AlertsRoute keeps paused watches visible and resumes them", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [],
+    watches: [{ id: "watch-paused", productName: "Display", productSlug: "display", merchantName: null, ruleType: "TARGET_PRICE", currency: "USD", targetAmount: "100", percentageDrop: null, baselineLandedPrice: "120", enabled: false }],
+    hasMoreAlerts: false,
+    hasMoreWatches: false,
+    query: { __relayQuery: { operationName: "AlertsRouteQuery", text: "query AlertsRouteQuery { viewer { id } }", variables: { first: 50 } } }
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  expect(screen.getByRole("list", { name: "Paused price watches" })).toHaveTextContent("Target 100 USD");
+  fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+
+  await waitFor(() => expect(commitMutationMock).toHaveBeenCalledWith(expect.objectContaining({
+    variables: { input: { id: "watch-paused", enabled: true } }
+  })));
+});
+
 test("PriceWatchControl reveals relevant input and submits one typed rule", async () => {
   render(<MemoryRouter><PriceWatchControl productId="product-id" /></MemoryRouter>);
 

@@ -86,6 +86,12 @@ export interface CompareBestCurrentPriceSummary {
   price: string;
 }
 
+export interface PublishedComparisonSnapshotSummary {
+  id: string;
+  path: string;
+  title: string | null;
+}
+
 export type CompareRouteLoaderData =
   | {
       status: "empty";
@@ -104,6 +110,7 @@ export type CompareRouteLoaderData =
       query: RelayRouteQueryDescriptor<CompareRouteQuery["variables"]>;
       offerContexts: CompareOfferContextsByProductId;
       products: CompareProductSummary[];
+      publishedSnapshots: PublishedComparisonSnapshotSummary[];
       recommendation?: CompareRecommendationSummary;
     };
 
@@ -177,11 +184,22 @@ export async function compareLoader({
       query: fetchedQuery.descriptor,
       offerContexts: summarizeOfferContexts(presentProducts),
       products: presentProducts.map(summarizeProduct),
+      publishedSnapshots: summarizePublishedSnapshots(fetchedQuery.data.viewer),
       recommendation: summarizeRecommendation(fetchedQuery.data.comparisonRecommendation)
     };
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
   }
+}
+
+function summarizePublishedSnapshots(
+  viewer: CompareRouteQuery["response"]["viewer"] | null | undefined
+): PublishedComparisonSnapshotSummary[] {
+  return viewer?.comparisonSnapshots.edges.map(({ node }) => ({
+    id: node.id,
+    path: node.sharePath,
+    title: node.title ?? null
+  })) ?? [];
 }
 
 export function recommendationProfileFromUrl(requestUrl: string): RecommendationProfile {

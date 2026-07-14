@@ -54,6 +54,8 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   const [commitMarkRead] = useMutation<MarkAlertReadMutation>(markAlertReadMutation);
   const [commitUpdate] = useMutation<UpdatePriceWatchMutation>(updatePriceWatchMutation);
   const [commitDelete] = useMutation<DeletePriceWatchMutation>(deletePriceWatchMutation);
+  const activeWatches = watches.filter((watch) => watch.enabled);
+  const pausedWatches = watches.filter((watch) => !watch.enabled);
 
   async function run(id: string, operation: () => Promise<string | null>) {
     setPendingIds((current) => new Set(current).add(id));
@@ -71,6 +73,22 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
         return next;
       });
     }
+  }
+
+  function toggleWatch(watch: WatchSummary) {
+    void run(watch.id, async () => {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: { id: watch.id, enabled: !watch.enabled } }
+      });
+      return response.updatePriceWatch?.watch ? null : routeMutationErrorMessage(response.updatePriceWatch?.errors, graphQLErrors);
+    });
+  }
+
+  function deleteWatch(watch: WatchSummary) {
+    void run(watch.id, async () => {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, { variables: { id: watch.id } });
+      return response.deletePriceWatch?.deletedWatchId ? null : routeMutationErrorMessage(response.deletePriceWatch?.errors, graphQLErrors);
+    });
   }
 
   return (
@@ -106,30 +124,48 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
         </section>
         <section aria-labelledby="active-watches-title" {...props(styles.section)}>
           <h2 id="active-watches-title" {...props(styles.sectionTitle)}>Active watches</h2>
-          {watches.length === 0 ? <p {...props(styles.aside)}>Create a watch from any product detail page.</p> : (
-            <ul aria-label="Active price watches" {...props(styles.list)}>
-              {watches.map((watch) => (
-                <li key={watch.id} {...props(styles.item)}>
-                  <strong><Link to={`/products/${encodeURIComponent(watch.productSlug)}`}>{watch.productName}</Link></strong>
-                  <p {...props(styles.meta)}><span>{watchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
-                  <div {...props(styles.actions)}>
-                    <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => { run(watch.id, async () => {
-                      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, { variables: { input: { id: watch.id, enabled: false } } });
-                      return response.updatePriceWatch?.watch ? null : routeMutationErrorMessage(response.updatePriceWatch?.errors, graphQLErrors);
-                    }); }}>Pause</Button>
-                    <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => { run(watch.id, async () => {
-                      const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, { variables: { id: watch.id } });
-                      return response.deletePriceWatch?.deletedWatchId ? null : routeMutationErrorMessage(response.deletePriceWatch?.errors, graphQLErrors);
-                    }); }}>Delete</Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {activeWatches.length === 0 ? <p {...props(styles.aside)}>Create a watch from any product detail page, or resume one below.</p> : (
+            <WatchList ariaLabel="Active price watches" watches={activeWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
           )}
-          {hasMoreWatches ? <p {...props(styles.aside)}>Showing the 50 newest active watches.</p> : null}
+          {hasMoreWatches ? <p {...props(styles.aside)}>Showing the 50 newest watches.</p> : null}
         </section>
+        {pausedWatches.length > 0 ? (
+          <section aria-labelledby="paused-watches-title" {...props(styles.section)}>
+            <h2 id="paused-watches-title" {...props(styles.sectionTitle)}>Paused watches</h2>
+            <WatchList ariaLabel="Paused price watches" watches={pausedWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
+          </section>
+        ) : null}
       </div>
     </PageShell>
+  );
+}
+
+function WatchList({
+  ariaLabel,
+  watches,
+  pendingIds,
+  onDelete,
+  onToggle
+}: {
+  ariaLabel: string;
+  watches: WatchSummary[];
+  pendingIds: ReadonlySet<string>;
+  onDelete: (watch: WatchSummary) => void;
+  onToggle: (watch: WatchSummary) => void;
+}) {
+  return (
+    <ul aria-label={ariaLabel} {...props(styles.list)}>
+      {watches.map((watch) => (
+        <li key={watch.id} {...props(styles.item)}>
+          <strong><Link to={`/products/${encodeURIComponent(watch.productSlug)}`}>{watch.productName}</Link></strong>
+          <p {...props(styles.meta)}><span>{watchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
+          <div {...props(styles.actions)}>
+            <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{watch.enabled ? "Pause" : "Resume"}</Button>
+            <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
