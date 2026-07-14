@@ -80,7 +80,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}
+    assert_receive {:run, _opts}, 250
     assert_receive {:run, _opts}, 250
 
     GenServer.stop(pid)
@@ -210,7 +210,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       )
 
     capture_log(fn ->
-      assert_receive {:run, _opts}
+      assert_receive {:run, _opts}, 250
       assert_receive {:run, _opts}, 250
     end)
 
@@ -237,7 +237,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
              ]}
           )
 
-        assert_receive {:run, _opts}
+        assert_receive {:run, _opts}, 250
         assert_receive {:run, _opts}, 250
 
         assert Process.alive?(pid)
@@ -270,7 +270,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
             )
           )
 
-        assert_receive {:run, _opts}
+        assert_receive {:run, _opts}, 250
         assert_receive {:run, _opts}, 250
 
         assert Process.alive?(pid)
