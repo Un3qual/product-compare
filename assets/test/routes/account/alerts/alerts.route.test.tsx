@@ -149,3 +149,26 @@ test("PriceWatchControl reveals relevant input and submits one typed rule", asyn
 
   expect(await screen.findByRole("status")).toHaveTextContent("Watch created");
 });
+
+test("PriceWatchControl resets all product-scoped form state when the product changes", () => {
+  const view = render(
+    <MemoryRouter>
+      <PriceWatchControl productId="product-one" />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByText("Watch price or availability"));
+  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "EUR" } });
+  fireEvent.change(screen.getByLabelText("Target landed price"), { target: { value: "75" } });
+
+  view.rerender(
+    <MemoryRouter>
+      <PriceWatchControl productId="product-two" />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByText("Watch price or availability"));
+  expect(screen.getByLabelText("Currency")).toHaveValue("USD");
+  expect(screen.getByLabelText("Target landed price")).toHaveValue("");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});

@@ -30,6 +30,10 @@ const styles = create({
 type RuleType = "TARGET_PRICE" | "PERCENTAGE_DROP" | "BACK_IN_STOCK" | "NEWLY_AVAILABLE";
 
 export function PriceWatchControl({ productId }: { productId: string }) {
+  return <PriceWatchForm key={productId} productId={productId} />;
+}
+
+function PriceWatchForm({ productId }: { productId: string }) {
   const amountId = useId();
   const currencyId = useId();
   const ruleId = useId();
