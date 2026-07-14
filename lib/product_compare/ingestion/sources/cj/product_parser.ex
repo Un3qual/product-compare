@@ -28,6 +28,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
          external_product_id: external_product_id,
          merchant_identifier: merchant_identifier,
          product_title: product_title,
+         model_number: nil,
+         description: nil,
          brand_name: optional_string(record, ["brand"]),
          gtin: optional_string(record, ["gtin"]),
          merchant_name: optional_string(record, ["advertiserName"]),
@@ -38,7 +40,10 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
          amount: amount,
          availability: availability(record),
          observed_at: observed_at,
-         raw_payload: record
+         raw_payload: record,
+         manufacturer_category_path: category_path(record),
+         media: [],
+         specifications: []
        }}
     end
   end
@@ -104,6 +109,13 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
   end
 
   defp availability(_record), do: :unknown
+
+  defp category_path(record) do
+    case optional_string(record, ["catalogName"]) do
+      nil -> []
+      catalog_name -> [catalog_name]
+    end
+  end
 
   defp domain_from_url(url) do
     url

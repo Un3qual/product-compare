@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -39,6 +40,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       attribute: attribute,
       claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
     )
+  end
+
+  defp catalog_query(ProductMedia, _params) do
+    ProductMedia
+    |> order_by([media], asc: media.position, asc: media.url, asc: media.id)
+    |> preload([media], source_artifact: [:source])
   end
 
   defp catalog_query(queryable, _params), do: queryable

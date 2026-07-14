@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (specification-rich enrichment and media)
+- Status: coordinating authenticated specification corrections
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-complete-run-offer-reconciliation-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-specification-rich-enrichment-and-media-implementation-plan.md`
+- Active implementation plan: none while the corrections slice is being
+  planned.
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -58,7 +58,35 @@ Recommendations are deterministic and evidence-backed.
   merchant pages, and SEO are promoted only as their dependencies become
   green.
 - Complete-run offer reconciliation: complete.
-- Specification-rich enrichment and media: active.
+- Specification-rich enrichment and media: complete.
+
+## Specification-Rich Enrichment And Media Evidence
+
+- The source-neutral listing contract now carries optional model, description,
+  manufacturer category paths, media observations, and typed specification
+  observations. The CJ adapter emits only fixture-backed category evidence and
+  does not infer unsupported provider fields.
+- Imports fill missing model and description values but never replace existing
+  curated copy. Exact configured category aliases can replace the generic
+  ingestion type; other paths create replay-safe review candidates without
+  changing the current type.
+- Product media accepts only HTTP(S) URLs, retains source-artifact provenance,
+  uses deterministic positions, and upserts by product and URL. GraphQL exposes
+  ordered safe media metadata while raw artifact payloads remain private.
+- Typed specification observations validate against the attribute definition,
+  persist fingerprinted proposed claims and evidence, and auto-accept only
+  through an explicit provider-and-attribute allowlist with sufficient
+  confidence and no current value. Bad optional enrichment increments an error
+  outcome without discarding a valid offer.
+- RED: the initial focused run failed compilation because media/specification
+  observations and normalized listing fields did not exist.
+- GREEN: the focused enrichment, parser, catalog, Specs, Taxonomy, and GraphQL
+  run passed 47 tests. The expanded ingestion and affected catalog/spec/taxonomy
+  run passed 175 tests with 0 failures.
+- The live schema snapshot was regenerated. Relay validation compiled 30 reader,
+  29 normalization, and 29 operation documents; frontend TypeScript passed.
+- Final gates: `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (`4 ready rows`), and `git diff --check` passed.
 
 ## Specification Provenance Evidence
 

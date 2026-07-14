@@ -4,6 +4,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.Catalog
+  alias ProductCompare.Ingestion.MediaObservation
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
@@ -73,6 +74,77 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
              } = graphql(conn, product_query(), %{"slug" => product.slug})
 
       assert product_id == relay_id(:product, product.id)
+    end
+
+    test "product exposes ordered source-backed media without raw artifact payloads", %{
+      conn: conn
+    } do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "media-product",
+          name: "Media Product"
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{kind: "affiliate_feed", name: "Media Source", domain: "media.test"})
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://media.test/product",
+          fetched_at: ~U[2026-07-13 18:00:00.000000Z],
+          raw_json: %{"secret" => "must stay private"}
+        })
+        |> Repo.insert!()
+
+      assert %{persisted: 2, rejected: 0} =
+               Catalog.upsert_product_media(
+                 product,
+                 artifact.id,
+                 [
+                   %MediaObservation{
+                     url: "https://cdn.test/gallery.jpg",
+                     role: :gallery,
+                     position: 2
+                   },
+                   %MediaObservation{
+                     url: "https://cdn.test/primary.jpg",
+                     role: :primary,
+                     position: 0,
+                     alt_text: "Primary view"
+                   }
+                 ],
+                 ~U[2026-07-13 18:00:00.000000Z]
+               )
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "media" => [
+                     %{
+                       "url" => "https://cdn.test/primary.jpg",
+                       "role" => "primary",
+                       "position" => 0,
+                       "altText" => "Primary view",
+                       "sourceArtifact" => %{
+                         "sourceName" => "Media Source",
+                         "url" => "https://media.test/product"
+                       }
+                     },
+                     %{
+                       "url" => "https://cdn.test/gallery.jpg",
+                       "position" => 2
+                     }
+                   ]
+                 }
+               }
+             } = response = graphql(conn, product_media_query(), %{"slug" => product.slug})
+
+      refute inspect(response) =~ "must stay private"
+      refute inspect(response) =~ "rawJson"
     end
 
     test "product batches brand lookups across aliased selections", %{conn: conn} do
@@ -1507,6 +1579,26 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
         brand {
           id
           name
+        }
+      }
+    }
+    """
+  end
+
+  defp product_media_query do
+    """
+    query ProductMedia($slug: String!) {
+      product(slug: $slug) {
+        media {
+          url
+          role
+          position
+          altText
+          observedAt
+          sourceArtifact {
+            sourceName
+            url
+          }
         }
       }
     }

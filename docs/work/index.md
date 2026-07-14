@@ -161,63 +161,17 @@ end-of-cursor, zero-failure run can deactivate historically observed offers
 from the identical hashed scope; partial, failed, bounded, differently scoped,
 and superseded runs fail closed. Fresh observations reactivate offers, and safe
 health reads expose reconciliation status and counts without query values.
-Specification-rich enrichment and media are the next coordinator planning
-target.
+Specification-rich enrichment and media completed on 2026-07-13. The
+source-neutral listing contract now accepts evidence-backed category, media,
+and typed specification observations while isolating malformed optional data.
+Imports fill only missing canonical copy, exact configured aliases may replace
+only the generic ingestion type, unmapped paths remain review candidates, and
+media and claims are replay-safe and retain artifact provenance. Authenticated
+specification corrections are the next coordinator planning target.
 
 ## Active Work
 
-### Specification-Rich Enrichment And Media
-
-Status: active
-Lane: Backend trusted catalog
-Plan: `docs/superpowers/plans/2026-07-13-specification-rich-enrichment-and-media-implementation-plan.md`
-Next action: extend the source-neutral listing contract and persist
-source-backed media, typed proposed claims, and reviewable category mappings
-without inventing unsupported CJ fields or overwriting curated catalog values.
-Owned paths:
-
-- `lib/product_compare/ingestion/normalized_listing.ex`
-- `lib/product_compare/ingestion/media_observation.ex`
-- `lib/product_compare/ingestion/specification_observation.ex`
-- `lib/product_compare/ingestion/sources/cj/product_parser.ex`
-- `lib/product_compare/ingestion.ex`
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare/specs.ex`
-- `lib/product_compare/taxonomy.ex`
-- `lib/product_compare_schemas/catalog/product.ex`
-- `lib/product_compare_schemas/catalog/product_media.ex`
-- `lib/product_compare_schemas/specs/product_attribute_claim.ex`
-- `lib/product_compare_schemas/ingestion/category_mapping_candidate.ex`
-- `lib/product_compare_web/schema.ex`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `priv/repo/migrations/*_add_product_enrichment.exs`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `test/product_compare/ingestion/sources/cj/product_parser_test.exs`
-- `test/product_compare/catalog_test.exs`
-- `test/product_compare/specs_test.exs`
-- `test/product_compare/taxonomy_test.exs`
-- `test/product_compare_web/schema/catalog_queries_test.exs`
-- `assets/schema.graphql`
-- `docs/work/product-trust-and-discovery.md`
-
-Prerequisites:
-
-- Canonical GTIN identity, public provenance, and run-scoped replay safety
-  remain green.
-
-Verification:
-
-- `mix test test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/sources/cj/product_parser_test.exs test/product_compare/catalog_test.exs test/product_compare/specs_test.exs test/product_compare/taxonomy_test.exs test/product_compare_web/schema/catalog_queries_test.exs`
-- `mix test test/product_compare/ingestion`
-- `mix relay.schema.generate`
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: supported enrichment persists with source provenance and replay
-safety; bad optional items are isolated; provider data cannot silently replace
-curated truth; and public GraphQL exposes ordered safe media only.
+None while authenticated specification corrections are being planned.
 
 ## Ready Work
 

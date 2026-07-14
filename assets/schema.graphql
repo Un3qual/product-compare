@@ -582,9 +582,19 @@ type Product implements Node {
   modelNumber: String
   description: String
   brand: Brand
+  media: [ProductMedia!]!
   currentAttributes: [ProductAttributeValue!]!
   offerTruth: ProductOfferTruth!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
+}
+
+type ProductMedia {
+  url: String!
+  role: String!
+  position: Int!
+  altText: String
+  observedAt: DateTime!
+  sourceArtifact: SourceArtifact!
 }
 
 type ProductAttributeValue {

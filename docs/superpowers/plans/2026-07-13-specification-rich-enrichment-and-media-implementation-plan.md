@@ -23,13 +23,14 @@ or allowing newer provider copy to overwrite curated product truth.
 - `lib/product_compare_schemas/ingestion/category_mapping_candidate.ex`
 - `lib/product_compare_web/schema.ex`
 - `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/graphql/loader.ex`
 - `priv/repo/migrations/*_add_product_enrichment.exs`
 - `test/product_compare/ingestion/enrichment_test.exs`
 - `test/product_compare/ingestion/sources/cj/product_parser_test.exs`
 - `test/product_compare/catalog_test.exs`
 - `test/product_compare/specs_test.exs`
 - `test/product_compare/taxonomy_test.exs`
-- `test/product_compare_web/schema/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
 - `assets/schema.graphql`
 - `docs/work/product-trust-and-discovery.md`
 
@@ -66,3 +67,13 @@ or allowing newer provider copy to overwrite curated product truth.
 
 Authenticated specification corrections are the next trusted-catalog
 milestone. They remain outside this ingestion slice.
+
+## Completion Evidence
+
+- The focused enrichment, parser, catalog, Specs, Taxonomy, and GraphQL run
+  passed 47 tests; the expanded affected backend run passed 175 tests.
+- The generated schema snapshot is current. Relay validation compiled 30
+  reader, 29 normalization, and 29 operation documents, and frontend
+  TypeScript passed.
+- Formatting, backend type checking, queue validation with four ready rows,
+  and diff hygiene passed.

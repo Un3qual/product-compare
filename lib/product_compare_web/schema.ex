@@ -894,6 +894,9 @@ defmodule ProductCompareWeb.Schema do
     field :description, :string
     field :brand, :brand, resolve: dataloader(Catalog, use_parent: true)
 
+    field :media, non_null(list_of(non_null(:product_media))),
+      resolve: dataloader(Catalog, use_parent: true)
+
     field :current_attributes, non_null(list_of(non_null(:product_attribute_value))) do
       resolve(&CatalogResolver.current_attributes/3)
     end
@@ -910,6 +913,15 @@ defmodule ProductCompareWeb.Schema do
 
       resolve(&PricingResolver.product_merchant_products/3)
     end
+  end
+
+  object :product_media do
+    field :url, non_null(:string)
+    field :role, non_null(:string)
+    field :position, non_null(:integer)
+    field :alt_text, :string
+    field :observed_at, non_null(:datetime)
+    field :source_artifact, non_null(:source_artifact)
   end
 
   object :product_attribute_value do
