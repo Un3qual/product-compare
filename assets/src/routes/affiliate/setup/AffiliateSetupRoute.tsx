@@ -36,16 +36,20 @@ import {
   AffiliateProgramForm,
   type CouponResult,
   type LinkResult,
-  type MerchantChoice,
   type NetworkResult,
   type ProgramResult
 } from "./AffiliateSetupForms";
 import { affiliateSetupLoader, type AffiliateSetupLoaderData } from "./loader";
+import {
+  buildCouponVariables,
+  buildLinkVariables,
+  buildMerchantChoices,
+  buildNetworkVariables,
+  buildProgramVariables,
+  getMerchantChoiceById,
+  getMerchantSummary
+} from "./affiliate-setup-data";
 import { affiliateSetupPagePath } from "./pagination";
-
-type AffiliateSetupMerchantConnection = NonNullable<
-  AffiliateSetupRouteQuery["response"]["merchants"]
->;
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -148,7 +152,7 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateNetwork,
         {
-          variables: buildNetworkVariables(new FormData(event.currentTarget))
+          variables: buildNetworkVariables(formDataToScalarValues(new FormData(event.currentTarget)))
         }
       );
       const payload = response.upsertAffiliateNetwork;
@@ -183,7 +187,7 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateProgram,
         {
-          variables: buildProgramVariables(new FormData(event.currentTarget))
+          variables: buildProgramVariables(formDataToScalarValues(new FormData(event.currentTarget)))
         }
       );
       const payload = response.upsertAffiliateProgram;
@@ -217,7 +221,7 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateLink,
         {
-          variables: buildLinkVariables(new FormData(event.currentTarget))
+          variables: buildLinkVariables(formDataToScalarValues(new FormData(event.currentTarget)))
         }
       );
       const payload = response.upsertAffiliateLink;
@@ -251,7 +255,7 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitCreateCoupon,
         {
-          variables: buildCouponVariables(new FormData(event.currentTarget))
+          variables: buildCouponVariables(formDataToScalarValues(new FormData(event.currentTarget)))
         }
       );
       const payload = response.createCoupon;
@@ -362,119 +366,14 @@ function AffiliateSetupUnavailableFallback() {
   );
 }
 
-function buildMerchantChoices(
-  merchants: AffiliateSetupMerchantConnection | null | undefined
-): MerchantChoice[] {
-  if (!merchants) {
-    return [];
-  }
+function formDataToScalarValues(formData: FormData) {
+  const values: Record<string, string> = {};
 
-  return merchants.edges.flatMap(({ node }) => {
-    if (!node?.id || !node.name || !node.domain) {
-      return [];
+  formData.forEach((value, name) => {
+    if (!(name in values)) {
+      values[name] = typeof value === "string" ? value : "";
     }
-
-    return [
-      {
-        id: node.id,
-        name: node.name,
-        domain: node.domain
-      }
-    ];
   });
-}
 
-function getMerchantChoiceById(merchantChoices: MerchantChoice[], merchantId: string) {
-  return merchantChoices.find((merchant) => merchant.id === merchantId);
-}
-
-function getMerchantSummary(merchantChoice: MerchantChoice | undefined) {
-  if (!merchantChoice) {
-    return null;
-  }
-
-  return `${merchantChoice.name} (${merchantChoice.domain})`;
-}
-
-function buildNetworkVariables(
-  formData: FormData
-): UpsertAffiliateNetworkMutation["variables"] {
-  return {
-    input: {
-      name: requiredFormString(formData, "networkName")
-    }
-  };
-}
-
-function buildProgramVariables(
-  formData: FormData
-): UpsertAffiliateProgramMutation["variables"] {
-  return {
-    input: {
-      affiliateNetworkId: requiredFormString(formData, "affiliateNetworkId"),
-      merchantId: requiredFormString(formData, "merchantId"),
-      programCode: optionalFormString(formData, "programCode"),
-      status: optionalFormString(formData, "programStatus")
-    }
-  };
-}
-
-function buildLinkVariables(formData: FormData): UpsertAffiliateLinkMutation["variables"] {
-  return {
-    input: {
-      merchantProductId: requiredFormString(formData, "merchantProductId"),
-      affiliateNetworkId: optionalFormString(formData, "linkAffiliateNetworkId"),
-      originalUrl: requiredFormString(formData, "originalUrl"),
-      affiliateUrl: requiredFormString(formData, "affiliateUrl"),
-      lastVerifiedAt: optionalDateTimeString(formData, "lastVerifiedAt")
-    }
-  };
-}
-
-function buildCouponVariables(formData: FormData): CreateCouponMutation["variables"] {
-  return {
-    input: {
-      merchantId: requiredFormString(formData, "couponMerchantId"),
-      affiliateNetworkId: optionalFormString(formData, "couponAffiliateNetworkId"),
-      artifactId: null,
-      code: requiredFormString(formData, "couponCode"),
-      description: optionalFormString(formData, "couponDescription"),
-      discountType: requiredFormString(formData, "discountType") as CreateCouponMutation["variables"]["input"]["discountType"],
-      discountValue: optionalFormString(formData, "discountValue"),
-      currency: optionalCurrencyString(formData, "currency"),
-      validFrom: optionalDateTimeString(formData, "validFrom"),
-      validTo: optionalDateTimeString(formData, "validTo"),
-      terms: optionalFormString(formData, "terms")
-    }
-  };
-}
-
-function requiredFormString(formData: FormData, name: string) {
-  const value = formData.get(name);
-
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function optionalFormString(formData: FormData, name: string) {
-  const value = requiredFormString(formData, name);
-
-  return value || null;
-}
-
-function optionalCurrencyString(formData: FormData, name: string) {
-  const value = optionalFormString(formData, name);
-
-  return value ? value.toUpperCase() : null;
-}
-
-function optionalDateTimeString(formData: FormData, name: string) {
-  const value = optionalFormString(formData, name);
-
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  return values;
 }

@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: done (product-community data contract)
+- Status: ready (product-detail route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after product-community data extraction (8 focused
-  tests and TypeScript).
+- Last verified: 2026-07-14 after product-detail route-data candidate
+  verification (60 route tests).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -23,6 +23,31 @@
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
+
+## Product Detail Route Data Contract
+
+- Status: ready on 2026-07-14.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Next action: isolate selected-tab, overview-summary, encoded product-path,
+  compare-action, and selected-item removal policy in a framework-free module
+  while retaining Relay reads, router location and navigation, boundaries,
+  tabs, layout, and presentation in `ProductDetailRoute`.
+- Owned paths:
+  - `assets/src/routes/products/product-detail-route-data.ts`
+  - `assets/src/routes/products/ProductDetailRoute.tsx`
+  - `assets/test/routes/products/product-detail-route-data.test.ts`
+  - `assets/test/routes/products/detail.route.test.tsx`
+  - `docs/work/frontend-product-detail.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/products/product-detail-route-data.test.ts test/routes/products/detail.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure route policy preserves tab selection, offer-cursor
+  fallback, overview counts, encoded product paths, compare selection order,
+  add/selected/full states, hashes, and unrelated search parameters.
+- Candidate evidence: the existing product-detail route suite passed 60 tests,
+  and current source inspection confirmed the cohesive deterministic policy
+  remains embedded in the 376-line React route owner.
 
 ## Product Community Data Contract
 

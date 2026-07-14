@@ -216,39 +216,16 @@ community, price-alert, and API-token route policy are complete with 11, 8,
 three source-verified, non-overlapping route-policy data contracts backed by
 22 affiliate, 51 offer-discovery, and 62 catalog tests.
 
+After PR #98 merged on 2026-07-14, the coordinator validated product-detail
+route policy as a fourth non-overlapping successor backed by 60 existing route
+tests. Affiliate setup then completed on
+`codex/affiliate-setup-data-contract`: merchant choice, summaries, and all four
+mutation-variable shapes now live in a framework-free contract with 28 focused
+tests. Offer discovery, catalog browse, and product detail remain ready.
+
 ## Ready Work
 
-### 1. Affiliate Setup Route Data Contract
-
-Status: ready
-Lane: Frontend affiliate setup
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free merchant-choice, summary, and mutation-
-variable policy while preserving Relay operations, request guards, form reset
-behavior, local selection, feedback, boundaries, and presentation.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-demo-parity.md`
-
-Prerequisites:
-
-- Existing 22-test affiliate-setup route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure affiliate setup policy preserves merchant filtering and
-summaries, field trimming, optional nulls, currency casing, date normalization,
-and every mutation-variable shape.
-
-### 2. Offer Discovery Filter Data Contract
+### 1. Offer Discovery Filter Data Contract
 
 Status: ready
 Lane: Frontend offer discovery
@@ -278,7 +255,7 @@ Exit condition: Pure offer-filter policy preserves form reset identity, summary
 ordering and copy, default detection, encoded product paths, merchant clearing,
 and sort fallbacks.
 
-### 3. Catalog Browse Route Data Contract
+### 2. Catalog Browse Route Data Contract
 
 Status: ready
 Lane: Frontend catalog browse
@@ -307,6 +284,36 @@ Verification:
 Exit condition: Pure catalog route policy preserves root-path normalization,
 encoded detail links, compare selection order, add/selected/full states,
 maximum selection, and item-removal paths.
+
+### 3. Product Detail Route Data Contract
+
+Status: ready
+Lane: Frontend product detail
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: extract framework-free tab, overview-summary, product-path, and
+compare-action policy while preserving Relay reads, location/navigation,
+boundaries, detail tabs, layout, and presentation.
+Owned paths:
+
+- `assets/src/routes/products/product-detail-route-data.ts`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/test/routes/products/product-detail-route-data.test.ts`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-product-detail.md`
+
+Prerequisites:
+
+- Existing 60-test product-detail route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/product-detail-route-data.test.ts test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: Pure product-detail policy preserves tab selection, offer-
+cursor fallback, overview counts, encoded product paths, compare selection
+order, add/selected/full states, hashes, and unrelated search parameters.
 
 ## Needs Decision Work
 

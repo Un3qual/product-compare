@@ -5,7 +5,7 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep three established frontend routes maintainable by extracting
+**Goal:** Keep four established frontend routes maintainable by extracting
 their deterministic form, summary, path, and view-state policy into small,
 framework-free contracts without changing user behavior.
 
@@ -42,15 +42,15 @@ network, program, link, and coupon mutation variables from scalar form values.
 The route retains Relay operations, request guards, form reset behavior,
 selection state, feedback, boundaries, and presentation.
 
-- [ ] Write pure tests for invalid merchant nodes, selected summaries, required
+- [x] Write pure tests for invalid merchant nodes, selected summaries, required
   and optional trimming, currency casing, date normalization, invalid dates,
   and every mutation-variable shape; run them and verify the missing-module
   failure.
-- [ ] Extract the deterministic policy and adapt `FormData` to scalar values at
+- [x] Extract the deterministic policy and adapt `FormData` to scalar values at
   the route boundary.
-- [ ] Run the pure and existing route suites, TypeScript, the framework-import
+- [x] Run the pure and existing route suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -104,9 +104,37 @@ reads, route location, Suspense and error boundaries, layout, and presentation.
   scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 4: Product Detail Route Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/products/product-detail-route-data.ts`
+- Modify: `assets/src/routes/products/ProductDetailRoute.tsx`
+- Create: `assets/test/routes/products/product-detail-route-data.test.ts`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Modify: `docs/work/frontend-product-detail.md`
+
+**Interfaces:** The pure module derives the selected detail tab, overview
+summary items, encoded product-detail and compare-selection paths, and the
+add/selected/full compare action. `ProductDetailRoute` retains Relay reads,
+router location and navigation, Suspense and error boundaries, detail-tab
+presentation, layout, and child panels.
+
+- [ ] Write pure tests for explicit and fallback tabs, offer-cursor fallback,
+  overview counts, encoded product paths, preserved unrelated search and hash
+  state, compare selection order, add/selected/full states, maximum selection,
+  and selected-item removal; verify RED.
+- [ ] Extract only deterministic route policy and keep Relay-derived product
+  availability and router side effects in the route owner.
+- [ ] Run the pure and existing detail suites, TypeScript, the framework-import
+  scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
-- The existing affiliate setup, offer discovery, and catalog browse route
-  suites passed 135 tests on 2026-07-14.
-- Current source inspection found the named deterministic policies in three
+- The existing affiliate setup, offer discovery, catalog browse, and product
+  detail route suites passed 195 tests on 2026-07-14.
+- Current source inspection found the named deterministic policies in four
   separate React owners with no code, test, or lane-doc ownership overlap.
