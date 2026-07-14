@@ -177,11 +177,23 @@ eligible same-currency landed prices, persist immutable observation facts and
 transport-neutral delivery attempts, and suppress replay and premature repeat
 events. Product detail now creates watches, and the authenticated inbox manages
 unread events and active rules. Deterministic source-backed recommendations are
-the next coordinator planning target.
+now active.
 
 ## Active Work
 
-None while deterministic recommendations are being planned.
+### Source-Backed Recommendations
+
+Status: active
+Lane: Full-stack comparison decisions
+Plan: `docs/superpowers/plans/2026-07-13-source-backed-recommendations-implementation-plan.md`
+Next action: rank only complete same-currency offer truth, require accepted
+claim evidence for best-value guidance, and render evidence references or an
+explicit no-winner explanation in compare.
+Owned paths: recommendation context/resolver/schema/tests, compare route/query/
+tests, generated GraphQL/Relay artifacts, and this lane doc.
+
+Exit condition: versioned deterministic profiles cite exact claim and price
+observations and fail closed for missing evidence, mixed currencies, or ties.
 
 ## Ready Work
 
