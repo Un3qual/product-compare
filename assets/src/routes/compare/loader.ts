@@ -147,6 +147,7 @@ export async function compareLoader({
         offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
         pickerFirst: COMPARE_PRODUCT_PICKER_PAGE_SIZE,
         pickerAfter: null,
+        includeRecommendation: slugs.length >= 2,
         recommendationProfile:
           recommendationProfile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST"
       },
@@ -199,10 +200,7 @@ function summarizeRecommendation(
   return {
     profile: value.profile === "BEST_VALUE" ? "best_value" : "lowest_current_cost",
     algorithmVersion: value.algorithmVersion,
-    status:
-      value.status === "WINNER" || value.status === "TIE"
-        ? value.status
-        : "INSUFFICIENT_EVIDENCE",
+    status: supportedRecommendationStatus(value.status),
     winnerProductId: value.winnerProductId ?? null,
     currency: value.currency ?? null,
     missingInputs: value.missingInputs,
@@ -217,6 +215,10 @@ function summarizeRecommendation(
       reasons: ranking.reasons
     }))
   };
+}
+
+function supportedRecommendationStatus(value: string): CompareRecommendationSummary["status"] {
+  return value === "WINNER" || value === "TIE" ? value : "INSUFFICIENT_EVIDENCE";
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {

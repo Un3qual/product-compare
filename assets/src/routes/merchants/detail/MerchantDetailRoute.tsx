@@ -7,7 +7,7 @@ import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { externalWebsiteHref } from "../../external-links";
-import { merchantDetailLoader } from "./loader";
+import type { MerchantDetailLoaderData } from "./loader";
 import merchantDetailRouteQuery from "./queries/MerchantDetailRouteQuery";
 
 const styles = create({
@@ -17,9 +17,14 @@ const styles = create({
 });
 
 export function MerchantDetailRoute() {
-  const loaderData = useLoaderData<typeof merchantDetailLoader>();
+  const loaderData = useLoaderData() as MerchantDetailLoaderData;
   if (loaderData.status !== "ready") return <PageShell eyebrow="Seller detail" title="Merchant not found"><FeedbackState kind="error" title="This merchant is unavailable." /></PageShell>;
-  const queryRef = useRoutePreloadedQuery<MerchantDetailRouteQueryType>(merchantDetailRouteQuery, loaderData.query);
+
+  return <ReadyMerchantDetail query={loaderData.query} />;
+}
+
+function ReadyMerchantDetail({ query }: { query: Extract<MerchantDetailLoaderData, { status: "ready" }>["query"] }) {
+  const queryRef = useRoutePreloadedQuery<MerchantDetailRouteQueryType>(merchantDetailRouteQuery, query);
   const data = usePreloadedQuery<MerchantDetailRouteQueryType>(merchantDetailRouteQuery, queryRef);
   const merchant = data.merchant;
   if (!merchant) return null;

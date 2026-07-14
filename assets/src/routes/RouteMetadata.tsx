@@ -40,7 +40,7 @@ export function RouteMetadata() {
       {metadata.imageUrl ? <meta property="og:image" content={metadata.imageUrl} /> : null}
       {metadata.imageUrl ? <meta name="twitter:image" content={metadata.imageUrl} /> : null}
       {metadata.structuredData ? (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: metadata.structuredData }} />
+        <script type="application/ld+json">{metadata.structuredData}</script>
       ) : null}
     </>
   );

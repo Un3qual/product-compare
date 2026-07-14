@@ -6,7 +6,7 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { categoryLoader } from "./loader";
+import type { CategoryLoaderData } from "./loader";
 import categoryRouteQuery from "./queries/CategoryRouteQuery";
 
 const styles = create({
@@ -18,19 +18,23 @@ const styles = create({
 });
 
 export function CategoryRoute() {
-  const loaderData = useLoaderData<typeof categoryLoader>();
+  const loaderData = useLoaderData() as CategoryLoaderData;
   if (loaderData.status !== "ready") {
     return <PageShell eyebrow="Product category" title="Category not found"><FeedbackState kind="error" title="This category is unavailable." /></PageShell>;
   }
 
-  const queryRef = useRoutePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, loaderData.query);
+  return <ReadyCategory query={loaderData.query} />;
+}
+
+function ReadyCategory({ query }: { query: Extract<CategoryLoaderData, { status: "ready" }>["query"] }) {
+  const queryRef = useRoutePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, query);
   const data = usePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, queryRef);
   const category = data.category;
   if (!category) return null;
 
   return (
     <PageShell eyebrow="Product category" title={`Compare ${category.name}`} description={category.description}>
-      <p {...props(styles.facts)}>{category.qualifiedProductCount} products currently meet this category's specification, content, and offer-quality threshold.</p>
+      <p {...props(styles.facts)}>{category.qualifiedProductCount} products currently meet this category’s specification, content, and offer-quality threshold.</p>
       <Link to={`/products?typeTaxonId=${encodeURIComponent(category.id)}&includeTypeDescendants=1`}>Explore every product and filter</Link>
       {category.products.edges.length ? (
         <ul aria-label={`${category.name} products`} {...props(styles.list)}>

@@ -31,23 +31,15 @@ export function ShareComparisonControl({ products, recommendation }: { products:
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
-    const searchIndexable = new FormData(event.currentTarget).get("searchIndexable") === "on";
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: {
-          input: {
-            productIds: products.map((product) => product.id),
-            recommendationProfile: recommendation?.profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
-            searchIndexable,
-            ...(title ? { title } : {})
-          }
-        }
+        variables: { input: publishInput(products, recommendation, new FormData(event.currentTarget)) }
       });
       const payload = response.publishComparisonSnapshot;
-      if (payload?.snapshot?.id && payload.sharePath) {
-        setPublished({ id: payload.snapshot.id, path: payload.sharePath });
+      const publishedSnapshot = publishedSnapshotFromPayload(payload);
+      if (publishedSnapshot) {
+        setPublished(publishedSnapshot);
         setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
       } else {
         setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
@@ -96,4 +88,27 @@ export function ShareComparisonControl({ products, recommendation }: { products:
       </form>
     </details>
   );
+}
+
+function publishInput(
+  products: readonly CompareProductSummary[],
+  recommendation: CompareRecommendationSummary | undefined,
+  form: FormData
+): PublishComparisonSnapshotMutation["variables"]["input"] {
+  const title = String(form.get("title") ?? "").trim();
+
+  return {
+    productIds: products.map((product) => product.id),
+    recommendationProfile: recommendation?.profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
+    searchIndexable: form.get("searchIndexable") === "on",
+    ...(title ? { title } : {})
+  };
+}
+
+function publishedSnapshotFromPayload(
+  payload: PublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"]
+) {
+  return payload?.snapshot?.id && payload.sharePath
+    ? { id: payload.snapshot.id, path: payload.sharePath }
+    : null;
 }

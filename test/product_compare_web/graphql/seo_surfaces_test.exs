@@ -4,6 +4,7 @@ defmodule ProductCompareWeb.GraphQL.SeoSurfacesTest do
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompare.Pricing
   alias ProductCompare.Specs
+  alias ProductCompareWeb.GraphQL.GlobalId
 
   test "product and curated category reads expose the shared search qualification contract", %{
     conn: conn
@@ -37,6 +38,7 @@ defmodule ProductCompareWeb.GraphQL.SeoSurfacesTest do
                  }
                },
                "category" => %{
+                 "id" => category_id,
                  "indexable" => false,
                  "qualifiedProductCount" => 1,
                  "seo" => %{
@@ -55,6 +57,7 @@ defmodule ProductCompareWeb.GraphQL.SeoSurfacesTest do
              })
 
     assert Jason.decode!(structured_data)["@type"] == "Product"
+    assert GlobalId.decode_integer(category_id, :taxon) == {:ok, category.id}
   end
 
   defp qualified_product(operator, category) do

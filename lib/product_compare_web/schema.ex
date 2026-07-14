@@ -1328,7 +1328,7 @@ defmodule ProductCompareWeb.Schema do
 
   object :seo_category do
     field :id, non_null(:id) do
-      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.entropy_id) end)
+      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.id) end)
     end
 
     field :name, non_null(:string)

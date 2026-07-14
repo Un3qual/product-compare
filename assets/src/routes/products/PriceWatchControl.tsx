@@ -40,13 +40,7 @@ export function PriceWatchControl({ productId }: { productId: string }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    const form = new FormData(event.currentTarget);
-    const currency = String(form.get("currency") ?? "USD").trim().toUpperCase();
-    const amount = String(form.get("amount") ?? "").trim();
-    const input: CreatePriceWatchMutation["variables"]["input"] = { productId, ruleType, currency };
-
-    if (ruleType === "TARGET_PRICE") input.targetAmount = amount;
-    if (ruleType === "PERCENTAGE_DROP") input.percentageDrop = amount;
+    const input = watchInput(productId, ruleType, new FormData(event.currentTarget));
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, { variables: { input } });
@@ -90,4 +84,22 @@ export function PriceWatchControl({ productId }: { productId: string }) {
       </form>
     </details>
   );
+}
+
+function watchInput(
+  productId: string,
+  ruleType: RuleType,
+  form: FormData
+): CreatePriceWatchMutation["variables"]["input"] {
+  const amount = String(form.get("amount") ?? "").trim();
+  const input: CreatePriceWatchMutation["variables"]["input"] = {
+    productId,
+    ruleType,
+    currency: String(form.get("currency") ?? "USD").trim().toUpperCase()
+  };
+
+  if (ruleType === "TARGET_PRICE") input.targetAmount = amount;
+  if (ruleType === "PERCENTAGE_DROP") input.percentageDrop = amount;
+
+  return input;
 }

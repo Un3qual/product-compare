@@ -97,6 +97,56 @@ defmodule ProductCompare.SeoTest do
     assert Seo.sitemap_entries(:comparisons, now: @now) == []
   end
 
+  test "comparison sitemap limits apply after captured-evidence qualification" do
+    owner = AccountsFixtures.user_fixture()
+    thin_first = SpecsFixtures.product_fixture(%{slug: "thin-snapshot-first"})
+    thin_second = SpecsFixtures.product_fixture(%{slug: "thin-snapshot-second"})
+
+    assert {:ok, _thin_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               %{
+                 product_ids: [thin_first.id, thin_second.id],
+                 recommendation_profile: :lowest_current_cost,
+                 search_indexable: true
+               },
+               now: @now
+             )
+
+    assert {:ok, _second_thin_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               %{
+                 product_ids: [thin_second.id, thin_first.id],
+                 recommendation_profile: :lowest_current_cost,
+                 search_indexable: true
+               },
+               now: DateTime.add(@now, 1, :microsecond)
+             )
+
+    operator = AccountsFixtures.operator_fixture()
+    qualified_first = qualified_product("limited-snapshot-first", operator)
+    qualified_second = qualified_product("limited-snapshot-second", operator)
+
+    assert {:ok, qualified_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               %{
+                 product_ids: [qualified_first.id, qualified_second.id],
+                 recommendation_profile: :lowest_current_cost,
+                 search_indexable: true
+               },
+               now: @now
+             )
+
+    assert Seo.sitemap_entries(:comparisons, now: @now, limit: 1) == [
+             %{
+               path: "/compare/shared/#{qualified_snapshot.public_token}",
+               last_modified: qualified_snapshot.inserted_at
+             }
+           ]
+  end
+
   test "product slug changes preserve a permanent lookup alias without polluting canonical sitemap paths" do
     product = SpecsFixtures.product_fixture(%{slug: "legacy-search-slug"})
 

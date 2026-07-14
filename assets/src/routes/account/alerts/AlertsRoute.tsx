@@ -13,7 +13,7 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../../ro
 import deletePriceWatchMutation from "./queries/DeletePriceWatchMutation";
 import markAlertReadMutation from "./queries/MarkAlertReadMutation";
 import updatePriceWatchMutation from "./queries/UpdatePriceWatchMutation";
-import { alertsLoader, type AlertSummary, type WatchSummary } from "./loader";
+import type { AlertsRouteLoaderData, AlertSummary, WatchSummary } from "./loader";
 
 const styles = create({
   actions: { display: "flex", flexWrap: "wrap", gap: "0.6rem" },
@@ -33,7 +33,7 @@ const styles = create({
 });
 
 export function AlertsRoute() {
-  const loaderData = useLoaderData<typeof alertsLoader>();
+  const loaderData = useLoaderData() as AlertsRouteLoaderData;
 
   if (loaderData.status === "unauthorized") {
     return (
@@ -92,10 +92,10 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                   </p>
                   {!alert.readAt ? (
                     <div {...props(styles.actions)}>
-                      <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => void run(alert.id, async () => {
+                      <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => { run(alert.id, async () => {
                         const { response, graphQLErrors } = await commitRouteMutationPromise(commitMarkRead, { variables: { id: alert.id } });
                         return response.markAlertRead?.event ? null : routeMutationErrorMessage(response.markAlertRead?.errors, graphQLErrors);
-                      })}>Mark read</Button>
+                      }); }}>Mark read</Button>
                     </div>
                   ) : null}
                 </li>
@@ -113,14 +113,14 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                   <strong><Link to={`/products/${encodeURIComponent(watch.productSlug)}`}>{watch.productName}</Link></strong>
                   <p {...props(styles.meta)}><span>{watchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
                   <div {...props(styles.actions)}>
-                    <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => void run(watch.id, async () => {
+                    <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => { run(watch.id, async () => {
                       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, { variables: { input: { id: watch.id, enabled: false } } });
                       return response.updatePriceWatch?.watch ? null : routeMutationErrorMessage(response.updatePriceWatch?.errors, graphQLErrors);
-                    })}>Pause</Button>
-                    <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => void run(watch.id, async () => {
+                    }); }}>Pause</Button>
+                    <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => { run(watch.id, async () => {
                       const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, { variables: { id: watch.id } });
                       return response.deletePriceWatch?.deletedWatchId ? null : routeMutationErrorMessage(response.deletePriceWatch?.errors, graphQLErrors);
-                    })}>Delete</Button>
+                    }); }}>Delete</Button>
                   </div>
                 </li>
               ))}

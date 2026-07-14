@@ -15,6 +15,14 @@ defmodule ProductCompareWeb.RuntimeConfig do
 
   def default_trusted_origins(_env, _phx_host), do: @dev_trusted_origins
 
+  @spec public_site_url(String.t() | nil, String.t() | nil) :: String.t()
+  def public_site_url(explicit_url, phx_host) do
+    case normalize_origin(explicit_url) do
+      nil -> frontend_origin(endpoint_host(phx_host))
+      origin -> origin
+    end
+  end
+
   defp frontend_origin(host) do
     frontend_host =
       if String.starts_with?(host, "api.") do
@@ -48,6 +56,18 @@ defmodule ProductCompareWeb.RuntimeConfig do
           |> String.split(":", parts: 2)
           |> hd()
         end
+    end
+  end
+
+  defp normalize_origin(nil), do: nil
+
+  defp normalize_origin(value) do
+    value
+    |> String.trim()
+    |> String.trim_trailing("/")
+    |> case do
+      "" -> nil
+      origin -> origin
     end
   end
 end

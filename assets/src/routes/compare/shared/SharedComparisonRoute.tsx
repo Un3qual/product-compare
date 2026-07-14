@@ -7,7 +7,7 @@ import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { buildComparePathFromSlugs } from "../paths";
-import { sharedComparisonLoader } from "./loader";
+import type { SharedComparisonLoaderData } from "./loader";
 import sharedComparisonRouteQuery from "./queries/SharedComparisonRouteQuery";
 
 const styles = create({
@@ -22,11 +22,16 @@ const styles = create({
 });
 
 export function SharedComparisonRoute() {
-  const loaderData = useLoaderData<typeof sharedComparisonLoader>();
+  const loaderData = useLoaderData() as SharedComparisonLoaderData;
   if (loaderData.status !== "ready") {
     return <PageShell eyebrow="Shared decision" title="Comparison not found"><FeedbackState kind="error" title="This snapshot is unavailable or has been revoked." /></PageShell>;
   }
-  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(sharedComparisonRouteQuery, loaderData.query);
+
+  return <ReadySharedComparison query={loaderData.query} />;
+}
+
+function ReadySharedComparison({ query }: { query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"] }) {
+  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(sharedComparisonRouteQuery, query);
   const data = usePreloadedQuery<SharedComparisonRouteQueryType>(sharedComparisonRouteQuery, queryRef);
   const snapshot = data.comparisonSnapshot;
   if (!snapshot) return null;

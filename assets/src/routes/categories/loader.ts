@@ -6,6 +6,7 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
+import { isCanonicalSlug } from "../route-params";
 import type { RouteDocumentMetadata } from "../RouteMetadata";
 import { routeMetadataFromSeo } from "../seo";
 import categoryRouteQuery from "./queries/CategoryRouteQuery";
@@ -20,7 +21,7 @@ export type CategoryLoaderData =
 
 export async function categoryLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return notFound();
+  if (!isCanonicalSlug(slug)) return notFound();
 
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);

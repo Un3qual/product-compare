@@ -22,6 +22,16 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
            ]
   end
 
+  test "public_site_url/2 derives the public frontend origin instead of the API origin" do
+    assert RuntimeConfig.public_site_url(nil, "api.example.com") == "https://app.example.com"
+    assert RuntimeConfig.public_site_url(nil, "example.com") == "https://example.com"
+  end
+
+  test "public_site_url/2 preserves an explicit canonical origin" do
+    assert RuntimeConfig.public_site_url("https://shop.example.net/", "api.example.com") ==
+             "https://shop.example.net"
+  end
+
   test "endpoint_host/1 falls back to example.com for nil" do
     assert RuntimeConfig.endpoint_host(nil) == "example.com"
   end

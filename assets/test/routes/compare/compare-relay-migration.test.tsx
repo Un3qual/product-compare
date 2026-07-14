@@ -137,6 +137,7 @@ const compareRouteQueryDescriptor = {
       offerFirst: 3,
       pickerFirst: 24,
       pickerAfter: null,
+      includeRecommendation: true,
       recommendationProfile: "LOWEST_CURRENT_COST"
     }
   }
@@ -266,6 +267,7 @@ test("compare loader preloads the batched comparison query through Relay", async
       offerFirst: 3,
       pickerFirst: 24,
       pickerAfter: null,
+      includeRecommendation: true,
       recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }

@@ -137,7 +137,13 @@ if config_env() == :prod do
     end
 
   config :product_compare, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
-  config :product_compare, :public_site_url, System.get_env("PUBLIC_SITE_URL", "https://#{host}")
+
+  config :product_compare,
+         :public_site_url,
+         ProductCompareWeb.RuntimeConfig.public_site_url(
+           System.get_env("PUBLIC_SITE_URL"),
+           phx_host
+         )
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],

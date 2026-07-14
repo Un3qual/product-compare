@@ -154,13 +154,19 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     assert %{
              "data" => %{
                "markAlertRead" => %{
-                 "event" => %{"id" => ^event_id, "readAt" => read_at},
+                 "event" => %{
+                   "id" => ^event_id,
+                   "readAt" => read_at,
+                   "merchantName" => merchant_name,
+                   "productName" => ^product_name
+                 },
                  "errors" => []
                }
              }
            } = graphql(owner_conn, mark_read_mutation(), %{"id" => event_id})
 
     assert is_binary(read_at)
+    assert is_binary(merchant_name)
   end
 
   defp offer_fixture do
@@ -263,7 +269,10 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
   defp mark_read_mutation do
     """
     mutation MarkAlertRead($id: ID!) {
-      markAlertRead(id: $id) { event { id readAt } errors { code field message } }
+      markAlertRead(id: $id) {
+        event { id readAt productName merchantName }
+        errors { code field message }
+      }
     }
     """
   end

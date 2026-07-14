@@ -2,6 +2,7 @@ import { data, type LoaderFunctionArgs } from "react-router-dom";
 import type { MerchantDetailRouteQuery } from "../../../__generated__/MerchantDetailRouteQuery.graphql";
 import { fetchRouteQuery, getRelayEnvironmentFromRouterContext, type RelayRouteQueryDescriptor } from "../../../relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "../../loader-errors";
+import { isCanonicalSlug } from "../../route-params";
 import { routeMetadataFromSeo } from "../../seo";
 import type { RouteDocumentMetadata } from "../../RouteMetadata";
 import merchantDetailRouteQuery from "./queries/MerchantDetailRouteQuery";
@@ -12,7 +13,7 @@ export type MerchantDetailLoaderData =
 
 export async function merchantDetailLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return notFound();
+  if (!isCanonicalSlug(slug)) return notFound();
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);
   try {

@@ -39,7 +39,9 @@ export function RecommendationPanel({ recommendation, slugs, specMode }: { recom
 
 function profilePath(slugs: readonly string[], specMode: CompareSpecMode, profile: "lowest_current_cost" | "best_value") {
   const params = new URLSearchParams();
-  slugs.forEach((slug) => params.append("slug", slug));
+  slugs.forEach((slug) => {
+    params.append("slug", slug);
+  });
   if (specMode !== "shared") params.set("specs", specMode);
   if (profile === "best_value") params.set("recommend", profile);
   return `/compare?${params.toString()}`;

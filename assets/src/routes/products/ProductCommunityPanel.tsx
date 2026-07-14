@@ -42,9 +42,9 @@ function ReviewSection({ product }: { product: Product }) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input: { productId: product.id, rating: Number(form.get("rating")), title: String(form.get("title") ?? "").trim() || undefined, body: String(form.get("body") ?? "").trim() || undefined } } });
+      const input = reviewInput(product.id, new FormData(event.currentTarget));
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input } });
       const payload = response.submitProductReview;
       setMessage(payload?.review ? "Review submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors));
     } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
@@ -61,6 +61,21 @@ function ReviewSection({ product }: { product: Product }) {
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>{message ? <p role="status">{message}</p> : null}
     </form></details>
   </section>;
+}
+
+function reviewInput(
+  productId: string,
+  form: FormData
+): SubmitProductReviewMutation["variables"]["input"] {
+  const title = String(form.get("title") ?? "").trim();
+  const body = String(form.get("body") ?? "").trim();
+
+  return {
+    productId,
+    rating: Number(form.get("rating")),
+    ...(title ? { title } : {}),
+    ...(body ? { body } : {})
+  };
 }
 
 function QuestionSection({ product }: { product: Product }) {

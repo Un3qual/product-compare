@@ -12,7 +12,15 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
 
-  @states ~w(available scheduled executing retryable completed discarded cancelled)
+  @state_keys %{
+    "available" => :available,
+    "scheduled" => :scheduled,
+    "executing" => :executing,
+    "retryable" => :retryable,
+    "completed" => :completed,
+    "discarded" => :discarded,
+    "cancelled" => :cancelled
+  }
   @pending_states ~w(available scheduled executing retryable)
   @failure_states ~w(retryable discarded cancelled)
 
@@ -57,15 +65,12 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
   end
 
   defp state_counts(jobs) do
-    initial = Map.new(@states, &{String.to_existing_atom(&1), 0})
+    initial = Map.new(@state_keys, fn {_state, key} -> {key, 0} end)
 
     Enum.reduce(jobs, initial, fn job, counts ->
-      case job.state do
-        state when state in @states ->
-          Map.update!(counts, String.to_existing_atom(state), &(&1 + 1))
-
-        _other ->
-          counts
+      case Map.fetch(@state_keys, job.state) do
+        {:ok, key} -> Map.update!(counts, key, &(&1 + 1))
+        :error -> counts
       end
     end)
   end

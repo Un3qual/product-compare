@@ -21,6 +21,7 @@ defmodule ProductCompare.Seo do
   @minimum_specification_count 2
   @minimum_category_products 3
   @maximum_sitemap_entries 10_000
+  @comparison_sitemap_batch_size 200
 
   @type metadata :: %{
           canonical_path: String.t(),
@@ -302,20 +303,45 @@ defmodule ProductCompare.Seo do
   end
 
   defp sitemap_query(:comparisons, _now, limit) do
-    ComparisonSnapshot
-    |> where(
-      [snapshot],
-      snapshot.search_indexable == true and is_nil(snapshot.revoked_at)
-    )
-    |> order_by([snapshot], asc: snapshot.id)
-    |> limit(^(limit * 2))
-    |> Repo.all()
-    |> Enum.filter(&snapshot_quality?/1)
-    |> Enum.take(limit)
+    limit
+    |> comparison_sitemap_snapshots(nil, [])
     |> Enum.map(fn snapshot ->
       {"/compare/shared/#{snapshot.public_token}", snapshot.inserted_at}
     end)
   end
+
+  defp comparison_sitemap_snapshots(0, _after_id, snapshots), do: Enum.reverse(snapshots)
+
+  defp comparison_sitemap_snapshots(remaining, after_id, snapshots) do
+    batch =
+      ComparisonSnapshot
+      |> where(
+        [snapshot],
+        snapshot.search_indexable == true and is_nil(snapshot.revoked_at)
+      )
+      |> maybe_after_snapshot(after_id)
+      |> order_by([snapshot], asc: snapshot.id)
+      |> limit(^@comparison_sitemap_batch_size)
+      |> Repo.all()
+
+    qualified = batch |> Enum.filter(&snapshot_quality?/1) |> Enum.take(remaining)
+    snapshots = Enum.reduce(qualified, snapshots, fn snapshot, acc -> [snapshot | acc] end)
+
+    cond do
+      length(qualified) == remaining or batch == [] ->
+        Enum.reverse(snapshots)
+
+      true ->
+        comparison_sitemap_snapshots(
+          remaining - length(qualified),
+          List.last(batch).id,
+          snapshots
+        )
+    end
+  end
+
+  defp maybe_after_snapshot(query, nil), do: query
+  defp maybe_after_snapshot(query, id), do: where(query, [snapshot], snapshot.id > ^id)
 
   defp qualified_products_query(%DateTime{} = now), do: qualified_products_query(Product, now)
 

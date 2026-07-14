@@ -252,7 +252,8 @@ const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,
       pickerFirst: 24,
-      pickerAfter: null
+      pickerAfter: null,
+      includeRecommendation: true
     }
   }
 };
@@ -735,11 +736,36 @@ test("compare loader requests selected product details and preserves URL order",
       offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
       pickerFirst: 24,
       pickerAfter: null,
+      includeRecommendation: true,
       recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+});
+
+test("compare loader skips decision recommendations until two products are selected", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    slugs: ["detail-product"],
+    recommendation: undefined
+  });
+
+  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    expect.objectContaining({ includeRecommendation: false }),
+    { signal: request.signal }
+  );
 });
 
 test("compare loader restores requested slug order when response order diverges", async () => {
@@ -1263,6 +1289,7 @@ test("compare loader forwards the route abort signal to the combined Relay prelo
       offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
       pickerFirst: 24,
       pickerAfter: null,
+      includeRecommendation: true,
       recommendationProfile: "LOWEST_CURRENT_COST"
     },
     { signal: request.signal }

@@ -6,9 +6,11 @@ export const compareRouteQuery = graphql`
     $offerFirst: Int!
     $pickerFirst: Int!
     $pickerAfter: String
+    $includeRecommendation: Boolean!
     $recommendationProfile: RecommendationProfile = LOWEST_CURRENT_COST
   ) {
-    comparisonRecommendation(slugs: $slugs, profile: $recommendationProfile) {
+    comparisonRecommendation(slugs: $slugs, profile: $recommendationProfile)
+      @include(if: $includeRecommendation) {
       profile
       algorithmVersion
       status

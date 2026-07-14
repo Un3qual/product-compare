@@ -30,6 +30,10 @@ export type ProductDetailLoaderResult =
   | ReturnType<typeof data<ProductDetailLoaderData>>
   | Response;
 
+type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
+  product: NonNullable<ProductDetailRouteQuery["response"]["product"]>;
+};
+
 export async function productDetailLoader({
   context,
   params,
@@ -83,7 +87,7 @@ export async function productDetailLoader({
     if (partialData) {
       return {
         status: "ready",
-        metadata: routeMetadataFromSeo(partialData.product!.seo, request.url, {
+        metadata: routeMetadataFromSeo(partialData.product.seo, request.url, {
           allowIndexing: new URL(request.url).search === ""
         }),
         productQuery: cacheRouteQueryData<ProductDetailRouteQuery>(
@@ -118,7 +122,9 @@ function offersAfterFromUrl(url: URL): string | null {
   return url.searchParams.get("offersAfter");
 }
 
-function partialProductData(error: unknown): ProductDetailRouteQuery["response"] | null {
+function partialProductData(
+  error: unknown
+): ProductDetailResponseWithProduct | null {
   if (!(error instanceof RouteLoaderGraphQLError)) {
     return null;
   }
@@ -131,5 +137,11 @@ function partialProductData(error: unknown): ProductDetailRouteQuery["response"]
 
   const data = response.data as ProductDetailRouteQuery["response"] | null | undefined;
 
-  return data?.product ? data : null;
+  return hasProduct(data) ? data : null;
+}
+
+function hasProduct(
+  data: ProductDetailRouteQuery["response"] | null | undefined
+): data is ProductDetailResponseWithProduct {
+  return data?.product !== null && data?.product !== undefined;
 }
