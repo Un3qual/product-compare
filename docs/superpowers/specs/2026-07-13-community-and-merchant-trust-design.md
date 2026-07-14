@@ -60,4 +60,3 @@ aggregate exclusion of hidden content, accepted-answer rules, reply depth,
 rate limits, report idempotency, moderator authorization, Markdown safety,
 merchant slug stability, freshness aggregates, tracked URLs, pagination, and
 empty/stale page suppression.
-

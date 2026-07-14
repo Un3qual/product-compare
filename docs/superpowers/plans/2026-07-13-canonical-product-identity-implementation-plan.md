@@ -70,4 +70,3 @@ Run the focused suite, format/type/queue gates, and `git diff --check`. Record
 red-green evidence in the lane doc, retain the next three or more complete
 ready rows, remove the active row, and commit code, migration, tests, plan, and
 lane/queue evidence together.
-

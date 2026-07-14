@@ -132,4 +132,3 @@ provider queries, raw payloads, or tracking parameters.
 - `docs/superpowers/specs/2026-07-13-watchlists-sharing-and-recommendations-design.md`
 - `docs/superpowers/specs/2026-07-13-community-and-merchant-trust-design.md`
 - `docs/superpowers/specs/2026-07-13-seo-and-acquisition-design.md`
-

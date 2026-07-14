@@ -69,4 +69,3 @@ Tests cover ownership, same-currency rules, edge-trigger/cooldown behavior,
 duplicate event prevention, in-app read state, snapshot immutability and
 revocation, privacy redaction, deterministic scores, ties, missing evidence,
 stale offers, algorithm versioning, and evidence-link integrity.
-

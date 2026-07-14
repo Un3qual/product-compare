@@ -73,4 +73,3 @@ offer versus paginated offers, full-run deactivation, partial-run safety,
 reactivation, job uniqueness, retry classification, discarded job health,
 scheduler enqueue behavior, and import/alert idempotency. A runtime drill proves
 a job survives process restart against the test database.
-

@@ -91,4 +91,3 @@ Contract and integration tests cover same-GTIN multi-merchant resolution,
 invalid and conflicting identifiers, no unsafe brand/title merge, replay,
 typed claims and evidence, correction moderation, taxon mapping, media order,
 and public provenance redaction.
-

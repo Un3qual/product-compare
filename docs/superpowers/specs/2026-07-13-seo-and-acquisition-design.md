@@ -58,4 +58,3 @@ Tests cover SSR metadata, canonical URLs, redirects, noindex decisions,
 JSON-LD escaping and factual consistency, rating/offer omission rules, sitemap
 qualification and pagination, robots output, private-route exclusion, and
 client navigation metadata updates.
-
