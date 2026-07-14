@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: coordinating complete-run offer reconciliation
+- Status: active (complete-run offer reconciliation)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -11,6 +11,8 @@
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
   `docs/superpowers/plans/2026-07-13-durable-ingestion-job-foundation-implementation-plan.md`
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-complete-run-offer-reconciliation-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -52,9 +54,10 @@ Recommendations are deterministic and evidence-backed.
 - Specification provenance read contract: complete.
 - Complete offer truth read contract: complete.
 - Durable ingestion job foundation: complete.
-- Enrichment, corrections, reconciliation, alerts, recommendations, sharing,
-  community, merchant pages, and SEO are promoted only as their dependencies
-  become green.
+- Enrichment, corrections, alerts, recommendations, sharing, community,
+  merchant pages, and SEO are promoted only as their dependencies become
+  green.
+- Complete-run offer reconciliation: active.
 
 ## Specification Provenance Evidence
 

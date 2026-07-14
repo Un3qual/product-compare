@@ -157,8 +157,49 @@ the next coordinator planning target.
 
 ## Active Work
 
-None. The coordinator is validating the complete-run offer-reconciliation
-slice before promotion; the independent ready reserve remains dispatchable.
+### Complete-Run Offer Reconciliation
+
+Status: active
+Lane: Backend ingestion operations
+Plan: `docs/superpowers/plans/2026-07-13-complete-run-offer-reconciliation-implementation-plan.md`
+Next action: add run-scoped observations and fail-closed complete-scope
+finalization that deactivates only previously observed offers missing from the
+same proven-complete scope.
+Owned paths:
+
+- `lib/product_compare/ingestion.ex`
+- `lib/product_compare/ingestion/reconciliation.ex`
+- `lib/product_compare/ingestion/cj_run_health.ex`
+- `lib/product_compare/ingestion/jobs/arguments.ex`
+- `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
+- `lib/product_compare/ingestion/jobs/health.ex`
+- `lib/product_compare_schemas/ingestion/import_run.ex`
+- `lib/product_compare_schemas/ingestion/import_observation.ex`
+- `lib/mix/tasks/product_compare.ingestion.cj_import.ex`
+- `priv/repo/migrations/*_add_ingestion_reconciliation.exs`
+- `test/product_compare/ingestion/reconciliation_test.exs`
+- `test/product_compare/ingestion/cj_run_health_test.exs`
+- `test/product_compare/ingestion/jobs/**`
+- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `test/support/fixtures/cj_ingestion_fixtures.ex`
+- `docs/work/product-trust-and-discovery.md`
+
+Prerequisites:
+
+- Durable CJ jobs and the complete offer-truth read contract remain green.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/reconciliation_test.exs test/product_compare/ingestion/cj_run_health_test.exs test/product_compare/ingestion/jobs test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `mix test test/product_compare/ingestion`
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: only explicitly complete, end-of-cursor, zero-failure runs can
+deactivate offers; partial/failed/different-scope runs are recorded but cannot
+hide offers, and later observations reactivate them.
 
 ## Ready Work
 
