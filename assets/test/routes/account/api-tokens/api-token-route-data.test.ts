@@ -89,7 +89,7 @@ test("buildRotateApiTokenVariables uses a trimmed replacement label or the exist
 });
 
 test("summarizeMutationApiToken preserves token facts and normalizes nullable fields", () => {
-  expect(summarizeMutationApiToken(undefined)).toBeNull();
+  expect(summarizeMutationApiToken()).toBeNull();
   expect(summarizeMutationApiToken({
     id: "mutation-token",
     label: undefined,

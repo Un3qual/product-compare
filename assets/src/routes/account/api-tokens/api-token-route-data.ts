@@ -145,19 +145,29 @@ export function buildRotateApiTokenVariables(
   return variables;
 }
 
-export function summarizeMutationApiToken(token: MutationApiToken | null | undefined) {
+export function summarizeMutationApiToken(token?: MutationApiToken | null) {
   if (!token) {
     return null;
   }
 
+  const {
+    id,
+    label = null,
+    tokenPrefix,
+    lastUsedAt = null,
+    expiresAt = null,
+    revokedAt = null,
+    insertedAt
+  } = token;
+
   return {
-    id: token.id,
-    label: token.label ?? null,
-    tokenPrefix: token.tokenPrefix,
-    lastUsedAt: token.lastUsedAt ?? null,
-    expiresAt: token.expiresAt ?? null,
-    revokedAt: token.revokedAt ?? null,
-    insertedAt: token.insertedAt
+    id,
+    label,
+    tokenPrefix,
+    lastUsedAt,
+    expiresAt,
+    revokedAt,
+    insertedAt
   } satisfies ApiTokenRecord;
 }
 
