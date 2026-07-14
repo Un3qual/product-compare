@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d77a3970f7fd2c23f6f5072924d3ebc2>>
+ * @generated SignedSource<<7d4e8ef78dc9741856338416e92fef29>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,6 +21,7 @@ export type AffiliateSetupRouteQuery$data = {
         readonly domain: string;
         readonly id: string;
         readonly name: string;
+        readonly slug: string;
       };
     }>;
     readonly pageInfo: {
@@ -110,6 +111,13 @@ v2 = [
                 "kind": "ScalarField",
                 "name": "domain",
                 "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "slug",
+                "storageKey": null
               }
             ],
             "storageKey": null
@@ -184,12 +192,12 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "c8328f003574d9dd0c8d034c18de0ff6",
+    "cacheID": "ee590fa0db6d52b8e774d24e08a1a772",
     "id": null,
     "metadata": {},
     "name": "AffiliateSetupRouteQuery",
     "operationKind": "query",
-    "text": "query AffiliateSetupRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query AffiliateSetupRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();

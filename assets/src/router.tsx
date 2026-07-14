@@ -96,6 +96,21 @@ export const routes: RouteObject[] = [
         })
       },
       {
+        path: "merchants/:slug",
+        handle: routeMetadata(
+          "Merchant details | Product Compare",
+          "Review a merchant's current product and offer evidence."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="merchant" title="Merchant details" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ MerchantDetailRoute }, { merchantDetailLoader }] = await Promise.all([
+            import("./routes/merchants/detail/MerchantDetailRoute"),
+            import("./routes/merchants/detail/loader")
+          ]);
+          return { Component: MerchantDetailRoute, loader: merchantDetailLoader };
+        })
+      },
+      {
         path: "affiliate/setup",
         handle: routeMetadata(
           "Affiliate setup | Product Compare",

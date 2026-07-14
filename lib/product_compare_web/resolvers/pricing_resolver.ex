@@ -17,6 +17,20 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     Connection.from_query_result(query, Input.connection_args(args), Repo)
   end
 
+  def merchant(_parent, %{slug: slug}, _resolution), do: {:ok, Pricing.get_merchant_by_slug(slug)}
+
+  def merchant_detail_summary(%{slug: slug}, _args, _resolution) do
+    case Pricing.merchant_detail(slug) do
+      %{summary: summary} -> {:ok, summary}
+      nil -> {:error, "merchant not found"}
+    end
+  end
+
+  def merchant_offers(%{id: merchant_id}, args, _resolution) do
+    query = Pricing.list_merchant_offers_query(merchant_id, true)
+    Connection.from_query_result(query, Input.connection_args(args), Repo)
+  end
+
   @spec merchant_products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def merchant_products(_parent, %{input: input}, _resolution) do

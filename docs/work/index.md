@@ -189,24 +189,29 @@ product Q&A completed on 2026-07-13. Reviews, questions, and answers require
 authenticated attribution and operator publication; only published reviews
 affect rating summaries, public author labels never reveal email, reporting and
 accepted answers are durable, and merchant-offer association no longer claims
-purchase verification. Merchant detail pages are now active.
+purchase verification. Merchant detail pages completed on 2026-07-13. Stable
+canonical merchant slugs now lead to database-complete offer coverage and
+freshness summaries, bounded current product listings, and safe merchant
+destinations. SEO and acquisition surfaces are now active.
 
 ## Active Work
 
-### Merchant Detail Reads And Pages
+### SEO And Acquisition Surfaces
 
 Status: active
-Lane: Full-stack merchant discovery
-Plan: `docs/superpowers/plans/2026-07-13-merchant-detail-pages-implementation-plan.md`
-Next action: add canonical merchant slugs, a public merchant detail read model,
-and a dedicated page with current offer/product coverage and freshness facts.
-Owned paths: merchant migration/schema/pricing/resolver/tests, merchant route/
-query/presentation/tests, directory links, generated GraphQL/Relay artifacts,
-and this lane doc.
+Lane: Full-stack acquisition
+Plan: `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
+Next action: add qualification-aware canonical metadata and structured data,
+curated category landing pages, privacy-safe comparison indexing controls, and
+bounded deterministic robots/sitemap output.
+Owned paths: taxonomy and snapshot SEO migrations/read models, public GraphQL
+SEO fields and tests, route metadata/category/shared controls and tests, Phoenix
+robots/sitemap controllers and tests, generated artifacts, and this lane doc.
 
-Exit condition: merchant pages have stable canonical URLs, use complete
-database-backed active-offer aggregates, preserve safe outbound links, and make
-freshness and unavailable data explicit.
+Exit condition: product, merchant, qualified category, and explicitly
+indexable comparison pages emit unique canonical metadata and truthful
+structured data; unqualified/private/parameterized pages emit `noindex`; and
+robots/sitemaps expose only bounded, qualifying canonical URLs.
 
 ## Ready Work
 

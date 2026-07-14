@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (merchant detail pages)
+- Status: active (SEO and acquisition surfaces)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-reviews-and-product-qa-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-merchant-detail-pages-implementation-plan.md`
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-seo-and-acquisition-surfaces-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -64,7 +64,28 @@ Recommendations are deterministic and evidence-backed.
 - Source-backed recommendations: complete.
 - Immutable shareable comparison snapshots: complete.
 - Reviews and product Q&A: complete.
-- Merchant detail pages: active.
+- Merchant detail pages: complete.
+- SEO and acquisition surfaces: active.
+
+## Merchant Detail Page Evidence
+
+- Added deterministic canonical merchant slugs with a collision-resistant
+  identity suffix. Existing merchants are backfilled, slugs remain stable when
+  display names change, and unknown slugs return HTTP 404.
+- The merchant detail summary evaluates every active merchant offer in the
+  database through the shared offer-truth policy. It reports distinct products,
+  observed and eligible offers, freshness classes, and the latest observation
+  without inferring totals from a bounded Relay page.
+- The public page separates complete summary facts from its cursor-bounded
+  product listing, makes missing observations explicit, links products to their
+  canonical detail pages, and applies the existing safe external destination
+  policy to merchant domains.
+- Merchant directory cards now link through the canonical slug without changing
+  directory pagination or filtering behavior.
+- GREEN: merchant identity, pricing read-model, and GraphQL suites passed 15
+  tests. Merchant detail and directory frontend suites passed 29 tests. Relay
+  compiled 42 reader, 41 normalization, and 41 operation documents; TypeScript,
+  client/SSR production builds, and the bundle budget passed.
 
 ## Reviews And Product Q&A Evidence
 

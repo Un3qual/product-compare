@@ -58,6 +58,9 @@ type RootQueryType {
   "Returns merchants ordered by primary key with cursor pagination."
   merchants(first: Int, after: String): MerchantConnection
 
+  "Returns one merchant by canonical slug."
+  merchant(slug: String!): Merchant
+
   "Returns captured merchant feed candidates with review-safe metadata."
   merchantFeedCandidates(
     first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort
@@ -849,8 +852,23 @@ type Merchant implements Node {
   id: ID!
   name: String!
   domain: String!
+  slug: String!
+  detailSummary: MerchantDetailSummary!
+  merchantProducts(first: Int, after: String): MerchantProductConnection!
   insertedAt: DateTime!
   updatedAt: DateTime!
+}
+
+type MerchantDetailSummary {
+  activeOfferCount: Int!
+  distinctProductCount: Int!
+  observedOfferCount: Int!
+  eligibleOfferCount: Int!
+  freshOfferCount: Int!
+  agingOfferCount: Int!
+  staleOfferCount: Int!
+  unobservedOfferCount: Int!
+  lastObservedAt: DateTime
 }
 
 type MerchantConnection {

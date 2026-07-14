@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4ca28439f2a1863ee11a4ab689d77ae2>>
+ * @generated SignedSource<<bea01d0ff1fd1cfa3917fb6a811c52ed>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,6 +21,7 @@ export type MerchantDirectoryRouteQuery$data = {
         readonly domain: string;
         readonly id: string;
         readonly name: string;
+        readonly slug: string;
       };
     }>;
     readonly pageInfo: {
@@ -110,6 +111,13 @@ v2 = [
                 "kind": "ScalarField",
                 "name": "domain",
                 "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "slug",
+                "storageKey": null
               }
             ],
             "storageKey": null
@@ -184,12 +192,12 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "ce2619bb740b8922e0d938159fb39a2d",
+    "cacheID": "e60ed11a63074678d39c40ee8c369192",
     "id": null,
     "metadata": {},
     "name": "MerchantDirectoryRouteQuery",
     "operationKind": "query",
-    "text": "query MerchantDirectoryRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query MerchantDirectoryRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();

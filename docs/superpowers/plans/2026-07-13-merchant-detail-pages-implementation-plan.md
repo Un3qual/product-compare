@@ -37,4 +37,8 @@ catalog coverage, current offer quality, freshness, and destination safety.
 - Relay, TypeScript, production builds, backend gates, queue validation, and
   diff hygiene.
 
-SEO and acquisition surfaces are next after stable merchant pages are green.
+## Completion
+
+Completed on 2026-07-13. Stable merchant slugs, complete summary aggregates,
+bounded offer/product reads, directory navigation, safe destinations, and 404
+behavior are implemented and verified. SEO and acquisition surfaces are next.

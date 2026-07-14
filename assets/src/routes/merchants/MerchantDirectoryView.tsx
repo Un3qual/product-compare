@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
@@ -36,6 +37,7 @@ const styles = create({
 });
 
 type MerchantDirectoryViewMerchant = {
+  detailHref: string;
   domain: string;
   id: string;
   name: string;
@@ -136,17 +138,20 @@ function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryVi
   return (
     <DataListItem
       actions={
-        merchant.websiteHref ? (
-          <Button asChild variant="soft">
-            <a href={merchant.websiteHref} target="_blank" rel="noopener noreferrer">
-              Visit merchant website
-            </a>
-          </Button>
-        ) : null
+        <>
+          <Button asChild variant="soft"><Link to={merchant.detailHref}>View merchant details</Link></Button>
+          {merchant.websiteHref ? (
+            <Button asChild variant="soft">
+              <a href={merchant.websiteHref} target="_blank" rel="noopener noreferrer">
+                Visit merchant website
+              </a>
+            </Button>
+          ) : null}
+        </>
       }
     >
       <div {...props(styles.merchant)}>
-        <h2 {...props(styles.name)}>{merchant.name}</h2>
+        <h2 {...props(styles.name)}><Link to={merchant.detailHref}>{merchant.name}</Link></h2>
         <p {...props(styles.domain)}>{merchant.domain}</p>
       </div>
     </DataListItem>

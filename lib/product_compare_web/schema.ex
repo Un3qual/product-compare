@@ -187,6 +187,12 @@ defmodule ProductCompareWeb.Schema do
       resolve(&PricingResolver.merchants/3)
     end
 
+    @desc "Returns one merchant by canonical slug."
+    field :merchant, :merchant do
+      arg(:slug, non_null(:string))
+      resolve(&PricingResolver.merchant/3)
+    end
+
     @desc "Returns captured merchant feed candidates with review-safe metadata."
     field :merchant_feed_candidates, :merchant_feed_candidate_connection do
       arg(:first, :integer)
@@ -1333,8 +1339,31 @@ defmodule ProductCompareWeb.Schema do
 
     field :name, non_null(:string)
     field :domain, non_null(:string)
+    field :slug, non_null(:string)
+
+    field :detail_summary, non_null(:merchant_detail_summary),
+      resolve: &PricingResolver.merchant_detail_summary/3
+
+    field :merchant_products, non_null(:merchant_product_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&PricingResolver.merchant_offers/3)
+    end
+
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :merchant_detail_summary do
+    field :active_offer_count, non_null(:integer)
+    field :distinct_product_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :fresh_offer_count, non_null(:integer)
+    field :aging_offer_count, non_null(:integer)
+    field :stale_offer_count, non_null(:integer)
+    field :unobserved_offer_count, non_null(:integer)
+    field :last_observed_at, :datetime
   end
 
   object :merchant_connection do
