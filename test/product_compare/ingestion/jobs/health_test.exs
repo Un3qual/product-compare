@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.Jobs.HealthTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Ingestion.Jobs.CJProductImportWorker
   alias ProductCompare.Ingestion.Jobs.Health
   alias ProductCompare.Repo
@@ -42,6 +44,15 @@ defmodule ProductCompare.Ingestion.Jobs.HealthTest do
       })
       |> Repo.insert!()
 
+    source = source_fixture()
+
+    import_run_fixture(source, %{
+      offers_deactivated: 2,
+      query: %{"providerFeedId" => "secret-feed"},
+      reconciliation_status: "succeeded",
+      reconciled_at: DateTime.add(now, -5, :minute)
+    })
+
     assert %{
              states: %{
                available: 1,
@@ -52,13 +63,20 @@ defmodule ProductCompare.Ingestion.Jobs.HealthTest do
              oldest_pending_at: oldest_pending_at,
              last_success_at: last_success_at,
              last_failure_at: last_failure_at,
-             last_failure_category: "discarded"
+             last_failure_category: "discarded",
+             last_reconciliation: %{
+               status: "succeeded",
+               reconciled_at: reconciled_at,
+               offers_deactivated: 2
+             }
            } = Health.summary(now: now)
 
     assert DateTime.compare(oldest_pending_at, retryable.scheduled_at) == :eq
     assert DateTime.compare(last_success_at, completed.completed_at) == :eq
     assert DateTime.compare(last_failure_at, discarded.discarded_at) == :eq
+    assert DateTime.compare(reconciled_at, DateTime.add(now, -5, :minute)) == :eq
     refute inspect(Health.summary(now: now)) =~ "secret provider body"
+    refute inspect(Health.summary(now: now)) =~ "secret-feed"
     refute inspect(Health.summary(now: now)) =~ available.args["schedule_window"]
   end
 end

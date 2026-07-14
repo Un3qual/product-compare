@@ -12,7 +12,10 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
   end
 
   test "product imports enqueue normalized non-secret unique jobs" do
+    refute CJProductImportWorker.args(schedule_window: "default-window")["complete_scope"]
+
     opts = [
+      complete_scope: true,
       currency: "usd",
       cursor: "invalid",
       keywords: "shoe, boot",
@@ -25,6 +28,7 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
     assert {:ok, first_job} = CJProductImportWorker.enqueue(opts)
 
     assert first_job.args == %{
+             "complete_scope" => true,
              "currency" => "USD",
              "cursor" => nil,
              "keywords" => ["shoe", "boot"],
@@ -53,6 +57,7 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
 
     args =
       CJProductImportWorker.args(
+        complete_scope: true,
         currency: "usd",
         keywords: ["shoe"],
         serviceable_areas: ["us"],
@@ -64,6 +69,7 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
     assert_receive {:product_import, opts}
 
     assert Map.new(opts) == %{
+             complete_scope: true,
              currency: "USD",
              cursor: nil,
              keywords: ["shoe"],

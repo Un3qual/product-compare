@@ -10,6 +10,7 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompare.Catalog
   alias ProductCompare.Catalog.GTIN
   alias ProductCompare.Ingestion.NormalizedListing
+  alias ProductCompare.Ingestion.Reconciliation
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy, as: TaxonomyContext
@@ -51,6 +52,7 @@ defmodule ProductCompare.Ingestion do
     attrs =
       attrs
       |> Map.new()
+      |> prepare_reconciliation()
       |> Map.put_new(:status, "running")
       |> Map.put_new(:started_at, DateTime.utc_now())
 
@@ -67,9 +69,28 @@ defmodule ProductCompare.Ingestion do
       |> Map.new()
       |> Map.put_new(:finished_at, DateTime.utc_now())
 
-    import_run
-    |> ImportRun.changeset(attrs)
-    |> Repo.update()
+    Repo.transaction(fn ->
+      with {:ok, completed_run} <-
+             import_run
+             |> ImportRun.changeset(attrs)
+             |> Repo.update(),
+           {:ok, reconciled_run} <- Reconciliation.finalize(completed_run) do
+        reconciled_run
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  defp prepare_reconciliation(attrs) do
+    {complete_scope, attrs} = Map.pop(attrs, :complete_scope, false)
+
+    attrs
+    |> Map.put_new(:scope_fingerprint, Reconciliation.scope_fingerprint(attrs))
+    |> Map.put_new(
+      :reconciliation_status,
+      if(complete_scope == true, do: "pending", else: "not_requested")
+    )
   end
 
   @spec upsert_merchant_feed_candidate(Source.t(), map()) ::
@@ -200,12 +221,22 @@ defmodule ProductCompare.Ingestion do
 
   @spec persist_normalized_listing(Source.t(), NormalizedListing.t()) ::
           {:ok, persisted_listing()} | {:error, term()}
-  def persist_normalized_listing(%Source{id: source_id} = source, %NormalizedListing{} = listing) do
+  def persist_normalized_listing(source, listing),
+    do: persist_normalized_listing(source, listing, [])
+
+  @spec persist_normalized_listing(Source.t(), NormalizedListing.t(), keyword()) ::
+          {:ok, persisted_listing()} | {:error, term()}
+  def persist_normalized_listing(
+        %Source{id: source_id} = source,
+        %NormalizedListing{} = listing,
+        opts
+      ) do
     Repo.transaction(fn ->
       with {:ok, merchant_identity} <-
              resolve_merchant_identity_in_transaction(source_id, listing),
            {:ok, persisted_listing} <-
-             persist_listing_in_transaction(source, listing, merchant_identity) do
+             persist_listing_in_transaction(source, listing, merchant_identity),
+           :ok <- maybe_record_import_observation(opts, persisted_listing) do
         persisted_listing
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -214,6 +245,13 @@ defmodule ProductCompare.Ingestion do
     |> case do
       {:ok, persisted_listing} -> {:ok, persisted_listing}
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp maybe_record_import_observation(opts, persisted_listing) do
+    case Keyword.get(opts, :import_run) do
+      %ImportRun{} = import_run -> Reconciliation.observe(import_run, persisted_listing)
+      _other -> :ok
     end
   end
 

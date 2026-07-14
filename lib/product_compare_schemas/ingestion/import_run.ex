@@ -4,6 +4,9 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
   @type t :: %__MODULE__{}
 
   @statuses ~w(running succeeded failed)
+  @reconciliation_statuses ~w(
+    not_requested pending succeeded skipped_partial skipped_failed skipped_superseded
+  )
   @required_fields [:source_id, :provider, :surface, :query, :status, :started_at]
   @count_fields [
     :pages_fetched,
@@ -31,8 +34,13 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     field :records_persisted, :integer, default: 0
     field :records_failed, :integer, default: 0
     field :error_summary, :string
+    field :scope_fingerprint, :string
+    field :reconciliation_status, :string, default: "not_requested"
+    field :reconciled_at, :utc_datetime_usec
+    field :offers_deactivated, :integer, default: 0
 
     belongs_to :source, ProductCompareSchemas.Specs.Source
+    has_many :observations, ProductCompareSchemas.Ingestion.ImportObservation
 
     timestamps()
   end
@@ -57,13 +65,19 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
       :records_normalized,
       :records_persisted,
       :records_failed,
-      :error_summary
+      :error_summary,
+      :scope_fingerprint,
+      :reconciliation_status,
+      :reconciled_at,
+      :offers_deactivated
     ])
     |> validate_required(@required_fields)
     |> validate_inclusion(:status, @statuses)
+    |> validate_inclusion(:reconciliation_status, @reconciliation_statuses)
     |> validate_number(:page_size, greater_than: 0)
     |> validate_number(:pages_requested, greater_than: 0)
     |> validate_counts()
+    |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:source_id)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
   end

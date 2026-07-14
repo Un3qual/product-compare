@@ -32,6 +32,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @impl GenServer
   def init(opts) do
     state = %{
+      complete_scope: Keyword.get(opts, :complete_scope, false) == true,
       currency: uppercase_string_option(opts, :currency, @default_currency),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       initial_delay_ms:
@@ -71,7 +72,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   end
 
   defp import_opts(state) do
-    [
+    opts = [
       currency: state.currency,
       keywords: state.keywords,
       limit: state.limit,
@@ -79,6 +80,8 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       serviceable_areas: state.serviceable_areas,
       cursor: state.cursor
     ]
+
+    if state.complete_scope, do: Keyword.put(opts, :complete_scope, true), else: opts
   end
 
   defp schedule_run(delay_ms) do

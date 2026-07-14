@@ -34,7 +34,10 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
           records_normalized: non_neg_integer() | nil,
           records_persisted: non_neg_integer() | nil,
           records_failed: non_neg_integer() | nil,
-          has_error_summary: boolean() | nil
+          has_error_summary: boolean() | nil,
+          reconciliation_status: String.t() | nil,
+          reconciled_at: DateTime.t() | nil,
+          offers_deactivated: non_neg_integer() | nil
         }
 
   @type summary :: %{
@@ -77,6 +80,9 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
       records_normalized: run.records_normalized,
       records_persisted: run.records_persisted,
       records_failed: run.records_failed,
+      reconciliation_status: run.reconciliation_status,
+      reconciled_at: run.reconciled_at,
+      offers_deactivated: run.offers_deactivated,
       has_error_summary:
         fragment("? IS NOT NULL AND BTRIM(?) <> ''", run.error_summary, run.error_summary)
     })
@@ -101,6 +107,9 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
       records_normalized: nil,
       records_persisted: nil,
       records_failed: nil,
+      reconciliation_status: nil,
+      reconciled_at: nil,
+      offers_deactivated: nil,
       has_error_summary: nil
     }
   end

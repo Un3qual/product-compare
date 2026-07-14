@@ -15,6 +15,7 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
 
   def product(opts) do
     %{
+      "complete_scope" => boolean_option(opts, :complete_scope, false),
       "currency" => uppercase_option(opts, :currency, @default_currency),
       "cursor" => OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       "keywords" => string_list_option(opts, :keywords, @default_keywords, & &1),
@@ -43,6 +44,7 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
   @spec product_runner_opts(map()) :: keyword()
   def product_runner_opts(args) do
     [
+      complete_scope: args["complete_scope"],
       currency: args["currency"],
       keywords: args["keywords"],
       limit: args["limit"],
@@ -95,6 +97,13 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
 
       _other ->
         default
+    end
+  end
+
+  defp boolean_option(opts, key, default) do
+    case OptionNormalization.option(opts, key, default) do
+      value when is_boolean(value) -> value
+      _other -> default
     end
   end
 

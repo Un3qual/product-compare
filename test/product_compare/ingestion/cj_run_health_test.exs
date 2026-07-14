@@ -43,6 +43,9 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
           records_normalized: 49,
           records_persisted: 49,
           records_failed: 0,
+          reconciliation_status: "succeeded",
+          reconciled_at: ~U[2026-07-02 12:03:00Z],
+          offers_deactivated: 4,
           query: %{"providerFeedId" => "secret-feed"}
         })
 
@@ -97,7 +100,10 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
                    records_normalized: 49,
                    records_persisted: 49,
                    records_failed: 0,
-                   has_error_summary: false
+                   has_error_summary: false,
+                   reconciliation_status: "succeeded",
+                   reconciled_at: ^latest_products_finished_at,
+                   offers_deactivated: 4
                  },
                  shoppingProductFeeds: %{
                    surface: "shoppingProductFeeds",
@@ -115,7 +121,10 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
                    records_normalized: 0,
                    records_persisted: 0,
                    records_failed: 1,
-                   has_error_summary: true
+                   has_error_summary: true,
+                   reconciliation_status: "not_requested",
+                   reconciled_at: nil,
+                   offers_deactivated: 0
                  }
                }
              } = summary = CJRunHealth.summary()
@@ -140,7 +149,10 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
         records_normalized: nil,
         records_persisted: nil,
         records_failed: nil,
-        has_error_summary: nil
+        has_error_summary: nil,
+        reconciliation_status: nil,
+        reconciled_at: nil,
+        offers_deactivated: nil
       }
 
       missing_feeds = %{missing_products | surface: "shoppingProductFeeds"}

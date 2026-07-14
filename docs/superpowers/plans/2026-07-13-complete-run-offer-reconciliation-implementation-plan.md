@@ -15,16 +15,21 @@ offers.
 - `lib/product_compare/ingestion/jobs/arguments.ex`
 - `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
 - `lib/product_compare/ingestion/jobs/health.ex`
+- `lib/product_compare/ingestion/cj_product_import_scheduler.ex`
 - `lib/product_compare_schemas/ingestion/import_run.ex`
 - `lib/product_compare_schemas/ingestion/import_observation.ex`
 - `lib/mix/tasks/product_compare.ingestion.cj_import.ex`
+- `lib/product_compare/application.ex`
+- `config/runtime.exs`
 - `priv/repo/migrations/*_add_ingestion_reconciliation.exs`
 - `test/product_compare/ingestion/reconciliation_test.exs`
 - `test/product_compare/ingestion/cj_run_health_test.exs`
 - `test/product_compare/ingestion/jobs/**`
+- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
 - `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - `test/support/fixtures/cj_ingestion_fixtures.ex`
 - `docs/work/product-trust-and-discovery.md`
+- `docs/runbooks/cj-weekly-operator-loop.md`
 
 ## Safety Contract
 
@@ -57,3 +62,11 @@ offers.
 
 Specification-rich enrichment is the next ingestion milestone. It remains
 outside this reconciliation slice.
+
+## Completion Evidence
+
+- Completed 2026-07-13 on `codex/product-trust-and-discovery`.
+- Focused reconciliation/task/job/health suite: 31 tests, 0 failures.
+- Ingestion and affected CJ task suite: 177 tests, 0 failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed.

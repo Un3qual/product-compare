@@ -59,6 +59,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
       start_supervised!(
         {CJProductImportScheduler,
          [
+           complete_scope: true,
            enqueuer: enqueuer,
            initial_delay_ms: 0,
            interval_ms: 1_000,
@@ -67,6 +68,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
       )
 
     assert_receive {:enqueued, opts}
+    assert opts[:complete_scope]
     assert opts[:currency] == "USD"
     refute_receive {:run, _opts}, 50
 

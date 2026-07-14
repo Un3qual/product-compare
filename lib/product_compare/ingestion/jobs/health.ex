@@ -10,15 +10,14 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
   alias ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker
   alias ProductCompare.Ingestion.Jobs.CJProductImportWorker
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.ImportRun
 
   @states ~w(available scheduled executing retryable completed discarded cancelled)
   @pending_states ~w(available scheduled executing retryable)
   @failure_states ~w(retryable discarded cancelled)
 
   @spec summary(keyword()) :: map()
-  def summary(opts \\ []) do
-    _now = Keyword.get(opts, :now, DateTime.utc_now())
-
+  def summary(_opts \\ []) do
     jobs =
       from(job in Job,
         where: job.worker in ^worker_names(),
@@ -45,7 +44,8 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
       oldest_pending_at: oldest_pending_at(jobs),
       last_success_at: latest_timestamp(jobs, "completed", :completed_at),
       last_failure_at: failure_timestamp(latest_failure),
-      last_failure_category: failure_category(latest_failure)
+      last_failure_category: failure_category(latest_failure),
+      last_reconciliation: latest_reconciliation()
     }
   end
 
@@ -98,4 +98,21 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
 
   defp failure_category(nil), do: nil
   defp failure_category({_timestamp, state}), do: state
+
+  defp latest_reconciliation do
+    ImportRun
+    |> where(
+      [run],
+      run.provider == "cj" and run.surface == "shoppingProducts" and
+        run.reconciliation_status != "not_requested"
+    )
+    |> order_by([run], desc: run.started_at, desc: run.id)
+    |> select([run], %{
+      status: run.reconciliation_status,
+      reconciled_at: run.reconciled_at,
+      offers_deactivated: run.offers_deactivated
+    })
+    |> limit(1)
+    |> Repo.one()
+  end
 end
