@@ -6,6 +6,10 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :alert_event
           | :api_token
           | :comparison_snapshot
+          | :community_report
+          | :product_answer
+          | :product_question
+          | :product_review
           | :saved_comparison_set
           | :affiliate_network
           | :affiliate_program
@@ -31,6 +35,10 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     alert_event: "AlertEvent",
     api_token: "ApiToken",
     comparison_snapshot: "ComparisonSnapshot",
+    community_report: "CommunityReport",
+    product_answer: "ProductAnswer",
+    product_question: "ProductQuestion",
+    product_review: "ProductReview",
     saved_comparison_set: "SavedComparisonSet",
     affiliate_network: "AffiliateNetwork",
     affiliate_program: "AffiliateProgram",

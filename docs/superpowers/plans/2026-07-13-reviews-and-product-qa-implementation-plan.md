@@ -46,3 +46,14 @@ allowing unmoderated content to affect shopper-facing summaries.
   backend gates, queue validation, and diff hygiene.
 
 Merchant detail reads and pages are next after community trust is green.
+
+## Completion Evidence
+
+- Community trust, GraphQL, and prior discussion regression slice: 18 tests
+  passed.
+- Product community panel and product-detail characterization: 51 tests passed.
+- Relay: 41 reader, 40 normalization, and 40 operation documents compiled;
+  TypeScript passed.
+- Purchase verification inference was removed and existing inferred values are
+  cleared by migration.
+- Completed 2026-07-13; merchant detail reads and pages promoted next.

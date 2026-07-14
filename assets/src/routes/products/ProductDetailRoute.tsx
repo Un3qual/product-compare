@@ -29,6 +29,7 @@ import {
 } from "./ProductAttributeList";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
+import { ProductCommunityPanel } from "./ProductCommunityPanel";
 
 const styles = create({
   description: {
@@ -204,7 +205,12 @@ function ProductDetail({
               label: "Specifications",
               value: "specifications"
             },
-            { content: offers, label: "Offers", value: "offers" }
+            { content: offers, label: "Offers", value: "offers" },
+            {
+              content: <ProductCommunityPanel product={product} />,
+              label: "Reviews & Q&A",
+              value: "community"
+            }
           ]}
           label="Product details"
           onValueChange={(value) =>
@@ -375,7 +381,12 @@ function productDetailPath(productSlug: string) {
 function detailViewFromLocation(hash: string, search: string) {
   const view = hash.replace(/^#/, "");
 
-  if (view === "overview" || view === "specifications" || view === "offers") {
+  if (
+    view === "overview" ||
+    view === "specifications" ||
+    view === "offers" ||
+    view === "community"
+  ) {
     return view;
   }
 

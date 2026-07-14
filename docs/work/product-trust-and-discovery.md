@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (reviews and product Q&A)
+- Status: active (merchant detail pages)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-shareable-comparison-snapshots-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-reviews-and-product-qa-implementation-plan.md`
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-merchant-detail-pages-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -63,7 +63,30 @@ Recommendations are deterministic and evidence-backed.
 - Price watchlists and alerts: complete.
 - Source-backed recommendations: complete.
 - Immutable shareable comparison snapshots: complete.
-- Reviews and product Q&A: active.
+- Reviews and product Q&A: complete.
+- Merchant detail pages: active.
+
+## Reviews And Product Q&A Evidence
+
+- Reused the existing review, thread, and post tables while adding explicit
+  pending/published/hidden/rejected moderation state, accepted answers, bounded
+  reports, operator decisions, and indexes for published product reads.
+- Authenticated submissions begin pending. Only published reviews contribute to
+  public lists and two-decimal rating aggregates; only published questions and
+  answers appear on product pages.
+- One user remains limited to one review per product. Question owners can accept
+  only a published answer from the same thread. Duplicate reports are rejected,
+  and non-operators cannot moderate content.
+- Offer association no longer derives `verified_purchase`; all existing inferred
+  values are cleared because the application has no durable user-to-purchase
+  evidence. Public author labels are generic and never expose email or user IDs.
+- Product detail now has a Reviews & Q&A tab with rating summaries, published
+  plain-text content, accepted-answer labels, and review/question/answer forms
+  that explain moderation state.
+- GREEN: new community context and GraphQL tests plus existing discussion
+  regressions passed 18 tests. Product-community and existing detail suites
+  passed 51 tests. Relay compiled 41 reader, 40 normalization, and 40 operation
+  documents; TypeScript passed.
 
 ## Immutable Comparison Snapshot Evidence
 

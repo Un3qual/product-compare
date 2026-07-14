@@ -142,6 +142,24 @@ type RootMutationType {
 
   "Revokes one of the current user's public comparison snapshots."
   revokeComparisonSnapshot(snapshotId: ID!): RevokeComparisonSnapshotPayload!
+
+  "Submits one authenticated product review for moderation."
+  submitProductReview(input: SubmitProductReviewInput!): ProductReviewPayload!
+
+  "Submits an authenticated product question for moderation."
+  askProductQuestion(input: AskProductQuestionInput!): ProductQuestionPayload!
+
+  "Submits an authenticated answer to a published question."
+  answerProductQuestion(input: AnswerProductQuestionInput!): ProductAnswerPayload!
+
+  "Marks one published answer as accepted by the question owner."
+  acceptProductAnswer(questionId: ID!, answerId: ID!): ProductQuestionPayload!
+
+  "Reports review or Q&A content for operator moderation."
+  reportCommunityContent(input: ReportCommunityContentInput!): CommunityReportPayload!
+
+  "Publishes, hides, or rejects community content as an operator."
+  moderateCommunityContent(input: ModerateCommunityContentInput!): CommunityModerationPayload!
 }
 
 input UpsertAffiliateNetworkInput {
@@ -414,6 +432,51 @@ input PublishComparisonSnapshotInput {
   recommendationProfile: RecommendationProfile!
 }
 
+input SubmitProductReviewInput {
+  productId: ID!
+  rating: Int!
+  title: String
+  body: String
+  merchantProductId: ID
+}
+
+input AskProductQuestionInput {
+  productId: ID!
+  title: String!
+  body: String
+}
+
+input AnswerProductQuestionInput {
+  questionId: ID!
+  body: String!
+}
+
+enum CommunityContentType {
+  REVIEW
+  QUESTION
+  ANSWER
+}
+
+enum CommunityModerationStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+  REJECTED
+}
+
+input ReportCommunityContentInput {
+  contentType: CommunityContentType!
+  contentId: ID!
+  reason: String!
+}
+
+input ModerateCommunityContentInput {
+  contentType: CommunityContentType!
+  contentId: ID!
+  status: CommunityModerationStatus!
+  note: String
+}
+
 type UpsertAffiliateNetworkPayload {
   network: AffiliateNetwork
   errors: [MutationError!]!
@@ -447,6 +510,32 @@ type PublishComparisonSnapshotPayload {
 
 type RevokeComparisonSnapshotPayload {
   revokedSnapshotId: ID
+  errors: [MutationError!]!
+}
+
+type ProductReviewPayload {
+  review: ProductReview
+  errors: [MutationError!]!
+}
+
+type ProductQuestionPayload {
+  question: ProductQuestion
+  errors: [MutationError!]!
+}
+
+type ProductAnswerPayload {
+  answer: ProductAnswer
+  errors: [MutationError!]!
+}
+
+type CommunityReportPayload {
+  reportId: ID
+  errors: [MutationError!]!
+}
+
+type CommunityModerationPayload {
+  contentId: ID
+  moderationStatus: CommunityModerationStatus
   errors: [MutationError!]!
 }
 
@@ -826,7 +915,45 @@ type Product implements Node {
   media: [ProductMedia!]!
   currentAttributes: [ProductAttributeValue!]!
   offerTruth: ProductOfferTruth!
+  reviewSummary: ProductReviewSummary!
+  reviews(first: Int): [ProductReview!]!
+  questions(first: Int): [ProductQuestion!]!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
+}
+
+type ProductReviewSummary {
+  count: Int!
+  averageRating: Decimal
+}
+
+type ProductReview {
+  id: ID!
+  rating: Int!
+  title: String
+  body: String
+  verifiedPurchase: Boolean!
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  createdAt: DateTime!
+}
+
+type ProductQuestion {
+  id: ID!
+  title: String!
+  body: String
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  acceptedAnswerId: ID
+  answers: [ProductAnswer!]!
+  createdAt: DateTime!
+}
+
+type ProductAnswer {
+  id: ID!
+  body: String!
+  moderationStatus: CommunityModerationStatus!
+  authorLabel: String!
+  createdAt: DateTime!
 }
 
 type ProductMedia {

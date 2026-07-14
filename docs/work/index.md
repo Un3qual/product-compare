@@ -185,26 +185,28 @@ cannot support a winner. Immutable comparison snapshots completed on
 fact records behind 256-bit public tokens; links retain ordered product,
 accepted specification, offer observation, and recommendation evidence, expose
 no owner identity, and return 404 after one-way owner revocation. Reviews and
-product Q&A are now active.
+product Q&A completed on 2026-07-13. Reviews, questions, and answers require
+authenticated attribution and operator publication; only published reviews
+affect rating summaries, public author labels never reveal email, reporting and
+accepted answers are durable, and merchant-offer association no longer claims
+purchase verification. Merchant detail pages are now active.
 
 ## Active Work
 
-### Reviews And Product Q&A
+### Merchant Detail Reads And Pages
 
 Status: active
-Lane: Full-stack community trust
-Plan: `docs/superpowers/plans/2026-07-13-reviews-and-product-qa-implementation-plan.md`
-Next action: harden the existing discussion schemas into published reviews,
-questions, and answers with authenticated writes, reports, operator moderation,
-honest verification labels, rating summaries, and product-detail surfaces.
-Owned paths: discussion schemas/context/resolver/migration/tests, product
-GraphQL and product-detail query/presentation/tests, generated GraphQL/Relay
-artifacts, and this lane doc.
+Lane: Full-stack merchant discovery
+Plan: `docs/superpowers/plans/2026-07-13-merchant-detail-pages-implementation-plan.md`
+Next action: add canonical merchant slugs, a public merchant detail read model,
+and a dedicated page with current offer/product coverage and freshness facts.
+Owned paths: merchant migration/schema/pricing/resolver/tests, merchant route/
+query/presentation/tests, directory links, generated GraphQL/Relay artifacts,
+and this lane doc.
 
-Exit condition: only published content affects public reads and rating
-aggregates; writes are attributable internally, author email stays private,
-reports and operator decisions are replay-safe, and purchase verification is
-never inferred from an offer association.
+Exit condition: merchant pages have stable canonical URLs, use complete
+database-backed active-offer aggregates, preserve safe outbound links, and make
+freshness and unavailable data explicit.
 
 ## Ready Work
 

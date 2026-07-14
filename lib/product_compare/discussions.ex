@@ -7,10 +7,11 @@ defmodule ProductCompare.Discussions do
 
   alias ProductCompare.Input
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
-  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @default_page_limit 50
   @max_page_limit 200
@@ -98,10 +99,9 @@ defmodule ProductCompare.Discussions do
   @spec create_review(map()) :: {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def create_review(attrs) do
     sanitized_attrs = drop_client_verified_purchase(attrs)
-    verified_purchase = derive_verified_purchase(sanitized_attrs)
 
     %ProductReview{}
-    |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
+    |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, false)
     |> Repo.insert()
   end
 
@@ -118,10 +118,8 @@ defmodule ProductCompare.Discussions do
             lock: "FOR UPDATE"
         )
 
-      verified_purchase = derive_verified_purchase(%{}, persisted_review)
-
       persisted_review
-      |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, verified_purchase)
+      |> ProductReview.changeset_with_verified_purchase(sanitized_attrs, false)
       |> Repo.update()
       |> case do
         {:ok, updated_review} -> updated_review
@@ -133,6 +131,185 @@ defmodule ProductCompare.Discussions do
   @spec delete_review(ProductReview.t()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def delete_review(%ProductReview{} = review), do: Repo.delete(review)
+
+  @spec submit_review(pos_integer(), pos_integer(), map()) ::
+          {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
+  def submit_review(user_id, product_id, attrs) do
+    attrs = %{
+      user_id: user_id,
+      product_id: product_id,
+      merchant_product_id: get_attr_value(attrs, :merchant_product_id),
+      rating: get_attr_value(attrs, :rating),
+      title: get_attr_value(attrs, :title),
+      body_md: get_attr_value(attrs, :body),
+      moderation_status: :pending
+    }
+
+    case create_review(attrs) do
+      {:ok, review} -> {:ok, Repo.get!(ProductReview, review.id)}
+      error -> error
+    end
+  end
+
+  @spec list_public_reviews(pos_integer(), keyword()) :: [ProductReview.t()]
+  def list_public_reviews(product_id, opts \\ []) do
+    {limit, offset} = normalize_pagination(opts)
+
+    Repo.all(
+      from review in ProductReview,
+        where: review.product_id == ^product_id and review.moderation_status == :published,
+        order_by: [desc: review.inserted_at, desc: review.id],
+        limit: ^limit,
+        offset: ^offset
+    )
+  end
+
+  @spec review_summary(pos_integer()) :: %{
+          count: non_neg_integer(),
+          average_rating: Decimal.t() | nil
+        }
+  def review_summary(product_id) do
+    {count, average} =
+      Repo.one(
+        from review in ProductReview,
+          where: review.product_id == ^product_id and review.moderation_status == :published,
+          select: {count(review.id), avg(review.rating)}
+      )
+
+    %{count: count, average_rating: average && Decimal.round(average, 2)}
+  end
+
+  @spec ask_question(pos_integer(), pos_integer(), map()) ::
+          {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
+  def ask_question(user_id, product_id, attrs) do
+    case create_thread(%{
+           product_id: product_id,
+           created_by: user_id,
+           title: get_attr_value(attrs, :title),
+           body_md: get_attr_value(attrs, :body),
+           kind: :question,
+           moderation_status: :pending
+         }) do
+      {:ok, thread} -> {:ok, Repo.get!(ProductThread, thread.id)}
+      error -> error
+    end
+  end
+
+  @spec answer_question(pos_integer(), Ecto.UUID.t(), String.t()) ::
+          {:ok, ThreadPost.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def answer_question(user_id, question_entropy_id, body) do
+    with %ProductThread{} = question <- public_question_by_entropy(question_entropy_id),
+         {:ok, post} <-
+           create_post(%{
+             thread_id: question.id,
+             user_id: user_id,
+             body_md: body,
+             moderation_status: :pending
+           }) do
+      {:ok, Repo.get!(ThreadPost, post.id)}
+    else
+      nil -> {:error, :not_found}
+      error -> error
+    end
+  end
+
+  @spec list_public_questions(pos_integer(), keyword()) :: [ProductThread.t()]
+  def list_public_questions(product_id, opts \\ []) do
+    {limit, offset} = normalize_pagination(opts)
+
+    published_posts =
+      from post in ThreadPost,
+        where: post.moderation_status == :published,
+        order_by: [asc: post.inserted_at, asc: post.id]
+
+    Repo.all(
+      from thread in ProductThread,
+        where:
+          thread.product_id == ^product_id and thread.kind == :question and
+            thread.moderation_status == :published,
+        order_by: [desc: thread.inserted_at, desc: thread.id],
+        limit: ^limit,
+        offset: ^offset,
+        preload: [posts: ^published_posts]
+    )
+  end
+
+  @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::
+          {:ok, ProductThread.t()}
+          | {:error, :not_found | :forbidden | :answer_not_published}
+  def accept_answer(user_id, question_entropy_id, answer_entropy_id) do
+    with %ProductThread{} = question <- question_by_entropy(question_entropy_id),
+         %ThreadPost{} = answer <- post_by_entropy(answer_entropy_id),
+         true <- answer.thread_id == question.id || {:error, :not_found},
+         true <- question.created_by == user_id || {:error, :forbidden},
+         true <- answer.moderation_status == :published || {:error, :answer_not_published} do
+      question
+      |> Ecto.Changeset.change(accepted_post_id: answer.id)
+      |> Repo.update()
+    else
+      nil -> {:error, :not_found}
+      {:error, _reason} = error -> error
+      false -> {:error, :not_found}
+    end
+  end
+
+  @spec moderate(
+          pos_integer(),
+          :review | :question | :answer,
+          Ecto.UUID.t(),
+          atom(),
+          String.t() | nil
+        ) ::
+          {:ok, ProductReview.t() | ProductThread.t() | ThreadPost.t()}
+          | {:error, :forbidden | :not_found | Ecto.Changeset.t()}
+  def moderate(operator_id, type, entropy_id, status, note \\ nil)
+
+  def moderate(operator_id, type, entropy_id, status, note)
+      when type in [:review, :question, :answer] and
+             status in [:published, :hidden, :rejected] do
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    with %User{is_operator: true} <- Repo.get(User, operator_id),
+         record when not is_nil(record) <- moderation_record(type, entropy_id) do
+      record
+      |> moderation_changeset(status, operator_id, note, now)
+      |> Repo.update()
+    else
+      %User{} -> {:error, :forbidden}
+      nil -> {:error, :not_found}
+    end
+  end
+
+  def moderate(_operator_id, _type, _entropy_id, _status, _note), do: {:error, :not_found}
+
+  @spec report(pos_integer(), :review | :question | :answer, Ecto.UUID.t(), String.t()) ::
+          {:ok, CommunityReport.t()}
+          | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
+  def report(reporter_id, type, entropy_id, reason) do
+    with record when not is_nil(record) <- moderation_record(type, entropy_id) do
+      target =
+        case type do
+          :review -> %{review_id: record.id}
+          :question -> %{thread_id: record.id}
+          :answer -> %{post_id: record.id}
+        end
+
+      %CommunityReport{}
+      |> CommunityReport.changeset(Map.merge(target, %{reporter_id: reporter_id, reason: reason}))
+      |> Repo.insert()
+      |> case do
+        {:error, %Ecto.Changeset{errors: errors}} = error ->
+          if Enum.any?(errors, fn {_field, {_message, opts}} -> opts[:constraint] == :unique end),
+            do: {:error, :already_reported},
+            else: error
+
+        result ->
+          result
+      end
+    else
+      nil -> {:error, :not_found}
+    end
+  end
 
   defp normalize_pagination(opts) do
     limit =
@@ -251,30 +428,36 @@ defmodule ProductCompare.Discussions do
 
   defp drop_client_verified_purchase(attrs), do: attrs
 
-  defp derive_verified_purchase(attrs, review \\ nil) do
-    merchant_product_id =
-      get_attr_value(attrs, :merchant_product_id) ||
-        if(review, do: review.merchant_product_id, else: nil)
-
-    product_id =
-      get_attr_value(attrs, :product_id) ||
-        if(review, do: review.product_id, else: nil)
-
-    with {:ok, parsed_merchant_product_id} <- Input.normalize_integer_id(merchant_product_id),
-         {:ok, parsed_product_id} <- Input.normalize_integer_id(product_id),
-         true <- merchant_product_matches_product?(parsed_merchant_product_id, parsed_product_id) do
-      true
-    else
-      _ -> false
+  defp public_question_by_entropy(entropy_id) do
+    case question_by_entropy(entropy_id) do
+      %ProductThread{moderation_status: :published} = question -> question
+      _ -> nil
     end
   end
 
-  defp merchant_product_matches_product?(merchant_product_id, product_id) do
-    Repo.exists?(
-      from mp in MerchantProduct,
-        where: mp.id == ^merchant_product_id and mp.product_id == ^product_id
-    )
+  defp question_by_entropy(entropy_id), do: record_by_entropy(ProductThread, entropy_id)
+  defp post_by_entropy(entropy_id), do: record_by_entropy(ThreadPost, entropy_id)
+
+  defp moderation_record(:review, entropy_id), do: record_by_entropy(ProductReview, entropy_id)
+  defp moderation_record(:question, entropy_id), do: record_by_entropy(ProductThread, entropy_id)
+  defp moderation_record(:answer, entropy_id), do: record_by_entropy(ThreadPost, entropy_id)
+
+  defp record_by_entropy(schema, entropy_id) do
+    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
+      Repo.get_by(schema, entropy_id: uuid)
+    else
+      :error -> nil
+    end
   end
+
+  defp moderation_changeset(%ProductReview{} = review, status, moderator_id, note, now),
+    do: ProductReview.moderation_changeset(review, status, moderator_id, note, now)
+
+  defp moderation_changeset(%ProductThread{} = thread, status, moderator_id, note, now),
+    do: ProductThread.moderation_changeset(thread, status, moderator_id, note, now)
+
+  defp moderation_changeset(%ThreadPost{} = post, status, moderator_id, note, now),
+    do: ThreadPost.moderation_changeset(post, status, moderator_id, note, now)
 
   defp get_attr_value(attrs, key) when is_map(attrs),
     do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
