@@ -122,6 +122,12 @@ reads, route location, Suspense and error boundaries, layout, and presentation.
   TypeScript, the `browse-route-data.ts` -> `compare/paths.ts` framework scan,
   and `git diff --check`. `mix work_queue.validate` was sandbox-blocked by
   Mix PubSub TCP permission (`:eperm`).
+- [x] Final branch-review fix: remove false maximum configurability from
+  `createBrowseRouteData` and use `compare/paths.ts`'s canonical
+  `MAX_COMPARE_PRODUCTS` for normalization, actions, and serialization.
+- [x] Final branch-review verification: the pure and browse route suites passed
+  69 tests, TypeScript and the transitive framework scan passed, and the
+  reactivated product-offers lane now points only to current source and tests.
 
 ---
 

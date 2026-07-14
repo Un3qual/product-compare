@@ -6,7 +6,7 @@
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after catalog route-data contract verification
+- Last verified: 2026-07-14 after final branch-review compare-limit fix
   (69 focused tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
@@ -70,6 +70,11 @@
   - Review GREEN: the catalog pure plus route suites passed 69 tests and the
     compare route suite passed 109 tests; whitespace trimming, blank removal,
     duplicate removal, ordering, and maximum selection are directly covered.
+  - Final branch-review fix removed false maximum configurability from the
+    browse contract. `browse-route-data.ts` now imports the canonical
+    `MAX_COMPARE_PRODUCTS` directly from `compare/paths.ts`, and the pure test
+    verifies the clamped three-product selection, encoded detail path, and
+    full action together.
   - The direct/transitive import scan confirms `browse-route-data.ts` and its
     `compare/paths.ts` dependency contain no React, Relay, router, or StyleX
     code.
