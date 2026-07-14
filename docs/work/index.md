@@ -180,25 +180,31 @@ unread events and active rules. Source-backed recommendations completed on
 2026-07-13. Versioned profiles use only complete same-currency landed prices,
 the best-value profile additionally requires accepted specification evidence,
 and the comparison UI cites exact observations and claims or explains why it
-cannot support a winner. Immutable comparison snapshots are now active.
+cannot support a winner. Immutable comparison snapshots completed on
+2026-07-13. Authenticated owners can publish two- or three-product captured
+fact records behind 256-bit public tokens; links retain ordered product,
+accepted specification, offer observation, and recommendation evidence, expose
+no owner identity, and return 404 after one-way owner revocation. Reviews and
+product Q&A are now active.
 
 ## Active Work
 
-### Immutable Shareable Comparison Snapshots
+### Reviews And Product Q&A
 
 Status: active
-Lane: Full-stack comparison sharing
-Plan: `docs/superpowers/plans/2026-07-13-shareable-comparison-snapshots-implementation-plan.md`
-Next action: capture two- or three-product comparisons into owner-scoped,
-immutable, public-safe records with high-entropy tokens, then add publish,
-revoke, and self-contained public read surfaces.
-Owned paths: snapshot schema/context/resolver/migration/tests, compare share
-controls, public snapshot route/query/tests, generated GraphQL/Relay artifacts,
-and this lane doc.
+Lane: Full-stack community trust
+Plan: `docs/superpowers/plans/2026-07-13-reviews-and-product-qa-implementation-plan.md`
+Next action: harden the existing discussion schemas into published reviews,
+questions, and answers with authenticated writes, reports, operator moderation,
+honest verification labels, rating summaries, and product-detail surfaces.
+Owned paths: discussion schemas/context/resolver/migration/tests, product
+GraphQL and product-detail query/presentation/tests, generated GraphQL/Relay
+artifacts, and this lane doc.
 
-Exit condition: published snapshots never change, reveal no owner identity,
-retain captured evidence and observation times, and return not found after
-revocation.
+Exit condition: only published content affects public reads and rating
+aggregates; writes are attributable internally, author email stays private,
+reports and operator decisions are replay-safe, and purchase verification is
+never inferred from an offer association.
 
 ## Ready Work
 

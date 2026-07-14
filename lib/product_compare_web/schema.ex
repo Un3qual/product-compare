@@ -13,6 +13,7 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.Resolvers.AuthResolver
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
+  alias ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver
   alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
@@ -145,6 +146,12 @@ defmodule ProductCompareWeb.Schema do
       arg(:slugs, non_null(list_of(non_null(:string))))
       arg(:profile, non_null(:recommendation_profile))
       resolve(&RecommendationsResolver.comparison_recommendation/3)
+    end
+
+    @desc "Returns a published, non-revoked immutable comparison snapshot."
+    field :comparison_snapshot, :comparison_snapshot do
+      arg(:token, non_null(:string))
+      resolve(&ComparisonSnapshotsResolver.comparison_snapshot/3)
     end
 
     @desc "Returns products in a deterministic requested order with cursor pagination."
@@ -359,6 +366,18 @@ defmodule ProductCompareWeb.Schema do
       arg(:saved_comparison_set_id, non_null(:id))
 
       resolve(&CatalogResolver.delete_saved_comparison_set/3)
+    end
+
+    @desc "Publishes an immutable comparison snapshot for the current user."
+    field :publish_comparison_snapshot, non_null(:publish_comparison_snapshot_payload) do
+      arg(:input, non_null(:publish_comparison_snapshot_input))
+      resolve(&ComparisonSnapshotsResolver.publish/3)
+    end
+
+    @desc "Revokes one of the current user's public comparison snapshots."
+    field :revoke_comparison_snapshot, non_null(:revoke_comparison_snapshot_payload) do
+      arg(:snapshot_id, non_null(:id))
+      resolve(&ComparisonSnapshotsResolver.revoke/3)
     end
   end
 
@@ -668,6 +687,12 @@ defmodule ProductCompareWeb.Schema do
     field :product_ids, non_null(list_of(non_null(:id)))
   end
 
+  input_object :publish_comparison_snapshot_input do
+    field :title, :string
+    field :product_ids, non_null(list_of(non_null(:id)))
+    field :recommendation_profile, non_null(:recommendation_profile)
+  end
+
   object :upsert_affiliate_network_payload do
     field :network, :affiliate_network
     field :errors, non_null(list_of(non_null(:mutation_error)))
@@ -690,6 +715,17 @@ defmodule ProductCompareWeb.Schema do
 
   object :saved_comparison_set_payload do
     field :saved_comparison_set, :saved_comparison_set
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :publish_comparison_snapshot_payload do
+    field :snapshot, :comparison_snapshot
+    field :share_path, :string
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :revoke_comparison_snapshot_payload do
+    field :revoked_snapshot_id, :id
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -960,6 +996,159 @@ defmodule ProductCompareWeb.Schema do
 
     field :inserted_at, non_null(:datetime)
     field :updated_at, non_null(:datetime)
+  end
+
+  object :comparison_snapshot do
+    field :id, non_null(:id) do
+      resolve(fn snapshot, _, _ ->
+        GlobalId.encode_required(:comparison_snapshot, snapshot.entropy_id)
+      end)
+    end
+
+    field :title, :string
+    field :captured_at, non_null(:datetime), resolve: &ComparisonSnapshotsResolver.captured_at/3
+    field :disclaimer, non_null(:string), resolve: &ComparisonSnapshotsResolver.disclaimer/3
+
+    field :products, non_null(list_of(non_null(:comparison_snapshot_product))),
+      resolve: &ComparisonSnapshotsResolver.snapshot_products/3
+
+    field :recommendation, non_null(:snapshot_recommendation),
+      resolve: &ComparisonSnapshotsResolver.recommendation/3
+  end
+
+  object :comparison_snapshot_product do
+    field :id, non_null(:id) do
+      resolve(fn product, _, _ -> GlobalId.encode_required(:product, product.id) end)
+    end
+
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
+    field :description, :string
+    field :model_number, :string
+    field :brand_name, :string
+    field :attributes, non_null(list_of(non_null(:comparison_snapshot_attribute)))
+    field :offers, non_null(list_of(non_null(:comparison_snapshot_offer)))
+  end
+
+  object :comparison_snapshot_attribute do
+    field :attribute_id, non_null(:id) do
+      resolve(fn attribute, _, _ ->
+        GlobalId.encode_required(:attribute, attribute.attribute_id)
+      end)
+    end
+
+    field :claim_id, non_null(:id) do
+      resolve(fn attribute, _, _ ->
+        GlobalId.encode_required(:product_attribute_claim, attribute.claim_id)
+      end)
+    end
+
+    field :code, non_null(:string)
+    field :display_name, non_null(:string)
+    field :value_text, non_null(:string)
+    field :source_type, non_null(:string)
+    field :confidence, :decimal
+    field :evidence, non_null(list_of(non_null(:comparison_snapshot_evidence)))
+  end
+
+  object :comparison_snapshot_evidence do
+    field :artifact_id, non_null(:id) do
+      resolve(fn evidence, _, _ ->
+        GlobalId.encode_required(:source_artifact, evidence.artifact_id)
+      end)
+    end
+
+    field :excerpt, :string
+    field :source_kind, non_null(:string)
+    field :source_name, non_null(:string)
+    field :source_domain, :string
+    field :url, :string
+
+    field :fetched_at, non_null(:datetime),
+      resolve: &ComparisonSnapshotsResolver.evidence_fetched_at/3
+  end
+
+  object :comparison_snapshot_offer do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn offer, _, _ ->
+        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
+      end)
+    end
+
+    field :price_point_id, non_null(:id) do
+      resolve(fn offer, _, _ -> GlobalId.encode_required(:price_point, offer.price_point_id) end)
+    end
+
+    field :merchant_name, non_null(:string)
+    field :merchant_domain, :string
+    field :currency, non_null(:string)
+    field :item_price, non_null(:decimal)
+    field :shipping, non_null(:decimal)
+    field :landed_price, non_null(:decimal)
+    field :freshness, non_null(:string)
+
+    field :observed_at, non_null(:datetime),
+      resolve: &ComparisonSnapshotsResolver.offer_observed_at/3
+  end
+
+  object :snapshot_recommendation do
+    field :profile, non_null(:recommendation_profile) do
+      resolve(fn recommendation, _, _ ->
+        {:ok, String.to_existing_atom(recommendation.profile)}
+      end)
+    end
+
+    field :algorithm_version, non_null(:string)
+
+    field :evaluated_at, non_null(:datetime),
+      resolve: &ComparisonSnapshotsResolver.recommendation_evaluated_at/3
+
+    field :status, non_null(:recommendation_status) do
+      resolve(fn recommendation, _, _ ->
+        {:ok, String.to_existing_atom(recommendation.status)}
+      end)
+    end
+
+    field :currency, :string
+    field :missing_inputs, non_null(list_of(non_null(:string)))
+
+    field :winner_product_id, :id do
+      resolve(fn recommendation, _, _ ->
+        GlobalId.encode_optional(:product, recommendation.winner_product_id)
+      end)
+    end
+
+    field :rankings, non_null(list_of(non_null(:snapshot_recommendation_ranking)))
+  end
+
+  object :snapshot_recommendation_ranking do
+    field :rank, non_null(:integer)
+    field :product_name, non_null(:string)
+    field :landed_price, non_null(:decimal)
+    field :currency, non_null(:string)
+    field :reasons, non_null(list_of(non_null(:string)))
+
+    field :product_id, non_null(:id) do
+      resolve(fn ranking, _, _ -> GlobalId.encode_required(:product, ranking.product_id) end)
+    end
+
+    field :price_point_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:price_point, ranking.price_point_id)
+      end)
+    end
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn ranking, _, _ ->
+        GlobalId.encode_required(:merchant_product, ranking.merchant_product_id)
+      end)
+    end
+
+    field :claim_ids, non_null(list_of(non_null(:id))) do
+      resolve(fn ranking, _, _ ->
+        {:ok, Enum.map(ranking.claim_ids, &GlobalId.encode(:product_attribute_claim, &1))}
+      end)
+    end
   end
 
   object :saved_comparison_item do

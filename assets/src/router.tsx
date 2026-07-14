@@ -172,6 +172,21 @@ export const routes: RouteObject[] = [
         })
       },
       {
+        path: "compare/shared/:token",
+        handle: routeMetadata(
+          "Shared comparison | Product Compare",
+          "Review a fixed, source-backed product comparison snapshot."
+        ),
+        errorElement: <RouteErrorBoundary resourceName="shared comparison" title="Shared comparison" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ SharedComparisonRoute }, { sharedComparisonLoader }] = await Promise.all([
+            import("./routes/compare/shared/SharedComparisonRoute"),
+            import("./routes/compare/shared/loader")
+          ]);
+          return { Component: SharedComparisonRoute, loader: sharedComparisonLoader };
+        })
+      },
+      {
         path: "compare/saved",
         handle: routeMetadata(
           "Saved comparisons | Product Compare",

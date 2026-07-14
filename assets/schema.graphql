@@ -43,6 +43,9 @@ type RootQueryType {
   "Returns deterministic source-backed guidance for two or three products."
   comparisonRecommendation(slugs: [String!]!, profile: RecommendationProfile!): ComparisonRecommendation!
 
+  "Returns a published, non-revoked immutable comparison snapshot."
+  comparisonSnapshot(token: String!): ComparisonSnapshot
+
   "Returns products in a deterministic requested order with cursor pagination."
   products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection
 
@@ -133,6 +136,12 @@ type RootMutationType {
 
   "Deletes one of the current authenticated user's saved comparison sets."
   deleteSavedComparisonSet(savedComparisonSetId: ID!): SavedComparisonSetPayload!
+
+  "Publishes an immutable comparison snapshot for the current user."
+  publishComparisonSnapshot(input: PublishComparisonSnapshotInput!): PublishComparisonSnapshotPayload!
+
+  "Revokes one of the current user's public comparison snapshots."
+  revokeComparisonSnapshot(snapshotId: ID!): RevokeComparisonSnapshotPayload!
 }
 
 input UpsertAffiliateNetworkInput {
@@ -399,6 +408,12 @@ input CreateSavedComparisonSetInput {
   productIds: [ID!]!
 }
 
+input PublishComparisonSnapshotInput {
+  title: String
+  productIds: [ID!]!
+  recommendationProfile: RecommendationProfile!
+}
+
 type UpsertAffiliateNetworkPayload {
   network: AffiliateNetwork
   errors: [MutationError!]!
@@ -421,6 +436,17 @@ type CreateCouponPayload {
 
 type SavedComparisonSetPayload {
   savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
+}
+
+type PublishComparisonSnapshotPayload {
+  snapshot: ComparisonSnapshot
+  sharePath: String
+  errors: [MutationError!]!
+}
+
+type RevokeComparisonSnapshotPayload {
+  revokedSnapshotId: ID
   errors: [MutationError!]!
 }
 
@@ -608,6 +634,83 @@ type SavedComparisonSet implements Node {
   items: [SavedComparisonItem!]!
   insertedAt: DateTime!
   updatedAt: DateTime!
+}
+
+type ComparisonSnapshot {
+  id: ID!
+  title: String
+  capturedAt: DateTime!
+  disclaimer: String!
+  products: [ComparisonSnapshotProduct!]!
+  recommendation: SnapshotRecommendation!
+}
+
+type ComparisonSnapshotProduct {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  modelNumber: String
+  brandName: String
+  attributes: [ComparisonSnapshotAttribute!]!
+  offers: [ComparisonSnapshotOffer!]!
+}
+
+type ComparisonSnapshotAttribute {
+  attributeId: ID!
+  claimId: ID!
+  code: String!
+  displayName: String!
+  valueText: String!
+  sourceType: String!
+  confidence: Decimal
+  evidence: [ComparisonSnapshotEvidence!]!
+}
+
+type ComparisonSnapshotEvidence {
+  artifactId: ID!
+  excerpt: String
+  sourceKind: String!
+  sourceName: String!
+  sourceDomain: String
+  url: String
+  fetchedAt: DateTime!
+}
+
+type ComparisonSnapshotOffer {
+  merchantProductId: ID!
+  pricePointId: ID!
+  merchantName: String!
+  merchantDomain: String
+  currency: String!
+  itemPrice: Decimal!
+  shipping: Decimal!
+  landedPrice: Decimal!
+  freshness: String!
+  observedAt: DateTime!
+}
+
+type SnapshotRecommendation {
+  profile: RecommendationProfile!
+  algorithmVersion: String!
+  evaluatedAt: DateTime!
+  status: RecommendationStatus!
+  currency: String
+  missingInputs: [String!]!
+  winnerProductId: ID
+  rankings: [SnapshotRecommendationRanking!]!
+}
+
+type SnapshotRecommendationRanking {
+  rank: Int!
+  productName: String!
+  landedPrice: Decimal!
+  currency: String!
+  reasons: [String!]!
+  productId: ID!
+  pricePointId: ID!
+  merchantProductId: ID!
+  claimIds: [ID!]!
 }
 
 type SavedComparisonItem {

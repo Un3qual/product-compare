@@ -41,3 +41,13 @@ facts behind an existing link.
   validation, and diff hygiene.
 
 Reviews and product Q&A are next after immutable public sharing is green.
+
+## Completion Evidence
+
+- Snapshot context and GraphQL: 7 tests passed; live-schema and global-ID
+  regression slice: 20 tests passed.
+- Snapshot, recommendation, and comparison frontend slice: 116 tests passed.
+- Relay: 38 reader, 37 normalization, and 37 operation documents compiled.
+- TypeScript, client/SSR production builds, bundle budget, and captured-decimal
+  serialization passed.
+- Completed 2026-07-13; reviews and product Q&A promoted next.

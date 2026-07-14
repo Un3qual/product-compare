@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active (immutable comparison snapshots)
+- Status: active (reviews and product Q&A)
 - Priority: P0
 - Source of truth: `docs/work/index.md`
 - Program design:
@@ -10,9 +10,9 @@
 - Program plan:
   `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - Latest completed implementation plan:
-  `docs/superpowers/plans/2026-07-13-source-backed-recommendations-implementation-plan.md`
-- Active implementation plan:
   `docs/superpowers/plans/2026-07-13-shareable-comparison-snapshots-implementation-plan.md`
+- Active implementation plan:
+  `docs/superpowers/plans/2026-07-13-reviews-and-product-qa-implementation-plan.md`
 - Owner: `codex/product-trust-and-discovery`
 - Last verified: 2026-07-13 against current ingestion, Specs, Pricing,
   Discussions, GraphQL, Relay route, and migration contracts.
@@ -62,7 +62,32 @@ Recommendations are deterministic and evidence-backed.
 - Authenticated specification corrections: complete.
 - Price watchlists and alerts: complete.
 - Source-backed recommendations: complete.
-- Immutable shareable comparison snapshots: active.
+- Immutable shareable comparison snapshots: complete.
+- Reviews and product Q&A: active.
+
+## Immutable Comparison Snapshot Evidence
+
+- Authenticated owners can publish exactly two or three distinct products as a
+  new immutable record with an optional bounded title and a 256-bit URL-safe
+  public token. Republishing always creates a different version and token.
+- Captures retain ordered product identity, accepted current specification
+  claims and safe source evidence, eligible best offer facts and observation
+  times, and the exact structured recommendation evaluated at capture time.
+- Database reads normalize captured decimals and datetimes back into the typed
+  public GraphQL contract. Later product, price, claim, or recommendation
+  changes do not alter existing links.
+- Public reads expose no account identity or saved-set identifier. Only the
+  owner can revoke; a revoked or malformed token resolves with an HTTP 404 and
+  cannot be restored through the application contract.
+- Compare includes publish/revoke controls. The public route is self-contained,
+  labels captured facts and observation times, warns that data may have changed,
+  and links back to a newly evaluated live comparison.
+- GREEN: snapshot context and GraphQL passed 7 tests; schema/global-ID
+  regressions expanded the backend slice to 20 passing tests. Snapshot and
+  comparison frontend suites passed 116 tests.
+- Relay compiled 38 reader, 37 normalization, and 37 operation documents.
+  TypeScript, client/SSR production builds, and the client bundle contract
+  passed.
 
 ## Source-Backed Recommendation Evidence
 
