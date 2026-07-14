@@ -33,6 +33,16 @@ import type { apiTokensLoader } from "./loader";
 
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
+
+  return (
+    <ApiTokensRoutePage
+      key={apiTokensRouteLocationIdentity(loaderData)}
+      loaderData={loaderData}
+    />
+  );
+}
+
+function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderData }) {
   const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
   const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenSummary>>(
     () => new Map()
@@ -346,6 +356,18 @@ export function ApiTokensRoute() {
       )}
     </PageShell>
   );
+}
+
+function apiTokensRouteLocationIdentity(loaderData: ApiTokensRouteLoaderData) {
+  const searchParams = new URLSearchParams({ status: loaderData.tokenStatus });
+
+  if (loaderData.status !== "unauthorized" && loaderData.after) {
+    searchParams.set("after", loaderData.after);
+  }
+
+  const access = loaderData.status === "unauthorized" ? "unauthorized" : "authorized";
+
+  return `${access}?${searchParams.toString()}`;
 }
 
 function ApiTokenPagination({

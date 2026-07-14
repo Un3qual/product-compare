@@ -349,16 +349,21 @@ test("product detail loader marks null products as not found", async () => {
     dispose: disposeProductRouteQuery
   });
 
-  await expect(
-    productDetailLoader(
-      buildProductDetailLoaderArgs({
-        environment,
-        request: new Request("https://app.example.com/products/missing-product"),
-        slug: "missing-product"
-      })
-    )
-  ).resolves.toEqual({
-    status: "not_found"
+  const result = await productDetailLoader(
+    buildProductDetailLoaderArgs({
+      environment,
+      request: new Request("https://app.example.com/products/missing-product"),
+      slug: "missing-product"
+    })
+  );
+
+  expect(result).toMatchObject({
+    data: {
+      status: "not_found"
+    },
+    init: {
+      status: 404
+    }
   });
 
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
@@ -373,8 +378,13 @@ test("product detail loader treats blank slugs as not found", async () => {
         slug: "   "
       })
     )
-  ).resolves.toEqual({
-    status: "not_found"
+  ).resolves.toMatchObject({
+    data: {
+      status: "not_found"
+    },
+    init: {
+      status: 404
+    }
   });
 
   expect(mockedFetchRouteQuery).not.toHaveBeenCalled();

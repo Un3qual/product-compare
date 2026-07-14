@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<897370fbc297c46a06e38e0e3fa2280c>>
+ * @generated SignedSource<<e2e1fffe18d015d744eb5554d7d21bee>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,6 +14,7 @@ export type RootViewerRouteQuery$data = {
   readonly viewer: {
     readonly email: string;
     readonly id: string;
+    readonly isOperator: boolean;
   } | null | undefined;
 };
 export type RootViewerRouteQuery = {
@@ -44,6 +45,13 @@ var v0 = [
         "kind": "ScalarField",
         "name": "email",
         "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "isOperator",
+        "storageKey": null
       }
     ],
     "storageKey": null
@@ -56,7 +64,7 @@ return {
     "metadata": null,
     "name": "RootViewerRouteQuery",
     "selections": (v0/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
@@ -67,16 +75,16 @@ return {
     "selections": (v0/*: any*/)
   },
   "params": {
-    "cacheID": "f9af563cefb1330e6dcb6869cf35ca28",
+    "cacheID": "5a9abb7ca427edcc6dc33aa9779f187e",
     "id": null,
     "metadata": {},
     "name": "RootViewerRouteQuery",
     "operationKind": "query",
-    "text": "query RootViewerRouteQuery {\n  viewer {\n    id\n    email\n  }\n}\n"
+    "text": "query RootViewerRouteQuery {\n  viewer {\n    id\n    email\n    isOperator\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "1573f8b6aa7d8c1b3ae911731f1f7816";
+(node as any).hash = "8ffe3b068359ec7370b48fae4f249829";
 
 export default node;

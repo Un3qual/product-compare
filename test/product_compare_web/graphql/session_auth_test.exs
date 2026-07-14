@@ -36,7 +36,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
   end
 
   test "viewer resolves from session without bearer token", %{conn: conn} do
-    user = user_fixture(%{password: "supersecretpass123"})
+    user = operator_fixture(%{password: String.duplicate("o", 16)})
     user_email = user.email
 
     conn =
@@ -48,11 +48,13 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     query {
       viewer {
         email
+        isOperator
       }
     }
     """
 
-    assert %{"data" => %{"viewer" => %{"email" => ^user_email}}} = graphql(conn, query)
+    assert %{"data" => %{"viewer" => %{"email" => ^user_email, "isOperator" => true}}} =
+             graphql(conn, query)
   end
 
   test "cross-origin requests do not resolve viewer from the browser session", %{conn: conn} do
@@ -106,7 +108,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     assert %{
              "data" => %{
                "register" => %{
-                 "viewer" => %{"email" => ^email},
+                 "viewer" => %{"email" => ^email, "isOperator" => false},
                  "errors" => []
                }
              }
@@ -717,6 +719,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
       login(email: $email, password: $password) {
         viewer {
           email
+          isOperator
         }
         errors {
           code
@@ -734,6 +737,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
       register(email: $email, password: $password) {
         viewer {
           email
+          isOperator
         }
         errors {
           code
@@ -810,6 +814,7 @@ defmodule ProductCompareWeb.GraphQL.SessionAuthTest do
     query {
       viewer {
         email
+        isOperator
       }
     }
     """

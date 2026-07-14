@@ -14,4 +14,20 @@ defmodule ProductCompare.Ingestion.OptionNormalizationTest do
       assert OptionNormalization.option(%{}, "limit", 5) == 5
     end
   end
+
+  describe "next_cursor/2" do
+    test "accepts only nil or non-negative cursor transitions from successful reports" do
+      assert OptionNormalization.next_cursor(40, {:ok, %{next_cursor: 80}}) == 80
+      assert OptionNormalization.next_cursor(40, {:ok, %{next_cursor: nil}}) == nil
+
+      for invalid_cursor <- [-1, 1.5, "80", %{value: 80}] do
+        assert OptionNormalization.next_cursor(40, {:ok, %{next_cursor: invalid_cursor}}) == 40
+      end
+    end
+
+    test "keeps the current cursor for errors and unexpected results" do
+      assert OptionNormalization.next_cursor(40, {:error, :provider_failure}) == 40
+      assert OptionNormalization.next_cursor(40, :unexpected) == 40
+    end
+  end
 end

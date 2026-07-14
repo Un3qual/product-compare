@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<622765b5e7a3a87304506f110f2fb0dc>>
+ * @generated SignedSource<<ba821f156c9ac3be14ff44a601b2e8c3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -32,7 +32,7 @@ export type SavedComparisonsRouteQuery$data = {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
     };
-  };
+  } | null | undefined;
 };
 export type SavedComparisonsRouteQuery = {
   response: SavedComparisonsRouteQuery$data;
@@ -187,7 +187,7 @@ return {
         "storageKey": null
       }
     ],
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -6,6 +6,8 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompare.Specs
+  alias ProductCompareWeb.GraphQL.Authorization
+  alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Accounts.User
 
@@ -17,26 +19,34 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     :price_point,
     :source_artifact
   ]
-  @authenticated_types [:affiliate_network, :affiliate_program, :affiliate_link, :coupon]
+  @operator_types [:affiliate_network, :affiliate_program, :affiliate_link, :coupon]
   @owner_scoped_types [:saved_comparison_set, :api_token]
 
   @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, term() | nil} | {:error, String.t()}
+          {:ok, term() | nil} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def node(_parent, %{id: id}, resolution) do
     with {:ok, {type, local_id}} <- decode_node_id(id),
          {:ok, record} <- fetch_node(type, local_id, resolution) do
       {:ok, record}
     else
-      :not_found -> {:ok, nil}
-      {:error, :invalid_id} -> {:error, "invalid node id"}
-      {:error, :unsupported_type} -> {:error, "invalid node id"}
+      :not_found ->
+        {:ok, nil}
+
+      {:error, :invalid_id} ->
+        {:error, "invalid node id"}
+
+      {:error, :unsupported_type} ->
+        {:error, "invalid node id"}
+
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
     end
   end
 
   defp decode_node_id(id) do
     GlobalId.decode_typed_local_id(
       id,
-      @public_types ++ @authenticated_types,
+      @public_types ++ @operator_types,
       @owner_scoped_types
     )
   end
@@ -45,8 +55,8 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     fetch_public_node(type, local_id)
   end
 
-  defp fetch_node(type, local_id, resolution) when type in @authenticated_types do
-    fetch_authenticated_node(type, local_id, resolution)
+  defp fetch_node(type, local_id, resolution) when type in @operator_types do
+    fetch_operator_node(type, local_id, resolution)
   end
 
   defp fetch_node(type, local_id, resolution) when type in @owner_scoped_types do
@@ -63,11 +73,11 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   defp fetch_public_node(:price_point, id), do: fetch_record(Pricing.get_price_point(id))
   defp fetch_public_node(:source_artifact, id), do: fetch_record(Specs.get_source_artifact(id))
 
-  defp fetch_authenticated_node(type, id, %{context: %{current_user: %User{}}}) do
-    fetch_record(fetch_affiliate_node(type, id))
+  defp fetch_operator_node(type, id, resolution) do
+    with {:ok, _operator} <- Authorization.require_operator(resolution) do
+      fetch_record(fetch_affiliate_node(type, id))
+    end
   end
-
-  defp fetch_authenticated_node(_type, _id, _resolution), do: fetch_record(nil)
 
   defp fetch_affiliate_node(:affiliate_network, id), do: Affiliate.get_affiliate_network(id)
   defp fetch_affiliate_node(:affiliate_program, id), do: Affiliate.get_affiliate_program(id)

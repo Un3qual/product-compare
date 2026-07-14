@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --ssr src/entry.server.tsx --outDir dist/server",
+    "build": "bun run build:client && bun run build:ssr && bun run check:bundle",
+    "build:client": "vite build",
+    "build:ssr": "vite build --ssr src/entry.server.tsx --outDir dist/server",
+    "check:bundle": "bun scripts/check-client-bundle.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "relay": "relay-compiler",
-    "check": "bun run typecheck && bun run test:unit"
+    "relay:check": "relay-compiler --validate",
+    "check": "bun run relay:check && bun run typecheck && bun run test:unit && bun run build"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.16",

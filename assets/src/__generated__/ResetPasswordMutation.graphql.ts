@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4c5fcbbe049f92d05b0bc944de613f2e>>
+ * @generated SignedSource<<5c880dc474cf647498687af7fbb346f4>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -112,7 +112,7 @@ return {
     "metadata": null,
     "name": "ResetPasswordMutation",
     "selections": (v2/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e5e23b7c781d8a5a45647c5b8043a34c>>
+ * @generated SignedSource<<cbd349f0568fafc528346ea84c55b242>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -51,7 +51,7 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "CreateSavedComparisonSetPayload",
+    "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
     "name": "createSavedComparisonSet",
     "plural": false,
@@ -117,7 +117,7 @@ return {
     "metadata": null,
     "name": "CreateSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

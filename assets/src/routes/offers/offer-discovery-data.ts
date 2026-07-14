@@ -3,6 +3,7 @@ import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-val
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeLabel } from "../graphql-datetime";
 import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "../offer-snapshot";
+import { compareProductText } from "../product-formatting";
 import type { OfferDiscoverySort } from "./loader";
 
 export type OfferConnection = NonNullable<
@@ -31,10 +32,6 @@ export type PriceHistoryRow = {
 };
 
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
-
-const MERCHANT_NAME_COLLATOR = new Intl.Collator(undefined, {
-  sensitivity: "base"
-});
 
 export const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
   currency: (offer) => offer.latestPriceCurrency,
@@ -125,7 +122,7 @@ function compareRenderableOffers(
   }
 
   if (sort === "merchant_name") {
-    const merchantComparison = MERCHANT_NAME_COLLATOR.compare(
+    const merchantComparison = compareProductText(
       offerMerchantName(left.offer.merchant),
       offerMerchantName(right.offer.merchant)
     );

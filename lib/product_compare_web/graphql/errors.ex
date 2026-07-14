@@ -14,6 +14,8 @@ defmodule ProductCompareWeb.GraphQL.Errors do
 
   @unauthenticated_code "UNAUTHENTICATED"
   @unauthenticated_message "unauthorized"
+  @forbidden_code "FORBIDDEN"
+  @forbidden_message "forbidden"
 
   @spec unauthenticated_code() :: String.t()
   def unauthenticated_code, do: @unauthenticated_code
@@ -30,6 +32,22 @@ defmodule ProductCompareWeb.GraphQL.Errors do
   def unauthenticated_mutation_error do
     mutation_error(unauthenticated_code(), @unauthenticated_message)
   end
+
+  @spec forbidden() :: top_level_error()
+  def forbidden do
+    [message: @forbidden_message, extensions: %{code: @forbidden_code}]
+  end
+
+  @spec forbidden_mutation_error() :: mutation_error()
+  def forbidden_mutation_error, do: mutation_error(@forbidden_code, @forbidden_message)
+
+  @spec authorization_error(:unauthenticated | :forbidden) :: top_level_error()
+  def authorization_error(:unauthenticated), do: unauthenticated()
+  def authorization_error(:forbidden), do: forbidden()
+
+  @spec authorization_mutation_error(:unauthenticated | :forbidden) :: mutation_error()
+  def authorization_mutation_error(:unauthenticated), do: unauthenticated_mutation_error()
+  def authorization_mutation_error(:forbidden), do: forbidden_mutation_error()
 
   @spec mutation_error(String.t(), String.t(), String.t() | atom() | nil) :: mutation_error()
   def mutation_error(code, message, field \\ nil) do

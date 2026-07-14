@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d33473a17b9bf352c6955cc46bbe9244>>
+ * @generated SignedSource<<71a46cb8b41e3b36a12477ead1d6af17>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -100,7 +100,7 @@ return {
     "metadata": null,
     "name": "VerifyEmailMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -289,9 +289,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
                })
     end
 
-    test "node returns affiliate entities for an authenticated viewer", %{conn: conn} do
-      viewer = AccountsFixtures.user_fixture()
-
+    test "node returns affiliate entities for a session operator", %{conn: conn} do
       %{
         merchant: merchant,
         merchant_product: merchant_product,
@@ -301,10 +299,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
         coupon: coupon
       } = affiliate_node_records()
 
-      conn =
-        conn
-        |> log_in_user(viewer)
-        |> put_req_header_same_origin()
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{
@@ -378,7 +373,7 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
       assert coupon_network_id == relay_id(:affiliate_network, network.id)
     end
 
-    test "node returns nil for affiliate entity ids without authentication", %{conn: conn} do
+    test "node rejects affiliate entity ids without authentication", %{conn: conn} do
       %{
         network: network,
         program: program,
@@ -394,8 +389,54 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
           ] do
         response = graphql(conn, node_id_query(), %{"id" => global_id})
 
-        assert %{"data" => %{"node" => nil}} = response
-        refute Map.has_key?(response, "errors")
+        assert %{
+                 "data" => %{"node" => nil},
+                 "errors" => [
+                   %{
+                     "extensions" => %{"code" => "UNAUTHENTICATED"},
+                     "path" => ["node"]
+                   }
+                   | _
+                 ]
+               } = response
+      end
+    end
+
+    test "node rejects affiliate entity ids for an authenticated member", %{conn: conn} do
+      %{network: network, program: program, link: link, coupon: coupon} =
+        affiliate_node_records()
+
+      conn = member_conn(conn)
+
+      for global_id <- [
+            relay_id(:affiliate_network, network.id),
+            relay_id(:affiliate_program, program.id),
+            relay_id(:affiliate_link, link.id),
+            relay_id(:coupon, coupon.id)
+          ] do
+        assert %{
+                 "data" => %{"node" => nil},
+                 "errors" => [
+                   %{"extensions" => %{"code" => "FORBIDDEN"}, "path" => ["node"]} | _
+                 ]
+               } = graphql(conn, node_id_query(), %{"id" => global_id})
+      end
+    end
+
+    test "node returns affiliate entities for an API-token operator", %{conn: conn} do
+      %{network: network, program: program, link: link, coupon: coupon} =
+        affiliate_node_records()
+
+      conn = operator_conn(conn, :api_token)
+
+      for {global_id, typename} <- [
+            {relay_id(:affiliate_network, network.id), "AffiliateNetwork"},
+            {relay_id(:affiliate_program, program.id), "AffiliateProgram"},
+            {relay_id(:affiliate_link, link.id), "AffiliateLink"},
+            {relay_id(:coupon, coupon.id), "Coupon"}
+          ] do
+        assert %{"data" => %{"node" => %{"__typename" => ^typename}}} =
+                 graphql(conn, node_id_query(), %{"id" => global_id})
       end
     end
 

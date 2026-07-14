@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
+import { data, type LoaderFunctionArgs } from "react-router-dom";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
@@ -22,18 +22,20 @@ export type ProductDetailLoaderData =
       status: "not_found" | "error";
     };
 
+export type ProductDetailLoaderResult =
+  | ProductDetailLoaderData
+  | ReturnType<typeof data<ProductDetailLoaderData>>;
+
 export async function productDetailLoader({
   context,
   params,
   request
-}: LoaderFunctionArgs): Promise<ProductDetailLoaderData> {
+}: LoaderFunctionArgs): Promise<ProductDetailLoaderResult> {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = offersAfterFromUrl(new URL(request.url));
 
   if (slug === "") {
-    return {
-      status: "not_found"
-    };
+    return productNotFoundResult();
   }
 
   const environment = getRelayEnvironmentFromRouterContext(context);
@@ -54,9 +56,7 @@ export async function productDetailLoader({
     if (!productRouteQuery.data.product) {
       productRouteQuery.dispose();
 
-      return {
-        status: "not_found"
-      };
+      return productNotFoundResult();
     }
 
     return {
@@ -86,6 +86,15 @@ export async function productDetailLoader({
       }
     );
   }
+}
+
+function productNotFoundResult() {
+  return data<ProductDetailLoaderData>(
+    {
+      status: "not_found"
+    },
+    { status: 404 }
+  );
 }
 
 function offersAfterFromUrl(url: URL): string | null {

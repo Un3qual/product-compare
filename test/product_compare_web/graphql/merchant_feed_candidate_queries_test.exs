@@ -2,7 +2,6 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.Ingestion
-  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
@@ -11,7 +10,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     test "merchantFeedCandidates returns review-safe candidate fields with pagination", %{
       conn: conn
     } do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
       first_seen_at = ~U[2026-06-04 20:00:00Z]
       second_seen_at = ~U[2026-06-04 21:00:00Z]
@@ -126,6 +125,16 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
              } = graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
     end
 
+    test "merchantFeedCandidates rejects authenticated members", %{conn: conn} do
+      conn = member_conn(conn)
+
+      assert %{
+               "data" => %{"merchantFeedCandidates" => nil},
+               "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
+             } =
+               graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+    end
+
     test "merchantFeedCandidate does not expose raw metadata fields", %{conn: conn} do
       assert %{
                "data" => %{
@@ -139,7 +148,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates rejects invalid cursors", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
@@ -154,7 +163,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates filters review status and ranks product counts", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       _shortlisted_large =
@@ -225,7 +234,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates ranks candidates by fit score", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       _trail =
@@ -315,7 +324,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "reviewMerchantFeedCandidate updates candidate review status", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       {:ok, candidate} =
@@ -354,7 +363,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     test "reviewMerchantFeedCandidate preserves an existing note when note is omitted", %{
       conn: conn
     } do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
       source = source_fixture()
 
       {:ok, candidate} =
@@ -429,8 +438,33 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                Repo.get!(MerchantFeedCandidate, candidate.id)
     end
 
+    test "reviewMerchantFeedCandidate rejects authenticated members without mutating state", %{
+      conn: conn
+    } do
+      source = source_fixture()
+      candidate = merchant_feed_candidate_fixture(source, %{provider_feed_id: "member-denied"})
+      conn = member_conn(conn)
+
+      assert %{
+               "data" => %{
+                 "reviewMerchantFeedCandidate" => %{
+                   "candidate" => nil,
+                   "errors" => [%{"code" => "FORBIDDEN"}]
+                 }
+               }
+             } =
+               graphql(conn, review_merchant_feed_candidate_mutation(), %{
+                 "input" => %{
+                   "id" => relay_id(:merchant_feed_candidate, candidate.id),
+                   "status" => "DISMISSED"
+                 }
+               })
+
+      assert %MerchantFeedCandidate{review_status: "pending"} = Repo.reload(candidate)
+    end
+
     test "reviewMerchantFeedCandidate returns payload errors for invalid ids", %{conn: conn} do
-      conn = authed_conn(conn)
+      conn = operator_conn(conn)
 
       assert %{
                "data" => %{
@@ -592,11 +626,5 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp authed_conn(conn) do
-    conn
-    |> log_in_user(AccountsFixtures.user_fixture())
-    |> put_req_header_same_origin()
   end
 end

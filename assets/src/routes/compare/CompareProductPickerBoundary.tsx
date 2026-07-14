@@ -15,7 +15,7 @@ import {
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 
 type ComparePickerProduct =
-  CompareProductPickerQuery["response"]["products"]["edges"][number]["node"];
+  NonNullable<CompareProductPickerQuery["response"]["products"]>["edges"][number]["node"];
 
 export function CompareProductPickerBoundary({
   heading = "Choose products",
@@ -62,16 +62,17 @@ function CompareProductPicker({
     { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" }
   );
+  const productConnection = data.products;
   const pageProducts = useMemo(
-    () => data.products.edges.map(({ node }) => node),
-    [data.products.edges]
+    () => productConnection?.edges.map(({ node }) => node) ?? [],
+    [productConnection]
   );
   const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
   const selectedSlugSet = new Set(selectedSlugs);
   const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
-  const nextCursor = nextProductPageCursor(data.products.pageInfo);
+  const nextCursor = nextProductPageCursor(productConnection?.pageInfo);
   const options = availableProducts.map((product) => ({
-    brandName: product.brand.name,
+    brandName: product.brand?.name ?? "Unknown brand",
     href: buildComparePath(selectedSlugs, product.slug, specMode),
     id: product.id,
     name: product.name
@@ -95,7 +96,10 @@ function CompareProductPicker({
 }
 
 function nextProductPageCursor(
-  pageInfo: CompareProductPickerQuery["response"]["products"]["pageInfo"] | null | undefined
+  pageInfo:
+    | NonNullable<CompareProductPickerQuery["response"]["products"]>["pageInfo"]
+    | null
+    | undefined
 ) {
   return pageInfo?.hasNextPage ? pageInfo.endCursor : null;
 }

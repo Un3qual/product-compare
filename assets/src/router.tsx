@@ -1,34 +1,9 @@
+import type { ComponentType } from "react";
 import type { HydrationState, RouteObject, ShouldRevalidateFunctionArgs } from "react-router-dom";
 import { createBrowserRouter } from "react-router-dom";
 import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
-import { ApiTokensRoute } from "./routes/account/api-tokens/ApiTokensRoute";
-import { apiTokensLoader } from "./routes/account/api-tokens/loader";
-import { AffiliateSetupRoute } from "./routes/affiliate/setup/AffiliateSetupRoute";
-import { affiliateSetupLoader } from "./routes/affiliate/setup/loader";
-import { ForgotPasswordRoute } from "./routes/auth/ForgotPasswordRoute";
-import { LoginRoute } from "./routes/auth/LoginRoute";
-import { LogoutRoute } from "./routes/auth/LogoutRoute";
-import { RegisterRoute } from "./routes/auth/RegisterRoute";
-import { ResetPasswordRoute } from "./routes/auth/ResetPasswordRoute";
-import { VerifyEmailRoute } from "./routes/auth/VerifyEmailRoute";
-import { browseLoader } from "./routes/catalog/loader";
-import { BrowseRoute } from "./routes/catalog/BrowseRoute";
-import { RevenueSummaryRoute } from "./routes/commerce/revenue/RevenueSummaryRoute";
-import { revenueSummaryLoader } from "./routes/commerce/revenue/loader";
-import { compareLoader } from "./routes/compare/loader";
-import { savedComparisonsLoader } from "./routes/compare/saved-data";
-import { CompareRoute } from "./routes/compare/CompareRoute";
-import { SavedComparisonsRoute } from "./routes/compare/SavedComparisonsRoute";
 import { RouteErrorBoundary } from "./routes/compare/RouteErrorBoundary";
-import { FeedCandidatesRoute } from "./routes/ingestion/feed-candidates/FeedCandidatesRoute";
-import { feedCandidatesLoader } from "./routes/ingestion/feed-candidates/loader";
-import { MerchantDirectoryRoute } from "./routes/merchants/MerchantDirectoryRoute";
-import { merchantDirectoryLoader } from "./routes/merchants/loader";
-import { OfferDiscoveryRoute } from "./routes/offers/OfferDiscoveryRoute";
-import { offerDiscoveryLoader } from "./routes/offers/loader";
-import { ProductDetailRoute } from "./routes/products/ProductDetailRoute";
-import { productDetailLoader } from "./routes/products/loader";
 import { notFoundLoader } from "./routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "./routes/RouteMetadata";
 import { RootLayout, RootRoute } from "./routes/RootRoute";
@@ -58,6 +33,7 @@ export const routes: RouteObject[] = [
     loader: rootLoader,
     shouldRevalidate: shouldRevalidateRootLoader,
     element: <RootLayout />,
+    errorElement: <RouteErrorBoundary resourceName="page" title="Product Compare" />,
     children: [
       {
         index: true,
@@ -73,8 +49,13 @@ export const routes: RouteObject[] = [
           "Browse products | Product Compare",
           "Browse the product catalog and narrow the results by the attributes that matter."
         ),
-        loader: browseLoader,
-        element: <BrowseRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ BrowseRoute }, { browseLoader }] = await Promise.all([
+            import("./routes/catalog/BrowseRoute"),
+            import("./routes/catalog/loader")
+          ]);
+          return { Component: BrowseRoute, loader: browseLoader };
+        })
       },
       {
         path: "products/:slug",
@@ -82,8 +63,17 @@ export const routes: RouteObject[] = [
           "Product details | Product Compare",
           "Review product specifications, current offers, and price history."
         ),
-        loader: productDetailLoader,
-        element: <ProductDetailRoute />
+        errorElement: <RouteErrorBoundary resourceName="product" title="Product details" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ ProductDetailRoute }, { productDetailLoader }] = await Promise.all([
+            import("./routes/products/ProductDetailRoute"),
+            import("./routes/products/loader")
+          ]);
+          return {
+            Component: ProductDetailRoute,
+            loader: productDetailLoader
+          };
+        })
       },
       {
         path: "merchants",
@@ -91,9 +81,19 @@ export const routes: RouteObject[] = [
           "Merchants | Product Compare",
           "Browse merchants represented in current Product Compare offers."
         ),
-        loader: merchantDirectoryLoader,
-        element: <MerchantDirectoryRoute />,
-        errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
+        errorElement: (
+          <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
+        ),
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ MerchantDirectoryRoute }, { merchantDirectoryLoader }] = await Promise.all([
+            import("./routes/merchants/MerchantDirectoryRoute"),
+            import("./routes/merchants/loader")
+          ]);
+          return {
+            Component: MerchantDirectoryRoute,
+            loader: merchantDirectoryLoader
+          };
+        })
       },
       {
         path: "affiliate/setup",
@@ -101,9 +101,19 @@ export const routes: RouteObject[] = [
           "Affiliate setup | Product Compare",
           "Configure merchant affiliate programs used for outbound offer links."
         ),
-        loader: affiliateSetupLoader,
-        element: <AffiliateSetupRoute />,
-        errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+        errorElement: (
+          <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+        ),
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ AffiliateSetupRoute }, { affiliateSetupLoader }] = await Promise.all([
+            import("./routes/affiliate/setup/AffiliateSetupRoute"),
+            import("./routes/affiliate/setup/loader")
+          ]);
+          return {
+            Component: AffiliateSetupRoute,
+            loader: affiliateSetupLoader
+          };
+        })
       },
       {
         path: "offers",
@@ -111,9 +121,17 @@ export const routes: RouteObject[] = [
           "Offers | Product Compare",
           "Discover current product offers, coupons, and merchant availability."
         ),
-        loader: offerDiscoveryLoader,
-        element: <OfferDiscoveryRoute />,
-        errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+        errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ OfferDiscoveryRoute }, { offerDiscoveryLoader }] = await Promise.all([
+            import("./routes/offers/OfferDiscoveryRoute"),
+            import("./routes/offers/loader")
+          ]);
+          return {
+            Component: OfferDiscoveryRoute,
+            loader: offerDiscoveryLoader
+          };
+        })
       },
       {
         path: "ingestion/feed-candidates",
@@ -121,11 +139,19 @@ export const routes: RouteObject[] = [
           "CJ feed candidates | Product Compare",
           "Review CJ feed candidates before importing products and offers."
         ),
-        loader: feedCandidatesLoader,
-        element: <FeedCandidatesRoute />,
         errorElement: (
           <RouteErrorBoundary resourceName="feed candidates" title="CJ feed candidates" />
-        )
+        ),
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ FeedCandidatesRoute }, { feedCandidatesLoader }] = await Promise.all([
+            import("./routes/ingestion/feed-candidates/FeedCandidatesRoute"),
+            import("./routes/ingestion/feed-candidates/loader")
+          ]);
+          return {
+            Component: FeedCandidatesRoute,
+            loader: feedCandidatesLoader
+          };
+        })
       },
       {
         path: "compare",
@@ -133,9 +159,17 @@ export const routes: RouteObject[] = [
           "Compare products | Product Compare",
           "Compare loaded products by specifications and current offers."
         ),
-        loader: compareLoader,
-        element: <CompareRoute />,
-        errorElement: <RouteErrorBoundary />
+        errorElement: <RouteErrorBoundary />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ CompareRoute }, { compareLoader }] = await Promise.all([
+            import("./routes/compare/CompareRoute"),
+            import("./routes/compare/loader")
+          ]);
+          return {
+            Component: CompareRoute,
+            loader: compareLoader
+          };
+        })
       },
       {
         path: "compare/saved",
@@ -143,9 +177,17 @@ export const routes: RouteObject[] = [
           "Saved comparisons | Product Compare",
           "Return to product comparisons saved to your account."
         ),
-        loader: savedComparisonsLoader,
-        element: <SavedComparisonsRoute />,
-        errorElement: <RouteErrorBoundary title="Saved comparisons" />
+        errorElement: <RouteErrorBoundary title="Saved comparisons" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ SavedComparisonsRoute }, { savedComparisonsLoader }] = await Promise.all([
+            import("./routes/compare/SavedComparisonsRoute"),
+            import("./routes/compare/saved-data")
+          ]);
+          return {
+            Component: SavedComparisonsRoute,
+            loader: savedComparisonsLoader
+          };
+        })
       },
       {
         path: "commerce/revenue",
@@ -153,9 +195,17 @@ export const routes: RouteObject[] = [
           "Revenue preview | Product Compare",
           "Preview attributed commerce revenue and commission summaries."
         ),
-        loader: revenueSummaryLoader,
-        element: <RevenueSummaryRoute />,
-        errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
+        errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />,
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ RevenueSummaryRoute }, { revenueSummaryLoader }] = await Promise.all([
+            import("./routes/commerce/revenue/RevenueSummaryRoute"),
+            import("./routes/commerce/revenue/loader")
+          ]);
+          return {
+            Component: RevenueSummaryRoute,
+            loader: revenueSummaryLoader
+          };
+        })
       },
       {
         path: "account/api-tokens",
@@ -163,9 +213,19 @@ export const routes: RouteObject[] = [
           "API tokens | Product Compare",
           "Create and manage API tokens for connected Product Compare tools."
         ),
-        loader: apiTokensLoader,
-        element: <ApiTokensRoute />,
-        errorElement: <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
+        errorElement: (
+          <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
+        ),
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ ApiTokensRoute }, { apiTokensLoader }] = await Promise.all([
+            import("./routes/account/api-tokens/ApiTokensRoute"),
+            import("./routes/account/api-tokens/loader")
+          ]);
+          return {
+            Component: ApiTokensRoute,
+            loader: apiTokensLoader
+          };
+        })
       },
       {
         path: "auth/login",
@@ -173,7 +233,10 @@ export const routes: RouteObject[] = [
           "Sign in | Product Compare",
           "Sign in to manage saved comparisons and account tools."
         ),
-        element: <LoginRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { LoginRoute } = await import("./routes/auth/LoginRoute");
+          return { Component: LoginRoute };
+        })
       },
       {
         path: "auth/logout",
@@ -181,7 +244,10 @@ export const routes: RouteObject[] = [
           "Sign out | Product Compare",
           "Sign out of your Product Compare account."
         ),
-        element: <LogoutRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { LogoutRoute } = await import("./routes/auth/LogoutRoute");
+          return { Component: LogoutRoute };
+        })
       },
       {
         path: "auth/register",
@@ -189,7 +255,10 @@ export const routes: RouteObject[] = [
           "Create account | Product Compare",
           "Create an account to save comparisons and manage connected tools."
         ),
-        element: <RegisterRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { RegisterRoute } = await import("./routes/auth/RegisterRoute");
+          return { Component: RegisterRoute };
+        })
       },
       {
         path: "auth/forgot-password",
@@ -197,7 +266,10 @@ export const routes: RouteObject[] = [
           "Forgot password | Product Compare",
           "Request a secure Product Compare password reset link."
         ),
-        element: <ForgotPasswordRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { ForgotPasswordRoute } = await import("./routes/auth/ForgotPasswordRoute");
+          return { Component: ForgotPasswordRoute };
+        })
       },
       {
         path: "auth/reset-password",
@@ -205,7 +277,10 @@ export const routes: RouteObject[] = [
           "Reset password | Product Compare",
           "Choose a new password for your Product Compare account."
         ),
-        element: <ResetPasswordRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { ResetPasswordRoute } = await import("./routes/auth/ResetPasswordRoute");
+          return { Component: ResetPasswordRoute };
+        })
       },
       {
         path: "auth/verify-email",
@@ -213,7 +288,10 @@ export const routes: RouteObject[] = [
           "Verify email | Product Compare",
           "Verify the email address connected to your Product Compare account."
         ),
-        element: <VerifyEmailRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const { VerifyEmailRoute } = await import("./routes/auth/VerifyEmailRoute");
+          return { Component: VerifyEmailRoute };
+        })
       },
       {
         path: "*",
@@ -237,6 +315,30 @@ export function createClientRouter(relayEnvironment: Environment) {
     getContext: () => createRelayRouterContext(relayEnvironment),
     hydrationData: typeof window === "undefined" ? undefined : window.__staticRouterHydrationData
   });
+}
+
+type LazyRouteModule = {
+  Component: ComponentType;
+  loader?: RouteObject["loader"];
+};
+
+function withLazyRouteImportRecovery<T extends LazyRouteModule>(
+  loadRouteModule: () => Promise<T>
+) {
+  return async () => {
+    try {
+      return await loadRouteModule();
+    } catch (error) {
+      return {
+        Component: function LazyRouteImportFailure() {
+          return null;
+        },
+        loader: function lazyRouteImportFailureLoader(): never {
+          throw error;
+        }
+      };
+    }
+  };
 }
 
 function isAuthRoutePath(pathname: string) {

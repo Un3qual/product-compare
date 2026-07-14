@@ -6,7 +6,26 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
 
+  setup %{conn: conn} do
+    {:ok, conn: operator_conn(conn), anonymous_conn: conn}
+  end
+
   describe "/api/graphql commerce revenue summary" do
+    test "requires authentication and rejects authenticated members", %{
+      conn: conn,
+      anonymous_conn: anonymous_conn
+    } do
+      assert %{
+               "data" => %{"revenueSummary" => nil},
+               "errors" => [%{"extensions" => %{"code" => "UNAUTHENTICATED"}} | _]
+             } = graphql(anonymous_conn, revenue_summary_query(), %{})
+
+      assert %{
+               "data" => %{"revenueSummary" => nil},
+               "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
+             } = graphql(member_conn(conn), revenue_summary_query(), %{})
+    end
+
     test "returns an empty dashboard summary shape", %{conn: conn} do
       assert %{
                "data" => %{

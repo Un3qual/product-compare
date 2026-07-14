@@ -68,7 +68,8 @@ const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
   status: "ready",
   viewer: {
     id: "viewer-1",
-    email: "person@example.com"
+    email: "person@example.com",
+    isOperator: true
   },
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR
 };
@@ -83,7 +84,8 @@ const degradedAuthenticatedLoaderData = {
   status: "degraded",
   viewer: {
     id: "viewer-1",
-    email: "person@example.com"
+    email: "person@example.com",
+    isOperator: true
   },
   viewerQuery: null
 } satisfies RootLoaderData;
@@ -97,7 +99,8 @@ beforeEach(() => {
   mockedUsePreloadedQuery.mockReturnValue({
     viewer: {
       id: "viewer-1",
-      email: "person@example.com"
+      email: "person@example.com",
+      isOperator: true
     }
   } as never);
 });
@@ -195,9 +198,9 @@ test("root destinations render authenticated account actions with the exact acti
   render(
     <MemoryRouter initialEntries={["/compare/saved"]}>
       <nav aria-label="Primary">
-        <RootPrimaryNavigation viewer={{ id: "viewer-1", email: "person@example.com" }} />
+        <RootPrimaryNavigation viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }} />
       </nav>
-      <RootHomeDestinations viewer={{ id: "viewer-1", email: "person@example.com" }} />
+      <RootHomeDestinations viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }} />
     </MemoryRouter>
   );
 
@@ -222,6 +225,10 @@ test("root destinations render authenticated account actions with the exact acti
     "href",
     "/commerce/revenue"
   );
+  expect(within(homeActions).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+    "href",
+    "/ingestion/feed-candidates"
+  );
   expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
     "/account/api-tokens"
@@ -232,6 +239,25 @@ test("root destinations render authenticated account actions with the exact acti
   );
   expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+});
+
+test("root destinations keep member account actions but hide operator destinations", () => {
+  const member = { id: "viewer-1", email: "person@example.com", isOperator: false };
+  render(
+    <MemoryRouter>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={member} />
+      </nav>
+      <RootHomeDestinations viewer={member} />
+    </MemoryRouter>
+  );
+
+  const primary = screen.getByRole("navigation", { name: "Primary" });
+  expect(within(primary).getByRole("link", { name: "Saved comparisons" })).toBeInTheDocument();
+  expect(within(primary).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
+  expect(within(primary).queryByRole("link", { name: "Affiliate setup" })).not.toBeInTheDocument();
+  expect(within(primary).queryByRole("link", { name: "Revenue preview" })).not.toBeInTheDocument();
+  expect(within(primary).queryByRole("link", { name: "Feed candidates" })).not.toBeInTheDocument();
 });
 
 test("root layout applies the deepest matched document metadata", async () => {
@@ -275,6 +301,7 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
+    "Feed candidates",
     "API tokens"
   ]) {
     expect(
@@ -317,6 +344,10 @@ test("root layout renders authenticated auth links in the primary navigation", a
   expect(within(primaryNavigation).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
     "href",
     "/commerce/revenue"
+  );
+  expect(within(primaryNavigation).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+    "href",
+    "/ingestion/feed-candidates"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
@@ -395,6 +426,7 @@ test("root route renders guest home actions as links while using the shared butt
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
+    "Feed candidates",
     "API tokens"
   ]) {
     expect(
@@ -483,6 +515,10 @@ test("root route renders authenticated home actions", async () => {
     "href",
     "/commerce/revenue"
   );
+  expect(within(homeActions).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+    "href",
+    "/ingestion/feed-candidates"
+  );
   expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
     "/account/api-tokens"
@@ -518,7 +554,8 @@ test("rootLoader preserves the cached root viewer when the viewer preload fails"
 
   setRootViewer(environment, {
     id: "viewer-1",
-    email: "person@example.com"
+    email: "person@example.com",
+    isOperator: true
   });
   mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Viewer fetch failed"));
 
@@ -526,7 +563,8 @@ test("rootLoader preserves the cached root viewer when the viewer preload fails"
     status: "degraded",
     viewer: {
       id: "viewer-1",
-      email: "person@example.com"
+      email: "person@example.com",
+      isOperator: true
     },
     viewerQuery: null
   });

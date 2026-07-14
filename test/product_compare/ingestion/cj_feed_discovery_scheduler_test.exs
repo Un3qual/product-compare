@@ -87,6 +87,79 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
     GenServer.stop(pid)
   end
 
+  test "normalizes invalid startup cursors to nil" do
+    for invalid_cursor <- [-1, 1.5, "40", %{value: 40}] do
+      parent = self()
+
+      runner = fn opts ->
+        send(parent, {:run, invalid_cursor, opts})
+        {:ok, report()}
+      end
+
+      pid =
+        start_supervised!(
+          Supervisor.child_spec(
+            {CJFeedDiscoveryScheduler,
+             [
+               cursor: invalid_cursor,
+               initial_delay_ms: 0,
+               interval_ms: 1_000,
+               runner: runner
+             ]},
+            id: {:invalid_startup_cursor, inspect(invalid_cursor)},
+            restart: :temporary
+          )
+        )
+
+      assert_receive {:run, ^invalid_cursor, opts}
+      assert opts[:cursor] == nil
+
+      GenServer.stop(pid)
+    end
+  end
+
+  test "does not advance to an invalid cursor from a successful report" do
+    for invalid_cursor <- [-1, 1.5, "80", %{value: 80}] do
+      parent = self()
+      run_count = :counters.new(1, [])
+
+      runner = fn opts ->
+        :counters.add(run_count, 1, 1)
+        count = :counters.get(run_count, 1)
+        send(parent, {:run, invalid_cursor, opts})
+
+        if count == 1 do
+          {:ok, Map.put(report(), :next_cursor, invalid_cursor)}
+        else
+          {:ok, report()}
+        end
+      end
+
+      pid =
+        start_supervised!(
+          Supervisor.child_spec(
+            {CJFeedDiscoveryScheduler,
+             [
+               cursor: 40,
+               initial_delay_ms: 0,
+               interval_ms: 20,
+               runner: runner
+             ]},
+            id: {:invalid_advanced_cursor, inspect(invalid_cursor)},
+            restart: :temporary
+          )
+        )
+
+      assert_receive {:run, ^invalid_cursor, first_opts}
+      assert first_opts[:cursor] == 40
+
+      assert_receive {:run, ^invalid_cursor, second_opts}, 250
+      assert second_opts[:cursor] == 40
+
+      GenServer.stop(pid)
+    end
+  end
+
   test "schedules the next run after a failed discovery" do
     parent = self()
 

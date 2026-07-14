@@ -4,9 +4,10 @@
 
 - Status: done (API token item presentation extraction)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after API-token item presentation extraction (43
-  API-token tests).
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-12 after route-location state hardening (45 API-token
+  route tests and 7 loader tests).
 - Implementation plan: `docs/plans/2026-05-31-frontend-api-token-management-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-api-token-expiry-presets-implementation-plan.md`
 - Objective: make the existing GraphQL API-token lifecycle demoable from the browser UI without adding REST endpoints.
@@ -45,6 +46,22 @@
     framework-free `api-token-status.ts` boundary and added a five-case
     lifecycle truth table.
   - `cd assets && bun run typecheck` and `git diff --check` completed with exit 0.
+
+## Route-Location State Hardening
+
+- Status: done on 2026-07-12.
+- Plan: Task 5 in
+  `docs/superpowers/plans/2026-07-12-project-quality-audit-remediation.md`.
+- Completed: optimistic token rows, mutation updates, pending/error state, and
+  one-time plaintext are owned by an inner route page keyed to canonical
+  authorization, status, and cursor identity. Same-location revalidation keeps
+  the current mutation state; status or cursor navigation mounts clean state
+  before the destination commit renders.
+- RED: both new navigation cases observed the created row or plaintext in the
+  destination layout commit before any passive-effect cleanup could run.
+- GREEN: status-only and cursor-only navigation both render without the local
+  row or secret. The expanded Task 5 gate passed 115 tests, TypeScript, Relay
+  validation, repository formatting, and diff hygiene.
 
 ## API Token Control Presentation Extraction
 

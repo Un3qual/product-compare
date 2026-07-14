@@ -3,11 +3,7 @@ import {
   type Environment,
   type RecordSourceProxy
 } from "relay-runtime";
-
-type RootViewer = {
-  id: string;
-  email: string;
-};
+import type { RootViewer } from "../root/loader";
 
 export function setRootViewer(environment: Environment, viewer: RootViewer) {
   commitLocalUpdate(environment, (store) => {
@@ -15,6 +11,7 @@ export function setRootViewer(environment: Environment, viewer: RootViewer) {
 
     viewerRecord.setValue(viewer.id, "id");
     viewerRecord.setValue(viewer.email, "email");
+    viewerRecord.setValue(viewer.isOperator, "isOperator");
     store.getRoot().setLinkedRecord(viewerRecord, "viewer");
   });
 }

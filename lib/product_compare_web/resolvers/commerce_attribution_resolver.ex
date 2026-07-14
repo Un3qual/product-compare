@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
+  alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.GlobalId
 
@@ -11,18 +12,23 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   @public_min_conversions 2
 
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
-  def revenue_summary(_parent, args, _resolution) do
+          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def revenue_summary(_parent, args, resolution) do
     input = Input.fetch_value(args || %{}, :input, %{}) || %{}
 
-    with {:ok, filters} <- normalize_revenue_summary_input(input),
+    with {:ok, _user} <- Authorization.require_operator(resolution),
+         {:ok, filters} <- normalize_revenue_summary_input(input),
          {:ok, summary} <-
            filters
            |> CommerceAttribution.dashboard_revenue_summary()
            |> graphql_summary() do
       {:ok, summary}
     else
-      {:error, _reason} -> {:error, @invalid_filters_error}
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
+      {:error, _reason} ->
+        {:error, @invalid_filters_error}
     end
   rescue
     ArgumentError -> {:error, @invalid_filters_error}

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6fece9543855d8d9b9548b59b7532d61>>
+ * @generated SignedSource<<3c470fdc19773eb1f2f5db9427b78874>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -292,7 +292,7 @@ return {
     "metadata": null,
     "name": "MerchantFeedCandidatesRouteQuery",
     "selections": (v4/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

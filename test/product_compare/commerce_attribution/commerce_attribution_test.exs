@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttributionTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ImpactAdapter
@@ -615,31 +617,71 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert updated.attribution_confidence == :high
     end
 
-    test "preserves status when follow-up payloads omit status" do
+    test "rejects a conflicting merchant product on an identifier-free follow-up" do
+      clicked_merchant = merchant_fixture()
+      clicked_merchant_product = merchant_product_fixture(%{merchant: clicked_merchant})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "ClickId" => click_session.click_id,
         "Status" => "APPROVED",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
         "Payout" => "15.00",
-        "ReportingDate" => "2026-05-20T12:05:00Z"
+        "ReportingDate" => "2026-05-20T12:05:00Z",
+        "MerchantProductId" => clicked_merchant_product.id
       }
 
-      {:ok, inserted} = ImpactAdapter.ingest_action(payload)
+      assert {:ok, approved} = ImpactAdapter.ingest_action(payload)
+      conflicting_merchant_product = merchant_product_fixture()
 
-      {:ok, updated} =
+      follow_up =
         payload
-        |> Map.drop(["Status"])
+        |> Map.drop(["ClickId"])
         |> Map.merge(%{
+          "Status" => "PAID",
           "Payout" => "20.00",
-          "ReportingDate" => "2026-05-21T09:00:00Z"
+          "ReportingDate" => "2026-05-21T12:05:00Z",
+          "MerchantProductId" => conflicting_merchant_product.id
         })
-        |> ImpactAdapter.ingest_action()
 
-      assert updated.id == inserted.id
-      assert updated.status == :approved
-      assert Decimal.equal?(updated.commission_amount, Decimal.new("20.00"))
-      assert updated.reported_at == ~U[2026-05-21 09:00:00.000000Z]
+      assert {:error, changeset} = ImpactAdapter.ingest_action(follow_up)
+      assert "does not match resolved click" in errors_on(changeset).merchant_product_id
+      assert Repo.reload!(approved) == approved
+    end
+
+    test "rejects a conflicting direct dimension on an identifier-free follow-up" do
+      clicked_merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      attrs = %{
+        source_network: :impact,
+        network_conversion_ref: "direct-follow-up-#{System.unique_integer([:positive])}",
+        public_click_id: click_session.click_id,
+        merchant_id: clicked_merchant.id,
+        status: :approved,
+        currency: "USD",
+        commission_amount: Decimal.new("15.00"),
+        reported_at: ~U[2026-05-20 12:05:00Z]
+      }
+
+      assert {:ok, approved} = CommerceAttribution.ingest_conversion(attrs)
+
+      assert {:error, changeset} =
+               CommerceAttribution.ingest_conversion(%{
+                 attrs
+                 | public_click_id: nil,
+                   merchant_id: merchant_fixture().id,
+                   status: :paid,
+                   commission_amount: Decimal.new("20.00"),
+                   reported_at: ~U[2026-05-21 12:05:00Z]
+               })
+
+      assert "does not match resolved click" in errors_on(changeset).merchant_id
+      assert Repo.reload!(approved) == approved
     end
 
     test "stores external click tokens without rejecting conversions" do
@@ -699,6 +741,300 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "gross_order_value" => "129.99"
                }
              } = CommerceAttribution.product_revenue_summary(product.id, network: :impact)
+    end
+
+    test "rejects provider dimensions that conflict with the resolved click" do
+      clicked_merchant = merchant_fixture()
+      clicked_product = SpecsFixtures.product_fixture()
+
+      clicked_merchant_product =
+        merchant_product_fixture(%{merchant: clicked_merchant, product: clicked_product})
+
+      clicked_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network_fixture(%{name: "Impact"}),
+          merchant: clicked_merchant
+        })
+
+      commerce_link =
+        commerce_link_fixture(%{
+          merchant: clicked_merchant,
+          affiliate_program_id: clicked_program.id,
+          network: :impact
+        })
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: clicked_merchant_product.id,
+          anonymous_id: "anon-#{System.unique_integer([:positive])}",
+          source_surface: :web
+        })
+
+      other_merchant = merchant_fixture()
+      other_product = SpecsFixtures.product_fixture()
+
+      other_merchant_product =
+        merchant_product_fixture(%{merchant: other_merchant, product: other_product})
+
+      other_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network_fixture(%{name: "Awin"}),
+          merchant: other_merchant
+        })
+
+      conflicts = [
+        merchant_id: other_merchant.id,
+        affiliate_program_id: other_program.id,
+        product_id: other_product.id,
+        merchant_product_id: other_merchant_product.id
+      ]
+
+      for {field, conflicting_id} <- conflicts do
+        attrs = %{
+          source_network: :impact,
+          network_conversion_ref: "conflicting-#{field}-#{System.unique_integer([:positive])}",
+          public_click_id: click_session.click_id,
+          status: :approved,
+          currency: "USD",
+          reported_at: ~U[2026-05-20 12:05:00Z]
+        }
+
+        assert {:error, changeset} =
+                 attrs
+                 |> Map.put(field, conflicting_id)
+                 |> CommerceAttribution.ingest_conversion()
+
+        assert "does not match resolved click" in errors_on(changeset)[field]
+      end
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "rejects provider relations that conflict with a click-known merchant" do
+      clicked_merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      other_merchant = merchant_fixture()
+
+      other_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network_fixture(%{name: "Awin"}),
+          merchant: other_merchant
+        })
+
+      other_merchant_product = merchant_product_fixture(%{merchant: other_merchant})
+
+      conflicts = [
+        affiliate_program_id: other_program.id,
+        merchant_product_id: other_merchant_product.id
+      ]
+
+      for {field, conflicting_id} <- conflicts do
+        attrs = %{
+          source_network: :impact,
+          network_conversion_ref:
+            "relational-conflict-#{field}-#{System.unique_integer([:positive])}",
+          public_click_id: click_session.click_id,
+          status: :approved,
+          currency: "USD",
+          reported_at: ~U[2026-05-20 12:05:00Z]
+        }
+
+        assert {:error, changeset} =
+                 attrs
+                 |> Map.put(field, conflicting_id)
+                 |> CommerceAttribution.ingest_conversion()
+
+        assert "does not match resolved click" in errors_on(changeset)[field]
+      end
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "allows compatible provider relations where the click lacks those dimensions" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+      affiliate_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network_fixture(%{name: "Impact"}),
+          merchant: merchant
+        })
+
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      assert {:ok, conversion} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: :impact,
+                 network_conversion_ref:
+                   "compatible-relations-#{System.unique_integer([:positive])}",
+                 public_click_id: click_session.click_id,
+                 affiliate_program_id: affiliate_program.id,
+                 merchant_product_id: merchant_product.id,
+                 status: :approved,
+                 currency: "USD",
+                 reported_at: ~U[2026-05-20 12:05:00Z]
+               })
+
+      assert conversion.merchant_id == merchant.id
+      assert conversion.affiliate_program_id == affiliate_program.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.product_id == nil
+      assert conversion.attribution_confidence == :high
+    end
+
+    test "resolves a castable string click session id before validating dimensions" do
+      clicked_merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+      other_merchant = merchant_fixture()
+
+      assert {:error, changeset} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: :impact,
+                 network_conversion_ref:
+                   "string-click-session-#{System.unique_integer([:positive])}",
+                 click_session_id: Integer.to_string(click_session.id),
+                 merchant_id: other_merchant.id,
+                 status: :approved,
+                 currency: "USD",
+                 reported_at: ~U[2026-05-20 12:05:00Z]
+               })
+
+      assert "does not match resolved click" in errors_on(changeset).merchant_id
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "enriches provider conversions from a resolved link when no dimensions conflict" do
+      merchant = merchant_fixture()
+
+      affiliate_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network_fixture(%{name: "Impact"}),
+          merchant: merchant
+        })
+
+      commerce_link =
+        commerce_link_fixture(%{
+          merchant: merchant,
+          affiliate_program_id: affiliate_program.id,
+          network: :impact
+        })
+
+      click_session = click_session_fixture(commerce_link)
+
+      assert {:ok, conversion} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: :impact,
+                 network_conversion_ref: "link-only-#{System.unique_integer([:positive])}",
+                 public_click_id: click_session.click_id,
+                 status: :approved,
+                 currency: "USD",
+                 reported_at: ~U[2026-05-20 12:05:00Z]
+               })
+
+      assert conversion.click_session_id == click_session.id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.affiliate_program_id == affiliate_program.id
+      assert conversion.merchant_product_id == nil
+      assert conversion.product_id == nil
+      assert conversion.attribution_confidence == :high
+    end
+
+    test "rejects an unknown initial status without writing a conversion" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "UNRECOGNIZED",
+        "Currency" => "USD",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:error, changeset} = ImpactAdapter.ingest_action(payload)
+      assert "is invalid" in errors_on(changeset).status
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "rejects an unknown status update without downgrading an approved conversion" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "Payout" => "15.00",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, approved} = ImpactAdapter.ingest_action(payload)
+
+      assert {:error, changeset} =
+               ImpactAdapter.ingest_action(%{
+                 payload
+                 | "Status" => "UNRECOGNIZED",
+                   "Payout" => "1.00",
+                   "ReportingDate" => "2026-05-21T12:05:00Z"
+               })
+
+      assert "is invalid" in errors_on(changeset).status
+
+      reloaded = Repo.reload!(approved)
+      assert reloaded.status == :approved
+      assert Decimal.equal?(reloaded.commission_amount, Decimal.new("15.00"))
+      assert reloaded.reported_at == ~U[2026-05-20 12:05:00.000000Z]
+    end
+
+    test "rejects missing and nil initial statuses without writing conversions" do
+      for status_attrs <- [%{}, %{"Status" => nil}] do
+        payload =
+          Map.merge(
+            %{
+              "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+              "Currency" => "USD",
+              "ReportingDate" => "2026-05-20T12:05:00Z"
+            },
+            status_attrs
+          )
+
+        assert {:error, changeset} = ImpactAdapter.ingest_action(payload)
+        assert "is invalid" in errors_on(changeset).status
+      end
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "rejects missing and nil status updates without downgrading an approved conversion" do
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "Payout" => "15.00",
+        "ReportingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, approved} = ImpactAdapter.ingest_action(payload)
+
+      for status_transform <- [
+            &Map.delete(&1, "Status"),
+            &Map.put(&1, "Status", nil)
+          ] do
+        update_payload =
+          payload
+          |> status_transform.()
+          |> Map.merge(%{
+            "Payout" => "1.00",
+            "ReportingDate" => "2026-05-21T12:05:00Z"
+          })
+
+        assert {:error, changeset} = ImpactAdapter.ingest_action(update_payload)
+        assert "is invalid" in errors_on(changeset).status
+
+        reloaded = Repo.reload!(approved)
+        assert reloaded.status == :approved
+        assert Decimal.equal?(reloaded.commission_amount, Decimal.new("15.00"))
+        assert reloaded.reported_at == ~U[2026-05-20 12:05:00.000000Z]
+      end
     end
 
     test "ignores stale follow-up payloads with older reported timestamps" do
@@ -1344,46 +1680,6 @@ defmodule ProductCompare.CommerceAttributionTest do
       "America/Los_Angeles",
       PacificTimeZoneDatabase
     )
-  end
-
-  defp capture_select_queries(fun) do
-    handler_id = {__MODULE__, System.unique_integer([:positive])}
-    ref = make_ref()
-    test_pid = self()
-
-    :ok =
-      :telemetry.attach(
-        handler_id,
-        [:product_compare, :repo, :query],
-        fn _event, _measurements, metadata, {pid, message_ref} ->
-          if select_query?(metadata.query) do
-            send(pid, {message_ref, metadata.query})
-          end
-        end,
-        {test_pid, ref}
-      )
-
-    try do
-      result = fun.()
-      {result, drain_queries(ref, [])}
-    after
-      :telemetry.detach(handler_id)
-    end
-  end
-
-  defp drain_queries(ref, acc) do
-    receive do
-      {^ref, query} -> drain_queries(ref, [query | acc])
-    after
-      0 -> Enum.reverse(acc)
-    end
-  end
-
-  defp select_query?(query) when is_binary(query) do
-    query
-    |> String.trim_leading()
-    |> String.upcase()
-    |> String.starts_with?("SELECT")
   end
 
   defp currency_probe_query?(query) when is_binary(query) do

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b1187e2ecbac69f4b3167a6e31211a5e>>
+ * @generated SignedSource<<5ce6a691255a455c6a0353ac8de83b3f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -181,7 +181,7 @@ return {
     "metadata": null,
     "name": "CreateApiTokenMutation",
     "selections": (v2/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -33,7 +33,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   def init(opts) do
     state = %{
       currency: uppercase_string_option(opts, :currency, @default_currency),
-      cursor: cursor_option(opts),
+      cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       initial_delay_ms:
         OptionNormalization.non_negative_integer_option(
           opts,
@@ -62,7 +62,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
 
     log_result(result, opts)
 
-    state = advance_cursor(state, result)
+    state = %{state | cursor: OptionNormalization.next_cursor(state.cursor, result)}
 
     schedule_run(state.interval_ms)
 
@@ -117,15 +117,6 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   defp log_result(_unexpected, opts) do
     Logger.warning("CJ product import failed " <> query_bounds(opts) <> " failure=runner_error")
   end
-
-  defp advance_cursor(state, {:ok, %{next_cursor: next_cursor}})
-       when is_integer(next_cursor) and next_cursor >= 0 do
-    %{state | cursor: next_cursor}
-  end
-
-  defp advance_cursor(state, {:ok, %{next_cursor: nil}}), do: %{state | cursor: nil}
-
-  defp advance_cursor(state, _result), do: state
 
   defp query_bounds(opts) do
     "keywords=#{length(opts[:keywords])} " <>
@@ -208,11 +199,4 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
 
   defp default_empty_list([], default), do: default
   defp default_empty_list(values, _default), do: values
-
-  defp cursor_option(opts) do
-    case Keyword.get(opts, :cursor) do
-      value when is_integer(value) and value >= 0 -> value
-      _invalid -> nil
-    end
-  end
 end

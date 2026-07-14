@@ -14,4 +14,11 @@ defmodule ProductCompare.Fixtures.AccountsFixtures do
 
     user
   end
+
+  @spec operator_fixture(map()) :: ProductCompareSchemas.Accounts.User.t()
+  def operator_fixture(attrs \\ %{}) do
+    user = user_fixture(attrs)
+    {:ok, operator} = Accounts.set_operator_access(user, true)
+    operator
+  end
 end

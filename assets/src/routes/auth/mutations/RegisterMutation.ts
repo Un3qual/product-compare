@@ -6,6 +6,7 @@ export const registerMutation = graphql`
       viewer {
         id
         email
+        isOperator
       }
       errors {
         code

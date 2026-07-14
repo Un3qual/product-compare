@@ -896,6 +896,54 @@ test("offer discovery sorts visible offers by merchant name without price labels
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
 });
 
+test("offer discovery uses product merchant ordering rather than the environment default locale", async () => {
+  const NativeCollator = Intl.Collator;
+  const contrastingIntl = Object.create(Intl) as typeof Intl;
+
+  function contrastingDefaultCollator(
+    locale?: Intl.LocalesArgument,
+    options?: Intl.CollatorOptions
+  ) {
+    return new NativeCollator(locale ?? "sv-SE", options);
+  }
+
+  contrastingIntl.Collator = contrastingDefaultCollator as typeof Intl.Collator;
+  vi.stubGlobal("Intl", contrastingIntl);
+
+  try {
+    vi.resetModules();
+    const { sortedRenderableOffers: sortedWithContrastingDefault } = await import(
+      "../../../src/routes/offers/offer-discovery-data"
+    );
+    const offers = [
+      buildOffer({
+        id: "merchant-product-zebra",
+        product: buildProduct("product-zebra", "Zebra Product"),
+        merchant: buildMerchant("merchant-zebra", "Zebra Market")
+      }),
+      buildOffer({
+        id: "merchant-product-accent",
+        product: buildProduct("product-accent", "Accent Product"),
+        merchant: buildMerchant("merchant-accent", "Älg Market")
+      })
+    ].map((offer, originalIndex) => ({
+      latestPriceCurrency: null,
+      latestPriceValue: null,
+      offer,
+      originalIndex
+    }));
+
+    expect(
+      sortedWithContrastingDefault(offers, "merchant_name", false).map(
+        ({ offer }) => offer.merchant?.name
+      )
+    ).toEqual(["Älg Market", "Zebra Market"]);
+  } finally {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  }
+});
+
 test("offer discovery summarizes the visible single-currency offer page", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({

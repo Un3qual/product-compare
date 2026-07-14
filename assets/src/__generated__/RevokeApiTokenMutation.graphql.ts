@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<48252a09f5d938c0a5182826d735f5ed>>
+ * @generated SignedSource<<720adbaf6fceee529d1b00546aa8bb20>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -161,7 +161,7 @@ return {
     "metadata": null,
     "name": "RevokeApiTokenMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5369145934f583975b3068e639afc8cf>>
+ * @generated SignedSource<<82e28577ee209f01893bd8b0c9afc9f4>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -93,7 +93,7 @@ export type BrowseProductsRouteQuery$data = {
         readonly brand: {
           readonly id: string;
           readonly name: string;
-        };
+        } | null | undefined;
         readonly currentAttributes: ReadonlyArray<{
           readonly code: string;
           readonly displayName: string;
@@ -109,7 +109,7 @@ export type BrowseProductsRouteQuery$data = {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
     };
-  };
+  } | null | undefined;
 };
 export type BrowseProductsRouteQuery = {
   response: BrowseProductsRouteQuery$data;
@@ -490,7 +490,7 @@ return {
     "metadata": null,
     "name": "BrowseProductsRouteQuery",
     "selections": (v10/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

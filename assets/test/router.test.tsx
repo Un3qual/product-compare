@@ -1,4 +1,8 @@
+import { render, screen } from "@testing-library/react";
+import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { createClientRouter, routes, shouldRevalidateRootLoader } from "../src/router";
+import { ApiTokensRoute } from "../src/routes/account/api-tokens/ApiTokensRoute";
+import { apiTokensLoader } from "../src/routes/account/api-tokens/loader";
 import { AffiliateSetupRoute } from "../src/routes/affiliate/setup/AffiliateSetupRoute";
 import { affiliateSetupLoader } from "../src/routes/affiliate/setup/loader";
 import { LogoutRoute } from "../src/routes/auth/LogoutRoute";
@@ -9,6 +13,8 @@ import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirector
 import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
 import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
 import { offerDiscoveryLoader } from "../src/routes/offers/loader";
+import { ProductDetailRoute } from "../src/routes/products/ProductDetailRoute";
+import { productDetailLoader } from "../src/routes/products/loader";
 import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
 import { notFoundLoader } from "../src/routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "../src/routes/RouteMetadata";
@@ -42,81 +48,198 @@ test("client router requires Relay context for route loaders", () => {
   );
 });
 
-test("API token route has a route-level error boundary", () => {
-  const apiTokensRoute = routes[0]?.children?.find(
-    (route) => route.path === "account/api-tokens"
-  );
+test("API token navigation lazily resolves its screen and loader", async () => {
+  const apiTokensRoute = findRoute("account/api-tokens");
+  const resolvedRoute = await resolveLazyRoute(apiTokensRoute);
 
-  expect(apiTokensRoute?.errorElement).toEqual(
+  expect(resolvedRoute).toEqual(
+    expect.objectContaining({
+      Component: ApiTokensRoute,
+      loader: apiTokensLoader
+    })
+  );
+  expect(apiTokensRoute.errorElement).toEqual(
     <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
   );
 });
 
-test("revenue summary route is registered under the root route", () => {
-  const revenueSummaryRoute = routes[0]?.children?.find(
-    (route) => route.path === "commerce/revenue"
-  );
+test("revenue summary navigation lazily resolves its screen and loader", async () => {
+  const revenueSummaryRoute = findRoute("commerce/revenue");
+  const resolvedRoute = await resolveLazyRoute(revenueSummaryRoute);
 
-  expect(revenueSummaryRoute).toEqual(
+  expect(resolvedRoute).toEqual(
     expect.objectContaining({
-      path: "commerce/revenue",
       loader: revenueSummaryLoader,
-      element: <RevenueSummaryRoute />,
-      errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
+      Component: RevenueSummaryRoute
     })
+  );
+  expect(revenueSummaryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
   );
 });
 
-test("merchant directory route is registered under the root route", () => {
-  const merchantDirectoryRoute = routes[0]?.children?.find((route) => route.path === "merchants");
+test("merchant directory navigation lazily resolves its screen and loader", async () => {
+  const merchantDirectoryRoute = findRoute("merchants");
+  const resolvedRoute = await resolveLazyRoute(merchantDirectoryRoute);
 
-  expect(merchantDirectoryRoute).toEqual(
+  expect(resolvedRoute).toEqual(
     expect.objectContaining({
-      path: "merchants",
       loader: merchantDirectoryLoader,
-      element: <MerchantDirectoryRoute />,
-      errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
+      Component: MerchantDirectoryRoute
     })
+  );
+  expect(merchantDirectoryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
   );
 });
 
-test("affiliate setup route is registered under the root route", () => {
-  const affiliateSetupRoute = routes[0]?.children?.find(
-    (route) => route.path === "affiliate/setup"
-  );
+test("affiliate setup navigation lazily resolves its screen and loader", async () => {
+  const affiliateSetupRoute = findRoute("affiliate/setup");
+  const resolvedRoute = await resolveLazyRoute(affiliateSetupRoute);
 
-  expect(affiliateSetupRoute).toEqual(
+  expect(resolvedRoute).toEqual(
     expect.objectContaining({
-      path: "affiliate/setup",
       loader: affiliateSetupLoader,
-      element: <AffiliateSetupRoute />,
-      errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+      Component: AffiliateSetupRoute
     })
+  );
+  expect(affiliateSetupRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
   );
 });
 
-test("offer discovery route is registered under the root route", () => {
-  const offerDiscoveryRoute = routes[0]?.children?.find((route) => route.path === "offers");
+test("offer discovery navigation lazily resolves its screen and loader", async () => {
+  const offerDiscoveryRoute = findRoute("offers");
+  const resolvedRoute = await resolveLazyRoute(offerDiscoveryRoute);
 
-  expect(offerDiscoveryRoute).toEqual(
+  expect(resolvedRoute).toEqual(
     expect.objectContaining({
-      path: "offers",
       loader: offerDiscoveryLoader,
-      element: <OfferDiscoveryRoute />,
-      errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+      Component: OfferDiscoveryRoute
     })
+  );
+  expect(offerDiscoveryRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
   );
 });
 
-test("logout route is registered under the root route", () => {
-  const logoutRoute = routes[0]?.children?.find((route) => route.path === "auth/logout");
+test("product detail navigation lazily resolves its screen and loader", async () => {
+  const productDetailRoute = findRoute("products/:slug");
+  const resolvedRoute = await resolveLazyRoute(productDetailRoute);
 
-  expect(logoutRoute).toEqual(
+  expect(resolvedRoute).toEqual(
     expect.objectContaining({
-      path: "auth/logout",
-      element: <LogoutRoute />
+      Component: ProductDetailRoute,
+      loader: productDetailLoader
     })
   );
+  expect(productDetailRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="product" title="Product details" />
+  );
+});
+
+test("product detail lazy import errors render product-specific route feedback", async () => {
+  vi.doMock("../src/routes/products/ProductDetailRoute", () => {
+    throw new Error("product chunk import failed");
+  });
+
+  const productDetailRoute = findRoute("products/:slug");
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <Outlet />,
+        errorElement: routes[0]?.errorElement,
+        children: [productDetailRoute]
+      }
+    ],
+    { initialEntries: ["/products/missing-product"] }
+  );
+
+  try {
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "An unexpected error occurred while loading the product."
+    );
+    expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+  } finally {
+    vi.doUnmock("../src/routes/products/ProductDetailRoute");
+  }
+});
+
+test("product detail loader errors render product-specific route feedback", async () => {
+  const productDetailRoute = findRoute("products/:slug");
+  const resolvedRoute = await resolveLazyRoute(productDetailRoute);
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/products/:slug",
+        loader: () => {
+          throw new Error("Relay product read failed");
+        },
+        Component: resolvedRoute.Component,
+        errorElement: productDetailRoute.errorElement
+      }
+    ],
+    { initialEntries: ["/products/missing-product"] }
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the product."
+  );
+  expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
+});
+
+test("logout navigation lazily resolves its screen", async () => {
+  const logoutRoute = findRoute("auth/logout");
+  const resolvedRoute = await resolveLazyRoute(logoutRoute);
+
+  expect(resolvedRoute).toEqual(expect.objectContaining({ Component: LogoutRoute }));
+});
+
+test("every non-root screen is absent from the initial route graph", () => {
+  const nonRootRoutes = (routes[0]?.children ?? []).filter(
+    (route) => !route.index && route.path !== "*"
+  );
+
+  for (const route of nonRootRoutes) {
+    expect(route.lazy, route.path).toEqual(expect.any(Function));
+    expect(route, route.path).not.toHaveProperty("element");
+    expect(route, route.path).not.toHaveProperty("Component");
+    expect(route, route.path).not.toHaveProperty("loader");
+  }
+});
+
+test("root error boundary handles a rejected lazy route", async () => {
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <Outlet />,
+        errorElement: routes[0]?.errorElement,
+        children: [
+          {
+            path: "broken-chunk",
+            lazy: () => Promise.reject(new Error("chunk import failed"))
+          }
+        ]
+      }
+    ],
+    { initialEntries: ["/broken-chunk"] }
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the page."
+  );
+  expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
 });
 
 test("application router registers a wildcard 404 route", () => {
@@ -160,4 +283,18 @@ function buildShouldRevalidateArgs(
     nextParams: {},
     nextUrl: new URL(nextPath, "https://app.example.com")
   };
+}
+
+function findRoute(path: string) {
+  const route = routes[0]?.children?.find((candidate) => candidate.path === path);
+  if (!route) throw new Error(`Missing route: ${path}`);
+  return route;
+}
+
+function resolveLazyRoute(route: ReturnType<typeof findRoute>) {
+  if (typeof route.lazy !== "function") {
+    throw new Error(`Route is not lazy: ${route.path}`);
+  }
+
+  return route.lazy();
 }

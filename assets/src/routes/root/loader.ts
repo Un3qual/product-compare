@@ -16,6 +16,7 @@ const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 export type RootViewer = {
   id: string;
   email: string;
+  isOperator: boolean;
 };
 
 export type RootViewerQueryDescriptor = RelayRouteQueryDescriptor<
@@ -113,14 +114,19 @@ function normalizeViewer(viewer: unknown): RootViewer | null {
     return null;
   }
 
-  const candidate = viewer as { email?: unknown; id?: unknown };
+  const candidate = viewer as { email?: unknown; id?: unknown; isOperator?: unknown };
 
-  if (typeof candidate.id !== "string" || typeof candidate.email !== "string") {
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.email !== "string" ||
+    typeof candidate.isOperator !== "boolean"
+  ) {
     return null;
   }
 
   return {
     id: candidate.id,
-    email: candidate.email
+    email: candidate.email,
+    isOperator: candidate.isOperator
   };
 }

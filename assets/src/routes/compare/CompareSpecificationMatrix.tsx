@@ -6,6 +6,7 @@ import {
 } from "@radix-ui/react-scroll-area";
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import { compareProductText } from "../product-formatting";
 import type { CompareProductSummary, CompareSpecMode } from "./loader";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
@@ -230,9 +231,11 @@ function compareSpecificationRows(
     return sortOrderComparison;
   }
 
-  const nameComparison = firstRow.displayName.localeCompare(secondRow.displayName);
+  const nameComparison = compareProductText(firstRow.displayName, secondRow.displayName);
 
-  return nameComparison === 0 ? firstRow.code.localeCompare(secondRow.code) : nameComparison;
+  return nameComparison === 0
+    ? compareProductText(firstRow.code, secondRow.code)
+    : nameComparison;
 }
 
 function compareSpecificationSortOrders(

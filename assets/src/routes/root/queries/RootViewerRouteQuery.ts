@@ -5,6 +5,7 @@ export const rootViewerRouteQuery = graphql`
     viewer {
       id
       email
+      isOperator
     }
   }
 `;

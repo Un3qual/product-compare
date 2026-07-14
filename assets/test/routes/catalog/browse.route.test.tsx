@@ -994,9 +994,14 @@ test("Relay store reads each URL-driven browse page without previous page edges"
   });
 
   const pageTwoSnapshot = environment.lookup(secondPageOperation.fragment);
-  const pageTwoProductIds = (
-    pageTwoSnapshot.data as BrowseProductsRouteQuery["response"]
-  ).products.edges.map(({ node }) => node.id);
+  const pageTwoProducts = (pageTwoSnapshot.data as BrowseProductsRouteQuery["response"])
+    .products;
+
+  if (!pageTwoProducts) {
+    throw new Error("Expected products in the second page snapshot");
+  }
+
+  const pageTwoProductIds = pageTwoProducts.edges.map(({ node }) => node.id);
 
   expect(pageTwoProductIds).toEqual(["product-page-2"]);
 });
@@ -1042,6 +1047,41 @@ test("catalog product presentation keeps highlights and route-derived actions", 
     "href",
     "/products?slug=catalog-first"
   );
+});
+
+test("catalog product presentation keeps brandless products alongside branded results", () => {
+  const products = [
+    {
+      id: "product-brandless",
+      name: "Brandless Product",
+      slug: "brandless-product",
+      brand: null,
+      currentAttributes: []
+    },
+    {
+      id: "product-branded",
+      name: "Branded Product",
+      slug: "branded-product",
+      brand: { id: "brand-1", name: "Acme" },
+      currentAttributes: []
+    }
+  ] as unknown as BrowseProductNode[];
+
+  render(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ href: "/products?slug=brandless-product", kind: "add" })}
+        detailHrefFor={(product) => `/products/${product.slug}`}
+        offerHrefFor={(product) => `/offers?productId=${product.id}`}
+        products={products}
+      />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("article", { name: "Brandless Product" })).toHaveTextContent(
+    "Unknown brand"
+  );
+  expect(screen.getByRole("article", { name: "Branded Product" })).toHaveTextContent("Acme");
 });
 
 test("catalog product presentation renders selected and full compare states", () => {

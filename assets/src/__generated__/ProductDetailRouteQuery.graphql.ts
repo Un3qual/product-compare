@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<31fbf4be36f9823fe1e8d843a36add2f>>
+ * @generated SignedSource<<351724ab0391273e35112934d82eca2d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,7 +20,7 @@ export type ProductDetailRouteQuery$data = {
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    };
+    } | null | undefined;
     readonly currentAttributes: ReadonlyArray<{
       readonly attributeId: string;
       readonly booleanValue: boolean | null | undefined;
@@ -544,7 +544,7 @@ return {
     "metadata": null,
     "name": "ProductDetailRouteQuery",
     "selections": (v13/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

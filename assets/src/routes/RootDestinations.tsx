@@ -102,9 +102,13 @@ const PUBLIC_DESTINATIONS = [
 
 const AUTHENTICATED_DESTINATIONS = [
   { label: "Saved comparisons", to: "/compare/saved" },
+  { label: "API tokens", to: "/account/api-tokens" }
+] as const satisfies readonly Destination[];
+
+const OPERATOR_DESTINATIONS = [
   { label: "Affiliate setup", to: "/affiliate/setup" },
   { label: "Revenue preview", to: "/commerce/revenue" },
-  { label: "API tokens", to: "/account/api-tokens" }
+  { label: "Feed candidates", to: "/ingestion/feed-candidates" }
 ] as const satisfies readonly Destination[];
 
 const SHOPPER_DESTINATIONS = [
@@ -146,6 +150,9 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
         {viewer ? (
           <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
         ) : null}
+        {viewer?.isOperator ? (
+          <DestinationLinks destinations={OPERATOR_DESTINATIONS} variant="ghost" />
+        ) : null}
         <AuthLinks viewer={viewer} />
       </div>
     </div>
@@ -163,6 +170,9 @@ export function RootHomeDestinations({ viewer }: RootDestinationsProps) {
         <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} variant="soft" />
         {viewer ? (
           <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="soft" />
+        ) : null}
+        {viewer?.isOperator ? (
+          <DestinationLinks destinations={OPERATOR_DESTINATIONS} variant="soft" />
         ) : null}
         <AuthLinks viewer={viewer} />
       </nav>

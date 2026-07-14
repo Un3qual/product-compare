@@ -1,3 +1,4 @@
+import { startTransition } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
@@ -568,6 +569,53 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
     "144 Hz",
     "Not available"
   ]);
+});
+
+test("comparison matrix uses product ordering when the environment default is Swedish", () => {
+  const defaultLocaleCompare = vi
+    .spyOn(String.prototype, "localeCompare")
+    .mockImplementation(function localeCompareWithSwedishDefault(
+      this: string,
+      other: string
+    ) {
+      return new Intl.Collator("sv-SE", { sensitivity: "base" }).compare(
+        String(this),
+        other
+      );
+    });
+
+  try {
+    render(
+      <CompareSpecificationMatrix
+        products={[
+          {
+            ...buildProductSummary(DETAIL_PRODUCT),
+            currentAttributes: [
+              { code: "zeta", displayName: "Zebra", valueText: "1" },
+              { code: "accent", displayName: "Älg", valueText: "2" }
+            ]
+          },
+          {
+            ...buildProductSummary(SECOND_PRODUCT),
+            currentAttributes: [
+              { code: "zeta", displayName: "Zebra", valueText: "1" },
+              { code: "accent", displayName: "Älg", valueText: "2" }
+            ]
+          }
+        ]}
+        specMode="all"
+      />
+    );
+
+    const rowLabels = within(screen.getByRole("table", { name: "All specifications" }))
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getByRole("rowheader").textContent);
+
+    expect(rowLabels).toEqual(["Älg", "Zebra"]);
+  } finally {
+    defaultLocaleCompare.mockRestore();
+  }
 });
 
 test("compare path helpers normalize selected slugs and cap serialized route query strings", () => {
@@ -1419,6 +1467,47 @@ test("empty compare page lets users choose products without editing the URL", ()
     { first: 24, after: null },
     { fetchPolicy: "store-or-network" }
   );
+});
+
+test("product picker keeps brandless products alongside branded results", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "empty",
+    specMode: "shared",
+    slugs: []
+  });
+  mockedUseLazyLoadQuery.mockReturnValue({
+    products: {
+      edges: [
+        {
+          node: {
+            id: "Product:brandless",
+            name: "Brandless Product",
+            slug: "brandless-product",
+            brand: null
+          }
+        },
+        {
+          node: {
+            id: "Product:branded",
+            name: "Branded Product",
+            slug: "branded-product",
+            brand: { id: "Brand:acme", name: "Acme" }
+          }
+        }
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        endCursor: null
+      }
+    }
+  });
+
+  renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Compare Brandless Product" })).toBeInTheDocument();
+  expect(screen.getByText("Unknown brand")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Compare Branded Product" })).toBeInTheDocument();
+  expect(screen.getByText("Acme")).toBeInTheDocument();
 });
 
 test("product picker can advance beyond the first picker page", () => {
@@ -3167,6 +3256,79 @@ test("compare route clears stale save feedback when selected products change", a
   );
 
   expect(getSaveFeedbackStatus()).toHaveTextContent("");
+});
+
+test("compare save completion settles the visible selection when a new selection suspends and is abandoned", () => {
+  let completeSave: (() => void) | undefined;
+  const suspendedSelection = new Promise<never>(() => undefined);
+  const suspendingQueryDescriptor = {
+    __relayQuery: {
+      ...COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery,
+      variables: {
+        ...COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
+        slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug]
+      }
+    }
+  };
+
+  commitMutationMock.mockImplementation(({ onCompleted }) => {
+    completeSave = () =>
+      onCompleted({
+        createSavedComparisonSet: {
+          savedComparisonSet: { id: "saved-set-1" },
+          errors: []
+        }
+      });
+  });
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <CompareRoute />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+  expect(screen.getByRole("button", { name: "Saving comparison..." })).toBeDisabled();
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(THIRD_PRODUCT)],
+      query: suspendingQueryDescriptor,
+      slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug]
+    })
+  );
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
+    if (descriptor === suspendingQueryDescriptor) {
+      throw suspendedSelection;
+    }
+
+    if (descriptor === COMPARE_ROUTE_QUERY_DESCRIPTOR) {
+      return COMPARE_ROUTE_QUERY_REF;
+    }
+
+    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
+  });
+
+  act(() => {
+    startTransition(() => {
+      rerender(
+        <MemoryRouter>
+          <CompareRoute />
+        </MemoryRouter>
+      );
+    });
+  });
+
+  expect(screen.getAllByText("Second Product").length).toBeGreaterThan(0);
+  expect(screen.queryByText("Third Product")).not.toBeInTheDocument();
+
+  act(() => {
+    completeSave?.();
+  });
+
+  expect(getSaveFeedbackStatus()).toHaveTextContent("Comparison saved.");
+  expect(screen.getByRole("button", { name: "Save comparison" })).toBeEnabled();
 });
 
 test("compare route reports a fallback error when the save commit throws synchronously", async () => {

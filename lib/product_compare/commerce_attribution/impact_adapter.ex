@@ -73,18 +73,23 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       (fallback_key && Map.get(payload, fallback_key))
   end
 
-  defp normalize_status(nil), do: nil
+  defp normalize_status(nil), do: :missing
+
+  defp normalize_status(status) when status in [:pending, :approved, :reversed, :paid], do: status
 
   defp normalize_status(status) when is_atom(status), do: status
 
   defp normalize_status(status) when is_binary(status) do
     case status |> String.trim() |> String.downcase() do
       "approved" -> :approved
+      "pending" -> :pending
       "reversed" -> :reversed
       "paid" -> :paid
-      _status -> :pending
+      unknown_status -> unknown_status
     end
   end
+
+  defp normalize_status(status), do: status
 
   defp decimal(nil), do: nil
   defp decimal(%Decimal{} = value), do: value

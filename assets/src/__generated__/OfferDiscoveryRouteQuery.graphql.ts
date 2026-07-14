@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<55c2ec32e0b6bb258257f0967a555e55>>
+ * @generated SignedSource<<eddc009e8da8eca4653c612f55c5e71d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -82,13 +82,13 @@ export type OfferDiscoveryRouteQuery$data = {
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
     };
-  };
+  } | null | undefined;
   readonly selectedProduct: {
     readonly __typename: "Product";
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    };
+    } | null | undefined;
     readonly id: string;
     readonly name: string;
     readonly slug: string;
@@ -502,7 +502,7 @@ return {
       },
       (v12/*: any*/)
     ],
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

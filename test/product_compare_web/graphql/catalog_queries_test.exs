@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -9,6 +11,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
@@ -40,6 +43,34 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
       assert product_id == relay_id(:product, product.id)
       assert brand_id == relay_id(:brand, product.brand_id)
+    end
+
+    test "product returns a null brand when the fixture explicitly sets brand_id to nil", %{
+      conn: conn
+    } do
+      brand_count = Repo.aggregate(Brand, :count, :id)
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          brand_id: nil,
+          name: "Brandless Product",
+          slug: "brandless-product"
+        })
+
+      assert product.brand_id == nil
+      assert Repo.aggregate(Brand, :count, :id) == brand_count
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "id" => product_id,
+                   "name" => "Brandless Product",
+                   "brand" => nil
+                 }
+               }
+             } = graphql(conn, product_query(), %{"slug" => product.slug})
+
+      assert product_id == relay_id(:product, product.id)
     end
 
     test "product batches brand lookups across aliased selections", %{conn: conn} do
@@ -1510,46 +1541,6 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp capture_select_queries(fun) do
-    handler_id = {__MODULE__, System.unique_integer([:positive])}
-    ref = make_ref()
-    test_pid = self()
-
-    :ok =
-      :telemetry.attach(
-        handler_id,
-        [:product_compare, :repo, :query],
-        fn _event, _measurements, metadata, {pid, message_ref} ->
-          if select_query?(metadata.query) do
-            send(pid, {message_ref, metadata.query})
-          end
-        end,
-        {test_pid, ref}
-      )
-
-    try do
-      result = fun.()
-      {result, drain_queries(ref, [])}
-    after
-      :telemetry.detach(handler_id)
-    end
-  end
-
-  defp drain_queries(ref, acc) do
-    receive do
-      {^ref, query} -> drain_queries(ref, [query | acc])
-    after
-      0 -> Enum.reverse(acc)
-    end
-  end
-
-  defp select_query?(query) when is_binary(query) do
-    query
-    |> String.trim_leading()
-    |> String.upcase()
-    |> String.starts_with?("SELECT")
   end
 
   defp count_queries_targeting_table(queries, table) when is_atom(table) do

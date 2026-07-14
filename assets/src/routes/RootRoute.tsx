@@ -76,6 +76,7 @@ function rootViewerFromQuery(
 
   return {
     id: viewer.id,
-    email: viewer.email
+    email: viewer.email,
+    isOperator: viewer.isOperator
   };
 }

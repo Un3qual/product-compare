@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<af45e75da0893b8789d324f196e664b9>>
+ * @generated SignedSource<<cd6ce2f91cd39720451a6c71530ba478>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -47,7 +47,7 @@ v1 = [
         "variableName": "savedComparisonSetId"
       }
     ],
-    "concreteType": "DeleteSavedComparisonSetPayload",
+    "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
     "name": "deleteSavedComparisonSet",
     "plural": false,
@@ -113,7 +113,7 @@ return {
     "metadata": null,
     "name": "DeleteSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
-    "type": "Mutation",
+    "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",

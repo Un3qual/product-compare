@@ -22,6 +22,7 @@
               [
                 elixirPkg
                 erlangPkg
+                bun
                 git
                 postgres
               ] ++ lib.optionals stdenv.isLinux [inotify-tools];

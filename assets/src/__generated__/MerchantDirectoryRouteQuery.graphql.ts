@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9340558ef317642e81f163f570d0a96f>>
+ * @generated SignedSource<<4ca28439f2a1863ee11a4ab689d77ae2>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -170,7 +170,7 @@ return {
     "metadata": null,
     "name": "MerchantDirectoryRouteQuery",
     "selections": (v2/*: any*/),
-    "type": "Query",
+    "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",

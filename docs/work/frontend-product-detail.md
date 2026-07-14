@@ -4,8 +4,10 @@
 
 - Status: ready (product detail decision-actions presentation extraction)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after post-stack validation (49 focused tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-12 after product not-found HTTP status hardening (49
+  product-detail tests and 15 SSR tests).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -41,6 +43,21 @@
 - Exit condition: decision-action presentation is isolated without changing
   encoded destinations, comparison state, offer cursors, tab hashes, or
   tray-return behavior.
+
+## Product Not-Found HTTP Status Hardening
+
+- Status: done on 2026-07-12.
+- Plan: Task 5 in
+  `docs/superpowers/plans/2026-07-12-project-quality-audit-remediation.md`.
+- Completed: a GraphQL `product: null` result now returns typed React Router
+  `not_found` data with HTTP 404. The existing product-not-found view and SSR
+  Relay bootstrap remain available instead of becoming a thrown route error.
+- RED: the focused product/SSR/API-token command ran 101 tests with four
+  expected failures. The loader returned plain `not_found` data and SSR
+  returned a 200 string for the missing product.
+- GREEN: the expanded product loader/route and SSR suites passed as part of
+  the 115-test Task 5 gate. `bun run typecheck`, `bun run relay:check`,
+  `mix format --check-formatted`, and `git diff --check` passed.
 
 ## Product Detail Offer List Presentation Extraction
 

@@ -5,7 +5,7 @@
 - Status: completed
 - Priority: P1
 - Source of truth: this file
-- Last verified: 2026-06-01 during frontend auth state hardening Task 4 final verification
+- Last verified: 2026-07-12 during project-quality operator authorization remediation
 - Historical context:
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
@@ -27,6 +27,11 @@
 - Browser-level logout coverage now sends `LogoutMutation` through `/api/graphql`, verifies the route returns to `/auth/login`, and verifies guest primary-navigation links after a successful GraphQL logout payload.
 - Backend session-auth coverage now includes unauthenticated logout idempotency and untrusted-origin rejection for `register`, `login`, and `logout`, including proof that rejected untrusted-origin logout preserves the logged-in viewer.
 - Backend GraphQL mutations that return typed payload errors now use `UNAUTHENTICATED` for missing-session failures, matching top-level auth-required query errors.
+- `viewer` now exposes non-null `isOperator`. Login, registration, root preload,
+  degraded Relay-cache recovery, and local viewer updates preserve the flag.
+- Global affiliate administration, top-level active coupons, feed-candidate
+  review, and revenue reporting require operator access. Members retain saved
+  comparisons and API-token account features but do not see operator navigation.
 
 ## Completed
 

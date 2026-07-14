@@ -49,6 +49,30 @@ test("session mutation results treat top-level Relay errors as session failures"
   ]);
 });
 
+test("session mutation results reject viewers without an operator capability", () => {
+  expect(
+    resolveSessionMutationResult(
+      {
+        viewer: {
+          id: "viewer-1",
+          email: "user@example.com"
+        },
+        errors: []
+      },
+      []
+    )
+  ).toEqual({
+    viewer: null,
+    errors: [
+      {
+        code: "UNKNOWN_ERROR",
+        field: null,
+        message: DEFAULT_ROUTE_ERROR_MESSAGE
+      }
+    ]
+  });
+});
+
 test("action mutation results preserve successful payloads without top-level Relay errors", () => {
   expect(resolveActionMutationResult({ ok: true, errors: [] }, [])).toEqual({
     ok: true,

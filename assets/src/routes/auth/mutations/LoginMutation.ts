@@ -6,6 +6,7 @@ export const loginMutation = graphql`
       viewer {
         id
         email
+        isOperator
       }
       errors {
         code

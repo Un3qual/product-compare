@@ -1,176 +1,195 @@
 schema {
-  query: Query
-  mutation: Mutation
+  mutation: RootMutationType
+  query: RootQueryType
 }
 
-interface Node {
-  id: ID!
-}
-
-type Query {
+type RootQueryType {
+  "Returns the current authenticated user, if any."
   viewer: User
+
+  "Returns a supported node by global ID."
   node(id: ID!): Node
+
+  "Returns safe display metadata for a source artifact."
   sourceArtifact(id: ID!): SourceArtifact
-  product(slug: String!): Product
-  comparisonProducts(slugs: [String!]!): [Product]!
-  products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection!
-  productFilterMetadata(filters: ProductFiltersInput): ProductFilterMetadata!
-  merchants(first: Int, after: String): MerchantConnection
-  merchantFeedCandidates(first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort): MerchantFeedCandidateConnection
-  merchantProducts(input: MerchantProductsInput!): MerchantProductConnection!
-  mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection!
+
+  "Returns API tokens owned by the current authenticated user."
   myApiTokens(first: Int, after: String, status: ApiTokenStatusFilter): ApiTokenConnection!
+
+  "Returns active coupons for a merchant at a specific timestamp (or now by default)."
+  activeCoupons(input: ActiveCouponsInput!): ActiveCouponsPayload
+
+  "Returns aggregate commerce revenue metrics with public-safe suppression metadata."
   revenueSummary(input: RevenueSummaryInput): RevenueSummary
+
+  "Returns a single product by slug."
+  product(slug: String!): Product
+
+  "Returns one product or null for each requested comparison slug, in requested order."
+  comparisonProducts(slugs: [String!]!): [Product]!
+
+  "Returns products in a deterministic requested order with cursor pagination."
+  products(first: Int, after: String, filters: ProductFiltersInput): ProductConnection
+
+  "Returns display-safe metadata for product filter controls."
+  productFilterMetadata(filters: ProductFiltersInput): ProductFilterMetadata!
+
+  "Returns the current authenticated user's saved comparison sets."
+  mySavedComparisonSets(first: Int, after: String): SavedComparisonSetConnection
+
+  "Returns merchants ordered by primary key with cursor pagination."
+  merchants(first: Int, after: String): MerchantConnection
+
+  "Returns captured merchant feed candidates with review-safe metadata."
+  merchantFeedCandidates(
+    first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort
+  ): MerchantFeedCandidateConnection
+
+  "Returns merchant products for a product with optional merchant and active filters."
+  merchantProducts(input: MerchantProductsInput!): MerchantProductConnection
 }
 
-type Mutation {
-  login(email: String!, password: String!): AuthSessionPayload!
+type RootMutationType {
+  "Creates a new user session by registering an email\/password account."
   register(email: String!, password: String!): AuthSessionPayload!
+
+  "Creates a new user session from email\/password credentials."
+  login(email: String!, password: String!): AuthSessionPayload!
+
+  "Deletes the current browser session."
   logout: LogoutPayload!
+
+  "Requests a password reset email for an existing account."
   forgotPassword(email: String!): AuthActionPayload!
+
+  "Resets an account password using a previously issued reset token."
   resetPassword(token: String!, password: String!): AuthActionPayload!
+
+  "Confirms an account email using a previously issued verification token."
   verifyEmail(token: String!): AuthActionPayload!
-  createSavedComparisonSet(input: CreateSavedComparisonSetInput!): CreateSavedComparisonSetPayload!
-  deleteSavedComparisonSet(savedComparisonSetId: ID!): DeleteSavedComparisonSetPayload!
+
+  "Creates a new API token for the current authenticated user."
   createApiToken(label: String, expiresAt: DateTime): CreateApiTokenPayload!
+
+  "Revokes one of the current authenticated user's API tokens."
   revokeApiToken(tokenId: ID!): RevokeApiTokenPayload!
+
+  "Rotates one of the current authenticated user's API tokens."
   rotateApiToken(tokenId: ID!, label: String, expiresAt: DateTime): CreateApiTokenPayload!
+
+  "Creates a first-party tracked outbound commerce click."
   trackCommerceClick(input: TrackCommerceClickInput!): TrackCommerceClickPayload!
+
+  "Upserts an affiliate network by name."
   upsertAffiliateNetwork(input: UpsertAffiliateNetworkInput!): UpsertAffiliateNetworkPayload
+
+  "Upserts an affiliate program by affiliate network and merchant."
   upsertAffiliateProgram(input: UpsertAffiliateProgramInput!): UpsertAffiliateProgramPayload
+
+  "Upserts an affiliate link by merchant product."
   upsertAffiliateLink(input: UpsertAffiliateLinkInput!): UpsertAffiliateLinkPayload
+
+  "Creates a coupon for a merchant."
   createCoupon(input: CreateCouponInput!): CreateCouponPayload
+
+  "Updates review status for a captured merchant feed candidate."
   reviewMerchantFeedCandidate(input: ReviewMerchantFeedCandidateInput!): ReviewMerchantFeedCandidatePayload!
+
+  "Creates a private saved comparison set for the current authenticated user."
+  createSavedComparisonSet(input: CreateSavedComparisonSetInput!): SavedComparisonSetPayload!
+
+  "Deletes one of the current authenticated user's saved comparison sets."
+  deleteSavedComparisonSet(savedComparisonSetId: ID!): SavedComparisonSetPayload!
 }
 
-type AuthSessionPayload {
-  viewer: User
-  errors: [MutationError!]!
-}
-
-type LogoutPayload {
-  ok: Boolean!
-  errors: [MutationError!]!
-}
-
-type AuthActionPayload {
-  ok: Boolean!
-  errors: [MutationError!]!
-}
-
-type MutationError {
-  code: String!
-  message: String!
-  field: String
-}
-
-type User implements Node {
-  id: ID!
-  email: String!
-}
-
-type ApiToken implements Node {
-  id: ID!
-  label: String
-  tokenPrefix: String!
-  lastUsedAt: DateTime
-  expiresAt: DateTime
-  revokedAt: DateTime
-  insertedAt: DateTime!
-}
-
-type ApiTokenConnection {
-  edges: [ApiTokenEdge!]!
-  pageInfo: PageInfo!
-}
-
-type ApiTokenEdge {
-  node: ApiToken!
-  cursor: String!
-}
-
-enum ApiTokenStatusFilter {
-  ACTIVE
-  REVOKED
-  ALL
-}
-
-type Product implements Node {
-  id: ID!
-  name: String!
-  slug: String!
-  description: String
-  brand: Brand!
-  currentAttributes: [ProductAttributeValue!]!
-  merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
-}
-
-type ProductAttributeValue {
-  attributeId: ID!
-  code: String!
-  displayName: String!
-  dataType: String!
-  valueText: String!
-  sortOrder: Int
-  groupLabel: String
-  isRequired: Boolean!
-  numericValue: Decimal
-  booleanValue: Boolean
-  enumOptionId: ID
-  unitSymbol: String
-}
-
-type Brand implements Node {
-  id: ID!
+input UpsertAffiliateNetworkInput {
   name: String!
 }
 
-type Merchant implements Node {
-  id: ID!
-  name: String!
-  domain: String!
+input TrackCommerceClickInput {
+  merchantProductId: ID!
 }
 
-type MerchantConnection {
-  edges: [MerchantEdge!]!
-  pageInfo: PageInfo!
-}
-
-type MerchantEdge {
-  node: Merchant!
-  cursor: String!
-}
-
-type MerchantFeedCandidate {
-  id: ID!
-  provider: String!
-  providerFeedId: String!
-  advertiserId: String
-  advertiserName: String
-  advertiserCountry: String
-  sourceFeedType: String
+input RevenueSummaryInput {
+  merchantId: ID
+  productId: ID
+  network: String
   currency: String
-  language: String
-  feedName: String
-  productCount: Int
-  reviewStatus: MerchantFeedCandidateReviewStatus!
-  reviewNote: String
-  reviewedAt: DateTime
-  providerLastUpdatedAt: DateTime
-  lastSeenAt: DateTime!
+  from: String
+  to: String
 }
 
-enum MerchantFeedCandidateReviewStatus {
-  DISMISSED
-  PENDING
-  SHORTLISTED
+type RevenueSummary {
+  filters: RevenueSummaryFilters!
+  metrics: RevenueSummaryMetrics!
+  suppression: RevenueSummarySuppression!
 }
 
-enum MerchantFeedCandidateSort {
-  NAME_ASC
-  PRODUCT_COUNT_DESC
-  LAST_SEEN_DESC
-  FIT_SCORE_DESC
+type RevenueSummaryFilters {
+  currency: String
+  from: String
+  merchantId: ID
+  network: String
+  productId: ID
+  to: String
+}
+
+type RevenueSummaryMetrics {
+  averagePaidPrice: String
+  clicks: Int
+  commissionRevenue: String
+  conversions: Int
+  currency: String
+  grossOrderValue: String
+}
+
+type RevenueSummarySuppression {
+  suppressed: Boolean!
+  threshold: Int!
+}
+
+input UpsertAffiliateProgramInput {
+  affiliateNetworkId: ID!
+  merchantId: ID!
+  programCode: String
+  status: String
+}
+
+input UpsertAffiliateLinkInput {
+  merchantProductId: ID!
+  affiliateNetworkId: ID
+  originalUrl: String!
+  affiliateUrl: String!
+  lastVerifiedAt: DateTime
+}
+
+input CreateCouponInput {
+  merchantId: ID!
+  affiliateNetworkId: ID
+  artifactId: ID
+  code: String!
+  description: String
+  discountType: CouponDiscountType!
+  discountValue: Decimal
+  currency: String
+  validFrom: DateTime
+  validTo: DateTime
+  terms: String
+}
+
+input ActiveCouponsInput {
+  merchantId: ID!
+  at: DateTime
+  first: Int
+  after: String
+}
+
+input MerchantProductsInput {
+  productId: ID!
+  merchantId: ID
+  activeOnly: Boolean
+  first: Int
+  after: String
 }
 
 input ReviewMerchantFeedCandidateInput {
@@ -179,19 +198,121 @@ input ReviewMerchantFeedCandidateInput {
   note: String
 }
 
-type ReviewMerchantFeedCandidatePayload {
-  candidate: MerchantFeedCandidate
+input ProductNumericFilterInput {
+  attributeId: ID!
+  min: Decimal
+  max: Decimal
+}
+
+input ProductBooleanFilterInput {
+  attributeId: ID!
+  value: Boolean!
+}
+
+input ProductEnumFilterInput {
+  attributeId: ID!
+  enumOptionId: ID!
+}
+
+enum ProductSort {
+  ID_ASC
+  NAME_ASC
+  BRAND_NAME_ASC
+  NEWEST
+}
+
+input ProductFiltersInput {
+  query: String
+  sort: ProductSort
+  primaryTypeTaxonId: ID
+  includeTypeDescendants: Boolean
+  numeric: [ProductNumericFilterInput!]
+  booleans: [ProductBooleanFilterInput!]
+  enums: [ProductEnumFilterInput!]
+  useCaseTaxonIds: [ID!]
+}
+
+type ProductFilterMetadata {
+  resultCount: Int!
+  typeOptions: [ProductFilterOption!]!
+  useCaseOptions: [ProductFilterOption!]!
+  numericFilters: [ProductNumericFilterMetadata!]!
+  booleanFilters: [ProductBooleanFilterMetadata!]!
+  enumFilters: [ProductEnumFilterMetadata!]!
+}
+
+type ProductFilterOption {
+  id: ID!
+  label: String!
+  count: Int!
+  selected: Boolean!
+  disabled: Boolean!
+}
+
+type ProductNumericFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  unitSymbol: String
+  min: Decimal
+  max: Decimal
+  selectedMin: Decimal
+  selectedMax: Decimal
+}
+
+type ProductBooleanFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  trueCount: Int!
+  falseCount: Int!
+  selectedValue: Boolean
+}
+
+type ProductEnumFilterMetadata {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  options: [ProductFilterOption!]!
+}
+
+input CreateSavedComparisonSetInput {
+  name: String!
+  productIds: [ID!]!
+}
+
+type UpsertAffiliateNetworkPayload {
+  network: AffiliateNetwork
   errors: [MutationError!]!
 }
 
-type MerchantFeedCandidateConnection {
-  edges: [MerchantFeedCandidateEdge!]!
-  pageInfo: PageInfo!
+type UpsertAffiliateProgramPayload {
+  program: AffiliateProgram
+  errors: [MutationError!]!
 }
 
-type MerchantFeedCandidateEdge {
-  node: MerchantFeedCandidate!
-  cursor: String!
+type UpsertAffiliateLinkPayload {
+  link: AffiliateLink
+  errors: [MutationError!]!
+}
+
+type CreateCouponPayload {
+  coupon: Coupon
+  errors: [MutationError!]!
+}
+
+type SavedComparisonSetPayload {
+  savedComparisonSet: SavedComparisonSet
+  errors: [MutationError!]!
+}
+
+type TrackCommerceClickPayload {
+  redirectPath: String
+  errors: [MutationError!]!
+}
+
+type ActiveCouponsPayload {
+  coupons: CouponConnection!
 }
 
 type AffiliateNetwork implements Node {
@@ -248,6 +369,16 @@ type SourceArtifact implements Node {
   fetchedAt: DateTime!
 }
 
+type CouponConnection {
+  edges: [CouponEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CouponEdge {
+  cursor: String!
+  node: Coupon!
+}
+
 type ActiveCoupon {
   code: String!
   description: String
@@ -264,8 +395,8 @@ type ActiveCouponConnection {
 }
 
 type ActiveCouponEdge {
-  node: ActiveCoupon!
   cursor: String!
+  node: ActiveCoupon!
 }
 
 enum CouponDiscountType {
@@ -273,6 +404,201 @@ enum CouponDiscountType {
   AMOUNT
   FREE_SHIPPING
   OTHER
+}
+
+type CreateApiTokenPayload {
+  plainTextToken: String
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
+
+type AuthSessionPayload {
+  viewer: User
+  errors: [MutationError!]!
+}
+
+type LogoutPayload {
+  ok: Boolean!
+  errors: [MutationError!]!
+}
+
+type AuthActionPayload {
+  ok: Boolean!
+  errors: [MutationError!]!
+}
+
+type RevokeApiTokenPayload {
+  apiToken: ApiToken
+  errors: [MutationError!]!
+}
+
+type ReviewMerchantFeedCandidatePayload {
+  candidate: MerchantFeedCandidate
+  errors: [MutationError!]!
+}
+
+type MutationError {
+  code: String!
+  message: String!
+  field: String
+}
+
+type User {
+  id: ID!
+  email: String!
+  isOperator: Boolean!
+}
+
+type ApiToken implements Node {
+  id: ID!
+  label: String
+  tokenPrefix: String!
+  lastUsedAt: DateTime
+  expiresAt: DateTime
+  revokedAt: DateTime
+  insertedAt: DateTime!
+}
+
+type ApiTokenConnection {
+  edges: [ApiTokenEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SavedComparisonSet implements Node {
+  id: ID!
+  name: String!
+  items: [SavedComparisonItem!]!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SavedComparisonItem {
+  position: Int!
+  product: Product!
+  insertedAt: DateTime!
+}
+
+type SavedComparisonSetConnection {
+  edges: [SavedComparisonSetEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SavedComparisonSetEdge {
+  cursor: String!
+  node: SavedComparisonSet!
+}
+
+type ApiTokenEdge {
+  cursor: String!
+  node: ApiToken!
+}
+
+enum ApiTokenStatusFilter {
+  ACTIVE
+  REVOKED
+  ALL
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+interface Node {
+  id: ID!
+}
+
+type Brand implements Node {
+  id: ID!
+  name: String!
+}
+
+type Merchant implements Node {
+  id: ID!
+  name: String!
+  domain: String!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type MerchantConnection {
+  edges: [MerchantEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MerchantEdge {
+  cursor: String!
+  node: Merchant!
+}
+
+type MerchantFeedCandidate {
+  id: ID!
+  provider: String!
+  providerFeedId: String!
+  advertiserId: String
+  advertiserName: String
+  advertiserCountry: String
+  sourceFeedType: String
+  currency: String
+  language: String
+  feedName: String
+  productCount: Int
+  providerLastUpdatedAt: DateTime
+  lastSeenAt: DateTime!
+  reviewStatus: MerchantFeedCandidateReviewStatus!
+  reviewNote: String
+  reviewedAt: DateTime
+}
+
+type MerchantFeedCandidateConnection {
+  edges: [MerchantFeedCandidateEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MerchantFeedCandidateEdge {
+  cursor: String!
+  node: MerchantFeedCandidate!
+}
+
+enum MerchantFeedCandidateReviewStatus {
+  PENDING
+  SHORTLISTED
+  DISMISSED
+}
+
+enum MerchantFeedCandidateSort {
+  NAME_ASC
+  PRODUCT_COUNT_DESC
+  LAST_SEEN_DESC
+  FIT_SCORE_DESC
+}
+
+type Product implements Node {
+  id: ID!
+  name: String!
+  slug: String!
+  modelNumber: String
+  description: String
+  brand: Brand
+  currentAttributes: [ProductAttributeValue!]!
+  merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
+}
+
+type ProductAttributeValue {
+  attributeId: ID!
+  code: String!
+  displayName: String!
+  dataType: String!
+  valueText: String!
+  sortOrder: Int
+  groupLabel: String
+  isRequired: Boolean!
+  numericValue: Decimal
+  booleanValue: Boolean
+  enumOptionId: ID
+  unitSymbol: String
 }
 
 type MerchantProduct implements Node {
@@ -289,6 +615,8 @@ type MerchantProduct implements Node {
   latestPrice: PricePoint
   activeCoupons(first: Int, after: String): ActiveCouponConnection
   priceHistory(first: Int, after: String, from: DateTime, to: DateTime): PricePointConnection
+  insertedAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type PricePoint implements Node {
@@ -296,6 +624,8 @@ type PricePoint implements Node {
   merchantProductId: ID!
   observedAt: DateTime!
   price: Decimal!
+  insertedAt: DateTime!
+  updatedAt: DateTime
 }
 
 type PricePointConnection {
@@ -304,8 +634,8 @@ type PricePointConnection {
 }
 
 type PricePointEdge {
-  node: PricePoint!
   cursor: String!
+  node: PricePoint!
 }
 
 type MerchantProductConnection {
@@ -314,8 +644,8 @@ type MerchantProductConnection {
 }
 
 type MerchantProductEdge {
-  node: MerchantProduct!
   cursor: String!
+  node: MerchantProduct!
 }
 
 type ProductConnection {
@@ -324,253 +654,21 @@ type ProductConnection {
 }
 
 type ProductEdge {
+  cursor: String!
   node: Product!
-  cursor: String!
-}
-
-type ProductFilterMetadata {
-  resultCount: Int!
-  typeOptions: [ProductFilterOption!]!
-  useCaseOptions: [ProductFilterOption!]!
-  numericFilters: [ProductNumericFilterMetadata!]!
-  booleanFilters: [ProductBooleanFilterMetadata!]!
-  enumFilters: [ProductEnumFilterMetadata!]!
-}
-
-type ProductFilterOption {
-  id: ID!
-  label: String!
-  count: Int!
-  selected: Boolean!
-  disabled: Boolean!
-}
-
-type ProductNumericFilterMetadata {
-  attributeId: ID!
-  code: String!
-  displayName: String!
-  unitSymbol: String
-  min: Decimal
-  max: Decimal
-  selectedMin: Decimal
-  selectedMax: Decimal
-}
-
-type ProductBooleanFilterMetadata {
-  attributeId: ID!
-  code: String!
-  displayName: String!
-  trueCount: Int!
-  falseCount: Int!
-  selectedValue: Boolean
-}
-
-type ProductEnumFilterMetadata {
-  attributeId: ID!
-  code: String!
-  displayName: String!
-  options: [ProductFilterOption!]!
-}
-
-type SavedComparisonSetConnection {
-  edges: [SavedComparisonSetEdge!]!
-  pageInfo: PageInfo!
-}
-
-type SavedComparisonSetEdge {
-  node: SavedComparisonSet!
-  cursor: String!
-}
-
-type SavedComparisonSet implements Node {
-  id: ID!
-  name: String!
-  items: [SavedComparisonItem!]!
-}
-
-type SavedComparisonItem {
-  position: Int!
-  product: Product!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String
-  endCursor: String
-}
-
-input CreateSavedComparisonSetInput {
-  name: String!
-  productIds: [ID!]!
-}
-
-input MerchantProductsInput {
-  productId: ID!
-  merchantId: ID
-  activeOnly: Boolean
-  first: Int
-  after: String
-}
-
-input UpsertAffiliateNetworkInput {
-  name: String!
-}
-
-input TrackCommerceClickInput {
-  merchantProductId: ID!
-}
-
-input UpsertAffiliateProgramInput {
-  affiliateNetworkId: ID!
-  merchantId: ID!
-  programCode: String
-  status: String
-}
-
-input UpsertAffiliateLinkInput {
-  merchantProductId: ID!
-  affiliateNetworkId: ID
-  originalUrl: String!
-  affiliateUrl: String!
-  lastVerifiedAt: DateTime
-}
-
-input CreateCouponInput {
-  merchantId: ID!
-  affiliateNetworkId: ID
-  artifactId: ID
-  code: String!
-  description: String
-  discountType: CouponDiscountType!
-  discountValue: Decimal
-  currency: String
-  validFrom: DateTime
-  validTo: DateTime
-  terms: String
-}
-
-input ProductNumericFilterInput {
-  attributeId: ID!
-  min: Decimal
-  max: Decimal
-}
-
-input ProductBooleanFilterInput {
-  attributeId: ID!
-  value: Boolean!
-}
-
-input ProductEnumFilterInput {
-  attributeId: ID!
-  enumOptionId: ID!
-}
-
-input ProductFiltersInput {
-  query: String
-  sort: ProductSort
-  primaryTypeTaxonId: ID
-  includeTypeDescendants: Boolean
-  numeric: [ProductNumericFilterInput!]
-  booleans: [ProductBooleanFilterInput!]
-  enums: [ProductEnumFilterInput!]
-  useCaseTaxonIds: [ID!]
-}
-
-enum ProductSort {
-  ID_ASC
-  NAME_ASC
-  BRAND_NAME_ASC
-  NEWEST
-}
-
-input RevenueSummaryInput {
-  merchantId: ID
-  productId: ID
-  network: String
-  currency: String
-  from: String
-  to: String
-}
-
-type RevenueSummary {
-  filters: RevenueSummaryFilters!
-  metrics: RevenueSummaryMetrics!
-  suppression: RevenueSummarySuppression!
-}
-
-type RevenueSummaryFilters {
-  merchantId: ID
-  productId: ID
-  network: String
-  currency: String
-  from: String
-  to: String
-}
-
-type RevenueSummaryMetrics {
-  clicks: Int
-  conversions: Int
-  grossOrderValue: String
-  commissionRevenue: String
-  averagePaidPrice: String
-  currency: String
-}
-
-type RevenueSummarySuppression {
-  suppressed: Boolean!
-  threshold: Int!
 }
 
 """
-Decimal values are serialized as base-10 strings to preserve precision.
+The `DateTime` scalar type represents a date and time in the UTC
+timezone. The DateTime appears in a JSON response as an ISO8601 formatted
+string, including UTC timezone ("Z"). The parsed date and time string will
+be converted to UTC if there is an offset.
 """
-scalar Decimal
-
 scalar DateTime
 
-type CreateApiTokenPayload {
-  plainTextToken: String
-  apiToken: ApiToken
-  errors: [MutationError!]!
-}
-
-type RevokeApiTokenPayload {
-  apiToken: ApiToken
-  errors: [MutationError!]!
-}
-
-type TrackCommerceClickPayload {
-  redirectPath: String
-  errors: [MutationError!]!
-}
-
-type UpsertAffiliateNetworkPayload {
-  network: AffiliateNetwork
-  errors: [MutationError!]!
-}
-
-type UpsertAffiliateProgramPayload {
-  program: AffiliateProgram
-  errors: [MutationError!]!
-}
-
-type UpsertAffiliateLinkPayload {
-  link: AffiliateLink
-  errors: [MutationError!]!
-}
-
-type CreateCouponPayload {
-  coupon: Coupon
-  errors: [MutationError!]!
-}
-
-type CreateSavedComparisonSetPayload {
-  savedComparisonSet: SavedComparisonSet
-  errors: [MutationError!]!
-}
-
-type DeleteSavedComparisonSetPayload {
-  savedComparisonSet: SavedComparisonSet
-  errors: [MutationError!]!
-}
+"""
+The `Decimal` scalar type represents signed double-precision fractional
+values parsed by the `Decimal` library. The Decimal appears in a JSON
+response as a string to preserve precision.
+"""
+scalar Decimal

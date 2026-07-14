@@ -4,35 +4,39 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
 
   @spec merchant_feed_candidates(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
-  def merchant_feed_candidates(_parent, args, %{context: %{current_user: _current_user}}) do
-    query_opts = [
-      review_status: normalize_review_status(Input.fetch_value(args, :review_status)),
-      sort: Input.fetch_value(args, :sort, :name_asc)
-    ]
+  def merchant_feed_candidates(_parent, args, resolution) do
+    with {:ok, _user} <- Authorization.require_operator(resolution) do
+      query_opts = [
+        review_status: normalize_review_status(Input.fetch_value(args, :review_status)),
+        sort: Input.fetch_value(args, :sort, :name_asc)
+      ]
 
-    Ingestion.list_merchant_feed_candidates_query(query_opts)
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
+      Ingestion.list_merchant_feed_candidates_query(query_opts)
+      |> Connection.from_query_result(Input.connection_args(args), Repo)
+    else
+      {:error, reason} -> {:error, GraphQLErrors.authorization_error(reason)}
+    end
   end
-
-  def merchant_feed_candidates(_parent, _args, _resolution),
-    do: {:error, GraphQLErrors.unauthenticated()}
 
   @spec review_merchant_feed_candidate(any(), %{input: map()}, Absinthe.Resolution.t()) ::
           {:ok, map()}
-  def review_merchant_feed_candidate(_parent, %{input: input}, %{
-        context: %{current_user: _current_user}
-      }) do
-    with {:ok, candidate_id} <- decode_candidate_id(Input.fetch_value(input, :id)),
+  def review_merchant_feed_candidate(_parent, %{input: input}, resolution) do
+    with {:ok, _user} <- Authorization.require_operator(resolution),
+         {:ok, candidate_id} <- decode_candidate_id(Input.fetch_value(input, :id)),
          attrs <- review_attrs(input),
          {:ok, candidate} <- Ingestion.review_merchant_feed_candidate(candidate_id, attrs) do
       {:ok, %{candidate: candidate, errors: []}}
     else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:ok, review_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
+
       {:error, :invalid_id} ->
         {:ok, review_error_payload("INVALID_ID", "invalid candidate id", "id")}
 
@@ -44,8 +48,10 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
     end
   end
 
-  def review_merchant_feed_candidate(_parent, _args, _resolution),
-    do: {:ok, review_error_payload(GraphQLErrors.unauthenticated_mutation_error())}
+  def review_merchant_feed_candidate(_parent, _args, resolution) do
+    {:error, reason} = Authorization.require_operator(resolution)
+    {:ok, review_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
+  end
 
   defp decode_candidate_id(value) when is_binary(value) do
     case GlobalId.decode_integer(value, :merchant_feed_candidate) do
