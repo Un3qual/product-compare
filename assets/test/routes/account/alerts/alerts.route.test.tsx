@@ -2,14 +2,20 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation } from "react-relay";
 import { AlertsRoute } from "../../../../src/routes/account/alerts/AlertsRoute";
-import { summarizeAlertsRoute, type AlertsRouteLoaderData } from "../../../../src/routes/account/alerts/loader";
+import { alertsLoader, summarizeAlertsRoute, type AlertsRouteLoaderData } from "../../../../src/routes/account/alerts/loader";
 import { PriceWatchControl } from "../../../../src/routes/products/PriceWatchControl";
 
-const { commitMutationMock, useLoaderDataMock, useMutationMock, useRevalidatorMock } = vi.hoisted(() => ({
+const { commitMutationMock, fetchRouteQueryMock, useLoaderDataMock, useMutationMock, useRevalidatorMock } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
+  fetchRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   useRevalidatorMock: vi.fn()
+}));
+
+vi.mock("../../../../src/relay/route-preload", () => ({
+  fetchRouteQuery: fetchRouteQueryMock,
+  getRelayEnvironmentFromRouterContext: vi.fn(() => ({}))
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -28,11 +34,46 @@ const mockedUseRevalidator = vi.mocked(useRevalidator);
 
 beforeEach(() => {
   commitMutationMock.mockReset();
+  fetchRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
   useRevalidatorMock.mockReset();
   mockedUseMutation.mockReturnValue([commitMutationMock, false] as never);
   mockedUseRevalidator.mockReturnValue({ revalidate: vi.fn(), state: "idle" } as never);
+});
+
+test("alertsLoader disposes its Relay query after copying route summaries", async () => {
+  const dispose = vi.fn();
+  fetchRouteQueryMock.mockResolvedValue({
+    data: {
+      myAlertEvents: { edges: [], pageInfo: { hasNextPage: false } },
+      myPriceWatches: { edges: [], pageInfo: { hasNextPage: false } }
+    },
+    descriptor: {
+      __relayQuery: {
+        operationName: "AlertsRouteQuery",
+        text: "query AlertsRouteQuery { myAlertEvents { edges { node { id } } } }",
+        variables: { first: 50 }
+      }
+    },
+    dispose
+  });
+
+  const result = await alertsLoader({
+    context: {},
+    params: {},
+    request: new Request("https://product.test/account/alerts"),
+    unstable_pattern: "/account/alerts"
+  });
+
+  expect(result).toEqual({
+    status: "ready",
+    alerts: [],
+    watches: [],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  });
+  expect(dispose).toHaveBeenCalledTimes(1);
 });
 
 test("summarizeAlertsRoute keeps valid event and watch facts", () => {
@@ -59,8 +100,7 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
     alerts: [{ id: "event-1", productName: "Display", productSlug: "display", merchantName: "Shop", ruleType: "TARGET_PRICE", currency: "USD", landedPrice: "90", observedAt: "2026-07-13T20:00:00Z", readAt: null }],
     watches: [{ id: "watch-1", productName: "Display", productSlug: "display", merchantName: null, ruleType: "TARGET_PRICE", currency: "USD", targetAmount: "100", percentageDrop: null, baselineLandedPrice: "120", enabled: true }],
     hasMoreAlerts: false,
-    hasMoreWatches: false,
-    query: { __relayQuery: { operationName: "AlertsRouteQuery", text: "query AlertsRouteQuery { viewer { id } }", variables: { first: 50 } } }
+    hasMoreWatches: false
   } satisfies AlertsRouteLoaderData);
 
   render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
@@ -78,8 +118,7 @@ test("AlertsRoute keeps paused watches visible and resumes them", async () => {
     alerts: [],
     watches: [{ id: "watch-paused", productName: "Display", productSlug: "display", merchantName: null, ruleType: "TARGET_PRICE", currency: "USD", targetAmount: "100", percentageDrop: null, baselineLandedPrice: "120", enabled: false }],
     hasMoreAlerts: false,
-    hasMoreWatches: false,
-    query: { __relayQuery: { operationName: "AlertsRouteQuery", text: "query AlertsRouteQuery { viewer { id } }", variables: { first: 50 } } }
+    hasMoreWatches: false
   } satisfies AlertsRouteLoaderData);
 
   render(<MemoryRouter><AlertsRoute /></MemoryRouter>);

@@ -180,6 +180,31 @@ defmodule ProductCompare.AlertsTest do
     assert :ok = AlertEvaluationWorker.perform(struct!(Oban.Job, args: first_job.args))
   end
 
+  test "a failed watch evaluation makes the price-point evaluation retryable" do
+    user = AccountsFixtures.user_fixture()
+    %{product: product, merchant_product: offer} = offer_fixture("USD")
+
+    assert {:ok, watch} =
+             Alerts.create_watch(user.id, %{
+               product_id: product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "50"
+             })
+
+    point = price_fixture(offer, "40", "0", true, @now)
+
+    assert {:error, {:watch_evaluation_failed, watch_id, :forced_failure}} =
+             Alerts.evaluate_price_point(point.id,
+               now: @now,
+               watch_evaluator: fn _watch_id, _price_point, _now ->
+                 {:error, :forced_failure}
+               end
+             )
+
+    assert watch_id == watch.id
+  end
+
   defp offer_fixture(currency) do
     product = SpecsFixtures.product_fixture()
 

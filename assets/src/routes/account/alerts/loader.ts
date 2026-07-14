@@ -5,8 +5,7 @@ import alertsRouteQuery, {
 } from "../../../__generated__/AlertsRouteQuery.graphql";
 import {
   fetchRouteQuery,
-  getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  getRelayEnvironmentFromRouterContext
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
 
@@ -42,7 +41,6 @@ export type AlertsRouteLoaderData =
       watches: WatchSummary[];
       hasMoreAlerts: boolean;
       hasMoreWatches: boolean;
-      query: RelayRouteQueryDescriptor<AlertsRouteQuery["variables"]>;
     }
   | { status: "unauthorized" };
 
@@ -60,8 +58,10 @@ export async function alertsLoader({ context, request }: LoaderFunctionArgs): Pr
       { signal: request.signal }
     );
     const summary = summarizeAlertsRoute(fetched.data);
+    fetched.dispose();
+    fetched = null;
 
-    return { status: "ready", query: fetched.descriptor, ...summary };
+    return { status: "ready", ...summary };
   } catch (error) {
     fetched?.dispose();
 

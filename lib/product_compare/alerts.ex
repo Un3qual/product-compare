@@ -123,11 +123,12 @@ defmodule ProductCompare.Alerts do
 
   @spec evaluate_price_point(pos_integer(), keyword()) ::
           {:ok, %{evaluated: non_neg_integer(), events_created: non_neg_integer()}}
-          | {:error, :price_point_not_found}
+          | {:error, :price_point_not_found | {:watch_evaluation_failed, pos_integer(), term()}}
   def evaluate_price_point(price_point_id, opts \\ [])
 
   def evaluate_price_point(price_point_id, opts) when valid_id(price_point_id) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
+    watch_evaluator = Keyword.get(opts, :watch_evaluator, &evaluate_watch/3)
 
     case Repo.get(PricePoint, price_point_id) |> Repo.preload(merchant_product: :product) do
       nil ->
@@ -146,20 +147,24 @@ defmodule ProductCompare.Alerts do
               order_by: [asc: watch.id]
           )
 
-        summary =
-          Enum.reduce(watches, %{evaluated: 0, events_created: 0}, fn watch, summary ->
-            case evaluate_watch(watch.id, price_point, now) do
+        Enum.reduce_while(
+          watches,
+          {:ok, %{evaluated: 0, events_created: 0}},
+          fn watch, {:ok, summary} ->
+            case watch_evaluator.(watch.id, price_point, now) do
               {:ok, created?} ->
-                summary
-                |> Map.update!(:evaluated, &(&1 + 1))
-                |> Map.update!(:events_created, &(&1 + if(created?, do: 1, else: 0)))
+                updated_summary =
+                  summary
+                  |> Map.update!(:evaluated, &(&1 + 1))
+                  |> Map.update!(:events_created, &(&1 + if(created?, do: 1, else: 0)))
 
-              {:error, _reason} ->
-                summary
+                {:cont, {:ok, updated_summary}}
+
+              {:error, reason} ->
+                {:halt, {:error, {:watch_evaluation_failed, watch.id, reason}}}
             end
-          end)
-
-        {:ok, summary}
+          end
+        )
     end
   end
 
