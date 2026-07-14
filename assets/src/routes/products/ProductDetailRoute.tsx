@@ -1,6 +1,6 @@
 import { Suspense, useId } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useLocation, useNavigate } from "react-router-dom";
+import { useLoaderData, useLocation, useNavigate } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery
@@ -27,6 +27,10 @@ import {
   ProductAttributeList,
   type ProductAttributeListItem
 } from "./ProductAttributeList";
+import {
+  ProductDecisionActions,
+  type ProductDecisionCompareAction
+} from "./ProductDecisionActions";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
 import { ProductCommunityPanel } from "./ProductCommunityPanel";
@@ -47,17 +51,6 @@ const styles = create({
     fontSize: "1.4rem",
     letterSpacing: "-0.025em",
     margin: 0
-  },
-  actions: {
-    display: "grid",
-    gap: "0.65rem"
-  },
-  actionList: {
-    display: "grid",
-    gap: "0.65rem",
-    listStyle: "none",
-    margin: 0,
-    padding: 0
   },
   overview: {
     display: "grid",
@@ -176,11 +169,18 @@ function ProductDetail({
           >
             {selectionTray}
             <ProductDecisionActions
-              currentHash={location.hash}
-              currentSearch={location.search}
-              productId={product.id}
-              productSlug={product.slug}
-              selectedCompareSlugs={selectedCompareSlugs}
+              browseHref={buildCurrentRoutePathWithCompareSlugs(
+                "/products",
+                "",
+                selectedCompareSlugs
+              )}
+              compareAction={productDecisionCompareAction(
+                product.slug,
+                location.search,
+                location.hash,
+                selectedCompareSlugs
+              )}
+              offerHref={`/offers?productId=${encodeURIComponent(product.id)}`}
             />
             <PriceWatchControl productId={product.id} />
           </ContextRail>
@@ -274,61 +274,18 @@ function ProductOverview({
   );
 }
 
-function ProductDecisionActions({
-  currentHash,
-  currentSearch,
-  productId,
-  productSlug,
-  selectedCompareSlugs
-}: {
-  currentHash: string;
-  currentSearch: string;
-  productId: string;
-  productSlug: string;
-  selectedCompareSlugs: readonly string[];
-}) {
-  const titleId = useId();
-
-  return (
-    <section aria-labelledby={titleId} {...props(styles.actions)}>
-      <h2 id={titleId}>Next steps</h2>
-      <ul {...props(styles.actionList)}>
-        <DetailCompareAction
-          currentHash={currentHash}
-          currentSearch={currentSearch}
-          productSlug={productSlug}
-          selectedCompareSlugs={selectedCompareSlugs}
-        />
-        <li>
-          <Link to={`/offers?productId=${encodeURIComponent(productId)}`}>Review active offers</Link>
-        </li>
-        <li>
-          <Link to={buildCurrentRoutePathWithCompareSlugs("/products", "", selectedCompareSlugs)}>
-            Browse products
-          </Link>
-        </li>
-      </ul>
-    </section>
-  );
-}
-
-function DetailCompareAction({
-  currentHash,
-  currentSearch,
-  productSlug,
-  selectedCompareSlugs
-}: {
-  currentHash: string;
-  currentSearch: string;
-  productSlug: string;
-  selectedCompareSlugs: readonly string[];
-}) {
+function productDecisionCompareAction(
+  productSlug: string,
+  currentSearch: string,
+  currentHash: string,
+  selectedCompareSlugs: readonly string[]
+): ProductDecisionCompareAction {
   if (selectedCompareSlugs.includes(productSlug)) {
-    return <li>This product is selected for comparison</li>;
+    return { kind: "selected" };
   }
 
   if (selectedCompareSlugs.length >= MAX_COMPARE_PRODUCTS) {
-    return <li>Compare selection full</li>;
+    return { kind: "full" };
   }
 
   const nextCompareSlugs = selectedCompareSlugsAfterAdding(
@@ -337,20 +294,15 @@ function DetailCompareAction({
     MAX_COMPARE_PRODUCTS
   );
 
-  return (
-    <li>
-      <Link
-        to={productDetailPathWithCompareSlugs(
-          productSlug,
-          currentSearch,
-          nextCompareSlugs,
-          currentHash
-        )}
-      >
-        Add this product to compare
-      </Link>
-    </li>
-  );
+  return {
+    kind: "add",
+    href: productDetailPathWithCompareSlugs(
+      productSlug,
+      currentSearch,
+      nextCompareSlugs,
+      currentHash
+    )
+  };
 }
 
 function ProductSpecifications({

@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (product detail decision-actions presentation extraction)
+- Status: done (product detail decision-actions presentation extraction)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-12 after product not-found HTTP status hardening (49
-  product-detail tests and 15 SSR tests).
+- Last verified: 2026-07-14 after product detail decision-actions presentation
+  extraction (54 product-detail tests and TypeScript).
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-detail-decision-actions-implementation-plan.md`
 - Historical context:
@@ -26,7 +26,7 @@
 
 ## Product Detail Decision Actions Presentation Extraction
 
-- Status: ready on 2026-07-12.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`.
 - Next action: extract the accessible Next steps presentation behind explicit
   add, selected, and full compare states while preserving route-owned Relay,
@@ -43,6 +43,20 @@
 - Exit condition: decision-action presentation is isolated without changing
   encoded destinations, comparison state, offer cursors, tab hashes, or
   tray-return behavior.
+- Completed: `ProductDecisionActions` now owns the accessible `Next steps`
+  region, compare-state copy, and offer/catalog links behind an explicit
+  `add`, `selected`, or `full` presentation contract. `ProductDetailRoute`
+  retains compare selection parsing, maximum enforcement, encoded URL
+  construction, Relay reads, navigation, and tray behavior.
+- Completed evidence:
+  - Baseline: the focused product-detail suite passed 51 tests before the
+    extraction.
+  - RED: the focused suite failed because the direct component tests could not
+    resolve the not-yet-created `ProductDecisionActions` module.
+  - GREEN: the focused suite passed 54 tests, including direct semantic
+    coverage for all three compare states and the shared offer/catalog links.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - `git diff --check` completed with exit 0.
 
 ## Product Not-Found HTTP Status Hardening
 

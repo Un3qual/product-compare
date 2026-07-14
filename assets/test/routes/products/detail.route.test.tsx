@@ -14,6 +14,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
 import { productDetailLoader } from "../../../src/routes/products/loader";
+import { ProductDecisionActions } from "../../../src/routes/products/ProductDecisionActions";
 import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
 import {
   ProductOfferList,
@@ -199,6 +200,78 @@ beforeEach(() => {
   loadQueryMock.mockReturnValue({ dispose: vi.fn() });
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
+});
+
+test("ProductDecisionActions renders the add-to-compare destination", () => {
+  render(
+    <MemoryRouter>
+      <ProductDecisionActions
+        browseHref="/products?slug=selected-product"
+        compareAction={{
+          kind: "add",
+          href: "/products/detail-product?slug=selected-product&slug=detail-product"
+        }}
+        offerHref="/offers?productId=product-id"
+      />
+    </MemoryRouter>
+  );
+
+  const actions = screen.getByRole("region", { name: "Next steps" });
+
+  expect(within(actions).getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
+    "href",
+    "/products/detail-product?slug=selected-product&slug=detail-product"
+  );
+  expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product-id"
+  );
+  expect(within(actions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
+    "href",
+    "/products?slug=selected-product"
+  );
+});
+
+test("ProductDecisionActions renders the selected compare state", () => {
+  render(
+    <MemoryRouter>
+      <ProductDecisionActions
+        browseHref="/products?slug=detail-product"
+        compareAction={{ kind: "selected" }}
+        offerHref="/offers?productId=product-id"
+      />
+    </MemoryRouter>
+  );
+
+  const actions = screen.getByRole("region", { name: "Next steps" });
+
+  expect(within(actions).getByText("This product is selected for comparison")).toBeVisible();
+  expect(
+    within(actions).queryByRole("link", { name: "Add this product to compare" })
+  ).not.toBeInTheDocument();
+  expect(within(actions).getByRole("link", { name: "Review active offers" })).toBeVisible();
+  expect(within(actions).getByRole("link", { name: "Browse products" })).toBeVisible();
+});
+
+test("ProductDecisionActions renders the full compare state", () => {
+  render(
+    <MemoryRouter>
+      <ProductDecisionActions
+        browseHref="/products?slug=first&slug=second&slug=third"
+        compareAction={{ kind: "full" }}
+        offerHref="/offers?productId=product-id"
+      />
+    </MemoryRouter>
+  );
+
+  const actions = screen.getByRole("region", { name: "Next steps" });
+
+  expect(within(actions).getByText("Compare selection full")).toBeVisible();
+  expect(
+    within(actions).queryByRole("link", { name: "Add this product to compare" })
+  ).not.toBeInTheDocument();
+  expect(within(actions).getByRole("link", { name: "Review active offers" })).toBeVisible();
+  expect(within(actions).getByRole("link", { name: "Browse products" })).toBeVisible();
 });
 
 test("ProductOfferList renders normalized offer details with bounded-more messages", () => {
