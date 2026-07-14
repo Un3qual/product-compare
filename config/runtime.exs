@@ -140,10 +140,7 @@ if config_env() == :prod do
 
   config :product_compare,
          :public_site_url,
-         ProductCompareWeb.RuntimeConfig.public_site_url(
-           System.get_env("PUBLIC_SITE_URL"),
-           phx_host
-         )
+         ProductCompareWeb.RuntimeConfig.public_site_url!(System.get_env("PUBLIC_SITE_URL"))
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],

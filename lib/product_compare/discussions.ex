@@ -273,9 +273,15 @@ defmodule ProductCompare.Discussions do
          true <- answer.thread_id == question.id || {:error, :not_found},
          true <- question.created_by == user_id || {:error, :forbidden},
          true <- answer.moderation_status == :published || {:error, :answer_not_published} do
-      question
-      |> Ecto.Changeset.change(accepted_post_id: answer.id)
-      |> Repo.update()
+      case question
+           |> Ecto.Changeset.change(accepted_post_id: answer.id)
+           |> Repo.update() do
+        {:ok, accepted_question} ->
+          {:ok, Repo.preload(accepted_question, :accepted_post)}
+
+        {:error, _changeset} = error ->
+          error
+      end
     else
       nil -> {:error, :not_found}
       {:error, _reason} = error -> error

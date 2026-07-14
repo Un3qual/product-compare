@@ -89,12 +89,22 @@ defmodule ProductCompare.Ingestion do
     {complete_scope, attrs} = Map.pop(attrs, :complete_scope, false)
 
     attrs
+    |> normalize_complete_scope_cursor(complete_scope)
     |> Map.put_new(:scope_fingerprint, Reconciliation.scope_fingerprint(attrs))
     |> Map.put_new(
       :reconciliation_status,
       if(complete_scope == true, do: "pending", else: "not_requested")
     )
   end
+
+  defp normalize_complete_scope_cursor(attrs, true) do
+    Map.update(attrs, :cursor_start, 0, fn
+      nil -> 0
+      cursor -> cursor
+    end)
+  end
+
+  defp normalize_complete_scope_cursor(attrs, _complete_scope), do: attrs
 
   @spec upsert_merchant_feed_candidate(Source.t(), map()) ::
           {:ok, MerchantFeedCandidate.t()} | {:error, Ecto.Changeset.t()}

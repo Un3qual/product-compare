@@ -15,11 +15,19 @@ defmodule ProductCompareWeb.RuntimeConfig do
 
   def default_trusted_origins(_env, _phx_host), do: @dev_trusted_origins
 
-  @spec public_site_url(String.t() | nil, String.t() | nil) :: String.t()
-  def public_site_url(explicit_url, phx_host) do
-    case normalize_origin(explicit_url) do
-      nil -> frontend_origin(endpoint_host(phx_host))
-      origin -> origin
+  @spec public_site_url!(String.t() | nil) :: String.t()
+  def public_site_url!(explicit_url) do
+    with value when is_binary(value) <- explicit_url,
+         trimmed when trimmed != "" <- String.trim(value),
+         %URI{} = uri <- URI.parse(trimmed),
+         true <- public_origin?(uri) do
+      uri
+      |> Map.put(:path, nil)
+      |> URI.to_string()
+    else
+      _invalid ->
+        raise ArgumentError,
+              "PUBLIC_SITE_URL must be an absolute HTTP(S) origin without a path, query, or fragment"
     end
   end
 
@@ -59,15 +67,16 @@ defmodule ProductCompareWeb.RuntimeConfig do
     end
   end
 
-  defp normalize_origin(nil), do: nil
-
-  defp normalize_origin(value) do
-    value
-    |> String.trim()
-    |> String.trim_trailing("/")
-    |> case do
-      "" -> nil
-      origin -> origin
-    end
+  defp public_origin?(%URI{
+         scheme: scheme,
+         host: host,
+         path: path,
+         query: nil,
+         fragment: nil,
+         userinfo: nil
+       }) do
+    scheme in ["http", "https"] and is_binary(host) and host != "" and path in [nil, "/"]
   end
+
+  defp public_origin?(_uri), do: false
 end

@@ -101,13 +101,20 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     {:ok, {_type, answer_entropy_id}} = ProductCompareWeb.GraphQL.GlobalId.decode(answer_id)
     {:ok, _answer} = Discussions.moderate(operator.id, :answer, answer_entropy_id, :published)
 
-    assert get_in(
-             graphql(asker_conn, accept_answer_mutation(), %{
-               "questionId" => question_id,
-               "answerId" => answer_id
-             }),
-             ["data", "acceptProductAnswer", "errors"]
-           ) == []
+    accept_response =
+      graphql(asker_conn, accept_answer_mutation(), %{
+        "questionId" => question_id,
+        "answerId" => answer_id
+      })
+
+    assert get_in(accept_response, ["data", "acceptProductAnswer", "errors"]) == []
+
+    assert get_in(accept_response, [
+             "data",
+             "acceptProductAnswer",
+             "question",
+             "acceptedAnswerId"
+           ]) == answer_id
 
     assert [%{"node" => question}] =
              get_in(graphql(conn, product_community_query(), %{"slug" => product.slug}), [

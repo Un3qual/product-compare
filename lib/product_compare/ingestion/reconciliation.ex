@@ -59,7 +59,8 @@ defmodule ProductCompare.Ingestion.Reconciliation do
     update_outcome(run, "skipped_failed", 0, nil)
   end
 
-  def finalize(%ImportRun{cursor_start: cursor_start} = run) when cursor_start > 0 do
+  def finalize(%ImportRun{cursor_start: cursor_start} = run)
+      when not is_integer(cursor_start) or cursor_start != 0 do
     update_outcome(run, "skipped_partial", 0, nil)
   end
 

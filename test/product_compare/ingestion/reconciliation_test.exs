@@ -94,6 +94,36 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 
+  test "a complete-scope run without an explicit cursor starts at the beginning" do
+    source = source_fixture()
+    query = %{"providerFeedId" => "feed-default-cursor"}
+
+    baseline = start_complete_scope_run!(source, query)
+    persist!(source, listing("A", 0), baseline)
+    offer_b = persist!(source, listing("B", 0), baseline).merchant_product
+    complete!(baseline)
+
+    {:ok, run} =
+      Ingestion.start_import_run(%{
+        complete_scope: true,
+        page_size: 25,
+        pages_requested: 5,
+        provider: "cj",
+        query: query,
+        source_id: source.id,
+        started_at: ~U[2026-07-13 18:00:00.000000Z],
+        surface: "shoppingProducts"
+      })
+
+    assert run.cursor_start == 0
+    persist!(source, listing("A", 60), run)
+
+    completed = complete!(run)
+
+    assert completed.reconciliation_status == "succeeded"
+    refute Repo.get!(MerchantProduct, offer_b.id).is_active
+  end
+
   test "bounded or differently scoped runs cannot hide offers and a fresh observation reactivates" do
     source = source_fixture()
     shoe_scope = %{"providerFeedId" => "feed-shoes"}
