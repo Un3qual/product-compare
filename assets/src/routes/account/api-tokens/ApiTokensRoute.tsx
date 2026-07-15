@@ -17,6 +17,12 @@ import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
+  addSetValue,
+  removeMapValue,
+  removeSetValue,
+  upsertMapValue
+} from "../../immutable-collection-state";
+import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
@@ -386,42 +392,4 @@ function ApiTokenPagination({
       nextHref={hasNextPage && endCursor ? apiTokenPagePath(tokenStatus, endCursor) : null}
     />
   );
-}
-
-function upsertMapValue<K, V>(
-  values: ReadonlyMap<K, V>,
-  key: K,
-  value: V
-): ReadonlyMap<K, V> {
-  const nextValues = new Map(values);
-  nextValues.set(key, value);
-  return nextValues;
-}
-
-function removeMapValue<K, V>(values: ReadonlyMap<K, V>, key: K): ReadonlyMap<K, V> {
-  if (!values.has(key)) {
-    return values;
-  }
-
-  const nextValues = new Map(values);
-  nextValues.delete(key);
-  return nextValues;
-}
-
-function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): ReadonlySet<T> {
-  if (currentValues.has(nextValue)) {
-    return currentValues;
-  }
-
-  return new Set(currentValues).add(nextValue);
-}
-
-function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): ReadonlySet<T> {
-  if (!currentValues.has(removedValue)) {
-    return currentValues;
-  }
-
-  const nextValues = new Set(currentValues);
-  nextValues.delete(removedValue);
-  return nextValues;
 }
