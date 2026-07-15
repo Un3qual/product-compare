@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -340,40 +340,27 @@ revoked/active/expired status copy while React retains semantic markup, tone,
 presets, errors, and lifecycle actions. Its focused suites pass 63 tests. The
 three other validated rows remain ready.
 
+Before claiming Catalog Specification Highlights, the coordinator validated
+two useful non-overlapping successors. Merchant visible-page filter
+normalization, selection, and heading copy remain embedded in its React owner,
+whose route suite passes 27 tests. Price-watch amount-rule selection and input
+normalization remain embedded in `PriceWatchControl`; its focused suite passes
+6 tests while the product-detail host route suite passes 55 tests. Both have
+complete owned paths and no blockers, so all useful validated candidates were
+promoted before the claim.
+
+Catalog Specification Highlights then completed: one framework-free selector
+now returns at most three rows by ascending finite sort order, places nullish
+and unusable orders last, preserves source order for ties, and leaves the Relay
+input unchanged while React retains all card markup, actions, omission, and
+StyleX presentation. Task review strengthened regression coverage for finite
+numeric extremes, non-finite orders, and deep input immutability; re-review
+found no remaining code or test-quality issue. Its focused suites pass 69
+tests. Four other validated rows remain ready.
+
 ## Ready Work
 
-### 1. Catalog Specification Highlights Data Contract
-
-Status: ready
-Lane: Frontend catalog specification highlights
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move bounded specification-highlight selection out of the StyleX
-product-list owner into a framework-free contract while preserving catalog
-card markup and decision actions.
-Owned paths:
-
-- `assets/src/routes/catalog/browse-product-list-data.ts`
-- `assets/src/routes/catalog/BrowseProductList.tsx`
-- `assets/test/routes/catalog/browse-product-list-data.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-specification-highlights.md`
-
-Prerequisites:
-
-- Existing catalog browse route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner selects at most three specification
-highlights by ascending explicit sort order, places unspecified orders last,
-preserves source order for ties, and does not mutate the Relay input; React
-retains the current empty omission, list markup, and styling.
-
-### 2. Recommendation Profile Route Data Contract
+### 1. Recommendation Profile Route Data Contract
 
 Status: ready
 Lane: Frontend recommendation profile navigation
@@ -410,7 +397,7 @@ is the sole route change; React and Relay owners retain their existing behavior
 and markup, while `share-comparison-data.ts` retains snapshot publish-input and
 GraphQL profile mapping.
 
-### 3. Saved Comparison Naming Data Contract
+### 2. Saved Comparison Naming Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison naming
@@ -440,6 +427,69 @@ Exit condition: one framework-free owner trims names, omits empty names,
 preserves product order, returns the existing zero-, one-, and multi-product
 copy, and leaves the input unchanged; React retains mutation variables,
 in-flight protection, feedback, and markup.
+
+### 3. Merchant Directory Visible-Page Filter Data Contract
+
+Status: ready
+Lane: Frontend merchant discovery demo parity
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move visible-page filter normalization, merchant selection, and
+heading copy out of `MerchantDirectoryView` into a framework-free contract
+while preserving local state, search and empty presentation, links, and cursor
+pagination.
+Owned paths:
+
+- `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- `assets/src/routes/merchants/MerchantDirectoryView.tsx`
+- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-discovery-demo-parity.md`
+
+Prerequisites:
+
+- Existing merchant-directory route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner returns normalized filter text,
+case-insensitively selected visible merchants in source order, and existing
+filtered/unfiltered heading copy without mutating input; React retains local
+state, page boundaries, markup, links, no-match copy, and pagination.
+
+### 4. Price-Watch Input Data Contract
+
+Status: ready
+Lane: Frontend price-watch input
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move amount-bearing rule selection and create-watch input
+normalization out of `PriceWatchControl` into a framework-free contract while
+preserving form state, Relay mutation orchestration, feedback, and markup.
+Owned paths:
+
+- `assets/src/routes/products/price-watch-data.ts`
+- `assets/src/routes/products/PriceWatchControl.tsx`
+- `assets/test/routes/products/price-watch-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-price-watch-input.md`
+
+Prerequisites:
+
+- Existing price-watch control characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner identifies amount-bearing rules and
+builds the existing mutation input with trimmed amounts and uppercased trimmed
+currency while omitting amount fields for availability rules; React retains
+product-scoped reset, state, validation, Relay behavior, feedback, and markup.
 
 ## Needs Decision Work
 

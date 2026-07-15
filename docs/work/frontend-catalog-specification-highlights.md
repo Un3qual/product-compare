@@ -6,7 +6,7 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after TDD and focused validation (68 catalog tests).
+- Last verified: 2026-07-15 after TDD and focused validation (69 catalog tests).
 
 ## Catalog Specification Highlights Data Contract
 
@@ -25,7 +25,7 @@
   - RED: `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts`
     failed because `browse-product-list-data` did not exist.
   - `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts test/routes/catalog/browse.route.test.tsx`
-    passed (68 tests).
+    passed (69 tests).
   - `cd assets && bun run typecheck`
     passed.
   - Framework-import scan of `assets/src/routes/catalog/browse-product-list-data.ts`

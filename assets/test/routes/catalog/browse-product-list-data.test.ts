@@ -42,15 +42,51 @@ test("selectBrowseProductSpecificationHighlights limits results to three rows", 
   expect(selectBrowseProductSpecificationHighlights(highlights)).toEqual(highlights.slice(0, 3));
 });
 
-test("selectBrowseProductSpecificationHighlights puts unspecified orders after finite orders", () => {
-  const unspecified = highlight("unspecified");
+test("selectBrowseProductSpecificationHighlights keeps finite extreme orders ahead of nullish and unusable orders", () => {
+  const undefinedOrder = highlight("undefined");
   const nullOrder = highlight("null", null);
-  const infiniteOrder = highlight("infinite", Number.POSITIVE_INFINITY);
-  const explicit = highlight("explicit", 10);
+  const notANumber = highlight("nan", Number.NaN);
+  const positiveInfinity = highlight("positive-infinity", Number.POSITIVE_INFINITY);
+  const negativeInfinity = highlight("negative-infinity", Number.NEGATIVE_INFINITY);
+  const maximumValue = highlight("maximum-value", Number.MAX_VALUE);
+  const maximumSafeInteger = highlight("maximum-safe-integer", Number.MAX_SAFE_INTEGER);
 
   expect(
-    selectBrowseProductSpecificationHighlights([unspecified, nullOrder, infiniteOrder, explicit])
-  ).toEqual([explicit, unspecified, nullOrder]);
+    selectBrowseProductSpecificationHighlights([
+      undefinedOrder,
+      nullOrder,
+      notANumber,
+      positiveInfinity,
+      negativeInfinity,
+      maximumValue,
+      maximumSafeInteger
+    ])
+  ).toEqual([maximumSafeInteger, maximumValue, undefinedOrder]);
+});
+
+test("selectBrowseProductSpecificationHighlights keeps unusable orders in source order at the bounded tail", () => {
+  const notANumber = highlight("nan", Number.NaN);
+  const positiveInfinity = highlight("positive-infinity", Number.POSITIVE_INFINITY);
+  const negativeInfinity = highlight("negative-infinity", Number.NEGATIVE_INFINITY);
+  const finite = highlight("finite", 10);
+
+  expect(
+    selectBrowseProductSpecificationHighlights([
+      notANumber,
+      positiveInfinity,
+      negativeInfinity,
+      finite
+    ])
+  ).toEqual([finite, notANumber, positiveInfinity]);
+
+  expect(
+    selectBrowseProductSpecificationHighlights([
+      finite,
+      negativeInfinity,
+      notANumber,
+      positiveInfinity
+    ])
+  ).toEqual([finite, negativeInfinity, notANumber]);
 });
 
 test("selectBrowseProductSpecificationHighlights preserves source order for equal orders", () => {
@@ -66,12 +102,26 @@ test("selectBrowseProductSpecificationHighlights preserves source order for equa
 });
 
 test("selectBrowseProductSpecificationHighlights leaves the input unchanged", () => {
-  const first = highlight("first", 20);
-  const second = highlight("second", 10);
-  const attributes = [first, second];
-  const beforeSelection = [...attributes];
+  const attributes = Object.freeze([
+    Object.freeze(highlight("first", 20)),
+    Object.freeze(highlight("second", 10))
+  ]);
+  const beforeSelection = [
+    {
+      code: "first",
+      displayName: "first",
+      sortOrder: 20,
+      valueText: "first value"
+    },
+    {
+      code: "second",
+      displayName: "second",
+      sortOrder: 10,
+      valueText: "second value"
+    }
+  ];
 
-  selectBrowseProductSpecificationHighlights(attributes);
+  expect(() => selectBrowseProductSpecificationHighlights(attributes)).not.toThrow();
 
   expect(attributes).toEqual(beforeSelection);
 });

@@ -449,13 +449,13 @@ orders last, preserves source order for ties, and leaves the Relay input
 unchanged. `BrowseProductList` retains product-card, empty omission, list,
 decision-action, and StyleX presentation.
 
-- [ ] Write pure tests for empty input, ascending order, the three-row bound,
+- [x] Write pure tests for empty input, ascending order, the three-row bound,
   unspecified orders, stable ties, and input immutability; verify RED.
-- [ ] Extract only deterministic highlight selection while retaining all card
+- [x] Extract only deterministic highlight selection while retaining all card
   markup and styling in `BrowseProductList`.
-- [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
+- [x] Run the pure and existing catalog route suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -512,6 +512,59 @@ protection, feedback, and presentation.
 - [ ] Extract only deterministic name construction while preserving mutation
   variables and save behavior.
 - [ ] Run the pure and existing compare route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 16: Merchant Directory Visible-Page Filter Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryView.tsx`
+- Create: `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Modify: `docs/work/frontend-merchant-discovery-demo-parity.md`
+
+**Interfaces:** The framework-free view-data module normalizes the current
+page's filter text, selects visible merchants by case-insensitive name match,
+and returns the existing filtered and unfiltered heading copy without mutating
+the merchant input. `MerchantDirectoryView` retains filter state, the search
+field, empty-page and no-match presentation, merchant markup and links, and
+cursor pagination.
+
+- [ ] Write pure tests for blank and trimmed filters, case-insensitive matches,
+  no matches, heading copy, source ordering, and input immutability; verify RED.
+- [ ] Extract only deterministic visible-page filter data while preserving
+  local state, page boundaries, markup, links, and pagination.
+- [ ] Run the pure and existing merchant-directory route suites, TypeScript,
+  the framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 17: Price-Watch Input Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Create: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-input.md`
+
+**Interfaces:** The framework-free data module identifies amount-bearing rule
+types and builds the existing create-watch input from trimmed amount and
+uppercased currency values, omitting amount fields for availability rules.
+`PriceWatchControl` retains product-scoped form reset, state, Relay mutation
+orchestration, validation attributes, success and error feedback, and markup.
+
+- [ ] Write pure tests for every rule type, trimmed amounts, uppercased
+  currency, availability-rule omission, and input immutability; verify RED.
+- [ ] Extract only deterministic rule and mutation-input data while preserving
+  form state, Relay behavior, feedback, and presentation.
+- [ ] Run the pure and existing price-watch control suites, TypeScript, the
   framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
@@ -598,3 +651,11 @@ protection, feedback, and presentation.
   profile navigation. Current source inspection found deterministic trimming,
   default, single-product, and ordered multi-product naming embedded in
   `CompareRoute.tsx`; its route suite passed 109 tests on 2026-07-15.
+- Before the catalog-highlight claim on 2026-07-15, current source inspection
+  confirmed that visible-page merchant filter normalization, selection, and
+  heading copy remain embedded in `MerchantDirectoryView`; its route suite
+  passed 27 tests.
+- The same replenishment pass confirmed that amount-bearing rule selection and
+  create-watch input normalization remain embedded in `PriceWatchControl`.
+  Its focused alert/control suite passed 6 tests, and the product-detail host
+  route suite passed 55 tests.
