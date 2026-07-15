@@ -21,6 +21,11 @@ import {
   catalogFiltersWithout,
   catalogFilterSummaryItems
 } from "./filter-summary";
+import {
+  catalogFilterFormInitialTypeState,
+  catalogFilterFormTypeSelection,
+  hasInitiallyOpenCatalogAdvancedFilters
+} from "./catalog-filter-form-state";
 import { catalogBrowseFirstPagePath } from "./paths";
 import { CatalogAdvancedFilters } from "./CatalogAdvancedFilters";
 
@@ -67,22 +72,19 @@ export function CatalogFilterForm({
   metadata: ProductFilterMetadata;
   pageSize: number;
 }) {
-  const [selectedTypeTaxonId, setSelectedTypeTaxonId] = useState(filters.typeTaxonId ?? "");
-  const [includeTypeDescendants, setIncludeTypeDescendants] = useState(
-    Boolean(filters.typeTaxonId && filters.includeTypeDescendants)
+  const [typeFilterState, setTypeFilterState] = useState(() =>
+    catalogFilterFormInitialTypeState(filters)
   );
-  const [advancedOpen, setAdvancedOpen] = useState(() => hasAdvancedFilters(filters));
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    hasInitiallyOpenCatalogAdvancedFilters(filters)
+  );
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
-    const hadSelectedTypeTaxon = selectedTypeTaxonId !== "";
+    setTypeFilterState((previous) => catalogFilterFormTypeSelection(previous, typeTaxonId));
+  }
 
-    setSelectedTypeTaxonId(typeTaxonId);
-
-    if (typeTaxonId === "") {
-      setIncludeTypeDescendants(false);
-    } else if (!hadSelectedTypeTaxon) {
-      setIncludeTypeDescendants(true);
-    }
+  function handleIncludeTypeDescendantsChange(includeTypeDescendants: boolean) {
+    setTypeFilterState((previous) => ({ ...previous, includeTypeDescendants }));
   }
 
   return (
@@ -99,13 +101,13 @@ export function CatalogFilterForm({
         <CompareSlugFields compareSlugs={compareSlugs} />
         <ProductTypeField
           metadata={metadata}
-          selectedTypeTaxonId={selectedTypeTaxonId}
+          selectedTypeTaxonId={typeFilterState.selectedTypeTaxonId}
           onTypeTaxonIdChange={handleTypeTaxonIdChange}
         />
         <IncludeDescendantsCheckbox
-          includeTypeDescendants={includeTypeDescendants}
-          selectedTypeTaxonId={selectedTypeTaxonId}
-          onIncludeTypeDescendantsChange={setIncludeTypeDescendants}
+          includeTypeDescendants={typeFilterState.includeTypeDescendants}
+          selectedTypeTaxonId={typeFilterState.selectedTypeTaxonId}
+          onIncludeTypeDescendantsChange={handleIncludeTypeDescendantsChange}
         />
       </div>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
@@ -284,14 +286,5 @@ export function CatalogActiveFilterSummary({
         Clear filters
       </Link>
     </section>
-  );
-}
-
-function hasAdvancedFilters(filters: CatalogFilters) {
-  return (
-    filters.useCaseTaxonIds.length > 0 ||
-    filters.numeric.length > 0 ||
-    filters.booleans.length > 0 ||
-    filters.enums.length > 0
   );
 }

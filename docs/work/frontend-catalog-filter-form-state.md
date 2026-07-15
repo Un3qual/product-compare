@@ -2,24 +2,25 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after current source inspection and 62 passing
-  catalog route tests.
+- Last verified: 2026-07-15 with 84 passing focused catalog tests, a successful
+  TypeScript check, a clean framework-import scan, and `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Catalog Filter Form State Contract
 
-- Status: active on 2026-07-15 on `codex/frontend-route-data-contracts`.
-- Next action: isolate type-filter initialization and transitions plus initial
-  advanced-filter disclosure policy in a framework-free state module while
-  retaining React state, controls, form serialization, active-filter summaries,
-  and presentation in `CatalogFilterForm`.
-- Candidate evidence: current source inspection found the deterministic state
-  policy embedded in the React form owner; its browse route suite passed 62
-  tests.
+- Status: completed on 2026-07-15 on `codex/frontend-route-data-contracts`.
+- Delivered: extracted framework-free initial type/descendant state,
+  type-selection transitions, and initial advanced-disclosure policy into
+  `catalog-filter-form-state.ts`; `CatalogFilterForm` retains React state,
+  controls, form serialization, active-filter summaries, and presentation.
+- Evidence: new pure-state coverage passed 22 tests; the existing browse route
+  coverage and pure suite passed 84 tests total. `cd assets && bun run
+  typecheck` passed. The framework-import scan returned no matches and `git
+  diff --check` was clean.
 - Blockers: none.
 
 ## Verification
