@@ -42,6 +42,19 @@ test("resolves API-origin relative and absolute tracked redirects", () => {
   ).toBe("http://localhost:4000/r/click-123");
 });
 
+test("rejects a redirect with the same host and port but a different scheme", () => {
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl("https://localhost:4000/r/click-123", API_ENDPOINT)
+  ).toThrow("Tracked commerce redirect must resolve to the same origin");
+});
+
+test("requires an explicit endpoint instead of reading environment state", () => {
+  expect(() => trackedMerchantProductHref("merchant-product-1", undefined as never)).toThrow();
+  expect(() =>
+    resolveTrackedCommerceRedirectUrl("/r/click-123", undefined as never)
+  ).toThrow();
+});
+
 test("rejects redirects outside the API origin", () => {
   for (const redirectPath of [
     "https://attacker.example/r/click-123",

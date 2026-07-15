@@ -6,7 +6,7 @@
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after the extracted pure contract suite (4 tests),
+- Last verified: 2026-07-15 after the extracted pure contract suite (6 tests),
   51 passing offer-discovery route tests, TypeScript, required policy scans,
   and `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
@@ -21,12 +21,15 @@
   navigation, and markup.
 - Evidence: `cd assets && bun x vitest run
   test/routes/offers/tracked-commerce-click-data.test.ts
-  test/routes/offers/offer-discovery.route.test.tsx` passed 55 tests; `bun run
-  typecheck` passed; both required policy scans found no matches.
+  test/routes/offers/offer-discovery.route.test.tsx` passed 57 tests; `bun run
+  typecheck` passed; the dependency-free framework/transport scan and
+  sensitive-field scan found no matches.
 - Blockers: none.
 
 ## Verification
 
 - `cd assets && bun x vitest run test/routes/offers/tracked-commerce-click-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
 - `cd assets && bun run typecheck`
+- `cd assets && rg -n 'from "(react|react-relay|react-router-dom)|@stylexjs|/relay/' src/routes/offers/tracked-commerce-click-data.ts`
+- `rg -n "merchantUrl|destinationUrl|CJ_API_TOKEN|CJ_ACCOUNT_ID|rawMetadata|raw_metadata" assets/src/routes/offers/TrackedCommerceClickAction.tsx assets/src/routes/offers/tracked-commerce-click-data.ts`
 - `git diff --check`

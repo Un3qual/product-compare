@@ -1,5 +1,3 @@
-import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
-
 type CommerceClick = {
   button: number;
   altKey: boolean;
@@ -20,7 +18,7 @@ export function shouldTrackCommerceClick(click: CommerceClick) {
 
 export function trackedMerchantProductHref(
   merchantProductId: string,
-  graphQLEndpoint = resolveGraphQLEndpoint()
+  graphQLEndpoint: string
 ) {
   const params = new URLSearchParams({ merchantProductId });
 
@@ -29,7 +27,7 @@ export function trackedMerchantProductHref(
 
 export function resolveTrackedCommerceRedirectUrl(
   redirectPath: string,
-  graphQLEndpoint = resolveGraphQLEndpoint()
+  graphQLEndpoint: string
 ) {
   const endpointUrl = new URL(graphQLEndpoint);
   const redirectUrl = new URL(redirectPath, endpointUrl.origin);

@@ -1,6 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { useMutation } from "react-relay";
 import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
+import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -25,6 +26,7 @@ export function TrackedCommerceClickAction({
   const [commitTrackCommerceClick, isPending] =
     useMutation<TrackCommerceClickMutation>(trackCommerceClickMutation);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const graphQLEndpoint = resolveGraphQLEndpoint();
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (!shouldTrackCommerceClick(event)) {
@@ -50,7 +52,9 @@ export function TrackedCommerceClickAction({
             payload.errors.length === 0 &&
             !hasRouteGraphQLErrors(graphQLErrors)
           ) {
-            window.location.assign(resolveTrackedCommerceRedirectUrl(payload.redirectPath));
+            window.location.assign(
+              resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint)
+            );
             return;
           }
 
@@ -71,7 +75,7 @@ export function TrackedCommerceClickAction({
       <Button asChild variant="solid">
         <a
           aria-disabled={isPending || undefined}
-          href={trackedMerchantProductHref(merchantProductId)}
+          href={trackedMerchantProductHref(merchantProductId, graphQLEndpoint)}
           onClick={isPending ? preventPendingNavigation : handleClick}
         >
           {label}
