@@ -479,15 +479,15 @@ location access, Relay reads, boundaries, snapshot behavior, and recommendation
 presentation. The completed `share-comparison-data.ts` contract retains
 snapshot publish-input construction and GraphQL profile mapping.
 
-- [ ] Write pure tests for default and best-value parsing, ordered encoded
+- [x] Write pure tests for default and best-value parsing, ordered encoded
   slugs, all specification modes, profile query defaults, sole-profile
   revalidation, and unrelated route changes; verify RED.
-- [ ] Consolidate only deterministic recommendation route policy while
+- [x] Consolidate only deterministic recommendation route policy while
   preserving Relay variables, snapshot profile behavior, error/Suspense
   boundaries, and panel markup.
-- [ ] Run the pure and existing recommendation/snapshot suites, TypeScript,
+- [x] Run the pure and existing recommendation/snapshot suites, TypeScript,
   the framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

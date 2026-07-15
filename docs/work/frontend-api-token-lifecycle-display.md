@@ -12,9 +12,9 @@
 ## API Token Lifecycle Display Data Contract
 
 - Status: done on 2026-07-15 on
-  `codex/api-token-lifecycle-display`.
+  `codex/frontend-route-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: move deterministic token labels, strict UTC lifecycle-date
+- Delivered: moved deterministic token labels, strict UTC lifecycle-date
   formatting, optional-date fallbacks, and status copy from `ApiTokenItem`
   into the existing framework-free API-token route-data owner while preserving
   item markup and lifecycle actions.

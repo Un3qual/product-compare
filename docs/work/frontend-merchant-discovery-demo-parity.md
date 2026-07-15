@@ -2,11 +2,12 @@
 
 ## Snapshot
 
-- Status: done (merchant directory view extraction)
+- Status: ready (merchant directory visible-page filter data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after merchant-directory view extraction review
-  follow-up (27 merchant tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-15 after current filter-policy source inspection and
+  27 passing merchant-directory route tests.
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.

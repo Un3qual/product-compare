@@ -55,13 +55,15 @@ describe("shouldRevalidateCompareLoader", () => {
     ["https://example.test/compare?slug=one&slug=two", "https://example.test/compare?slug=one&slug=three&recommend=best_value"],
     ["https://example.test/compare?slug=one&slug=two&specs=all", "https://example.test/compare?slug=one&slug=two&specs=differences&recommend=best_value"],
     ["https://example.test/compare?slug=one&sort=price", "https://example.test/compare?slug=one&sort=name&recommend=best_value"]
-  ])("defers to the router default for unrelated route changes", (currentUrl, nextUrl) => {
-    expect(
-      shouldRevalidateCompareLoader({
-        currentUrl: new URL(currentUrl),
-        nextUrl: new URL(nextUrl),
-        defaultShouldRevalidate: false
-      })
-    ).toBe(false);
+  ])("defers to either router default for unrelated route changes", (currentUrl, nextUrl) => {
+    for (const defaultShouldRevalidate of [false, true]) {
+      expect(
+        shouldRevalidateCompareLoader({
+          currentUrl: new URL(currentUrl),
+          nextUrl: new URL(nextUrl),
+          defaultShouldRevalidate
+        })
+      ).toBe(defaultShouldRevalidate);
+    }
   });
 });

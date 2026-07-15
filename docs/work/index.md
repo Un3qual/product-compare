@@ -358,46 +358,20 @@ numeric extremes, non-finite orders, and deep input immutability; re-review
 found no remaining code or test-quality issue. Its focused suites pass 69
 tests. Four other validated rows remain ready.
 
+Recommendation Profile Route Data then completed: one framework-free owner now
+parses the exact best-value profile, builds ordered encoded profile paths with
+specification-mode and default-query handling, and suppresses core comparison
+reloads only for a raw recommendation-parameter-only change. React retains
+location access, Relay reads and variables, reset/error/Suspense boundaries,
+snapshot behavior, and markup; `share-comparison-data.ts` remains the owner of
+snapshot publish input and GraphQL profile mapping. Task review strengthened
+unrelated-change coverage to prove both router-default values propagate;
+re-review found no remaining issue. Its focused suites pass 34 tests. Three
+other validated rows remain ready.
+
 ## Ready Work
 
-### 1. Recommendation Profile Route Data Contract
-
-Status: ready
-Lane: Frontend recommendation profile navigation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: consolidate recommendation-profile parsing, navigation paths, and
-profile-only revalidation in a framework-free contract while preserving Relay
-reads, snapshot publish-input mapping, boundaries, and panel markup.
-Owned paths:
-
-- `assets/src/routes/compare/recommendation-route-data.ts`
-- `assets/src/routes/compare/loader.ts`
-- `assets/src/routes/compare/RecommendationPanel.tsx`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/recommendation-route-data.test.ts`
-- `assets/test/routes/compare/recommendation-panel.test.tsx`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-recommendation-profile-navigation.md`
-
-Prerequisites:
-
-- Existing recommendation-panel and comparison-snapshot characterizations
-  remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves exact best-value parsing,
-lowest-cost fallback, ordered encoded slugs, specification mode, profile query
-omission/defaults, and loader suppression only when the recommendation profile
-is the sole route change; React and Relay owners retain their existing behavior
-and markup, while `share-comparison-data.ts` retains snapshot publish-input and
-GraphQL profile mapping.
-
-### 2. Saved Comparison Naming Data Contract
+### 1. Saved Comparison Naming Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison naming
@@ -428,7 +402,7 @@ preserves product order, returns the existing zero-, one-, and multi-product
 copy, and leaves the input unchanged; React retains mutation variables,
 in-flight protection, feedback, and markup.
 
-### 3. Merchant Directory Visible-Page Filter Data Contract
+### 2. Merchant Directory Visible-Page Filter Data Contract
 
 Status: ready
 Lane: Frontend merchant discovery demo parity
@@ -460,7 +434,7 @@ case-insensitively selected visible merchants in source order, and existing
 filtered/unfiltered heading copy without mutating input; React retains local
 state, page boundaries, markup, links, no-match copy, and pagination.
 
-### 4. Price-Watch Input Data Contract
+### 3. Price-Watch Input Data Contract
 
 Status: ready
 Lane: Frontend price-watch input
