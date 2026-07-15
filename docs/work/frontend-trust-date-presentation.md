@@ -2,16 +2,16 @@
 
 ## Snapshot
 
-- Status: ready (trust-surface date presentation contract)
+- Status: complete (trust-surface date presentation contract)
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after current source and consumer-suite validation
-  (8 merchant-detail and comparison-snapshot tests).
+- Last verified: 2026-07-14 after focused and full frontend verification (13
+  focused tests; 71 files and 993 tests in the full gate).
 
 ## Trust-Surface Date Presentation Contract
 
-- Status: ready on 2026-07-14.
+- Status: complete on `codex/route-policy-data-contracts` as of 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: centralize UTC date-only and date-time text formatting for
   merchant detail and public comparison snapshots in the framework-free
@@ -37,3 +37,19 @@
   and `Intl.DateTimeFormat` setup in merchant detail and public comparison
   snapshots around the existing `product-formatting.ts` owner. Their current
   focused suites pass 8 tests.
+
+## Completion Evidence
+
+- `product-formatting.ts` owns cached UTC date-only and date-time formatters
+  plus exact malformed-string fallback; it remains free of React, Relay,
+  router, StyleX, and Radix imports.
+- Merchant detail and public comparison snapshots use the shared contract
+  without changing source `dateTime` attributes or captured-decision copy.
+- RED: the focused run failed four direct tests because the two string helpers
+  were absent while both existing consumer suites remained green.
+- GREEN: the direct formatter and consumer suites passed 13 tests.
+- `cd assets && bun run typecheck` passed.
+- `cd assets && bun run check` passed Relay validation, TypeScript, 71 test
+  files and 993 tests, client and SSR production builds, and the client bundle
+  budget (181,873 gzip bytes against 200,000).
+- The framework-import scan and `git diff --check` passed.

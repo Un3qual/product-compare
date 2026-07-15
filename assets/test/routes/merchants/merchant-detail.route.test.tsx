@@ -51,4 +51,8 @@ test("MerchantDetailRoute renders complete summary, safe destination, and produc
   expect(screen.getByRole("link", { name: "Visit merchant website" })).toHaveAttribute("href", "https://trusted.example");
   expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute("href", "/products/field-camera");
   expect(screen.getByText(/99 USD \+ 4 shipping · In stock/)).toBeVisible();
+  expect(screen.getByText("Jul 14, 2026", { selector: "time" })).toHaveAttribute(
+    "datetime",
+    "2026-07-14T01:00:00Z"
+  );
 });

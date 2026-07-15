@@ -55,9 +55,9 @@ community, price alerts, and API-token route-state contracts are also complete.
 Affiliate setup, offer-discovery filter policy, catalog browse route data,
 product-detail route data, compare-picker data, product-offer panel data, and
 shared external-destination safety are complete. Three source-verified, non-
-overlapping successors remain ready across trust-surface date presentation,
-product-attribute grouping data, and route-metadata resolution data. Saved-
-comparison navigation is a fourth source-verified, non-overlapping successor.
+overlapping successors remain ready across product-attribute grouping, route-
+metadata resolution, and saved-comparison navigation. Trust-surface date
+presentation is complete.
 
 Active implementation plans:
 
@@ -118,9 +118,10 @@ batch and should not be recreated or promoted.
   plan.
 - Completed reserve: external-destination safety also executed through that
   same plan.
-- Ready reserve: trust-surface date presentation, product-attribute grouping
-  data, route-metadata resolution data, and saved-comparison navigation data
-  execute through that same plan.
+- Completed reserve: trust-surface date presentation also executed through
+  that same plan.
+- Ready reserve: product-attribute grouping data, route-metadata resolution
+  data, and saved-comparison navigation data execute through that same plan.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

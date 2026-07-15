@@ -285,16 +285,16 @@ date-only function; public comparison snapshots consume the date-time function.
 Both preserve the original source string as the fallback for malformed values,
 while the React owners retain semantic `<time dateTime>` markup and layout.
 
-- [ ] Write direct tests for UTC date-only and date-time labels, offset
+- [x] Write direct tests for UTC date-only and date-time labels, offset
   normalization across a day boundary, malformed-string fallback, and the
   existing `Date`-input formatter; verify RED for the missing string helpers.
-- [ ] Replace the two route-local date formatters without changing semantic
+- [x] Replace the two route-local date formatters without changing semantic
   `dateTime` attributes, captured recommendation copy, or merchant-summary
   fallback behavior.
-- [ ] Run the direct formatter and existing merchant-detail and comparison-
+- [x] Run the direct formatter and existing merchant-detail and comparison-
   snapshot suites, TypeScript, the framework-import scan, and `git diff
   --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

@@ -210,5 +210,9 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
   expect(screen.getByRole("note")).toHaveTextContent("captured snapshot");
   expect(screen.getByText("Second camera", { selector: "strong" })).toBeVisible();
   expect(screen.getByText(/Shop: 90 USD landed/)).toBeVisible();
+  expect(screen.getByText("Jul 13, 2026, 11:00 PM", { selector: "time" })).toHaveAttribute(
+    "datetime",
+    "2026-07-13T23:00:00Z"
+  );
   expect(screen.getByRole("link", { name: "Open a live comparison" })).toHaveAttribute("href", "/compare?slug=second-camera&slug=first-camera");
 });

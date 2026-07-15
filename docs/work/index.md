@@ -278,43 +278,16 @@ actionable issue, and the three other validated rows remain ready. Before
 claiming Trust-Surface Date Presentation, the coordinator validated saved-
 comparison navigation as a fourth non-overlapping successor: ordered reopen
 links and first/next cursor paths remain embedded in the Relay route owner,
-whose current route-state suite passes 31 tests.
+whose current route-state suite passes 31 tests. Trust-Surface Date
+Presentation then completed: one framework-free formatter now owns UTC date-
+only and date-time labels, offset normalization, and exact malformed-source
+fallbacks while merchant and snapshot markup retain their source `dateTime`
+values. Its direct and consumer suites pass 13 tests, and the full frontend
+gate passes 71 files and 993 tests. The three other validated rows remain ready.
 
 ## Ready Work
 
-### 1. Trust-Surface Date Presentation Contract
-
-Status: ready
-Lane: Frontend trust-surface date presentation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: centralize UTC date-only and date-time text formatting for merchant
-detail and public comparison snapshots in the framework-free product formatter
-while preserving semantic `dateTime` values and malformed-value fallbacks.
-Owned paths:
-
-- `assets/src/routes/product-formatting.ts`
-- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
-- `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
-- `assets/test/routes/product-formatting.test.ts`
-- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-trust-date-presentation.md`
-
-Prerequisites:
-
-- Existing merchant-detail and comparison-snapshot suites remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/product-formatting.test.ts test/routes/merchants/merchant-detail.route.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free formatter owns stable UTC date-only and
-date-time labels, offset normalization, and exact malformed-string fallback;
-merchant and snapshot markup retain their original semantic `dateTime` values.
-
-### 2. Product Attribute Grouping Data Contract
+### 1. Product Attribute Grouping Data Contract
 
 Status: ready
 Lane: Frontend product attribute grouping
@@ -343,7 +316,7 @@ Exit condition: one framework-free owner preserves trimmed group labels,
 case-insensitive first-label grouping, first-seen group order, stable attribute
 order within groups, and original ungrouped order.
 
-### 3. Route Metadata Resolution Data Contract
+### 2. Route Metadata Resolution Data Contract
 
 Status: ready
 Lane: Frontend route metadata resolution
@@ -373,7 +346,7 @@ loader-data precedence over the same match's handle, handle fallback for
 invalid loader metadata, required title and description strings, optional
 string fields, and explicit-true indexability.
 
-### 4. Saved Comparison Navigation Data Contract
+### 3. Saved Comparison Navigation Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison navigation

@@ -6,6 +6,7 @@ import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { formatProductDateTimeLabel } from "../../product-formatting";
 import { buildComparePathFromSlugs } from "../paths";
 import type { SharedComparisonLoaderData } from "./loader";
 import sharedComparisonRouteQuery from "./queries/SharedComparisonRouteQuery";
@@ -39,12 +40,12 @@ function ReadySharedComparison({ query }: { query: Extract<SharedComparisonLoade
 
   return (
     <PageShell eyebrow="Shared decision" title={snapshot.title ?? "Shared product comparison"} description="A fixed, source-backed record of the facts available when this comparison was published.">
-      <p {...props(styles.capture)}>Captured <time dateTime={snapshot.capturedAt}>{formatDate(snapshot.capturedAt)}</time></p>
+      <p {...props(styles.capture)}>Captured <time dateTime={snapshot.capturedAt}>{formatProductDateTimeLabel(snapshot.capturedAt)}</time></p>
       <p role="note" {...props(styles.disclaimer)}>{snapshot.disclaimer}</p>
       <section aria-labelledby="shared-recommendation" {...props(styles.recommendation)}>
         <h2 id="shared-recommendation" {...props(styles.title)}>Captured recommendation</h2>
         {winner ? <><strong>{winner.productName}</strong><ul>{winner.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></> : <><strong>No supported winner</strong><ul>{snapshot.recommendation.missingInputs.map((reason) => <li key={reason}>{reason}</li>)}</ul></>}
-        <p {...props(styles.evidence)}>Algorithm {snapshot.recommendation.algorithmVersion}; evaluated {formatDate(snapshot.recommendation.evaluatedAt)}.</p>
+        <p {...props(styles.evidence)}>Algorithm {snapshot.recommendation.algorithmVersion}; evaluated {formatProductDateTimeLabel(snapshot.recommendation.evaluatedAt)}.</p>
       </section>
       <section aria-label="Captured products" {...props(styles.grid)}>
         {snapshot.products.map((product) => (
@@ -53,16 +54,11 @@ function ReadySharedComparison({ query }: { query: Extract<SharedComparisonLoade
             <p {...props(styles.capture)}>{product.brandName ?? "Unknown brand"}{product.modelNumber ? ` · ${product.modelNumber}` : ""}</p>
             {product.description ? <p>{product.description}</p> : null}
             <dl {...props(styles.attributeList)}>{product.attributes.map((attribute) => <div key={attribute.claimId}><dt>{attribute.displayName}</dt><dd>{attribute.valueText}</dd><p {...props(styles.evidence)}>Accepted claim {attribute.claimId}{attribute.evidence.length ? ` · ${attribute.evidence[0].sourceName}` : ""}</p></div>)}</dl>
-            {product.offers.map((offer) => <p key={offer.pricePointId}>{offer.merchantName}: {offer.landedPrice} {offer.currency} landed <span {...props(styles.evidence)}>(observed {formatDate(offer.observedAt)})</span></p>)}
+            {product.offers.map((offer) => <p key={offer.pricePointId}>{offer.merchantName}: {offer.landedPrice} {offer.currency} landed <span {...props(styles.evidence)}>(observed {formatProductDateTimeLabel(offer.observedAt)})</span></p>)}
           </article>
         ))}
       </section>
       <Link to={buildComparePathFromSlugs(snapshot.products.map((product) => product.slug))}>Open a live comparison</Link>
     </PageShell>
   );
-}
-
-function formatDate(value: string) {
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(timestamp) : value;
 }
