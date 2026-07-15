@@ -560,13 +560,13 @@ uppercased currency values, omitting amount fields for availability rules.
 `PriceWatchControl` retains product-scoped form reset, state, Relay mutation
 orchestration, validation attributes, success and error feedback, and markup.
 
-- [ ] Write pure tests for every rule type, trimmed amounts, uppercased
+- [x] Write pure tests for every rule type, trimmed amounts, uppercased
   currency, availability-rule omission, and input immutability; verify RED.
-- [ ] Extract only deterministic rule and mutation-input data while preserving
+- [x] Extract only deterministic rule and mutation-input data while preserving
   form state, Relay behavior, feedback, and presentation.
-- [ ] Run the pure and existing price-watch control suites, TypeScript, the
+- [x] Run the pure and existing price-watch control suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -625,6 +625,35 @@ markup.
   error, pending, navigation, and presentation behavior.
 - [ ] Run the pure and existing offer-discovery route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 20: Immutable Route-State Collection Contract
+
+**Files:**
+
+- Create: `assets/src/routes/immutable-collection-state.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Create: `assets/test/routes/immutable-collection-state.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-immutable-route-state.md`
+
+**Interfaces:** The framework-free route-state module owns copy-on-write map
+upsert/remove and set add/remove helpers. Set membership and map-removal no-ops
+preserve the original collection identity; changes return a new collection and
+leave the input unchanged. Route owners retain all React state transitions,
+Relay orchestration, errors, feedback, and presentation.
+
+- [ ] Write pure tests for map insert/replace/remove, set add/remove, source
+  ordering, no-op identity, changed-result identity, and input immutability;
+  verify RED.
+- [ ] Replace only the duplicate collection helpers while preserving route
+  state and mutation behavior.
+- [ ] Run the pure and existing API-token and saved-comparison route-state
+  suites, TypeScript, the framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -732,3 +761,13 @@ markup.
   characterization passed 31 focused tests on 2026-07-15. The contract retains
   ordinary lowercasing, source ordering, existing headings, and input identity;
   independent task review found no actionable issues.
+- Before the price-watch input claim on 2026-07-15, current source inspection
+  confirmed duplicate immutable set add/remove helpers in API-token and saved-
+  comparison route owners, plus map upsert/remove helpers in the token owner.
+  Their route suites passed 45 and 31 tests. The shared-state candidate is path-
+  disjoint from price-watch input, feed-candidate review, and tracked-commerce
+  click data.
+- The completed price-watch input contract and existing alert route
+  characterization passed 16 focused tests on 2026-07-15. Task review found no
+  Critical or Important issue; queue closeout corrected the lane status noted
+  as the sole Minor finding.

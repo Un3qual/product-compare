@@ -401,40 +401,25 @@ boundaries, empty/no-match presentation, merchant markup and safe links, and
 cursor pagination. Its pure and route suites pass 31 tests, and independent
 task review found no actionable issue. Three other validated rows remain ready.
 
+Before claiming Price-Watch Input Data, the coordinator validated a fourth
+non-overlapping successor. API-token and saved-comparison route owners duplicate
+the same immutable set add/remove policy, while the token owner also embeds
+map upsert/remove policy; their route suites pass 45 and 31 tests. The successor
+has complete owned paths, no blockers, and does not overlap price watches,
+feed-candidate review, or tracked-commerce clicks.
+
+Price-Watch Input Data then completed: one framework-free owner now identifies
+the amount-bearing rules and builds the existing create-watch input from
+trimmed amounts and uppercased trimmed currency while omitting amount fields for
+availability rules. `PriceWatchControl` retains product-keyed reset, FormData
+and event handling, local state, validation, Relay mutation behavior, feedback,
+and markup. Its pure and route suites pass 16 tests; task review found no
+Critical or Important issue, and the lane-status closeout resolves its sole
+Minor note. Three other validated rows remain ready.
+
 ## Ready Work
 
-### 1. Price-Watch Input Data Contract
-
-Status: ready
-Lane: Frontend price-watch input
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move amount-bearing rule selection and create-watch input
-normalization out of `PriceWatchControl` into a framework-free contract while
-preserving form state, Relay mutation orchestration, feedback, and markup.
-Owned paths:
-
-- `assets/src/routes/products/price-watch-data.ts`
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/test/routes/products/price-watch-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-price-watch-input.md`
-
-Prerequisites:
-
-- Existing price-watch control characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner identifies amount-bearing rules and
-builds the existing mutation input with trimmed amounts and uppercased trimmed
-currency while omitting amount fields for availability rules; React retains
-product-scoped reset, state, validation, Relay behavior, feedback, and markup.
-
-### 2. Feed-Candidate Review View-Data Contract
+### 1. Feed-Candidate Review View-Data Contract
 
 Status: ready
 Lane: Frontend feed-candidate review view data
@@ -467,7 +452,7 @@ candidate/status/count/time labels, current-page status counts, and filtered
 first/next paths without mutating input; React and Relay owners retain all
 orchestration, controls, state, markup, and styling.
 
-### 3. Tracked-Commerce Click Data Contract
+### 2. Tracked-Commerce Click Data Contract
 
 Status: ready
 Lane: Frontend tracked-commerce click data
@@ -498,6 +483,40 @@ Exit condition: one framework-free owner qualifies unmodified primary clicks,
 builds encoded first-party tracking hrefs, and resolves only API-origin
 redirects; React retains event handling, pending/error state, Relay mutation
 orchestration, browser navigation, and presentation.
+
+### 3. Immutable Route-State Collection Contract
+
+Status: ready
+Lane: Frontend immutable route state
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: consolidate the duplicate immutable set add/remove helpers and
+API-token map upsert/remove helpers in a framework-free route-state module while
+preserving each route's React state, Relay orchestration, and presentation.
+Owned paths:
+
+- `assets/src/routes/immutable-collection-state.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/test/routes/immutable-collection-state.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-immutable-route-state.md`
+
+Prerequisites:
+
+- Existing API-token and saved-comparison route-state characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/immutable-collection-state.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner provides copy-on-write map upsert and
+remove plus set add and remove, preserving original collection identity for
+set membership and map-removal no-ops and leaving inputs unchanged; route owners
+retain state transitions, mutations, Relay data, feedback, and markup.
 
 ## Needs Decision Work
 

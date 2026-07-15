@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready on 2026-07-15.
+- Status: done on 2026-07-15 on `codex/frontend-route-data-contracts`.
 - Priority: P1.
 - Dispatch source of truth: `docs/work/index.md`.
 - Lane context and status evidence: this file.
@@ -33,3 +33,17 @@
   embedded in `PriceWatchControl`; its focused alert/control suite passed 6
   tests, and the product-detail host route suite passed 55 tests.
 - Blockers: none.
+
+## Completion Evidence (2026-07-15)
+
+- RED: `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts`
+  failed because the new `price-watch-data` module did not exist.
+- GREEN: extracted the framework-free amount-rule and create-watch input
+  normalization contract. The React control retains product-keyed reset,
+  FormData/event handling, Relay mutation lifecycle, validation attributes,
+  feedback, and markup.
+- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+  passed: 2 files, 16 tests, 0 failures.
+- `cd assets && bun run typecheck` passed.
+- The direct framework-import scan of `price-watch-data.ts` found no React,
+  Relay, router, or StyleX imports; `git diff --check` passed.
