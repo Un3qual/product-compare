@@ -365,6 +365,8 @@ parses the required and optional document fields. `RouteMetadata` retains
   suite gap: skipping a fully invalid deepest match in favor of valid
   shallower metadata. Add the regression case and verify the focused and full
   gates again.
+- [x] Independent re-review confirmed the regression closes the finding with
+  no remaining actionable issue.
 
 ---
 

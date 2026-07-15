@@ -51,3 +51,5 @@
 - Independent review confirmed the production extraction and identified one
   missing regression: a fully invalid deepest match must not hide valid
   shallower metadata. The new direct case covers that fallback.
+- Independent re-review confirmed the regression closes the finding with no
+  remaining actionable issue.
