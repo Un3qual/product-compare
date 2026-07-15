@@ -285,11 +285,12 @@ Owned paths:
 
 Prerequisites:
 
-- Existing offer-discovery and merchant consumer suites remain green.
+- Existing product-offer, product-detail, offer-discovery, and merchant
+  consumer suites remain green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 

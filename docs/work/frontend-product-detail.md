@@ -28,7 +28,7 @@
 
 - Status: done on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate selected-tab, overview-summary, encoded product-path,
+- Completed action: isolated selected-tab, overview-summary, encoded product-path,
   compare-action, and selected-item removal policy in a framework-free module
   while retaining Relay reads, router location and navigation, boundaries,
   tabs, layout, and presentation in `ProductDetailRoute`.

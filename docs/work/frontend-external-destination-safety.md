@@ -7,7 +7,7 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-14 after current source and consumer-suite validation
-  (80 offer-discovery and merchant tests).
+  (139 product-offer, product-detail, offer-discovery, and merchant tests).
 
 ## External Destination Safety Contract
 
@@ -20,8 +20,11 @@
   - `assets/src/routes/external-links.ts`
   - `assets/test/routes/external-links.test.ts`
   - `docs/work/frontend-external-destination-safety.md`
+- Prerequisites:
+  - Existing product-offer, product-detail, offer-discovery, merchant-directory,
+    and merchant-detail suites remain green.
 - Verification:
-  - `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
+  - `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
   - `cd assets && bun run typecheck`
   - `git diff --check`
 - Exit condition: the shared contract directly preserves safe public HTTP(S)
@@ -30,6 +33,6 @@
   invalid hostnames and ports, localhost, and reserved IPv4/IPv6 destinations.
 - Candidate evidence: current source inspection found the complete policy in a
   410-line framework-free module used by offer discovery, product offers, and
-  merchant pages. The existing offer-discovery, merchant-directory, and
-  merchant-detail suites pass 80 tests, but no direct suite owns the policy's
-  security-sensitive edge cases.
+  merchant pages. The existing product-offer contract, product-detail, offer-
+  discovery, merchant-directory, and merchant-detail suites pass 139 tests,
+  but no direct suite owns the policy's security-sensitive edge cases.

@@ -23,7 +23,7 @@
 
 - Status: done on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate reset identity, unique loaded-page accumulation,
+- Completed action: isolated reset identity, unique loaded-page accumulation,
   available options, cursor and empty-state rules, and compare paths in a
   framework-free module. Keep Relay reads, effects, Suspense/error boundaries,
   state transitions, and picker presentation in their current owners.

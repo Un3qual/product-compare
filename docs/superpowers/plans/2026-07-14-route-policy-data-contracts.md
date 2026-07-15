@@ -236,6 +236,11 @@ presentation and tracked commerce actions.
 - Modify: `assets/src/routes/external-links.ts`
 - Create: `assets/test/routes/external-links.test.ts`
 - Create: `docs/work/frontend-external-destination-safety.md`
+- Test: `assets/test/routes/products/product-offer-panel-data.test.ts`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Test: `assets/test/routes/merchants/merchant-detail.route.test.tsx`
 
 **Interfaces:** The existing framework-free module remains the single owner of
 external HTTP URL and bare website-domain normalization. The batch adds direct
@@ -250,8 +255,9 @@ remain unchanged.
   behavior before changing production code.
 - [ ] Simplify or correct the policy only where direct evidence requires it,
   without weakening consumer safety or introducing runtime dependencies.
-- [ ] Run the direct contract and existing offer-discovery and merchant
-  consumer suites, TypeScript, and `git diff --check`.
+- [ ] Run the direct contract and existing product-offer, product-detail,
+  offer-discovery, and merchant consumer suites, TypeScript, and `git diff
+  --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ---
