@@ -156,14 +156,20 @@ function parseUrl(value: string) {
 }
 
 function isSafeExternalHttpUrl(url: URL) {
+  const hostname = hostnameForValidation(url.hostname);
+
   return (
     isHttpProtocol(url.protocol) &&
-    url.hostname.length > 0 &&
+    hostname.length > 0 &&
     url.username.length === 0 &&
     url.password.length === 0 &&
-    isValidHostname(url.hostname) &&
-    isPublicHostname(url.hostname)
+    isValidHostname(hostname) &&
+    isPublicHostname(hostname)
   );
+}
+
+function hostnameForValidation(hostname: string) {
+  return hostname.endsWith(".") ? hostname.slice(0, -1) : hostname;
 }
 
 function isHttpProtocol(protocol: string) {
@@ -559,7 +565,7 @@ function isHostnameShapedBareDomain(value: string) {
     return false;
   }
 
-  const labels = parsedDomain.hostname.split(".");
+  const labels = hostnameForValidation(parsedDomain.hostname).split(".");
 
   return labels.length >= 2 && labels.every(isValidHostnameLabel);
 }

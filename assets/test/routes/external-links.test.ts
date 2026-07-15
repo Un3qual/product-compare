@@ -18,6 +18,10 @@ describe("external HTTP URL hrefs", () => {
       "https://shop.example.com:8443/products/42",
       "https://shop.example.com:8443/products/42"
     ],
+    [
+      "https://shop.example.com./products/42",
+      "https://shop.example.com./products/42"
+    ],
     ["https://shop.example.com:1", "https://shop.example.com:1"],
     ["https://shop.example.com:65535", "https://shop.example.com:65535"],
     ["https://localhost.example.com", "https://localhost.example.com"],
@@ -109,7 +113,7 @@ describe("external HTTP URL hrefs", () => {
     "https://shop..example.com/product",
     "https://shop_example.com/product",
     "https://.example.com/product",
-    "https://example.com./product"
+    "https://example.com../product"
   ])("rejects invalid external hostname %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -125,6 +129,7 @@ describe("external HTTP URL hrefs", () => {
 
   test.each([
     "http://localhost",
+    "http://localhost.",
     "https://localhost:4000/product",
     "https://catalog.localhost/product"
   ])("rejects localhost destination %s", (value) => {
@@ -133,6 +138,7 @@ describe("external HTTP URL hrefs", () => {
 
   test.each([
     "http://0.0.0.0",
+    "http://127.0.0.1.",
     "http://10.0.0.1",
     "http://100.64.0.1",
     "http://127.0.0.1",
@@ -221,6 +227,7 @@ describe("external website hrefs", () => {
   test.each([
     ["  shop.example.com  ", "https://shop.example.com"],
     ["Shop.Example.com:8443", "https://Shop.Example.com:8443"],
+    ["Shop.Example.com.:8443", "https://Shop.Example.com.:8443"],
     [" http://shop.example.com/about ", "http://shop.example.com/about"],
     [" https://shop.example.com/about ", "https://shop.example.com/about"]
   ])(
@@ -234,6 +241,7 @@ describe("external website hrefs", () => {
     "",
     "internal",
     "localhost",
+    "localhost.",
     "shop.example.com/path",
     "shop.example.com?ref=compare",
     "shop.example.com#about",
@@ -245,6 +253,8 @@ describe("external website hrefs", () => {
     "javascript://shop.example.com",
     "https://user@shop.example.com",
     "127.0.0.1",
+    "127.0.0.1.",
+    "shop.example.com..",
     "192.168.1.1"
   ])("rejects unsafe or malformed website value %s", (value) => {
     expect(externalWebsiteHref(value)).toBeNull();

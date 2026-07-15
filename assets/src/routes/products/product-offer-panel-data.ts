@@ -13,6 +13,7 @@ import {
   buildOfferSnapshotSummary,
   type OfferSnapshotSelectors
 } from "../offer-snapshot";
+import { productDetailPath } from "./product-detail-route-data";
 
 export type ProductOfferCouponRow = {
   code: string;
@@ -183,6 +184,12 @@ function buildVisiblePriceHistorySummary(
   };
 }
 
+const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
+  currency: (offer) => offer.currency,
+  hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
+  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
+};
+
 function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOfferSnapshot {
   const summary = buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS);
 
@@ -193,12 +200,6 @@ function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOf
     visibleOfferCount: summary.visibleOfferCount
   };
 }
-
-const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
-  currency: (offer) => offer.currency,
-  hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
-  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
-};
 
 function hasVisiblePrice(
   offer: VisibleProductOffer
@@ -224,6 +225,16 @@ function productOffersPath(
   offersAfter: string | null,
   selectedCompareSlugs: readonly string[]
 ) {
+  const query = productOfferSearchParams(offersAfter, selectedCompareSlugs).toString();
+  const querySuffix = query.length > 0 ? `?${query}` : "";
+
+  return `${productDetailPath(productSlug)}${querySuffix}#offers`;
+}
+
+function productOfferSearchParams(
+  offersAfter: string | null,
+  selectedCompareSlugs: readonly string[]
+) {
   const params = new URLSearchParams();
 
   if (offersAfter) {
@@ -234,9 +245,7 @@ function productOffersPath(
     params.append("slug", slug);
   }
 
-  const query = params.toString();
-  const basePath = `/products/${encodeURIComponent(productSlug)}`;
-  return `${query.length > 0 ? `${basePath}?${query}` : basePath}#offers`;
+  return params;
 }
 
 function buildCouponRows(
