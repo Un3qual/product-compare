@@ -32,6 +32,18 @@ describe("catalogFilterFormInitialTypeState", () => {
     expect(catalogFilterFormInitialTypeState(input)).toEqual(expected);
   });
 
+  test("treats a runtime null type as absent", () => {
+    const runtimeFilters = {
+      typeTaxonId: null,
+      includeTypeDescendants: true
+    } as unknown as Parameters<typeof catalogFilterFormInitialTypeState>[0];
+
+    expect(catalogFilterFormInitialTypeState(runtimeFilters)).toEqual({
+      selectedTypeTaxonId: "",
+      includeTypeDescendants: false
+    });
+  });
+
   test.each([
     ["selected type with descendants enabled", "type-laptops", true, true],
     ["selected type with descendants disabled", "type-laptops", false, false],

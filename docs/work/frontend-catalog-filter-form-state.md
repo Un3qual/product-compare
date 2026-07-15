@@ -6,7 +6,7 @@
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 with 84 passing focused catalog tests, a successful
+- Last verified: 2026-07-15 with 85 passing focused catalog tests, a successful
   TypeScript check, a clean framework-import scan, and `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
@@ -17,8 +17,9 @@
   type-selection transitions, and initial advanced-disclosure policy into
   `catalog-filter-form-state.ts`; `CatalogFilterForm` retains React state,
   controls, form serialization, active-filter summaries, and presentation.
-- Evidence: new pure-state coverage passed 22 tests; the existing browse route
-  coverage and pure suite passed 84 tests total. `cd assets && bun run
+- Evidence: new pure-state coverage passed 23 tests, including runtime-null
+  normalization; the existing browse route coverage and pure suite passed 85
+  tests total. `cd assets && bun run
   typecheck` passed. The framework-import scan returned no matches and `git
   diff --check` was clean.
 - Blockers: none.
