@@ -675,15 +675,15 @@ type disables descendants; changing one selected type to another preserves the
 current descendant choice. `CatalogFilterForm` retains React state, controls,
 form serialization, active-filter summary behavior, and markup.
 
-- [ ] Write pure tests for empty and selected initial type state, descendant
+- [x] Write pure tests for empty and selected initial type state, descendant
   initialization, first selection, clear, selected-type changes with both
   descendant choices, every advanced-filter collection, and input immutability;
   verify RED.
-- [ ] Extract only deterministic state policy while preserving React controls,
+- [x] Extract only deterministic state policy while preserving React controls,
   URL form fields, advanced-filter presentation, and summaries.
-- [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
+- [x] Run the pure and existing catalog route suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -704,16 +704,16 @@ cleared; an absent draft falls back to the persisted note and omits `note` when
 that trimmed value is empty. `FeedCandidatesRoute` retains React state, Relay
 mutation orchestration, errors, feedback, revalidation, and presentation.
 
-- [ ] Write pure tests for explicit nonblank and blank drafts, absent drafts
+- [x] Write pure tests for explicit nonblank and blank drafts, absent drafts
   with nonblank and empty persisted notes, trimmed notes, own-property draft
   detection, successful-draft removal, missing-draft behavior, source ordering,
   result identity, and input immutability; verify RED.
-- [ ] Extract only deterministic mutation-input and draft-removal policy while
+- [x] Extract only deterministic mutation-input and draft-removal policy while
   preserving React state, Relay behavior, errors, feedback, revalidation, and
   presentation.
-- [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
+- [x] Run the pure and existing feed-candidate route suites, TypeScript, the
   framework-import scan, secret/raw-field scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -733,15 +733,15 @@ connection fallbacks, and ordered valid price-history rows.
 `OfferDiscoveryCard` retains safe versus tracked merchant-action selection,
 observation and coupon rendering, markup, and StyleX presentation.
 
-- [ ] Write pure tests for nullish and empty-string label fallbacks, active and
+- [x] Write pure tests for nullish and empty-string label fallbacks, active and
   inactive status copy, nullable connection fallbacks and existing-connection
   identity, ordered valid/invalid price-history rows, and input immutability;
   verify RED.
-- [ ] Extract only deterministic card view data while preserving merchant
+- [x] Extract only deterministic card view data while preserving merchant
   action, observation, coupon, markup, and presentation behavior.
-- [ ] Run the pure and existing offer-discovery route suites, TypeScript, the
+- [x] Run the pure and existing offer-discovery route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1010,3 +1010,8 @@ ordinary-error, or unknown context into the pure owner.
   classification still embedded in four path-disjoint React owners. Their
   category, alerts, recommendation, compare, and router suites passed 138 tests.
   The four successors do not overlap each other or the three claimed rows.
+- The completed catalog filter-form, feed-candidate review mutation, and offer-
+  discovery card contracts passed 172 focused tests on 2026-07-15. TypeScript
+  and all framework/transport/sensitive-field boundaries passed. Independent
+  task reviews approved feed and offer directly and approved catalog after an
+  explicit runtime-null normalization case was added.

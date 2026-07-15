@@ -477,114 +477,21 @@ suites pass 138 tests. All four successors have complete, mutually disjoint
 owned paths and do not overlap catalog filter-form state, feed-candidate review
 mutation data, or offer-discovery card view data.
 
+The three claimed contracts then completed in parallel. Catalog filter-form
+state now has one framework-free owner for initialization, type transitions,
+and initial advanced disclosure. Feed-candidate review mutation data now owns
+own-property draft selection, trimmed mutation input, and immutable successful-
+draft removal. Offer-discovery card data now owns its deterministic labels,
+nullable connection fallbacks, and ordered valid price-history rows while the
+React owner retains safe/tracked actions and presentation. Their pure and route
+suites pass 172 tests; TypeScript and all dependency/sensitive-field scans pass.
+Independent task reviews approved feed and offer data directly, and approved
+catalog state after explicit runtime-null coverage was added. Four validated
+rows remain ready.
+
 ## Active Work
 
-### Catalog Filter Form State Contract
-
-Status: active
-Owner: `codex/frontend-route-data-contracts` (catalog filter state)
-Lane: Frontend catalog filter form state
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move type-filter initialization and transitions plus initial
-advanced-filter disclosure policy out of `CatalogFilterForm` into a framework-
-free state contract while preserving React state, controls, form serialization,
-active-filter summary, and markup.
-Owned paths:
-
-- `assets/src/routes/catalog/catalog-filter-form-state.ts`
-- `assets/src/routes/catalog/CatalogFilterForm.tsx`
-- `assets/test/routes/catalog/catalog-filter-form-state.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-filter-form-state.md`
-
-Prerequisites:
-
-- Existing catalog filter-form characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/catalog-filter-form-state.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework-import scan of the pure state module
-- `git diff --check`
-
-Exit condition: one framework-free owner initializes type/descendant state,
-enables descendants for the first selected type, disables them when the type is
-cleared, preserves the choice across selected-type changes, and identifies
-initial advanced disclosure without mutating filters; React retains state,
-controls, form serialization, summaries, and presentation.
-
-### Feed-Candidate Review Mutation Data Contract
-
-Status: active
-Owner: `codex/frontend-route-data-contracts` (feed review mutation data)
-Lane: Frontend feed-candidate review mutation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move explicit-draft detection, trimmed review mutation-input
-construction, and immutable successful-draft removal out of
-`FeedCandidatesRoute` into a framework-free data contract while preserving
-React state, Relay mutation orchestration, errors, feedback, revalidation, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.ts`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `docs/work/frontend-feed-candidate-review-mutation-data.md`
-
-Prerequisites:
-
-- Existing feed-candidate review mutation characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework-import and secret/raw-field scans of the pure data module
-- `git diff --check`
-
-Exit condition: one framework-free owner distinguishes an explicit blank draft
-from an absent draft, trims draft or persisted review notes, omits empty
-non-draft notes, builds the existing mutation input, and removes a successful
-draft without mutating input; React and Relay retain all state transitions,
-mutation lifecycle, feedback, revalidation, and presentation.
-
-### Offer-Discovery Card View-Data Contract
-
-Status: active
-Owner: `codex/frontend-route-data-contracts` (offer card view data)
-Lane: Frontend offer-discovery card view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move product/status/merchant/domain/latest-price labels, nullable
-connection fallbacks, and ordered valid price-history rows out of
-`OfferDiscoveryCard` into a framework-free view-data contract while preserving
-safe/tracked merchant actions, observation and coupon rendering, markup, and
-styling.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-card-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryCard.tsx`
-- `assets/test/routes/offers/offer-discovery-card-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-card-data.md`
-
-Prerequisites:
-
-- Existing offer-discovery card characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-card-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves current product, status,
-merchant, domain, and latest-price fallbacks, returns empty nullable
-connections, and builds ordered valid price-history rows without mutating
-input; React retains action selection, safe and tracked links, observation and
-coupon rendering, markup, and styling.
+None.
 
 ## Ready Work
 

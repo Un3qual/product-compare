@@ -60,11 +60,11 @@ saved-comparison naming data, merchant visible-page filter data, and price-watch
 input data, feed-candidate review view data, and tracked-commerce click data are
 also complete. Immutable route-state collection helpers are also complete.
 Catalog filter-form state, feed-candidate review mutation data, and offer-
-discovery card view data are active. Four source-verified, non-overlapping
-successors remain ready across category landing view data, alerts mutation data,
-recommendation result view data, and shared route-error view data. Trust-surface
-date presentation, product-attribute grouping, route-metadata resolution, and
-saved-comparison navigation data are complete.
+discovery card view data are also complete. Four source-verified, non-
+overlapping successors remain ready across category landing view data, alerts
+mutation data, recommendation result view data, and shared route-error view
+data. Trust-surface date presentation, product-attribute grouping, route-
+metadata resolution, and saved-comparison navigation data are complete.
 
 Active implementation plans:
 
@@ -147,9 +147,9 @@ batch and should not be recreated or promoted.
   plan; do not promote it again without fresh scope.
 - Completed reserve: immutable route-state collection helpers executed through
   that same plan; do not promote them again without fresh scope.
-- Active reserve: catalog filter-form state, feed-candidate review mutation
-  data, and offer-discovery card view data execute through that same plan.
-  Confirm live ownership in `docs/work/index.md` before dispatch.
+- Completed reserve: catalog filter-form state, feed-candidate review mutation
+  data, and offer-discovery card view data executed through that same plan; do
+  not promote them again without fresh scope.
 - Ready reserve: category landing view data, alerts mutation data,
   recommendation result view data, and shared route-error view data execute
   through that same plan. Confirm live ownership in `docs/work/index.md` before
