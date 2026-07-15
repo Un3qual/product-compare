@@ -317,40 +317,18 @@ recommendation-profile route data as a fourth non-overlapping successor:
 profile parsing, profile-link construction, GraphQL enum mapping, and profile-
 only loader revalidation remain split between the compare loader and React
 panel, while the current recommendation and snapshot suites pass 11 tests.
+Saved Comparison Navigation then completed: one framework-free owner now
+builds ordered encoded reopen paths and first/next pagination paths while the
+route retains Relay query retention, deletion, local state, boundaries, links,
+and presentation. Task review caught that the extracted contract relied on the
+loader to reject non-advancing cursors; the contract now enforces that invariant
+directly. Its pure and route-state suites pass 42 tests, the full frontend gate
+passes 74 files and 1,018 tests, and task re-review is approved. The three other
+validated rows remain ready.
 
 ## Ready Work
 
-### 1. Saved Comparison Navigation Data Contract
-
-Status: ready
-Lane: Frontend saved-comparison navigation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic saved-set reopen and cursor-pagination paths
-out of the Relay route owner into a framework-free contract while preserving
-stored product order, query retention, mutation behavior, and route markup.
-Owned paths:
-
-- `assets/src/routes/compare/saved-comparisons-route-data.ts`
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-data.test.ts`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-saved-comparison-navigation.md`
-
-Prerequisites:
-
-- Existing saved-comparison route-state characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-data.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves ordered and encoded reopen
-links, unauthorized pagination suppression, first-page return visibility, and
-next-page links only for advancing non-empty cursors.
-
-### 2. API Token Lifecycle Display Data Contract
+### 1. API Token Lifecycle Display Data Contract
 
 Status: ready
 Lane: Frontend API-token lifecycle display
@@ -382,7 +360,7 @@ labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
 exact invalid-string fallbacks, optional empty labels, and revoked/active/
 expired status copy; React retains semantic details and lifecycle controls.
 
-### 3. Catalog Specification Highlights Data Contract
+### 2. Catalog Specification Highlights Data Contract
 
 Status: ready
 Lane: Frontend catalog specification highlights
@@ -413,7 +391,7 @@ highlights by ascending explicit sort order, places unspecified orders last,
 preserves source order for ties, and does not mutate the Relay input; React
 retains the current empty omission, list markup, and styling.
 
-### 4. Recommendation Profile Route Data Contract
+### 3. Recommendation Profile Route Data Contract
 
 Status: ready
 Lane: Frontend recommendation profile navigation

@@ -385,14 +385,19 @@ reopen path and first/next cursor pagination paths from transport-neutral
 values. `SavedComparisonsRoute` retains Relay query retention, mutation and
 local-state orchestration, router links, boundaries, and presentation.
 
-- [ ] Write pure tests for empty and ordered product selections, encoded
+- [x] Write pure tests for empty and ordered product selections, encoded
   slugs, unauthorized pagination, first-page return visibility, absent or
   empty next cursors, and encoded advancing cursors; verify RED.
-- [ ] Extract only deterministic navigation data while preserving stored
+- [x] Extract only deterministic navigation data while preserving stored
   product order, query-retainer identity, delete behavior, and route markup.
-- [ ] Run the pure and existing route-state suites, TypeScript, the framework-
+- [x] Run the pure and existing route-state suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
+- [x] Task review found that the transport-neutral contract relied on the
+  loader to reject a repeated next cursor. Add a failing direct regression,
+  enforce cursor advancement in the pure owner, cover absent `undefined`, and
+  restore the validated P2 lane priority.
+- [x] Task re-review approved the completed contract with no remaining issue.
 
 ---
 
