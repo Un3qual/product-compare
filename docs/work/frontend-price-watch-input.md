@@ -10,10 +10,10 @@
 
 ## Price-Watch Input Data Contract
 
-- Next action: isolate amount-bearing rule selection and create-watch input
-  normalization in a framework-free data module while retaining product-scoped
+- Delivered: `price-watch-data.ts` owns amount-bearing rule selection and
+  create-watch input normalization. `PriceWatchControl` retains product-scoped
   form reset, state, Relay mutation orchestration, validation attributes,
-  feedback, and presentation in `PriceWatchControl`.
+  feedback, and presentation.
 - Owned paths:
   - `assets/src/routes/products/price-watch-data.ts`
   - `assets/src/routes/products/PriceWatchControl.tsx`
@@ -29,9 +29,9 @@
   fields, trimmed amount values, uppercased trimmed currency, and omission of
   amount fields for availability rules; React retains form and mutation
   behavior.
-- Candidate evidence: current source inspection found the deterministic policy
-  embedded in `PriceWatchControl`; its focused alert/control suite passed 6
-  tests, and the product-detail host route suite passed 55 tests.
+- Completion evidence: the deterministic policy now lives in
+  `price-watch-data.ts`; its pure contract and retained alert/control suite
+  passed 16 focused tests.
 - Blockers: none.
 
 ## Completion Evidence (2026-07-15)
