@@ -79,8 +79,9 @@
 
 - The historical offer baseline is complete; the Product Offer Panel Data
   Contract is complete and no longer present in the live queue.
-- The current three-row ready successor set is External Destination Safety,
-  Trust-Surface Date Presentation, and Product Attribute Grouping Data.
+- Current queue membership is intentionally not duplicated here; dispatch
+  starts at `docs/work/index.md` so completed lane evidence cannot become a
+  stale second queue.
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are present; no fallback planning
   blocker applies.
 

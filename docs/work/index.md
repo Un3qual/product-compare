@@ -269,11 +269,12 @@ Destination Safety, the coordinator validated a fourth non-overlapping
 successor in the route metadata renderer:
 deepest-match selection, loader-versus-handle precedence, and malformed-value
 parsing remain embedded in the React head owner, whose integration suite passes
-2 tests. External Destination Safety then completed with 106 direct cases and
+2 tests. External Destination Safety then completed with 140 direct cases and
 139 unchanged consumer cases passing. Review follow-up closed raw/WHATWG
-authority disagreement and replaced textual IPv6 checks with numeric CIDR
-classification. Independent re-review found no remaining actionable issue, and
-the three other validated rows remain ready.
+authority disagreement and replaced textual IPv6 checks with a dated numeric
+registry policy whose longest-prefix rules preserve globally reachable
+exceptions inside non-global parents. Independent re-review found no remaining
+actionable issue, and the three other validated rows remain ready.
 
 ## Ready Work
 

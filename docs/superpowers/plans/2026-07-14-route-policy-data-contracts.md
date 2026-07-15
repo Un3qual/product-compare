@@ -259,11 +259,11 @@ remain unchanged.
   offer-discovery, and merchant consumer suites, TypeScript, and `git diff
   --check`.
 - [x] Record lane evidence and commit the milestone.
-- [x] Task review verification: 106 direct cases and 139 unchanged consumer
+- [x] Task review verification: 140 direct cases and 139 unchanged consumer
   cases passed. Review follow-up replaced divergent raw/WHATWG authority
-  interpretation and textual IPv6 prefix checks with one strict raw-authority
-  parse and CIDR-accurate IPv6 classification; independent re-review found no
-  remaining actionable issue.
+  interpretation and textual IPv6 checks with one strict raw-authority parse
+  plus a dated, longest-prefix IPv6 registry policy. Independent re-review
+  found no remaining actionable issue.
 
 ---
 
@@ -394,8 +394,9 @@ parses the required and optional document fields. `RouteMetadata` retains
   destination safety, date presentation, and product-attribute grouping.
   Current source inspection found deterministic selection and parsing embedded
   in the React head owner; its integration suite passed 2 tests on 2026-07-14.
-- External-destination safety completed with 106 direct cases and 139 unchanged
+- External-destination safety completed with 140 direct cases and 139 unchanged
   consumer cases passing. The contract now validates the raw HTTP authority
   before WHATWG canonicalization, rejects userinfo and ambiguous authority
-  forms, and applies numeric CIDR checks to non-public and IPv4-transition IPv6
-  ranges without rejecting the public `2001:db80::/…` neighbor.
+  forms, and applies order-independent longest-prefix rules to non-global IPv6
+  parents, their globally reachable exceptions, and intentional IPv4-
+  transition exclusions without rejecting public boundary neighbors.
