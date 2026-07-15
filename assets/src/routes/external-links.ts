@@ -1,14 +1,43 @@
-const RESERVED_IPV6_PREFIXES = ["fc", "fd", "fe8", "fe9", "fea", "feb", "ff", "2001:db8"];
 const DOCUMENTATION_IPV4_RANGES = new Set([
   "192.0.2",
   "198.51.100",
   "203.0.113"
 ]);
+const BLOCKED_IPV6_PREFIXES = [
+  // IPv4-compatible, mapped, and translatable address forms.
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000],
+    bits: 96
+  },
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff],
+    bits: 96
+  },
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 0x0000],
+    bits: 96
+  },
+  // NAT64 well-known and local-use translation prefixes.
+  {
+    prefix: [0x0064, 0xff9b, 0x0000, 0x0000, 0x0000, 0x0000],
+    bits: 96
+  },
+  { prefix: [0x0064, 0xff9b, 0x0001], bits: 48 },
+  // 6to4 and Teredo carry IPv4 routing information in canonical IPv6 words.
+  { prefix: [0x2002], bits: 16 },
+  { prefix: [0x2001, 0x0000], bits: 32 },
+  // Unique-local, link-local, multicast, and documentation ranges.
+  { prefix: [0xfc00], bits: 7 },
+  { prefix: [0xfe80], bits: 10 },
+  { prefix: [0xff00], bits: 8 },
+  { prefix: [0x2001, 0x0db8], bits: 32 }
+] as const;
 
 export function externalHttpUrlHref(value: string) {
   const href = value.trim();
+  const rawAuthority = parseRawHttpAuthority(href);
 
-  if (href.length === 0 || hasMalformedHttpAuthority(href)) {
+  if (!rawAuthority || hasDottedIPv4Tail(rawAuthority.hostname)) {
     return null;
   }
 
@@ -172,61 +201,99 @@ function parseBracketedIPv6Address(hostname: string) {
 }
 
 function isReservedIPv6Address(address: string) {
-  const embeddedIPv4Address = parseEmbeddedIPv4Address(address);
+  const words = parseIPv6AddressWords(address);
 
-  if (embeddedIPv4Address) {
+  if (!words) {
     return true;
   }
 
-  return (
-    address === "::" ||
-    address === "::1" ||
-    RESERVED_IPV6_PREFIXES.some((prefix) => address.startsWith(prefix))
+  return BLOCKED_IPV6_PREFIXES.some(({ prefix, bits }) =>
+    matchesIPv6Prefix(words, prefix, bits)
   );
 }
 
-function parseEmbeddedIPv4Address(address: string) {
-  if (address.startsWith("::ffff:")) {
-    return parseEmbeddedIPv4AddressSuffix(address.slice("::ffff:".length));
-  }
+function parseIPv6AddressWords(address: string) {
+  const compressionIndex = address.indexOf("::");
 
-  if (address.startsWith("::")) {
-    return parseEmbeddedIPv4AddressSuffix(address.slice("::".length));
-  }
-
-  return null;
-}
-
-function parseEmbeddedIPv4AddressSuffix(value: string) {
-  if (value.length === 0) {
+  if (
+    compressionIndex !== -1 &&
+    address.indexOf("::", compressionIndex + 2) !== -1
+  ) {
     return null;
   }
 
-  const dottedAddress = parseIPv4Address(value);
+  if (compressionIndex === -1) {
+    const words = parseIPv6WordSequence(address);
 
-  if (dottedAddress) {
-    return dottedAddress;
+    return words?.length === 8 ? words : null;
   }
 
-  const hexWords = value.split(":");
+  const leadingWords = parseIPv6WordSequence(
+    address.slice(0, compressionIndex)
+  );
+  const trailingWords = parseIPv6WordSequence(
+    address.slice(compressionIndex + 2)
+  );
 
-  if (hexWords.length !== 2) {
+  if (!leadingWords || !trailingWords) {
     return null;
   }
 
-  const highWord = parseIPv6HexWord(hexWords[0]);
-  const lowWord = parseIPv6HexWord(hexWords[1]);
+  const omittedWordCount = 8 - leadingWords.length - trailingWords.length;
 
-  if (highWord === null || lowWord === null) {
+  if (omittedWordCount < 1) {
     return null;
   }
 
   return [
-    highWord >> 8,
-    highWord & 0xff,
-    lowWord >> 8,
-    lowWord & 0xff
-  ] as [number, number, number, number];
+    ...leadingWords,
+    ...Array.from({ length: omittedWordCount }, () => 0),
+    ...trailingWords
+  ];
+}
+
+function parseIPv6WordSequence(value: string) {
+  if (value.length === 0) {
+    return [];
+  }
+
+  const words: number[] = [];
+
+  for (const valueWord of value.split(":")) {
+    const word = parseIPv6HexWord(valueWord);
+
+    if (word === null) {
+      return null;
+    }
+
+    words.push(word);
+  }
+
+  return words;
+}
+
+function matchesIPv6Prefix(
+  address: number[],
+  prefix: readonly number[],
+  prefixLength: number
+) {
+  const completeWords = Math.floor(prefixLength / 16);
+
+  for (let index = 0; index < completeWords; index += 1) {
+    if (address[index] !== prefix[index]) {
+      return false;
+    }
+  }
+
+  const remainingBits = prefixLength % 16;
+
+  if (remainingBits === 0) {
+    return true;
+  }
+
+  const mask = (0xffff << (16 - remainingBits)) & 0xffff;
+
+  return (address[completeWords] & mask) === (prefix[completeWords] & mask);
 }
 
 function parseIPv6HexWord(value: string) {
@@ -261,52 +328,44 @@ function hasAbsoluteUrlScheme(value: string) {
   return true;
 }
 
-function hasMalformedHttpAuthority(value: string) {
-  const lowerValue = value.toLowerCase();
-
-  return (
-    hasMissingHttpAuthoritySlashes(lowerValue) ||
-    lowerValue.startsWith("http:///") ||
-    lowerValue.startsWith("https:///") ||
-    lowerValue.startsWith("http://\\") ||
-    lowerValue.startsWith("https://\\") ||
-    lowerValue.startsWith("http:\\") ||
-    lowerValue.startsWith("https:\\") ||
-    hasInvalidHttpAuthorityPort(value)
-  );
-}
-
-function hasInvalidHttpAuthorityPort(value: string) {
+function parseRawHttpAuthority(value: string) {
   const separatorIndex = value.indexOf("://");
 
-  if (separatorIndex === -1) {
-    return false;
+  if (
+    separatorIndex === -1 ||
+    !isRawHttpProtocol(value.slice(0, separatorIndex))
+  ) {
+    return null;
   }
 
   const authorityStart = separatorIndex + "://".length;
-  const authorityEnd = findAuthorityEnd(value, authorityStart);
-  const authority = value.slice(authorityStart, authorityEnd);
-  const hostnameAndPort = authority.slice(authority.lastIndexOf("@") + 1);
+  const authorityEnd = findStrictAuthorityEnd(value, authorityStart);
 
-  if (hostnameAndPort.startsWith("[")) {
-    const closingBracketIndex = hostnameAndPort.indexOf("]");
-    const portSuffix = hostnameAndPort.slice(closingBracketIndex + 1);
-
-    return (
-      portSuffix.length > 0 &&
-      (!portSuffix.startsWith(":") || !isValidPort(portSuffix.slice(1)))
-    );
+  if (authorityEnd === null) {
+    return null;
   }
 
-  const colonIndex = hostnameAndPort.lastIndexOf(":");
+  const authority = value.slice(authorityStart, authorityEnd);
 
-  return (
-    colonIndex !== -1 && !isValidPort(hostnameAndPort.slice(colonIndex + 1))
-  );
+  if (authority.length === 0 || authority.includes("@")) {
+    return null;
+  }
+
+  return parseRawHostnameAndPort(authority);
 }
 
-function findAuthorityEnd(value: string, authorityStart: number) {
+function isRawHttpProtocol(value: string) {
+  const protocol = value.toLowerCase();
+
+  return protocol === "http" || protocol === "https";
+}
+
+function findStrictAuthorityEnd(value: string, authorityStart: number) {
   for (let index = authorityStart; index < value.length; index += 1) {
+    if (isForbiddenRawAuthorityCharacter(value[index])) {
+      return null;
+    }
+
     if (value[index] === "/" || value[index] === "?" || value[index] === "#") {
       return index;
     }
@@ -315,10 +374,65 @@ function findAuthorityEnd(value: string, authorityStart: number) {
   return value.length;
 }
 
-function hasMissingHttpAuthoritySlashes(value: string) {
+function isForbiddenRawAuthorityCharacter(character: string) {
+  const codePoint = character.charCodeAt(0);
+
+  return character === "\\" || codePoint <= 0x20 || codePoint === 0x7f;
+}
+
+function parseRawHostnameAndPort(authority: string) {
+  if (authority.startsWith("[")) {
+    return parseRawBracketedHostnameAndPort(authority);
+  }
+
+  if (authority.includes("[") || authority.includes("]")) {
+    return null;
+  }
+
+  const colonIndex = authority.lastIndexOf(":");
+
+  if (colonIndex === -1) {
+    return { hostname: authority };
+  }
+
+  if (
+    authority.indexOf(":") !== colonIndex ||
+    !isValidPort(authority.slice(colonIndex + 1))
+  ) {
+    return null;
+  }
+
+  const hostname = authority.slice(0, colonIndex);
+
+  return hostname.length > 0 ? { hostname } : null;
+}
+
+function parseRawBracketedHostnameAndPort(authority: string) {
+  const closingBracketIndex = authority.indexOf("]");
+
+  if (closingBracketIndex <= 1) {
+    return null;
+  }
+
+  const hostname = authority.slice(0, closingBracketIndex + 1);
+  const portSuffix = authority.slice(closingBracketIndex + 1);
+
+  if (portSuffix.length === 0) {
+    return { hostname };
+  }
+
+  if (!portSuffix.startsWith(":") || !isValidPort(portSuffix.slice(1))) {
+    return null;
+  }
+
+  return { hostname };
+}
+
+function hasDottedIPv4Tail(hostname: string) {
   return (
-    (value.startsWith("http:") && !value.startsWith("http://")) ||
-    (value.startsWith("https:") && !value.startsWith("https://"))
+    hostname.startsWith("[") &&
+    hostname.endsWith("]") &&
+    hostname.includes(".")
   );
 }
 
