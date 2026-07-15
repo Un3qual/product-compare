@@ -81,6 +81,17 @@ describe("buildSavedComparisonsPagination", () => {
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
+  test("hides the next-page path when no next page exists", () => {
+    expect(
+      buildSavedComparisonsPagination({
+        after: "cursor-current",
+        endCursor: "cursor-next",
+        hasNextPage: false,
+        status: "ready"
+      })
+    ).toEqual({ firstHref: "/compare/saved", nextHref: null });
+  });
+
   test("encodes an advancing next-page cursor", () => {
     expect(
       buildSavedComparisonsPagination({

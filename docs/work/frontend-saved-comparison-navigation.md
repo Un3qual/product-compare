@@ -33,6 +33,11 @@
   - Review-fix GREEN: the combined pure and route-state suite passed 42 tests
     after requiring an advancing, non-empty next cursor; absent cursor coverage
     now includes `undefined` as well as `null` and `""`.
+  - Final-review RED: temporarily removing the `hasNextPage` guard made the
+    direct pure suite fail when a non-empty advancing cursor was present but no
+    next page existed.
+  - Final-review GREEN: after restoring the guard, the combined pure and
+    route-state suite passed 43 tests, including the no-next-page cursor case.
 - Verified commands:
   - `cd assets && bun x vitest run
     test/routes/compare/saved-comparisons-route-data.test.ts
@@ -42,11 +47,11 @@
   - direct framework import scan of
     `assets/src/routes/compare/saved-comparisons-route-data.ts`
   - `git diff --check`
-- Exit condition met after the review-fix GREEN verification: reopening
+- Exit condition met after the final-review GREEN verification: reopening
   preserves stored product order and current `URLSearchParams` encoding;
   pagination hides for unauthorized data, exposes first-page return only after
-  a cursor, hides unavailable and non-advancing next cursors, and encodes
-  advancing cursors.
+  a cursor, hides unavailable and non-advancing next cursors, suppresses
+  non-empty cursors when `hasNextPage` is false, and encodes advancing cursors.
 - The full frontend gate passed Relay validation, TypeScript, 74 test files and
   1,018 tests, client and SSR production builds, and the client bundle budget
   (181,915 gzip bytes against 200,000).
