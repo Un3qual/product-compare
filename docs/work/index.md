@@ -254,41 +254,22 @@ then completed: one transport-neutral contract now owns reset identity, stable
 page accumulation, selected-product exclusion, option/path construction,
 cursor behavior, and empty copy while Relay timing, state/effects, boundaries,
 and presentation remain in React. Its pure and route suites pass 116 tests,
-and independent task review found no actionable issues.
+and independent task review found no actionable issues. Before claiming Product
+Offer Panel, the coordinator validated a fourth non-overlapping successor in
+the shared product-attribute list: deterministic label normalization, case-
+insensitive grouping, and stable group and attribute ordering are still
+embedded in the StyleX presentation owner, while its product-detail and compare
+consumers pass 164 tests. Product Offer Panel then completed: one transport-
+neutral contract now owns visible offer normalization, coupon and price-history
+rows, snapshot display values, and first/next pagination paths while React
+retains error, empty, snapshot, list, pagination, accessibility, and tracked-
+commerce presentation. Its pure and product-detail suites pass 59 tests, and
+independent task review found no actionable issues. The three other validated
+rows remain ready.
 
 ## Ready Work
 
-### 1. Product Offer Panel Data Contract
-
-Status: ready
-Lane: Frontend product offers
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free offer normalization, coupon and price-
-history row construction, snapshot values, and pagination policy while
-preserving panel markup, accessibility, and list presentation.
-Owned paths:
-
-- `assets/src/routes/products/product-offer-panel-data.ts`
-- `assets/src/routes/products/ProductOfferPanel.tsx`
-- `assets/src/routes/products/ProductOfferList.tsx`
-- `assets/test/routes/products/product-offer-panel-data.test.ts`
-- `docs/work/frontend-product-offers.md`
-
-Prerequisites:
-
-- Existing 55-test product-detail route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure offer-panel data preserves unsafe-URL exclusion, merchant
-fallbacks, price/currency validation, coupon and price-history semantics,
-snapshot values, compare-slug ordering, and offer pagination paths.
-
-### 2. External Destination Safety Contract
+### 1. External Destination Safety Contract
 
 Status: ready
 Lane: Frontend external destination safety
@@ -317,7 +298,7 @@ destinations, optional bare-domain HTTPS promotion, and exact safe hrefs while
 rejecting credentials, malformed authorities, unsupported schemes, invalid
 hostnames and ports, localhost, and reserved IPv4/IPv6 destinations.
 
-### 3. Trust-Surface Date Presentation Contract
+### 2. Trust-Surface Date Presentation Contract
 
 Status: ready
 Lane: Frontend trust-surface date presentation
@@ -348,6 +329,35 @@ Verification:
 Exit condition: one framework-free formatter owns stable UTC date-only and
 date-time labels, offset normalization, and exact malformed-string fallback;
 merchant and snapshot markup retain their original semantic `dateTime` values.
+
+### 3. Product Attribute Grouping Data Contract
+
+Status: ready
+Lane: Frontend product attribute grouping
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic product-attribute grouping out of the StyleX
+list component into a framework-free data contract while preserving list and
+section markup for product-detail and comparison consumers.
+Owned paths:
+
+- `assets/src/routes/products/product-attribute-list-data.ts`
+- `assets/src/routes/products/ProductAttributeList.tsx`
+- `assets/test/routes/products/product-attribute-list-data.test.ts`
+- `docs/work/frontend-product-attribute-grouping.md`
+
+Prerequisites:
+
+- Existing product-detail and compare route characterizations remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/product-attribute-list-data.test.ts test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves trimmed group labels,
+case-insensitive first-label grouping, first-seen group order, stable attribute
+order within groups, and original ungrouped order.
 
 ## Needs Decision Work
 

@@ -212,16 +212,20 @@ transport-neutral offer connection. `ProductOfferPanel` retains error, empty,
 snapshot, list, and pagination markup; `ProductOfferList` retains offer-row
 presentation and tracked commerce actions.
 
-- [ ] Write pure tests for unsafe URL exclusion, merchant fallback, numeric and
+- [x] Write pure tests for unsafe URL exclusion, merchant fallback, numeric and
   currency validation, coupon discount/date semantics, price-history filtering,
   mixed-currency snapshots, compare-slug ordering, and first/next pagination;
   verify RED.
-- [ ] Extract only deterministic offer-panel data and path policy while keeping
+- [x] Extract only deterministic offer-panel data and path policy while keeping
   React identifiers, markup, accessibility, and tracked commerce presentation
   in the component owners.
-- [ ] Run the pure and existing detail suites, TypeScript, the framework-import
+- [x] Run the pure and existing detail suites, TypeScript, the framework-import
   scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
+- [x] Task review verification: the pure and existing product-detail suites
+  passed 59 tests, TypeScript and the transitive framework scan passed, and
+  independent review found no actionable spec, correctness, boundary,
+  performance, maintainability, or test-quality issues.
 
 ---
 
@@ -281,6 +285,34 @@ while the React owners retain semantic `<time dateTime>` markup and layout.
   --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 9: Product Attribute Grouping Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/products/product-attribute-list-data.ts`
+- Modify: `assets/src/routes/products/ProductAttributeList.tsx`
+- Create: `assets/test/routes/products/product-attribute-list-data.test.ts`
+- Create: `docs/work/frontend-product-attribute-grouping.md`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+
+**Interfaces:** The framework-free data module partitions product attributes
+into first-seen labeled groups and an ungrouped tail. It trims labels, matches
+labels case-insensitively while retaining the first display label, and
+preserves attribute order. `ProductAttributeList` retains StyleX, empty-state,
+section, heading, and definition-list presentation.
+
+- [ ] Write pure tests for empty input, all-ungrouped input, trimmed labels,
+  case-insensitive grouping, first-label retention, first-seen group order,
+  stable attribute order, and ungrouped tail order; verify RED.
+- [ ] Extract only deterministic grouping data and keep all markup and styling
+  in `ProductAttributeList`.
+- [ ] Run the pure, product-detail, and compare route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -312,3 +344,11 @@ while the React owners retain semantic `<time dateTime>` markup and layout.
 - The completed compare-picker contract and existing route characterization
   passed 116 focused tests on 2026-07-14; independent task review found no
   actionable issues.
+- The product-attribute grouping candidate is non-overlapping with product-
+  offer, external-destination, and date-presentation ownership. Current source
+  inspection found deterministic grouping embedded in the StyleX list owner;
+  the product-detail and compare consumer suites passed 164 tests on
+  2026-07-14.
+- The completed product-offer panel contract and existing product-detail route
+  characterization passed 59 focused tests on 2026-07-14; independent task
+  review found no actionable issues.

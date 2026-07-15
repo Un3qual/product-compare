@@ -78,7 +78,7 @@
 ## Closure
 
 - The historical offer baseline is complete; the Product Offer Panel Data
-  Contract is the current active successor in `docs/work/index.md`.
+  Contract is complete and no longer present in the live queue.
 - The current three-row ready successor set is External Destination Safety,
   Trust-Surface Date Presentation, and Product Attribute Grouping Data.
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are present; no fallback planning
