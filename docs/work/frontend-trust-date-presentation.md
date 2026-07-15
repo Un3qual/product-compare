@@ -57,3 +57,5 @@
   files and 995 tests, client and SSR production builds, and the client bundle
   budget (181,909 gzip bytes against 200,000).
 - The framework-import scan and `git diff --check` passed.
+- Independent re-review confirmed the malformed-date finding is resolved with
+  no remaining actionable issue.

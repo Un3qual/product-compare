@@ -285,8 +285,8 @@ fallbacks while merchant and snapshot markup retain their source `dateTime`
 values. Its direct and consumer suites pass 15 tests; review follow-up routes
 all string inputs through the existing strict GraphQL DateTime validator so
 impossible calendar dates and timestamps without offsets fail closed. The full
-frontend gate passes 71 files and 995 tests. The three other validated rows
-remain ready.
+frontend gate passes 71 files and 995 tests. Independent re-review found no
+remaining actionable issue. The three other validated rows remain ready.
 
 ## Ready Work
 

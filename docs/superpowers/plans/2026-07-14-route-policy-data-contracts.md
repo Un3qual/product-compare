@@ -302,6 +302,8 @@ while the React owners retain semantic `<time dateTime>` markup and layout.
 - [x] Review fix verification: two new regression cases failed before the fix;
   the formatter, validator, merchant, and snapshot suites then passed 26 tests,
   and the full frontend gate passed 71 files and 995 tests.
+- [x] Independent re-review confirmed the malformed-date finding is resolved
+  with no remaining actionable issue.
 
 ---
 
