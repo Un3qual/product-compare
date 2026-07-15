@@ -44,6 +44,18 @@
 - Candidate evidence: current source inspection found a cohesive deterministic
   policy in `CompareProductPickerBoundary`, distinct from the completed picker
   presentation boundary, and the existing route suite passed 109 tests.
+- Completion evidence (2026-07-14):
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts`
+    failed as expected because `compare-picker-data` did not exist.
+  - GREEN: the new pure contract plus existing compare route suite passed 116
+    tests, with reset identity, stable page deduplication, selected exclusion,
+    brand fallback, cursor/empty behavior, canonical maximum, encoded paths,
+    and specification modes covered.
+  - `cd assets && bun run typecheck` passed; the direct/transitive scan of
+    `compare-picker-data.ts` and its `compare/paths.ts` dependency found no
+    React, Relay, router, StyleX, or Radix imports; `git diff --check` passed.
+  - Relay reads and request timing, state/effect transitions, boundaries, and
+    picker-local filtering remain in their existing React owners.
 
 ## Saved Comparison View-State Extraction
 
