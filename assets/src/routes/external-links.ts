@@ -175,7 +175,7 @@ function isReservedIPv6Address(address: string) {
   const embeddedIPv4Address = parseEmbeddedIPv4Address(address);
 
   if (embeddedIPv4Address) {
-    return isReservedIPv4Address(embeddedIPv4Address);
+    return true;
   }
 
   return (
@@ -271,8 +271,48 @@ function hasMalformedHttpAuthority(value: string) {
     lowerValue.startsWith("http://\\") ||
     lowerValue.startsWith("https://\\") ||
     lowerValue.startsWith("http:\\") ||
-    lowerValue.startsWith("https:\\")
+    lowerValue.startsWith("https:\\") ||
+    hasInvalidHttpAuthorityPort(value)
   );
+}
+
+function hasInvalidHttpAuthorityPort(value: string) {
+  const separatorIndex = value.indexOf("://");
+
+  if (separatorIndex === -1) {
+    return false;
+  }
+
+  const authorityStart = separatorIndex + "://".length;
+  const authorityEnd = findAuthorityEnd(value, authorityStart);
+  const authority = value.slice(authorityStart, authorityEnd);
+  const hostnameAndPort = authority.slice(authority.lastIndexOf("@") + 1);
+
+  if (hostnameAndPort.startsWith("[")) {
+    const closingBracketIndex = hostnameAndPort.indexOf("]");
+    const portSuffix = hostnameAndPort.slice(closingBracketIndex + 1);
+
+    return (
+      portSuffix.length > 0 &&
+      (!portSuffix.startsWith(":") || !isValidPort(portSuffix.slice(1)))
+    );
+  }
+
+  const colonIndex = hostnameAndPort.lastIndexOf(":");
+
+  return (
+    colonIndex !== -1 && !isValidPort(hostnameAndPort.slice(colonIndex + 1))
+  );
+}
+
+function findAuthorityEnd(value: string, authorityStart: number) {
+  for (let index = authorityStart; index < value.length; index += 1) {
+    if (value[index] === "/" || value[index] === "?" || value[index] === "#") {
+      return index;
+    }
+  }
+
+  return value.length;
 }
 
 function hasMissingHttpAuthoritySlashes(value: string) {
@@ -330,7 +370,9 @@ function isValidHostname(hostname: string) {
     return true;
   }
 
-  return hostname.split(".").every(isValidHostnameLabel);
+  const labels = hostname.split(".");
+
+  return labels.length >= 2 && labels.every(isValidHostnameLabel);
 }
 
 function isValidHostnameLabel(label: string) {
