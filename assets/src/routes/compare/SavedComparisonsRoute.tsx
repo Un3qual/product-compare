@@ -19,13 +19,16 @@ import {
 import type {
   savedComparisonsLoader,
   SavedComparisonSetQueryDescriptor,
-  SavedComparisonSetSummary,
-  SavedComparisonsRouteLoaderData
+  SavedComparisonSetSummary
 } from "./saved-data";
 import { CompareShell } from "./CompareShell";
 import {
   SavedComparisonSetList
 } from "./SavedComparisonSetList";
+import {
+  buildSavedComparisonReopenPath,
+  buildSavedComparisonsPagination
+} from "./saved-comparisons-route-data";
 import {
   buildSavedComparisonsViewState,
   type SavedComparisonSortMode
@@ -142,27 +145,7 @@ export function SavedComparisonsRoute() {
 }
 
 function savedComparisonHref(savedSet: SavedComparisonSetSummary) {
-  return buildSavedComparisonHref(savedSet.products.map(({ slug }) => slug));
-}
-
-function savedComparisonsPagePath(after: string) {
-  const searchParams = new URLSearchParams({ after });
-
-  return `/compare/saved?${searchParams.toString()}`;
-}
-
-function buildSavedComparisonsPagination(loaderData: SavedComparisonsRouteLoaderData) {
-  if (loaderData.status === "unauthorized") {
-    return { firstHref: null, nextHref: null };
-  }
-
-  return {
-    firstHref: loaderData.after ? "/compare/saved" : null,
-    nextHref:
-      loaderData.hasNextPage && loaderData.endCursor
-        ? savedComparisonsPagePath(loaderData.endCursor)
-        : null
-  };
+  return buildSavedComparisonReopenPath(savedSet.products.map(({ slug }) => slug));
 }
 
 function SavedComparisonSetQueryRetainers({
@@ -193,16 +176,6 @@ function SavedComparisonSetQueryRetainer({
   );
 
   return null;
-}
-
-function buildSavedComparisonHref(slugs: string[]) {
-  const searchParams = new URLSearchParams();
-
-  for (const slug of slugs) {
-    searchParams.append("slug", slug);
-  }
-
-  return `/compare?${searchParams.toString()}`;
 }
 
 function SavedComparisonReturnActions() {

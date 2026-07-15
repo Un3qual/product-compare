@@ -2,33 +2,40 @@
 
 ## Snapshot
 
-- Status: ready (saved comparison navigation data contract)
-- Priority: P2
+- Status: done (saved comparison navigation data contract)
+- Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after current source and route-state suite
-  validation (31 tests).
+- Last verified: 2026-07-14 on `codex/route-policy-data-contracts`.
 
 ## Saved Comparison Navigation Data Contract
 
-- Status: ready on 2026-07-14.
-- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: move deterministic saved-set reopen and cursor-pagination paths
-  out of the Relay route owner into a framework-free contract while preserving
-  stored product order, query retention, mutation behavior, and route markup.
+- Status: done on 2026-07-14.
+- Completed action: extracted ordered saved-set reopen paths and first/next
+  cursor pagination paths into a framework-free module. The route retains Relay
+  query retention, deletion mutation and local state, router links, boundaries,
+  and presentation.
 - Owned paths:
   - `assets/src/routes/compare/saved-comparisons-route-data.ts`
   - `assets/src/routes/compare/SavedComparisonsRoute.tsx`
   - `assets/test/routes/compare/saved-comparisons-route-data.test.ts`
   - `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
   - `docs/work/frontend-saved-comparison-navigation.md`
-- Verification:
-  - `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-data.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- TDD evidence:
+  - RED: `cd assets && bun x vitest run
+    test/routes/compare/saved-comparisons-route-data.test.ts` failed as
+    expected because `saved-comparisons-route-data` did not exist.
+  - GREEN: the pure navigation suite passed 9 tests and the unchanged route
+    state suite passed 31 tests. The combined command passed 40 tests.
+- Verified commands:
+  - `cd assets && bun x vitest run
+    test/routes/compare/saved-comparisons-route-data.test.ts
+    test/routes/compare/saved-comparisons-route-state.test.tsx`
   - `cd assets && bun run typecheck`
+  - direct framework import scan of
+    `assets/src/routes/compare/saved-comparisons-route-data.ts`
   - `git diff --check`
-- Exit condition: one framework-free owner preserves ordered and encoded
-  reopen links, unauthorized pagination suppression, first-page return
-  visibility, and next-page links only for advancing non-empty cursors.
-- Candidate evidence: current source inspection found deterministic ordered
-  reopen and cursor-pagination path construction embedded in
-  `SavedComparisonsRoute.tsx`. Its current route-state suite passes 31 tests.
+- Exit condition met: reopening preserves stored product order and current
+  `URLSearchParams` encoding; pagination hides for unauthorized data, exposes
+  first-page return only after a cursor, hides unavailable next cursors, and
+  encodes advancing cursors.
