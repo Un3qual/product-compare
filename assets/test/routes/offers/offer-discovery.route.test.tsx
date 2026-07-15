@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
@@ -11,6 +11,7 @@ import type {
 } from "../../../src/routes/offers/offer-discovery-data";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 
 const {
   commitCommerceClickMock,
@@ -576,6 +577,29 @@ test("offer discovery renders inactive All offers rows as safe direct merchant l
   fireEvent.click(merchantLink);
 
   expect(commitCommerceClickMock).not.toHaveBeenCalled();
+});
+
+test("offer discovery renders a route error when a tracked redirect is cross-origin", () => {
+  renderOfferDiscoveryRoute();
+  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+
+  const onCompleted = commitCommerceClickMock.mock.calls[0]?.[0]?.onCompleted;
+
+  expect(onCompleted).toBeTypeOf("function");
+  expect(() => {
+    act(() => {
+      onCompleted?.(
+        {
+          trackCommerceClick: {
+            redirectPath: "https://attacker.example/r/click-123",
+            errors: []
+          }
+        },
+        null
+      );
+    });
+  }).not.toThrow();
+  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
 });
 
 test("offer discovery renders tracked click errors without nested paragraph markup", () => {

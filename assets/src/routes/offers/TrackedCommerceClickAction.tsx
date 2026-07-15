@@ -52,9 +52,13 @@ export function TrackedCommerceClickAction({
             payload.errors.length === 0 &&
             !hasRouteGraphQLErrors(graphQLErrors)
           ) {
-            window.location.assign(
-              resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint)
-            );
+            try {
+              window.location.assign(
+                resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint)
+              );
+            } catch {
+              setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+            }
             return;
           }
 
