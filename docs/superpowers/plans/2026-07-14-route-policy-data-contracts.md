@@ -401,6 +401,8 @@ local-state orchestration, router links, boundaries, and presentation.
 - [x] Final review found `hasNextPage: false` lacked independent coverage. Add
   a direct final-page case, prove it fails without the existing guard, restore
   production unchanged, and verify the focused and full gates again.
+- [x] Final whole-batch re-review approved saved navigation and the narrowed
+  queue successor with no remaining issue.
 
 ---
 
@@ -563,3 +565,5 @@ snapshot publish-input construction and GraphQL profile mapping.
   duplicated the completed snapshot contract's GraphQL mapping ownership. The
   ready row, task interface, tests, and exit condition now exclude that policy
   and explicitly preserve `share-comparison-data.ts` as its sole owner.
+- Final whole-batch re-review confirmed the narrowed candidate is executable
+  within its owned paths and the three ready rows are path-disjoint.
