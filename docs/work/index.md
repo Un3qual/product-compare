@@ -385,41 +385,25 @@ feedback, Relay data, and markup. Its pure and route suites pass 117 tests, and
 independent task review found no actionable issue. Three other validated rows
 remain ready.
 
+Before claiming Merchant Directory Visible-Page Filter Data, the coordinator
+validated a fourth non-overlapping successor. Normal click activation,
+first-party tracking href construction, and same-origin redirect resolution
+remain embedded in `TrackedCommerceClickAction`; its offer-discovery route
+suite passes 51 tests. The successor has complete owned paths, no blockers, and
+does not overlap merchant filtering, price-watch input, or feed-candidate review
+data.
+
+Merchant Directory Visible-Page Filter Data then completed: one framework-free
+owner now returns normalized filter text, case-insensitively selected merchants
+in source order, and the existing filtered or unfiltered heading without
+mutating its input. `MerchantDirectoryView` retains local state, page
+boundaries, empty/no-match presentation, merchant markup and safe links, and
+cursor pagination. Its pure and route suites pass 31 tests, and independent
+task review found no actionable issue. Three other validated rows remain ready.
+
 ## Ready Work
 
-### 1. Merchant Directory Visible-Page Filter Data Contract
-
-Status: ready
-Lane: Frontend merchant discovery demo parity
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move visible-page filter normalization, merchant selection, and
-heading copy out of `MerchantDirectoryView` into a framework-free contract
-while preserving local state, search and empty presentation, links, and cursor
-pagination.
-Owned paths:
-
-- `assets/src/routes/merchants/merchant-directory-view-data.ts`
-- `assets/src/routes/merchants/MerchantDirectoryView.tsx`
-- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing merchant-directory route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner returns normalized filter text,
-case-insensitively selected visible merchants in source order, and existing
-filtered/unfiltered heading copy without mutating input; React retains local
-state, page boundaries, markup, links, no-match copy, and pagination.
-
-### 2. Price-Watch Input Data Contract
+### 1. Price-Watch Input Data Contract
 
 Status: ready
 Lane: Frontend price-watch input
@@ -450,7 +434,7 @@ builds the existing mutation input with trimmed amounts and uppercased trimmed
 currency while omitting amount fields for availability rules; React retains
 product-scoped reset, state, validation, Relay behavior, feedback, and markup.
 
-### 3. Feed-Candidate Review View-Data Contract
+### 2. Feed-Candidate Review View-Data Contract
 
 Status: ready
 Lane: Frontend feed-candidate review view data
@@ -482,6 +466,38 @@ Exit condition: one framework-free owner preserves current fit score/reasons,
 candidate/status/count/time labels, current-page status counts, and filtered
 first/next paths without mutating input; React and Relay owners retain all
 orchestration, controls, state, markup, and styling.
+
+### 3. Tracked-Commerce Click Data Contract
+
+Status: ready
+Lane: Frontend tracked-commerce click data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move normal click qualification, first-party tracking href
+construction, and same-origin redirect resolution out of
+`TrackedCommerceClickAction` into a framework-free contract while preserving
+Relay mutation orchestration, pending/error state, navigation, and markup.
+Owned paths:
+
+- `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-tracked-commerce-click-data.md`
+
+Prerequisites:
+
+- Existing offer-discovery tracked-click characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/tracked-commerce-click-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner qualifies unmodified primary clicks,
+builds encoded first-party tracking hrefs, and resolves only API-origin
+redirects; React retains event handling, pending/error state, Relay mutation
+orchestration, browser navigation, and presentation.
 
 ## Needs Decision Work
 

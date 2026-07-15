@@ -534,13 +534,13 @@ the merchant input. `MerchantDirectoryView` retains filter state, the search
 field, empty-page and no-match presentation, merchant markup and links, and
 cursor pagination.
 
-- [ ] Write pure tests for blank and trimmed filters, case-insensitive matches,
+- [x] Write pure tests for blank and trimmed filters, case-insensitive matches,
   no matches, heading copy, source ordering, and input immutability; verify RED.
-- [ ] Extract only deterministic visible-page filter data while preserving
+- [x] Extract only deterministic visible-page filter data while preserving
   local state, page boundaries, markup, links, and pagination.
-- [ ] Run the pure and existing merchant-directory route suites, TypeScript,
+- [x] Run the pure and existing merchant-directory route suites, TypeScript,
   the framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -597,6 +597,34 @@ revalidation, and feedback.
   mutation, draft-note, event, and presentation behavior.
 - [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
   framework-import scan, secret/raw-field scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 19: Tracked-Commerce Click Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- Modify: `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- Create: `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-tracked-commerce-click-data.md`
+
+**Interfaces:** The framework-free data module qualifies normal unmodified
+primary clicks, builds the existing encoded first-party merchant-product
+tracking href, and resolves only redirect paths whose origin matches the API
+endpoint origin. `TrackedCommerceClickAction` retains React event handling,
+pending/error state, Relay mutation orchestration, browser navigation, and
+markup.
+
+- [ ] Write pure tests for primary and modified clicks, encoded merchant-
+  product IDs, API-origin absolute and relative redirects, cross-origin and
+  non-HTTP redirects, and input immutability; verify RED.
+- [ ] Extract only deterministic click and URL policy while preserving Relay,
+  error, pending, navigation, and presentation behavior.
+- [ ] Run the pure and existing offer-discovery route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -694,3 +722,13 @@ revalidation, and feedback.
   inspection confirmed that scoring, reasons, review summary/status, reviewed-
   time, and pagination-path policy remain embedded in the 409-line
   `FeedCandidateReviewList`; its route suite passed 17 tests.
+- Before the merchant visible-page filter claim on 2026-07-15, current source
+  inspection confirmed that normal click qualification, first-party tracking
+  href construction, and same-origin redirect resolution remain embedded in
+  `TrackedCommerceClickAction`; its offer-discovery route suite passed 51 tests.
+  The tracked-click candidate is path-disjoint from merchant filtering, price-
+  watch input, and feed-candidate review data.
+- The completed merchant visible-page filter contract and existing route
+  characterization passed 31 focused tests on 2026-07-15. The contract retains
+  ordinary lowercasing, source ordering, existing headings, and input identity;
+  independent task review found no actionable issues.
