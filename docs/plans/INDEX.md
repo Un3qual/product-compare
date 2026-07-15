@@ -57,11 +57,11 @@ product-detail route data, compare-picker data, product-offer panel data, and
 shared external-destination safety are complete. API-token lifecycle display,
 catalog specification-highlight data, recommendation-profile route data,
 saved-comparison naming data, merchant visible-page filter data, and price-watch
-input data are also complete. Three source-verified, non-overlapping successors
-remain ready across feed-candidate review view data, tracked-commerce click
-data, and immutable route-state collection helpers. Trust-surface date
-presentation, product-attribute grouping, route-metadata resolution, and saved-
-comparison navigation data are complete.
+input data and feed-candidate review view data are also complete. Three source-
+verified, non-overlapping successors remain ready across tracked-commerce click
+data, immutable route-state collection helpers, and catalog filter-form state.
+Trust-surface date presentation, product-attribute grouping, route-metadata
+resolution, and saved-comparison navigation data are complete.
 
 Active implementation plans:
 
@@ -138,9 +138,11 @@ batch and should not be recreated or promoted.
   same plan; do not promote it again without fresh scope.
 - Completed reserve: price-watch input data executed through that same plan; do
   not promote it again without fresh scope.
-- Ready reserve: feed-candidate review view data, tracked-commerce click data,
-  and immutable route-state collection helpers execute through that same plan.
-  Confirm live ownership in `docs/work/index.md` before dispatch.
+- Completed reserve: feed-candidate review view data executed through that same
+  plan; do not promote it again without fresh scope.
+- Ready reserve: tracked-commerce click data, immutable route-state collection
+  helpers, and catalog filter-form state execute through that same plan. Confirm
+  live ownership in `docs/work/index.md` before dispatch.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

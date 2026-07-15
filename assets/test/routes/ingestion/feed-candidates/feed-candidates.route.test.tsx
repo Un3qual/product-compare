@@ -6,11 +6,11 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../../../src/relay/route-preload";
 import type { MerchantFeedCandidatesRouteQuery } from "../../../../src/__generated__/MerchantFeedCandidatesRouteQuery.graphql";
+import type { FeedCandidate } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidateReviewList";
 import {
   formatFeedCandidateName,
-  formatFeedCandidateReviewStatus,
-  type FeedCandidate
-} from "../../../../src/routes/ingestion/feed-candidates/FeedCandidateReviewList";
+  formatFeedCandidateReviewStatus
+} from "../../../../src/routes/ingestion/feed-candidates/feed-candidate-review-data";
 import { FeedCandidatesRoute } from "../../../../src/routes/ingestion/feed-candidates/FeedCandidatesRoute";
 import type { FeedCandidatesLoaderData } from "../../../../src/routes/ingestion/feed-candidates/loader";
 

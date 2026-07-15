@@ -417,42 +417,28 @@ and markup. Its pure and route suites pass 16 tests; task review found no
 Critical or Important issue, and the lane-status closeout resolves its sole
 Minor note. Three other validated rows remain ready.
 
+Before claiming Feed-Candidate Review View Data, the coordinator validated a
+fourth non-overlapping successor. Catalog type-filter initialization and
+transitions plus advanced-filter disclosure policy remain embedded in
+`CatalogFilterForm`; its browse route suite passes 62 tests. The successor has
+complete owned paths, no blockers, and does not overlap feed-candidate review,
+tracked-commerce clicks, or immutable route-state collections.
+
+Feed-Candidate Review View Data then completed: one framework-free owner now
+provides candidate names, product-count copy, fit scores and ordered reasons,
+review status labels, tones and current-page counts, valid-only reviewed times,
+and filter-preserving first/next paths. React and Relay owners retain query and
+mutation orchestration, draft notes, callbacks, controls, markup, and styling.
+Its pure and route suites pass 24 tests. Three other validated rows remain
+ready.
+
+## Active Work
+
+None.
+
 ## Ready Work
 
-### 1. Feed-Candidate Review View-Data Contract
-
-Status: ready
-Lane: Frontend feed-candidate review view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move candidate scoring, reasons, labels, review status counts and
-tone, reviewed-time formatting, and filter-preserving pagination paths out of
-`FeedCandidateReviewList` into a framework-free contract while preserving
-Relay, mutations, draft notes, callbacks, markup, and styling.
-Owned paths:
-
-- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `docs/work/frontend-feed-candidate-review-data.md`
-
-Prerequisites:
-
-- Existing feed-candidate route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves current fit score/reasons,
-candidate/status/count/time labels, current-page status counts, and filtered
-first/next paths without mutating input; React and Relay owners retain all
-orchestration, controls, state, markup, and styling.
-
-### 2. Tracked-Commerce Click Data Contract
+### 1. Tracked-Commerce Click Data Contract
 
 Status: ready
 Lane: Frontend tracked-commerce click data
@@ -484,7 +470,7 @@ builds encoded first-party tracking hrefs, and resolves only API-origin
 redirects; React retains event handling, pending/error state, Relay mutation
 orchestration, browser navigation, and presentation.
 
-### 3. Immutable Route-State Collection Contract
+### 2. Immutable Route-State Collection Contract
 
 Status: ready
 Lane: Frontend immutable route state
@@ -517,6 +503,39 @@ Exit condition: one framework-free owner provides copy-on-write map upsert and
 remove plus set add and remove, preserving original collection identity for
 set membership and map-removal no-ops and leaving inputs unchanged; route owners
 retain state transitions, mutations, Relay data, feedback, and markup.
+
+### 3. Catalog Filter Form State Contract
+
+Status: ready
+Lane: Frontend catalog filter form state
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move type-filter initialization and transitions plus initial
+advanced-filter disclosure policy out of `CatalogFilterForm` into a framework-
+free state contract while preserving React state, controls, form serialization,
+active-filter summary, and markup.
+Owned paths:
+
+- `assets/src/routes/catalog/catalog-filter-form-state.ts`
+- `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- `assets/test/routes/catalog/catalog-filter-form-state.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-filter-form-state.md`
+
+Prerequisites:
+
+- Existing catalog filter-form characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/catalog-filter-form-state.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner initializes type/descendant state,
+enables descendants for the first selected type, disables them when the type is
+cleared, preserves the choice across selected-type changes, and identifies
+initial advanced disclosure without mutating filters; React retains state,
+controls, form serialization, summaries, and presentation.
 
 ## Needs Decision Work
 

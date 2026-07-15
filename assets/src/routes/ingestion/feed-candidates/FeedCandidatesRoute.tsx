@@ -19,12 +19,14 @@ import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   FeedCandidateReviewList,
-  formatFeedCandidateName,
-  formatFeedCandidateReviewStatus,
   type FeedCandidate,
   type FeedCandidatesConnection,
   type ReviewStatus
 } from "./FeedCandidateReviewList";
+import {
+  formatFeedCandidateName,
+  formatFeedCandidateReviewStatus
+} from "./feed-candidate-review-data";
 import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData

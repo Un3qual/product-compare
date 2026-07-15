@@ -589,15 +589,15 @@ callbacks, list/summary/pagination markup, buttons, and StyleX presentation;
 `FeedCandidatesRoute` retains loader/query/mutation orchestration, draft state,
 revalidation, and feedback.
 
-- [ ] Write pure tests for name fallback, product-count thresholds, normalized
+- [x] Write pure tests for name fallback, product-count thresholds, normalized
   market/currency/language and feed-type scoring, reasons, status label/tone and
   counts, valid/invalid reviewed time, filtered first/next paths, and input
   immutability; verify RED.
-- [ ] Extract only deterministic review view data while preserving Relay,
+- [x] Extract only deterministic review view data while preserving Relay,
   mutation, draft-note, event, and presentation behavior.
-- [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
+- [x] Run the pure and existing feed-candidate route suites, TypeScript, the
   framework-import scan, secret/raw-field scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -654,6 +654,35 @@ Relay orchestration, errors, feedback, and presentation.
   state and mutation behavior.
 - [ ] Run the pure and existing API-token and saved-comparison route-state
   suites, TypeScript, the framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 21: Catalog Filter Form State Contract
+
+**Files:**
+
+- Create: `assets/src/routes/catalog/catalog-filter-form-state.ts`
+- Modify: `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- Create: `assets/test/routes/catalog/catalog-filter-form-state.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-filter-form-state.md`
+
+**Interfaces:** The framework-free state module owns initial type and descendant
+state, type-selection transitions, and whether advanced filters initially open.
+The first type selected from an empty state enables descendants; clearing the
+type disables descendants; changing one selected type to another preserves the
+current descendant choice. `CatalogFilterForm` retains React state, controls,
+form serialization, active-filter summary behavior, and markup.
+
+- [ ] Write pure tests for empty and selected initial type state, descendant
+  initialization, first selection, clear, selected-type changes with both
+  descendant choices, every advanced-filter collection, and input immutability;
+  verify RED.
+- [ ] Extract only deterministic state policy while preserving React controls,
+  URL form fields, advanced-filter presentation, and summaries.
+- [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -771,3 +800,13 @@ Relay orchestration, errors, feedback, and presentation.
   characterization passed 16 focused tests on 2026-07-15. Task review found no
   Critical or Important issue; queue closeout corrected the lane status noted
   as the sole Minor finding.
+- Before the feed-candidate review view-data claim on 2026-07-15, current source
+  inspection confirmed that catalog type-filter initialization and transitions
+  plus advanced-filter disclosure policy remain embedded in
+  `CatalogFilterForm`; its route suite passed 62 tests. The catalog state
+  candidate is path-disjoint from feed-candidate review, tracked-commerce
+  clicks, and immutable route-state collections.
+- The completed feed-candidate review view-data contract and existing route
+  characterization passed 24 focused tests on 2026-07-15. Framework and
+  secret/raw-field scans passed, and independent task review found no
+  actionable issues.
