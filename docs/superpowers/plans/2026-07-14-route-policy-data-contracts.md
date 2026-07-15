@@ -447,6 +447,37 @@ decision-action, and StyleX presentation.
   import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 14: Recommendation Profile Route Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/recommendation-route-data.ts`
+- Modify: `assets/src/routes/compare/loader.ts`
+- Modify: `assets/src/routes/compare/RecommendationPanel.tsx`
+- Modify: `assets/src/routes/compare/ShareComparisonControl.tsx`
+- Create: `assets/test/routes/compare/recommendation-route-data.test.ts`
+- Test: `assets/test/routes/compare/recommendation-panel.test.tsx`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-recommendation-profile-navigation.md`
+
+**Interfaces:** The framework-free route-data module parses recommendation
+profiles, builds ordered profile paths, maps profiles to GraphQL enum values,
+and suppresses core comparison reloads only when the recommendation profile is
+the sole route change. React retains location access, Relay reads, boundaries,
+snapshot behavior, and recommendation presentation.
+
+- [ ] Write pure tests for default and best-value parsing, ordered encoded
+  slugs, all specification modes, profile query defaults, GraphQL enum mapping,
+  sole-profile revalidation, and unrelated route changes; verify RED.
+- [ ] Consolidate only deterministic recommendation route policy while
+  preserving Relay variables, snapshot profile behavior, error/Suspense
+  boundaries, and panel markup.
+- [ ] Run the pure and existing recommendation/snapshot suites, TypeScript,
+  the framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -512,3 +543,9 @@ decision-action, and StyleX presentation.
   display. Current source inspection found bounded sort-order selection
   embedded in `BrowseProductList.tsx`; its catalog route suite passed 62 tests
   on 2026-07-14.
+- The recommendation-profile route-data candidate is non-overlapping with
+  saved-comparison navigation, API-token lifecycle display, and catalog
+  specification highlights. Current source inspection found profile parsing,
+  path construction, GraphQL mapping, and revalidation policy split between
+  `loader.ts` and `RecommendationPanel.tsx`; its recommendation and snapshot
+  suites passed 11 tests on 2026-07-14.

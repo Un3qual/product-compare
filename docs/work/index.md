@@ -312,6 +312,11 @@ production extraction and identified missing regression coverage for skipping
 a fully invalid deepest match; that case is now covered, and the refreshed full
 frontend gate passes 73 files and 1,007 tests. Independent re-review found no
 remaining actionable issue. The three other validated rows remain ready.
+Before claiming Saved Comparison Navigation, the coordinator validated
+recommendation-profile route data as a fourth non-overlapping successor:
+profile parsing, profile-link construction, GraphQL enum mapping, and profile-
+only loader revalidation remain split between the compare loader and React
+panel, while the current recommendation and snapshot suites pass 11 tests.
 
 ## Ready Work
 
@@ -407,6 +412,43 @@ Exit condition: one framework-free owner selects at most three specification
 highlights by ascending explicit sort order, places unspecified orders last,
 preserves source order for ties, and does not mutate the Relay input; React
 retains the current empty omission, list markup, and styling.
+
+### 4. Recommendation Profile Route Data Contract
+
+Status: ready
+Lane: Frontend recommendation profile navigation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: consolidate recommendation-profile parsing, navigation paths,
+GraphQL enum mapping, and profile-only revalidation in a framework-free
+contract while preserving Relay reads, snapshot behavior, boundaries, and
+panel markup.
+Owned paths:
+
+- `assets/src/routes/compare/recommendation-route-data.ts`
+- `assets/src/routes/compare/loader.ts`
+- `assets/src/routes/compare/RecommendationPanel.tsx`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/recommendation-route-data.test.ts`
+- `assets/test/routes/compare/recommendation-panel.test.tsx`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-recommendation-profile-navigation.md`
+
+Prerequisites:
+
+- Existing recommendation-panel and comparison-snapshot characterizations
+  remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves exact best-value parsing,
+lowest-cost fallback, ordered encoded slugs, specification mode, profile query
+omission/defaults, GraphQL profile mapping, and loader suppression only when
+the recommendation profile is the sole route change; React and Relay owners
+retain their existing behavior and markup.
 
 ## Needs Decision Work
 
