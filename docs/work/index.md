@@ -337,7 +337,7 @@ while its existing route suite passes 109 tests. API-token lifecycle display
 then completed: the framework-free route-data owner now returns stable labels,
 strict offset-aware UTC lifecycle dates, exact invalid-string fallbacks, and
 revoked/active/expired status copy while React retains semantic markup, tone,
-presets, errors, and lifecycle actions. Its focused suites pass 60 tests. The
+presets, errors, and lifecycle actions. Its focused suites pass 63 tests. The
 three other validated rows remain ready.
 
 ## Ready Work

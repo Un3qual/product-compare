@@ -56,18 +56,23 @@ test("buildApiTokenDisplayData uses optional lifecycle fallbacks", () => {
   });
 });
 
-test("buildApiTokenDisplayData preserves impossible and offset-less timestamps exactly", () => {
+test.each([
+  "2026-02-30T10:15:00Z",
+  "2026-08-29T12:00:00",
+  "2026-08-29T12:00:59.1234567Z",
+  "not-a-timestamp"
+])("buildApiTokenDisplayData preserves noncanonical timestamp %s exactly", (value) => {
   expect(
     buildApiTokenDisplayData({
       ...SERVER_TOKEN,
-      expiresAt: "2026-02-30T10:15:00Z",
-      lastUsedAt: "2026-08-29T12:00:00",
-      insertedAt: "not-a-timestamp"
+      expiresAt: value,
+      lastUsedAt: value,
+      insertedAt: value
     })
   ).toMatchObject({
-    expiresAtLabel: "2026-02-30T10:15:00Z",
-    lastUsedAtLabel: "2026-08-29T12:00:00",
-    insertedAtLabel: "not-a-timestamp"
+    expiresAtLabel: value,
+    lastUsedAtLabel: value,
+    insertedAtLabel: value
   });
 });
 
