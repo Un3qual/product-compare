@@ -1,7 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { useMutation } from "react-relay";
 import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
-import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -9,6 +8,11 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
+import {
+  resolveTrackedCommerceRedirectUrl,
+  shouldTrackCommerceClick,
+  trackedMerchantProductHref
+} from "./tracked-commerce-click-data";
 import { trackCommerceClickMutation } from "./mutations/TrackCommerceClickMutation";
 
 export function TrackedCommerceClickAction({
@@ -23,7 +27,7 @@ export function TrackedCommerceClickAction({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (!shouldTrackClick(event)) {
+    if (!shouldTrackCommerceClick(event)) {
       return;
     }
 
@@ -78,36 +82,6 @@ export function TrackedCommerceClickAction({
   );
 }
 
-function shouldTrackClick(event: MouseEvent<HTMLAnchorElement>) {
-  return (
-    event.button === 0 &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey
-  );
-}
-
 function preventPendingNavigation(event: MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
-}
-
-function trackedMerchantProductHref(merchantProductId: string) {
-  const params = new URLSearchParams({ merchantProductId });
-
-  return resolveTrackedCommerceRedirectUrl(`/r/merchant-product?${params.toString()}`);
-}
-
-export function resolveTrackedCommerceRedirectUrl(
-  redirectPath: string,
-  graphQLEndpoint = resolveGraphQLEndpoint()
-) {
-  const endpointUrl = new URL(graphQLEndpoint);
-  const redirectUrl = new URL(redirectPath, endpointUrl.origin);
-
-  if (redirectUrl.origin !== endpointUrl.origin) {
-    throw new Error("Tracked commerce redirect must resolve to the same origin");
-  }
-
-  return redirectUrl.toString();
 }

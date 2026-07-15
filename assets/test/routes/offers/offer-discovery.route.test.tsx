@@ -10,7 +10,7 @@ import type {
   PriceHistoryConnection
 } from "../../../src/routes/offers/offer-discovery-data";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
-import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/TrackedCommerceClickAction";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
 
 const {
   commitCommerceClickMock,

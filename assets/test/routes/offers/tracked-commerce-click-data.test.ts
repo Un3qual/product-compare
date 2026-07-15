@@ -1,0 +1,55 @@
+import {
+  resolveTrackedCommerceRedirectUrl,
+  shouldTrackCommerceClick,
+  trackedMerchantProductHref
+} from "../../../src/routes/offers/tracked-commerce-click-data";
+
+const API_ENDPOINT = "http://localhost:4000/api/graphql";
+const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
+
+test("qualifies only unmodified primary commerce clicks without changing the input", () => {
+  const primaryClick = {
+    button: 0,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false
+  };
+  const originalClick = { ...primaryClick };
+
+  expect(shouldTrackCommerceClick(primaryClick)).toBe(true);
+  expect(primaryClick).toEqual(originalClick);
+
+  for (const modifier of ["altKey", "ctrlKey", "metaKey", "shiftKey"] as const) {
+    expect(shouldTrackCommerceClick({ ...primaryClick, [modifier]: true })).toBe(false);
+  }
+
+  expect(shouldTrackCommerceClick({ ...primaryClick, button: 1 })).toBe(false);
+});
+
+test("builds an API-origin merchant-product tracking href with an encoded ID", () => {
+  expect(trackedMerchantProductHref("merchant product/with?symbols", API_ENDPOINT)).toBe(
+    "http://localhost:4000/r/merchant-product?merchantProductId=merchant+product%2Fwith%3Fsymbols"
+  );
+});
+
+test("resolves API-origin relative and absolute tracked redirects", () => {
+  expect(
+    resolveTrackedCommerceRedirectUrl("/r/click-123?merchantProductId=merchant-product-1", API_ENDPOINT)
+  ).toBe("http://localhost:4000/r/click-123?merchantProductId=merchant-product-1");
+  expect(
+    resolveTrackedCommerceRedirectUrl("http://localhost:4000/r/click-123", API_ENDPOINT)
+  ).toBe("http://localhost:4000/r/click-123");
+});
+
+test("rejects redirects outside the API origin", () => {
+  for (const redirectPath of [
+    "https://attacker.example/r/click-123",
+    "//attacker.example/r/click-123",
+    SCRIPT_SCHEME_REDIRECT
+  ]) {
+    expect(() => resolveTrackedCommerceRedirectUrl(redirectPath, API_ENDPOINT)).toThrow(
+      "Tracked commerce redirect must resolve to the same origin"
+    );
+  }
+});
