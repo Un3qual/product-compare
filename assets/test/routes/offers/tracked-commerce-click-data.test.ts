@@ -55,12 +55,13 @@ test("requires an explicit endpoint instead of reading environment state", () =>
   ).toThrow();
 });
 
-test("rejects redirects outside the API origin", () => {
+test("rejects unsafe redirects", () => {
   for (const redirectPath of [
     "https://attacker.example/r/click-123",
     "//attacker.example/r/click-123",
     "http://attacker.example:4000/r/click-123",
     "http://localhost:4001/r/click-123",
+    "blob:http://localhost:4000/click-123",
     SCRIPT_SCHEME_REDIRECT
   ]) {
     expect(() => resolveTrackedCommerceRedirectUrl(redirectPath, API_ENDPOINT)).toThrow(

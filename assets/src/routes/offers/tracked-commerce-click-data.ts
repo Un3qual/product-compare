@@ -31,8 +31,11 @@ export function resolveTrackedCommerceRedirectUrl(
 ) {
   const endpointUrl = new URL(graphQLEndpoint);
   const redirectUrl = new URL(redirectPath, endpointUrl.origin);
+  const usesEndpointHttpProtocol =
+    (redirectUrl.protocol === "http:" || redirectUrl.protocol === "https:") &&
+    redirectUrl.protocol === endpointUrl.protocol;
 
-  if (redirectUrl.origin !== endpointUrl.origin) {
+  if (redirectUrl.origin !== endpointUrl.origin || !usesEndpointHttpProtocol) {
     throw new Error("Tracked commerce redirect must resolve to the same origin");
   }
 
