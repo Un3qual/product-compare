@@ -38,8 +38,22 @@ describe("external HTTP URL hrefs", () => {
     ["http://[2001:1::2]", "http://[2001:1::2]"],
     ["http://[2001:1::3]", "http://[2001:1::3]"],
     ["http://[2001:3::1]", "http://[2001:3::1]"],
+    [
+      "http://[2001:3:ffff:ffff:ffff:ffff:ffff:ffff]",
+      "http://[2001:3:ffff:ffff:ffff:ffff:ffff:ffff]"
+    ],
     ["http://[2001:4:112::1]", "http://[2001:4:112::1]"],
+    [
+      "http://[2001:4:112:ffff:ffff:ffff:ffff:ffff]",
+      "http://[2001:4:112:ffff:ffff:ffff:ffff:ffff]"
+    ],
+    ["http://[2001:20::1]", "http://[2001:20::1]"],
+    ["http://[2001:2f:ffff::1]", "http://[2001:2f:ffff::1]"],
+    ["http://[2001:30::1]", "http://[2001:30::1]"],
+    ["http://[2001:3f:ffff::1]", "http://[2001:3f:ffff::1]"],
     ["http://[2620:4f:8000::1]", "http://[2620:4f:8000::1]"],
+    // Immediate upper neighbor outside the non-global 2001::/23 parent.
+    ["http://[2001:200::1]", "http://[2001:200::1]"],
     // Immediate upper neighbor outside documentation-only 3fff::/20.
     ["http://[3fff:1000::1]", "http://[3fff:1000::1]"]
   ])("preserves the trimmed exact safe href %s", (value, expected) => {
@@ -157,13 +171,24 @@ describe("external HTTP URL hrefs", () => {
     ["http://[2001:2:0:ffff:ffff:ffff:ffff:ffff]", "benchmark upper edge"],
     ["http://[2001:10::1]", "deprecated ORCHID 2001:10::/28"],
     ["http://[2001:1f:ffff::1]", "deprecated ORCHID upper edge"],
-    ["http://[2001:20::1]", "ORCHIDv2 2001:20::/28"],
-    ["http://[2001:2f:ffff::1]", "ORCHIDv2 upper edge"],
     ["http://[3fff::1]", "documentation 3fff::/20"],
     ["http://[3fff:fff:ffff::1]", "documentation upper edge"],
     ["http://[5f00::1]", "SRv6 SID 5f00::/16"],
     ["http://[5f00:ffff:ffff::1]", "SRv6 SID upper edge"]
   ])("rejects non-global special-use IPv6 destination %s (%s)", (value) => {
+    expect(externalHttpUrlHref(value)).toBeNull();
+  });
+
+  test.each([
+    ["http://[2001:1::]", "below exact anycast exceptions"],
+    ["http://[2001:1::4]", "above exact anycast exceptions"],
+    ["http://[2001:2:1::1]", "unlisted address after benchmarking"],
+    ["http://[2001:4::1]", "unlisted 2001:4 address"],
+    ["http://[2001:4:111:ffff::1]", "below AS112-v6 exception"],
+    ["http://[2001:4:113::1]", "above AS112-v6 exception"],
+    ["http://[2001:40::1]", "above ORCHIDv2 and DRIP exceptions"],
+    ["http://[2001:1ff:ffff::1]", "upper edge of 2001::/23"]
+  ])("rejects non-global 2001::/23 destination %s (%s)", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
 

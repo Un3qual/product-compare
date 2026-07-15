@@ -4,57 +4,116 @@ const DOCUMENTATION_IPV4_RANGES = new Set([
   "203.0.113"
 ]);
 // Browser destination policy snapshot: IANA IPv6 Special-Purpose Address
-// Registry reviewed 2026-07-14. Block non-globally-reachable registry rows
-// plus the intentionally disallowed IPv4 transition/translation mechanisms.
-const BLOCKED_IPV6_PREFIXES = [
+// Registry reviewed 2026-07-14. Rules model non-global parents and their
+// globally reachable exceptions, plus intentional transition exclusions.
+const IPV6_DESTINATION_RULES = [
   // RFC 4291: IPv4-compatible forms, including unspecified and loopback.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000],
-    bits: 96
+    bits: 96,
+    decision: "block"
   },
   // RFC 4291: IPv4-mapped forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff],
-    bits: 96
+    bits: 96,
+    decision: "block"
   },
   // RFC 6052: IPv4-translatable forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 0x0000],
-    bits: 96
+    bits: 96,
+    decision: "block"
   },
   // RFC 6052: NAT64 well-known translation prefix.
   {
     prefix: [0x0064, 0xff9b, 0x0000, 0x0000, 0x0000, 0x0000],
-    bits: 96
+    bits: 96,
+    decision: "block"
   },
   // RFC 8215: NAT64 local-use translation prefix.
-  { prefix: [0x0064, 0xff9b, 0x0001], bits: 48 },
+  { prefix: [0x0064, 0xff9b, 0x0001], bits: 48, decision: "block" },
   // RFC 6666: discard-only prefix.
-  { prefix: [0x0100, 0x0000, 0x0000, 0x0000], bits: 64 },
+  {
+    prefix: [0x0100, 0x0000, 0x0000, 0x0000],
+    bits: 64,
+    decision: "block"
+  },
   // RFC 9780: dummy IPv6 prefix.
-  { prefix: [0x0100, 0x0000, 0x0000, 0x0001], bits: 64 },
-  // RFC 4380: Teredo carries IPv4 routing information.
-  { prefix: [0x2001, 0x0000], bits: 32 },
-  // RFC 5180: benchmarking prefix.
-  { prefix: [0x2001, 0x0002, 0x0000], bits: 48 },
-  // RFC 4843: deprecated ORCHID prefix.
-  { prefix: [0x2001, 0x0010], bits: 28 },
-  // RFC 7343: ORCHIDv2 prefix.
-  { prefix: [0x2001, 0x0020], bits: 28 },
+  {
+    prefix: [0x0100, 0x0000, 0x0000, 0x0001],
+    bits: 64,
+    decision: "block"
+  },
+  // IANA 2001::/23 is non-global by default. This parent covers Teredo
+  // (RFC 4380), benchmarking (RFC 5180), deprecated ORCHID (RFC 4843), and
+  // unlisted protocol-assignment space; the narrower allow rules are global.
+  { prefix: [0x2001, 0x0000], bits: 23, decision: "block" },
+  // IANA globally reachable PCP, TURN, and DNS-SD anycast exceptions.
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0001
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0002
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0003
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  // RFC 7450: AMT globally reachable exception.
+  { prefix: [0x2001, 0x0003], bits: 32, decision: "allow" },
+  // RFC 7535: AS112-v6 globally reachable exception.
+  { prefix: [0x2001, 0x0004, 0x0112], bits: 48, decision: "allow" },
+  // RFC 7343: ORCHIDv2 is globally reachable in the IANA registry.
+  { prefix: [0x2001, 0x0020], bits: 28, decision: "allow" },
+  // RFC 9374: DRIP Entity Tags are globally reachable.
+  { prefix: [0x2001, 0x0030], bits: 28, decision: "allow" },
   // RFC 3056: 6to4 carries IPv4 routing information.
-  { prefix: [0x2002], bits: 16 },
+  { prefix: [0x2002], bits: 16, decision: "block" },
   // RFC 3849: original documentation prefix.
-  { prefix: [0x2001, 0x0db8], bits: 32 },
+  { prefix: [0x2001, 0x0db8], bits: 32, decision: "block" },
   // RFC 9637: additional documentation prefix.
-  { prefix: [0x3fff, 0x0000], bits: 20 },
+  { prefix: [0x3fff, 0x0000], bits: 20, decision: "block" },
   // RFC 9602: SRv6 SID prefix is not a routable browser destination.
-  { prefix: [0x5f00], bits: 16 },
+  { prefix: [0x5f00], bits: 16, decision: "block" },
   // RFC 4193: unique-local range.
-  { prefix: [0xfc00], bits: 7 },
+  { prefix: [0xfc00], bits: 7, decision: "block" },
   // RFC 4291: link-local range.
-  { prefix: [0xfe80], bits: 10 },
+  { prefix: [0xfe80], bits: 10, decision: "block" },
   // RFC 4291: multicast range.
-  { prefix: [0xff00], bits: 8 }
+  { prefix: [0xff00], bits: 8, decision: "block" }
 ] as const;
 
 export function externalHttpUrlHref(value: string) {
@@ -231,9 +290,32 @@ function isReservedIPv6Address(address: string) {
     return true;
   }
 
-  return BLOCKED_IPV6_PREFIXES.some(({ prefix, bits }) =>
-    matchesIPv6Prefix(words, prefix, bits)
-  );
+  return isBlockedIPv6Destination(words);
+}
+
+function isBlockedIPv6Destination(address: number[]) {
+  let mostSpecificPrefixLength = -1;
+  let shouldBlock = false;
+
+  // Longest prefix wins; equal-specificity conflicts fail closed. Neither
+  // decision therefore depends on the declaration order of policy rules.
+  for (const rule of IPV6_DESTINATION_RULES) {
+    if (!matchesIPv6Prefix(address, rule.prefix, rule.bits)) {
+      continue;
+    }
+
+    if (rule.bits > mostSpecificPrefixLength) {
+      mostSpecificPrefixLength = rule.bits;
+      shouldBlock = rule.decision === "block";
+      continue;
+    }
+
+    if (rule.bits === mostSpecificPrefixLength && rule.decision === "block") {
+      shouldBlock = true;
+    }
+  }
+
+  return shouldBlock;
 }
 
 function parseIPv6AddressWords(address: string) {
