@@ -468,15 +468,21 @@ errors, feedback, and presentation. The pure and route suites pass 84 tests,
 TypeScript and dependency-boundary checks pass, and independent task review
 found no actionable issue. Three other validated rows remain ready.
 
+Before claiming the three remaining ready contracts, the coordinator validated
+four non-overlapping successors from current source and behavior. Category
+landing composition, alert mutation inputs/outcomes, recommendation result
+presentation, and shared route-error classification remain embedded in their
+React owners without an existing pure contract. Their five characterization
+suites pass 138 tests. All four successors have complete, mutually disjoint
+owned paths and do not overlap catalog filter-form state, feed-candidate review
+mutation data, or offer-discovery card view data.
+
 ## Active Work
 
-None.
+### Catalog Filter Form State Contract
 
-## Ready Work
-
-### 1. Catalog Filter Form State Contract
-
-Status: ready
+Status: active
+Owner: `codex/frontend-route-data-contracts` (catalog filter state)
 Lane: Frontend catalog filter form state
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 Next action: move type-filter initialization and transitions plus initial
@@ -499,6 +505,7 @@ Verification:
 
 - `cd assets && bun x vitest run test/routes/catalog/catalog-filter-form-state.test.ts test/routes/catalog/browse.route.test.tsx`
 - `cd assets && bun run typecheck`
+- framework-import scan of the pure state module
 - `git diff --check`
 
 Exit condition: one framework-free owner initializes type/descendant state,
@@ -507,9 +514,10 @@ cleared, preserves the choice across selected-type changes, and identifies
 initial advanced disclosure without mutating filters; React retains state,
 controls, form serialization, summaries, and presentation.
 
-### 2. Feed-Candidate Review Mutation Data Contract
+### Feed-Candidate Review Mutation Data Contract
 
-Status: ready
+Status: active
+Owner: `codex/frontend-route-data-contracts` (feed review mutation data)
 Lane: Frontend feed-candidate review mutation data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 Next action: move explicit-draft detection, trimmed review mutation-input
@@ -533,6 +541,7 @@ Verification:
 
 - `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
 - `cd assets && bun run typecheck`
+- framework-import and secret/raw-field scans of the pure data module
 - `git diff --check`
 
 Exit condition: one framework-free owner distinguishes an explicit blank draft
@@ -541,9 +550,10 @@ non-draft notes, builds the existing mutation input, and removes a successful
 draft without mutating input; React and Relay retain all state transitions,
 mutation lifecycle, feedback, revalidation, and presentation.
 
-### 3. Offer-Discovery Card View-Data Contract
+### Offer-Discovery Card View-Data Contract
 
-Status: ready
+Status: active
+Owner: `codex/frontend-route-data-contracts` (offer card view data)
 Lane: Frontend offer-discovery card view data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 Next action: move product/status/merchant/domain/latest-price labels, nullable
@@ -575,6 +585,143 @@ merchant, domain, and latest-price fallbacks, returns empty nullable
 connections, and builds ordered valid price-history rows without mutating
 input; React retains action selection, safe and tracked links, observation and
 coupon rendering, markup, and styling.
+
+## Ready Work
+
+### 1. Category Landing View-Data Contract
+
+Status: ready
+Lane: Frontend category landing view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move category title/count copy, browse and next-page paths, product
+rows, brand fallback, and first-three specification highlights out of
+`CategoryRoute` into a framework-free view-data contract while preserving Relay
+reads, route fallbacks, markup, links, and styling.
+Owned paths:
+
+- `assets/src/routes/categories/category-view-data.ts`
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/test/routes/categories/category-view-data.test.ts`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `docs/work/frontend-category-view-data.md`
+
+Prerequisites:
+
+- Existing category route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns the exact category heading,
+qualification copy, encoded browse/next paths, source-ordered product rows,
+nullish brand fallback, and at most the first three source-ordered attribute
+highlights without mutating input; React and Relay retain loading, empty-state,
+markup, links, and styling.
+
+### 2. Alerts Mutation Data Contract
+
+Status: ready
+Lane: Frontend alerts mutation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move toggle/delete/mark-read mutation variables and operation-
+specific success/error resolution out of `AlertsRoute` into a framework-free
+data contract while preserving pending state, Relay commits, revalidation,
+feedback, and presentation.
+Owned paths:
+
+- `assets/src/routes/account/alerts/alerts-mutation-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-mutation-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-alerts-mutation-data.md`
+
+Prerequisites:
+
+- Existing alerts route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-mutation-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure mutation-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner builds exact toggle/delete/mark-read
+variables and returns no error only for the existing operation-specific success
+payload, delegating all other payload/GraphQL failures to shared route-error
+copy; React retains pending state, Relay commits, revalidation, feedback, and
+presentation.
+
+### 3. Recommendation Result View-Data Contract
+
+Status: ready
+Lane: Frontend recommendation result view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move winner selection, supported/no-winner reason selection, and
+exact evidence copy out of `RecommendationPanel` into a framework-free view-
+data contract while preserving Relay fetching, profile navigation, suspense,
+error handling, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/compare/recommendation-view-data.ts`
+- `assets/src/routes/compare/RecommendationPanel.tsx`
+- `assets/test/routes/compare/recommendation-view-data.test.ts`
+- `assets/test/routes/compare/recommendation-panel.test.tsx`
+- `docs/work/frontend-recommendation-view-data.md`
+
+Prerequisites:
+
+- Existing recommendation-panel characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/recommendation-view-data.test.ts test/routes/compare/recommendation-panel.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner selects the first matching winner,
+preserves supported or missing-input reason order, and returns exact singular/
+plural evidence copy without mutating input; React and Relay retain profile
+navigation, query lifecycle, fallbacks, markup, and styling.
+
+### 4. Shared Route-Error View-Data Contract
+
+Status: ready
+Lane: Frontend shared route-error view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move response-status and network/unexpected error classification,
+resource capitalization, and exact error/retry copy out of `RouteErrorBoundary`
+into a framework-free view-data contract while preserving React Router error
+detection and presentation.
+Owned paths:
+
+- `assets/src/routes/compare/route-error-view-data.ts`
+- `assets/src/routes/compare/RouteErrorBoundary.tsx`
+- `assets/test/routes/compare/route-error-view-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/router.test.tsx`
+- `docs/work/frontend-route-error-view-data.md`
+
+Prerequisites:
+
+- Existing compare and router error-boundary characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/route-error-view-data.test.ts test/routes/compare/compare.route.test.tsx test/router.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/router dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves default, 5xx, 404, 401/403,
+other-response, network, and unexpected-error copy for the supplied resource
+without mutating input; React Router retains raw error detection, boundary
+registration, markup, and presentation.
 
 ## Needs Decision Work
 

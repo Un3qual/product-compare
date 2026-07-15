@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,7 +12,7 @@
 
 ## Feed-Candidate Review Mutation Data Contract
 
-- Status: ready on 2026-07-15.
+- Status: active on 2026-07-15 on `codex/frontend-route-data-contracts`.
 - Next action: isolate explicit-draft detection, trimmed review mutation-input
   construction, and immutable successful-draft removal in a framework-free
   data module while retaining React state, Relay mutation orchestration,

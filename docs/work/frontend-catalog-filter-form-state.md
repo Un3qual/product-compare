@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,7 +12,7 @@
 
 ## Catalog Filter Form State Contract
 
-- Status: ready on 2026-07-15.
+- Status: active on 2026-07-15 on `codex/frontend-route-data-contracts`.
 - Next action: isolate type-filter initialization and transitions plus initial
   advanced-filter disclosure policy in a framework-free state module while
   retaining React state, controls, form serialization, active-filter summaries,

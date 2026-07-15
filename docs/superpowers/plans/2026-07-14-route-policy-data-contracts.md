@@ -743,6 +743,117 @@ observation and coupon rendering, markup, and StyleX presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 24: Category Landing View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/categories/category-view-data.ts`
+- Modify: `assets/src/routes/categories/CategoryRoute.tsx`
+- Create: `assets/test/routes/categories/category-view-data.test.ts`
+- Test: `assets/test/routes/categories/category.route.test.tsx`
+- Create: `docs/work/frontend-category-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns category title and
+qualification copy, the encoded catalog browse and conditional next-page
+paths, source-ordered product rows, nullish brand fallback, and the first three
+source-ordered specification highlights. `CategoryRoute` retains loader and
+Relay reads, route fallbacks, empty-state rendering, markup, links, and StyleX.
+
+- [ ] Write pure tests for category copy, encoded browse IDs and cursors,
+  next-page eligibility, nullish versus empty brand names, empty products,
+  source ordering, first-three highlight truncation, and input immutability;
+  verify RED.
+- [ ] Extract only deterministic category view data while preserving Relay,
+  route fallbacks, empty-state behavior, markup, links, and presentation.
+- [ ] Run the pure and existing category route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 25: Alerts Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/account/alerts/alerts-mutation-data.ts`
+- Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- Create: `assets/test/routes/account/alerts/alerts-mutation-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-alerts-mutation-data.md`
+
+**Interfaces:** The framework-free mutation-data module owns exact toggle,
+delete, and mark-read variables plus operation-specific success/error
+resolution. A truthy updated watch, deleted-watch ID, or alert event is success;
+all other payload and GraphQL outcomes delegate to shared route mutation-error
+copy. `AlertsRoute` retains pending state, Relay commits, revalidation, failure
+catching, feedback, and presentation.
+
+- [ ] Write pure tests for all three variable shapes, toggle inversion,
+  operation-specific success, payload and GraphQL failure copy, result identity
+  where relevant, and input immutability; verify RED.
+- [ ] Extract only deterministic variables and outcome policy while preserving
+  React state, Relay commit lifecycle, revalidation, feedback, and presentation.
+- [ ] Run the pure and existing alerts route suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 26: Recommendation Result View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/recommendation-view-data.ts`
+- Modify: `assets/src/routes/compare/RecommendationPanel.tsx`
+- Create: `assets/test/routes/compare/recommendation-view-data.test.ts`
+- Test: `assets/test/routes/compare/recommendation-panel.test.tsx`
+- Create: `docs/work/frontend-recommendation-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns first matching-winner
+selection, supported versus no-winner reasons, and exact evidence copy with
+singular/plural accepted-claim references. `RecommendationPanel` retains Relay
+fetching, profile navigation, suspense and error handling, markup, and StyleX.
+
+- [ ] Write pure tests for a matching winner, first-match selection, missing or
+  unmatched winners, supported and missing-input reason order, zero/one/many
+  claim-reference copy, and input immutability; verify RED.
+- [ ] Extract only deterministic result presentation while preserving Relay,
+  profiles, query lifecycle, fallbacks, markup, and presentation.
+- [ ] Run the pure and existing recommendation-panel suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 27: Shared Route-Error View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/route-error-view-data.ts`
+- Modify: `assets/src/routes/compare/RouteErrorBoundary.tsx`
+- Create: `assets/test/routes/compare/route-error-view-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Test: `assets/test/router.test.tsx`
+- Create: `docs/work/frontend-route-error-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns resource
+capitalization plus default, 5xx, 404, 401/403, other-response, network, and
+unexpected-error copy. `RouteErrorBoundary` retains React Router error
+detection and boundary presentation and passes only normalized response,
+ordinary-error, or unknown context into the pure owner.
+
+- [ ] Write pure tests for every status branch, case-insensitive network/fetch
+  messages, `NetworkError`, qualifying and ordinary `TypeError`, generic errors,
+  unknown values, resource capitalization, exact retry copy, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic classification and copy while preserving React
+  Router detection, registration, markup, and presentation.
+- [ ] Run the pure, compare, and router suites, TypeScript, the framework/router
+  dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -893,3 +1004,9 @@ observation and coupon rendering, markup, and StyleX presentation.
   comparison characterization passed 84 focused tests on 2026-07-15.
   TypeScript and the pure-module dependency boundary passed, and independent
   task review found no actionable issues.
+- Before claiming Tasks 21–23 on 2026-07-15, current source inspection found
+  deterministic category landing composition, alert mutation variables and
+  outcomes, recommendation result presentation, and shared route-error
+  classification still embedded in four path-disjoint React owners. Their
+  category, alerts, recommendation, compare, and router suites passed 138 tests.
+  The four successors do not overlap each other or the three claimed rows.
