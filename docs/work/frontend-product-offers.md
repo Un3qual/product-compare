@@ -74,8 +74,9 @@
 
 - The historical offer baseline is complete; the Product Offer Panel Data
   Contract is the current ready successor in `docs/work/index.md`.
-- The current three-row successor set is Compare Picker Data Contract, Product
-  Offer Panel Data Contract, and External Destination Safety Contract.
+- The current three-row successor set is Product Offer Panel Data Contract,
+  External Destination Safety Contract, and Trust-Surface Date Presentation
+  Contract.
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are present; no fallback planning
   blocker applies.
 

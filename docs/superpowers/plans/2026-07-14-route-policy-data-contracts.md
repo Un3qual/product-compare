@@ -284,7 +284,7 @@ while the React owners retain semantic `<time dateTime>` markup and layout.
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
-  detail, and compare route suites passed 304 tests on 2026-07-14.
+  detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five
   separate React owners with no code, test, or lane-doc ownership overlap.
 - The compare picker candidate is distinct from its completed presentation
