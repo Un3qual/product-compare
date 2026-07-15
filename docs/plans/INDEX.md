@@ -57,11 +57,12 @@ product-detail route data, compare-picker data, product-offer panel data, and
 shared external-destination safety are complete. API-token lifecycle display,
 catalog specification-highlight data, recommendation-profile route data,
 saved-comparison naming data, merchant visible-page filter data, and price-watch
-input data and feed-candidate review view data are also complete. Three source-
-verified, non-overlapping successors remain ready across tracked-commerce click
-data, immutable route-state collection helpers, and catalog filter-form state.
-Trust-surface date presentation, product-attribute grouping, route-metadata
-resolution, and saved-comparison navigation data are complete.
+input data, feed-candidate review view data, and tracked-commerce click data are
+also complete. Three source-verified, non-overlapping successors remain ready
+across immutable route-state collection helpers, catalog filter-form state, and
+feed-candidate review mutation data. Trust-surface date presentation, product-
+attribute grouping, route-metadata resolution, and saved-comparison navigation
+data are complete.
 
 Active implementation plans:
 
@@ -140,9 +141,11 @@ batch and should not be recreated or promoted.
   not promote it again without fresh scope.
 - Completed reserve: feed-candidate review view data executed through that same
   plan; do not promote it again without fresh scope.
-- Ready reserve: tracked-commerce click data, immutable route-state collection
-  helpers, and catalog filter-form state execute through that same plan. Confirm
-  live ownership in `docs/work/index.md` before dispatch.
+- Completed reserve: tracked-commerce click data executed through that same
+  plan; do not promote it again without fresh scope.
+- Ready reserve: immutable route-state collection helpers, catalog filter-form
+  state, and feed-candidate review mutation data execute through that same plan.
+  Confirm live ownership in `docs/work/index.md` before dispatch.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

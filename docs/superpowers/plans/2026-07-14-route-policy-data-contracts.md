@@ -618,14 +618,14 @@ endpoint origin. `TrackedCommerceClickAction` retains React event handling,
 pending/error state, Relay mutation orchestration, browser navigation, and
 markup.
 
-- [ ] Write pure tests for primary and modified clicks, encoded merchant-
+- [x] Write pure tests for primary and modified clicks, encoded merchant-
   product IDs, API-origin absolute and relative redirects, cross-origin and
   non-HTTP redirects, and input immutability; verify RED.
-- [ ] Extract only deterministic click and URL policy while preserving Relay,
+- [x] Extract only deterministic click and URL policy while preserving Relay,
   error, pending, navigation, and presentation behavior.
-- [ ] Run the pure and existing offer-discovery route suites, TypeScript, the
+- [x] Run the pure and existing offer-discovery route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -683,6 +683,36 @@ form serialization, active-filter summary behavior, and markup.
   URL form fields, advanced-filter presentation, and summaries.
 - [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
   import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 22: Feed-Candidate Review Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- Create: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-review-mutation-data.md`
+
+**Interfaces:** The framework-free data module owns explicit-draft detection,
+trimmed review mutation-input construction, and immutable successful-draft
+removal. An explicit blank draft includes `note: ""` so a persisted note can be
+cleared; an absent draft falls back to the persisted note and omits `note` when
+that trimmed value is empty. `FeedCandidatesRoute` retains React state, Relay
+mutation orchestration, errors, feedback, revalidation, and presentation.
+
+- [ ] Write pure tests for explicit nonblank and blank drafts, absent drafts
+  with nonblank and empty persisted notes, trimmed notes, own-property draft
+  detection, successful-draft removal, missing-draft behavior, source ordering,
+  result identity, and input immutability; verify RED.
+- [ ] Extract only deterministic mutation-input and draft-removal policy while
+  preserving React state, Relay behavior, errors, feedback, revalidation, and
+  presentation.
+- [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
+  framework-import scan, secret/raw-field scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -810,3 +840,14 @@ form serialization, active-filter summary behavior, and markup.
   characterization passed 24 focused tests on 2026-07-15. Framework and
   secret/raw-field scans passed, and independent task review found no
   actionable issues.
+- Before the tracked-commerce click-data claim on 2026-07-15, current source
+  inspection confirmed that explicit-draft detection, trimmed mutation-input
+  construction, and successful-draft removal remain embedded in
+  `FeedCandidatesRoute`; its route suite passed 17 tests. The mutation-data
+  candidate is path-disjoint from tracked-commerce clicks, immutable route-
+  state collections, and catalog filter-form state.
+- The completed tracked-commerce click-data contract and existing offer-
+  discovery route characterization passed 55 focused tests on 2026-07-15.
+  Framework and sensitive-field scans passed, and independent task re-review
+  found no actionable issues after exact same-host/different-port coverage was
+  added.

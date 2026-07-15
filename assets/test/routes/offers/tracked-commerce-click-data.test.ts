@@ -46,6 +46,7 @@ test("rejects redirects outside the API origin", () => {
   for (const redirectPath of [
     "https://attacker.example/r/click-123",
     "//attacker.example/r/click-123",
+    "http://localhost:4001/r/click-123",
     SCRIPT_SCHEME_REDIRECT
   ]) {
     expect(() => resolveTrackedCommerceRedirectUrl(redirectPath, API_ENDPOINT)).toThrow(

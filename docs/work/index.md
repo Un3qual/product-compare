@@ -432,45 +432,29 @@ mutation orchestration, draft notes, callbacks, controls, markup, and styling.
 Its pure and route suites pass 24 tests. Three other validated rows remain
 ready.
 
+Before claiming Tracked-Commerce Click Data, the coordinator validated a
+fourth non-overlapping successor. Feed-candidate review mutation-input and
+draft-removal policy remain embedded in `FeedCandidatesRoute`; its existing
+route suite passes 17 tests. The successor has complete owned paths, no
+blockers, and does not overlap tracked-commerce clicks, immutable route-state
+collections, or catalog filter-form state.
+
+Tracked-Commerce Click Data then completed: one framework-free owner now
+qualifies normal unmodified primary clicks, builds the encoded first-party
+merchant-product href, and rejects redirects outside the exact GraphQL API
+origin. `TrackedCommerceClickAction` retains React event handling, pending and
+error state, Relay mutation orchestration, browser navigation, accessibility,
+markup, and styling. Its pure and route suites pass 55 tests; independent task
+review approved the exact scheme, host, and port boundary after a focused
+coverage follow-up. Three other validated rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Tracked-Commerce Click Data Contract
-
-Status: ready
-Lane: Frontend tracked-commerce click data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move normal click qualification, first-party tracking href
-construction, and same-origin redirect resolution out of
-`TrackedCommerceClickAction` into a framework-free contract while preserving
-Relay mutation orchestration, pending/error state, navigation, and markup.
-Owned paths:
-
-- `assets/src/routes/offers/tracked-commerce-click-data.ts`
-- `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
-- `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-tracked-commerce-click-data.md`
-
-Prerequisites:
-
-- Existing offer-discovery tracked-click characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/tracked-commerce-click-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner qualifies unmodified primary clicks,
-builds encoded first-party tracking hrefs, and resolves only API-origin
-redirects; React retains event handling, pending/error state, Relay mutation
-orchestration, browser navigation, and presentation.
-
-### 2. Immutable Route-State Collection Contract
+### 1. Immutable Route-State Collection Contract
 
 Status: ready
 Lane: Frontend immutable route state
@@ -504,7 +488,7 @@ remove plus set add and remove, preserving original collection identity for
 set membership and map-removal no-ops and leaving inputs unchanged; route owners
 retain state transitions, mutations, Relay data, feedback, and markup.
 
-### 3. Catalog Filter Form State Contract
+### 2. Catalog Filter Form State Contract
 
 Status: ready
 Lane: Frontend catalog filter form state
@@ -536,6 +520,40 @@ enables descendants for the first selected type, disables them when the type is
 cleared, preserves the choice across selected-type changes, and identifies
 initial advanced disclosure without mutating filters; React retains state,
 controls, form serialization, summaries, and presentation.
+
+### 3. Feed-Candidate Review Mutation Data Contract
+
+Status: ready
+Lane: Frontend feed-candidate review mutation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move explicit-draft detection, trimmed review mutation-input
+construction, and immutable successful-draft removal out of
+`FeedCandidatesRoute` into a framework-free data contract while preserving
+React state, Relay mutation orchestration, errors, feedback, revalidation, and
+presentation.
+Owned paths:
+
+- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.ts`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/frontend-feed-candidate-review-mutation-data.md`
+
+Prerequisites:
+
+- Existing feed-candidate review mutation characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner distinguishes an explicit blank draft
+from an absent draft, trims draft or persisted review notes, omits empty
+non-draft notes, builds the existing mutation input, and removes a successful
+draft without mutating input; React and Relay retain all state transitions,
+mutation lifecycle, feedback, revalidation, and presentation.
 
 ## Needs Decision Work
 
