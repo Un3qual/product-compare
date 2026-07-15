@@ -30,3 +30,11 @@ test("string-input formatters preserve malformed source values exactly", () => {
   expect(formatProductDateLabel(malformedValue)).toBe(malformedValue);
   expect(formatProductDateTimeLabel(malformedValue)).toBe(malformedValue);
 });
+
+test.each([
+  "2026-02-30T00:00:00Z",
+  "2026-07-14T01:00:00"
+])("string-input formatters reject non-canonical GraphQL DateTime %s", (value) => {
+  expect(formatProductDateLabel(value)).toBe(value);
+  expect(formatProductDateTimeLabel(value)).toBe(value);
+});

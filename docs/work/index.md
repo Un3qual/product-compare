@@ -282,8 +282,11 @@ whose current route-state suite passes 31 tests. Trust-Surface Date
 Presentation then completed: one framework-free formatter now owns UTC date-
 only and date-time labels, offset normalization, and exact malformed-source
 fallbacks while merchant and snapshot markup retain their source `dateTime`
-values. Its direct and consumer suites pass 13 tests, and the full frontend
-gate passes 71 files and 993 tests. The three other validated rows remain ready.
+values. Its direct and consumer suites pass 15 tests; review follow-up routes
+all string inputs through the existing strict GraphQL DateTime validator so
+impossible calendar dates and timestamps without offsets fail closed. The full
+frontend gate passes 71 files and 995 tests. The three other validated rows
+remain ready.
 
 ## Ready Work
 

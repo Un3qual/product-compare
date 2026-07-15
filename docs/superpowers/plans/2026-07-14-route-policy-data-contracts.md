@@ -5,15 +5,16 @@
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep six established frontend route surfaces maintainable by
+**Goal:** Keep established frontend route surfaces maintainable by
 extracting their deterministic form, summary, path, normalization, and view-
 state policy into small, framework-free contracts without changing user
 behavior, and directly characterize the shared external-destination safety
 boundary used by offer and merchant surfaces.
 
-**Architecture:** Each task creates one pure TypeScript module beside its React
-owner. React components retain Relay reads and mutations, router integration,
-local state, effects, boundaries, and semantic presentation.
+**Architecture:** Extraction tasks create or extend a small framework-free
+TypeScript owner beside their React consumer. React components retain Relay
+reads and mutations, router integration, local state, effects, boundaries, and
+semantic presentation.
 
 **Tech Stack:** React 19, React Router 7, Relay 20, TypeScript 5.8, Vitest, Bun,
 StyleX.
@@ -295,6 +296,12 @@ while the React owners retain semantic `<time dateTime>` markup and layout.
   snapshot suites, TypeScript, the framework-import scan, and `git diff
   --check`.
 - [x] Record lane evidence and commit the milestone.
+- [x] Review fix: route string inputs through the existing strict GraphQL
+  DateTime validator so impossible dates and timestamps without offsets retain
+  their original source strings instead of normalizing through `Date.parse`.
+- [x] Review fix verification: two new regression cases failed before the fix;
+  the formatter, validator, merchant, and snapshot suites then passed 26 tests,
+  and the full frontend gate passed 71 files and 995 tests.
 
 ---
 
