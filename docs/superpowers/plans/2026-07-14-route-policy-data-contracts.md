@@ -386,6 +386,33 @@ local-state orchestration, router links, boundaries, and presentation.
   import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 12: API Token Lifecycle Display Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-lifecycle-display.md`
+
+**Interfaces:** The existing framework-free API-token route-data owner returns
+one display record per token with its label, strict UTC lifecycle-date labels,
+optional empty-state labels, and revoked/active/expired status copy.
+`ApiTokenItem` retains semantic detail markup, status tone, rotation presets,
+errors, and lifecycle actions.
+
+- [ ] Write pure tests for labeled and unlabeled tokens, valid UTC and offset
+  timestamps, optional-date fallbacks, impossible and offset-less timestamp
+  fallbacks, and revoked/active/expired status precedence; verify RED.
+- [ ] Move only deterministic item-display data into the existing route-data
+  owner while preserving item markup and lifecycle behavior.
+- [ ] Run the pure and existing API-token route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -440,3 +467,9 @@ local-state orchestration, router links, boundaries, and presentation.
   Current source inspection found ordered reopen and cursor-pagination path
   policy embedded in `SavedComparisonsRoute.tsx`; its route-state suite passed
   31 tests on 2026-07-14.
+- The API-token lifecycle display candidate is non-overlapping with product-
+  attribute grouping, route-metadata resolution, and saved-comparison
+  navigation. Current source inspection found token labels, UTC lifecycle-date
+  formatting, optional fallbacks, and status copy embedded in
+  `ApiTokenItem.tsx`; its route-data and route suites passed 55 tests on
+  2026-07-14.
