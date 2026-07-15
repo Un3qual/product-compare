@@ -56,7 +56,7 @@ describe("buildSavedComparisonsPagination", () => {
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
-  test.each([null, ""]) (
+  test.each([null, "", undefined]) (
     "hides the next-page path when its cursor is absent or empty (%j)",
     (endCursor) => {
       expect(
@@ -69,6 +69,17 @@ describe("buildSavedComparisonsPagination", () => {
       ).toEqual({ firstHref: null, nextHref: null });
     }
   );
+
+  test("hides the next-page path when its cursor does not advance", () => {
+    expect(
+      buildSavedComparisonsPagination({
+        after: "cursor-current",
+        endCursor: "cursor-current",
+        hasNextPage: true,
+        status: "ready"
+      })
+    ).toEqual({ firstHref: "/compare/saved", nextHref: null });
+  });
 
   test("encodes an advancing next-page cursor", () => {
     expect(

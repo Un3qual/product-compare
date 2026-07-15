@@ -3,7 +3,7 @@
 ## Snapshot
 
 - Status: done (saved comparison navigation data contract)
-- Priority: P1
+- Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-14 on `codex/route-policy-data-contracts`.
@@ -27,6 +27,11 @@
     expected because `saved-comparisons-route-data` did not exist.
   - GREEN: the pure navigation suite passed 9 tests and the unchanged route
     state suite passed 31 tests. The combined command passed 40 tests.
+  - Review-fix RED: the direct pure suite failed when a repeated cursor still
+    produced a next-page href.
+  - Review-fix GREEN: the combined pure and route-state suite passed 42 tests
+    after requiring an advancing, non-empty next cursor; absent cursor coverage
+    now includes `undefined` as well as `null` and `""`.
 - Verified commands:
   - `cd assets && bun x vitest run
     test/routes/compare/saved-comparisons-route-data.test.ts
@@ -35,7 +40,8 @@
   - direct framework import scan of
     `assets/src/routes/compare/saved-comparisons-route-data.ts`
   - `git diff --check`
-- Exit condition met: reopening preserves stored product order and current
-  `URLSearchParams` encoding; pagination hides for unauthorized data, exposes
-  first-page return only after a cursor, hides unavailable next cursors, and
-  encodes advancing cursors.
+- Exit condition met after the review-fix GREEN verification: reopening
+  preserves stored product order and current `URLSearchParams` encoding;
+  pagination hides for unauthorized data, exposes first-page return only after
+  a cursor, hides unavailable and non-advancing next cursors, and encodes
+  advancing cursors.

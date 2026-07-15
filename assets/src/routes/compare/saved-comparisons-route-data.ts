@@ -35,7 +35,9 @@ export function buildSavedComparisonsPagination({
   return {
     firstHref: after ? "/compare/saved" : null,
     nextHref:
-      hasNextPage && endCursor ? savedComparisonsPagePath(endCursor) : null
+      hasNextPage && endCursor && endCursor !== after
+        ? savedComparisonsPagePath(endCursor)
+        : null
   };
 }
 
