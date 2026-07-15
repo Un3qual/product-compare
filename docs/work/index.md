@@ -303,40 +303,16 @@ specification-highlight selection as a fourth non-overlapping successor:
 bounded ordering by explicit sort order, unspecified-order placement, and
 stable source ordering remain embedded in the StyleX product-list owner, while
 its existing catalog route suite passes 62 tests.
+Route Metadata Resolution then completed: one framework-free owner now selects
+the deepest valid match, prefers loader data over the same match's handle,
+falls back from invalid loader metadata, and parses required, optional, and
+indexability fields while React retains router access and all head markup. Its
+direct and integration suites pass 8 tests, and the full frontend gate passes
+73 files and 1,006 tests. The three other validated rows remain ready.
 
 ## Ready Work
 
-### 1. Route Metadata Resolution Data Contract
-
-Status: ready
-Lane: Frontend route metadata resolution
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic route-match metadata selection and parsing out
-of the React head renderer into a framework-free contract while preserving the
-existing document-head markup.
-Owned paths:
-
-- `assets/src/routes/route-metadata-data.ts`
-- `assets/src/routes/RouteMetadata.tsx`
-- `assets/test/routes/route-metadata-data.test.ts`
-- `docs/work/frontend-route-metadata-resolution.md`
-
-Prerequisites:
-
-- Existing Route Metadata integration characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/route-metadata-data.test.ts test/routes/route-metadata.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves deepest-match precedence,
-loader-data precedence over the same match's handle, handle fallback for
-invalid loader metadata, required title and description strings, optional
-string fields, and explicit-true indexability.
-
-### 2. Saved Comparison Navigation Data Contract
+### 1. Saved Comparison Navigation Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison navigation
@@ -366,7 +342,7 @@ Exit condition: one framework-free owner preserves ordered and encoded reopen
 links, unauthorized pagination suppression, first-page return visibility, and
 next-page links only for advancing non-empty cursors.
 
-### 3. API Token Lifecycle Display Data Contract
+### 2. API Token Lifecycle Display Data Contract
 
 Status: ready
 Lane: Frontend API-token lifecycle display
@@ -398,7 +374,7 @@ labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
 exact invalid-string fallbacks, optional empty labels, and revoked/active/
 expired status copy; React retains semantic details and lifecycle controls.
 
-### 4. Catalog Specification Highlights Data Contract
+### 3. Catalog Specification Highlights Data Contract
 
 Status: ready
 Lane: Frontend catalog specification highlights

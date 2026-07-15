@@ -2,16 +2,16 @@
 
 ## Snapshot
 
-- Status: ready (route metadata resolution data contract)
+- Status: complete (route metadata resolution data contract)
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after current source and integration-suite
-  validation (2 route metadata tests).
+- Last verified: 2026-07-14 after focused and full frontend verification (8
+  focused tests; 73 files and 1,006 tests in the full gate).
 
 ## Route Metadata Resolution Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: complete on `codex/route-policy-data-contracts` as of 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: move deterministic route-match metadata selection and parsing
   out of the React head renderer into a framework-free contract while
@@ -32,3 +32,19 @@
 - Candidate evidence: current source inspection found deterministic match
   selection and metadata parsing embedded in `RouteMetadata.tsx`; its current
   integration suite passed 2 tests.
+
+## Completion Evidence
+
+- `route-metadata-data.ts` now owns deepest-valid-match traversal, loader-data
+  precedence, same-match handle fallback, required title and description
+  validation, optional string parsing, and explicit-true indexability.
+- `RouteMetadata` retains `useMatches` plus all title, meta, canonical-link,
+  social, robots, and structured-data markup.
+- RED failed because the framework-free metadata module did not exist.
+- GREEN passed 6 direct contract tests and 2 unchanged integration tests (8
+  focused tests total).
+- `cd assets && bun run typecheck` passed.
+- `cd assets && bun run check` passed Relay validation, TypeScript, 73 test
+  files and 1,006 tests, client and SSR production builds, and the client
+  bundle budget (181,918 gzip bytes against 200,000).
+- The framework-import scan and `git diff --check` passed.

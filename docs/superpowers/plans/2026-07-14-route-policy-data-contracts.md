@@ -352,15 +352,15 @@ metadata, preferring loader data over the same match's static handle, and
 parses the required and optional document fields. `RouteMetadata` retains
 `useMatches` and all title, meta, link, and structured-data markup.
 
-- [ ] Write pure tests for deepest-match precedence, loader-data precedence,
+- [x] Write pure tests for deepest-match precedence, loader-data precedence,
   invalid-loader handle fallback, required title and description strings,
   optional string fields, explicit-true indexability, and no valid metadata;
   verify RED.
-- [ ] Extract only deterministic match selection and metadata parsing while
+- [x] Extract only deterministic match selection and metadata parsing while
   retaining router access and document-head markup in `RouteMetadata`.
-- [ ] Run the pure and existing integration suites, TypeScript, the framework-
+- [x] Run the pure and existing integration suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
