@@ -647,14 +647,14 @@ preserve the original collection identity; changes return a new collection and
 leave the input unchanged. Route owners retain all React state transitions,
 Relay orchestration, errors, feedback, and presentation.
 
-- [ ] Write pure tests for map insert/replace/remove, set add/remove, source
+- [x] Write pure tests for map insert/replace/remove, set add/remove, source
   ordering, no-op identity, changed-result identity, and input immutability;
   verify RED.
-- [ ] Replace only the duplicate collection helpers while preserving route
+- [x] Replace only the duplicate collection helpers while preserving route
   state and mutation behavior.
-- [ ] Run the pure and existing API-token and saved-comparison route-state
+- [x] Run the pure and existing API-token and saved-comparison route-state
   suites, TypeScript, the framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -713,6 +713,34 @@ mutation orchestration, errors, feedback, revalidation, and presentation.
   presentation.
 - [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
   framework-import scan, secret/raw-field scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 23: Offer-Discovery Card View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/offers/offer-discovery-card-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- Create: `assets/test/routes/offers/offer-discovery-card-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-discovery-card-data.md`
+
+**Interfaces:** The framework-free view-data module owns product, status,
+merchant, domain, and latest-price labels, nullable coupon/price-history
+connection fallbacks, and ordered valid price-history rows.
+`OfferDiscoveryCard` retains safe versus tracked merchant-action selection,
+observation and coupon rendering, markup, and StyleX presentation.
+
+- [ ] Write pure tests for nullish and empty-string label fallbacks, active and
+  inactive status copy, nullable connection fallbacks and existing-connection
+  identity, ordered valid/invalid price-history rows, and input immutability;
+  verify RED.
+- [ ] Extract only deterministic card view data while preserving merchant
+  action, observation, coupon, markup, and presentation behavior.
+- [ ] Run the pure and existing offer-discovery route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -852,3 +880,13 @@ mutation orchestration, errors, feedback, revalidation, and presentation.
   or environment dependency. Dependency and sensitive-field scans passed, and
   independent task re-review found no actionable issues after exact scheme,
   host, and port coverage was added.
+- Before the immutable route-state claim on 2026-07-15, current source
+  inspection confirmed product/status/merchant/domain/latest-price labels,
+  nullable connection fallbacks, and ordered price-history view rows remain
+  embedded in `OfferDiscoveryCard`; its route suite passed 51 tests. The card
+  candidate is path-disjoint from immutable route state, catalog filter-form
+  state, and feed-candidate review mutation data.
+- The completed immutable route-state contract and existing API-token and saved-
+  comparison characterization passed 84 focused tests on 2026-07-15.
+  TypeScript and the pure-module dependency boundary passed, and independent
+  task review found no actionable issues.

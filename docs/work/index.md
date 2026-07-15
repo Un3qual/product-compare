@@ -450,47 +450,29 @@ tests; independent review approved the exact scheme, host, and port boundary
 after focused coverage and dependency-boundary follow-up. Three other validated
 rows remain ready.
 
+Before claiming Immutable Route-State Collection, the coordinator validated a
+fourth non-overlapping successor. Product, status, merchant/domain, latest-
+price, nullable connection, and ordered price-history view policy remain
+embedded in `OfferDiscoveryCard`; the existing offer-discovery route suite
+passes 51 tests. The successor has complete owned paths, no blockers, and does
+not overlap immutable route state, catalog filter-form state, or feed-candidate
+review mutation data.
+
+Immutable Route-State Collection then completed: one framework-free owner now
+provides copy-on-write map upsert/remove and set add/remove behavior with exact
+identity and iteration-order semantics. API-token and saved-comparison routes
+retain their React state transitions, functional setters, Relay orchestration,
+errors, feedback, and presentation. The pure and route suites pass 84 tests,
+TypeScript and dependency-boundary checks pass, and independent task review
+found no actionable issue. Three other validated rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Immutable Route-State Collection Contract
-
-Status: ready
-Lane: Frontend immutable route state
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: consolidate the duplicate immutable set add/remove helpers and
-API-token map upsert/remove helpers in a framework-free route-state module while
-preserving each route's React state, Relay orchestration, and presentation.
-Owned paths:
-
-- `assets/src/routes/immutable-collection-state.ts`
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/test/routes/immutable-collection-state.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-immutable-route-state.md`
-
-Prerequisites:
-
-- Existing API-token and saved-comparison route-state characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/immutable-collection-state.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner provides copy-on-write map upsert and
-remove plus set add and remove, preserving original collection identity for
-set membership and map-removal no-ops and leaving inputs unchanged; route owners
-retain state transitions, mutations, Relay data, feedback, and markup.
-
-### 2. Catalog Filter Form State Contract
+### 1. Catalog Filter Form State Contract
 
 Status: ready
 Lane: Frontend catalog filter form state
@@ -523,7 +505,7 @@ cleared, preserves the choice across selected-type changes, and identifies
 initial advanced disclosure without mutating filters; React retains state,
 controls, form serialization, summaries, and presentation.
 
-### 3. Feed-Candidate Review Mutation Data Contract
+### 2. Feed-Candidate Review Mutation Data Contract
 
 Status: ready
 Lane: Frontend feed-candidate review mutation data
@@ -556,6 +538,41 @@ from an absent draft, trims draft or persisted review notes, omits empty
 non-draft notes, builds the existing mutation input, and removes a successful
 draft without mutating input; React and Relay retain all state transitions,
 mutation lifecycle, feedback, revalidation, and presentation.
+
+### 3. Offer-Discovery Card View-Data Contract
+
+Status: ready
+Lane: Frontend offer-discovery card view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move product/status/merchant/domain/latest-price labels, nullable
+connection fallbacks, and ordered valid price-history rows out of
+`OfferDiscoveryCard` into a framework-free view-data contract while preserving
+safe/tracked merchant actions, observation and coupon rendering, markup, and
+styling.
+Owned paths:
+
+- `assets/src/routes/offers/offer-discovery-card-data.ts`
+- `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- `assets/test/routes/offers/offer-discovery-card-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-card-data.md`
+
+Prerequisites:
+
+- Existing offer-discovery card characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-card-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves current product, status,
+merchant, domain, and latest-price fallbacks, returns empty nullable
+connections, and builds ordered valid price-history rows without mutating
+input; React retains action selection, safe and tracked links, observation and
+coupon rendering, markup, and styling.
 
 ## Needs Decision Work
 
