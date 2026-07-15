@@ -25,8 +25,8 @@
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Completed action: isolated reset identity, unique loaded-page accumulation,
   available options, cursor and empty-state rules, and compare paths in a
-  framework-free module. Keep Relay reads, effects, Suspense/error boundaries,
-  state transitions, and picker presentation in their current owners.
+  framework-free module. Relay reads, effects, Suspense/error boundaries,
+  state transitions, and picker presentation remain in their current owners.
 - Owned paths:
   - `assets/src/routes/compare/compare-picker-data.ts`
   - `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
