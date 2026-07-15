@@ -447,8 +447,10 @@ error state, Relay mutation orchestration, browser navigation, accessibility,
 markup, and styling. The React owner now passes its resolved API endpoint into
 the dependency-free contract explicitly. Its pure and route suites pass 57
 tests; independent review approved the exact scheme, host, and port boundary
-after focused coverage and dependency-boundary follow-up. Three other validated
-rows remain ready.
+after focused coverage and dependency-boundary follow-up. Final branch review
+then exposed the asynchronous rejection path: the route now turns redirect
+resolution or navigation failures into existing default error feedback, and
+the combined suites pass 58 tests. Three other validated rows remain ready.
 
 Before claiming Immutable Route-State Collection, the coordinator validated a
 fourth non-overlapping successor. Product, status, merchant/domain, latest-

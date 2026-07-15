@@ -875,11 +875,14 @@ observation and coupon rendering, markup, and StyleX presentation.
   candidate is path-disjoint from tracked-commerce clicks, immutable route-
   state collections, and catalog filter-form state.
 - The completed tracked-commerce click-data contract and existing offer-
-  discovery route characterization passed 57 focused tests on 2026-07-15. The
+  discovery route characterization passed 58 focused tests on 2026-07-15. The
   pure owner requires explicit endpoint input and has no framework, transport,
   or environment dependency. Dependency and sensitive-field scans passed, and
   independent task re-review found no actionable issues after exact scheme,
-  host, and port coverage was added.
+  host, and port coverage was added. Final branch review then identified the
+  asynchronous redirect-rejection boundary; route-level regression coverage
+  now proves resolution or navigation failures render existing default error
+  feedback without escaping the Relay completion callback.
 - Before the immutable route-state claim on 2026-07-15, current source
   inspection confirmed product/status/merchant/domain/latest-price labels,
   nullable connection fallbacks, and ordered price-history view rows remain
