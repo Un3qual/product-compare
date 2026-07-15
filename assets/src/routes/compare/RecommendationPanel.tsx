@@ -6,7 +6,11 @@ import type { CompareRecommendationQuery } from "../../__generated__/CompareReco
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import type { CompareSpecMode } from "./loader";
-import { recommendationProfileFromUrl } from "./loader";
+import {
+  buildRecommendationProfilePath,
+  recommendationProfileFromUrl,
+  type RecommendationProfile
+} from "./recommendation-route-data";
 import compareRecommendationQuery from "./queries/CompareRecommendationQuery";
 
 const styles = create({
@@ -54,7 +58,7 @@ function RecommendationContent({
   slugs,
   specMode
 }: {
-  profile: "lowest_current_cost" | "best_value";
+  profile: RecommendationProfile;
   slugs: readonly string[];
   specMode: CompareSpecMode;
 }) {
@@ -80,8 +84,8 @@ function RecommendationContent({
     <section aria-labelledby="recommendation-title" {...props(styles.panel)}>
       <h2 id="recommendation-title" {...props(styles.title)}>Decision recommendation</h2>
       <nav aria-label="Recommendation profiles" {...props(styles.controls)}>
-        <Link aria-current={profile === "lowest_current_cost" ? "page" : undefined} to={profilePath(slugs, specMode, "lowest_current_cost")}>Lowest current cost</Link>
-        <Link aria-current={profile === "best_value" ? "page" : undefined} to={profilePath(slugs, specMode, "best_value")}>Best supported value</Link>
+        <Link aria-current={profile === "lowest_current_cost" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "lowest_current_cost")}>Lowest current cost</Link>
+        <Link aria-current={profile === "best_value" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "best_value")}>Best supported value</Link>
       </nav>
       {winner ? (
         <>
@@ -97,14 +101,4 @@ function RecommendationContent({
       )}
     </section>
   );
-}
-
-function profilePath(slugs: readonly string[], specMode: CompareSpecMode, profile: "lowest_current_cost" | "best_value") {
-  const params = new URLSearchParams();
-  slugs.forEach((slug) => {
-    params.append("slug", slug);
-  });
-  if (specMode !== "shared") params.set("specs", specMode);
-  if (profile === "best_value") params.set("recommend", profile);
-  return `/compare?${params.toString()}`;
 }

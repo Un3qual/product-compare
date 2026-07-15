@@ -10,7 +10,10 @@ import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
 import type { CompareProductSummary } from "./loader";
-import { recommendationProfileFromUrl } from "./loader";
+import {
+  recommendationProfileFromUrl,
+  type RecommendationProfile
+} from "./recommendation-route-data";
 import ownedComparisonSnapshotsQuery from "./queries/OwnedComparisonSnapshotsQuery";
 import publishComparisonSnapshotMutation from "./queries/PublishComparisonSnapshotMutation";
 import revokeComparisonSnapshotMutation from "./queries/RevokeComparisonSnapshotMutation";
@@ -182,7 +185,7 @@ function SnapshotHistory({
 
 function useSnapshotPublisher(
   products: readonly CompareProductSummary[],
-  recommendationProfile: "lowest_current_cost" | "best_value",
+  recommendationProfile: RecommendationProfile,
   onPublished: (snapshot: PublishedComparisonSnapshot) => void,
   onMessage: (message: string | null) => void
 ) {

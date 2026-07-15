@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from "react-router-dom";
+import type { LoaderFunctionArgs } from "react-router-dom";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import {
   fetchRouteQuery,
@@ -15,10 +15,13 @@ import {
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
+export {
+  recommendationProfileFromUrl,
+  shouldRevalidateCompareLoader,
+  type RecommendationProfile
+} from "./recommendation-route-data";
 
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
-
-export type RecommendationProfile = "lowest_current_cost" | "best_value";
 
 export interface CompareProductSummary {
   id: string;
@@ -159,31 +162,6 @@ export async function compareLoader({
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
   }
-}
-
-export function recommendationProfileFromUrl(requestUrl: string): RecommendationProfile {
-  return new URL(requestUrl, "http://product-compare.local").searchParams.get("recommend") === "best_value"
-    ? "best_value"
-    : "lowest_current_cost";
-}
-
-export function shouldRevalidateCompareLoader({
-  currentUrl,
-  defaultShouldRevalidate,
-  nextUrl
-}: ShouldRevalidateFunctionArgs) {
-  const current = new URL(currentUrl);
-  const next = new URL(nextUrl);
-  const recommendationChanged =
-    current.searchParams.get("recommend") !== next.searchParams.get("recommend");
-  current.searchParams.delete("recommend");
-  next.searchParams.delete("recommend");
-
-  return recommendationChanged &&
-    current.pathname === next.pathname &&
-    current.search === next.search
-    ? false
-    : defaultShouldRevalidate;
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
