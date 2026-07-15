@@ -9,6 +9,7 @@ import {
   API_TOKEN_EXPIRES_AT_PRESETS,
   buildApiTokenExpiresAtInputValue
 } from "./date-presets";
+import { buildApiTokenDisplayData } from "./api-token-route-data";
 import type { ApiTokenSummary } from "./loader";
 
 const styles = create({
@@ -54,7 +55,8 @@ export function ApiTokenItem({
   rotatePending,
   token
 }: ApiTokenItemProps) {
-  const displayLabel = token.label ?? "Unlabeled token";
+  const displayData = buildApiTokenDisplayData(token);
+  const { displayLabel } = displayData;
   const lifecyclePending = revokePending || rotatePending;
 
   function handleRotateSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,7 +68,7 @@ export function ApiTokenItem({
     <li {...props(styles.item)}>
       <article {...props(styles.token)}>
         <h2 {...props(styles.tokenTitle)}>{displayLabel}</h2>
-        <ApiTokenDetails token={token} />
+        <ApiTokenDetails displayData={displayData} token={token} />
         <ApiTokenRowErrors revokeError={revokeError} rotateError={rotateError} />
         {token.revokedAt ? null : (
           <ApiTokenActions
@@ -84,7 +86,13 @@ export function ApiTokenItem({
   );
 }
 
-function ApiTokenDetails({ token }: { token: ApiTokenSummary }) {
+function ApiTokenDetails({
+  displayData,
+  token
+}: {
+  displayData: ReturnType<typeof buildApiTokenDisplayData>;
+  token: ApiTokenSummary;
+}) {
   return (
     <dl>
       <div>
@@ -93,21 +101,21 @@ function ApiTokenDetails({ token }: { token: ApiTokenSummary }) {
       </div>
       <div>
         <dt>Expires</dt>
-        <dd>{formatOptionalDateTime(token.expiresAt, "Never expires")}</dd>
+        <dd>{displayData.expiresAtLabel}</dd>
       </div>
       <div>
         <dt>Last used</dt>
-        <dd>{formatOptionalDateTime(token.lastUsedAt, "Never used")}</dd>
+        <dd>{displayData.lastUsedAtLabel}</dd>
       </div>
       <div>
         <dt>Created</dt>
-        <dd>{formatUtcDateTime(token.insertedAt)}</dd>
+        <dd>{displayData.insertedAtLabel}</dd>
       </div>
       <div>
         <dt>Status</dt>
         <dd>
           <StatusBadge tone={apiTokenIsActive(token) ? "positive" : "neutral"}>
-            {apiTokenStatusLabel(token)}
+            {displayData.statusLabel}
           </StatusBadge>
         </dd>
       </div>
@@ -223,32 +231,4 @@ function ApiTokenActions({
       </Button>
     </>
   );
-}
-
-function formatOptionalDateTime(value: string | null, emptyLabel: string) {
-  return value ? formatUtcDateTime(value) : emptyLabel;
-}
-
-function formatUtcDateTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return `${date.getUTCFullYear()}-${padUtcPart(date.getUTCMonth() + 1)}-${padUtcPart(
-    date.getUTCDate()
-  )} ${padUtcPart(date.getUTCHours())}:${padUtcPart(date.getUTCMinutes())} UTC`;
-}
-
-function padUtcPart(value: number) {
-  return value.toString().padStart(2, "0");
-}
-
-function apiTokenStatusLabel(token: ApiTokenSummary) {
-  if (token.revokedAt) {
-    return "Revoked token";
-  }
-
-  return apiTokenIsActive(token) ? "Active token" : "Expired token";
 }

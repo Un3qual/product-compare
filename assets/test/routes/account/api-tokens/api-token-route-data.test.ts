@@ -1,6 +1,7 @@
 import {
   apiTokenPagePath,
   apiTokensRouteLocationIdentity,
+  buildApiTokenDisplayData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
   buildRotateApiTokenVariables,
@@ -25,6 +26,72 @@ const LOCAL_TOKEN = {
   label: "Local token",
   tokenPrefix: "local-prefix"
 };
+
+test("buildApiTokenDisplayData preserves labeled tokens and names null labels", () => {
+  expect(buildApiTokenDisplayData(SERVER_TOKEN).displayLabel).toBe("Server token");
+  expect(buildApiTokenDisplayData({ ...SERVER_TOKEN, label: null }).displayLabel).toBe(
+    "Unlabeled token"
+  );
+});
+
+test("buildApiTokenDisplayData formats offset-aware lifecycle timestamps in UTC", () => {
+  expect(
+    buildApiTokenDisplayData({
+      ...SERVER_TOKEN,
+      expiresAt: "2026-08-29T12:00:59.123Z",
+      lastUsedAt: "2026-08-29T14:30:00+02:30",
+      insertedAt: "2026-07-01T03:15:00-04:00"
+    })
+  ).toMatchObject({
+    expiresAtLabel: "2026-08-29 12:00 UTC",
+    lastUsedAtLabel: "2026-08-29 12:00 UTC",
+    insertedAtLabel: "2026-07-01 07:15 UTC"
+  });
+});
+
+test("buildApiTokenDisplayData uses optional lifecycle fallbacks", () => {
+  expect(buildApiTokenDisplayData(SERVER_TOKEN)).toMatchObject({
+    expiresAtLabel: "Never expires",
+    lastUsedAtLabel: "Never used"
+  });
+});
+
+test("buildApiTokenDisplayData preserves impossible and offset-less timestamps exactly", () => {
+  expect(
+    buildApiTokenDisplayData({
+      ...SERVER_TOKEN,
+      expiresAt: "2026-02-30T10:15:00Z",
+      lastUsedAt: "2026-08-29T12:00:00",
+      insertedAt: "not-a-timestamp"
+    })
+  ).toMatchObject({
+    expiresAtLabel: "2026-02-30T10:15:00Z",
+    lastUsedAtLabel: "2026-08-29T12:00:00",
+    insertedAtLabel: "not-a-timestamp"
+  });
+});
+
+test("buildApiTokenDisplayData gives revoked status precedence over active and expired", () => {
+  expect(
+    buildApiTokenDisplayData({
+      ...SERVER_TOKEN,
+      expiresAt: "2000-01-01T00:00:00Z",
+      revokedAt: "2026-07-01T00:00:00Z"
+    }).statusLabel
+  ).toBe("Revoked token");
+  expect(
+    buildApiTokenDisplayData({
+      ...SERVER_TOKEN,
+      expiresAt: "2999-01-01T00:00:00Z"
+    }).statusLabel
+  ).toBe("Active token");
+  expect(
+    buildApiTokenDisplayData({
+      ...SERVER_TOKEN,
+      expiresAt: "2000-01-01T00:00:00Z"
+    }).statusLabel
+  ).toBe("Expired token");
+});
 
 test("apiTokensRouteLocationIdentity separates authorization, status, and cursor state", () => {
   expect(apiTokensRouteLocationIdentity({

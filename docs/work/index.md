@@ -330,41 +330,19 @@ added direct coverage for `hasNextPage: false`. The three other validated rows
 remain ready. Final whole-batch re-review confirmed the narrowed recommendation
 successor is executable within its owned paths and found no remaining issue.
 
+After PR #99 merged on 2026-07-15, the coordinator validated saved-comparison
+naming as a fourth non-overlapping successor. Deterministic default, single-
+product, and ordered multi-product naming remains embedded in `CompareRoute`,
+while its existing route suite passes 109 tests. API-token lifecycle display
+then completed: the framework-free route-data owner now returns stable labels,
+strict offset-aware UTC lifecycle dates, exact invalid-string fallbacks, and
+revoked/active/expired status copy while React retains semantic markup, tone,
+presets, errors, and lifecycle actions. Its focused suites pass 60 tests. The
+three other validated rows remain ready.
+
 ## Ready Work
 
-### 1. API Token Lifecycle Display Data Contract
-
-Status: ready
-Lane: Frontend API-token lifecycle display
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic token labels, strict UTC lifecycle-date
-formatting, optional-date fallbacks, and status copy from `ApiTokenItem` into
-the existing framework-free API-token route-data owner while preserving item
-markup and lifecycle actions.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-lifecycle-display.md`
-
-Prerequisites:
-
-- Existing API-token route-data and route characterizations remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: the framework-free route-data owner returns stable display
-labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
-exact invalid-string fallbacks, optional empty labels, and revoked/active/
-expired status copy; React retains semantic details and lifecycle controls.
-
-### 2. Catalog Specification Highlights Data Contract
+### 1. Catalog Specification Highlights Data Contract
 
 Status: ready
 Lane: Frontend catalog specification highlights
@@ -395,7 +373,7 @@ highlights by ascending explicit sort order, places unspecified orders last,
 preserves source order for ties, and does not mutate the Relay input; React
 retains the current empty omission, list markup, and styling.
 
-### 3. Recommendation Profile Route Data Contract
+### 2. Recommendation Profile Route Data Contract
 
 Status: ready
 Lane: Frontend recommendation profile navigation
@@ -431,6 +409,37 @@ omission/defaults, and loader suppression only when the recommendation profile
 is the sole route change; React and Relay owners retain their existing behavior
 and markup, while `share-comparison-data.ts` retains snapshot publish-input and
 GraphQL profile mapping.
+
+### 3. Saved Comparison Naming Data Contract
+
+Status: ready
+Lane: Frontend saved-comparison naming
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic saved-comparison name construction out of
+`CompareRoute` into a framework-free contract while preserving save mutation
+orchestration, product ordering, feedback, and route presentation.
+Owned paths:
+
+- `assets/src/routes/compare/saved-comparison-name-data.ts`
+- `assets/src/routes/compare/CompareRoute.tsx`
+- `assets/test/routes/compare/saved-comparison-name-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-saved-comparison-naming.md`
+
+Prerequisites:
+
+- Existing compare route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparison-name-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner trims names, omits empty names,
+preserves product order, returns the existing zero-, one-, and multi-product
+copy, and leaves the input unchanged; React retains mutation variables,
+in-flight protection, feedback, and markup.
 
 ## Needs Decision Work
 

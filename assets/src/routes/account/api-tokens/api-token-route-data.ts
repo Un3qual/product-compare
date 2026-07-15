@@ -1,5 +1,8 @@
 import { apiTokenIsActive } from "./api-token-status";
 
+const OFFSET_AWARE_TIMESTAMP_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 export type ApiTokenStatus = "active" | "revoked" | "all";
 
 export interface ApiTokenRecord {
@@ -52,6 +55,16 @@ export type MutationApiToken = {
   readonly revokedAt: string | null | undefined;
   readonly insertedAt: string;
 };
+
+export function buildApiTokenDisplayData(token: ApiTokenRecord) {
+  return {
+    displayLabel: token.label ?? "Unlabeled token",
+    expiresAtLabel: formatOptionalDateTime(token.expiresAt, "Never expires"),
+    lastUsedAtLabel: formatOptionalDateTime(token.lastUsedAt, "Never used"),
+    insertedAtLabel: formatUtcDateTime(token.insertedAt),
+    statusLabel: apiTokenStatusLabel(token)
+  };
+}
 
 export function apiTokensRouteLocationIdentity(loaderData: ApiTokensRouteIdentityData) {
   const searchParams = new URLSearchParams({ status: loaderData.tokenStatus });
@@ -272,4 +285,72 @@ function mergeApiTokenUpdate(
     ...token,
     revokedAt: token.revokedAt ?? updatedToken.revokedAt
   } satisfies ApiTokenRecord;
+}
+
+function formatOptionalDateTime(value: string | null, emptyLabel: string) {
+  return value ? formatUtcDateTime(value) : emptyLabel;
+}
+
+function formatUtcDateTime(value: string) {
+  const timestampParts = OFFSET_AWARE_TIMESTAMP_PATTERN.exec(value);
+
+  if (!timestampParts || !hasValidCalendarDateTime(timestampParts)) {
+    return value;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getUTCFullYear()}-${padUtcPart(date.getUTCMonth() + 1)}-${padUtcPart(
+    date.getUTCDate()
+  )} ${padUtcPart(date.getUTCHours())}:${padUtcPart(date.getUTCMinutes())} UTC`;
+}
+
+function hasValidCalendarDateTime(timestampParts: RegExpExecArray) {
+  const year = Number(timestampParts[1]);
+  const month = Number(timestampParts[2]);
+  const day = Number(timestampParts[3]);
+  const hour = Number(timestampParts[4]);
+  const minute = Number(timestampParts[5]);
+  const second = Number(timestampParts[6]);
+
+  return (
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= daysInMonth(year, month) &&
+    hour >= 0 &&
+    hour <= 23 &&
+    minute >= 0 &&
+    minute <= 59 &&
+    second >= 0 &&
+    second <= 59
+  );
+}
+
+function daysInMonth(year: number, month: number) {
+  if (month === 2) {
+    return isLeapYear(year) ? 29 : 28;
+  }
+
+  return month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31;
+}
+
+function isLeapYear(year: number) {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function padUtcPart(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
+function apiTokenStatusLabel(token: ApiTokenRecord) {
+  if (token.revokedAt) {
+    return "Revoked token";
+  }
+
+  return apiTokenIsActive(token) ? "Active token" : "Expired token";
 }

@@ -422,14 +422,14 @@ optional empty-state labels, and revoked/active/expired status copy.
 `ApiTokenItem` retains semantic detail markup, status tone, rotation presets,
 errors, and lifecycle actions.
 
-- [ ] Write pure tests for labeled and unlabeled tokens, valid UTC and offset
+- [x] Write pure tests for labeled and unlabeled tokens, valid UTC and offset
   timestamps, optional-date fallbacks, impossible and offset-less timestamp
   fallbacks, and revoked/active/expired status precedence; verify RED.
-- [ ] Move only deterministic item-display data into the existing route-data
+- [x] Move only deterministic item-display data into the existing route-data
   owner while preserving item markup and lifecycle behavior.
-- [ ] Run the pure and existing API-token route suites, TypeScript, the
+- [x] Run the pure and existing API-token route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -487,6 +487,32 @@ snapshot publish-input construction and GraphQL profile mapping.
   boundaries, and panel markup.
 - [ ] Run the pure and existing recommendation/snapshot suites, TypeScript,
   the framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 15: Saved Comparison Naming Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/saved-comparison-name-data.ts`
+- Modify: `assets/src/routes/compare/CompareRoute.tsx`
+- Create: `assets/test/routes/compare/saved-comparison-name-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-naming.md`
+
+**Interfaces:** The framework-free route-data module builds the existing saved-
+comparison name from ordered product names by trimming names, omitting empty
+names, and preserving the current zero-, one-, and multi-product copy.
+`CompareRoute` retains Relay data, save mutation orchestration, in-flight
+protection, feedback, and presentation.
+
+- [ ] Write pure tests for empty input, whitespace-only names, one product,
+  ordered multiple products, and input immutability; verify RED.
+- [ ] Extract only deterministic name construction while preserving mutation
+  variables and save behavior.
+- [ ] Run the pure and existing compare route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -567,3 +593,8 @@ snapshot publish-input construction and GraphQL profile mapping.
   and explicitly preserve `share-comparison-data.ts` as its sole owner.
 - Final whole-batch re-review confirmed the narrowed candidate is executable
   within its owned paths and the three ready rows are path-disjoint.
+- The saved-comparison naming candidate is non-overlapping with API-token
+  lifecycle display, catalog specification highlights, and recommendation-
+  profile navigation. Current source inspection found deterministic trimming,
+  default, single-product, and ordered multi-product naming embedded in
+  `CompareRoute.tsx`; its route suite passed 109 tests on 2026-07-15.
