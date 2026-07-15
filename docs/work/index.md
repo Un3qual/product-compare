@@ -444,9 +444,11 @@ qualifies normal unmodified primary clicks, builds the encoded first-party
 merchant-product href, and rejects redirects outside the exact GraphQL API
 origin. `TrackedCommerceClickAction` retains React event handling, pending and
 error state, Relay mutation orchestration, browser navigation, accessibility,
-markup, and styling. Its pure and route suites pass 55 tests; independent task
-review approved the exact scheme, host, and port boundary after a focused
-coverage follow-up. Three other validated rows remain ready.
+markup, and styling. The React owner now passes its resolved API endpoint into
+the dependency-free contract explicitly. Its pure and route suites pass 57
+tests; independent review approved the exact scheme, host, and port boundary
+after focused coverage and dependency-boundary follow-up. Three other validated
+rows remain ready.
 
 ## Active Work
 

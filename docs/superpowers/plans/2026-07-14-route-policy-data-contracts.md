@@ -847,7 +847,8 @@ mutation orchestration, errors, feedback, revalidation, and presentation.
   candidate is path-disjoint from tracked-commerce clicks, immutable route-
   state collections, and catalog filter-form state.
 - The completed tracked-commerce click-data contract and existing offer-
-  discovery route characterization passed 55 focused tests on 2026-07-15.
-  Framework and sensitive-field scans passed, and independent task re-review
-  found no actionable issues after exact same-host/different-port coverage was
-  added.
+  discovery route characterization passed 57 focused tests on 2026-07-15. The
+  pure owner requires explicit endpoint input and has no framework, transport,
+  or environment dependency. Dependency and sensitive-field scans passed, and
+  independent task re-review found no actionable issues after exact scheme,
+  host, and port coverage was added.
