@@ -314,17 +314,20 @@ frontend gate passes 73 files and 1,007 tests. Independent re-review found no
 remaining actionable issue. The three other validated rows remain ready.
 Before claiming Saved Comparison Navigation, the coordinator validated
 recommendation-profile route data as a fourth non-overlapping successor:
-profile parsing, profile-link construction, GraphQL enum mapping, and profile-
-only loader revalidation remain split between the compare loader and React
-panel, while the current recommendation and snapshot suites pass 11 tests.
+profile parsing, profile-link construction, and profile-only loader
+revalidation remain split between the compare loader and React panel, while
+the current recommendation and snapshot suites pass 11 tests. Snapshot publish
+input and its GraphQL profile mapping remain owned by the completed snapshot
+data contract and are outside this successor.
 Saved Comparison Navigation then completed: one framework-free owner now
 builds ordered encoded reopen paths and first/next pagination paths while the
 route retains Relay query retention, deletion, local state, boundaries, links,
 and presentation. Task review caught that the extracted contract relied on the
 loader to reject non-advancing cursors; the contract now enforces that invariant
-directly. Its pure and route-state suites pass 42 tests, the full frontend gate
-passes 74 files and 1,018 tests, and task re-review is approved. The three other
-validated rows remain ready.
+directly. Its pure and route-state suites pass 43 tests, the full frontend gate
+passes 74 files and 1,019 tests, and task re-review is approved. Final review
+added direct coverage for `hasNextPage: false`. The three other validated rows
+remain ready.
 
 ## Ready Work
 
@@ -396,10 +399,9 @@ retains the current empty omission, list markup, and styling.
 Status: ready
 Lane: Frontend recommendation profile navigation
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: consolidate recommendation-profile parsing, navigation paths,
-GraphQL enum mapping, and profile-only revalidation in a framework-free
-contract while preserving Relay reads, snapshot behavior, boundaries, and
-panel markup.
+Next action: consolidate recommendation-profile parsing, navigation paths, and
+profile-only revalidation in a framework-free contract while preserving Relay
+reads, snapshot publish-input mapping, boundaries, and panel markup.
 Owned paths:
 
 - `assets/src/routes/compare/recommendation-route-data.ts`
@@ -424,9 +426,10 @@ Verification:
 
 Exit condition: one framework-free owner preserves exact best-value parsing,
 lowest-cost fallback, ordered encoded slugs, specification mode, profile query
-omission/defaults, GraphQL profile mapping, and loader suppression only when
-the recommendation profile is the sole route change; React and Relay owners
-retain their existing behavior and markup.
+omission/defaults, and loader suppression only when the recommendation profile
+is the sole route change; React and Relay owners retain their existing behavior
+and markup, while `share-comparison-data.ts` retains snapshot publish-input and
+GraphQL profile mapping.
 
 ## Needs Decision Work
 

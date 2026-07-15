@@ -31,7 +31,12 @@
   - `git diff --check`
 - Exit condition: one framework-free owner preserves exact best-value parsing,
   lowest-cost fallback, ordered encoded slugs, specification mode, profile
-  query defaults, GraphQL enum mapping, and recommendation-only revalidation.
+  query defaults, and recommendation-only revalidation. The completed
+  `share-comparison-data.ts` contract retains snapshot publish-input and
+  GraphQL profile mapping.
 - Candidate evidence: current source inspection found the deterministic policy
   split between `loader.ts` and `RecommendationPanel.tsx`. The existing
-  recommendation-panel and comparison-snapshot suites passed 11 tests.
+  recommendation-panel and comparison-snapshot suites passed 11 tests. Current
+  source inspection also confirmed snapshot publish-input and its profile
+  mapping are already complete in `share-comparison-data.ts`, so they remain
+  explicitly outside this row.

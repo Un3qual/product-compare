@@ -6,8 +6,8 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after focused and full frontend verification (42
-  focused tests; 74 files and 1,018 tests in the full gate).
+- Last verified: 2026-07-14 after focused and full frontend verification (43
+  focused tests; 74 files and 1,019 tests in the full gate).
 
 ## Saved Comparison Navigation Data Contract
 
@@ -53,7 +53,10 @@
   a cursor, hides unavailable and non-advancing next cursors, suppresses
   non-empty cursors when `hasNextPage` is false, and encodes advancing cursors.
 - The full frontend gate passed Relay validation, TypeScript, 74 test files and
-  1,018 tests, client and SSR production builds, and the client bundle budget
+  1,019 tests, client and SSR production builds, and the client bundle budget
   (181,915 gzip bytes against 200,000).
 - Task re-review approved the contract after the advancement invariant and
   optional-cursor coverage fixes, with no remaining actionable issue.
+- Final review found the existing `hasNextPage` guard lacked an independent
+  direct case. Temporarily removing it made the new final-page test fail; after
+  restoring production unchanged, 12 pure and 31 route-state tests passed.

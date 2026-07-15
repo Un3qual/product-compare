@@ -398,6 +398,9 @@ local-state orchestration, router links, boundaries, and presentation.
   enforce cursor advancement in the pure owner, cover absent `undefined`, and
   restore the validated P2 lane priority.
 - [x] Task re-review approved the completed contract with no remaining issue.
+- [x] Final review found `hasNextPage: false` lacked independent coverage. Add
+  a direct final-page case, prove it fails without the existing guard, restore
+  production unchanged, and verify the focused and full gates again.
 
 ---
 
@@ -468,14 +471,15 @@ decision-action, and StyleX presentation.
 - Create: `docs/work/frontend-recommendation-profile-navigation.md`
 
 **Interfaces:** The framework-free route-data module parses recommendation
-profiles, builds ordered profile paths, maps profiles to GraphQL enum values,
-and suppresses core comparison reloads only when the recommendation profile is
-the sole route change. React retains location access, Relay reads, boundaries,
-snapshot behavior, and recommendation presentation.
+profiles, builds ordered profile paths, and suppresses core comparison reloads
+only when the recommendation profile is the sole route change. React retains
+location access, Relay reads, boundaries, snapshot behavior, and recommendation
+presentation. The completed `share-comparison-data.ts` contract retains
+snapshot publish-input construction and GraphQL profile mapping.
 
 - [ ] Write pure tests for default and best-value parsing, ordered encoded
-  slugs, all specification modes, profile query defaults, GraphQL enum mapping,
-  sole-profile revalidation, and unrelated route changes; verify RED.
+  slugs, all specification modes, profile query defaults, sole-profile
+  revalidation, and unrelated route changes; verify RED.
 - [ ] Consolidate only deterministic recommendation route policy while
   preserving Relay variables, snapshot profile behavior, error/Suspense
   boundaries, and panel markup.
@@ -551,6 +555,11 @@ snapshot behavior, and recommendation presentation.
 - The recommendation-profile route-data candidate is non-overlapping with
   saved-comparison navigation, API-token lifecycle display, and catalog
   specification highlights. Current source inspection found profile parsing,
-  path construction, GraphQL mapping, and revalidation policy split between
-  `loader.ts` and `RecommendationPanel.tsx`; its recommendation and snapshot
-  suites passed 11 tests on 2026-07-14.
+  path construction, and revalidation policy split between `loader.ts` and
+  `RecommendationPanel.tsx`; its recommendation and snapshot suites passed 11
+  tests on 2026-07-14. The completed snapshot contract remains the sole owner
+  of snapshot publish-input and GraphQL profile mapping.
+- Final whole-batch review found the initial recommendation-profile candidate
+  duplicated the completed snapshot contract's GraphQL mapping ownership. The
+  ready row, task interface, tests, and exit condition now exclude that policy
+  and explicitly preserve `share-comparison-data.ts` as its sole owner.
