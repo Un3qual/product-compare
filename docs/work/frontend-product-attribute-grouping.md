@@ -2,16 +2,16 @@
 
 ## Snapshot
 
-- Status: ready (product attribute grouping data contract)
+- Status: complete (product attribute grouping data contract)
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after current source and consumer-suite validation
-  (164 product-detail and compare route tests).
+- Last verified: 2026-07-14 after focused and full frontend verification (169
+  focused tests; 72 files and 1,000 tests in the full gate).
 
 ## Product Attribute Grouping Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: complete on `codex/route-policy-data-contracts` as of 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: move deterministic product-attribute grouping out of the StyleX
   list component into a framework-free data contract while preserving current
@@ -32,3 +32,19 @@
   grouping loop and normalization helpers embedded in
   `ProductAttributeList.tsx`. The product-detail and compare suites that consume
   the component passed 164 tests.
+
+## Completion Evidence
+
+- `product-attribute-list-data.ts` now owns label trimming, case-insensitive
+  grouping, first-label retention, first-seen group order, stable attribute
+  order, and the ordered ungrouped tail.
+- `ProductAttributeList` retains empty-state, section, heading, definition-list,
+  and StyleX presentation while preserving its existing item-type export.
+- RED failed because the framework-free grouping module did not exist.
+- GREEN passed 5 direct tests and 164 unchanged consumer tests (169 focused
+  tests total).
+- `cd assets && bun run typecheck` passed.
+- `cd assets && bun run check` passed Relay validation, TypeScript, 72 test
+  files and 1,000 tests, client and SSR production builds, and the client
+  bundle budget (181,907 gzip bytes against 200,000).
+- The framework-import scan and `git diff --check` passed.

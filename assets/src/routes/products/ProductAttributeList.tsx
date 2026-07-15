@@ -1,5 +1,11 @@
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import {
+  buildProductAttributeListData,
+  type ProductAttributeListItem
+} from "./product-attribute-list-data";
+
+export type { ProductAttributeListItem } from "./product-attribute-list-data";
 
 const styles = create({
   groups: {
@@ -41,20 +47,6 @@ const styles = create({
   }
 });
 
-export interface ProductAttributeListItem {
-  attributeId?: string;
-  code: string;
-  displayName: string;
-  valueText: string;
-  sortOrder?: number | null;
-  groupLabel?: string | null;
-  isRequired?: boolean;
-  numericValue?: string | null;
-  booleanValue?: boolean | null;
-  enumOptionId?: string | null;
-  unitSymbol?: string | null;
-}
-
 export function ProductAttributeList({
   attributes,
   emptyMessage
@@ -66,7 +58,7 @@ export function ProductAttributeList({
     return <p>{emptyMessage}</p>;
   }
 
-  const { groupedAttributes, ungroupedAttributes } = splitAttributesByGroupLabel(attributes);
+  const { groupedAttributes, ungroupedAttributes } = buildProductAttributeListData(attributes);
 
   if (groupedAttributes.length === 0) {
     return <AttributeDefinitionList attributes={attributes} />;
@@ -102,51 +94,4 @@ function AttributeDefinitionList({
       ))}
     </dl>
   );
-}
-
-function splitAttributesByGroupLabel(attributes: ReadonlyArray<ProductAttributeListItem>) {
-  const groups = new Map<
-    string,
-    {
-      label: string;
-      attributes: ProductAttributeListItem[];
-    }
-  >();
-  const ungroupedAttributes: ProductAttributeListItem[] = [];
-
-  for (const attribute of attributes) {
-    const label = normalizedGroupLabel(attribute.groupLabel);
-
-    if (!label) {
-      ungroupedAttributes.push(attribute);
-      continue;
-    }
-
-    const groupKey = normalizedGroupLabelKey(label);
-    const group = groups.get(groupKey);
-
-    if (group) {
-      group.attributes.push(attribute);
-    } else {
-      groups.set(groupKey, {
-        label,
-        attributes: [attribute]
-      });
-    }
-  }
-
-  return {
-    groupedAttributes: Array.from(groups.values()),
-    ungroupedAttributes
-  };
-}
-
-function normalizedGroupLabel(groupLabel: string | null | undefined) {
-  const trimmedLabel = groupLabel?.trim();
-
-  return trimmedLabel ? trimmedLabel : null;
-}
-
-function normalizedGroupLabelKey(groupLabel: string) {
-  return groupLabel.toLowerCase();
 }

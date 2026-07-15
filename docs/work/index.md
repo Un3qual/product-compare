@@ -291,39 +291,16 @@ Before claiming Product Attribute Grouping, the coordinator validated API-
 token lifecycle display data as a fourth non-overlapping successor: UTC display
 labels, optional-date fallbacks, and status copy remain embedded in the React
 item owner, while its existing route-data and route suites pass 55 tests.
+Product Attribute Grouping then completed: one framework-free owner now trims
+and case-folds group labels, retains the first display label, and preserves
+first-seen group, grouped-attribute, and ungrouped-tail ordering while React
+retains all markup and styling. Its pure and consumer suites pass 169 tests,
+and the full frontend gate passes 72 files and 1,000 tests. The three other
+validated rows remain ready.
 
 ## Ready Work
 
-### 1. Product Attribute Grouping Data Contract
-
-Status: ready
-Lane: Frontend product attribute grouping
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic product-attribute grouping out of the StyleX
-list component into a framework-free data contract while preserving list and
-section markup for product-detail and comparison consumers.
-Owned paths:
-
-- `assets/src/routes/products/product-attribute-list-data.ts`
-- `assets/src/routes/products/ProductAttributeList.tsx`
-- `assets/test/routes/products/product-attribute-list-data.test.ts`
-- `docs/work/frontend-product-attribute-grouping.md`
-
-Prerequisites:
-
-- Existing product-detail and compare route characterizations remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-attribute-list-data.test.ts test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves trimmed group labels,
-case-insensitive first-label grouping, first-seen group order, stable attribute
-order within groups, and original ungrouped order.
-
-### 2. Route Metadata Resolution Data Contract
+### 1. Route Metadata Resolution Data Contract
 
 Status: ready
 Lane: Frontend route metadata resolution
@@ -353,7 +330,7 @@ loader-data precedence over the same match's handle, handle fallback for
 invalid loader metadata, required title and description strings, optional
 string fields, and explicit-true indexability.
 
-### 3. Saved Comparison Navigation Data Contract
+### 2. Saved Comparison Navigation Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison navigation
@@ -383,7 +360,7 @@ Exit condition: one framework-free owner preserves ordered and encoded reopen
 links, unauthorized pagination suppression, first-page return visibility, and
 next-page links only for advancing non-empty cursors.
 
-### 4. API Token Lifecycle Display Data Contract
+### 3. API Token Lifecycle Display Data Contract
 
 Status: ready
 Lane: Frontend API-token lifecycle display

@@ -324,14 +324,14 @@ labels case-insensitively while retaining the first display label, and
 preserves attribute order. `ProductAttributeList` retains StyleX, empty-state,
 section, heading, and definition-list presentation.
 
-- [ ] Write pure tests for empty input, all-ungrouped input, trimmed labels,
+- [x] Write pure tests for empty input, all-ungrouped input, trimmed labels,
   case-insensitive grouping, first-label retention, first-seen group order,
   stable attribute order, and ungrouped tail order; verify RED.
-- [ ] Extract only deterministic grouping data and keep all markup and styling
+- [x] Extract only deterministic grouping data and keep all markup and styling
   in `ProductAttributeList`.
-- [ ] Run the pure, product-detail, and compare route suites, TypeScript, the
+- [x] Run the pure, product-detail, and compare route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

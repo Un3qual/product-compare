@@ -55,10 +55,9 @@ community, price alerts, and API-token route-state contracts are also complete.
 Affiliate setup, offer-discovery filter policy, catalog browse route data,
 product-detail route data, compare-picker data, product-offer panel data, and
 shared external-destination safety are complete. Three source-verified, non-
-overlapping successors remain ready across product-attribute grouping, route-
-metadata resolution, and saved-comparison navigation. Trust-surface date
-presentation is complete. API-token lifecycle display data is a fourth source-
-verified, non-overlapping successor.
+overlapping successors remain ready across route-metadata resolution, saved-
+comparison navigation, and API-token lifecycle display data. Trust-surface
+date presentation and product-attribute grouping data are complete.
 
 Active implementation plans:
 
@@ -121,9 +120,10 @@ batch and should not be recreated or promoted.
   same plan.
 - Completed reserve: trust-surface date presentation also executed through
   that same plan.
-- Ready reserve: product-attribute grouping data, route-metadata resolution
-  data, saved-comparison navigation data, and API-token lifecycle display data
-  execute through that same plan.
+- Completed reserve: product-attribute grouping data also executed through
+  that same plan.
+- Ready reserve: route-metadata resolution data, saved-comparison navigation
+  data, and API-token lifecycle display data execute through that same plan.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through
