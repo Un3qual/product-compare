@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready (compare picker data contract)
+- Status: done (compare picker data contract)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-14 after compare-picker candidate verification (109
-  compare route tests)
+- Last verified: 2026-07-14 after compare-picker completion and independent
+  task review (116 focused tests)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -21,7 +21,7 @@
 
 ## Compare Picker Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: done on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
 - Next action: isolate reset identity, unique loaded-page accumulation,
   available options, cursor and empty-state rules, and compare paths in a
@@ -56,6 +56,8 @@
     React, Relay, router, StyleX, or Radix imports; `git diff --check` passed.
   - Relay reads and request timing, state/effect transitions, boundaries, and
     picker-local filtering remain in their existing React owners.
+  - Independent task review found no actionable correctness, lifecycle,
+    framework-purity, performance, typing, or test-quality issues.
 
 ## Saved Comparison View-State Extraction
 

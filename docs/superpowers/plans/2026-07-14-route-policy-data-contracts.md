@@ -181,14 +181,17 @@ compare paths. `CompareProductPickerBoundary` retains Relay reads, effects,
 state transitions, Suspense and error boundaries, while
 `CompareProductPickerView` retains presentation and loaded-option filtering.
 
-- [ ] Write pure tests for reset identity, duplicate page rows, selected-item
+- [x] Write pure tests for reset identity, duplicate page rows, selected-item
   exclusion, unknown-brand fallback, next-cursor rules, empty copy, maximum
   selection, encoded paths, and specification mode; verify RED.
-- [ ] Extract only deterministic picker policy and preserve existing state and
+- [x] Extract only deterministic picker policy and preserve existing state and
   Relay request timing.
-- [ ] Run the pure and existing compare suites, TypeScript, the framework-
+- [x] Run the pure and existing compare suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
+- [x] Task review verification: the pure and existing compare suites passed 116
+  tests, TypeScript and the transitive framework scan passed, and independent
+  review found no actionable correctness, lifecycle, purity, or test issues.
 
 ---
 
@@ -247,6 +250,37 @@ remain unchanged.
   consumer suites, TypeScript, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 8: Trust-Surface Date Presentation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/product-formatting.ts`
+- Modify: `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- Modify: `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
+- Create: `assets/test/routes/product-formatting.test.ts`
+- Test: `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-trust-date-presentation.md`
+
+**Interfaces:** The framework-free product formatter adds separate string-input
+UTC date-only and date-time label functions. Merchant detail consumes the
+date-only function; public comparison snapshots consume the date-time function.
+Both preserve the original source string as the fallback for malformed values,
+while the React owners retain semantic `<time dateTime>` markup and layout.
+
+- [ ] Write direct tests for UTC date-only and date-time labels, offset
+  normalization across a day boundary, malformed-string fallback, and the
+  existing `Date`-input formatter; verify RED for the missing string helpers.
+- [ ] Replace the two route-local date formatters without changing semantic
+  `dateTime` attributes, captured recommendation copy, or merchant-summary
+  fallback behavior.
+- [ ] Run the direct formatter and existing merchant-detail and comparison-
+  snapshot suites, TypeScript, the framework-import scan, and `git diff
+  --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -270,3 +304,11 @@ remain unchanged.
 - The completed product-detail contract and route characterization passed 67
   focused tests on 2026-07-14. The contract shares the canonical compare limit
   and path utilities, and independent re-review found no actionable issues.
+- The trust-surface date candidate is non-overlapping with the three earlier
+  ready contracts. Current source inspection found duplicate UTC date parsing
+  and formatting in merchant detail and public comparison snapshots around the
+  existing framework-free product formatter; their focused suites passed 8
+  tests on 2026-07-14.
+- The completed compare-picker contract and existing route characterization
+  passed 116 focused tests on 2026-07-14; independent task review found no
+  actionable issues.

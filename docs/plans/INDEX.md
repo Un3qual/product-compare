@@ -53,9 +53,10 @@ matrix data, and decision-summary data completed on
 `codex/frontend-view-contracts` in PR #97. Comparison sharing, product
 community, price alerts, and API-token route-state contracts are also complete.
 Affiliate setup, offer-discovery filter policy, catalog browse route data, and
-product-detail route data are complete. Three source-verified, non-overlapping
-successors keep the ready floor intact across compare picker, product-offer
-panel data, and the shared external-destination safety contract.
+product-detail route data and compare-picker data are complete. Three source-
+verified, non-overlapping successors keep the ready floor intact across product-
+offer panel data, shared external-destination safety, and trust-surface date
+presentation.
 
 Active implementation plans:
 
@@ -111,8 +112,9 @@ batch and should not be recreated or promoted.
 - Completed reserve: affiliate setup route data, offer-discovery filter data,
   catalog browse route data, and product-detail route data executed through
   `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Ready reserve: compare-picker data, product-offer panel data, and external-
-  destination safety contract hardening execute through that same plan.
+- Completed reserve: compare-picker data also executed through that same plan.
+- Ready reserve: product-offer panel data, external-destination safety, and
+  trust-surface date presentation execute through that same plan.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

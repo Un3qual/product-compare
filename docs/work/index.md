@@ -245,41 +245,20 @@ product-offer panel data, and a newly validated external-destination safety
 contract remain ready. The latter is a shared product-critical boundary used
 by offers and merchant pages; its existing consumer suites pass 80 tests, but
 the 410-line framework-free policy has no direct contract suite for public
-HTTP(S), credential, hostname, port, or reserved-address behavior.
+HTTP(S), credential, hostname, port, or reserved-address behavior. Before
+claiming Compare Picker, the coordinator also validated a non-overlapping
+trust-surface date-presentation contract: merchant detail and public comparison
+snapshots duplicate UTC date parsing and formatting around the existing shared
+product formatter, and their two focused suites pass 8 tests. Compare Picker
+then completed: one transport-neutral contract now owns reset identity, stable
+page accumulation, selected-product exclusion, option/path construction,
+cursor behavior, and empty copy while Relay timing, state/effects, boundaries,
+and presentation remain in React. Its pure and route suites pass 116 tests,
+and independent task review found no actionable issues.
 
 ## Ready Work
 
-### 1. Compare Picker Data Contract
-
-Status: ready
-Lane: Frontend compare and saved routes
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free picker reset, page accumulation, available-
-option, cursor, empty-state, and compare-path policy while preserving Relay
-reads, effects, Suspense/error boundaries, and picker presentation.
-Owned paths:
-
-- `assets/src/routes/compare/compare-picker-data.ts`
-- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
-- `assets/test/routes/compare/compare-picker-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-compare-saved-hardening.md`
-
-Prerequisites:
-
-- Existing 109-test compare route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure picker policy preserves reset identity, stable unique page
-accumulation, selected-product exclusion, unknown-brand fallback, next-cursor
-rules, empty copy, maximum selection, encoded paths, and specification mode.
-
-### 2. Product Offer Panel Data Contract
+### 1. Product Offer Panel Data Contract
 
 Status: ready
 Lane: Frontend product offers
@@ -309,7 +288,7 @@ Exit condition: Pure offer-panel data preserves unsafe-URL exclusion, merchant
 fallbacks, price/currency validation, coupon and price-history semantics,
 snapshot values, compare-slug ordering, and offer pagination paths.
 
-### 3. External Destination Safety Contract
+### 2. External Destination Safety Contract
 
 Status: ready
 Lane: Frontend external destination safety
@@ -337,6 +316,38 @@ Exit condition: the shared contract directly preserves safe public HTTP(S)
 destinations, optional bare-domain HTTPS promotion, and exact safe hrefs while
 rejecting credentials, malformed authorities, unsupported schemes, invalid
 hostnames and ports, localhost, and reserved IPv4/IPv6 destinations.
+
+### 3. Trust-Surface Date Presentation Contract
+
+Status: ready
+Lane: Frontend trust-surface date presentation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: centralize UTC date-only and date-time text formatting for merchant
+detail and public comparison snapshots in the framework-free product formatter
+while preserving semantic `dateTime` values and malformed-value fallbacks.
+Owned paths:
+
+- `assets/src/routes/product-formatting.ts`
+- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
+- `assets/test/routes/product-formatting.test.ts`
+- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-trust-date-presentation.md`
+
+Prerequisites:
+
+- Existing merchant-detail and comparison-snapshot suites remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/product-formatting.test.ts test/routes/merchants/merchant-detail.route.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free formatter owns stable UTC date-only and
+date-time labels, offset normalization, and exact malformed-string fallback;
+merchant and snapshot markup retain their original semantic `dateTime` values.
 
 ## Needs Decision Work
 
