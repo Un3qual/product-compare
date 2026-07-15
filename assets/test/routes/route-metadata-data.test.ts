@@ -25,6 +25,22 @@ test("resolveRouteDocumentMetadata selects the deepest valid route metadata", ()
   ]);
 });
 
+test("resolveRouteDocumentMetadata skips an invalid deepest match", () => {
+  expect(
+    resolveRouteDocumentMetadata([
+      { handle: { metadata: metadata("Root") } },
+      { data: { metadata: metadata("Loaded catalog") } },
+      {
+        data: { metadata: { description: "Missing a title" } },
+        handle: { metadata: { title: "Missing a description" } }
+      }
+    ])
+  ).toEqual({
+    ...metadata("Loaded catalog"),
+    indexable: false
+  });
+});
+
 test("resolveRouteDocumentMetadata prefers loader metadata over the same match handle", () => {
   expect(
     resolveRouteDocumentMetadata([

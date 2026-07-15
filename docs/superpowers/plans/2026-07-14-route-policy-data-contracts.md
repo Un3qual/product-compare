@@ -361,6 +361,10 @@ parses the required and optional document fields. `RouteMetadata` retains
 - [x] Run the pure and existing integration suites, TypeScript, the framework-
   import scan, and `git diff --check`.
 - [x] Record lane evidence and commit the milestone.
+- [x] Independent review confirmed production behavior and found one direct-
+  suite gap: skipping a fully invalid deepest match in favor of valid
+  shallower metadata. Add the regression case and verify the focused and full
+  gates again.
 
 ---
 

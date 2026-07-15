@@ -6,8 +6,8 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after focused and full frontend verification (8
-  focused tests; 73 files and 1,006 tests in the full gate).
+- Last verified: 2026-07-14 after focused and full frontend verification (9
+  focused tests; 73 files and 1,007 tests in the full gate).
 
 ## Route Metadata Resolution Data Contract
 
@@ -41,10 +41,13 @@
 - `RouteMetadata` retains `useMatches` plus all title, meta, canonical-link,
   social, robots, and structured-data markup.
 - RED failed because the framework-free metadata module did not exist.
-- GREEN passed 6 direct contract tests and 2 unchanged integration tests (8
+- GREEN passed 7 direct contract tests and 2 unchanged integration tests (9
   focused tests total).
 - `cd assets && bun run typecheck` passed.
 - `cd assets && bun run check` passed Relay validation, TypeScript, 73 test
-  files and 1,006 tests, client and SSR production builds, and the client
+  files and 1,007 tests, client and SSR production builds, and the client
   bundle budget (181,918 gzip bytes against 200,000).
 - The framework-import scan and `git diff --check` passed.
+- Independent review confirmed the production extraction and identified one
+  missing regression: a fully invalid deepest match must not hide valid
+  shallower metadata. The new direct case covers that fallback.
