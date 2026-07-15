@@ -248,17 +248,22 @@ behavioral coverage and changes production code only where that contract
 reveals duplicated or unsafe behavior; offer, product, and merchant consumers
 remain unchanged.
 
-- [ ] Write direct tests for trimming and exact href preservation, safe public
+- [x] Write direct tests for trimming and exact href preservation, safe public
   HTTP(S), bare-domain HTTPS promotion, credentials, malformed authorities,
   unsupported schemes, hostname and port validation, localhost, reserved IPv4
   ranges, and reserved or IPv4-embedded IPv6 destinations; verify the current
   behavior before changing production code.
-- [ ] Simplify or correct the policy only where direct evidence requires it,
+- [x] Simplify or correct the policy only where direct evidence requires it,
   without weakening consumer safety or introducing runtime dependencies.
-- [ ] Run the direct contract and existing product-offer, product-detail,
+- [x] Run the direct contract and existing product-offer, product-detail,
   offer-discovery, and merchant consumer suites, TypeScript, and `git diff
   --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
+- [x] Task review verification: 106 direct cases and 139 unchanged consumer
+  cases passed. Review follow-up replaced divergent raw/WHATWG authority
+  interpretation and textual IPv6 prefix checks with one strict raw-authority
+  parse and CIDR-accurate IPv6 classification; independent re-review found no
+  remaining actionable issue.
 
 ---
 
@@ -319,6 +324,33 @@ section, heading, and definition-list presentation.
   framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 10: Route Metadata Resolution Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/route-metadata-data.ts`
+- Modify: `assets/src/routes/RouteMetadata.tsx`
+- Create: `assets/test/routes/route-metadata-data.test.ts`
+- Create: `docs/work/frontend-route-metadata-resolution.md`
+- Test: `assets/test/routes/route-metadata.test.tsx`
+
+**Interfaces:** The framework-free data module selects the deepest valid route
+metadata, preferring loader data over the same match's static handle, and
+parses the required and optional document fields. `RouteMetadata` retains
+`useMatches` and all title, meta, link, and structured-data markup.
+
+- [ ] Write pure tests for deepest-match precedence, loader-data precedence,
+  invalid-loader handle fallback, required title and description strings,
+  optional string fields, explicit-true indexability, and no valid metadata;
+  verify RED.
+- [ ] Extract only deterministic match selection and metadata parsing while
+  retaining router access and document-head markup in `RouteMetadata`.
+- [ ] Run the pure and existing integration suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -358,3 +390,12 @@ section, heading, and definition-list presentation.
 - The completed product-offer panel contract and existing product-detail route
   characterization passed 59 focused tests on 2026-07-14; independent task
   review found no actionable issues.
+- The route-metadata resolution candidate is non-overlapping with external-
+  destination safety, date presentation, and product-attribute grouping.
+  Current source inspection found deterministic selection and parsing embedded
+  in the React head owner; its integration suite passed 2 tests on 2026-07-14.
+- External-destination safety completed with 106 direct cases and 139 unchanged
+  consumer cases passing. The contract now validates the raw HTTP authority
+  before WHATWG canonicalization, rejects userinfo and ambiguous authority
+  forms, and applies numeric CIDR checks to non-public and IPv4-transition IPv6
+  ranges without rejecting the public `2001:db80::/…` neighbor.

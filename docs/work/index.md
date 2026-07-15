@@ -264,42 +264,20 @@ neutral contract now owns visible offer normalization, coupon and price-history
 rows, snapshot display values, and first/next pagination paths while React
 retains error, empty, snapshot, list, pagination, accessibility, and tracked-
 commerce presentation. Its pure and product-detail suites pass 59 tests, and
-independent task review found no actionable issues. The three other validated
-rows remain ready.
+independent task review found no actionable issues. Before claiming External
+Destination Safety, the coordinator validated a fourth non-overlapping
+successor in the route metadata renderer:
+deepest-match selection, loader-versus-handle precedence, and malformed-value
+parsing remain embedded in the React head owner, whose integration suite passes
+2 tests. External Destination Safety then completed with 106 direct cases and
+139 unchanged consumer cases passing. Review follow-up closed raw/WHATWG
+authority disagreement and replaced textual IPv6 checks with numeric CIDR
+classification. Independent re-review found no remaining actionable issue, and
+the three other validated rows remain ready.
 
 ## Ready Work
 
-### 1. External Destination Safety Contract
-
-Status: ready
-Lane: Frontend external destination safety
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: add a direct behavioral contract for the shared external HTTP and
-website destination policy, then simplify or correct the implementation only
-where those tests expose duplicated or unsafe normalization behavior.
-Owned paths:
-
-- `assets/src/routes/external-links.ts`
-- `assets/test/routes/external-links.test.ts`
-- `docs/work/frontend-external-destination-safety.md`
-
-Prerequisites:
-
-- Existing product-offer, product-detail, offer-discovery, and merchant
-  consumer suites remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/external-links.test.ts test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx test/routes/offers/offer-discovery.route.test.tsx test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: the shared contract directly preserves safe public HTTP(S)
-destinations, optional bare-domain HTTPS promotion, and exact safe hrefs while
-rejecting credentials, malformed authorities, unsupported schemes, invalid
-hostnames and ports, localhost, and reserved IPv4/IPv6 destinations.
-
-### 2. Trust-Surface Date Presentation Contract
+### 1. Trust-Surface Date Presentation Contract
 
 Status: ready
 Lane: Frontend trust-surface date presentation
@@ -331,7 +309,7 @@ Exit condition: one framework-free formatter owns stable UTC date-only and
 date-time labels, offset normalization, and exact malformed-string fallback;
 merchant and snapshot markup retain their original semantic `dateTime` values.
 
-### 3. Product Attribute Grouping Data Contract
+### 2. Product Attribute Grouping Data Contract
 
 Status: ready
 Lane: Frontend product attribute grouping
@@ -359,6 +337,36 @@ Verification:
 Exit condition: one framework-free owner preserves trimmed group labels,
 case-insensitive first-label grouping, first-seen group order, stable attribute
 order within groups, and original ungrouped order.
+
+### 3. Route Metadata Resolution Data Contract
+
+Status: ready
+Lane: Frontend route metadata resolution
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic route-match metadata selection and parsing out
+of the React head renderer into a framework-free contract while preserving the
+existing document-head markup.
+Owned paths:
+
+- `assets/src/routes/route-metadata-data.ts`
+- `assets/src/routes/RouteMetadata.tsx`
+- `assets/test/routes/route-metadata-data.test.ts`
+- `docs/work/frontend-route-metadata-resolution.md`
+
+Prerequisites:
+
+- Existing Route Metadata integration characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/route-metadata-data.test.ts test/routes/route-metadata.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves deepest-match precedence,
+loader-data precedence over the same match's handle, handle fallback for
+invalid loader metadata, required title and description strings, optional
+string fields, and explicit-true indexability.
 
 ## Needs Decision Work
 
