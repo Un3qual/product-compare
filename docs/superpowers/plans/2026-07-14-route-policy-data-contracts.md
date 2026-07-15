@@ -507,13 +507,13 @@ names, and preserving the current zero-, one-, and multi-product copy.
 `CompareRoute` retains Relay data, save mutation orchestration, in-flight
 protection, feedback, and presentation.
 
-- [ ] Write pure tests for empty input, whitespace-only names, one product,
+- [x] Write pure tests for empty input, whitespace-only names, one product,
   ordered multiple products, and input immutability; verify RED.
-- [ ] Extract only deterministic name construction while preserving mutation
+- [x] Extract only deterministic name construction while preserving mutation
   variables and save behavior.
-- [ ] Run the pure and existing compare route suites, TypeScript, the
+- [x] Run the pure and existing compare route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -566,6 +566,37 @@ orchestration, validation attributes, success and error feedback, and markup.
   form state, Relay behavior, feedback, and presentation.
 - [ ] Run the pure and existing price-watch control suites, TypeScript, the
   framework-import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 18: Feed-Candidate Review View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- Create: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-review-data.md`
+
+**Interfaces:** The framework-free view-data module owns candidate name,
+product-count, fit score and reasons, review status label/tone/counts,
+reviewed-time, and filter-preserving pagination-path policy.
+`FeedCandidateReviewList` retains Relay connection consumption, review and note
+callbacks, list/summary/pagination markup, buttons, and StyleX presentation;
+`FeedCandidatesRoute` retains loader/query/mutation orchestration, draft state,
+revalidation, and feedback.
+
+- [ ] Write pure tests for name fallback, product-count thresholds, normalized
+  market/currency/language and feed-type scoring, reasons, status label/tone and
+  counts, valid/invalid reviewed time, filtered first/next paths, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic review view data while preserving Relay,
+  mutation, draft-note, event, and presentation behavior.
+- [ ] Run the pure and existing feed-candidate route suites, TypeScript, the
+  framework-import scan, secret/raw-field scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -659,3 +690,7 @@ orchestration, validation attributes, success and error feedback, and markup.
   create-watch input normalization remain embedded in `PriceWatchControl`.
   Its focused alert/control suite passed 6 tests, and the product-detail host
   route suite passed 55 tests.
+- Before the saved-comparison naming claim on 2026-07-15, current source
+  inspection confirmed that scoring, reasons, review summary/status, reviewed-
+  time, and pagination-path policy remain embedded in the 409-line
+  `FeedCandidateReviewList`; its route suite passed 17 tests.

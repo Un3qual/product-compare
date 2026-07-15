@@ -369,40 +369,25 @@ unrelated-change coverage to prove both router-default values propagate;
 re-review found no remaining issue. Its focused suites pass 34 tests. Three
 other validated rows remain ready.
 
+Before claiming Saved Comparison Naming, the coordinator validated a fourth
+non-overlapping successor. Candidate scoring, reasons, review status/count
+labels, reviewed-time formatting, and filter-preserving pagination paths remain
+embedded in the 409-line `FeedCandidateReviewList`, whose route suite passes 17
+tests. The successor has complete owned paths, no blockers, and does not overlap
+saved comparisons, merchant filtering, or price-watch input.
+
+Saved Comparison Naming then completed: one zero-import framework-free owner
+now trims product names, omits blanks, preserves caller order and duplicates,
+and returns the existing fallback, singular, and multi-product copy without
+mutating its input. `CompareRoute` retains the ready-state and in-flight guards,
+save request identity, ordered product IDs, mutation callbacks and errors,
+feedback, Relay data, and markup. Its pure and route suites pass 117 tests, and
+independent task review found no actionable issue. Three other validated rows
+remain ready.
+
 ## Ready Work
 
-### 1. Saved Comparison Naming Data Contract
-
-Status: ready
-Lane: Frontend saved-comparison naming
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic saved-comparison name construction out of
-`CompareRoute` into a framework-free contract while preserving save mutation
-orchestration, product ordering, feedback, and route presentation.
-Owned paths:
-
-- `assets/src/routes/compare/saved-comparison-name-data.ts`
-- `assets/src/routes/compare/CompareRoute.tsx`
-- `assets/test/routes/compare/saved-comparison-name-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-saved-comparison-naming.md`
-
-Prerequisites:
-
-- Existing compare route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparison-name-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: one framework-free owner trims names, omits empty names,
-preserves product order, returns the existing zero-, one-, and multi-product
-copy, and leaves the input unchanged; React retains mutation variables,
-in-flight protection, feedback, and markup.
-
-### 2. Merchant Directory Visible-Page Filter Data Contract
+### 1. Merchant Directory Visible-Page Filter Data Contract
 
 Status: ready
 Lane: Frontend merchant discovery demo parity
@@ -434,7 +419,7 @@ case-insensitively selected visible merchants in source order, and existing
 filtered/unfiltered heading copy without mutating input; React retains local
 state, page boundaries, markup, links, no-match copy, and pagination.
 
-### 3. Price-Watch Input Data Contract
+### 2. Price-Watch Input Data Contract
 
 Status: ready
 Lane: Frontend price-watch input
@@ -464,6 +449,39 @@ Exit condition: one framework-free owner identifies amount-bearing rules and
 builds the existing mutation input with trimmed amounts and uppercased trimmed
 currency while omitting amount fields for availability rules; React retains
 product-scoped reset, state, validation, Relay behavior, feedback, and markup.
+
+### 3. Feed-Candidate Review View-Data Contract
+
+Status: ready
+Lane: Frontend feed-candidate review view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move candidate scoring, reasons, labels, review status counts and
+tone, reviewed-time formatting, and filter-preserving pagination paths out of
+`FeedCandidateReviewList` into a framework-free contract while preserving
+Relay, mutations, draft notes, callbacks, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/frontend-feed-candidate-review-data.md`
+
+Prerequisites:
+
+- Existing feed-candidate route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves current fit score/reasons,
+candidate/status/count/time labels, current-page status counts, and filtered
+first/next paths without mutating input; React and Relay owners retain all
+orchestration, controls, state, markup, and styling.
 
 ## Needs Decision Work
 

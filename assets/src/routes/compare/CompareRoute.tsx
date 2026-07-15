@@ -39,6 +39,7 @@ import {
 import { CompareSelectionTray } from "./CompareSelectionTray";
 import { ShareComparisonControl } from "./ShareComparisonControl";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
+import { buildSavedComparisonName } from "./saved-comparison-name-data";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{
   label: string;
@@ -351,24 +352,4 @@ function isActiveSaveRequest(
   saveRequest: { id: number }
 ) {
   return activeSaveRequest?.id === saveRequest.id;
-}
-
-function buildSavedComparisonName(
-  products: Array<{
-    name: string;
-  }>
-) {
-  const productNames = products
-    .map((product) => product.name.trim())
-    .filter((name) => name !== "");
-
-  if (productNames.length === 0) {
-    return "Saved comparison";
-  }
-
-  if (productNames.length === 1) {
-    return `${productNames[0]} comparison`;
-  }
-
-  return productNames.join(" vs ");
 }

@@ -54,11 +54,13 @@ matrix data, and decision-summary data completed on
 community, price alerts, and API-token route-state contracts are also complete.
 Affiliate setup, offer-discovery filter policy, catalog browse route data,
 product-detail route data, compare-picker data, product-offer panel data, and
-shared external-destination safety are complete. Three source-verified, non-
-overlapping successors remain ready across API-token lifecycle display,
-catalog specification-highlight data, and recommendation-profile route data.
-Trust-surface date presentation, product-attribute grouping, route-metadata
-resolution, and saved-comparison navigation data are complete.
+shared external-destination safety are complete. API-token lifecycle display,
+catalog specification-highlight data, recommendation-profile route data, and
+saved-comparison naming data are also complete. Three source-verified,
+non-overlapping successors remain ready across merchant visible-page filter
+data, price-watch input data, and feed-candidate review view data. Trust-surface
+date presentation, product-attribute grouping, route-metadata resolution, and
+saved-comparison navigation data are complete.
 
 Active implementation plans:
 
@@ -127,9 +129,13 @@ batch and should not be recreated or promoted.
   same plan.
 - Completed reserve: saved-comparison navigation data also executed through
   that same plan.
-- Ready reserve: API-token lifecycle display data, catalog specification-
-  highlight data, and recommendation-profile route data execute through that
-  same plan.
+- Completed reserve: API-token lifecycle display data, catalog specification-
+  highlight data, recommendation-profile route data, and saved-comparison
+  naming data executed through that same plan; do not promote them again
+  without fresh scope.
+- Ready reserve: merchant visible-page filter data, price-watch input data, and
+  feed-candidate review view data execute through that same plan. Confirm live
+  ownership in `docs/work/index.md` before dispatch.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

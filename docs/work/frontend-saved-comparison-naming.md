@@ -2,18 +2,18 @@
 
 ## Snapshot
 
-- Status: ready (saved-comparison naming data contract)
+- Status: complete (saved-comparison naming data contract)
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after current source inspection and 109 passing
-  compare route tests.
+- Last verified: 2026-07-15 with 117 passing saved-comparison naming and
+  compare route tests, TypeScript, a framework-import scan, and diff checks.
 
 ## Saved Comparison Naming Data Contract
 
-- Status: ready on 2026-07-15.
+- Status: complete on 2026-07-15 on `codex/frontend-route-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: move deterministic saved-comparison naming out of
+- Completed: extracted deterministic saved-comparison naming from
   `CompareRoute` into a framework-free owner while preserving save mutation
   orchestration and route presentation.
 - Owned paths:
@@ -23,9 +23,20 @@
   - `assets/test/routes/compare/compare.route.test.tsx`
   - `docs/work/frontend-saved-comparison-naming.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/compare/saved-comparison-name-data.test.ts test/routes/compare/compare.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
+  - RED: `cd assets && bun x vitest run
+    test/routes/compare/saved-comparison-name-data.test.ts` failed as expected
+    before implementation because the new module was absent.
+  - GREEN: `cd assets && bun x vitest run
+    test/routes/compare/saved-comparison-name-data.test.ts
+    test/routes/compare/compare.route.test.tsx` passed 117 tests.
+  - `cd assets && bun run typecheck` passed.
+  - The route-data module has no imports, so it has no direct or transitive
+    React, React Router, Relay, or StyleX dependencies.
+  - `git diff --check` passed.
+  - Review: confirmed the route still snapshots the same product IDs in order,
+    uses the extracted name only for the existing mutation input, and retains
+    the in-flight guard, request identity, callbacks, feedback, Relay data,
+    and markup.
 - Exit condition: the framework-free owner trims names, omits empty names,
   preserves product order, returns the current zero-, one-, and multi-product
   copy, and leaves the input unchanged; React retains mutation variables,
