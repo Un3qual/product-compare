@@ -415,6 +415,32 @@ errors, and lifecycle actions.
   framework-import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 13: Catalog Specification Highlights Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/catalog/browse-product-list-data.ts`
+- Modify: `assets/src/routes/catalog/BrowseProductList.tsx`
+- Create: `assets/test/routes/catalog/browse-product-list-data.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-specification-highlights.md`
+
+**Interfaces:** The framework-free data module selects at most three catalog
+specification highlights by ascending explicit sort order, places unspecified
+orders last, preserves source order for ties, and leaves the Relay input
+unchanged. `BrowseProductList` retains product-card, empty omission, list,
+decision-action, and StyleX presentation.
+
+- [ ] Write pure tests for empty input, ascending order, the three-row bound,
+  unspecified orders, stable ties, and input immutability; verify RED.
+- [ ] Extract only deterministic highlight selection while retaining all card
+  markup and styling in `BrowseProductList`.
+- [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -475,3 +501,8 @@ errors, and lifecycle actions.
   formatting, optional fallbacks, and status copy embedded in
   `ApiTokenItem.tsx`; its route-data and route suites passed 55 tests on
   2026-07-14.
+- The catalog specification-highlights candidate is non-overlapping with route-
+  metadata resolution, saved-comparison navigation, and API-token lifecycle
+  display. Current source inspection found bounded sort-order selection
+  embedded in `BrowseProductList.tsx`; its catalog route suite passed 62 tests
+  on 2026-07-14.

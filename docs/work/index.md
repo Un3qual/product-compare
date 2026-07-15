@@ -298,6 +298,11 @@ retains all markup and styling. Its pure and consumer suites pass 169 tests,
 and the full frontend gate passes 72 files and 1,000 tests. Independent review
 found no actionable behavior, mutation, compatibility, performance, test, or
 queue issue. The three other validated rows remain ready.
+Before claiming Route Metadata Resolution, the coordinator validated catalog
+specification-highlight selection as a fourth non-overlapping successor:
+bounded ordering by explicit sort order, unspecified-order placement, and
+stable source ordering remain embedded in the StyleX product-list owner, while
+its existing catalog route suite passes 62 tests.
 
 ## Ready Work
 
@@ -392,6 +397,37 @@ Exit condition: the framework-free route-data owner returns stable display
 labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
 exact invalid-string fallbacks, optional empty labels, and revoked/active/
 expired status copy; React retains semantic details and lifecycle controls.
+
+### 4. Catalog Specification Highlights Data Contract
+
+Status: ready
+Lane: Frontend catalog specification highlights
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move bounded specification-highlight selection out of the StyleX
+product-list owner into a framework-free contract while preserving catalog
+card markup and decision actions.
+Owned paths:
+
+- `assets/src/routes/catalog/browse-product-list-data.ts`
+- `assets/src/routes/catalog/BrowseProductList.tsx`
+- `assets/test/routes/catalog/browse-product-list-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-specification-highlights.md`
+
+Prerequisites:
+
+- Existing catalog browse route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner selects at most three specification
+highlights by ascending explicit sort order, places unspecified orders last,
+preserves source order for ties, and does not mutate the Relay input; React
+retains the current empty omission, list markup, and styling.
 
 ## Needs Decision Work
 
