@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (product offer panel data contract)
+- Status: complete (product offer panel data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after product-offer panel candidate verification
-  (55 product-detail route tests)
+- Last verified: 2026-07-14 after product-offer panel data-contract extraction
+  (59 focused pure and product-detail route tests)
 - Historical context:
   - `docs/plans/2026-03-05-frontend-fullstack-design.md`
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
@@ -20,24 +20,29 @@
 
 ## Product Offer Panel Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: complete on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate offer normalization, coupon and price-history row
-  construction, snapshot values, and pagination paths in a framework-free
-  module while retaining panel markup, accessibility, and list presentation.
+- Completed action: isolated offer normalization, coupon and price-history row
+  construction, snapshot display values, and pagination paths in a
+  framework-free module while retaining panel markup, accessibility, and list
+  presentation.
 - Owned paths:
   - `assets/src/routes/products/product-offer-panel-data.ts`
   - `assets/src/routes/products/ProductOfferPanel.tsx`
   - `assets/src/routes/products/ProductOfferList.tsx`
   - `assets/test/routes/products/product-offer-panel-data.test.ts`
   - `docs/work/frontend-product-offers.md`
-- Verification:
+- Verification completed:
   - `cd assets && bun x vitest run test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: pure offer-panel data preserves unsafe-URL exclusion,
+    passed 59 tests.
+  - `cd assets && bun run typecheck` passed.
+  - The direct/transitive import scan of `product-offer-panel-data.ts` and its
+    pure dependencies found no React, Relay, router, StyleX, or Radix imports.
+  - `git diff --check` passed.
+- Exit evidence: pure offer-panel data preserves unsafe-URL exclusion,
   merchant fallbacks, price and currency validation, coupon and price-history
-  semantics, snapshot values, compare-slug ordering, and pagination paths.
+  semantics, snapshot display values, compare-slug ordering, and pagination
+  paths.
 - Candidate evidence: current source inspection found the deterministic data
   transformation and path policy embedded in the 300-line React panel, and the
   existing product-detail route suite passed 55 tests.
@@ -73,10 +78,9 @@
 ## Closure
 
 - The historical offer baseline is complete; the Product Offer Panel Data
-  Contract is the current ready successor in `docs/work/index.md`.
-- The current three-row successor set is Product Offer Panel Data Contract,
-  External Destination Safety Contract, and Trust-Surface Date Presentation
-  Contract.
+  Contract is the current active successor in `docs/work/index.md`.
+- The current three-row ready successor set is External Destination Safety,
+  Trust-Surface Date Presentation, and Product Attribute Grouping Data.
 - `docs/plans/INDEX.md` and `ARCHITECTURE.md` are present; no fallback planning
   blocker applies.
 

@@ -1,32 +1,15 @@
-import type { GraphQLDateTimeContext } from "../graphql-datetime";
 import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction";
+import type {
+  ProductOfferCouponRow,
+  ProductOfferListItem,
+  ProductOfferPriceHistoryRow
+} from "./product-offer-panel-data";
 
-export type ProductOfferCouponRow = {
-  code: string;
-  description: string | null | undefined;
-  discountText: string | null;
-  key: string;
-  terms: string | null | undefined;
-  validToText: string | null;
-};
-
-export type ProductOfferPriceHistoryRow = {
-  id: string;
-  observedAt: string;
-  observedDate: string;
-  priceText: string;
-};
-
-export type ProductOfferListItem = {
-  coupons: ReadonlyArray<ProductOfferCouponRow>;
-  couponsHasMore: boolean;
-  id: string;
-  merchantName: string;
-  priceHistory: ReadonlyArray<ProductOfferPriceHistoryRow>;
-  priceHistoryHasMore: boolean;
-  priceObservation: GraphQLDateTimeContext | null;
-  priceText: string | null;
-};
+export type {
+  ProductOfferCouponRow,
+  ProductOfferListItem,
+  ProductOfferPriceHistoryRow
+} from "./product-offer-panel-data";
 
 export function ProductOfferList({ offers }: { offers: ReadonlyArray<ProductOfferListItem> }) {
   return (
