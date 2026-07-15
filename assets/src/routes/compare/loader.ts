@@ -7,12 +7,17 @@ import {
 } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
+import {
+  MAX_COMPARE_PRODUCTS,
+  selectedCompareSlugsFromSearch,
+  type CompareSpecMode
+} from "./paths";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
-export const MAX_COMPARE_PRODUCTS = 3;
+export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
+
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
 
-export type CompareSpecMode = "shared" | "differences" | "all";
 export type RecommendationProfile = "lowest_current_cost" | "best_value";
 
 export interface CompareProductSummary {
@@ -95,7 +100,7 @@ export async function compareLoader({
   context,
   request
 }: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
-  const slugs = parseSelectedSlugs(request.url);
+  const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
   const specMode = compareSpecModeFromUrl(request.url);
 
   if (slugs.length === 0) {
@@ -192,21 +197,6 @@ export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
     default:
       return "shared";
   }
-}
-
-function parseSelectedSlugs(requestUrl: string) {
-  const url = new URL(requestUrl);
-  const selected = new Set<string>();
-
-  for (const rawSlug of url.searchParams.getAll("slug")) {
-    const slug = rawSlug.trim();
-
-    if (slug !== "") {
-      selected.add(slug);
-    }
-  }
-
-  return Array.from(selected);
 }
 
 function orderProductsByRequestedSlugs(

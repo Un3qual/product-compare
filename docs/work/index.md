@@ -216,97 +216,221 @@ community, price-alert, and API-token route policy are complete with 11, 8,
 three source-verified, non-overlapping route-policy data contracts backed by
 22 affiliate, 51 offer-discovery, and 62 catalog tests.
 
+After PR #98 merged on 2026-07-14, the coordinator validated product-detail
+route policy as a fourth non-overlapping successor backed by 55 existing route
+tests. Affiliate setup then completed on
+`codex/route-policy-data-contracts`: merchant choice, summaries, and all four
+mutation-variable shapes now live in a framework-free contract with 28 focused
+tests. Before claiming the next row, the coordinator freshly validated the
+compare picker as a fourth non-overlapping route-policy successor: its
+deterministic pagination, accumulation, option, empty-state, and compare-path
+policy is characterized by 109 passing route tests. Offer discovery then
+completed on `codex/route-policy-data-contracts`: one framework-free owner now
+provides filter types, defaults, ordered sort options, normalization, form
+identity, summaries, and paths without changing route behavior. Its pure,
+route, and loader suites passed 70 tests. Before claiming catalog browse, the
+coordinator validated product-offer panel data as a substantive fourth
+successor: its offer normalization, coupon and price-history rows, snapshot
+inputs, and pagination policy remain embedded in the React panel, and the
+existing product-detail suite passes 55 tests. Catalog browse then completed:
+one framework-free contract now owns canonical browse paths, encoded product-
+detail links, normalized compare selection, add/selected/full actions, and
+ordered removal paths. Its pure and route suites passed 68 tests. Product
+detail then completed: one framework-free contract now owns the canonical
+detail tab, overview summaries, encoded paths, compare action, and ordered
+selection removal while the route retains Relay, navigation, boundaries, and
+presentation. Review follow-up removed a falsely configurable compare maximum
+and reused the canonical shared limit; 67 focused tests pass. Compare picker,
+product-offer panel data, and a newly validated external-destination safety
+contract remain ready. The latter is a shared product-critical boundary used
+by offers and merchant pages; its existing consumer suites pass 80 tests, but
+the 410-line framework-free policy has no direct contract suite for public
+HTTP(S), credential, hostname, port, or reserved-address behavior. Before
+claiming Compare Picker, the coordinator also validated a non-overlapping
+trust-surface date-presentation contract: merchant detail and public comparison
+snapshots duplicate UTC date parsing and formatting around the existing shared
+product formatter, and their two focused suites pass 8 tests. Compare Picker
+then completed: one transport-neutral contract now owns reset identity, stable
+page accumulation, selected-product exclusion, option/path construction,
+cursor behavior, and empty copy while Relay timing, state/effects, boundaries,
+and presentation remain in React. Its pure and route suites pass 116 tests,
+and independent task review found no actionable issues. Before claiming Product
+Offer Panel, the coordinator validated a fourth non-overlapping successor in
+the shared product-attribute list: deterministic label normalization, case-
+insensitive grouping, and stable group and attribute ordering are still
+embedded in the StyleX presentation owner, while its product-detail and compare
+consumers pass 164 tests. Product Offer Panel then completed: one transport-
+neutral contract now owns visible offer normalization, coupon and price-history
+rows, snapshot display values, and first/next pagination paths while React
+retains error, empty, snapshot, list, pagination, accessibility, and tracked-
+commerce presentation. Its pure and product-detail suites pass 59 tests, and
+independent task review found no actionable issues. Before claiming External
+Destination Safety, the coordinator validated a fourth non-overlapping
+successor in the route metadata renderer:
+deepest-match selection, loader-versus-handle precedence, and malformed-value
+parsing remain embedded in the React head owner, whose integration suite passes
+2 tests. External Destination Safety then completed with 140 direct cases and
+139 unchanged consumer cases passing. Review follow-up closed raw/WHATWG
+authority disagreement and replaced textual IPv6 checks with a dated numeric
+registry policy whose longest-prefix rules preserve globally reachable
+exceptions inside non-global parents. Independent re-review found no remaining
+actionable issue, and the three other validated rows remain ready. Before
+claiming Trust-Surface Date Presentation, the coordinator validated saved-
+comparison navigation as a fourth non-overlapping successor: ordered reopen
+links and first/next cursor paths remain embedded in the Relay route owner,
+whose current route-state suite passes 31 tests. Trust-Surface Date
+Presentation then completed: one framework-free formatter now owns UTC date-
+only and date-time labels, offset normalization, and exact malformed-source
+fallbacks while merchant and snapshot markup retain their source `dateTime`
+values. Its direct and consumer suites pass 15 tests; review follow-up routes
+all string inputs through the existing strict GraphQL DateTime validator so
+impossible calendar dates and timestamps without offsets fail closed. The full
+frontend gate passes 71 files and 995 tests. Independent re-review found no
+remaining actionable issue. The three other validated rows remain ready.
+Before claiming Product Attribute Grouping, the coordinator validated API-
+token lifecycle display data as a fourth non-overlapping successor: UTC display
+labels, optional-date fallbacks, and status copy remain embedded in the React
+item owner, while its existing route-data and route suites pass 55 tests.
+Product Attribute Grouping then completed: one framework-free owner now trims
+and case-folds group labels, retains the first display label, and preserves
+first-seen group, grouped-attribute, and ungrouped-tail ordering while React
+retains all markup and styling. Its pure and consumer suites pass 169 tests,
+and the full frontend gate passes 72 files and 1,000 tests. Independent review
+found no actionable behavior, mutation, compatibility, performance, test, or
+queue issue. The three other validated rows remain ready.
+Before claiming Route Metadata Resolution, the coordinator validated catalog
+specification-highlight selection as a fourth non-overlapping successor:
+bounded ordering by explicit sort order, unspecified-order placement, and
+stable source ordering remain embedded in the StyleX product-list owner, while
+its existing catalog route suite passes 62 tests.
+Route Metadata Resolution then completed: one framework-free owner now selects
+the deepest valid match, prefers loader data over the same match's handle,
+falls back from invalid loader metadata, and parses required, optional, and
+indexability fields while React retains router access and all head markup. Its
+direct and integration suites pass 9 tests. Independent review confirmed the
+production extraction and identified missing regression coverage for skipping
+a fully invalid deepest match; that case is now covered, and the refreshed full
+frontend gate passes 73 files and 1,007 tests. Independent re-review found no
+remaining actionable issue. The three other validated rows remain ready.
+Before claiming Saved Comparison Navigation, the coordinator validated
+recommendation-profile route data as a fourth non-overlapping successor:
+profile parsing, profile-link construction, and profile-only loader
+revalidation remain split between the compare loader and React panel, while
+the current recommendation and snapshot suites pass 11 tests. Snapshot publish
+input and its GraphQL profile mapping remain owned by the completed snapshot
+data contract and are outside this successor.
+Saved Comparison Navigation then completed: one framework-free owner now
+builds ordered encoded reopen paths and first/next pagination paths while the
+route retains Relay query retention, deletion, local state, boundaries, links,
+and presentation. Task review caught that the extracted contract relied on the
+loader to reject non-advancing cursors; the contract now enforces that invariant
+directly. Its pure and route-state suites pass 43 tests, the full frontend gate
+passes 74 files and 1,019 tests, and task re-review is approved. Final review
+added direct coverage for `hasNextPage: false`. The three other validated rows
+remain ready. Final whole-batch re-review confirmed the narrowed recommendation
+successor is executable within its owned paths and found no remaining issue.
+
 ## Ready Work
 
-### 1. Affiliate Setup Route Data Contract
+### 1. API Token Lifecycle Display Data Contract
 
 Status: ready
-Lane: Frontend affiliate setup
+Lane: Frontend API-token lifecycle display
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free merchant-choice, summary, and mutation-
-variable policy while preserving Relay operations, request guards, form reset
-behavior, local selection, feedback, boundaries, and presentation.
+Next action: move deterministic token labels, strict UTC lifecycle-date
+formatting, optional-date fallbacks, and status copy from `ApiTokenItem` into
+the existing framework-free API-token route-data owner while preserving item
+markup and lifecycle actions.
 Owned paths:
 
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-demo-parity.md`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-lifecycle-display.md`
 
 Prerequisites:
 
-- Existing 22-test affiliate-setup route characterization remains green.
+- Existing API-token route-data and route characterizations remain green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Pure affiliate setup policy preserves merchant filtering and
-summaries, field trimming, optional nulls, currency casing, date normalization,
-and every mutation-variable shape.
+Exit condition: the framework-free route-data owner returns stable display
+labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
+exact invalid-string fallbacks, optional empty labels, and revoked/active/
+expired status copy; React retains semantic details and lifecycle controls.
 
-### 2. Offer Discovery Filter Data Contract
-
-Status: ready
-Lane: Frontend offer discovery
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free form-key, active-filter summary, reset,
-merchant-clear, product-detail, and sort-label policy while preserving form
-markup, links, controls, and styling.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-filter-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
-- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-demo-parity.md`
-
-Prerequisites:
-
-- Existing 51-test offer-discovery route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: Pure offer-filter policy preserves form reset identity, summary
-ordering and copy, default detection, encoded product paths, merchant clearing,
-and sort fallbacks.
-
-### 3. Catalog Browse Route Data Contract
+### 2. Catalog Specification Highlights Data Contract
 
 Status: ready
-Lane: Frontend catalog browse
+Lane: Frontend catalog specification highlights
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: extract framework-free browse-path, product-detail, compare-action,
-and selected-item removal policy while preserving Relay reads, location access,
-boundaries, layout, and presentation.
+Next action: move bounded specification-highlight selection out of the StyleX
+product-list owner into a framework-free contract while preserving catalog
+card markup and decision actions.
 Owned paths:
 
-- `assets/src/routes/catalog/browse-route-data.ts`
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/test/routes/catalog/browse-route-data.test.ts`
+- `assets/src/routes/catalog/browse-product-list-data.ts`
+- `assets/src/routes/catalog/BrowseProductList.tsx`
+- `assets/test/routes/catalog/browse-product-list-data.test.ts`
 - `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-browse.md`
+- `docs/work/frontend-catalog-specification-highlights.md`
 
 Prerequisites:
 
-- Existing 62-test catalog browse characterization remains green.
+- Existing catalog browse route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts test/routes/catalog/browse.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `git diff --check`
 
-Exit condition: Pure catalog route policy preserves root-path normalization,
-encoded detail links, compare selection order, add/selected/full states,
-maximum selection, and item-removal paths.
+Exit condition: one framework-free owner selects at most three specification
+highlights by ascending explicit sort order, places unspecified orders last,
+preserves source order for ties, and does not mutate the Relay input; React
+retains the current empty omission, list markup, and styling.
+
+### 3. Recommendation Profile Route Data Contract
+
+Status: ready
+Lane: Frontend recommendation profile navigation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: consolidate recommendation-profile parsing, navigation paths, and
+profile-only revalidation in a framework-free contract while preserving Relay
+reads, snapshot publish-input mapping, boundaries, and panel markup.
+Owned paths:
+
+- `assets/src/routes/compare/recommendation-route-data.ts`
+- `assets/src/routes/compare/loader.ts`
+- `assets/src/routes/compare/RecommendationPanel.tsx`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/recommendation-route-data.test.ts`
+- `assets/test/routes/compare/recommendation-panel.test.tsx`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-recommendation-profile-navigation.md`
+
+Prerequisites:
+
+- Existing recommendation-panel and comparison-snapshot characterizations
+  remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves exact best-value parsing,
+lowest-cost fallback, ordered encoded slugs, specification mode, profile query
+omission/defaults, and loader suppression only when the recommendation profile
+is the sole route change; React and Relay owners retain their existing behavior
+and markup, while `share-comparison-data.ts` retains snapshot publish-input and
+GraphQL profile mapping.
 
 ## Needs Decision Work
 

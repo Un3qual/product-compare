@@ -1,14 +1,126 @@
-const RESERVED_IPV6_PREFIXES = ["fc", "fd", "fe8", "fe9", "fea", "feb", "ff", "2001:db8"];
 const DOCUMENTATION_IPV4_RANGES = new Set([
   "192.0.2",
   "198.51.100",
   "203.0.113"
 ]);
+// Browser destination policy snapshot: IANA IPv6 Special-Purpose Address
+// Registry reviewed 2026-07-14. Rules model non-global parents and their
+// globally reachable exceptions, plus intentional transition exclusions.
+const IPV6_DESTINATION_RULES = [
+  // RFC 4291: IPv4-compatible forms, including unspecified and loopback.
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000],
+    bits: 96,
+    decision: "block"
+  },
+  // RFC 4291: IPv4-mapped forms.
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff],
+    bits: 96,
+    decision: "block"
+  },
+  // RFC 6052: IPv4-translatable forms.
+  {
+    prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 0x0000],
+    bits: 96,
+    decision: "block"
+  },
+  // RFC 6052: NAT64 well-known translation prefix.
+  {
+    prefix: [0x0064, 0xff9b, 0x0000, 0x0000, 0x0000, 0x0000],
+    bits: 96,
+    decision: "block"
+  },
+  // RFC 8215: NAT64 local-use translation prefix.
+  { prefix: [0x0064, 0xff9b, 0x0001], bits: 48, decision: "block" },
+  // RFC 6666: discard-only prefix.
+  {
+    prefix: [0x0100, 0x0000, 0x0000, 0x0000],
+    bits: 64,
+    decision: "block"
+  },
+  // RFC 9780: dummy IPv6 prefix.
+  {
+    prefix: [0x0100, 0x0000, 0x0000, 0x0001],
+    bits: 64,
+    decision: "block"
+  },
+  // IANA 2001::/23 is non-global by default. This parent covers Teredo
+  // (RFC 4380), benchmarking (RFC 5180), deprecated ORCHID (RFC 4843), and
+  // unlisted protocol-assignment space; the narrower allow rules are global.
+  { prefix: [0x2001, 0x0000], bits: 23, decision: "block" },
+  // IANA globally reachable PCP, TURN, and DNS-SD anycast exceptions.
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0001
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0002
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  {
+    prefix: [
+      0x2001,
+      0x0001,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0003
+    ],
+    bits: 128,
+    decision: "allow"
+  },
+  // RFC 7450: AMT globally reachable exception.
+  { prefix: [0x2001, 0x0003], bits: 32, decision: "allow" },
+  // RFC 7535: AS112-v6 globally reachable exception.
+  { prefix: [0x2001, 0x0004, 0x0112], bits: 48, decision: "allow" },
+  // RFC 7343: ORCHIDv2 is globally reachable in the IANA registry.
+  { prefix: [0x2001, 0x0020], bits: 28, decision: "allow" },
+  // RFC 9374: DRIP Entity Tags are globally reachable.
+  { prefix: [0x2001, 0x0030], bits: 28, decision: "allow" },
+  // RFC 3056: 6to4 carries IPv4 routing information.
+  { prefix: [0x2002], bits: 16, decision: "block" },
+  // RFC 3849: original documentation prefix.
+  { prefix: [0x2001, 0x0db8], bits: 32, decision: "block" },
+  // RFC 9637: additional documentation prefix.
+  { prefix: [0x3fff, 0x0000], bits: 20, decision: "block" },
+  // RFC 9602: SRv6 SID prefix is not a routable browser destination.
+  { prefix: [0x5f00], bits: 16, decision: "block" },
+  // RFC 4193: unique-local range.
+  { prefix: [0xfc00], bits: 7, decision: "block" },
+  // RFC 4291: link-local range.
+  { prefix: [0xfe80], bits: 10, decision: "block" },
+  // RFC 4291: multicast range.
+  { prefix: [0xff00], bits: 8, decision: "block" }
+] as const;
 
 export function externalHttpUrlHref(value: string) {
   const href = value.trim();
+  const rawAuthority = parseRawHttpAuthority(href);
 
-  if (href.length === 0 || hasMalformedHttpAuthority(href)) {
+  if (!rawAuthority || hasDottedIPv4Tail(rawAuthority.hostname)) {
     return null;
   }
 
@@ -44,14 +156,20 @@ function parseUrl(value: string) {
 }
 
 function isSafeExternalHttpUrl(url: URL) {
+  const hostname = hostnameForValidation(url.hostname);
+
   return (
     isHttpProtocol(url.protocol) &&
-    url.hostname.length > 0 &&
+    hostname.length > 0 &&
     url.username.length === 0 &&
     url.password.length === 0 &&
-    isValidHostname(url.hostname) &&
-    isPublicHostname(url.hostname)
+    isValidHostname(hostname) &&
+    isPublicHostname(hostname)
   );
+}
+
+function hostnameForValidation(hostname: string) {
+  return hostname.endsWith(".") ? hostname.slice(0, -1) : hostname;
 }
 
 function isHttpProtocol(protocol: string) {
@@ -172,61 +290,122 @@ function parseBracketedIPv6Address(hostname: string) {
 }
 
 function isReservedIPv6Address(address: string) {
-  const embeddedIPv4Address = parseEmbeddedIPv4Address(address);
+  const words = parseIPv6AddressWords(address);
 
-  if (embeddedIPv4Address) {
-    return isReservedIPv4Address(embeddedIPv4Address);
+  if (!words) {
+    return true;
   }
 
-  return (
-    address === "::" ||
-    address === "::1" ||
-    RESERVED_IPV6_PREFIXES.some((prefix) => address.startsWith(prefix))
+  return isBlockedIPv6Destination(words);
+}
+
+function isBlockedIPv6Destination(address: number[]) {
+  let mostSpecificPrefixLength = -1;
+  let shouldBlock = false;
+
+  // Longest prefix wins; equal-specificity conflicts fail closed. Neither
+  // decision therefore depends on the declaration order of policy rules.
+  for (const rule of IPV6_DESTINATION_RULES) {
+    if (!matchesIPv6Prefix(address, rule.prefix, rule.bits)) {
+      continue;
+    }
+
+    if (rule.bits > mostSpecificPrefixLength) {
+      mostSpecificPrefixLength = rule.bits;
+      shouldBlock = rule.decision === "block";
+      continue;
+    }
+
+    if (rule.bits === mostSpecificPrefixLength && rule.decision === "block") {
+      shouldBlock = true;
+    }
+  }
+
+  return shouldBlock;
+}
+
+function parseIPv6AddressWords(address: string) {
+  const compressionIndex = address.indexOf("::");
+
+  if (
+    compressionIndex !== -1 &&
+    address.indexOf("::", compressionIndex + 2) !== -1
+  ) {
+    return null;
+  }
+
+  if (compressionIndex === -1) {
+    const words = parseIPv6WordSequence(address);
+
+    return words?.length === 8 ? words : null;
+  }
+
+  const leadingWords = parseIPv6WordSequence(
+    address.slice(0, compressionIndex)
   );
-}
+  const trailingWords = parseIPv6WordSequence(
+    address.slice(compressionIndex + 2)
+  );
 
-function parseEmbeddedIPv4Address(address: string) {
-  if (address.startsWith("::ffff:")) {
-    return parseEmbeddedIPv4AddressSuffix(address.slice("::ffff:".length));
-  }
-
-  if (address.startsWith("::")) {
-    return parseEmbeddedIPv4AddressSuffix(address.slice("::".length));
-  }
-
-  return null;
-}
-
-function parseEmbeddedIPv4AddressSuffix(value: string) {
-  if (value.length === 0) {
+  if (!leadingWords || !trailingWords) {
     return null;
   }
 
-  const dottedAddress = parseIPv4Address(value);
+  const omittedWordCount = 8 - leadingWords.length - trailingWords.length;
 
-  if (dottedAddress) {
-    return dottedAddress;
-  }
-
-  const hexWords = value.split(":");
-
-  if (hexWords.length !== 2) {
-    return null;
-  }
-
-  const highWord = parseIPv6HexWord(hexWords[0]);
-  const lowWord = parseIPv6HexWord(hexWords[1]);
-
-  if (highWord === null || lowWord === null) {
+  if (omittedWordCount < 1) {
     return null;
   }
 
   return [
-    highWord >> 8,
-    highWord & 0xff,
-    lowWord >> 8,
-    lowWord & 0xff
-  ] as [number, number, number, number];
+    ...leadingWords,
+    ...Array.from({ length: omittedWordCount }, () => 0),
+    ...trailingWords
+  ];
+}
+
+function parseIPv6WordSequence(value: string) {
+  if (value.length === 0) {
+    return [];
+  }
+
+  const words: number[] = [];
+
+  for (const valueWord of value.split(":")) {
+    const word = parseIPv6HexWord(valueWord);
+
+    if (word === null) {
+      return null;
+    }
+
+    words.push(word);
+  }
+
+  return words;
+}
+
+function matchesIPv6Prefix(
+  address: number[],
+  prefix: readonly number[],
+  prefixLength: number
+) {
+  const completeWords = Math.floor(prefixLength / 16);
+
+  for (let index = 0; index < completeWords; index += 1) {
+    if (address[index] !== prefix[index]) {
+      return false;
+    }
+  }
+
+  const remainingBits = prefixLength % 16;
+
+  if (remainingBits === 0) {
+    return true;
+  }
+
+  const mask = (0xffff << (16 - remainingBits)) & 0xffff;
+
+  return (address[completeWords] & mask) === (prefix[completeWords] & mask);
 }
 
 function parseIPv6HexWord(value: string) {
@@ -261,24 +440,111 @@ function hasAbsoluteUrlScheme(value: string) {
   return true;
 }
 
-function hasMalformedHttpAuthority(value: string) {
-  const lowerValue = value.toLowerCase();
+function parseRawHttpAuthority(value: string) {
+  const separatorIndex = value.indexOf("://");
 
-  return (
-    hasMissingHttpAuthoritySlashes(lowerValue) ||
-    lowerValue.startsWith("http:///") ||
-    lowerValue.startsWith("https:///") ||
-    lowerValue.startsWith("http://\\") ||
-    lowerValue.startsWith("https://\\") ||
-    lowerValue.startsWith("http:\\") ||
-    lowerValue.startsWith("https:\\")
-  );
+  if (
+    separatorIndex === -1 ||
+    !isRawHttpProtocol(value.slice(0, separatorIndex))
+  ) {
+    return null;
+  }
+
+  const authorityStart = separatorIndex + "://".length;
+  const authorityEnd = findStrictAuthorityEnd(value, authorityStart);
+
+  if (authorityEnd === null) {
+    return null;
+  }
+
+  const authority = value.slice(authorityStart, authorityEnd);
+
+  if (authority.length === 0 || authority.includes("@")) {
+    return null;
+  }
+
+  return parseRawHostnameAndPort(authority);
 }
 
-function hasMissingHttpAuthoritySlashes(value: string) {
+function isRawHttpProtocol(value: string) {
+  const protocol = value.toLowerCase();
+
+  return protocol === "http" || protocol === "https";
+}
+
+function findStrictAuthorityEnd(value: string, authorityStart: number) {
+  for (let index = authorityStart; index < value.length; index += 1) {
+    if (isForbiddenRawAuthorityCharacter(value[index])) {
+      return null;
+    }
+
+    if (value[index] === "/" || value[index] === "?" || value[index] === "#") {
+      return index;
+    }
+  }
+
+  return value.length;
+}
+
+function isForbiddenRawAuthorityCharacter(character: string) {
+  const codePoint = character.charCodeAt(0);
+
+  return character === "\\" || codePoint <= 0x20 || codePoint === 0x7f;
+}
+
+function parseRawHostnameAndPort(authority: string) {
+  if (authority.startsWith("[")) {
+    return parseRawBracketedHostnameAndPort(authority);
+  }
+
+  if (authority.includes("[") || authority.includes("]")) {
+    return null;
+  }
+
+  const colonIndex = authority.lastIndexOf(":");
+
+  if (colonIndex === -1) {
+    return { hostname: authority };
+  }
+
+  if (
+    authority.indexOf(":") !== colonIndex ||
+    !isValidPort(authority.slice(colonIndex + 1))
+  ) {
+    return null;
+  }
+
+  const hostname = authority.slice(0, colonIndex);
+
+  return hostname.length > 0 ? { hostname } : null;
+}
+
+function parseRawBracketedHostnameAndPort(authority: string) {
+  const closingBracketIndex = authority.indexOf("]");
+
+  if (closingBracketIndex <= 1) {
+    return null;
+  }
+
+  const hostname = authority.slice(0, closingBracketIndex + 1);
+  const portSuffix = authority.slice(closingBracketIndex + 1);
+
+  if (portSuffix.length === 0) {
+    return { hostname };
+  }
+
+  if (!portSuffix.startsWith(":") || !isValidPort(portSuffix.slice(1))) {
+    return null;
+  }
+
+  return { hostname };
+}
+
+function hasDottedIPv4Tail(hostname: string) {
   return (
-    (value.startsWith("http:") && !value.startsWith("http://")) ||
-    (value.startsWith("https:") && !value.startsWith("https://"))
+    hostname.startsWith("[") &&
+    hostname.endsWith("]") &&
+    hostname.includes(".")
   );
 }
 
@@ -299,7 +565,7 @@ function isHostnameShapedBareDomain(value: string) {
     return false;
   }
 
-  const labels = parsedDomain.hostname.split(".");
+  const labels = hostnameForValidation(parsedDomain.hostname).split(".");
 
   return labels.length >= 2 && labels.every(isValidHostnameLabel);
 }
@@ -330,7 +596,9 @@ function isValidHostname(hostname: string) {
     return true;
   }
 
-  return hostname.split(".").every(isValidHostnameLabel);
+  const labels = hostname.split(".");
+
+  return labels.length >= 2 && labels.every(isValidHostnameLabel);
 }
 
 function isValidHostnameLabel(label: string) {

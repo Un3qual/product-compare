@@ -2,24 +2,26 @@
 
 ## Snapshot
 
-- Status: ready (affiliate-setup route data contract)
+- Status: done (affiliate-setup route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after affiliate route-data candidate verification
-  (22 route tests)
+- Last verified: 2026-07-14 after affiliate route-data contract completion (28
+  focused tests and TypeScript).
 - Implementation plan: `docs/plans/2026-06-01-frontend-affiliate-setup-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-affiliate-setup-merchant-context-implementation-plan.md`
 - Objective: make the existing authenticated affiliate setup GraphQL contract demoable from the browser UI without adding REST endpoints.
 
 ## Affiliate Setup Route Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: completed 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate merchant-choice, summary, and network/program/link/coupon
-  mutation-variable policy in a framework-free module while retaining Relay
-  operations, request guards, form resets, selection state, feedback,
-  boundaries, and presentation in `AffiliateSetupRoute`.
+- Completed: extracted merchant-choice and summary derivation plus
+  network/program/link/coupon mutation-variable construction into the
+  framework-free `affiliate-setup-data` contract. `AffiliateSetupRoute`
+  converts `FormData` to scalar form values at its mutation boundary while
+  retaining Relay operations, request guards, form resets, selection state,
+  feedback, boundaries, and presentation.
 - Owned paths:
   - `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
   - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
@@ -27,15 +29,21 @@
   - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
   - `docs/work/frontend-affiliate-setup-demo-parity.md`
 - Verification:
+  - RED: `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts` failed as expected because `affiliate-setup-data` did not exist.
   - `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
   - `cd assets && bun run typecheck`
+  - Framework-import scan of `affiliate-setup-data.ts` for React, Relay,
+    router, StyleX, and Radix imports: clean.
   - `git diff --check`
+- Completed verification: the focused pure and route suites passed 28 tests,
+  TypeScript completed with exit 0, the framework-import scan was clean, and
+  `git diff --check` completed with exit 0.
 - Exit condition: pure route data preserves merchant filtering and summaries,
   field trimming, optional nulls, currency casing, date normalization, and
   every mutation-variable shape.
-- Candidate evidence: the existing route suite passed 22 tests, and current
-  source inspection confirmed the named deterministic helpers remain embedded
-  in the 480-line route owner.
+- Pre-implementation candidate evidence: the existing route suite passed 22
+  tests, and source inspection confirmed the named deterministic helpers were
+  embedded in the 480-line route owner before extraction.
 
 ## Merchant-Choice Pagination
 

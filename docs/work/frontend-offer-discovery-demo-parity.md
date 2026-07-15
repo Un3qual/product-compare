@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (offer-discovery filter data contract)
+- Status: completed (offer-discovery filter data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after offer-filter candidate verification (51
-  route tests)
+- Last verified: 2026-07-14 after offer-filter data extraction (8 pure, 51
+  route, and 11 loader tests; 70 total)
 - Implementation plan:
   - `docs/plans/2026-06-01-frontend-offer-discovery-demo-parity-implementation-plan.md`
 - Recently completed usable-product plan:
@@ -23,28 +23,40 @@
 
 ## Offer Discovery Filter Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: completed on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate form reset identity, active-filter summary, reset and
-  merchant-clear visibility, selected-product paths, and sort labels in a
-  framework-free module while retaining form/list markup, links, controls, and
-  styling in `OfferDiscoveryFilterForm`.
+- Completed: `offer-discovery-filter-data.ts` is the framework-free source of
+  truth for filter types, page-size defaults, ordered sort options and labels,
+  unknown-sort normalization, form reset identity, active-filter summaries,
+  reset visibility, selected-product and merchant-clear paths. The loader and
+  path compatibility module consume the same policy, while
+  `OfferDiscoveryFilterForm` retains form/list markup, controls, links, and
+  StyleX.
 - Owned paths:
   - `assets/src/routes/offers/offer-discovery-filter-data.ts`
   - `assets/src/routes/offers/OfferDiscoveryFilterForm.tsx`
+  - `assets/src/routes/offers/loader.ts`
+  - `assets/src/routes/offers/paths.ts`
   - `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
   - `assets/test/routes/offers/offer-discovery.route.test.tsx`
   - `docs/work/frontend-offer-discovery-demo-parity.md`
 - Verification:
-  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-  - `cd assets && bun run typecheck`
-  - `git diff --check`
-- Exit condition: pure filter data preserves form reset identity, summary
+  - RED: the new pure suite failed because
+    `offer-discovery-filter-data.ts` did not exist. Review regressions then
+    failed before shared policy and unknown-sort normalization were present.
+  - `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/offers/offer-discovery-loader.test.ts`
+    passed 70 tests.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - Direct and transitive framework-import review found no imports in the pure
+    module.
+  - `git diff --check` completed with no output.
+- Exit condition met: pure filter data preserves form reset identity, summary
   ordering and copy, default detection, encoded product paths, merchant
-  clearing, and sort fallbacks.
-- Candidate evidence: the existing route suite passed 51 tests, and current
-  source inspection confirmed the deterministic filter policy remains in the
-  React form owner.
+  clearing, canonical URL construction, sort-only reset behavior, and safe
+  future-sort fallbacks.
+- Review outcome: two source-of-truth/type-safety findings were resolved by
+  moving the shared defaults, options, types, normalization, and path policy
+  into the pure owner. Independent re-review was clean.
 
 ## 2026-07-11 Route Decomposition
 

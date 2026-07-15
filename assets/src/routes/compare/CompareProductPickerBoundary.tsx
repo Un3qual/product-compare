@@ -5,8 +5,16 @@ import compareProductPickerQuery, {
 } from "../../__generated__/CompareProductPickerQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
-import { buildComparePathFromSlugs } from "./paths";
+import {
+  appendUniqueComparePickerProducts,
+  availableComparePickerProducts,
+  buildComparePickerOptions,
+  comparePickerEmptyMessage,
+  comparePickerResetToken,
+  isComparePickerEmpty,
+  nextComparePickerPageCursor
+} from "./compare-picker-data";
+import type { CompareSpecMode } from "./paths";
 import {
   CompareProductPickerView,
   type CompareProductPickerOption
@@ -26,7 +34,7 @@ export function CompareProductPickerBoundary({
   specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
-  const resetToken = `${specMode}:${selectedSlugs.join("|")}`;
+  const resetToken = comparePickerResetToken(specMode, selectedSlugs);
 
   return (
     <ResettableErrorBoundary
@@ -67,23 +75,21 @@ function CompareProductPicker({
     () => productConnection?.edges.map(({ node }) => node) ?? [],
     [productConnection]
   );
-  const productOptions = appendUniqueProducts(loadedProducts, pageProducts);
-  const selectedSlugSet = new Set(selectedSlugs);
-  const availableProducts = productOptions.filter((product) => !selectedSlugSet.has(product.slug));
-  const nextCursor = nextProductPageCursor(productConnection?.pageInfo);
-  const options = availableProducts.map((product) => ({
-    brandName: product.brand?.name ?? "Unknown brand",
-    href: buildComparePath(selectedSlugs, product.slug, specMode),
-    id: product.id,
-    name: product.name
-  })) satisfies CompareProductPickerOption[];
+  const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
+  const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
+  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo);
+  const options = buildComparePickerOptions(
+    availableProducts,
+    selectedSlugs,
+    specMode
+  ) satisfies CompareProductPickerOption[];
 
   useEffect(() => {
-    setLoadedProducts((products) => appendUniqueProducts(products, pageProducts));
+    setLoadedProducts((products) => appendUniqueComparePickerProducts(products, pageProducts));
   }, [pageProducts]);
 
-  if (isEmptyProductPicker(availableProducts, nextCursor)) {
-    return <p>{emptyProductPickerMessage(selectedSlugs)}</p>;
+  if (isComparePickerEmpty(availableProducts, nextCursor)) {
+    return <p>{comparePickerEmptyMessage(selectedSlugs)}</p>;
   }
 
   return (
@@ -93,62 +99,4 @@ function CompareProductPicker({
       options={options}
     />
   );
-}
-
-function nextProductPageCursor(
-  pageInfo:
-    | NonNullable<CompareProductPickerQuery["response"]["products"]>["pageInfo"]
-    | null
-    | undefined
-) {
-  return pageInfo?.hasNextPage ? pageInfo.endCursor : null;
-}
-
-function isEmptyProductPicker(
-  availableProducts: readonly ComparePickerProduct[],
-  nextCursor: string | null | undefined
-) {
-  return availableProducts.length === 0 && !nextCursor;
-}
-
-function emptyProductPickerMessage(selectedSlugs: readonly string[]) {
-  return selectedSlugs.length === 0
-    ? "No products are available to compare yet."
-    : "No additional products are available to compare yet.";
-}
-
-function buildComparePath(
-  selectedSlugs: readonly string[],
-  productSlug: string,
-  specMode: CompareSpecMode
-) {
-  const nextSlugs = Array.from(new Set([...selectedSlugs, productSlug])).slice(
-    0,
-    MAX_COMPARE_PRODUCTS
-  );
-
-  return buildComparePathFromSlugs(nextSlugs, { specMode });
-}
-
-function appendUniqueProducts(
-  existingProducts: ComparePickerProduct[],
-  newProducts: readonly ComparePickerProduct[]
-) {
-  if (newProducts.length === 0) {
-    return existingProducts;
-  }
-
-  const seenProductIds = new Set(existingProducts.map((product) => product.id));
-  const nextProducts = [...existingProducts];
-
-  for (const product of newProducts) {
-    if (seenProductIds.has(product.id)) {
-      continue;
-    }
-
-    seenProductIds.add(product.id);
-    nextProducts.push(product);
-  }
-
-  return nextProducts.length === existingProducts.length ? existingProducts : nextProducts;
 }

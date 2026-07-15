@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: completed (saved comparison view-state extraction)
+- Status: done (compare picker data contract)
 - Priority: P2
 - Source of truth: this file
-- Last verified: 2026-07-12 after saved comparison view-state extraction (46
-  focused saved-comparison tests)
+- Last verified: 2026-07-14 after compare-picker completion and independent
+  task review (116 focused tests)
 - Historical context:
   - `ARCHITECTURE.md`
   - `docs/plans/INDEX.md`
@@ -18,6 +18,46 @@
   - Save/delete feedback is exposed through accessible route-local status messaging.
   - Compare and saved-comparisons routes register route-level error boundaries for unexpected loader/render failures.
   - Focused frontend tests cover the hardened shell and error-boundary fallbacks without reopening unrelated route work.
+
+## Compare Picker Data Contract
+
+- Status: done on 2026-07-14 on `codex/route-policy-data-contracts`.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Completed action: isolated reset identity, unique loaded-page accumulation,
+  available options, cursor and empty-state rules, and compare paths in a
+  framework-free module. Relay reads, effects, Suspense/error boundaries,
+  state transitions, and picker presentation remain in their current owners.
+- Owned paths:
+  - `assets/src/routes/compare/compare-picker-data.ts`
+  - `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+  - `assets/test/routes/compare/compare-picker-data.test.ts`
+  - `assets/test/routes/compare/compare.route.test.tsx`
+  - `docs/work/frontend-compare-saved-hardening.md`
+- Verification:
+  - `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
+  - `cd assets && bun run typecheck`
+  - `git diff --check`
+- Exit condition: pure picker policy preserves reset identity, stable unique
+  accumulation, selected-product exclusion, unknown-brand fallback, next-
+  cursor behavior, empty copy, maximum selection, encoded paths, and
+  specification mode.
+- Candidate evidence: current source inspection found a cohesive deterministic
+  policy in `CompareProductPickerBoundary`, distinct from the completed picker
+  presentation boundary, and the existing route suite passed 109 tests.
+- Completion evidence (2026-07-14):
+  - RED: `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts`
+    failed as expected because `compare-picker-data` did not exist.
+  - GREEN: the new pure contract plus existing compare route suite passed 116
+    tests, with reset identity, stable page deduplication, selected exclusion,
+    brand fallback, cursor/empty behavior, canonical maximum, encoded paths,
+    and specification modes covered.
+  - `cd assets && bun run typecheck` passed; the direct/transitive scan of
+    `compare-picker-data.ts` and its `compare/paths.ts` dependency found no
+    React, Relay, router, StyleX, or Radix imports; `git diff --check` passed.
+  - Relay reads and request timing, state/effect transitions, boundaries, and
+    picker-local filtering remain in their existing React owners.
+  - Independent task review found no actionable correctness, lifecycle,
+    framework-purity, performance, typing, or test-quality issues.
 
 ## Saved Comparison View-State Extraction
 

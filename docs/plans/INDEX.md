@@ -52,8 +52,13 @@ Product-detail decision actions, revenue-summary view data, specification-
 matrix data, and decision-summary data completed on
 `codex/frontend-view-contracts` in PR #97. Comparison sharing, product
 community, price alerts, and API-token route-state contracts are also complete.
-Three source-verified route-policy successors keep the ready floor intact
-across affiliate setup, offer discovery, and catalog browse.
+Affiliate setup, offer-discovery filter policy, catalog browse route data,
+product-detail route data, compare-picker data, product-offer panel data, and
+shared external-destination safety are complete. Three source-verified, non-
+overlapping successors remain ready across API-token lifecycle display,
+catalog specification-highlight data, and recommendation-profile route data.
+Trust-surface date presentation, product-attribute grouping, route-metadata
+resolution, and saved-comparison navigation data are complete.
 
 Active implementation plans:
 
@@ -106,9 +111,25 @@ batch and should not be recreated or promoted.
   view data, and API-token route data execute through
   `docs/superpowers/plans/2026-07-14-trust-surface-view-data-contracts.md`;
   all four contracts are complete on `codex/trust-surface-data-contracts`.
-- Ready reserve: affiliate setup route data, offer-discovery filter data, and
-  catalog browse route data execute through
+- Completed reserve: affiliate setup route data, offer-discovery filter data,
+  catalog browse route data, and product-detail route data executed through
   `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Completed reserve: compare-picker data also executed through that same plan.
+- Completed reserve: product-offer panel data also executed through that same
+  plan.
+- Completed reserve: external-destination safety also executed through that
+  same plan.
+- Completed reserve: trust-surface date presentation also executed through
+  that same plan.
+- Completed reserve: product-attribute grouping data also executed through
+  that same plan.
+- Completed reserve: route-metadata resolution data also executed through that
+  same plan.
+- Completed reserve: saved-comparison navigation data also executed through
+  that same plan.
+- Ready reserve: API-token lifecycle display data, catalog specification-
+  highlight data, and recommendation-profile route data execute through that
+  same plan.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

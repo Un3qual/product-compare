@@ -7,6 +7,7 @@ import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { externalWebsiteHref } from "../../external-links";
+import { formatProductDateLabel } from "../../product-formatting";
 import type { MerchantDetailLoaderData } from "./loader";
 import merchantDetailRouteQuery from "./queries/MerchantDetailRouteQuery";
 
@@ -38,11 +39,9 @@ function ReadyMerchantDetail({ query }: { query: Extract<MerchantDetailLoaderDat
       { label: "Eligible landed prices", value: summary.eligibleOfferCount },
       { label: "Fresh observations", value: summary.freshOfferCount }
     ]} />
-    <p {...props(styles.secondary)}>{summary.lastObservedAt ? <>Latest captured observation <time dateTime={summary.lastObservedAt}>{formatDate(summary.lastObservedAt)}</time>.</> : "No offer observations are available yet."} {summary.agingOfferCount} aging, {summary.staleOfferCount} stale, and {summary.unobservedOfferCount} unobserved active offers.</p>
+    <p {...props(styles.secondary)}>{summary.lastObservedAt ? <>Latest captured observation <time dateTime={summary.lastObservedAt}>{formatProductDateLabel(summary.lastObservedAt)}</time>.</> : "No offer observations are available yet."} {summary.agingOfferCount} aging, {summary.staleOfferCount} stale, and {summary.unobservedOfferCount} unobserved active offers.</p>
     {merchant.merchantProducts.edges.length ? <ul aria-label="Merchant product offers" {...props(styles.list)}>{merchant.merchantProducts.edges.map(({ node }) => <li key={node.id} {...props(styles.offer)}>{node.product ? <strong><Link to={`/products/${node.product.slug}`}>{node.product.name}</Link></strong> : <strong>Unavailable product</strong>}{node.latestPrice ? <p>{node.latestPrice.price} {node.currency}{node.latestPrice.shipping == null ? " plus unknown shipping" : ` + ${node.latestPrice.shipping} shipping`} · {node.latestPrice.inStock === false ? "Out of stock" : node.latestPrice.inStock === true ? "In stock" : "Stock unknown"}</p> : <p>No price observation yet.</p>}</li>)}</ul> : <FeedbackState kind="empty" title="No active merchant offers yet." />}
     {merchant.merchantProducts.pageInfo.hasNextPage && merchant.merchantProducts.pageInfo.endCursor ? <Link to={`/merchants/${merchant.slug}?after=${encodeURIComponent(merchant.merchantProducts.pageInfo.endCursor)}`}>Next offers</Link> : null}
     <Link to="/merchants">Back to all merchants</Link>
   </PageShell>;
 }
-
-function formatDate(value: string) { const timestamp = Date.parse(value); return Number.isFinite(timestamp) ? new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(timestamp) : value; }

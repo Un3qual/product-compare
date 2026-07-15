@@ -8,26 +8,17 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
+import {
+  DEFAULT_OFFERS_PAGE_SIZE,
+  normalizeOfferDiscoverySort,
+  type OfferDiscoveryFilters,
+  type OfferDiscoverySort
+} from "./offer-discovery-filter-data";
 
-export const DEFAULT_OFFERS_PAGE_SIZE = 6;
+export { DEFAULT_OFFERS_PAGE_SIZE } from "./offer-discovery-filter-data";
+export type { OfferDiscoveryFilters, OfferDiscoverySort } from "./offer-discovery-filter-data";
+
 const MAX_OFFERS_PAGE_SIZE = 50;
-const OFFER_DISCOVERY_SORT_VALUES = [
-  "default",
-  "price_asc",
-  "price_desc",
-  "merchant_name"
-] as const;
-
-export type OfferDiscoverySort = (typeof OFFER_DISCOVERY_SORT_VALUES)[number];
-
-export interface OfferDiscoveryFilters {
-  activeOnly: boolean;
-  after: string | null;
-  first: number;
-  merchantId: string | null;
-  productId: string | null;
-  sort: OfferDiscoverySort;
-}
 
 export type OfferDiscoveryLoaderData =
   | {
@@ -136,16 +127,7 @@ function pageSizeFromUrl(url: URL) {
 }
 
 function sortFromUrl(url: URL): OfferDiscoverySort {
-  const value = nonBlankParam(url, "sort");
-
-  return isOfferDiscoverySort(value) ? value : "default";
-}
-
-function isOfferDiscoverySort(value: string | null): value is OfferDiscoverySort {
-  return (
-    value !== null &&
-    (OFFER_DISCOVERY_SORT_VALUES as readonly string[]).includes(value)
-  );
+  return normalizeOfferDiscoverySort(nonBlankParam(url, "sort"));
 }
 
 function nonBlankParam(url: URL, name: string) {

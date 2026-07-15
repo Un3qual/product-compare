@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready (catalog browse route data contract)
+- Status: done (catalog browse route data contract)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after catalog route-data candidate verification
-  (62 route tests)
+- Last verified: 2026-07-14 after final branch-review compare-limit fix
+  (69 focused tests)
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -29,18 +29,25 @@
 
 ## Catalog Browse Route Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: done on 2026-07-14.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: isolate canonical browse paths, product-detail links,
-  add/selected/full compare actions, and selected-item removal paths in a
-  framework-free module while retaining Relay reads, location access,
-  boundaries, layout, and presentation in `BrowseRoute`.
+- Completion: `browse-route-data.ts` owns canonical browse paths and delegates
+  normalized compare selection, add/selected/full actions, and ordered
+  selected-item removal paths to the shared framework-free compare policy.
+  `BrowseRoute` retains Relay reads, location access, boundaries, layout, and
+  presentation.
 - Owned paths:
   - `assets/src/routes/catalog/browse-route-data.ts`
   - `assets/src/routes/catalog/BrowseRoute.tsx`
   - `assets/test/routes/catalog/browse-route-data.test.ts`
   - `assets/test/routes/catalog/browse.route.test.tsx`
+  - `assets/src/routes/compare/paths.ts`
+  - `assets/src/routes/compare/loader.ts`
   - `docs/work/frontend-catalog-browse.md`
+  - `docs/work/frontend-product-offers.md`
+  - `docs/work/index.md`
+  - `docs/plans/INDEX.md`
+  - `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 - Verification:
   - `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
   - `cd assets && bun run typecheck`
@@ -51,6 +58,27 @@
 - Candidate evidence: the existing browse suite passed 62 tests, and current
   source inspection confirmed browse pathname, product/detail, compare action,
   and selected-item removal policy remain embedded in the React route.
+- Completion evidence:
+  - RED: `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts`
+    failed as expected because `browse-route-data.ts` did not exist.
+  - GREEN: `cd assets && bun x vitest run test/routes/catalog/browse-route-data.test.ts test/routes/catalog/browse.route.test.tsx`
+    passed 68 tests.
+  - `cd assets && bun run typecheck` completed with exit 0.
+  - Review fix: compare normalization, compare addition, and compare-path
+    serialization are centralized in `compare/paths.ts`; the loader re-exports
+    its maximum-selection constant and specification-mode type for compatibility.
+  - Review GREEN: the catalog pure plus route suites passed 69 tests and the
+    compare route suite passed 109 tests; whitespace trimming, blank removal,
+    duplicate removal, ordering, and maximum selection are directly covered.
+  - Final branch-review fix removed false maximum configurability from the
+    browse contract. `browse-route-data.ts` now imports the canonical
+    `MAX_COMPARE_PRODUCTS` directly from `compare/paths.ts`, and the pure test
+    verifies the clamped three-product selection, encoded detail path, and
+    full action together.
+  - The direct/transitive import scan confirms `browse-route-data.ts` and its
+    `compare/paths.ts` dependency contain no React, Relay, router, or StyleX
+    code.
+  - `git diff --check` completed with exit 0.
 
 ## Catalog Advanced Filter Presentation Extraction
 

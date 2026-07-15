@@ -1,10 +1,12 @@
-import { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./loader";
+export const MAX_COMPARE_PRODUCTS = 3;
+
+export type CompareSpecMode = "shared" | "differences" | "all";
 
 interface BuildComparePathOptions {
   specMode?: CompareSpecMode;
 }
 
-interface NormalizeCompareSlugsOptions {
+export interface NormalizeCompareSlugsOptions {
   maxProducts?: number;
 }
 
@@ -37,7 +39,8 @@ export function selectedCompareSlugsAfterAdding(
 export function buildCurrentRoutePathWithCompareSlugs(
   pathname: string,
   search: string,
-  selectedSlugs: readonly string[]
+  selectedSlugs: readonly string[],
+  options: NormalizeCompareSlugsOptions = {}
 ): string {
   const currentParams = new URLSearchParams(search);
   const nextParams = new URLSearchParams();
@@ -48,7 +51,7 @@ export function buildCurrentRoutePathWithCompareSlugs(
     }
   }
 
-  appendNormalizedCompareSlugParams(nextParams, selectedSlugs);
+  appendNormalizedCompareSlugParams(nextParams, selectedSlugs, options);
 
   const nextQueryString = nextParams.toString();
 
@@ -84,14 +87,17 @@ export function buildComparePathAfterRemovingSlugIndex(
 
 function appendNormalizedCompareSlugParams(
   params: URLSearchParams,
-  slugs: readonly string[]
+  slugs: readonly string[],
+  options: NormalizeCompareSlugsOptions = {}
 ) {
-  for (const slug of normalizedCompareSlugs(slugs, { maxProducts: MAX_COMPARE_PRODUCTS })) {
+  for (const slug of normalizedCompareSlugs(slugs, {
+    maxProducts: options.maxProducts ?? MAX_COMPARE_PRODUCTS
+  })) {
     params.append("slug", slug);
   }
 }
 
-function normalizedCompareSlugs(
+export function normalizedCompareSlugs(
   slugs: readonly string[],
   options: NormalizeCompareSlugsOptions = {}
 ): string[] {
