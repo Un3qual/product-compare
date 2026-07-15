@@ -32,7 +32,16 @@ describe("external HTTP URL hrefs", () => {
       "https://[2606:4700:4700::1111]:8443/dns",
       "https://[2606:4700:4700::1111]:8443/dns"
     ],
-    ["http://[2001:db80::1]", "http://[2001:db80::1]"]
+    ["http://[2001:db80::1]", "http://[2001:db80::1]"],
+    // Globally reachable IANA exceptions inside 2001::/23 remain allowed.
+    ["http://[2001:1::1]", "http://[2001:1::1]"],
+    ["http://[2001:1::2]", "http://[2001:1::2]"],
+    ["http://[2001:1::3]", "http://[2001:1::3]"],
+    ["http://[2001:3::1]", "http://[2001:3::1]"],
+    ["http://[2001:4:112::1]", "http://[2001:4:112::1]"],
+    ["http://[2620:4f:8000::1]", "http://[2620:4f:8000::1]"],
+    // Immediate upper neighbor outside documentation-only 3fff::/20.
+    ["http://[3fff:1000::1]", "http://[3fff:1000::1]"]
   ])("preserves the trimmed exact safe href %s", (value, expected) => {
     expect(externalHttpUrlHref(value)).toBe(expected);
   });
@@ -136,6 +145,25 @@ describe("external HTTP URL hrefs", () => {
     "http://[ff02::1]",
     "http://[2001:db8::1]"
   ])("rejects reserved IPv6 destination %s", (value) => {
+    expect(externalHttpUrlHref(value)).toBeNull();
+  });
+
+  test.each([
+    ["http://[100::1]", "discard-only 100::/64"],
+    ["http://[100::ffff:ffff:ffff:ffff]", "discard-only upper edge"],
+    ["http://[100:0:0:1::1]", "dummy 100:0:0:1::/64"],
+    ["http://[100:0:0:1:ffff:ffff:ffff:ffff]", "dummy upper edge"],
+    ["http://[2001:2::1]", "benchmarking 2001:2::/48"],
+    ["http://[2001:2:0:ffff:ffff:ffff:ffff:ffff]", "benchmark upper edge"],
+    ["http://[2001:10::1]", "deprecated ORCHID 2001:10::/28"],
+    ["http://[2001:1f:ffff::1]", "deprecated ORCHID upper edge"],
+    ["http://[2001:20::1]", "ORCHIDv2 2001:20::/28"],
+    ["http://[2001:2f:ffff::1]", "ORCHIDv2 upper edge"],
+    ["http://[3fff::1]", "documentation 3fff::/20"],
+    ["http://[3fff:fff:ffff::1]", "documentation upper edge"],
+    ["http://[5f00::1]", "SRv6 SID 5f00::/16"],
+    ["http://[5f00:ffff:ffff::1]", "SRv6 SID upper edge"]
+  ])("rejects non-global special-use IPv6 destination %s (%s)", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
 

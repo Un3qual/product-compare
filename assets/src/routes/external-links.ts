@@ -3,34 +3,58 @@ const DOCUMENTATION_IPV4_RANGES = new Set([
   "198.51.100",
   "203.0.113"
 ]);
+// Browser destination policy snapshot: IANA IPv6 Special-Purpose Address
+// Registry reviewed 2026-07-14. Block non-globally-reachable registry rows
+// plus the intentionally disallowed IPv4 transition/translation mechanisms.
 const BLOCKED_IPV6_PREFIXES = [
-  // IPv4-compatible, mapped, and translatable address forms.
+  // RFC 4291: IPv4-compatible forms, including unspecified and loopback.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000],
     bits: 96
   },
+  // RFC 4291: IPv4-mapped forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff],
     bits: 96
   },
+  // RFC 6052: IPv4-translatable forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 0x0000],
     bits: 96
   },
-  // NAT64 well-known and local-use translation prefixes.
+  // RFC 6052: NAT64 well-known translation prefix.
   {
     prefix: [0x0064, 0xff9b, 0x0000, 0x0000, 0x0000, 0x0000],
     bits: 96
   },
+  // RFC 8215: NAT64 local-use translation prefix.
   { prefix: [0x0064, 0xff9b, 0x0001], bits: 48 },
-  // 6to4 and Teredo carry IPv4 routing information in canonical IPv6 words.
-  { prefix: [0x2002], bits: 16 },
+  // RFC 6666: discard-only prefix.
+  { prefix: [0x0100, 0x0000, 0x0000, 0x0000], bits: 64 },
+  // RFC 9780: dummy IPv6 prefix.
+  { prefix: [0x0100, 0x0000, 0x0000, 0x0001], bits: 64 },
+  // RFC 4380: Teredo carries IPv4 routing information.
   { prefix: [0x2001, 0x0000], bits: 32 },
-  // Unique-local, link-local, multicast, and documentation ranges.
+  // RFC 5180: benchmarking prefix.
+  { prefix: [0x2001, 0x0002, 0x0000], bits: 48 },
+  // RFC 4843: deprecated ORCHID prefix.
+  { prefix: [0x2001, 0x0010], bits: 28 },
+  // RFC 7343: ORCHIDv2 prefix.
+  { prefix: [0x2001, 0x0020], bits: 28 },
+  // RFC 3056: 6to4 carries IPv4 routing information.
+  { prefix: [0x2002], bits: 16 },
+  // RFC 3849: original documentation prefix.
+  { prefix: [0x2001, 0x0db8], bits: 32 },
+  // RFC 9637: additional documentation prefix.
+  { prefix: [0x3fff, 0x0000], bits: 20 },
+  // RFC 9602: SRv6 SID prefix is not a routable browser destination.
+  { prefix: [0x5f00], bits: 16 },
+  // RFC 4193: unique-local range.
   { prefix: [0xfc00], bits: 7 },
+  // RFC 4291: link-local range.
   { prefix: [0xfe80], bits: 10 },
-  { prefix: [0xff00], bits: 8 },
-  { prefix: [0x2001, 0x0db8], bits: 32 }
+  // RFC 4291: multicast range.
+  { prefix: [0xff00], bits: 8 }
 ] as const;
 
 export function externalHttpUrlHref(value: string) {

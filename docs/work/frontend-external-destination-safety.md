@@ -7,16 +7,17 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-14 after direct contract, consumer-suite, TypeScript,
-  dependency, and patch validation (245 tests: 106 direct plus 139 consumer).
+  dependency, and patch validation (266 tests: 127 direct plus 139 consumer).
 
 ## External Destination Safety Contract
 
 - Status: complete on 2026-07-14 on `codex/route-policy-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Result: added a 106-case direct behavioral contract and corrected the
+- Result: added a 127-case direct behavioral contract and corrected the
   parser-boundary safety gaps: single-label external hosts, explicit empty or
   zero ports, raw userinfo and authority ambiguity, and IPv4 transition or
-  translation destinations embedded in IPv6 forms.
+  translation destinations embedded in IPv6 forms. The numeric policy now
+  also covers the current non-global special-use IPv6 registry ranges.
 - Owned paths:
   - `assets/src/routes/external-links.ts`
   - `assets/test/routes/external-links.test.ts`
@@ -36,8 +37,8 @@
   - Initial consumer baseline passed 139 tests across the five named suites.
   - The first direct run passed 74 characterization cases and failed six
     focused regressions for the three parser-boundary gaps above.
-  - The corrected policy passed all 106 direct cases plus all 139 unchanged
-    consumer cases (245 total), with TypeScript, framework/runtime dependency
+  - The corrected policy passed all 127 direct cases plus all 139 unchanged
+    consumer cases (266 total), with TypeScript, framework/runtime dependency
     scan, and `git diff --check` clean.
   - The policy remains framework-free and adds no runtime dependency.
 
@@ -49,7 +50,11 @@
   tail.
 - Expands canonical IPv6 into numeric words and applies CIDR-accurate policy
   for IPv4-compatible, mapped, and translatable forms; NAT64 well-known and
-  local-use ranges; 6to4; Teredo; and the existing unique-local, link-local,
-  multicast, and documentation ranges.
+  local-use ranges; 6to4; Teredo; and a 2026-07-14 IANA registry snapshot of
+  non-global special-use ranges. RFC provenance is adjacent to each table row.
+- The registry snapshot includes discard-only, dummy, benchmarking, deprecated
+  and current ORCHID, both documentation allocations, SRv6 SID, unique-local,
+  link-local, and multicast CIDRs without blocking globally reachable
+  exceptions inside `2001::/23`.
 - Preserves ordinary public IPv6, including the verified `2001:db80::/…`
   neighbor outside the documentation-only `2001:db8::/32` range.
