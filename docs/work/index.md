@@ -274,7 +274,11 @@ parsing remain embedded in the React head owner, whose integration suite passes
 authority disagreement and replaced textual IPv6 checks with a dated numeric
 registry policy whose longest-prefix rules preserve globally reachable
 exceptions inside non-global parents. Independent re-review found no remaining
-actionable issue, and the three other validated rows remain ready.
+actionable issue, and the three other validated rows remain ready. Before
+claiming Trust-Surface Date Presentation, the coordinator validated saved-
+comparison navigation as a fourth non-overlapping successor: ordered reopen
+links and first/next cursor paths remain embedded in the Relay route owner,
+whose current route-state suite passes 31 tests.
 
 ## Ready Work
 
@@ -368,6 +372,36 @@ Exit condition: one framework-free owner preserves deepest-match precedence,
 loader-data precedence over the same match's handle, handle fallback for
 invalid loader metadata, required title and description strings, optional
 string fields, and explicit-true indexability.
+
+### 4. Saved Comparison Navigation Data Contract
+
+Status: ready
+Lane: Frontend saved-comparison navigation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic saved-set reopen and cursor-pagination paths
+out of the Relay route owner into a framework-free contract while preserving
+stored product order, query retention, mutation behavior, and route markup.
+Owned paths:
+
+- `assets/src/routes/compare/saved-comparisons-route-data.ts`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-data.test.ts`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-saved-comparison-navigation.md`
+
+Prerequisites:
+
+- Existing saved-comparison route-state characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-route-data.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves ordered and encoded reopen
+links, unauthorized pagination suppression, first-page return visibility, and
+next-page links only for advancing non-empty cursors.
 
 ## Needs Decision Work
 

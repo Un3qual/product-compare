@@ -351,6 +351,32 @@ parses the required and optional document fields. `RouteMetadata` retains
   import scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 11: Saved Comparison Navigation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/saved-comparisons-route-data.ts`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Create: `assets/test/routes/compare/saved-comparisons-route-data.test.ts`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-navigation.md`
+
+**Interfaces:** The framework-free data module builds an ordered saved-set
+reopen path and first/next cursor pagination paths from transport-neutral
+values. `SavedComparisonsRoute` retains Relay query retention, mutation and
+local-state orchestration, router links, boundaries, and presentation.
+
+- [ ] Write pure tests for empty and ordered product selections, encoded
+  slugs, unauthorized pagination, first-page return visibility, absent or
+  empty next cursors, and encoded advancing cursors; verify RED.
+- [ ] Extract only deterministic navigation data while preserving stored
+  product order, query-retainer identity, delete behavior, and route markup.
+- [ ] Run the pure and existing route-state suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -400,3 +426,8 @@ parses the required and optional document fields. `RouteMetadata` retains
   forms, and applies order-independent longest-prefix rules to non-global IPv6
   parents, their globally reachable exceptions, and intentional IPv4-
   transition exclusions without rejecting public boundary neighbors.
+- The saved-comparison navigation candidate is non-overlapping with date
+  presentation, product-attribute grouping, and route-metadata resolution.
+  Current source inspection found ordered reopen and cursor-pagination path
+  policy embedded in `SavedComparisonsRoute.tsx`; its route-state suite passed
+  31 tests on 2026-07-14.
