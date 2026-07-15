@@ -11,6 +11,8 @@ describe("product offer panel data", () => {
         {
           node: {
             id: "unsafe-offer",
+            // Inert security fixture passed to the offer URL validator and excluded.
+            // skipcq: JS-0087
             url: "javascript:alert(1)",
             currency: "USD",
             merchant: { name: "Unsafe Store" },

@@ -97,6 +97,8 @@ describe("external HTTP URL hrefs", () => {
   });
 
   test.each([
+    // Inert security fixture passed to the URL validator and expected to be rejected.
+    // skipcq: JS-0087
     "javascript:alert(1)",
     "data:text/html,unsafe",
     "ftp://shop.example.com/product",
@@ -250,6 +252,8 @@ describe("external website hrefs", () => {
     "shop.example.com:0",
     "shop.example.com:65536",
     "shop.example.com:abc",
+    // Inert security fixture passed to the URL validator and expected to be rejected.
+    // skipcq: JS-0087
     "javascript://shop.example.com",
     "https://user@shop.example.com",
     "127.0.0.1",
