@@ -970,6 +970,36 @@ request identity, callbacks, feedback state, query reads, markup, and styling.
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 32: API-Token Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free route-data module additionally
+owns revoke mutation variables plus structural create/rotate credential and
+revoke completion outcomes. It composes the existing token projection and
+shared route-error policy. `ApiTokensRoute` retains FormData, Relay commits,
+pending and concurrency guards, one-time-secret lifecycle, state transitions,
+dialogs, row-scoped errors, callbacks, markup, and styling.
+
+- [ ] Write pure tests for revoke variables; credential success; missing,
+  null, and empty plaintext; missing tokens; revoke success; top-level GraphQL
+  precedence; payload/default errors; complete payloads that also contain
+  payload errors; and input immutability; verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  truthy plaintext semantics, generated mutation contracts, optimistic state
+  application, pending cleanup, and shared error behavior.
+- [ ] Run the pure route-data and API-token route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -979,6 +1009,10 @@ request identity, callbacks, feedback state, query reads, markup, and styling.
 - Current source inspection on 2026-07-16 found create-saved-set input and
   completion policy still embedded in `CompareRoute`; the two existing compare
   suites pass 116 tests, and the candidate is path-disjoint from Tasks 28-30.
+- Current source inspection on 2026-07-16 found create, rotate, and revoke
+  completion interpretation still embedded in `ApiTokensRoute`; its existing
+  pure owner and route suites pass 64 tests, and the candidate is path-disjoint
+  from Tasks 29-31.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,

@@ -1,32 +1,38 @@
-# Frontend Catalog Advanced-Filter View Data
+# Frontend Catalog Advanced-Filter Data
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and the passing
-  catalog characterization in the 82-test successor cohort.
+- Last verified: 2026-07-16.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Catalog Advanced-Filter View-Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate effective use-case, numeric, boolean, and enum
-  selections, stable field identities, and selected-option disabled policy in
-  a framework-free module while retaining semantic form controls,
-  accessibility, uncontrolled input behavior, and presentation in
-  `CatalogAdvancedFilters`.
-- Candidate evidence: current source inspection found the deterministic
-  selection and field-identity policy embedded in the React owner; the catalog
-  characterization passed in the three-suite, 82-test successor validation
-  run.
-- Blockers: none.
+- Extracted deterministic, framework-free advanced-filter rows into
+  `catalog-advanced-filter-data.ts`.
+- The module structurally accepts selections and metadata, computes URL-state
+  precedence with metadata fallback, preserves empty numeric values and false
+  boolean values, keeps the last enum selection per attribute, applies the
+  selected-disabled policy, and supplies stable form names and IDs.
+- `CatalogAdvancedFilters` retains fieldset omission, labels, controls,
+  `TextField`, accessibility, uncontrolled defaults, and presentation while
+  rendering the supplied rows in metadata order.
 
-## Verification
+## TDD and Verification Evidence
 
-- `cd assets && bun x vitest run test/routes/catalog/catalog-advanced-filter-data.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure view-data module
-- `git diff --check`
+- RED: `cd assets && bun x vitest run test/routes/catalog/catalog-advanced-filter-data.test.ts`
+  failed as expected because Vite could not resolve the new
+  `catalog-advanced-filter-data` module.
+- GREEN: the same focused pure suite passed with 5 tests after the minimal
+  structural module was added.
+- Focused verification:
+  `cd assets && bun x vitest run test/routes/catalog/catalog-advanced-filter-data.test.ts test/routes/catalog/browse.route.test.tsx`
+  passed with 67 tests.
+- TypeScript: `cd assets && bun run typecheck` passed.
+- Framework/transport/generated dependency scan of the pure module found no
+  matches for React, Relay, GraphQL, generated artifacts, fetch, Axios, or
+  HTTP transports.
+- `git diff --check` passed.

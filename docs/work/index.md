@@ -520,47 +520,30 @@ copy. React retains forms, Relay lifecycle, pagination, errors, callbacks,
 markup, and styling. Focused verification is recorded in the lane work doc;
 the three other validated rows remain ready.
 
+Before claiming Catalog Advanced-Filter View Data, the coordinator validated a
+fourth non-overlapping successor. Credential success interpretation is
+duplicated across API-token creation and rotation, with adjacent revoke outcome
+policy still embedded in `ApiTokensRoute`. The existing framework-free owner
+already projects mutation tokens and builds create/rotate variables, and its
+focused suites pass 64 tests. The successor has complete owned paths, no
+blockers, and does not overlap catalog filters, root destinations, or compare
+saved-set mutation data.
+
+Catalog Advanced-Filter View Data then completed: one framework-free owner now
+returns source-ordered use-case, numeric, boolean, and enum rows with exact
+selection precedence, metadata fallbacks, stable field identities, and
+selected-disabled behavior. React retains semantic fieldsets, labels, native
+controls, `TextField`, accessibility, uncontrolled defaults, and presentation.
+Its pure and browse suites pass 67 tests; the three other validated rows remain
+ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Catalog Advanced-Filter View-Data Contract
-
-Status: ready
-Lane: Frontend catalog advanced-filter view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move effective use-case, numeric, boolean, and enum selections,
-stable field identities, and selected-option disabled policy out of
-`CatalogAdvancedFilters` into a framework-free view-data contract while
-preserving semantic controls, accessibility, uncontrolled input behavior, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/catalog/catalog-advanced-filter-data.ts`
-- `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
-- `assets/test/routes/catalog/catalog-advanced-filter-data.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-advanced-filter-data.md`
-
-Prerequisites:
-
-- Existing catalog browse characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/catalog-advanced-filter-data.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns source-ordered render-ready
-advanced-filter rows with exact URL-state precedence, metadata fallback,
-field identities, and disabled selection behavior without mutating input;
-React retains form controls, accessibility, and presentation.
-
-### 2. Root Destination Policy Data Contract
+### 1. Root Destination Policy Data Contract
 
 Status: ready
 Lane: Frontend root destination policy data
@@ -593,7 +576,7 @@ groups for guest, member, and operator viewers, including secondary-public
 exclusion and auth actions, without mutating input; React retains matching,
 markup, variants, accessibility, and presentation.
 
-### 3. Compare Saved-Set Mutation Data Contract
+### 2. Compare Saved-Set Mutation Data Contract
 
 Status: ready
 Lane: Frontend compare saved-set mutation data
@@ -628,6 +611,41 @@ Exit condition: one framework-free owner composes the existing naming policy
 into exact ordered create variables and classifies structural completion with
 existing success/error semantics without mutating input; React retains Relay,
 request identity, stale-response guards, feedback, markup, and presentation.
+
+### 3. API-Token Mutation Outcome Data Contract
+
+Status: ready
+Lane: Frontend API-token mutation outcome data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move revoke variables and structural create/rotate credential plus
+revoke completion outcomes into the existing framework-free API-token route-
+data owner while preserving FormData, Relay lifecycle, concurrency guards,
+one-time-secret state, optimistic updates, dialogs, row errors, and styling.
+Owned paths:
+
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-mutation-outcome-data.md`
+
+Prerequisites:
+
+- Existing generated create, rotate, and revoke mutation shapes remain
+  unchanged.
+- Existing API-token route-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure route-data module
+- `git diff --check`
+
+Exit condition: all three mutation completion branches consume structural pure
+outcomes with existing token projection, truthy-plaintext, and shared error
+semantics; React retains every Relay, concurrency, secret, state, callback,
+markup, and presentation responsibility.
 
 ## Needs Decision Work
 

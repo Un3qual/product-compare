@@ -461,6 +461,7 @@ test("route-selected disabled use cases remain enabled and submitted", () => {
 
   expect(gamingFilter).toBeChecked();
   expect(gamingFilter).toBeEnabled();
+  expect(gamingFilter).toHaveAttribute("id", "catalog-use-case-use-gaming");
   expect(new FormData(form).getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
 });
 
