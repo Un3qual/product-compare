@@ -43,13 +43,17 @@ test("MerchantDetailRoute renders complete summary, safe destination, and produc
   mockedUsePreloadedQuery.mockReturnValue({ merchant: {
     id: "merchant-1", name: "Trusted Shop", slug: "trusted-shop-12345678", domain: "trusted.example",
     detailSummary: { activeOfferCount: 2, distinctProductCount: 1, observedOfferCount: 1, eligibleOfferCount: 1, freshOfferCount: 1, agingOfferCount: 0, staleOfferCount: 0, unobservedOfferCount: 1, lastObservedAt: "2026-07-14T01:00:00Z" },
-    merchantProducts: { edges: [{ node: { id: "offer-1", currency: "USD", product: { id: "product-1", name: "Field Camera", slug: "field-camera" }, latestPrice: { id: "price-1", price: "99", shipping: "4", inStock: true, observedAt: "2026-07-14T01:00:00Z" } } }], pageInfo: { hasNextPage: false, endCursor: null } }
+    merchantProducts: { edges: [{ node: { id: "offer-1", currency: "USD", product: { id: "product-1", name: "Field Camera", slug: "field-camera" }, latestPrice: { id: "price-1", price: "99", shipping: "4", inStock: true, observedAt: "2026-07-14T01:00:00Z" } } }], pageInfo: { hasNextPage: true, endCursor: "next + /?" } }
   } } as never);
   render(<MemoryRouter><MerchantDetailRoute /></MemoryRouter>);
   expect(screen.getByRole("heading", { name: "Trusted Shop" })).toBeVisible();
   expect(screen.getByLabelText("Merchant coverage")).toHaveTextContent("Eligible landed prices1");
   expect(screen.getByRole("link", { name: "Visit merchant website" })).toHaveAttribute("href", "https://trusted.example");
   expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute("href", "/products/field-camera");
+  expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
+    "href",
+    "/merchants/trusted-shop-12345678?after=next%20%2B%20%2F%3F"
+  );
   expect(screen.getByText(/99 USD \+ 4 shipping · In stock/)).toBeVisible();
   expect(screen.getByText("Jul 14, 2026", { selector: "time" })).toHaveAttribute(
     "datetime",

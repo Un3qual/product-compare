@@ -2,26 +2,28 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and the passing
-  two-test merchant-detail characterization.
+- Last verified: 2026-07-16 with the focused view-data and route suites (7
+  tests), `assets` TypeScript, the pure-module dependency scan, and
+  `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Merchant Detail View-Data Contract
 
-- Status: active on 2026-07-16 on
+- Status: completed on 2026-07-16 on
   `codex/category-alert-recommendation-contracts`.
-- Next action: isolate merchant coverage summaries, freshness copy, offer-row
-  projection, product-detail paths, and next-page policy in a framework-free
-  module while retaining Relay reads, safe website resolution, semantic
-  markup, empty and error states, and styling in `MerchantDetailRoute`.
-- Candidate evidence: current source inspection found fixed summary rows,
-  observation fallback copy, source-ordered offer projection, price, shipping,
-  and stock labels, product paths, and encoded conditional pagination embedded
-  in the React owner. The current merchant-detail suite passes two tests.
+- Delivered: `merchant-detail-view-data.ts` now owns fixed coverage summary
+  rows, observed and unobserved freshness copy, source-ordered offer rows with
+  price/shipping/stock fallbacks, encoded product paths, and conditional
+  encoded next-page paths. `MerchantDetailRoute` continues to own Relay,
+  external destination safety, date formatting and semantic markup, feedback
+  states, and StyleX.
+- Evidence: the pure suite covers exact copy and order, product availability,
+  all price fallbacks, pagination presence/absence, encoding, and immutability;
+  the route suite confirms its rendered projected next link.
 - Non-overlap: the completed trust-date and external-destination contracts keep
   their existing formatter and URL-safety ownership; this row owns the
   remaining merchant-detail presentation and path policy only.
