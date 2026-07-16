@@ -1,0 +1,51 @@
+export type CategorySpecificationHighlight = {
+  attributeId: string;
+  displayName: string;
+  valueText: string;
+};
+
+export type CategoryViewDataInput = {
+  id: string;
+  name: string;
+  slug: string;
+  qualifiedProductCount: number;
+  products: {
+    edges: ReadonlyArray<{
+      node: {
+        id: string;
+        name: string;
+        slug: string;
+        brand?: { name: string } | null;
+        currentAttributes: ReadonlyArray<CategorySpecificationHighlight>;
+      };
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
+
+export function getCategoryViewData(category: CategoryViewDataInput) {
+  return {
+    title: `Compare ${category.name}`,
+    qualificationCopy: `${category.qualifiedProductCount} products currently meet this category’s specification, content, and offer-quality threshold.`,
+    browsePath: `/products?typeTaxonId=${encodeURIComponent(category.id)}&includeTypeDescendants=1`,
+    productRows: category.products.edges.map(({ node }) => ({
+      id: node.id,
+      name: node.name,
+      slug: node.slug,
+      brandName: node.brand?.name ?? "Unknown brand",
+      specificationHighlights: node.currentAttributes.slice(0, 3)
+    })),
+    nextPagePath: categoryNextPagePath(category)
+  };
+}
+
+function categoryNextPagePath(category: CategoryViewDataInput) {
+  const { endCursor, hasNextPage } = category.products.pageInfo;
+
+  return hasNextPage && endCursor
+    ? `/categories/${category.slug}?after=${encodeURIComponent(endCursor)}`
+    : null;
+}

@@ -854,6 +854,93 @@ ordinary-error, or unknown context into the pure owner.
   dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 28: Shared Comparison Mutation Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/share-comparison-data.ts`
+- Modify: `assets/src/routes/compare/ShareComparisonControl.tsx`
+- Modify: `assets/test/routes/compare/share-comparison-data.test.ts`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-share-comparison-mutation-data.md`
+
+**Interfaces:** The existing framework-free sharing module additionally owns
+publish and revoke mutation variables, structural payload-to-snapshot
+projection, source-node projection, and immutable published/revoked state
+transitions with their exact success copy. `ShareComparisonControl` retains
+form adaptation, Relay commits, pending state, query pagination, suspense and
+error handling, callbacks, markup, and StyleX.
+
+- [ ] Write pure tests for publish and revoke variables, complete and partial
+  publish payloads, source-node fallback, publish deduplication and prepend
+  order, revoke removal and tombstones, exact success copy, and input
+  immutability; verify RED where the new exports do not yet exist.
+- [ ] Extract only deterministic mutation and local-state policy while
+  preserving Relay lifecycle, pagination, feedback errors, markup, and
+  presentation.
+- [ ] Run the pure sharing and existing snapshot suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 29: Catalog Advanced-Filter View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/catalog/catalog-advanced-filter-data.ts`
+- Modify: `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
+- Create: `assets/test/routes/catalog/catalog-advanced-filter-data.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-advanced-filter-data.md`
+
+**Interfaces:** The framework-free view-data module owns effective use-case,
+numeric, boolean, and enum selections plus selected-option disabled policy,
+stable field identities, and source ordering. `CatalogAdvancedFilters`
+retains fieldset, label, input, and TextField presentation and receives only
+render-ready structural rows.
+
+- [ ] Write pure tests for URL-state precedence, metadata fallback, false and
+  empty values, repeated enum selection last-write behavior, selected disabled
+  options, stable field identities, empty groups, source ordering, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic advanced-filter view data while preserving
+  form names, values, accessibility, uncontrolled input behavior, and
+  presentation.
+- [ ] Run the pure and existing browse suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 30: Root Destination Policy Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/root-destination-data.ts`
+- Modify: `assets/src/routes/RootDestinations.tsx`
+- Create: `assets/test/routes/root-destination-data.test.ts`
+- Test: `assets/test/routes/root.route.test.tsx`
+- Create: `docs/work/frontend-root-destination-data.md`
+
+**Interfaces:** The framework-free data module owns ordered public, shopper,
+authenticated, operator, secondary, and auth destination groups plus viewer-
+specific primary and home composition. `RootDestinations` retains active-path
+matching, NavLink and Button composition, semantic navigation markup, and
+StyleX.
+
+- [ ] Write pure tests for guest, authenticated member, and operator primary
+  and home groups, exact destination copy, secondary-public exclusion,
+  comparison end matching metadata, source ordering, and input immutability;
+  verify RED.
+- [ ] Extract only deterministic destination policy while preserving active
+  matching, markup, button variants, accessibility labels, and presentation.
+- [ ] Run the pure and existing root-route suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -969,6 +1056,15 @@ ordinary-error, or unknown context into the pure owner.
   characterization passed 16 focused tests on 2026-07-15. Task review found no
   Critical or Important issue; queue closeout corrected the lane status noted
   as the sole Minor finding.
+- The category landing contract completed on 2026-07-16 with 8 focused tests
+  and passed an independent spec-and-quality review with no findings.
+- Before closing that row, current source inspection confirmed three
+  mutually disjoint successors: comparison snapshot mutation projection and
+  local state remain in `ShareComparisonControl`, advanced filter selection
+  policy remains in `CatalogAdvancedFilters`, and viewer-specific destination
+  composition remains in `RootDestinations`. Their existing snapshot, browse,
+  and root characterization suites passed 82 tests on 2026-07-16. None
+  overlaps the remaining alerts, recommendation, or shared route-error rows.
 - Before the feed-candidate review view-data claim on 2026-07-15, current source
   inspection confirmed that catalog type-filter initialization and transitions
   plus advanced-filter disclosure policy remain embedded in

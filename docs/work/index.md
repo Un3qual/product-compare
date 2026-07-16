@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-15
+Updated: 2026-07-16
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -489,47 +489,22 @@ Independent task reviews approved feed and offer data directly, and approved
 catalog state after explicit runtime-null coverage was added. Four validated
 rows remain ready.
 
+Category landing then completed on
+`codex/category-alert-recommendation-contracts`. A framework-free owner now
+provides category copy, rows, and paths; its focused suites pass 8 tests, and
+independent task review found no actionable issues. Before closing the row,
+the coordinator validated comparison-snapshot mutation data, catalog advanced-
+filter view data, and root destination policy as three mutually disjoint
+successors. Their existing snapshot, catalog, and root suites pass 82 tests,
+and the alerts, recommendation, and shared route-error contracts remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Category Landing View-Data Contract
-
-Status: ready
-Lane: Frontend category landing view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move category title/count copy, browse and next-page paths, product
-rows, brand fallback, and first-three specification highlights out of
-`CategoryRoute` into a framework-free view-data contract while preserving Relay
-reads, route fallbacks, markup, links, and styling.
-Owned paths:
-
-- `assets/src/routes/categories/category-view-data.ts`
-- `assets/src/routes/categories/CategoryRoute.tsx`
-- `assets/test/routes/categories/category-view-data.test.ts`
-- `assets/test/routes/categories/category.route.test.tsx`
-- `docs/work/frontend-category-view-data.md`
-
-Prerequisites:
-
-- Existing category route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns the exact category heading,
-qualification copy, encoded browse/next paths, source-ordered product rows,
-nullish brand fallback, and at most the first three source-ordered attribute
-highlights without mutating input; React and Relay retain loading, empty-state,
-markup, links, and styling.
-
-### 2. Alerts Mutation Data Contract
+### 1. Alerts Mutation Data Contract
 
 Status: ready
 Lane: Frontend alerts mutation data
@@ -563,7 +538,7 @@ payload, delegating all other payload/GraphQL failures to shared route-error
 copy; React retains pending state, Relay commits, revalidation, feedback, and
 presentation.
 
-### 3. Recommendation Result View-Data Contract
+### 2. Recommendation Result View-Data Contract
 
 Status: ready
 Lane: Frontend recommendation result view data
@@ -596,7 +571,7 @@ preserves supported or missing-input reason order, and returns exact singular/
 plural evidence copy without mutating input; React and Relay retain profile
 navigation, query lifecycle, fallbacks, markup, and styling.
 
-### 4. Shared Route-Error View-Data Contract
+### 3. Shared Route-Error View-Data Contract
 
 Status: ready
 Lane: Frontend shared route-error view data
@@ -629,6 +604,108 @@ Exit condition: one framework-free owner preserves default, 5xx, 404, 401/403,
 other-response, network, and unexpected-error copy for the supplied resource
 without mutating input; React Router retains raw error detection, boundary
 registration, markup, and presentation.
+
+### 4. Shared Comparison Mutation Data Contract
+
+Status: ready
+Lane: Frontend shared comparison mutation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move publish/revoke variables, structural snapshot projection,
+immutable local publish/revoke state, and exact success copy out of
+`ShareComparisonControl` into the existing framework-free sharing contract
+while preserving Relay lifecycle, pagination, feedback errors, markup, and
+styling.
+Owned paths:
+
+- `assets/src/routes/compare/share-comparison-data.ts`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/share-comparison-data.test.ts`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-share-comparison-mutation-data.md`
+
+Prerequisites:
+
+- Existing comparison-snapshot characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure sharing module
+- `git diff --check`
+
+Exit condition: one framework-free owner builds exact mutation variables,
+projects complete snapshot payloads and source nodes, and returns immutable
+published/revoked state with exact success copy without mutating input; React
+and Relay retain form adaptation, commits, pending state, pagination, errors,
+callbacks, markup, and presentation.
+
+### 5. Catalog Advanced-Filter View-Data Contract
+
+Status: ready
+Lane: Frontend catalog advanced-filter view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move effective use-case, numeric, boolean, and enum selections,
+stable field identities, and selected-option disabled policy out of
+`CatalogAdvancedFilters` into a framework-free view-data contract while
+preserving semantic controls, accessibility, uncontrolled input behavior, and
+presentation.
+Owned paths:
+
+- `assets/src/routes/catalog/catalog-advanced-filter-data.ts`
+- `assets/src/routes/catalog/CatalogAdvancedFilters.tsx`
+- `assets/test/routes/catalog/catalog-advanced-filter-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-advanced-filter-data.md`
+
+Prerequisites:
+
+- Existing catalog browse characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/catalog-advanced-filter-data.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns source-ordered render-ready
+advanced-filter rows with exact URL-state precedence, metadata fallback,
+field identities, and disabled selection behavior without mutating input;
+React retains form controls, accessibility, and presentation.
+
+### 6. Root Destination Policy Data Contract
+
+Status: ready
+Lane: Frontend root destination policy data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move ordered public, shopper, authenticated, operator, secondary,
+and auth destination composition out of `RootDestinations` into a framework-
+free data contract while preserving active-path matching, semantic navigation,
+Button/NavLink composition, and styling.
+Owned paths:
+
+- `assets/src/routes/root-destination-data.ts`
+- `assets/src/routes/RootDestinations.tsx`
+- `assets/test/routes/root-destination-data.test.ts`
+- `assets/test/routes/root.route.test.tsx`
+- `docs/work/frontend-root-destination-data.md`
+
+Prerequisites:
+
+- Existing root-route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/root-destination-data.test.ts test/routes/root.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns exact ordered destination
+groups for guest, member, and operator viewers, including secondary-public
+exclusion and auth actions, without mutating input; React retains matching,
+markup, variants, accessibility, and presentation.
 
 ## Needs Decision Work
 
