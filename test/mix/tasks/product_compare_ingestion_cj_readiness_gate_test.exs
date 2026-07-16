@@ -243,7 +243,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
     test "does not start ProductCompare.Supervisor or CJ schedulers" do
       script = """
-      Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate.run([])
+      Mix.Task.run("product_compare.ingestion.cj_readiness_gate", [])
       IO.puts("product_compare_supervisor=\#{inspect(Process.whereis(ProductCompare.Supervisor))}")
       IO.puts("feed_discovery_scheduler=\#{inspect(Process.whereis(ProductCompare.Ingestion.CJFeedDiscoveryScheduler))}")
       IO.puts("product_import_scheduler=\#{inspect(Process.whereis(ProductCompare.Ingestion.CJProductImportScheduler))}")
