@@ -1018,16 +1018,16 @@ projection, product-detail paths, and conditional pagination paths.
 `MerchantDetailRoute` retains Relay reads, safe external website resolution,
 semantic links and time markup, empty and error states, and StyleX.
 
-- [ ] Write pure tests for exact summary order and copy, observed and missing
+- [x] Write pure tests for exact summary order and copy, observed and missing
   observation text, source-ordered available and unavailable product rows,
   price, shipping, stock, and no-price fallbacks, encoded product and advancing
   pagination paths, absent pagination, and input immutability; verify RED.
-- [ ] Extract only deterministic merchant detail view and path policy while
+- [x] Extract only deterministic merchant detail view and path policy while
   preserving the existing product-date and external-destination owners,
   generated query contract, semantic markup, feedback states, and presentation.
-- [ ] Run the pure view-data and existing merchant-detail suites, TypeScript,
+- [x] Run the pure view-data and existing merchant-detail suites, TypeScript,
   the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

@@ -577,36 +577,18 @@ pure and route suites pass 28 tests; the successor has complete owned paths, no
 blockers, and does not overlap merchant detail, saved-comparison deletion, or
 product community mutations.
 
+Merchant Detail View-Data then completed: one framework-free owner now returns
+the exact ordered coverage summary, observation and freshness copy, source-
+ordered offer rows, complete price/shipping/stock fallbacks, encoded product
+paths, and conditional pagination paths. React retains Relay, safe external
+website resolution, date formatting, semantic links and time markup, feedback
+states, and StyleX. Its pure and route suites pass eight tests; task re-review
+found no issues after explicit generated-Relay `undefined` coverage, and the
+three validated successor rows remain ready.
+
 ## Active Work
 
-### Merchant Detail View-Data Contract
-
-Status: active
-Owner: `codex/category-alert-recommendation-contracts`
-Lane: Frontend merchant detail view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: implement Task 33 with test-first evidence while preserving Relay,
-safe external destinations, semantic markup, time elements, feedback states,
-and presentation in `MerchantDetailRoute`.
-Owned paths:
-
-- `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
-- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
-- `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
-- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
-- `docs/work/frontend-merchant-detail-view-data.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/merchants/merchant-detail-view-data.test.ts test/routes/merchants/merchant-detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns exact merchant summaries,
-freshness copy, source-ordered offer rows, encoded product and pagination paths,
-and existing fallbacks without mutating input; React retains Relay, safe
-external-link resolution, semantic markup, feedback states, and presentation.
+None.
 
 ## Ready Work
 
