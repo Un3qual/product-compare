@@ -1,24 +1,11 @@
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import {
-  buildDeleteSavedComparisonSetMutationVariables,
-  resolveDeleteSavedComparisonSetMutationOutcome
-} from "../../../src/routes/compare/saved-comparison-delete-mutation-data";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "../../../src/routes/compare/saved-comparison-delete-mutation-data";
 
 const MUTATION_ERROR = {
   code: "BAD_USER_INPUT",
   field: "savedComparisonSetId",
   message: "Could not delete this comparison set."
 };
-
-test("buildDeleteSavedComparisonSetMutationVariables returns the exact delete shape without changing its source", () => {
-  const savedComparisonSet = { id: "saved-set-1", name: "Desk setup" };
-
-  const variables = buildDeleteSavedComparisonSetMutationVariables(savedComparisonSet);
-
-  expect(variables).toEqual({ savedComparisonSetId: "saved-set-1" });
-  expect(variables).not.toBe(savedComparisonSet);
-  expect(savedComparisonSet).toEqual({ id: "saved-set-1", name: "Desk setup" });
-});
 
 test("resolveDeleteSavedComparisonSetMutationOutcome returns the deleted ID for a complete payload", () => {
   expect(

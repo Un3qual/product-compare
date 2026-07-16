@@ -28,10 +28,7 @@ import {
   buildSavedComparisonReopenPath,
   buildSavedComparisonsPagination
 } from "./saved-comparisons-route-data";
-import {
-  buildDeleteSavedComparisonSetMutationVariables,
-  resolveDeleteSavedComparisonSetMutationOutcome
-} from "./saved-comparison-delete-mutation-data";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
 import {
   buildSavedComparisonsViewState,
   type SavedComparisonSortMode
@@ -70,7 +67,7 @@ export function SavedComparisonsRoute() {
     commitRouteMutation(
       commitDeleteSavedComparisonSet,
       {
-        variables: buildDeleteSavedComparisonSetMutationVariables({ id: savedComparisonSetId }),
+        variables: { savedComparisonSetId },
         onCompleted: (response, graphQLErrors) => {
           const payload = response.deleteSavedComparisonSet;
           const outcome = resolveDeleteSavedComparisonSetMutationOutcome(payload, graphQLErrors);

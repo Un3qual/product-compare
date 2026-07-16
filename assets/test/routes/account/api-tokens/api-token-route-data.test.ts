@@ -4,7 +4,6 @@ import {
   buildApiTokenDisplayData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
-  buildRevokeApiTokenVariables,
   buildRotateApiTokenVariables,
   markTokenRotated,
   resolveApiTokenCredentialMutationOutcome,
@@ -203,10 +202,6 @@ test("buildRotateApiTokenVariables uses a trimmed replacement label or the exist
     label: SERVER_TOKEN.label,
     expiresAt: null
   });
-});
-
-test("buildRevokeApiTokenVariables preserves the selected token id", () => {
-  expect(buildRevokeApiTokenVariables(SERVER_TOKEN.id)).toEqual({ tokenId: SERVER_TOKEN.id });
 });
 
 test("resolveApiTokenCredentialMutationOutcome returns a credential for complete facts", () => {

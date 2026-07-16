@@ -20,8 +20,6 @@ import revokeComparisonSnapshotMutation from "./queries/RevokeComparisonSnapshot
 import {
   appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
-  buildComparisonSnapshotPublishMutationVariables,
-  buildComparisonSnapshotRevokeMutationVariables,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
   publishedSnapshotFromPayload,
@@ -206,7 +204,7 @@ function useSnapshotPublisher(
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: buildComparisonSnapshotPublishMutationVariables(input)
+        variables: { input }
       });
       const payload = response.publishComparisonSnapshot;
       const snapshot = publishedSnapshotFromPayload(payload, input.title ?? null);
@@ -230,7 +228,7 @@ function useSnapshotRevoker(
   async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, {
-        variables: buildComparisonSnapshotRevokeMutationVariables(snapshot)
+        variables: { snapshotId: snapshot.id }
       });
       const payload = response.revokeComparisonSnapshot;
 

@@ -48,10 +48,6 @@ export type RotateApiTokenVariables = CreateApiTokenVariables & {
   tokenId: string;
 };
 
-export type RevokeApiTokenVariables = {
-  tokenId: string;
-};
-
 export type MutationApiToken = {
   readonly id: string;
   readonly label: string | null | undefined;
@@ -193,10 +189,6 @@ export function buildRotateApiTokenVariables(
   }
 
   return variables;
-}
-
-export function buildRevokeApiTokenVariables(tokenId: string): RevokeApiTokenVariables {
-  return { tokenId };
 }
 
 export function resolveApiTokenCredentialMutationOutcome(

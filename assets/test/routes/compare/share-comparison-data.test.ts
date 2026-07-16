@@ -1,8 +1,6 @@
 import {
   appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
-  buildComparisonSnapshotPublishMutationVariables,
-  buildComparisonSnapshotRevokeMutationVariables,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
   publishedSnapshotFromPayload,
@@ -100,42 +98,6 @@ test("comparison snapshot state helpers preserve fallback labels and immutable i
 
   expect([...next]).toEqual(["keep"]);
   expect([...ids]).toEqual(["keep", "remove"]);
-});
-
-test("buildComparisonSnapshotPublishMutationVariables returns exact ordered values without changing the input", () => {
-  const input = buildComparisonSnapshotPublishInput({
-    productIds: ["product-2", "product-1"],
-    recommendationProfile: "best_value",
-    searchIndexable: true,
-    title: "Travel kit"
-  });
-
-  const variables = buildComparisonSnapshotPublishMutationVariables(input);
-
-  expect(variables).toEqual({
-    input: {
-      productIds: ["product-2", "product-1"],
-      recommendationProfile: "BEST_VALUE",
-      searchIndexable: true,
-      title: "Travel kit"
-    }
-  });
-  expect(input).toEqual({
-    productIds: ["product-2", "product-1"],
-    recommendationProfile: "BEST_VALUE",
-    searchIndexable: true,
-    title: "Travel kit"
-  });
-});
-
-test("buildComparisonSnapshotRevokeMutationVariables derives the exact snapshot id without changing its source", () => {
-  const source = snapshot("snapshot-1", "Travel kit");
-
-  const variables = buildComparisonSnapshotRevokeMutationVariables(source);
-
-  expect(variables).toEqual({ snapshotId: "snapshot-1" });
-  expect(variables).not.toBe(source);
-  expect(source).toEqual(snapshot("snapshot-1", "Travel kit"));
 });
 
 test("publishedSnapshotFromPayload projects only a complete publish payload", () => {

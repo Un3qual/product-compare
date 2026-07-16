@@ -1,28 +1,8 @@
 import { routeMutationErrorMessage } from "../../route-errors";
 
-type AlertMutationSource = {
-  id: string;
-};
-
-type PriceWatchMutationSource = AlertMutationSource & {
-  enabled: boolean;
-};
-
 type MutationPayload = {
   errors?: unknown;
 };
-
-export function buildTogglePriceWatchMutationVariables(watch: PriceWatchMutationSource) {
-  return { input: { id: watch.id, enabled: !watch.enabled } };
-}
-
-export function buildDeletePriceWatchMutationVariables(watch: AlertMutationSource) {
-  return { id: watch.id };
-}
-
-export function buildMarkAlertReadMutationVariables(alert: AlertMutationSource) {
-  return { id: alert.id };
-}
 
 export function resolveTogglePriceWatchMutationError(
   payload: (MutationPayload & { watch?: unknown }) | null | undefined,

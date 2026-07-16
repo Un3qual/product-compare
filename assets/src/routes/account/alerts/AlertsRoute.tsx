@@ -11,9 +11,6 @@ import { Button } from "../../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import {
-  buildDeletePriceWatchMutationVariables,
-  buildMarkAlertReadMutationVariables,
-  buildTogglePriceWatchMutationVariables,
   resolveDeletePriceWatchMutationError,
   resolveMarkAlertReadMutationError,
   resolveTogglePriceWatchMutationError
@@ -91,7 +88,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   function toggleWatch(watch: WatchSummary) {
     return run(watch.id, async () => {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
-        variables: buildTogglePriceWatchMutationVariables(watch)
+        variables: { input: { id: watch.id, enabled: !watch.enabled } }
       });
       return resolveTogglePriceWatchMutationError(response.updatePriceWatch, graphQLErrors);
     });
@@ -100,7 +97,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   function deleteWatch(watch: WatchSummary) {
     return run(watch.id, async () => {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, {
-        variables: buildDeletePriceWatchMutationVariables(watch)
+        variables: { id: watch.id }
       });
       return resolveDeletePriceWatchMutationError(response.deletePriceWatch, graphQLErrors);
     });
@@ -127,7 +124,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                     <div {...props(styles.actions)}>
                       <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => { run(alert.id, async () => {
                         const { response, graphQLErrors } = await commitRouteMutationPromise(commitMarkRead, {
-                          variables: buildMarkAlertReadMutationVariables(alert)
+                          variables: { id: alert.id }
                         });
                         return resolveMarkAlertReadMutationError(response.markAlertRead, graphQLErrors);
                       }); }}>Mark read</Button>

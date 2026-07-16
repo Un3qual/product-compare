@@ -55,18 +55,6 @@ export function buildComparisonSnapshotPublishInput({
   };
 }
 
-export function buildComparisonSnapshotPublishMutationVariables(
-  input: ComparisonSnapshotPublishInput
-) {
-  return { input };
-}
-
-export function buildComparisonSnapshotRevokeMutationVariables(
-  source: Pick<PublishedComparisonSnapshot, "id">
-) {
-  return { snapshotId: source.id };
-}
-
 export function publishedSnapshotFromPayload(
   payload: ComparisonSnapshotPublishPayload | null | undefined,
   title: string | null

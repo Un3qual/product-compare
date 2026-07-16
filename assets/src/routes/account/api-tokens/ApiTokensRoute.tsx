@@ -35,7 +35,6 @@ import {
   apiTokensRouteLocationIdentity,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
-  buildRevokeApiTokenVariables,
   buildRotateApiTokenVariables,
   markTokenRotated,
   resolveApiTokenCredentialMutationOutcome,
@@ -232,7 +231,7 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     commitRouteMutation(
       commitRevokeApiToken,
       {
-        variables: buildRevokeApiTokenVariables(tokenId),
+        variables: { tokenId },
         onCompleted: (response, graphQLErrors) => {
           const payload = response.revokeApiToken;
           const outcome = resolveRevokeApiTokenMutationOutcome(payload, graphQLErrors);
