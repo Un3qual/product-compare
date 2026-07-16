@@ -4,11 +4,15 @@ import {
   buildApiTokenDisplayData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
+  buildRevokeApiTokenVariables,
   buildRotateApiTokenVariables,
   markTokenRotated,
+  resolveApiTokenCredentialMutationOutcome,
+  resolveRevokeApiTokenMutationOutcome,
   summarizeMutationApiToken,
   upsertApiTokenSummary
 } from "../../../../src/routes/account/api-tokens/api-token-route-data";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
 
 const SERVER_TOKEN = {
   id: "server-token",
@@ -196,6 +200,163 @@ test("buildRotateApiTokenVariables uses a trimmed replacement label or the exist
     tokenId: SERVER_TOKEN.id,
     label: SERVER_TOKEN.label,
     expiresAt: null
+  });
+});
+
+test("buildRevokeApiTokenVariables preserves the selected token id", () => {
+  expect(buildRevokeApiTokenVariables(SERVER_TOKEN.id)).toEqual({ tokenId: SERVER_TOKEN.id });
+});
+
+test("resolveApiTokenCredentialMutationOutcome returns a credential for complete facts", () => {
+  expect(
+    resolveApiTokenCredentialMutationOutcome(
+      {
+        plainTextToken: "one-time-secret",
+        apiToken: SERVER_TOKEN,
+        errors: []
+      },
+      []
+    )
+  ).toEqual({
+    error: null,
+    plainTextToken: "one-time-secret",
+    token: SERVER_TOKEN
+  });
+});
+
+test.each([
+  ["missing", undefined],
+  ["null", null],
+  ["empty", ""]
+] as const)(
+  "resolveApiTokenCredentialMutationOutcome rejects %s plaintext credentials",
+  (_caseName, plainTextToken) => {
+    expect(
+      resolveApiTokenCredentialMutationOutcome(
+        { plainTextToken, apiToken: SERVER_TOKEN, errors: [] },
+        []
+      )
+    ).toEqual({
+      error: DEFAULT_ROUTE_ERROR_MESSAGE,
+      plainTextToken: null,
+      token: null
+    });
+  }
+);
+
+test("resolveApiTokenCredentialMutationOutcome rejects a missing token despite plaintext", () => {
+  expect(
+    resolveApiTokenCredentialMutationOutcome(
+      { plainTextToken: "one-time-secret", apiToken: null, errors: [] },
+      []
+    )
+  ).toEqual({
+    error: DEFAULT_ROUTE_ERROR_MESSAGE,
+    plainTextToken: null,
+    token: null
+  });
+});
+
+test("resolveApiTokenCredentialMutationOutcome gives top-level GraphQL errors precedence", () => {
+  expect(
+    resolveApiTokenCredentialMutationOutcome(
+      {
+        plainTextToken: "one-time-secret",
+        apiToken: SERVER_TOKEN,
+        errors: [{ code: "INVALID_ARGUMENT", message: "Payload error." }]
+      },
+      [{ message: "Top-level failure" }]
+    )
+  ).toEqual({
+    error: DEFAULT_ROUTE_ERROR_MESSAGE,
+    plainTextToken: null,
+    token: null
+  });
+});
+
+test("resolveApiTokenCredentialMutationOutcome uses payload errors and the shared default", () => {
+  expect(
+    resolveApiTokenCredentialMutationOutcome(
+      {
+        plainTextToken: null,
+        apiToken: null,
+        errors: [{ code: "INVALID_ARGUMENT", message: "Label is invalid." }]
+      },
+      []
+    )
+  ).toMatchObject({ error: "Label is invalid.", plainTextToken: null, token: null });
+  expect(resolveApiTokenCredentialMutationOutcome(undefined, [])).toMatchObject({
+    error: DEFAULT_ROUTE_ERROR_MESSAGE,
+    plainTextToken: null,
+    token: null
+  });
+});
+
+test("resolveApiTokenCredentialMutationOutcome keeps complete payload facts successful despite payload errors", () => {
+  const payload = {
+    plainTextToken: "one-time-secret",
+    apiToken: SERVER_TOKEN,
+    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
+  };
+
+  expect(resolveApiTokenCredentialMutationOutcome(payload, [])).toEqual({
+    error: null,
+    plainTextToken: "one-time-secret",
+    token: SERVER_TOKEN
+  });
+  expect(payload).toEqual({
+    plainTextToken: "one-time-secret",
+    apiToken: SERVER_TOKEN,
+    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
+  });
+});
+
+test("resolveRevokeApiTokenMutationOutcome returns a token for complete facts", () => {
+  expect(
+    resolveRevokeApiTokenMutationOutcome(
+      { apiToken: { ...SERVER_TOKEN, revokedAt: "2026-07-14T00:00:00Z" }, errors: [] },
+      []
+    )
+  ).toEqual({
+    error: null,
+    token: { ...SERVER_TOKEN, revokedAt: "2026-07-14T00:00:00Z" }
+  });
+});
+
+test("resolveRevokeApiTokenMutationOutcome uses payload errors and top-level GraphQL precedence", () => {
+  expect(
+    resolveRevokeApiTokenMutationOutcome(
+      {
+        apiToken: null,
+        errors: [{ code: "INVALID_ARGUMENT", message: "Token cannot be revoked." }]
+      },
+      []
+    )
+  ).toEqual({ error: "Token cannot be revoked.", token: null });
+  expect(
+    resolveRevokeApiTokenMutationOutcome(
+      {
+        apiToken: SERVER_TOKEN,
+        errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
+      },
+      [{ message: "Top-level failure" }]
+    )
+  ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, token: null });
+});
+
+test("resolveRevokeApiTokenMutationOutcome keeps complete payload facts successful without mutating input", () => {
+  const payload = {
+    apiToken: SERVER_TOKEN,
+    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
+  };
+
+  expect(resolveRevokeApiTokenMutationOutcome(payload, [])).toEqual({
+    error: null,
+    token: SERVER_TOKEN
+  });
+  expect(payload).toEqual({
+    apiToken: SERVER_TOKEN,
+    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
   });
 });
 

@@ -2,19 +2,19 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 64 passing
-  API-token route-data and route characterization tests.
+- Last verified: 2026-07-16 after the mutation-outcome extraction, 76 passing
+  API-token route-data and route characterization tests, and TypeScript.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## API-Token Mutation Outcome Data Contract
 
-- Status: active on 2026-07-16 on
+- Status: completed on 2026-07-16 on
   `codex/category-alert-recommendation-contracts`.
-- Next action: isolate exact revoke variables plus structural create/rotate
+- Completed: isolated exact revoke variables plus structural create/rotate
   credential and revoke completion outcomes in the existing framework-free
   route-data module while retaining FormData, Relay commits, concurrency and
   pending guards, one-time-secret lifecycle, state transitions, dialogs,
@@ -40,7 +40,13 @@
 
 ## Verification
 
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure route-data module
-- `git diff --check`
+- RED: `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts`
+  failed 12 new contract tests because `buildRevokeApiTokenVariables`,
+  `resolveApiTokenCredentialMutationOutcome`, and
+  `resolveRevokeApiTokenMutationOutcome` were not implemented.
+- GREEN: `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+  passed 76 tests across 2 files.
+- `cd assets && bun run typecheck` passed (`tsc --noEmit`).
+- `cd assets && if rg -n -i 'react|relay|react-router|stylex' src/routes/account/api-tokens/api-token-route-data.ts; then exit 1; fi`
+  passed with no framework or transport dependency matches.
+- `git diff --check` passed.

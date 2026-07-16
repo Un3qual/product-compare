@@ -1,4 +1,8 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../../route-errors";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -44,6 +48,10 @@ export type RotateApiTokenVariables = CreateApiTokenVariables & {
   tokenId: string;
 };
 
+export type RevokeApiTokenVariables = {
+  tokenId: string;
+};
+
 export type MutationApiToken = {
   readonly id: string;
   readonly label: string | null | undefined;
@@ -53,6 +61,37 @@ export type MutationApiToken = {
   readonly revokedAt: string | null | undefined;
   readonly insertedAt: string;
 };
+
+type ApiTokenMutationPayload = {
+  readonly apiToken?: MutationApiToken | null;
+  readonly errors?: unknown;
+};
+
+type ApiTokenCredentialMutationPayload = ApiTokenMutationPayload & {
+  readonly plainTextToken?: string | null;
+};
+
+export type ApiTokenCredentialMutationOutcome =
+  | {
+      error: null;
+      plainTextToken: string;
+      token: ApiTokenRecord;
+    }
+  | {
+      error: string;
+      plainTextToken: null;
+      token: null;
+    };
+
+export type RevokeApiTokenMutationOutcome =
+  | {
+      error: null;
+      token: ApiTokenRecord;
+    }
+  | {
+      error: string;
+      token: null;
+    };
 
 export function buildApiTokenDisplayData(token: ApiTokenRecord) {
   return {
@@ -156,6 +195,44 @@ export function buildRotateApiTokenVariables(
   return variables;
 }
 
+export function buildRevokeApiTokenVariables(tokenId: string): RevokeApiTokenVariables {
+  return { tokenId };
+}
+
+export function resolveApiTokenCredentialMutationOutcome(
+  payload: ApiTokenCredentialMutationPayload | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+): ApiTokenCredentialMutationOutcome {
+  if (hasRouteGraphQLErrors(graphQLErrors)) {
+    return credentialMutationFailure(payload, graphQLErrors);
+  }
+
+  const token = summarizeMutationApiToken(payload?.apiToken);
+
+  if (payload?.plainTextToken && token) {
+    return { error: null, plainTextToken: payload.plainTextToken, token };
+  }
+
+  return credentialMutationFailure(payload, graphQLErrors);
+}
+
+export function resolveRevokeApiTokenMutationOutcome(
+  payload: ApiTokenMutationPayload | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+): RevokeApiTokenMutationOutcome {
+  if (hasRouteGraphQLErrors(graphQLErrors)) {
+    return revokeMutationFailure(payload, graphQLErrors);
+  }
+
+  const token = summarizeMutationApiToken(payload?.apiToken);
+
+  if (token) {
+    return { error: null, token };
+  }
+
+  return revokeMutationFailure(payload, graphQLErrors);
+}
+
 export function summarizeMutationApiToken(token?: MutationApiToken | null) {
   if (!token) {
     return null;
@@ -227,6 +304,27 @@ function normalizeExpiresAtFormValue(formData: FormData) {
   }
 
   return normalizeDateTimeLocalValue(optionalFormText(formData.get("expiresAt")));
+}
+
+function credentialMutationFailure(
+  payload: ApiTokenCredentialMutationPayload | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+): ApiTokenCredentialMutationOutcome {
+  return {
+    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    plainTextToken: null,
+    token: null
+  };
+}
+
+function revokeMutationFailure(
+  payload: ApiTokenMutationPayload | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+): RevokeApiTokenMutationOutcome {
+  return {
+    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    token: null
+  };
 }
 
 function optionalFormText(value: FormDataEntryValue | null) {

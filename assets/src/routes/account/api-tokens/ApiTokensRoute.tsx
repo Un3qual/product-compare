@@ -23,9 +23,7 @@ import {
   upsertMapValue
 } from "../../immutable-collection-state";
 import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
+  DEFAULT_ROUTE_ERROR_MESSAGE
 } from "../../route-errors";
 import {
   ApiTokenList,
@@ -37,9 +35,11 @@ import {
   apiTokensRouteLocationIdentity,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
+  buildRevokeApiTokenVariables,
   buildRotateApiTokenVariables,
   markTokenRotated,
-  summarizeMutationApiToken,
+  resolveApiTokenCredentialMutationOutcome,
+  resolveRevokeApiTokenMutationOutcome,
   upsertApiTokenSummary,
   upsertApiTokenSummaryMap
 } from "./api-token-route-data";
@@ -119,20 +119,16 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         }
       );
       const payload = response.createApiToken;
-      const createdToken = summarizeMutationApiToken(payload?.apiToken);
+      const outcome = resolveApiTokenCredentialMutationOutcome(payload, graphQLErrors);
 
-      if (
-        payload?.plainTextToken &&
-        createdToken &&
-        !hasRouteGraphQLErrors(graphQLErrors)
-      ) {
+      if (outcome.error === null) {
         setCreateError(null);
-        setCreatedTokens((currentTokens) => upsertApiTokenSummary(currentTokens, createdToken));
-        setOneTimeToken(payload.plainTextToken);
+        setCreatedTokens((currentTokens) => upsertApiTokenSummary(currentTokens, outcome.token));
+        setOneTimeToken(outcome.plainTextToken);
         setCreateDialogOpen(false);
         form.reset();
       } else {
-        setCreateError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+        setCreateError(outcome.error);
       }
     } catch {
       setCreateError(DEFAULT_ROUTE_ERROR_MESSAGE);
@@ -180,34 +176,26 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         variables,
         onCompleted: (response, graphQLErrors) => {
           const payload = response.rotateApiToken;
-          const rotatedToken = summarizeMutationApiToken(payload?.apiToken);
+          const outcome = resolveApiTokenCredentialMutationOutcome(payload, graphQLErrors);
 
-          if (
-            payload?.plainTextToken &&
-            rotatedToken &&
-            !hasRouteGraphQLErrors(graphQLErrors)
-          ) {
-            const revokedPreviousToken = markTokenRotated(token, rotatedToken);
+          if (outcome.error === null) {
+            const revokedPreviousToken = markTokenRotated(token, outcome.token);
 
             setRotateErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, token.id));
             setCreatedTokens((currentTokens) =>
-              upsertApiTokenSummary(currentTokens, rotatedToken)
+              upsertApiTokenSummary(currentTokens, outcome.token)
             );
             setApiTokenUpdates((currentUpdates) =>
               upsertApiTokenSummaryMap(
-                upsertApiTokenSummaryMap(currentUpdates, rotatedToken),
+                upsertApiTokenSummaryMap(currentUpdates, outcome.token),
                 revokedPreviousToken
               )
             );
-            setOneTimeToken(payload.plainTextToken);
+            setOneTimeToken(outcome.plainTextToken);
             form.reset();
           } else {
             setRotateErrorsByTokenId((currentErrors) =>
-              upsertMapValue(
-                currentErrors,
-                token.id,
-                routeMutationErrorMessage(payload?.errors, graphQLErrors)
-              )
+              upsertMapValue(currentErrors, token.id, outcome.error)
             );
           }
 
@@ -244,25 +232,19 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     commitRouteMutation(
       commitRevokeApiToken,
       {
-        variables: {
-          tokenId
-        },
+        variables: buildRevokeApiTokenVariables(tokenId),
         onCompleted: (response, graphQLErrors) => {
           const payload = response.revokeApiToken;
-          const revokedToken = summarizeMutationApiToken(payload?.apiToken);
+          const outcome = resolveRevokeApiTokenMutationOutcome(payload, graphQLErrors);
 
-          if (revokedToken && !hasRouteGraphQLErrors(graphQLErrors)) {
+          if (outcome.error === null) {
             setRevokeErrorsByTokenId((currentErrors) => removeMapValue(currentErrors, tokenId));
             setApiTokenUpdates((currentUpdates) =>
-              upsertApiTokenSummaryMap(currentUpdates, revokedToken)
+              upsertApiTokenSummaryMap(currentUpdates, outcome.token)
             );
           } else {
             setRevokeErrorsByTokenId((currentErrors) =>
-              upsertMapValue(
-                currentErrors,
-                tokenId,
-                routeMutationErrorMessage(payload?.errors, graphQLErrors)
-              )
+              upsertMapValue(currentErrors, tokenId, outcome.error)
             );
           }
 
