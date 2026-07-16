@@ -9,6 +9,11 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
+import {
+  resolveTrackedCommerceRedirectUrl,
+  shouldTrackCommerceClick,
+  trackedMerchantProductHref
+} from "./tracked-commerce-click-data";
 import { trackCommerceClickMutation } from "./mutations/TrackCommerceClickMutation";
 
 export function TrackedCommerceClickAction({
@@ -21,9 +26,10 @@ export function TrackedCommerceClickAction({
   const [commitTrackCommerceClick, isPending] =
     useMutation<TrackCommerceClickMutation>(trackCommerceClickMutation);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const graphQLEndpoint = resolveGraphQLEndpoint();
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (!shouldTrackClick(event)) {
+    if (!shouldTrackCommerceClick(event)) {
       return;
     }
 
@@ -46,7 +52,13 @@ export function TrackedCommerceClickAction({
             payload.errors.length === 0 &&
             !hasRouteGraphQLErrors(graphQLErrors)
           ) {
-            window.location.assign(resolveTrackedCommerceRedirectUrl(payload.redirectPath));
+            try {
+              window.location.assign(
+                resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint)
+              );
+            } catch {
+              setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+            }
             return;
           }
 
@@ -67,7 +79,7 @@ export function TrackedCommerceClickAction({
       <Button asChild variant="solid">
         <a
           aria-disabled={isPending || undefined}
-          href={trackedMerchantProductHref(merchantProductId)}
+          href={trackedMerchantProductHref(merchantProductId, graphQLEndpoint)}
           onClick={isPending ? preventPendingNavigation : handleClick}
         >
           {label}
@@ -78,36 +90,6 @@ export function TrackedCommerceClickAction({
   );
 }
 
-function shouldTrackClick(event: MouseEvent<HTMLAnchorElement>) {
-  return (
-    event.button === 0 &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey
-  );
-}
-
 function preventPendingNavigation(event: MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
-}
-
-function trackedMerchantProductHref(merchantProductId: string) {
-  const params = new URLSearchParams({ merchantProductId });
-
-  return resolveTrackedCommerceRedirectUrl(`/r/merchant-product?${params.toString()}`);
-}
-
-export function resolveTrackedCommerceRedirectUrl(
-  redirectPath: string,
-  graphQLEndpoint = resolveGraphQLEndpoint()
-) {
-  const endpointUrl = new URL(graphQLEndpoint);
-  const redirectUrl = new URL(redirectPath, endpointUrl.origin);
-
-  if (redirectUrl.origin !== endpointUrl.origin) {
-    throw new Error("Tracked commerce redirect must resolve to the same origin");
-  }
-
-  return redirectUrl.toString();
 }

@@ -7,6 +7,11 @@ import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
 import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
+import {
+  buildCreatePriceWatchInput,
+  needsPriceWatchAmount,
+  type PriceWatchRuleType
+} from "./price-watch-data";
 
 const styles = create({
   details: {
@@ -27,8 +32,6 @@ const styles = create({
   summary: { cursor: "pointer", fontWeight: 650 }
 });
 
-type RuleType = "TARGET_PRICE" | "PERCENTAGE_DROP" | "BACK_IN_STOCK" | "NEWLY_AVAILABLE";
-
 export function PriceWatchControl({ productId }: { productId: string }) {
   return <PriceWatchForm key={productId} productId={productId} />;
 }
@@ -37,14 +40,20 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const amountId = useId();
   const currencyId = useId();
   const ruleId = useId();
-  const [ruleType, setRuleType] = useState<RuleType>("TARGET_PRICE");
+  const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
   const [message, setMessage] = useState<string | null>(null);
   const [commitCreate, mutationPending] = useMutation<CreatePriceWatchMutation>(createPriceWatchMutation);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    const input = watchInput(productId, ruleType, new FormData(event.currentTarget));
+    const form = new FormData(event.currentTarget);
+    const input = buildCreatePriceWatchInput({
+      productId,
+      ruleType,
+      amount: form.get("amount"),
+      currency: form.get("currency")
+    });
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, { variables: { input } });
@@ -55,7 +64,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
     }
   }
 
-  const needsAmount = ruleType === "TARGET_PRICE" || ruleType === "PERCENTAGE_DROP";
+  const needsAmount = needsPriceWatchAmount(ruleType);
 
   return (
     <details {...props(styles.details)}>
@@ -63,7 +72,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} {...props(styles.form)}>
         <label htmlFor={ruleId} {...props(styles.field)}>
           Alert when
-          <select id={ruleId} name="ruleType" value={ruleType} onChange={(event) => setRuleType(event.target.value as RuleType)} {...props(styles.input)}>
+          <select id={ruleId} name="ruleType" value={ruleType} onChange={(event) => setRuleType(event.target.value as PriceWatchRuleType)} {...props(styles.input)}>
             <option value="TARGET_PRICE">Landed price reaches a target</option>
             <option value="PERCENTAGE_DROP">Landed price drops by a percentage</option>
             <option value="BACK_IN_STOCK">An offer returns in stock</option>
@@ -88,22 +97,4 @@ function PriceWatchForm({ productId }: { productId: string }) {
       </form>
     </details>
   );
-}
-
-function watchInput(
-  productId: string,
-  ruleType: RuleType,
-  form: FormData
-): CreatePriceWatchMutation["variables"]["input"] {
-  const amount = String(form.get("amount") ?? "").trim();
-  const input: CreatePriceWatchMutation["variables"]["input"] = {
-    productId,
-    ruleType,
-    currency: String(form.get("currency") ?? "USD").trim().toUpperCase()
-  };
-
-  if (ruleType === "TARGET_PRICE") input.targetAmount = amount;
-  if (ruleType === "PERCENTAGE_DROP") input.percentageDrop = amount;
-
-  return input;
 }

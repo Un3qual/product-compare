@@ -268,24 +268,25 @@ defmodule ProductCompare.Discussions do
           {:ok, ProductThread.t()}
           | {:error, :not_found | :forbidden | :answer_not_published}
   def accept_answer(user_id, question_entropy_id, answer_entropy_id) do
-    with %ProductThread{} = question <- question_by_entropy(question_entropy_id),
-         %ThreadPost{} = answer <- post_by_entropy(answer_entropy_id),
-         true <- answer.thread_id == question.id || {:error, :not_found},
-         true <- question.created_by == user_id || {:error, :forbidden},
-         true <- answer.moderation_status == :published || {:error, :answer_not_published} do
-      case question
-           |> Ecto.Changeset.change(accepted_post_id: answer.id)
-           |> Repo.update() do
-        {:ok, accepted_question} ->
-          {:ok, Repo.preload(accepted_question, :accepted_post)}
-
-        {:error, _changeset} = error ->
-          error
+    Repo.transaction(fn ->
+      with %ProductThread{} = question <-
+             locked_record_by_entropy(ProductThread, question_entropy_id),
+           %ThreadPost{} = answer <- locked_record_by_entropy(ThreadPost, answer_entropy_id),
+           true <- answer.thread_id == question.id || {:error, :not_found},
+           true <- question.created_by == user_id || {:error, :forbidden},
+           true <- answer.moderation_status == :published || {:error, :answer_not_published} do
+        question
+        |> Ecto.Changeset.change(accepted_post_id: answer.id)
+        |> update_or_rollback()
+      else
+        nil -> Repo.rollback(:not_found)
+        {:error, reason} -> Repo.rollback(reason)
+        false -> Repo.rollback(:not_found)
       end
-    else
-      nil -> {:error, :not_found}
-      {:error, _reason} = error -> error
-      false -> {:error, :not_found}
+    end)
+    |> case do
+      {:ok, accepted_question} -> {:ok, Repo.preload(accepted_question, :accepted_post)}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -307,9 +308,7 @@ defmodule ProductCompare.Discussions do
 
     with %User{is_operator: true} <- Repo.get(User, operator_id),
          record when not is_nil(record) <- moderation_record(type, entropy_id) do
-      record
-      |> moderation_changeset(status, operator_id, note, now)
-      |> Repo.update()
+      moderate_record(record, status, operator_id, note, now)
     else
       %User{} -> {:error, :forbidden}
       nil -> {:error, :not_found}
@@ -472,7 +471,6 @@ defmodule ProductCompare.Discussions do
   end
 
   defp question_by_entropy(entropy_id), do: record_by_entropy(ProductThread, entropy_id)
-  defp post_by_entropy(entropy_id), do: record_by_entropy(ThreadPost, entropy_id)
 
   defp moderation_record(:review, entropy_id), do: record_by_entropy(ProductReview, entropy_id)
   defp moderation_record(:question, entropy_id), do: record_by_entropy(ProductThread, entropy_id)
@@ -483,6 +481,62 @@ defmodule ProductCompare.Discussions do
       Repo.get_by(schema, entropy_id: uuid)
     else
       :error -> nil
+    end
+  end
+
+  defp locked_record_by_entropy(schema, entropy_id) do
+    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
+      Repo.one(from record in schema, where: record.entropy_id == ^uuid, lock: "FOR UPDATE")
+    else
+      :error -> nil
+    end
+  end
+
+  defp moderate_record(%ThreadPost{} = answer, status, moderator_id, note, now) do
+    Repo.transaction(fn ->
+      question =
+        Repo.one(
+          from question in ProductThread,
+            where: question.id == ^answer.thread_id,
+            lock: "FOR UPDATE"
+        )
+
+      if is_nil(question), do: Repo.rollback(:not_found)
+
+      persisted_answer =
+        Repo.one(
+          from post in ThreadPost,
+            where: post.id == ^answer.id and post.thread_id == ^question.id,
+            lock: "FOR UPDATE"
+        )
+
+      if is_nil(persisted_answer), do: Repo.rollback(:not_found)
+
+      updated_answer =
+        persisted_answer
+        |> moderation_changeset(status, moderator_id, note, now)
+        |> update_or_rollback()
+
+      if status != :published and question.accepted_post_id == persisted_answer.id do
+        question
+        |> Ecto.Changeset.change(accepted_post_id: nil)
+        |> update_or_rollback()
+      end
+
+      updated_answer
+    end)
+  end
+
+  defp moderate_record(record, status, moderator_id, note, now) do
+    record
+    |> moderation_changeset(status, moderator_id, note, now)
+    |> Repo.update()
+  end
+
+  defp update_or_rollback(changeset) do
+    case Repo.update(changeset) do
+      {:ok, record} -> record
+      {:error, changeset} -> Repo.rollback(changeset)
     end
   end
 

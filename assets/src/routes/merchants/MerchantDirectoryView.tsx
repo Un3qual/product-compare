@@ -8,6 +8,7 @@ import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import { getMerchantDirectoryViewData } from "./merchant-directory-view-data";
 
 const styles = create({
   controls: {
@@ -63,12 +64,7 @@ export function MerchantDirectoryView({
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();
   const filterLabelId = `${filterInputId}-label`;
-  const normalizedFilterText = filterText.trim().toLowerCase();
-  const visibleMerchants = normalizedFilterText
-    ? merchants.filter((merchant) =>
-        merchant.name.toLowerCase().includes(normalizedFilterText)
-      )
-    : merchants;
+  const { heading, visibleMerchants } = getMerchantDirectoryViewData(merchants, filterText);
 
   if (merchants.length === 0) {
     return <FeedbackState kind="empty" title="No merchants available yet." />;
@@ -78,11 +74,7 @@ export function MerchantDirectoryView({
     <>
       <SectionHeading
         description="Merchant names and destination domains for this result page."
-        title={
-          normalizedFilterText
-            ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
-            : `${merchants.length} merchants on this page`
-        }
+        title={heading}
       />
       <div {...props(styles.filter)}>
         <span id={filterLabelId}>Filter merchants on this page</span>

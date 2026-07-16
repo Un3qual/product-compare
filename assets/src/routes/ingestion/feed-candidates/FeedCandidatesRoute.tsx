@@ -6,7 +6,6 @@ import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
 } from "../../../__generated__/MerchantFeedCandidatesRouteQuery.graphql";
 import reviewMerchantFeedCandidateMutation, {
-  type ReviewMerchantFeedCandidateInput,
   type ReviewMerchantFeedCandidateMutation
 } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
@@ -19,12 +18,18 @@ import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   FeedCandidateReviewList,
-  formatFeedCandidateName,
-  formatFeedCandidateReviewStatus,
   type FeedCandidate,
-  type FeedCandidatesConnection,
-  type ReviewStatus
+  type FeedCandidatesConnection
 } from "./FeedCandidateReviewList";
+import {
+  formatFeedCandidateName,
+  formatFeedCandidateReviewStatus
+} from "./feed-candidate-review-data";
+import {
+  buildFeedCandidateReviewMutationInput,
+  type FeedCandidateReviewStatus,
+  omitReviewNoteDraft
+} from "./feed-candidate-review-mutation-data";
 import {
   feedCandidatesLoader,
   type FeedCandidatesLoaderData
@@ -183,20 +188,12 @@ function FeedCandidateReviewPanel({
     }));
   };
 
-  const handleReview = (candidate: FeedCandidate, status: ReviewStatus) => {
-    const hasDraftNote = hasReviewNoteDraft(reviewNotes, candidate.id);
-    const note = (hasDraftNote ? reviewNotes[candidate.id] : candidate.reviewNote ?? "").trim();
-    const input: ReviewMerchantFeedCandidateInput =
-      hasDraftNote || note.length > 0
-        ? {
-            id: candidate.id,
-            status,
-            note
-          }
-        : {
-            id: candidate.id,
-            status
-          };
+  const handleReview = (candidate: FeedCandidate, status: FeedCandidateReviewStatus) => {
+    const input = buildFeedCandidateReviewMutationInput(
+      candidate,
+      status,
+      reviewNotes
+    );
 
     setReviewFeedback("");
     commitReview({
@@ -246,15 +243,5 @@ function FeedCandidatesUnavailableFallback() {
     <section role="alert">
       <p>Feed candidates unavailable.</p>
     </section>
-  );
-}
-
-function hasReviewNoteDraft(reviewNotes: Record<string, string>, candidateId: string) {
-  return Object.prototype.hasOwnProperty.call(reviewNotes, candidateId);
-}
-
-function omitReviewNoteDraft(reviewNotes: Record<string, string>, candidateId: string) {
-  return Object.fromEntries(
-    Object.entries(reviewNotes).filter(([id]) => id !== candidateId)
   );
 }

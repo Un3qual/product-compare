@@ -422,14 +422,14 @@ optional empty-state labels, and revoked/active/expired status copy.
 `ApiTokenItem` retains semantic detail markup, status tone, rotation presets,
 errors, and lifecycle actions.
 
-- [ ] Write pure tests for labeled and unlabeled tokens, valid UTC and offset
+- [x] Write pure tests for labeled and unlabeled tokens, valid UTC and offset
   timestamps, optional-date fallbacks, impossible and offset-less timestamp
   fallbacks, and revoked/active/expired status precedence; verify RED.
-- [ ] Move only deterministic item-display data into the existing route-data
+- [x] Move only deterministic item-display data into the existing route-data
   owner while preserving item markup and lifecycle behavior.
-- [ ] Run the pure and existing API-token route suites, TypeScript, the
+- [x] Run the pure and existing API-token route suites, TypeScript, the
   framework-import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -449,13 +449,13 @@ orders last, preserves source order for ties, and leaves the Relay input
 unchanged. `BrowseProductList` retains product-card, empty omission, list,
 decision-action, and StyleX presentation.
 
-- [ ] Write pure tests for empty input, ascending order, the three-row bound,
+- [x] Write pure tests for empty input, ascending order, the three-row bound,
   unspecified orders, stable ties, and input immutability; verify RED.
-- [ ] Extract only deterministic highlight selection while retaining all card
+- [x] Extract only deterministic highlight selection while retaining all card
   markup and styling in `BrowseProductList`.
-- [ ] Run the pure and existing catalog route suites, TypeScript, the framework-
+- [x] Run the pure and existing catalog route suites, TypeScript, the framework-
   import scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -479,14 +479,379 @@ location access, Relay reads, boundaries, snapshot behavior, and recommendation
 presentation. The completed `share-comparison-data.ts` contract retains
 snapshot publish-input construction and GraphQL profile mapping.
 
-- [ ] Write pure tests for default and best-value parsing, ordered encoded
+- [x] Write pure tests for default and best-value parsing, ordered encoded
   slugs, all specification modes, profile query defaults, sole-profile
   revalidation, and unrelated route changes; verify RED.
-- [ ] Consolidate only deterministic recommendation route policy while
+- [x] Consolidate only deterministic recommendation route policy while
   preserving Relay variables, snapshot profile behavior, error/Suspense
   boundaries, and panel markup.
-- [ ] Run the pure and existing recommendation/snapshot suites, TypeScript,
+- [x] Run the pure and existing recommendation/snapshot suites, TypeScript,
   the framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 15: Saved Comparison Naming Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/saved-comparison-name-data.ts`
+- Modify: `assets/src/routes/compare/CompareRoute.tsx`
+- Create: `assets/test/routes/compare/saved-comparison-name-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-naming.md`
+
+**Interfaces:** The framework-free route-data module builds the existing saved-
+comparison name from ordered product names by trimming names, omitting empty
+names, and preserving the current zero-, one-, and multi-product copy.
+`CompareRoute` retains Relay data, save mutation orchestration, in-flight
+protection, feedback, and presentation.
+
+- [x] Write pure tests for empty input, whitespace-only names, one product,
+  ordered multiple products, and input immutability; verify RED.
+- [x] Extract only deterministic name construction while preserving mutation
+  variables and save behavior.
+- [x] Run the pure and existing compare route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 16: Merchant Directory Visible-Page Filter Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryView.tsx`
+- Create: `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Modify: `docs/work/frontend-merchant-discovery-demo-parity.md`
+
+**Interfaces:** The framework-free view-data module normalizes the current
+page's filter text, selects visible merchants by case-insensitive name match,
+and returns the existing filtered and unfiltered heading copy without mutating
+the merchant input. `MerchantDirectoryView` retains filter state, the search
+field, empty-page and no-match presentation, merchant markup and links, and
+cursor pagination.
+
+- [x] Write pure tests for blank and trimmed filters, case-insensitive matches,
+  no matches, heading copy, source ordering, and input immutability; verify RED.
+- [x] Extract only deterministic visible-page filter data while preserving
+  local state, page boundaries, markup, links, and pagination.
+- [x] Run the pure and existing merchant-directory route suites, TypeScript,
+  the framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 17: Price-Watch Input Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Create: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-input.md`
+
+**Interfaces:** The framework-free data module identifies amount-bearing rule
+types and builds the existing create-watch input from trimmed amount and
+uppercased currency values, omitting amount fields for availability rules.
+`PriceWatchControl` retains product-scoped form reset, state, Relay mutation
+orchestration, validation attributes, success and error feedback, and markup.
+
+- [x] Write pure tests for every rule type, trimmed amounts, uppercased
+  currency, availability-rule omission, and input immutability; verify RED.
+- [x] Extract only deterministic rule and mutation-input data while preserving
+  form state, Relay behavior, feedback, and presentation.
+- [x] Run the pure and existing price-watch control suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 18: Feed-Candidate Review View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- Create: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-review-data.md`
+
+**Interfaces:** The framework-free view-data module owns candidate name,
+product-count, fit score and reasons, review status label/tone/counts,
+reviewed-time, and filter-preserving pagination-path policy.
+`FeedCandidateReviewList` retains Relay connection consumption, review and note
+callbacks, list/summary/pagination markup, buttons, and StyleX presentation;
+`FeedCandidatesRoute` retains loader/query/mutation orchestration, draft state,
+revalidation, and feedback.
+
+- [x] Write pure tests for name fallback, product-count thresholds, normalized
+  market/currency/language and feed-type scoring, reasons, status label/tone and
+  counts, valid/invalid reviewed time, filtered first/next paths, and input
+  immutability; verify RED.
+- [x] Extract only deterministic review view data while preserving Relay,
+  mutation, draft-note, event, and presentation behavior.
+- [x] Run the pure and existing feed-candidate route suites, TypeScript, the
+  framework-import scan, secret/raw-field scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 19: Tracked-Commerce Click Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- Modify: `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- Create: `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-tracked-commerce-click-data.md`
+
+**Interfaces:** The framework-free data module qualifies normal unmodified
+primary clicks, builds the existing encoded first-party merchant-product
+tracking href, and resolves only redirect paths whose origin matches the API
+endpoint origin. `TrackedCommerceClickAction` retains React event handling,
+pending/error state, Relay mutation orchestration, browser navigation, and
+markup.
+
+- [x] Write pure tests for primary and modified clicks, encoded merchant-
+  product IDs, API-origin absolute and relative redirects, cross-origin and
+  non-HTTP redirects, and input immutability; verify RED.
+- [x] Extract only deterministic click and URL policy while preserving Relay,
+  error, pending, navigation, and presentation behavior.
+- [x] Run the pure and existing offer-discovery route suites, TypeScript, the
+  framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 20: Immutable Route-State Collection Contract
+
+**Files:**
+
+- Create: `assets/src/routes/immutable-collection-state.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Create: `assets/test/routes/immutable-collection-state.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-immutable-route-state.md`
+
+**Interfaces:** The framework-free route-state module owns copy-on-write map
+upsert/remove and set add/remove helpers. Set membership and map-removal no-ops
+preserve the original collection identity; changes return a new collection and
+leave the input unchanged. Route owners retain all React state transitions,
+Relay orchestration, errors, feedback, and presentation.
+
+- [x] Write pure tests for map insert/replace/remove, set add/remove, source
+  ordering, no-op identity, changed-result identity, and input immutability;
+  verify RED.
+- [x] Replace only the duplicate collection helpers while preserving route
+  state and mutation behavior.
+- [x] Run the pure and existing API-token and saved-comparison route-state
+  suites, TypeScript, the framework-import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 21: Catalog Filter Form State Contract
+
+**Files:**
+
+- Create: `assets/src/routes/catalog/catalog-filter-form-state.ts`
+- Modify: `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- Create: `assets/test/routes/catalog/catalog-filter-form-state.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-filter-form-state.md`
+
+**Interfaces:** The framework-free state module owns initial type and descendant
+state, type-selection transitions, and whether advanced filters initially open.
+The first type selected from an empty state enables descendants; clearing the
+type disables descendants; changing one selected type to another preserves the
+current descendant choice. `CatalogFilterForm` retains React state, controls,
+form serialization, active-filter summary behavior, and markup.
+
+- [x] Write pure tests for empty and selected initial type state, descendant
+  initialization, first selection, clear, selected-type changes with both
+  descendant choices, every advanced-filter collection, and input immutability;
+  verify RED.
+- [x] Extract only deterministic state policy while preserving React controls,
+  URL form fields, advanced-filter presentation, and summaries.
+- [x] Run the pure and existing catalog route suites, TypeScript, the framework-
+  import scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 22: Feed-Candidate Review Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx`
+- Create: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-review-mutation-data.md`
+
+**Interfaces:** The framework-free data module owns explicit-draft detection,
+trimmed review mutation-input construction, and immutable successful-draft
+removal. An explicit blank draft includes `note: ""` so a persisted note can be
+cleared; an absent draft falls back to the persisted note and omits `note` when
+that trimmed value is empty. `FeedCandidatesRoute` retains React state, Relay
+mutation orchestration, errors, feedback, revalidation, and presentation.
+
+- [x] Write pure tests for explicit nonblank and blank drafts, absent drafts
+  with nonblank and empty persisted notes, trimmed notes, own-property draft
+  detection, successful-draft removal, missing-draft behavior, source ordering,
+  result identity, and input immutability; verify RED.
+- [x] Extract only deterministic mutation-input and draft-removal policy while
+  preserving React state, Relay behavior, errors, feedback, revalidation, and
+  presentation.
+- [x] Run the pure and existing feed-candidate route suites, TypeScript, the
+  framework-import scan, secret/raw-field scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 23: Offer-Discovery Card View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/offers/offer-discovery-card-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryCard.tsx`
+- Create: `assets/test/routes/offers/offer-discovery-card-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-discovery-card-data.md`
+
+**Interfaces:** The framework-free view-data module owns product, status,
+merchant, domain, and latest-price labels, nullable coupon/price-history
+connection fallbacks, and ordered valid price-history rows.
+`OfferDiscoveryCard` retains safe versus tracked merchant-action selection,
+observation and coupon rendering, markup, and StyleX presentation.
+
+- [x] Write pure tests for nullish and empty-string label fallbacks, active and
+  inactive status copy, nullable connection fallbacks and existing-connection
+  identity, ordered valid/invalid price-history rows, and input immutability;
+  verify RED.
+- [x] Extract only deterministic card view data while preserving merchant
+  action, observation, coupon, markup, and presentation behavior.
+- [x] Run the pure and existing offer-discovery route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 24: Category Landing View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/categories/category-view-data.ts`
+- Modify: `assets/src/routes/categories/CategoryRoute.tsx`
+- Create: `assets/test/routes/categories/category-view-data.test.ts`
+- Test: `assets/test/routes/categories/category.route.test.tsx`
+- Create: `docs/work/frontend-category-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns category title and
+qualification copy, the encoded catalog browse and conditional next-page
+paths, source-ordered product rows, nullish brand fallback, and the first three
+source-ordered specification highlights. `CategoryRoute` retains loader and
+Relay reads, route fallbacks, empty-state rendering, markup, links, and StyleX.
+
+- [ ] Write pure tests for category copy, encoded browse IDs and cursors,
+  next-page eligibility, nullish versus empty brand names, empty products,
+  source ordering, first-three highlight truncation, and input immutability;
+  verify RED.
+- [ ] Extract only deterministic category view data while preserving Relay,
+  route fallbacks, empty-state behavior, markup, links, and presentation.
+- [ ] Run the pure and existing category route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 25: Alerts Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/account/alerts/alerts-mutation-data.ts`
+- Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- Create: `assets/test/routes/account/alerts/alerts-mutation-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-alerts-mutation-data.md`
+
+**Interfaces:** The framework-free mutation-data module owns exact toggle,
+delete, and mark-read variables plus operation-specific success/error
+resolution. A truthy updated watch, deleted-watch ID, or alert event is success;
+all other payload and GraphQL outcomes delegate to shared route mutation-error
+copy. `AlertsRoute` retains pending state, Relay commits, revalidation, failure
+catching, feedback, and presentation.
+
+- [ ] Write pure tests for all three variable shapes, toggle inversion,
+  operation-specific success, payload and GraphQL failure copy, result identity
+  where relevant, and input immutability; verify RED.
+- [ ] Extract only deterministic variables and outcome policy while preserving
+  React state, Relay commit lifecycle, revalidation, feedback, and presentation.
+- [ ] Run the pure and existing alerts route suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 26: Recommendation Result View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/recommendation-view-data.ts`
+- Modify: `assets/src/routes/compare/RecommendationPanel.tsx`
+- Create: `assets/test/routes/compare/recommendation-view-data.test.ts`
+- Test: `assets/test/routes/compare/recommendation-panel.test.tsx`
+- Create: `docs/work/frontend-recommendation-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns first matching-winner
+selection, supported versus no-winner reasons, and exact evidence copy with
+singular/plural accepted-claim references. `RecommendationPanel` retains Relay
+fetching, profile navigation, suspense and error handling, markup, and StyleX.
+
+- [ ] Write pure tests for a matching winner, first-match selection, missing or
+  unmatched winners, supported and missing-input reason order, zero/one/many
+  claim-reference copy, and input immutability; verify RED.
+- [ ] Extract only deterministic result presentation while preserving Relay,
+  profiles, query lifecycle, fallbacks, markup, and presentation.
+- [ ] Run the pure and existing recommendation-panel suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 27: Shared Route-Error View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/route-error-view-data.ts`
+- Modify: `assets/src/routes/compare/RouteErrorBoundary.tsx`
+- Create: `assets/test/routes/compare/route-error-view-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Test: `assets/test/router.test.tsx`
+- Create: `docs/work/frontend-route-error-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns resource
+capitalization plus default, 5xx, 404, 401/403, other-response, network, and
+unexpected-error copy. `RouteErrorBoundary` retains React Router error
+detection and boundary presentation and passes only normalized response,
+ordinary-error, or unknown context into the pure owner.
+
+- [ ] Write pure tests for every status branch, case-insensitive network/fetch
+  messages, `NetworkError`, qualifying and ordinary `TypeError`, generic errors,
+  unknown values, resource capitalization, exact retry copy, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic classification and copy while preserving React
+  Router detection, registration, markup, and presentation.
+- [ ] Run the pure, compare, and router suites, TypeScript, the framework/router
+  dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -567,3 +932,86 @@ snapshot publish-input construction and GraphQL profile mapping.
   and explicitly preserve `share-comparison-data.ts` as its sole owner.
 - Final whole-batch re-review confirmed the narrowed candidate is executable
   within its owned paths and the three ready rows are path-disjoint.
+- The saved-comparison naming candidate is non-overlapping with API-token
+  lifecycle display, catalog specification highlights, and recommendation-
+  profile navigation. Current source inspection found deterministic trimming,
+  default, single-product, and ordered multi-product naming embedded in
+  `CompareRoute.tsx`; its route suite passed 109 tests on 2026-07-15.
+- Before the catalog-highlight claim on 2026-07-15, current source inspection
+  confirmed that visible-page merchant filter normalization, selection, and
+  heading copy remain embedded in `MerchantDirectoryView`; its route suite
+  passed 27 tests.
+- The same replenishment pass confirmed that amount-bearing rule selection and
+  create-watch input normalization remain embedded in `PriceWatchControl`.
+  Its focused alert/control suite passed 6 tests, and the product-detail host
+  route suite passed 55 tests.
+- Before the saved-comparison naming claim on 2026-07-15, current source
+  inspection confirmed that scoring, reasons, review summary/status, reviewed-
+  time, and pagination-path policy remain embedded in the 409-line
+  `FeedCandidateReviewList`; its route suite passed 17 tests.
+- Before the merchant visible-page filter claim on 2026-07-15, current source
+  inspection confirmed that normal click qualification, first-party tracking
+  href construction, and same-origin redirect resolution remain embedded in
+  `TrackedCommerceClickAction`; its offer-discovery route suite passed 51 tests.
+  The tracked-click candidate is path-disjoint from merchant filtering, price-
+  watch input, and feed-candidate review data.
+- The completed merchant visible-page filter contract and existing route
+  characterization passed 31 focused tests on 2026-07-15. The contract retains
+  ordinary lowercasing, source ordering, existing headings, and input identity;
+  independent task review found no actionable issues.
+- Before the price-watch input claim on 2026-07-15, current source inspection
+  confirmed duplicate immutable set add/remove helpers in API-token and saved-
+  comparison route owners, plus map upsert/remove helpers in the token owner.
+  Their route suites passed 45 and 31 tests. The shared-state candidate is path-
+  disjoint from price-watch input, feed-candidate review, and tracked-commerce
+  click data.
+- The completed price-watch input contract and existing alert route
+  characterization passed 16 focused tests on 2026-07-15. Task review found no
+  Critical or Important issue; queue closeout corrected the lane status noted
+  as the sole Minor finding.
+- Before the feed-candidate review view-data claim on 2026-07-15, current source
+  inspection confirmed that catalog type-filter initialization and transitions
+  plus advanced-filter disclosure policy remain embedded in
+  `CatalogFilterForm`; its route suite passed 62 tests. The catalog state
+  candidate is path-disjoint from feed-candidate review, tracked-commerce
+  clicks, and immutable route-state collections.
+- The completed feed-candidate review view-data contract and existing route
+  characterization passed 24 focused tests on 2026-07-15. Framework and
+  secret/raw-field scans passed, and independent task review found no
+  actionable issues.
+- Before the tracked-commerce click-data claim on 2026-07-15, current source
+  inspection confirmed that explicit-draft detection, trimmed mutation-input
+  construction, and successful-draft removal remain embedded in
+  `FeedCandidatesRoute`; its route suite passed 17 tests. The mutation-data
+  candidate is path-disjoint from tracked-commerce clicks, immutable route-
+  state collections, and catalog filter-form state.
+- The completed tracked-commerce click-data contract and existing offer-
+  discovery route characterization passed 58 focused tests on 2026-07-15. The
+  pure owner requires explicit endpoint input and has no framework, transport,
+  or environment dependency. Dependency and sensitive-field scans passed, and
+  independent task re-review found no actionable issues after exact scheme,
+  host, and port coverage was added. Final branch review then identified the
+  asynchronous redirect-rejection boundary; route-level regression coverage
+  now proves resolution or navigation failures render existing default error
+  feedback without escaping the Relay completion callback.
+- Before the immutable route-state claim on 2026-07-15, current source
+  inspection confirmed product/status/merchant/domain/latest-price labels,
+  nullable connection fallbacks, and ordered price-history view rows remain
+  embedded in `OfferDiscoveryCard`; its route suite passed 51 tests. The card
+  candidate is path-disjoint from immutable route state, catalog filter-form
+  state, and feed-candidate review mutation data.
+- The completed immutable route-state contract and existing API-token and saved-
+  comparison characterization passed 84 focused tests on 2026-07-15.
+  TypeScript and the pure-module dependency boundary passed, and independent
+  task review found no actionable issues.
+- Before claiming Tasks 21–23 on 2026-07-15, current source inspection found
+  deterministic category landing composition, alert mutation variables and
+  outcomes, recommendation result presentation, and shared route-error
+  classification still embedded in four path-disjoint React owners. Their
+  category, alerts, recommendation, compare, and router suites passed 138 tests.
+  The four successors do not overlap each other or the three claimed rows.
+- The completed catalog filter-form, feed-candidate review mutation, and offer-
+  discovery card contracts passed 172 focused tests on 2026-07-15. TypeScript
+  and all framework/transport/sensitive-field boundaries passed. Independent
+  task reviews approved feed and offer directly and approved catalog after an
+  explicit runtime-null normalization case was added.

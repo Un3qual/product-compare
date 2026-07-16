@@ -11,6 +11,7 @@ defmodule ProductCompare.ComparisonSnapshots do
   alias ProductCompare.Recommendations
   alias ProductCompare.Recommendations.Result, as: RecommendationResult
   alias ProductCompare.Repo
+  alias ProductCompare.Seo
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
@@ -43,6 +44,7 @@ defmodule ProductCompare.ComparisonSnapshots do
         search_indexable: Input.fetch_attr(attrs, :search_indexable) || false,
         payload: payload
       })
+      |> Ecto.Changeset.put_change(:search_qualified, Seo.snapshot_qualified?(payload))
       |> Repo.insert()
       |> map_snapshot()
     end

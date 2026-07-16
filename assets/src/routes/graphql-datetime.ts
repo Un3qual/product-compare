@@ -25,11 +25,13 @@ export function graphQLDateTimeContext(value: unknown): GraphQLDateTimeContext |
     return null;
   }
 
-  const parts = graphQLDateTimeParts(value);
+  const parsed = parsedGraphQLDateTime(value);
 
-  if (!parts || !isValidGraphQLDateTime(value, parts)) {
+  if (!parsed) {
     return null;
   }
+
+  const { parts } = parsed;
 
   return {
     dateTime: value,
@@ -39,6 +41,26 @@ export function graphQLDateTimeContext(value: unknown): GraphQLDateTimeContext |
 
 export function graphQLDateTimeLabel(value: unknown) {
   return graphQLDateTimeContext(value)?.label ?? null;
+}
+
+export function parseGraphQLDateTime(value: unknown) {
+  return parsedGraphQLDateTime(value)?.date ?? null;
+}
+
+function parsedGraphQLDateTime(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const parts = graphQLDateTimeParts(value);
+
+  if (!parts || !isValidGraphQLDateTime(parts)) {
+    return null;
+  }
+
+  const date = new Date(normalizeGraphQLDateTimeForParsing(value));
+
+  return Number.isNaN(date.getTime()) ? null : { date, parts };
 }
 
 function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
@@ -75,12 +97,15 @@ function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
   };
 }
 
-function isValidGraphQLDateTime(value: string, parts: GraphQLDateTimeParts) {
-  return (
-    isValidCalendarDate(parts) &&
-    isValidTime(parts) &&
-    isValidOffset(parts) &&
-    !Number.isNaN(new Date(value).getTime())
+function isValidGraphQLDateTime(parts: GraphQLDateTimeParts) {
+  return isValidCalendarDate(parts) && isValidTime(parts) && isValidOffset(parts);
+}
+
+function normalizeGraphQLDateTimeForParsing(value: string) {
+  return value.replace(
+    /\.(\d{1,6})(?=Z|[+-]\d{2}:\d{2}$)/,
+    (_match, fractionalSeconds: string) =>
+      `.${fractionalSeconds.padEnd(3, "0").slice(0, 3)}`
   );
 }
 

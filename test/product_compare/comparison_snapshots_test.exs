@@ -6,9 +6,22 @@ defmodule ProductCompare.ComparisonSnapshotsTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
 
   @now ~U[2026-07-13 23:00:00Z]
+
+  test "publish changeset does not cast derived search qualification" do
+    changeset =
+      ComparisonSnapshot.publish_changeset(%ComparisonSnapshot{}, %{
+        public_token: String.duplicate("a", 43),
+        user_id: 1,
+        payload: %{},
+        search_qualified: true
+      })
+
+    refute Ecto.Changeset.get_change(changeset, :search_qualified)
+  end
 
   test "publishes ordered immutable facts behind a high-entropy public token" do
     owner = AccountsFixtures.user_fixture()

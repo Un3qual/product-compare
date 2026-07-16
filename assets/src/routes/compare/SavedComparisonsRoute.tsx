@@ -11,6 +11,7 @@ import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-prelo
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
+import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
@@ -191,22 +192,4 @@ export function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQuer
   return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
     stableJsonValue(savedSetQuery.__relayQuery.variables)
   )}`;
-}
-
-function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): ReadonlySet<T> {
-  if (currentValues.has(nextValue)) {
-    return currentValues;
-  }
-
-  return new Set(currentValues).add(nextValue);
-}
-
-function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): ReadonlySet<T> {
-  if (!currentValues.has(removedValue)) {
-    return currentValues;
-  }
-
-  const nextValues = new Set(currentValues);
-  nextValues.delete(removedValue);
-  return nextValues;
 }

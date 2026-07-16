@@ -2,18 +2,19 @@
 
 ## Snapshot
 
-- Status: ready (API-token lifecycle display data contract)
+- Status: done (API-token lifecycle display data contract)
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after current source and focused-suite validation
-  (55 API-token route-data and route tests).
+- Last verified: 2026-07-15 after 63 focused API-token route-data and route
+  tests, TypeScript, the framework-import scan, and diff hygiene passed.
 
 ## API Token Lifecycle Display Data Contract
 
-- Status: ready on 2026-07-14.
+- Status: done on 2026-07-15 on
+  `codex/frontend-route-data-contracts`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
-- Next action: move deterministic token labels, strict UTC lifecycle-date
+- Delivered: moved deterministic token labels, strict UTC lifecycle-date
   formatting, optional-date fallbacks, and status copy from `ApiTokenItem`
   into the existing framework-free API-token route-data owner while preserving
   item markup and lifecycle actions.
@@ -34,3 +35,17 @@
 - Candidate evidence: current source inspection found deterministic label,
   UTC lifecycle-date, optional fallback, and status-copy policy embedded in
   `ApiTokenItem.tsx`. The existing route-data and route suites pass 55 tests.
+
+## Completion Evidence
+
+- Added eight pure cases that failed before the display-data contract existed
+  and now cover labeled and unlabeled tokens, UTC and offset timestamps,
+  optional fallbacks, impossible and offset-less exact fallbacks, and status
+  precedence.
+- `api-token-route-data.ts` now owns the display record and reuses the shared
+  strict GraphQL DateTime validator without importing React, React Router, or
+  StyleX.
+- `ApiTokenItem` consumes the display record while retaining its detail markup,
+  status tone, rotation presets, row errors, and lifecycle controls.
+- Focused verification passed 63 tests; TypeScript, the framework-import scan,
+  and `git diff --check` passed.

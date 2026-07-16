@@ -1,4 +1,4 @@
-import { graphQLDateTimeContext } from "./graphql-datetime";
+import { parseGraphQLDateTime } from "./graphql-datetime";
 
 const PRODUCT_LOCALE = "en-US";
 const PRODUCT_TIME_ZONE = "UTC";
@@ -35,7 +35,7 @@ export function formatProductDateTimeLabel(value: string) {
 }
 
 function formatProductDateString(value: string, formatter: Intl.DateTimeFormat) {
-  const dateTime = graphQLDateTimeContext(value)?.dateTime;
+  const date = parseGraphQLDateTime(value);
 
-  return dateTime ? formatter.format(Date.parse(dateTime)) : value;
+  return date ? formatter.format(date) : value;
 }

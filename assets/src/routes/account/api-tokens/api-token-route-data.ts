@@ -1,3 +1,4 @@
+import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -52,6 +53,16 @@ export type MutationApiToken = {
   readonly revokedAt: string | null | undefined;
   readonly insertedAt: string;
 };
+
+export function buildApiTokenDisplayData(token: ApiTokenRecord) {
+  return {
+    displayLabel: token.label ?? "Unlabeled token",
+    expiresAtLabel: formatOptionalDateTime(token.expiresAt, "Never expires"),
+    lastUsedAtLabel: formatOptionalDateTime(token.lastUsedAt, "Never used"),
+    insertedAtLabel: formatUtcDateTime(token.insertedAt),
+    statusLabel: apiTokenStatusLabel(token)
+  };
+}
 
 export function apiTokensRouteLocationIdentity(loaderData: ApiTokensRouteIdentityData) {
   const searchParams = new URLSearchParams({ status: loaderData.tokenStatus });
@@ -272,4 +283,32 @@ function mergeApiTokenUpdate(
     ...token,
     revokedAt: token.revokedAt ?? updatedToken.revokedAt
   } satisfies ApiTokenRecord;
+}
+
+function formatOptionalDateTime(value: string | null, emptyLabel: string) {
+  return value ? formatUtcDateTime(value) : emptyLabel;
+}
+
+function formatUtcDateTime(value: string) {
+  const date = parseGraphQLDateTime(value);
+
+  if (!date) {
+    return value;
+  }
+
+  return `${date.getUTCFullYear()}-${padUtcPart(date.getUTCMonth() + 1)}-${padUtcPart(
+    date.getUTCDate()
+  )} ${padUtcPart(date.getUTCHours())}:${padUtcPart(date.getUTCMinutes())} UTC`;
+}
+
+function padUtcPart(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
+function apiTokenStatusLabel(token: ApiTokenRecord) {
+  if (token.revokedAt) {
+    return "Revoked token";
+  }
+
+  return apiTokenIsActive(token) ? "Active token" : "Expired token";
 }

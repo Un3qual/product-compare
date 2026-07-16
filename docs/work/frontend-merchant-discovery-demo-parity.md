@@ -2,14 +2,36 @@
 
 ## Snapshot
 
-- Status: done (merchant directory view extraction)
+- Status: done (merchant directory visible-page filter data contract)
 - Priority: P1
-- Source of truth: this file
-- Last verified: 2026-07-12 after merchant-directory view extraction review
-  follow-up (27 merchant tests)
+- Dispatch source of truth: `docs/work/index.md`
+- Lane context and status evidence: this file
+- Last verified: 2026-07-15 after the visible-page filter data contract passed
+  31 focused pure and merchant-directory route tests.
 - Implementation plan: `docs/plans/2026-06-01-frontend-merchant-discovery-demo-parity-implementation-plan.md`
 - Recently completed implementation plan: `docs/plans/2026-06-27-project-merchant-directory-page-size-implementation-plan.md`
 - Objective: make the existing public merchant discovery GraphQL contract demoable from the browser UI without adding REST endpoints.
+
+## Merchant Directory Visible-Page Filter Data Contract
+
+- Status: done on 2026-07-15 on `codex/frontend-route-data-contracts`.
+- Dispatch source: `docs/work/index.md`.
+- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`.
+- Completed: extracted visible-page filter normalization, merchant selection,
+  and heading copy to a framework-free data module. `MerchantDirectoryView`
+  retains local state, the search field, page boundaries, no-match presentation,
+  links, and cursor pagination.
+- RED: `cd assets && bun x vitest run
+  test/routes/merchants/merchant-directory-view-data.test.ts` failed because
+  `merchant-directory-view-data.ts` did not exist.
+- GREEN: `cd assets && bun x vitest run
+  test/routes/merchants/merchant-directory-view-data.test.ts
+  test/routes/merchants/merchant-directory.route.test.tsx` passed 31 tests.
+- Typecheck: `cd assets && bun run typecheck` passed.
+- Framework boundary: the view-data module has no React, React Router, Relay,
+  or StyleX imports.
+- Diff hygiene: `git diff --check` passed.
+- Blockers: none.
 
 ## Merchant Directory View Extraction
 

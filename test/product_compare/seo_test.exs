@@ -1,12 +1,16 @@
 defmodule ProductCompare.SeoTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompare.Pricing
+  alias ProductCompare.Repo
   alias ProductCompare.Seo
   alias ProductCompare.Specs
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot
 
   @now ~U[2026-07-13 20:00:00Z]
   @description String.duplicate("Evidence-rich product description for careful shoppers. ", 3)
@@ -145,6 +149,65 @@ defmodule ProductCompare.SeoTest do
                last_modified: qualified_snapshot.inserted_at
              }
            ]
+  end
+
+  test "comparison sitemap qualification is resolved in one bounded database read" do
+    owner = AccountsFixtures.user_fixture()
+
+    thin_payload = %{
+      version: 1,
+      products: [
+        %{name: "Thin first", slug: "thin-first", attributes: [], offers: []},
+        %{name: "Thin second", slug: "thin-second", attributes: [], offers: []}
+      ]
+    }
+
+    thin_snapshots =
+      Enum.map(1..200, fn index ->
+        %{
+          entropy_id: Ecto.UUID.generate(),
+          public_token:
+            :sha256
+            |> :crypto.hash("thin-snapshot-#{index}")
+            |> Base.url_encode64(padding: false),
+          user_id: owner.id,
+          payload: thin_payload,
+          search_indexable: true,
+          inserted_at: DateTime.add(@now, index, :microsecond)
+        }
+      end)
+
+    assert {200, nil} = Repo.insert_all(ComparisonSnapshot, thin_snapshots)
+
+    operator = AccountsFixtures.operator_fixture()
+    qualified_first = qualified_product("bounded-snapshot-first", operator)
+    qualified_second = qualified_product("bounded-snapshot-second", operator)
+
+    assert {:ok, qualified_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               %{
+                 product_ids: [qualified_first.id, qualified_second.id],
+                 recommendation_profile: :lowest_current_cost,
+                 search_indexable: true
+               },
+               now: @now
+             )
+
+    {entries, queries} =
+      capture_select_queries(fn -> Seo.sitemap_entries(:comparisons, now: @now, limit: 1) end)
+
+    assert entries == [
+             %{
+               path: "/compare/shared/#{qualified_snapshot.public_token}",
+               last_modified: qualified_snapshot.inserted_at
+             }
+           ]
+
+    comparison_queries =
+      Enum.filter(queries, &String.contains?(&1, ~s(FROM "comparison_snapshots")))
+
+    assert [_query] = comparison_queries
   end
 
   test "product slug changes preserve a permanent lookup alias without polluting canonical sitemap paths" do

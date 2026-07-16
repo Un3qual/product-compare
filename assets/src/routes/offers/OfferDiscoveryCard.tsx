@@ -5,17 +5,13 @@ import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
 import {
   discountLabel,
-  emptyCouponConnection,
-  emptyPriceHistoryConnection,
   offerMerchantName,
-  priceLabel,
-  priceHistoryRow,
   type ActiveCouponsConnection,
   type CouponNode,
   type OfferNode,
-  type PriceHistoryConnection,
   type PriceHistoryRow
 } from "./offer-discovery-data";
+import { getOfferDiscoveryCardData } from "./offer-discovery-card-data";
 import { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";
 
 type CouponEdge = ActiveCouponsConnection["edges"][number];
@@ -89,25 +85,27 @@ export function OfferDiscoveryCard({
   offer: OfferNode;
   highlightLabel: string | null;
 }) {
-  const priceHistory = priceHistoryConnection(offer.priceHistory);
-  const activeCoupons = couponConnection(offer.activeCoupons);
+  const cardData = getOfferDiscoveryCardData(offer);
   const merchantName = offerMerchantName(offer.merchant);
 
   return (
     <article {...props(styles.offer)}>
       <OfferCardHeader
-        isActive={offer.isActive}
-        productName={offerProductName(offer.product)}
+        productName={cardData.productName}
+        status={cardData.status}
       />
       <OfferDecisionContext
         highlightLabel={highlightLabel}
+        latestPriceLabel={cardData.latestPriceLabel}
+        merchantDomain={cardData.merchantDomain}
         merchantName={merchantName}
         offer={offer}
       />
       <OfferSupportingDetail
-        activeCoupons={activeCoupons}
-        offer={offer}
-        priceHistory={priceHistory}
+        activeCoupons={cardData.activeCoupons}
+        merchantName={cardData.summaryMerchantName}
+        priceHistoryHasMore={cardData.priceHistory.pageInfo.hasNextPage}
+        priceHistoryRows={cardData.priceHistoryRows}
       />
     </article>
   );
@@ -115,10 +113,14 @@ export function OfferDiscoveryCard({
 
 function OfferDecisionContext({
   highlightLabel,
+  latestPriceLabel,
+  merchantDomain,
   merchantName,
   offer
 }: {
   highlightLabel: string | null;
+  latestPriceLabel: string;
+  merchantDomain: string | null;
   merchantName: string;
   offer: OfferNode;
 }) {
@@ -131,12 +133,12 @@ function OfferDecisionContext({
           merchantProductId={offer.id}
           merchantUrl={offer.url}
         />
-        <OfferMerchantDomain domain={offerMerchantDomain(offer.merchant)} />
+        <OfferMerchantDomain domain={merchantDomain} />
         <OfferObservationContext offer={offer} />
       </section>
       <section aria-label="Current price" {...props(styles.priceContext)}>
         {highlightLabel ? <StatusBadge tone="accent">{highlightLabel}</StatusBadge> : null}
-        <p {...props(styles.price)}>{offerLatestPriceLabel(offer)}</p>
+        <p {...props(styles.price)}>{latestPriceLabel}</p>
       </section>
     </div>
   );
@@ -144,21 +146,21 @@ function OfferDecisionContext({
 
 function OfferSupportingDetail({
   activeCoupons,
-  offer,
-  priceHistory
+  merchantName,
+  priceHistoryHasMore,
+  priceHistoryRows
 }: {
-  activeCoupons: ReturnType<typeof couponConnection>;
-  offer: OfferNode;
-  priceHistory: ReturnType<typeof priceHistoryConnection>;
+  activeCoupons: ActiveCouponsConnection;
+  merchantName: string;
+  priceHistoryHasMore: boolean;
+  priceHistoryRows: ReturnType<typeof getOfferDiscoveryCardData>["priceHistoryRows"];
 }) {
-  const merchantName = offerSummaryMerchantName(offer.merchant);
-
   return (
     <div {...props(styles.supportingDetail)}>
       <PriceHistorySummary
-        hasMore={priceHistory.pageInfo.hasNextPage}
+        hasMore={priceHistoryHasMore}
         merchantName={merchantName}
-        rows={offerPriceHistoryRows(priceHistory, offer.currency)}
+        rows={priceHistoryRows}
       />
       <CouponSummary
         couponEdges={activeCoupons.edges}
@@ -170,18 +172,16 @@ function OfferSupportingDetail({
 }
 
 function OfferCardHeader({
-  isActive,
-  productName
+  productName,
+  status
 }: {
-  isActive: boolean;
   productName: string;
+  status: ReturnType<typeof getOfferDiscoveryCardData>["status"];
 }) {
   return (
     <header {...props(styles.offerHeader)}>
       <h2 {...props(styles.offerTitle)}>{productName}</h2>
-      <StatusBadge tone={isActive ? "positive" : "neutral"}>
-        {offerStatusLabel(isActive)}
-      </StatusBadge>
+      <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
     </header>
   );
 }
@@ -251,44 +251,6 @@ function OfferObservationContext({ offer }: { offer: OfferNode }) {
       ) : null}
     </>
   );
-}
-
-function offerProductName(product: OfferNode["product"]) {
-  return product?.name ?? "Unknown product";
-}
-
-function offerStatusLabel(isActive: boolean) {
-  return isActive ? "Active" : "Inactive";
-}
-
-function offerSummaryMerchantName(merchant: OfferNode["merchant"]) {
-  return merchant?.name ?? "Offer";
-}
-
-function offerMerchantDomain(merchant: OfferNode["merchant"]) {
-  return merchant?.domain ?? null;
-}
-
-function offerLatestPriceLabel(offer: OfferNode) {
-  return priceLabel(offer.latestPrice?.price, offer.currency) ?? "No latest price.";
-}
-
-function offerPriceHistoryRows(priceHistory: PriceHistoryConnection, currency: string) {
-  return priceHistory.edges
-    .map(({ node }) => priceHistoryRow(node, currency))
-    .filter((row): row is PriceHistoryRow => row !== null);
-}
-
-function priceHistoryConnection(
-  priceHistory: PriceHistoryConnection | null | undefined
-): PriceHistoryConnection {
-  return priceHistory ?? emptyPriceHistoryConnection();
-}
-
-function couponConnection(
-  activeCoupons: ActiveCouponsConnection | null | undefined
-): ActiveCouponsConnection {
-  return activeCoupons ?? emptyCouponConnection();
 }
 
 function PriceHistorySummary({

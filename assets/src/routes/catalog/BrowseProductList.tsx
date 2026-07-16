@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import { selectBrowseProductSpecificationHighlights } from "./browse-product-list-data";
 
 export type BrowseProductNode =
   NonNullable<BrowseProductsRouteQuery["response"]["products"]>["edges"][number]["node"];
@@ -12,8 +13,6 @@ export type BrowseCompareAction =
   | { kind: "selected" }
   | { kind: "full" }
   | { href: string; kind: "add" };
-
-const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
 
 const styles = create({
   actionList: {
@@ -149,13 +148,7 @@ function SpecificationHighlights({
 }: {
   attributes: BrowseProductNode["currentAttributes"];
 }) {
-  const highlights = [...attributes]
-    .sort(
-      (left, right) =>
-        (left.sortOrder ?? Number.MAX_SAFE_INTEGER) -
-        (right.sortOrder ?? Number.MAX_SAFE_INTEGER)
-    )
-    .slice(0, SPECIFICATION_HIGHLIGHT_LIMIT);
+  const highlights = selectBrowseProductSpecificationHighlights(attributes);
 
   if (highlights.length === 0) {
     return null;

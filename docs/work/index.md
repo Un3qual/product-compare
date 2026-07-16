@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -330,107 +330,305 @@ added direct coverage for `hasNextPage: false`. The three other validated rows
 remain ready. Final whole-batch re-review confirmed the narrowed recommendation
 successor is executable within its owned paths and found no remaining issue.
 
+After PR #99 merged on 2026-07-15, the coordinator validated saved-comparison
+naming as a fourth non-overlapping successor. Deterministic default, single-
+product, and ordered multi-product naming remains embedded in `CompareRoute`,
+while its existing route suite passes 109 tests. API-token lifecycle display
+then completed: the framework-free route-data owner now returns stable labels,
+strict offset-aware UTC lifecycle dates, exact invalid-string fallbacks, and
+revoked/active/expired status copy while React retains semantic markup, tone,
+presets, errors, and lifecycle actions. Its focused suites pass 63 tests. The
+three other validated rows remain ready.
+
+Before claiming Catalog Specification Highlights, the coordinator validated
+two useful non-overlapping successors. Merchant visible-page filter
+normalization, selection, and heading copy remain embedded in its React owner,
+whose route suite passes 27 tests. Price-watch amount-rule selection and input
+normalization remain embedded in `PriceWatchControl`; its focused suite passes
+6 tests while the product-detail host route suite passes 55 tests. Both have
+complete owned paths and no blockers, so all useful validated candidates were
+promoted before the claim.
+
+Catalog Specification Highlights then completed: one framework-free selector
+now returns at most three rows by ascending finite sort order, places nullish
+and unusable orders last, preserves source order for ties, and leaves the Relay
+input unchanged while React retains all card markup, actions, omission, and
+StyleX presentation. Task review strengthened regression coverage for finite
+numeric extremes, non-finite orders, and deep input immutability; re-review
+found no remaining code or test-quality issue. Its focused suites pass 69
+tests. Four other validated rows remain ready.
+
+Recommendation Profile Route Data then completed: one framework-free owner now
+parses the exact best-value profile, builds ordered encoded profile paths with
+specification-mode and default-query handling, and suppresses core comparison
+reloads only for a raw recommendation-parameter-only change. React retains
+location access, Relay reads and variables, reset/error/Suspense boundaries,
+snapshot behavior, and markup; `share-comparison-data.ts` remains the owner of
+snapshot publish input and GraphQL profile mapping. Task review strengthened
+unrelated-change coverage to prove both router-default values propagate;
+re-review found no remaining issue. Its focused suites pass 34 tests. Three
+other validated rows remain ready.
+
+Before claiming Saved Comparison Naming, the coordinator validated a fourth
+non-overlapping successor. Candidate scoring, reasons, review status/count
+labels, reviewed-time formatting, and filter-preserving pagination paths remain
+embedded in the 409-line `FeedCandidateReviewList`, whose route suite passes 17
+tests. The successor has complete owned paths, no blockers, and does not overlap
+saved comparisons, merchant filtering, or price-watch input.
+
+Saved Comparison Naming then completed: one zero-import framework-free owner
+now trims product names, omits blanks, preserves caller order and duplicates,
+and returns the existing fallback, singular, and multi-product copy without
+mutating its input. `CompareRoute` retains the ready-state and in-flight guards,
+save request identity, ordered product IDs, mutation callbacks and errors,
+feedback, Relay data, and markup. Its pure and route suites pass 117 tests, and
+independent task review found no actionable issue. Three other validated rows
+remain ready.
+
+Before claiming Merchant Directory Visible-Page Filter Data, the coordinator
+validated a fourth non-overlapping successor. Normal click activation,
+first-party tracking href construction, and same-origin redirect resolution
+remain embedded in `TrackedCommerceClickAction`; its offer-discovery route
+suite passes 51 tests. The successor has complete owned paths, no blockers, and
+does not overlap merchant filtering, price-watch input, or feed-candidate review
+data.
+
+Merchant Directory Visible-Page Filter Data then completed: one framework-free
+owner now returns normalized filter text, case-insensitively selected merchants
+in source order, and the existing filtered or unfiltered heading without
+mutating its input. `MerchantDirectoryView` retains local state, page
+boundaries, empty/no-match presentation, merchant markup and safe links, and
+cursor pagination. Its pure and route suites pass 31 tests, and independent
+task review found no actionable issue. Three other validated rows remain ready.
+
+Before claiming Price-Watch Input Data, the coordinator validated a fourth
+non-overlapping successor. API-token and saved-comparison route owners duplicate
+the same immutable set add/remove policy, while the token owner also embeds
+map upsert/remove policy; their route suites pass 45 and 31 tests. The successor
+has complete owned paths, no blockers, and does not overlap price watches,
+feed-candidate review, or tracked-commerce clicks.
+
+Price-Watch Input Data then completed: one framework-free owner now identifies
+the amount-bearing rules and builds the existing create-watch input from
+trimmed amounts and uppercased trimmed currency while omitting amount fields for
+availability rules. `PriceWatchControl` retains product-keyed reset, FormData
+and event handling, local state, validation, Relay mutation behavior, feedback,
+and markup. Its pure and route suites pass 16 tests; task review found no
+Critical or Important issue, and the lane-status closeout resolves its sole
+Minor note. Three other validated rows remain ready.
+
+Before claiming Feed-Candidate Review View Data, the coordinator validated a
+fourth non-overlapping successor. Catalog type-filter initialization and
+transitions plus advanced-filter disclosure policy remain embedded in
+`CatalogFilterForm`; its browse route suite passes 62 tests. The successor has
+complete owned paths, no blockers, and does not overlap feed-candidate review,
+tracked-commerce clicks, or immutable route-state collections.
+
+Feed-Candidate Review View Data then completed: one framework-free owner now
+provides candidate names, product-count copy, fit scores and ordered reasons,
+review status labels, tones and current-page counts, valid-only reviewed times,
+and filter-preserving first/next paths. React and Relay owners retain query and
+mutation orchestration, draft notes, callbacks, controls, markup, and styling.
+Its pure and route suites pass 24 tests. Three other validated rows remain
+ready.
+
+Before claiming Tracked-Commerce Click Data, the coordinator validated a
+fourth non-overlapping successor. Feed-candidate review mutation-input and
+draft-removal policy remain embedded in `FeedCandidatesRoute`; its existing
+route suite passes 17 tests. The successor has complete owned paths, no
+blockers, and does not overlap tracked-commerce clicks, immutable route-state
+collections, or catalog filter-form state.
+
+Tracked-Commerce Click Data then completed: one framework-free owner now
+qualifies normal unmodified primary clicks, builds the encoded first-party
+merchant-product href, and rejects redirects outside the exact GraphQL API
+origin. `TrackedCommerceClickAction` retains React event handling, pending and
+error state, Relay mutation orchestration, browser navigation, accessibility,
+markup, and styling. The React owner now passes its resolved API endpoint into
+the dependency-free contract explicitly. Its pure and route suites pass 57
+tests; independent review approved the exact scheme, host, and port boundary
+after focused coverage and dependency-boundary follow-up. Final branch review
+then exposed the asynchronous rejection path: the route now turns redirect
+resolution or navigation failures into existing default error feedback, and
+the combined suites pass 58 tests. Three other validated rows remain ready.
+
+Before claiming Immutable Route-State Collection, the coordinator validated a
+fourth non-overlapping successor. Product, status, merchant/domain, latest-
+price, nullable connection, and ordered price-history view policy remain
+embedded in `OfferDiscoveryCard`; the existing offer-discovery route suite
+passes 51 tests. The successor has complete owned paths, no blockers, and does
+not overlap immutable route state, catalog filter-form state, or feed-candidate
+review mutation data.
+
+Immutable Route-State Collection then completed: one framework-free owner now
+provides copy-on-write map upsert/remove and set add/remove behavior with exact
+identity and iteration-order semantics. API-token and saved-comparison routes
+retain their React state transitions, functional setters, Relay orchestration,
+errors, feedback, and presentation. The pure and route suites pass 84 tests,
+TypeScript and dependency-boundary checks pass, and independent task review
+found no actionable issue. Three other validated rows remain ready.
+
+Before claiming the three remaining ready contracts, the coordinator validated
+four non-overlapping successors from current source and behavior. Category
+landing composition, alert mutation inputs/outcomes, recommendation result
+presentation, and shared route-error classification remain embedded in their
+React owners without an existing pure contract. Their five characterization
+suites pass 138 tests. All four successors have complete, mutually disjoint
+owned paths and do not overlap catalog filter-form state, feed-candidate review
+mutation data, or offer-discovery card view data.
+
+The three claimed contracts then completed in parallel. Catalog filter-form
+state now has one framework-free owner for initialization, type transitions,
+and initial advanced disclosure. Feed-candidate review mutation data now owns
+own-property draft selection, trimmed mutation input, and immutable successful-
+draft removal. Offer-discovery card data now owns its deterministic labels,
+nullable connection fallbacks, and ordered valid price-history rows while the
+React owner retains safe/tracked actions and presentation. Their pure and route
+suites pass 172 tests; TypeScript and all dependency/sensitive-field scans pass.
+Independent task reviews approved feed and offer data directly, and approved
+catalog state after explicit runtime-null coverage was added. Four validated
+rows remain ready.
+
+## Active Work
+
+None.
+
 ## Ready Work
 
-### 1. API Token Lifecycle Display Data Contract
+### 1. Category Landing View-Data Contract
 
 Status: ready
-Lane: Frontend API-token lifecycle display
+Lane: Frontend category landing view data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic token labels, strict UTC lifecycle-date
-formatting, optional-date fallbacks, and status copy from `ApiTokenItem` into
-the existing framework-free API-token route-data owner while preserving item
-markup and lifecycle actions.
+Next action: move category title/count copy, browse and next-page paths, product
+rows, brand fallback, and first-three specification highlights out of
+`CategoryRoute` into a framework-free view-data contract while preserving Relay
+reads, route fallbacks, markup, links, and styling.
 Owned paths:
 
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-lifecycle-display.md`
+- `assets/src/routes/categories/category-view-data.ts`
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/test/routes/categories/category-view-data.test.ts`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `docs/work/frontend-category-view-data.md`
 
 Prerequisites:
 
-- Existing API-token route-data and route characterizations remain green.
+- Existing category route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
 - `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
 - `git diff --check`
 
-Exit condition: the framework-free route-data owner returns stable display
-labels for labeled and unlabeled tokens, valid offset-aware UTC timestamps,
-exact invalid-string fallbacks, optional empty labels, and revoked/active/
-expired status copy; React retains semantic details and lifecycle controls.
+Exit condition: one framework-free owner returns the exact category heading,
+qualification copy, encoded browse/next paths, source-ordered product rows,
+nullish brand fallback, and at most the first three source-ordered attribute
+highlights without mutating input; React and Relay retain loading, empty-state,
+markup, links, and styling.
 
-### 2. Catalog Specification Highlights Data Contract
+### 2. Alerts Mutation Data Contract
 
 Status: ready
-Lane: Frontend catalog specification highlights
+Lane: Frontend alerts mutation data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move bounded specification-highlight selection out of the StyleX
-product-list owner into a framework-free contract while preserving catalog
-card markup and decision actions.
+Next action: move toggle/delete/mark-read mutation variables and operation-
+specific success/error resolution out of `AlertsRoute` into a framework-free
+data contract while preserving pending state, Relay commits, revalidation,
+feedback, and presentation.
 Owned paths:
 
-- `assets/src/routes/catalog/browse-product-list-data.ts`
-- `assets/src/routes/catalog/BrowseProductList.tsx`
-- `assets/test/routes/catalog/browse-product-list-data.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-specification-highlights.md`
+- `assets/src/routes/account/alerts/alerts-mutation-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-mutation-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-alerts-mutation-data.md`
 
 Prerequisites:
 
-- Existing catalog browse route characterization remains green.
+- Existing alerts route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/catalog/browse-product-list-data.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-mutation-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
 - `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure mutation-data module
 - `git diff --check`
 
-Exit condition: one framework-free owner selects at most three specification
-highlights by ascending explicit sort order, places unspecified orders last,
-preserves source order for ties, and does not mutate the Relay input; React
-retains the current empty omission, list markup, and styling.
+Exit condition: one framework-free owner builds exact toggle/delete/mark-read
+variables and returns no error only for the existing operation-specific success
+payload, delegating all other payload/GraphQL failures to shared route-error
+copy; React retains pending state, Relay commits, revalidation, feedback, and
+presentation.
 
-### 3. Recommendation Profile Route Data Contract
+### 3. Recommendation Result View-Data Contract
 
 Status: ready
-Lane: Frontend recommendation profile navigation
+Lane: Frontend recommendation result view data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: consolidate recommendation-profile parsing, navigation paths, and
-profile-only revalidation in a framework-free contract while preserving Relay
-reads, snapshot publish-input mapping, boundaries, and panel markup.
+Next action: move winner selection, supported/no-winner reason selection, and
+exact evidence copy out of `RecommendationPanel` into a framework-free view-
+data contract while preserving Relay fetching, profile navigation, suspense,
+error handling, markup, and styling.
 Owned paths:
 
-- `assets/src/routes/compare/recommendation-route-data.ts`
-- `assets/src/routes/compare/loader.ts`
+- `assets/src/routes/compare/recommendation-view-data.ts`
 - `assets/src/routes/compare/RecommendationPanel.tsx`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/recommendation-route-data.test.ts`
+- `assets/test/routes/compare/recommendation-view-data.test.ts`
 - `assets/test/routes/compare/recommendation-panel.test.tsx`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-recommendation-profile-navigation.md`
+- `docs/work/frontend-recommendation-view-data.md`
 
 Prerequisites:
 
-- Existing recommendation-panel and comparison-snapshot characterizations
-  remain green.
+- Existing recommendation-panel characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/recommendation-view-data.test.ts test/routes/compare/recommendation-panel.test.tsx`
 - `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
 - `git diff --check`
 
-Exit condition: one framework-free owner preserves exact best-value parsing,
-lowest-cost fallback, ordered encoded slugs, specification mode, profile query
-omission/defaults, and loader suppression only when the recommendation profile
-is the sole route change; React and Relay owners retain their existing behavior
-and markup, while `share-comparison-data.ts` retains snapshot publish-input and
-GraphQL profile mapping.
+Exit condition: one framework-free owner selects the first matching winner,
+preserves supported or missing-input reason order, and returns exact singular/
+plural evidence copy without mutating input; React and Relay retain profile
+navigation, query lifecycle, fallbacks, markup, and styling.
+
+### 4. Shared Route-Error View-Data Contract
+
+Status: ready
+Lane: Frontend shared route-error view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move response-status and network/unexpected error classification,
+resource capitalization, and exact error/retry copy out of `RouteErrorBoundary`
+into a framework-free view-data contract while preserving React Router error
+detection and presentation.
+Owned paths:
+
+- `assets/src/routes/compare/route-error-view-data.ts`
+- `assets/src/routes/compare/RouteErrorBoundary.tsx`
+- `assets/test/routes/compare/route-error-view-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/test/router.test.tsx`
+- `docs/work/frontend-route-error-view-data.md`
+
+Prerequisites:
+
+- Existing compare and router error-boundary characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/route-error-view-data.test.ts test/routes/compare/compare.route.test.tsx test/router.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/router dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner preserves default, 5xx, 404, 401/403,
+other-response, network, and unexpected-error copy for the supplied resource
+without mutating input; React Router retains raw error detection, boundary
+registration, markup, and presentation.
 
 ## Needs Decision Work
 

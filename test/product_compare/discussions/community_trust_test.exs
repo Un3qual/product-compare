@@ -78,6 +78,41 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert Enum.map(public_question.posts, & &1.id) == [answer.id]
   end
 
+  test "unpublishing an accepted answer clears the accepted answer reference" do
+    asker = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, question} =
+             Discussions.ask_question(asker.id, product.id, %{
+               title: "Does it work outdoors?",
+               body: "I need it below freezing."
+             })
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} =
+             Discussions.answer_question(answerer.id, question.entropy_id, "Yes, down to -10 C.")
+
+    assert {:ok, answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+    assert {:ok, accepted_question} =
+             Discussions.accept_answer(asker.id, question.entropy_id, answer.entropy_id)
+
+    assert accepted_question.accepted_post_id == answer.id
+
+    assert {:ok, hidden_answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :hidden)
+
+    assert hidden_answer.moderation_status == :hidden
+    public_question = Discussions.get_public_question(question.entropy_id)
+    assert is_nil(public_question.accepted_post_id)
+    assert is_nil(public_question.accepted_post)
+  end
+
   test "reports are attributable, duplicate-safe, and moderation requires an operator" do
     author = AccountsFixtures.user_fixture()
     reporter = AccountsFixtures.user_fixture()
