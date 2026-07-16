@@ -537,41 +537,16 @@ controls, `TextField`, accessibility, uncontrolled defaults, and presentation.
 Its pure and browse suites pass 67 tests; the three other validated rows remain
 ready.
 
+Root Destination Policy Data then completed: one framework-free owner now
+returns exact ordered public, shopper, authenticated, operator, secondary-
+public, and auth groups for guest, member, and operator viewers. React retains
+active-path matching, NavLink/Button composition, semantic navigation,
+accessibility, variants, and StyleX. Its pure and root suites pass 18 tests;
+the three validated successor rows remain ready.
+
 ## Active Work
 
-### Root Destination Policy Data Contract
-
-Status: active
-Lane: Frontend root destination policy data
-Worker: `codex/category-alert-recommendation-contracts`
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move ordered public, shopper, authenticated, operator, secondary,
-and auth destination composition out of `RootDestinations` into a framework-
-free data contract while preserving active-path matching, semantic navigation,
-Button/NavLink composition, and styling.
-Owned paths:
-
-- `assets/src/routes/root-destination-data.ts`
-- `assets/src/routes/RootDestinations.tsx`
-- `assets/test/routes/root-destination-data.test.ts`
-- `assets/test/routes/root.route.test.tsx`
-- `docs/work/frontend-root-destination-data.md`
-
-Prerequisites:
-
-- Existing root-route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/root-destination-data.test.ts test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns exact ordered destination
-groups for guest, member, and operator viewers, including secondary-public
-exclusion and auth actions, without mutating input; React retains matching,
-markup, variants, accessibility, and presentation.
+None.
 
 ## Ready Work
 
