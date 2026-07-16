@@ -505,48 +505,28 @@ copy while React Router retains raw error detection and presentation. Its pure,
 compare, and router suites pass 138 tests. The three promoted successors remain
 ready.
 
+Before claiming Shared Comparison Mutation Data, the coordinator validated a
+fourth non-overlapping successor. Exact create-saved-set variables and
+structural completion policy remain embedded in `CompareRoute`, while the
+existing naming policy stays independently owned and the save-feedback plus
+compare route suites pass 116 tests. The successor has complete owned paths,
+no blockers, and does not overlap snapshot sharing, catalog advanced filters,
+or root destinations.
+
+Shared Comparison Mutation Data then completed: the existing framework-free
+sharing owner now builds publish/revoke variables, projects mutation payloads
+and source nodes, and returns immutable publish/revoke state with exact success
+copy. React retains forms, Relay lifecycle, pagination, errors, callbacks,
+markup, and styling. Focused verification is recorded in the lane work doc;
+the three other validated rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Shared Comparison Mutation Data Contract
-
-Status: ready
-Lane: Frontend shared comparison mutation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move publish/revoke variables, structural snapshot projection,
-immutable local publish/revoke state, and exact success copy out of
-`ShareComparisonControl` into the existing framework-free sharing contract
-while preserving Relay lifecycle, pagination, feedback errors, markup, and
-styling.
-Owned paths:
-
-- `assets/src/routes/compare/share-comparison-data.ts`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/share-comparison-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-share-comparison-mutation-data.md`
-
-Prerequisites:
-
-- Existing comparison-snapshot characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure sharing module
-- `git diff --check`
-
-Exit condition: one framework-free owner builds exact mutation variables,
-projects complete snapshot payloads and source nodes, and returns immutable
-published/revoked state with exact success copy without mutating input; React
-and Relay retain form adaptation, commits, pending state, pagination, errors,
-callbacks, markup, and presentation.
-
-### 2. Catalog Advanced-Filter View-Data Contract
+### 1. Catalog Advanced-Filter View-Data Contract
 
 Status: ready
 Lane: Frontend catalog advanced-filter view data
@@ -580,7 +560,7 @@ advanced-filter rows with exact URL-state precedence, metadata fallback,
 field identities, and disabled selection behavior without mutating input;
 React retains form controls, accessibility, and presentation.
 
-### 3. Root Destination Policy Data Contract
+### 2. Root Destination Policy Data Contract
 
 Status: ready
 Lane: Frontend root destination policy data
@@ -612,6 +592,42 @@ Exit condition: one framework-free owner returns exact ordered destination
 groups for guest, member, and operator viewers, including secondary-public
 exclusion and auth actions, without mutating input; React retains matching,
 markup, variants, accessibility, and presentation.
+
+### 3. Compare Saved-Set Mutation Data Contract
+
+Status: ready
+Lane: Frontend compare saved-set mutation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move exact ordered create-saved-set input and structural completion
+policy out of `CompareRoute` into a framework-free mutation-data contract while
+preserving ready and in-flight guards, request identity, Relay callbacks,
+feedback, query reads, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/compare/saved-comparison-mutation-data.ts`
+- `assets/src/routes/compare/CompareRoute.tsx`
+- `assets/test/routes/compare/saved-comparison-mutation-data.test.ts`
+- `assets/test/routes/compare/compare-save-feedback.test.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-compare-saved-set-mutation-data.md`
+
+Prerequisites:
+
+- Existing saved-comparison naming and route mutation-error policies remain
+  unchanged.
+- Existing compare save-feedback and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparison-mutation-data.test.ts test/routes/compare/compare-save-feedback.test.tsx test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure mutation-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner composes the existing naming policy
+into exact ordered create variables and classifies structural completion with
+existing success/error semantics without mutating input; React retains Relay,
+request identity, stale-response guards, feedback, markup, and presentation.
 
 ## Needs Decision Work
 

@@ -941,12 +941,44 @@ StyleX.
   transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 31: Compare Saved-Set Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/saved-comparison-mutation-data.ts`
+- Modify: `assets/src/routes/compare/CompareRoute.tsx`
+- Create: `assets/test/routes/compare/saved-comparison-mutation-data.test.ts`
+- Test: `assets/test/routes/compare/compare-save-feedback.test.tsx`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-compare-saved-set-mutation-data.md`
+
+**Interfaces:** The framework-free mutation-data module composes the existing
+saved-comparison naming policy into the exact ordered create input and
+classifies structural mutation completion as success or the existing shared
+route error. `CompareRoute` retains Relay commits, ready and in-flight guards,
+request identity, callbacks, feedback state, query reads, markup, and styling.
+
+- [ ] Write pure tests for empty, trimmed, singular, and ordered names; ordered
+  product IDs; structural success; missing IDs; payload and top-level GraphQL
+  errors; exact success copy; and input immutability; verify RED.
+- [ ] Extract only deterministic create-input and completion policy while
+  preserving the existing naming and shared route-error owners plus every
+  Relay and stale-request lifecycle guard.
+- [ ] Run the pure mutation-data, save-feedback, and compare route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
   detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five
   separate React owners with no code, test, or lane-doc ownership overlap.
+- Current source inspection on 2026-07-16 found create-saved-set input and
+  completion policy still embedded in `CompareRoute`; the two existing compare
+  suites pass 116 tests, and the candidate is path-disjoint from Tasks 28-30.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,
