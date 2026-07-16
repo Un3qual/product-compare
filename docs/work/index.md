@@ -544,35 +544,17 @@ active-path matching, NavLink/Button composition, semantic navigation,
 accessibility, variants, and StyleX. Its pure and root suites pass 18 tests;
 the three validated successor rows remain ready.
 
+Compare Saved-Set Mutation Data then completed: one framework-free owner now
+composes the existing naming policy into exact ordered create input and
+classifies structural completion with the existing shared route-error policy.
+React retains every Relay, ready and in-flight, request identity, stale-
+completion, callback, feedback, query-read, markup, and presentation
+responsibility. Its pure, save-feedback, and compare route suites pass 124
+tests; the three validated successor rows remain ready.
+
 ## Active Work
 
-### Compare Saved-Set Mutation Data Contract
-
-Status: active
-Owner: `codex/category-alert-recommendation-contracts`
-Lane: Frontend compare saved-set mutation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: implement Task 31 with test-first evidence, preserving the existing
-Relay and request-lifecycle ownership in `CompareRoute`.
-Owned paths:
-
-- `assets/src/routes/compare/saved-comparison-mutation-data.ts`
-- `assets/src/routes/compare/CompareRoute.tsx`
-- `assets/test/routes/compare/saved-comparison-mutation-data.test.ts`
-- `assets/test/routes/compare/compare-save-feedback.test.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-compare-saved-set-mutation-data.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparison-mutation-data.test.ts test/routes/compare/compare-save-feedback.test.tsx test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure mutation-data module
-- `git diff --check`
-
-Exit condition: the pure contract owns exact ordered create variables and
-structural completion policy, focused verification is green, and the lane is
-closed without moving Relay or stale-response responsibilities out of React.
+None.
 
 ## Ready Work
 
