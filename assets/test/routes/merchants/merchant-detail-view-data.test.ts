@@ -42,6 +42,33 @@ test("keeps the missing-observation fallback while retaining freshness counts", 
   });
 });
 
+test("treats undefined Relay nullable fields like their null fallbacks", () => {
+  const data = getMerchantDetailViewData(buildMerchant({
+    detailSummary: buildSummary({ lastObservedAt: undefined }),
+    merchantProducts: buildProducts([
+      buildOffer({ id: "no-product-or-price", product: undefined, latestPrice: undefined }),
+      buildOffer({
+        id: "unknown-shipping",
+        latestPrice: { price: "12", shipping: undefined, inStock: undefined }
+      })
+    ], { hasNextPage: true, endCursor: undefined })
+  }));
+
+  expect(data.observation).toMatchObject({
+    lastObservedAt: null,
+    leadCopy: "No offer observations are available yet."
+  });
+  expect(data.offerRows).toEqual([
+    { id: "no-product-or-price", product: null, priceCopy: "No price observation yet." },
+    {
+      id: "unknown-shipping",
+      product: { name: "Field Camera", path: "/products/field-camera" },
+      priceCopy: "12 USD plus unknown shipping · Stock unknown"
+    }
+  ]);
+  expect(data.nextPagePath).toBeNull();
+});
+
 test("projects available and unavailable offers in source order with exact price fallbacks", () => {
   const data = getMerchantDetailViewData(buildMerchant({
     merchantProducts: buildProducts([

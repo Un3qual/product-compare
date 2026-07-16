@@ -6,7 +6,7 @@
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 with the focused view-data and route suites (7
+- Last verified: 2026-07-16 with the focused view-data and route suites (8
   tests), `assets` TypeScript, the pure-module dependency scan, and
   `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
@@ -22,8 +22,9 @@
   external destination safety, date formatting and semantic markup, feedback
   states, and StyleX.
 - Evidence: the pure suite covers exact copy and order, product availability,
-  all price fallbacks, pagination presence/absence, encoding, and immutability;
-  the route suite confirms its rendered projected next link.
+  null and undefined Relay field fallbacks, all price fallbacks, pagination
+  presence/absence, encoding, and immutability; the route suite confirms its
+  rendered projected next link.
 - Non-overlap: the completed trust-date and external-destination contracts keep
   their existing formatter and URL-safety ownership; this row owns the
   remaining merchant-detail presentation and path policy only.
