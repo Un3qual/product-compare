@@ -560,36 +560,18 @@ policy. The pure and panel suites pass eight tests; the successor has complete
 owned paths, no blockers, and does not overlap API tokens, merchant detail, or
 saved-comparison deletion.
 
+API-Token Mutation Outcome Data then completed: the existing framework-free
+route-data owner now builds exact revoke variables and classifies structural
+create, rotate, and revoke completion with existing token projection and
+shared route-error policy. React retains FormData, Relay, pending and
+concurrency guards, one-time-secret state, optimistic updates, dialogs,
+callbacks, markup, and styling. Its pure and route suites pass 76 tests;
+independent task review found no issues, and the three validated successor rows
+remain ready.
+
 ## Active Work
 
-### API-Token Mutation Outcome Data Contract
-
-Status: active
-Owner: `codex/category-alert-recommendation-contracts`
-Lane: Frontend API-token mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: implement Task 32 with test-first evidence while preserving all
-FormData, Relay, concurrency, secret, optimistic-state, callback, markup, and
-presentation ownership in `ApiTokensRoute`.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-mutation-outcome-data.md`
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure route-data module
-- `git diff --check`
-
-Exit condition: all three mutation completion branches consume structural pure
-outcomes with existing token projection, truthy-plaintext, and shared error
-semantics; React retains every Relay, concurrency, secret, state, callback,
-markup, and presentation responsibility.
+None.
 
 ## Ready Work
 

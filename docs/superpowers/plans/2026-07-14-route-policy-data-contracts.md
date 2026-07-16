@@ -989,16 +989,16 @@ shared route-error policy. `ApiTokensRoute` retains FormData, Relay commits,
 pending and concurrency guards, one-time-secret lifecycle, state transitions,
 dialogs, row-scoped errors, callbacks, markup, and styling.
 
-- [ ] Write pure tests for revoke variables; credential success; missing,
+- [x] Write pure tests for revoke variables; credential success; missing,
   null, and empty plaintext; missing tokens; revoke success; top-level GraphQL
   precedence; payload/default errors; complete payloads that also contain
   payload errors; and input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   truthy plaintext semantics, generated mutation contracts, optimistic state
   application, pending cleanup, and shared error behavior.
-- [ ] Run the pure route-data and API-token route suites, TypeScript, the
+- [x] Run the pure route-data and API-token route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

@@ -47,6 +47,8 @@
 - GREEN: `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
   passed 76 tests across 2 files.
 - `cd assets && bun run typecheck` passed (`tsc --noEmit`).
-- `cd assets && if rg -n -i 'react|relay|react-router|stylex' src/routes/account/api-tokens/api-token-route-data.ts; then exit 1; fi`
+- `cd assets && if rg -n -i "react|relay|react-router|stylex|radix" src/routes/account/api-tokens/api-token-route-data.ts; then exit 1; fi`
   passed with no framework or transport dependency matches.
 - `git diff --check` passed.
+- Independent task review found no Critical, Important, or Minor issues and
+  approved the task for completion.
