@@ -1059,6 +1059,10 @@ StyleX.
 - Category landing, alerts mutation, and recommendation result contracts
   completed serially on 2026-07-16 with 8, 16, and 13 focused tests. Each task
   passed an independent spec-and-quality review with no findings.
+- Shared route-error view data completed on 2026-07-16 with 13 pure contract
+  tests and 125 unchanged compare/router tests. TypeScript and the framework/
+  router boundary passed; the three previously promoted, mutually disjoint
+  successors preserve the ready-row floor.
 - Before the alerts claim, current source inspection confirmed and promoted
   three mutually disjoint successors: comparison snapshot mutation projection
   and local state remain in `ShareComparisonControl`, advanced filter selection

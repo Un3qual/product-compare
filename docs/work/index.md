@@ -499,7 +499,11 @@ same branch. Framework-free owners now provide category copy, rows, and paths,
 exact alert mutation variables and outcome policy, and recommendation winner,
 reason, and evidence projection. Their focused suites pass 8, 16, and 13 tests;
 all three independent task reviews found no actionable issues. The shared
-route-error contract and the three promoted successors remain ready.
+route-error contract then completed on the same branch. One framework-free
+owner now preserves response-status, network, unexpected-error, and default
+copy while React Router retains raw error detection and presentation. Its pure,
+compare, and router suites pass 138 tests. The three promoted successors remain
+ready.
 
 ## Active Work
 
@@ -507,41 +511,7 @@ None.
 
 ## Ready Work
 
-### 1. Shared Route-Error View-Data Contract
-
-Status: ready
-Lane: Frontend shared route-error view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move response-status and network/unexpected error classification,
-resource capitalization, and exact error/retry copy out of `RouteErrorBoundary`
-into a framework-free view-data contract while preserving React Router error
-detection and presentation.
-Owned paths:
-
-- `assets/src/routes/compare/route-error-view-data.ts`
-- `assets/src/routes/compare/RouteErrorBoundary.tsx`
-- `assets/test/routes/compare/route-error-view-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `assets/test/router.test.tsx`
-- `docs/work/frontend-route-error-view-data.md`
-
-Prerequisites:
-
-- Existing compare and router error-boundary characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/route-error-view-data.test.ts test/routes/compare/compare.route.test.tsx test/router.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/router dependency scan of the pure view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner preserves default, 5xx, 404, 401/403,
-other-response, network, and unexpected-error copy for the supplied resource
-without mutating input; React Router retains raw error detection, boundary
-registration, markup, and presentation.
-
-### 2. Shared Comparison Mutation Data Contract
+### 1. Shared Comparison Mutation Data Contract
 
 Status: ready
 Lane: Frontend shared comparison mutation data
@@ -576,7 +546,7 @@ published/revoked state with exact success copy without mutating input; React
 and Relay retain form adaptation, commits, pending state, pagination, errors,
 callbacks, markup, and presentation.
 
-### 3. Catalog Advanced-Filter View-Data Contract
+### 2. Catalog Advanced-Filter View-Data Contract
 
 Status: ready
 Lane: Frontend catalog advanced-filter view data
@@ -610,7 +580,7 @@ advanced-filter rows with exact URL-state precedence, metadata fallback,
 field identities, and disabled selection behavior without mutating input;
 React retains form controls, accessibility, and presentation.
 
-### 4. Root Destination Policy Data Contract
+### 3. Root Destination Policy Data Contract
 
 Status: ready
 Lane: Frontend root destination policy data
