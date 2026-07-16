@@ -1119,6 +1119,38 @@ presentation.
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 37: Share-Comparison Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/share-comparison-data.ts`
+- Modify: `assets/src/routes/compare/ShareComparisonControl.tsx`
+- Modify: `assets/test/routes/compare/share-comparison-data.test.ts`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-share-comparison-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free share-comparison data module
+additionally owns structural publish and revoke completion outcomes as the
+projected published snapshot or original revoked snapshot and the existing
+shared route error. `ShareComparisonControl` retains FormData and location
+adaptation, Relay mutation promises, hooks, component state and callbacks,
+snapshot paging, markup, and styling.
+
+- [ ] Write pure tests for complete publish projection and revoke identity;
+  missing and null publish IDs, share paths, payloads, and revoke facts;
+  payload and top-level GraphQL errors on incomplete facts; complete facts
+  that coexist with payload or top-level errors; shared default fallback; and
+  input immutability; verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  current fact-first success semantics, generated mutation contracts, Relay
+  promise handling, local state transitions, callbacks, and shared errors.
+- [ ] Run the pure share-comparison and existing comparison-snapshots suites,
+  TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1156,6 +1188,13 @@ presentation.
   The pure and route suites pass 28 tests, and the candidate is path-disjoint
   from Tasks 33-35 while preserving generated mutation, concurrency, shared-
   error, and presentation owners.
+- Current source inspection on 2026-07-16 found publish and revoke structural
+  outcome and shared-error interpretation still embedded in
+  `ShareComparisonControl`; its existing framework-free owner already builds
+  inputs and variables, projects published snapshots, and owns immutable
+  snapshot state. The pure and control suites pass 17 tests, and the candidate
+  is path-disjoint from Tasks 34-36 while preserving current fact-first
+  success semantics and every Relay and presentation owner.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,

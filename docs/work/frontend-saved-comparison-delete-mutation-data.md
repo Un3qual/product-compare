@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,8 +12,8 @@
 
 ## Saved-Comparison Delete Mutation Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate exact delete variables and structural completion as a
+- Status: active on 2026-07-16.
+- Current action: isolate exact delete variables and structural completion as a
   deleted ID or shared route error in a framework-free mutation-data module
   while retaining row-scoped in-flight guards, Relay lifecycle, state,
   feedback, query retention, markup, and styling in `SavedComparisonsRoute`.
