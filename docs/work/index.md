@@ -569,21 +569,25 @@ callbacks, markup, and styling. Its pure and route suites pass 76 tests;
 independent task review found no issues, and the three validated successor rows
 remain ready.
 
+Before claiming Merchant Detail View-Data, the coordinator validated a fourth
+non-overlapping successor. Network, program, link, and coupon structural
+completion policy remains embedded in `AffiliateSetupRoute`, while the existing
+framework-free setup-data owner already builds all four mutation inputs. Its
+pure and route suites pass 28 tests; the successor has complete owned paths, no
+blockers, and does not overlap merchant detail, saved-comparison deletion, or
+product community mutations.
+
 ## Active Work
 
-None.
+### Merchant Detail View-Data Contract
 
-## Ready Work
-
-### 1. Merchant Detail View-Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/category-alert-recommendation-contracts`
 Lane: Frontend merchant detail view data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move merchant coverage summaries, freshness copy, offer-row
-projection, product paths, and pagination policy out of `MerchantDetailRoute`
-into a framework-free view-data contract while preserving Relay reads, safe
-website resolution, semantic markup, feedback states, and styling.
+Next action: implement Task 33 with test-first evidence while preserving Relay,
+safe external destinations, semantic markup, time elements, feedback states,
+and presentation in `MerchantDetailRoute`.
 Owned paths:
 
 - `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
@@ -591,12 +595,6 @@ Owned paths:
 - `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
 - `assets/test/routes/merchants/merchant-detail.route.test.tsx`
 - `docs/work/frontend-merchant-detail-view-data.md`
-
-Prerequisites:
-
-- Existing GraphQL merchant-detail response shape remains unchanged.
-- Existing product-date and external-destination owners remain unchanged.
-- Existing merchant-detail characterization remains green.
 
 Verification:
 
@@ -610,7 +608,9 @@ freshness copy, source-ordered offer rows, encoded product and pagination paths,
 and existing fallbacks without mutating input; React retains Relay, safe
 external-link resolution, semantic markup, feedback states, and presentation.
 
-### 2. Saved-Comparison Delete Mutation Data Contract
+## Ready Work
+
+### 1. Saved-Comparison Delete Mutation Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison delete mutation data
@@ -646,7 +646,7 @@ structural deleted-or-error outcome with existing top-level and payload error
 semantics without mutating input; React retains Relay, row concurrency, state,
 callbacks, query retention, markup, and presentation.
 
-### 3. Product Community Mutation Outcome Data Contract
+### 2. Product Community Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend product community mutation outcome data
@@ -681,6 +681,43 @@ Exit condition: the existing framework-free owner returns exact success or
 shared-error copy for review, question, and answer completion without mutating
 inputs; React retains Relay, pending state, input adaptation, pagination,
 feedback placement, markup, and presentation.
+
+### 3. Affiliate Setup Mutation Outcome Data Contract
+
+Status: ready
+Lane: Frontend affiliate setup mutation outcome data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move structural network, program, link, and coupon completion
+interpretation out of `AffiliateSetupRoute` into its existing framework-free
+data owner while preserving FormData adaptation, Relay mutation promises,
+in-flight and pending guards, selected state, feedback placement, markup, and
+presentation.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-mutation-outcome-data.md`
+
+Prerequisites:
+
+- Existing generated network, program, link, and coupon mutation shapes remain
+  unchanged.
+- Existing shared route mutation-error policy remains unchanged.
+- Existing affiliate setup data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure setup-data module
+- `git diff --check`
+
+Exit condition: the existing framework-free owner returns each complete
+network, program, link, or coupon fact or the shared route error without
+mutating inputs; React retains Relay, concurrency, state, feedback, markup, and
+presentation.
 
 ## Needs Decision Work
 

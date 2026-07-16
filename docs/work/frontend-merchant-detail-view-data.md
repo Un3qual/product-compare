@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,7 +12,8 @@
 
 ## Merchant Detail View-Data Contract
 
-- Status: ready on 2026-07-16.
+- Status: active on 2026-07-16 on
+  `codex/category-alert-recommendation-contracts`.
 - Next action: isolate merchant coverage summaries, freshness copy, offer-row
   projection, product-detail paths, and next-page policy in a framework-free
   module while retaining Relay reads, safe website resolution, semantic

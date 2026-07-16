@@ -1088,6 +1088,37 @@ state, input adaptation, feedback placement, pagination, markup, and styling.
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 36: Affiliate Setup Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- Modify: `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- Test: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- Create: `docs/work/frontend-affiliate-setup-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free setup-data module additionally owns
+structural network, program, link, and coupon completion outcomes as their
+original complete fact or the existing shared route error.
+`AffiliateSetupRoute` retains FormData adaptation, Relay mutation promises,
+in-flight and pending guards, selected state, feedback placement, markup, and
+presentation.
+
+- [ ] Write pure tests for each operation's complete fact and identity; missing
+  and null facts; top-level GraphQL-error precedence; payload and default
+  errors; complete facts that also contain payload errors; and input
+  immutability; verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  generated mutation contracts, top-level error precedence, current payload-
+  error success behavior, Relay promise handling, guards, state, and shared
+  errors.
+- [ ] Run the pure setup-data and existing affiliate setup route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1119,6 +1150,12 @@ state, input adaptation, feedback placement, pagination, markup, and styling.
   corresponding input policy. The pure and panel suites pass eight tests, and
   the candidate is path-disjoint from Tasks 32-34 while preserving current
   fact-first success semantics and every Relay and presentation owner.
+- Current source inspection on 2026-07-16 found network, program, link, and
+  coupon completion interpretation still embedded in `AffiliateSetupRoute`;
+  its existing framework-free owner already builds all four mutation inputs.
+  The pure and route suites pass 28 tests, and the candidate is path-disjoint
+  from Tasks 33-35 while preserving generated mutation, concurrency, shared-
+  error, and presentation owners.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,
