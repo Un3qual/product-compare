@@ -2,31 +2,34 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and the passing
-  root characterization in the 82-test successor cohort.
+- Last verified: 2026-07-16 after the extracted policy, focused pure and root
+  suites, TypeScript, dependency scan, and whitespace validation.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Root Destination Policy Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate ordered public, shopper, authenticated, operator,
-  secondary, and auth destination composition for guest, member, and operator
-  viewers in a framework-free module while retaining active-path matching,
-  NavLink/Button composition, semantic navigation, and styling in
-  `RootDestinations`.
-- Candidate evidence: current source inspection found static destination copy,
-  secondary-public filtering, and viewer-specific group composition embedded
-  in the React owner; the root characterization passed in the three-suite,
-  82-test successor validation run.
+- Status: done on 2026-07-16.
+- Completed: extracted ordered public, shopper, authenticated, operator,
+  secondary-public, and auth destination composition to the framework-free
+  `root-destination-data.ts` contract. `RootDestinations` retains active-path
+  matching, NavLink/Button composition, semantic navigation, and StyleX.
+- Evidence: direct policy coverage characterizes guest, member, and operator
+  group composition, exact copy, comparison exact-match metadata, source
+  ordering, secondary-public exclusion, and viewer immutability. The rendered
+  root-route characterization remains green.
 - Blockers: none.
 
 ## Verification
 
+- RED: `cd assets && bun x vitest run test/routes/root-destination-data.test.ts`
+  failed as expected because `src/routes/root-destination-data.ts` was absent.
 - `cd assets && bun x vitest run test/routes/root-destination-data.test.ts test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure data module
-- `git diff --check`
+  passed: 2 files, 18 tests, 0 failures.
+- `cd assets && bun run typecheck` passed.
+- The framework/transport dependency scan found no React, Relay, router,
+  StyleX, Radix, or generated GraphQL imports in the pure data module.
+- `git diff --check` passed.
