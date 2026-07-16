@@ -1000,6 +1000,35 @@ dialogs, row-scoped errors, callbacks, markup, and styling.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 33: Merchant Detail View-Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
+- Modify: `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- Create: `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
+- Test: `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- Create: `docs/work/frontend-merchant-detail-view-data.md`
+
+**Interfaces:** The framework-free view-data module owns exact merchant
+coverage summary rows, observation and freshness copy, source-ordered offer-row
+projection, product-detail paths, and conditional pagination paths.
+`MerchantDetailRoute` retains Relay reads, safe external website resolution,
+semantic links and time markup, empty and error states, and StyleX.
+
+- [ ] Write pure tests for exact summary order and copy, observed and missing
+  observation text, source-ordered available and unavailable product rows,
+  price, shipping, stock, and no-price fallbacks, encoded product and advancing
+  pagination paths, absent pagination, and input immutability; verify RED.
+- [ ] Extract only deterministic merchant detail view and path policy while
+  preserving the existing product-date and external-destination owners,
+  generated query contract, semantic markup, feedback states, and presentation.
+- [ ] Run the pure view-data and existing merchant-detail suites, TypeScript,
+  the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1013,6 +1042,12 @@ dialogs, row-scoped errors, callbacks, markup, and styling.
   completion interpretation still embedded in `ApiTokensRoute`; its existing
   pure owner and route suites pass 64 tests, and the candidate is path-disjoint
   from Tasks 29-31.
+- Current source inspection on 2026-07-16 found merchant coverage summaries,
+  freshness copy, source-ordered offer projection, price, shipping, and stock
+  labels, product-detail paths, and pagination policy still embedded in
+  `MerchantDetailRoute`. Its existing suite passes two tests, and the candidate
+  is path-disjoint from Tasks 30-32 while leaving the completed date-formatting
+  and external-destination owners unchanged.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,

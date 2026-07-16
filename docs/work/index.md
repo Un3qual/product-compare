@@ -539,14 +539,11 @@ ready.
 
 ## Active Work
 
-None.
+### Root Destination Policy Data Contract
 
-## Ready Work
-
-### 1. Root Destination Policy Data Contract
-
-Status: ready
+Status: active
 Lane: Frontend root destination policy data
+Worker: `codex/category-alert-recommendation-contracts`
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 Next action: move ordered public, shopper, authenticated, operator, secondary,
 and auth destination composition out of `RootDestinations` into a framework-
@@ -576,7 +573,9 @@ groups for guest, member, and operator viewers, including secondary-public
 exclusion and auth actions, without mutating input; React retains matching,
 markup, variants, accessibility, and presentation.
 
-### 2. Compare Saved-Set Mutation Data Contract
+## Ready Work
+
+### 1. Compare Saved-Set Mutation Data Contract
 
 Status: ready
 Lane: Frontend compare saved-set mutation data
@@ -612,7 +611,7 @@ into exact ordered create variables and classifies structural completion with
 existing success/error semantics without mutating input; React retains Relay,
 request identity, stale-response guards, feedback, markup, and presentation.
 
-### 3. API-Token Mutation Outcome Data Contract
+### 2. API-Token Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend API-token mutation outcome data
@@ -646,6 +645,41 @@ Exit condition: all three mutation completion branches consume structural pure
 outcomes with existing token projection, truthy-plaintext, and shared error
 semantics; React retains every Relay, concurrency, secret, state, callback,
 markup, and presentation responsibility.
+
+### 3. Merchant Detail View-Data Contract
+
+Status: ready
+Lane: Frontend merchant detail view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move merchant coverage summaries, freshness copy, offer-row
+projection, product paths, and pagination policy out of `MerchantDetailRoute`
+into a framework-free view-data contract while preserving Relay reads, safe
+website resolution, semantic markup, feedback states, and styling.
+Owned paths:
+
+- `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
+- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- `docs/work/frontend-merchant-detail-view-data.md`
+
+Prerequisites:
+
+- Existing GraphQL merchant-detail response shape remains unchanged.
+- Existing product-date and external-destination owners remain unchanged.
+- Existing merchant-detail characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-detail-view-data.test.ts test/routes/merchants/merchant-detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns exact merchant summaries,
+freshness copy, source-ordered offer rows, encoded product and pagination paths,
+and existing fallbacks without mutating input; React retains Relay, safe
+external-link resolution, semantic markup, feedback states, and presentation.
 
 ## Needs Decision Work
 
