@@ -16,7 +16,9 @@ export type OfferDiscoveryCardData = {
   priceHistory: PriceHistoryConnection;
   priceHistoryRows: PriceHistoryRow[];
   productName: string;
-  statusLabel: "Active" | "Inactive";
+  status:
+    | { label: "Active"; tone: "positive" }
+    | { label: "Inactive"; tone: "neutral" };
   summaryMerchantName: string;
 };
 
@@ -32,7 +34,9 @@ export function getOfferDiscoveryCardData(offer: OfferNode): OfferDiscoveryCardD
       .map(({ node }) => priceHistoryRow(node, offer.currency))
       .filter((row): row is PriceHistoryRow => row !== null),
     productName: offer.product?.name ?? "Unknown product",
-    statusLabel: offer.isActive ? "Active" : "Inactive",
+    status: offer.isActive
+      ? { label: "Active", tone: "positive" }
+      : { label: "Inactive", tone: "neutral" },
     summaryMerchantName: offer.merchant?.name ?? "Offer"
   };
 }

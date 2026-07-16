@@ -9,7 +9,6 @@ const MERCHANTS = [
 test("returns every merchant and the page heading for blank or whitespace-only filters", () => {
   expect(getMerchantDirectoryViewData(MERCHANTS, "   ")).toEqual({
     heading: "3 merchants on this page",
-    normalizedFilterText: "",
     visibleMerchants: MERCHANTS
   });
 });
@@ -17,7 +16,6 @@ test("returns every merchant and the page heading for blank or whitespace-only f
 test("filters names case-insensitively after trimming while preserving source order", () => {
   const data = getMerchantDirectoryViewData(MERCHANTS, "  AcMe ");
 
-  expect(data.normalizedFilterText).toBe("acme");
   expect(data.visibleMerchants).toEqual([MERCHANTS[0], MERCHANTS[2]]);
   expect(data.heading).toBe("2 of 3 merchants shown");
 });
@@ -25,7 +23,6 @@ test("filters names case-insensitively after trimming while preserving source or
 test("returns the existing filtered heading when no merchant names match", () => {
   expect(getMerchantDirectoryViewData(MERCHANTS, "missing")).toEqual({
     heading: "0 of 3 merchants shown",
-    normalizedFilterText: "missing",
     visibleMerchants: []
   });
 });

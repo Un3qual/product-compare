@@ -15,7 +15,6 @@ export function getMerchantDirectoryViewData<T extends MerchantDirectoryViewData
     heading: normalizedFilterText
       ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
       : `${merchants.length} merchants on this page`,
-    normalizedFilterText,
     visibleMerchants
   };
 }

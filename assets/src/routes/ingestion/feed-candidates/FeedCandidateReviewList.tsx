@@ -18,13 +18,13 @@ import {
   formatReviewedAt,
   reviewStatusTone
 } from "./feed-candidate-review-data";
+import type { FeedCandidateReviewStatus } from "./feed-candidate-review-mutation-data";
 import { type FeedCandidatesPagination } from "./pagination";
 
 export type FeedCandidatesConnection = NonNullable<
   MerchantFeedCandidatesRouteQuery["response"]["merchantFeedCandidates"]
 >;
 export type FeedCandidate = FeedCandidatesConnection["edges"][number]["node"];
-export type ReviewStatus = "PENDING" | "SHORTLISTED" | "DISMISSED";
 
 const styles = create({
   list: {
@@ -58,7 +58,7 @@ export function FeedCandidateReviewList({
 }: {
   connection: FeedCandidatesConnection;
   isReviewInFlight: boolean;
-  onReview: (candidate: FeedCandidate, status: ReviewStatus) => void;
+  onReview: (candidate: FeedCandidate, status: FeedCandidateReviewStatus) => void;
   onReviewNoteChange: (candidateId: string, note: string) => void;
   pagination: FeedCandidatesPagination;
   reviewFeedback: string;
@@ -123,7 +123,7 @@ function FeedCandidateListItem({
   candidate: FeedCandidate;
   isReviewInFlight: boolean;
   onReviewNoteChange: (candidateId: string, note: string) => void;
-  onReview: (candidate: FeedCandidate, status: ReviewStatus) => void;
+  onReview: (candidate: FeedCandidate, status: FeedCandidateReviewStatus) => void;
   reviewNoteValue: string;
 }) {
   const candidateName = formatFeedCandidateName(candidate);

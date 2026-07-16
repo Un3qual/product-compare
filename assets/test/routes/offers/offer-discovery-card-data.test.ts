@@ -25,10 +25,10 @@ test("preserves present empty labels while defaulting nullish product and mercha
 });
 
 test.each([
-  [true, "Active"],
-  [false, "Inactive"]
-])("uses canonical %s offer status copy", (isActive, statusLabel) => {
-  expect(getOfferDiscoveryCardData(buildOffer({ isActive })).statusLabel).toBe(statusLabel);
+  [true, { label: "Active", tone: "positive" }],
+  [false, { label: "Inactive", tone: "neutral" }]
+])("uses canonical %s offer status presentation", (isActive, status) => {
+  expect(getOfferDiscoveryCardData(buildOffer({ isActive })).status).toEqual(status);
 });
 
 test("formats valid latest prices and falls back only when the current formatter returns null", () => {

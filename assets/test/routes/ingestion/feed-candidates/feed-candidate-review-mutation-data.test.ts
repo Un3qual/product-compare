@@ -1,3 +1,4 @@
+import type { ReviewMerchantFeedCandidateInput } from "../../../../src/__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import {
   buildFeedCandidateReviewMutationInput,
   omitReviewNoteDraft
@@ -7,6 +8,12 @@ const CANDIDATE = {
   id: "candidate-1",
   reviewNote: "Persisted review note"
 };
+
+test("returns the generated Relay mutation input contract", () => {
+  expectTypeOf(
+    buildFeedCandidateReviewMutationInput(CANDIDATE, "SHORTLISTED", {})
+  ).toEqualTypeOf<ReviewMerchantFeedCandidateInput>();
+});
 
 test("builds a trimmed input from an explicit nonblank draft", () => {
   const input = buildFeedCandidateReviewMutationInput(

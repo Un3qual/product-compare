@@ -1,10 +1,9 @@
-export type FeedCandidateReviewStatus = "PENDING" | "SHORTLISTED" | "DISMISSED";
+import type { ReviewMerchantFeedCandidateInput } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 
-export type FeedCandidateReviewMutationInput = {
-  id: string;
-  status: FeedCandidateReviewStatus;
-  note?: string;
-};
+export type FeedCandidateReviewStatus = Exclude<
+  ReviewMerchantFeedCandidateInput["status"],
+  "%future added value"
+>;
 
 type FeedCandidateReviewNoteSource = {
   id: string;
@@ -15,7 +14,7 @@ export function buildFeedCandidateReviewMutationInput(
   candidate: FeedCandidateReviewNoteSource,
   status: FeedCandidateReviewStatus,
   reviewNotes: Readonly<Record<string, string>>
-): FeedCandidateReviewMutationInput {
+): ReviewMerchantFeedCandidateInput {
   const hasDraftNote = Object.prototype.hasOwnProperty.call(reviewNotes, candidate.id);
   const note = (hasDraftNote ? reviewNotes[candidate.id] : candidate.reviewNote ?? "").trim();
 

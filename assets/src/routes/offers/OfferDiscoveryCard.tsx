@@ -91,9 +91,8 @@ export function OfferDiscoveryCard({
   return (
     <article {...props(styles.offer)}>
       <OfferCardHeader
-        isActive={offer.isActive}
         productName={cardData.productName}
-        statusLabel={cardData.statusLabel}
+        status={cardData.status}
       />
       <OfferDecisionContext
         highlightLabel={highlightLabel}
@@ -173,20 +172,16 @@ function OfferSupportingDetail({
 }
 
 function OfferCardHeader({
-  isActive,
   productName,
-  statusLabel
+  status
 }: {
-  isActive: boolean;
   productName: string;
-  statusLabel: "Active" | "Inactive";
+  status: ReturnType<typeof getOfferDiscoveryCardData>["status"];
 }) {
   return (
     <header {...props(styles.offerHeader)}>
       <h2 {...props(styles.offerTitle)}>{productName}</h2>
-      <StatusBadge tone={isActive ? "positive" : "neutral"}>
-        {statusLabel}
-      </StatusBadge>
+      <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
     </header>
   );
 }

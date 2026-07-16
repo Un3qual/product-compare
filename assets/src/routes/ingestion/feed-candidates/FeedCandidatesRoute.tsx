@@ -6,7 +6,6 @@ import merchantFeedCandidatesRouteQuery, {
   type MerchantFeedCandidatesRouteQuery
 } from "../../../__generated__/MerchantFeedCandidatesRouteQuery.graphql";
 import reviewMerchantFeedCandidateMutation, {
-  type ReviewMerchantFeedCandidateInput,
   type ReviewMerchantFeedCandidateMutation
 } from "../../../__generated__/ReviewMerchantFeedCandidateMutation.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
@@ -20,8 +19,7 @@ import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   FeedCandidateReviewList,
   type FeedCandidate,
-  type FeedCandidatesConnection,
-  type ReviewStatus
+  type FeedCandidatesConnection
 } from "./FeedCandidateReviewList";
 import {
   formatFeedCandidateName,
@@ -29,6 +27,7 @@ import {
 } from "./feed-candidate-review-data";
 import {
   buildFeedCandidateReviewMutationInput,
+  type FeedCandidateReviewStatus,
   omitReviewNoteDraft
 } from "./feed-candidate-review-mutation-data";
 import {
@@ -189,8 +188,8 @@ function FeedCandidateReviewPanel({
     }));
   };
 
-  const handleReview = (candidate: FeedCandidate, status: ReviewStatus) => {
-    const input: ReviewMerchantFeedCandidateInput = buildFeedCandidateReviewMutationInput(
+  const handleReview = (candidate: FeedCandidate, status: FeedCandidateReviewStatus) => {
+    const input = buildFeedCandidateReviewMutationInput(
       candidate,
       status,
       reviewNotes
