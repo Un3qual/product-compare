@@ -1,6 +1,7 @@
 import {
   graphQLDateTimeContext,
-  graphQLDateTimeLabel
+  graphQLDateTimeLabel,
+  parseGraphQLDateTime
 } from "../../src/routes/graphql-datetime";
 
 test.each([
@@ -24,4 +25,12 @@ test.each([
 ])("rejects unsupported DateTime value %s", (value) => {
   expect(graphQLDateTimeContext(value)).toBeNull();
   expect(graphQLDateTimeLabel(value)).toBeNull();
+});
+
+test.each([
+  ["2026-06-01T00:00:00.1Z", "2026-06-01T00:00:00.100Z"],
+  ["2026-06-01T00:00:00.123456Z", "2026-06-01T00:00:00.123Z"],
+  ["2026-06-01T00:00:00.987654+02:00", "2026-05-31T22:00:00.987Z"]
+])("parses GraphQL fractional-second precision for %s", (value, expected) => {
+  expect(parseGraphQLDateTime(value)?.toISOString()).toBe(expected);
 });

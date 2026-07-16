@@ -28,7 +28,7 @@ describe("catalogFilterFormInitialTypeState", () => {
       filters({ typeTaxonId: "type-laptops", includeTypeDescendants: true }),
       { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: true }
     ]
-  ])("uses $s", (_description, input, expected) => {
+  ])("uses %s", (_description, input, expected) => {
     expect(catalogFilterFormInitialTypeState(input)).toEqual(expected);
   });
 
@@ -49,7 +49,7 @@ describe("catalogFilterFormInitialTypeState", () => {
     ["selected type with descendants disabled", "type-laptops", false, false],
     ["empty type with descendants enabled", "", true, false],
     ["empty type with descendants disabled", "", false, false]
-  ])("initializes descendants for $s", (_description, typeTaxonId, input, expected) => {
+  ])("initializes descendants for %s", (_description, typeTaxonId, input, expected) => {
     expect(
       catalogFilterFormInitialTypeState(filters({ typeTaxonId, includeTypeDescendants: input }))
     ).toHaveProperty("includeTypeDescendants", expected);
@@ -116,7 +116,7 @@ describe("hasInitiallyOpenCatalogAdvancedFilters", () => {
     ["numeric filters", filters({ numeric: [{ attributeId: "price", min: "10" }] })],
     ["boolean filters", filters({ booleans: [{ attributeId: "wireless", value: true }] })],
     ["enum filters", filters({ enums: [{ attributeId: "color", enumOptionId: "red" }] })]
-  ])("opens for $s", (_description, input) => {
+  ])("opens for %s", (_description, input) => {
     expect(hasInitiallyOpenCatalogAdvancedFilters(input)).toBe(true);
   });
 

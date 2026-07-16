@@ -1,3 +1,4 @@
+import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { formatProductDateTime } from "../../product-formatting";
 import {
   feedCandidatesReviewStatusToUrlParam,
@@ -25,6 +26,20 @@ export interface ReviewStatusCounts {
   shortlisted: number;
 }
 
+type CandidateFitContribution = {
+  points: number;
+  reason: string | null;
+};
+
+const NO_CANDIDATE_FIT = { points: 0, reason: null } as const;
+
+const PRODUCT_COUNT_FIT_TIERS = [
+  { minimum: 10000, points: 50, reason: "10000+ products" },
+  { minimum: 1000, points: 35, reason: "1000+ products" },
+  { minimum: 100, points: 20, reason: "100+ products" },
+  { minimum: 1, points: 10, reason: "1+ products" }
+] as const;
+
 export function formatFeedCandidateName(
   candidate: Pick<FeedCandidateReviewData, "advertiserName" | "providerFeedId">
 ) {
@@ -40,23 +55,16 @@ export function formatProductCount(productCount: number | null | undefined) {
 }
 
 export function candidateFitScore(candidate: FeedCandidateReviewData) {
-  return (
-    productCountFitPoints(candidate.productCount) +
-    exactCandidateFieldPoints(candidate.advertiserCountry, "US", 20) +
-    exactCandidateFieldPoints(candidate.currency, "USD", 15) +
-    exactCandidateFieldPoints(candidate.language, "EN", 10) +
-    sourceFeedTypeFitPoints(candidate.sourceFeedType)
+  return candidateFitContributions(candidate).reduce(
+    (score, contribution) => score + contribution.points,
+    0
   );
 }
 
 export function candidateFitReasons(candidate: FeedCandidateReviewData) {
-  return [
-    productCountFitReason(candidate.productCount),
-    exactCandidateFieldReason(candidate.advertiserCountry, "US", "US market"),
-    exactCandidateFieldReason(candidate.currency, "USD", "USD"),
-    exactCandidateFieldReason(candidate.language, "EN", "English"),
-    sourceFeedTypeFitReason(candidate.sourceFeedType)
-  ].filter((reason): reason is string => typeof reason === "string");
+  return candidateFitContributions(candidate)
+    .map((contribution) => contribution.reason)
+    .filter((reason): reason is string => typeof reason === "string");
 }
 
 export function formatFeedCandidateReviewStatus(reviewStatus: string | null | undefined) {
@@ -109,13 +117,9 @@ export function countByReviewStatus(
 }
 
 export function formatReviewedAt(value: string | null | undefined) {
-  if (typeof value !== "string") {
-    return "";
-  }
+  const date = parseGraphQLDateTime(value);
 
-  const date = new Date(value);
-
-  return Number.isNaN(date.getTime()) ? "" : formatProductDateTime(date);
+  return date ? formatProductDateTime(date) : "";
 }
 
 export function feedCandidatesFirstPagePath(
@@ -155,68 +159,46 @@ function appendFeedCandidatesFilterParams(
   params.set("sort", feedCandidatesSortToUrlParam(pagination.sort));
 }
 
-function productCountFitPoints(productCount: number | null | undefined) {
-  if (typeof productCount !== "number") {
-    return 0;
-  }
-
-  if (productCount >= 10000) {
-    return 50;
-  }
-
-  if (productCount >= 1000) {
-    return 35;
-  }
-
-  if (productCount >= 100) {
-    return 20;
-  }
-
-  return productCount > 0 ? 10 : 0;
+function candidateFitContributions(candidate: FeedCandidateReviewData) {
+  return [
+    productCountFit(candidate.productCount),
+    exactCandidateFieldFit(candidate.advertiserCountry, "US", 20, "US market"),
+    exactCandidateFieldFit(candidate.currency, "USD", 15, "USD"),
+    exactCandidateFieldFit(candidate.language, "EN", 10, "English"),
+    sourceFeedTypeFit(candidate.sourceFeedType)
+  ];
 }
 
-function productCountFitReason(productCount: number | null | undefined) {
+function productCountFit(
+  productCount: number | null | undefined
+): CandidateFitContribution {
   if (typeof productCount !== "number") {
-    return null;
+    return NO_CANDIDATE_FIT;
   }
 
-  if (productCount >= 10000) {
-    return "10000+ products";
-  }
-
-  if (productCount >= 1000) {
-    return "1000+ products";
-  }
-
-  if (productCount >= 100) {
-    return "100+ products";
-  }
-
-  return productCount > 0 ? "1+ products" : null;
+  return (
+    PRODUCT_COUNT_FIT_TIERS.find((tier) => productCount >= tier.minimum) ??
+    NO_CANDIDATE_FIT
+  );
 }
 
-function exactCandidateFieldPoints(
+function exactCandidateFieldFit(
   value: string | null | undefined,
   expectedValue: string,
-  points: number
-) {
-  return normalizeCandidateField(value) === expectedValue ? points : 0;
-}
-
-function exactCandidateFieldReason(
-  value: string | null | undefined,
-  expectedValue: string,
+  points: number,
   reason: string
-) {
-  return normalizeCandidateField(value) === expectedValue ? reason : null;
+): CandidateFitContribution {
+  return normalizeCandidateField(value) === expectedValue
+    ? { points, reason }
+    : NO_CANDIDATE_FIT;
 }
 
-function sourceFeedTypeFitPoints(sourceFeedType: string | null | undefined) {
-  return candidateFieldHasValue(sourceFeedType) ? 5 : 0;
-}
-
-function sourceFeedTypeFitReason(sourceFeedType: string | null | undefined) {
-  return candidateFieldHasValue(sourceFeedType) ? "feed type present" : null;
+function sourceFeedTypeFit(
+  sourceFeedType: string | null | undefined
+): CandidateFitContribution {
+  return candidateFieldHasValue(sourceFeedType)
+    ? { points: 5, reason: "feed type present" }
+    : NO_CANDIDATE_FIT;
 }
 
 function normalizeCandidateField(value: string | null | undefined) {

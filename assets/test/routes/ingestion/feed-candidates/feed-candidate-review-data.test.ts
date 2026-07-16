@@ -45,12 +45,29 @@ test("scores product-count thresholds and normalized market fields in reason ord
     "English",
     "feed type present"
   ]);
-  expect(candidateFitScore({ ...completeCandidate, productCount: 10000 })).toBe(100);
-  expect(candidateFitScore({ ...completeCandidate, productCount: 100 })).toBe(70);
-  expect(candidateFitScore({ ...completeCandidate, productCount: 1 })).toBe(60);
-  expect(candidateFitScore({ ...completeCandidate, productCount: 0 })).toBe(50);
   expect(candidateFitReasons({ ...completeCandidate, sourceFeedType: "  " })).not.toContain(
     "feed type present"
+  );
+});
+
+test.each<readonly [number | null, number, string | null]>([
+  [10000, 100, "10000+ products"],
+  [1000, 85, "1000+ products"],
+  [100, 70, "100+ products"],
+  [1, 60, "1+ products"],
+  [0, 50, null],
+  [null, 50, null]
+])("keeps the %s-product score and reason aligned", (productCount, score, reason) => {
+  const candidate = { ...completeCandidate, productCount };
+
+  expect(candidateFitScore(candidate)).toBe(score);
+  expect(candidateFitReasons(candidate)).toEqual(
+    reason ? [reason, "US market", "USD", "English", "feed type present"] : [
+      "US market",
+      "USD",
+      "English",
+      "feed type present"
+    ]
   );
 });
 
