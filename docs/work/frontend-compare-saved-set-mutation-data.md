@@ -2,26 +2,29 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 116 passing
-  compare save-feedback and route characterization tests.
+- Last verified: 2026-07-16 with 8 pure mutation-data tests plus 116 compare
+  save-feedback and route characterization tests passing (124 total), clean
+  TypeScript, dependency-boundary, and diff checks.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Compare Saved-Set Mutation Data Contract
 
-- Status: active on 2026-07-16 on
+- Status: done on 2026-07-16 on
   `codex/category-alert-recommendation-contracts`.
-- Next action: isolate the exact ordered create-saved-set input and structural
-  completion result in a framework-free mutation-data module while retaining
-  ready and in-flight guards, request identity, Relay callbacks, feedback,
-  query reads, markup, and styling in `CompareRoute`.
-- Candidate evidence: current source inspection found variable construction
-  and completion interpretation embedded in `CompareRoute`; the existing pure
-  naming module already owns adjacent name policy, and the save-feedback and
-  compare route suites pass 116 tests.
+- Delivered `saved-comparison-mutation-data.ts`, a framework-free owner of
+  ordered create input and structural completion policy. It composes the
+  existing saved-comparison naming and shared route-error policies, preserves
+  duplicate product IDs in source order, and returns the exact success copy.
+  `CompareRoute` retains its ready and in-flight guards, request identity,
+  Relay callbacks, feedback, query reads, markup, and styling.
+- Evidence: the pure test suite first failed because the new module did not
+  exist. After the minimal extraction, the pure, save-feedback, and compare
+  route suites passed 124 tests; TypeScript, the framework/transport scan, and
+  `git diff --check` passed.
 - Blockers: none.
 
 ## Boundaries

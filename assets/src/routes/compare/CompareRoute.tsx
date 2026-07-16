@@ -15,11 +15,7 @@ import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
-import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { CompareShell } from "./CompareShell";
 import {
   compareLoader,
@@ -39,7 +35,10 @@ import {
 import { CompareSelectionTray } from "./CompareSelectionTray";
 import { ShareComparisonControl } from "./ShareComparisonControl";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
-import { buildSavedComparisonName } from "./saved-comparison-name-data";
+import {
+  buildSavedComparisonSetMutationInput,
+  resolveSavedComparisonSetMutationOutcome
+} from "./saved-comparison-mutation-data";
 
 const COMPARE_SPEC_MODE_OPTIONS: Array<{
   label: string;
@@ -129,34 +128,19 @@ function CompareSelectionRoute({
       commitCreateSavedComparisonSet,
       {
         variables: {
-          input: {
-            name: buildSavedComparisonName(loaderData.products),
-            productIds: loaderData.products.map((product) => product.id)
-          }
+          input: buildSavedComparisonSetMutationInput(loaderData.products)
         },
         onCompleted: (response, graphQLErrors) => {
           if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
             return;
           }
 
-          const payload = response.createSavedComparisonSet;
+          const outcome = resolveSavedComparisonSetMutationOutcome(
+            response.createSavedComparisonSet,
+            graphQLErrors
+          );
 
-          if (
-            payload?.savedComparisonSet?.id &&
-            !hasRouteGraphQLErrors(graphQLErrors)
-          ) {
-            setSaveFeedback({
-              error: null,
-              isInFlight: false,
-              message: "Comparison saved."
-            });
-          } else {
-            setSaveFeedback({
-              error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-              isInFlight: false,
-              message: null
-            });
-          }
+          setSaveFeedback({ ...outcome, isInFlight: false });
 
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
