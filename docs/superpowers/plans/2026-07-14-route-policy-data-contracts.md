@@ -1056,15 +1056,16 @@ StyleX.
   characterization passed 16 focused tests on 2026-07-15. Task review found no
   Critical or Important issue; queue closeout corrected the lane status noted
   as the sole Minor finding.
-- The category landing contract completed on 2026-07-16 with 8 focused tests
-  and passed an independent spec-and-quality review with no findings.
-- Before closing that row, current source inspection confirmed three
-  mutually disjoint successors: comparison snapshot mutation projection and
-  local state remain in `ShareComparisonControl`, advanced filter selection
+- Category landing and alerts mutation contracts completed serially on
+  2026-07-16 with 8 and 16 focused tests. Each passed an independent spec-and-
+  quality review with no findings.
+- Before the alerts claim, current source inspection confirmed and promoted
+  three mutually disjoint successors: comparison snapshot mutation projection
+  and local state remain in `ShareComparisonControl`, advanced filter selection
   policy remains in `CatalogAdvancedFilters`, and viewer-specific destination
   composition remains in `RootDestinations`. Their existing snapshot, browse,
   and root characterization suites passed 82 tests on 2026-07-16. None
-  overlaps the remaining alerts, recommendation, or shared route-error rows.
+  overlaps the remaining recommendation or shared route-error rows.
 - Before the feed-candidate review view-data claim on 2026-07-15, current source
   inspection confirmed that catalog type-filter initialization and transitions
   plus advanced-filter disclosure policy remain embedded in

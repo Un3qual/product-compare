@@ -489,14 +489,16 @@ Independent task reviews approved feed and offer data directly, and approved
 catalog state after explicit runtime-null coverage was added. Four validated
 rows remain ready.
 
-Category landing then completed on
-`codex/category-alert-recommendation-contracts`. A framework-free owner now
-provides category copy, rows, and paths; its focused suites pass 8 tests, and
-independent task review found no actionable issues. Before closing the row,
-the coordinator validated comparison-snapshot mutation data, catalog advanced-
-filter view data, and root destination policy as three mutually disjoint
-successors. Their existing snapshot, catalog, and root suites pass 82 tests,
-and the alerts, recommendation, and shared route-error contracts remain ready.
+Category landing completed on
+`codex/category-alert-recommendation-contracts`. Before alerts was claimed, the
+coordinator validated and promoted comparison-snapshot mutation data, catalog
+advanced-filter view data, and root destination policy as three mutually
+disjoint successors. Their existing snapshot, catalog, and root suites pass 82
+tests. Alerts mutation then completed on the same branch. Framework-free owners
+now provide category copy, rows, and paths plus exact alert mutation variables
+and outcome policy. Their focused suites pass 8 and 16 tests; both independent
+task reviews found no actionable issues. Recommendation and shared route-error
+contracts remain ready.
 
 ## Active Work
 
@@ -504,41 +506,7 @@ None.
 
 ## Ready Work
 
-### 1. Alerts Mutation Data Contract
-
-Status: ready
-Lane: Frontend alerts mutation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move toggle/delete/mark-read mutation variables and operation-
-specific success/error resolution out of `AlertsRoute` into a framework-free
-data contract while preserving pending state, Relay commits, revalidation,
-feedback, and presentation.
-Owned paths:
-
-- `assets/src/routes/account/alerts/alerts-mutation-data.ts`
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- `assets/test/routes/account/alerts/alerts-mutation-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-alerts-mutation-data.md`
-
-Prerequisites:
-
-- Existing alerts route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts-mutation-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure mutation-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner builds exact toggle/delete/mark-read
-variables and returns no error only for the existing operation-specific success
-payload, delegating all other payload/GraphQL failures to shared route-error
-copy; React retains pending state, Relay commits, revalidation, feedback, and
-presentation.
-
-### 2. Recommendation Result View-Data Contract
+### 1. Recommendation Result View-Data Contract
 
 Status: ready
 Lane: Frontend recommendation result view data
@@ -571,7 +539,7 @@ preserves supported or missing-input reason order, and returns exact singular/
 plural evidence copy without mutating input; React and Relay retain profile
 navigation, query lifecycle, fallbacks, markup, and styling.
 
-### 3. Shared Route-Error View-Data Contract
+### 2. Shared Route-Error View-Data Contract
 
 Status: ready
 Lane: Frontend shared route-error view data
@@ -605,7 +573,7 @@ other-response, network, and unexpected-error copy for the supplied resource
 without mutating input; React Router retains raw error detection, boundary
 registration, markup, and presentation.
 
-### 4. Shared Comparison Mutation Data Contract
+### 3. Shared Comparison Mutation Data Contract
 
 Status: ready
 Lane: Frontend shared comparison mutation data
@@ -640,7 +608,7 @@ published/revoked state with exact success copy without mutating input; React
 and Relay retain form adaptation, commits, pending state, pagination, errors,
 callbacks, markup, and presentation.
 
-### 5. Catalog Advanced-Filter View-Data Contract
+### 4. Catalog Advanced-Filter View-Data Contract
 
 Status: ready
 Lane: Frontend catalog advanced-filter view data
@@ -674,7 +642,7 @@ advanced-filter rows with exact URL-state precedence, metadata fallback,
 field identities, and disabled selection behavior without mutating input;
 React retains form controls, accessibility, and presentation.
 
-### 6. Root Destination Policy Data Contract
+### 5. Root Destination Policy Data Contract
 
 Status: ready
 Lane: Frontend root destination policy data
