@@ -596,27 +596,18 @@ state. Its pure and control suites pass 17 tests; the successor has complete
 owned paths, no blockers, and does not overlap saved-comparison deletion,
 product community mutations, or affiliate setup mutations.
 
+Saved-Comparison Delete Mutation Data then completed: one framework-free owner
+now builds the exact delete variables and returns the structurally deleted ID
+or existing shared route error. React retains row-scoped in-flight protection,
+Relay commits and callbacks, pending and deleted state, cleanup, feedback,
+query retention, markup, and styling. Its pure and route-state suites pass 41
+tests; task re-review found no issues after explicit omitted, empty, and null-ID
+generated-payload coverage, and the three validated successor rows remain
+ready.
+
 ## Active Work
 
-### Saved-Comparison Delete Mutation Data Contract
-
-Status: active
-Lane: Frontend saved-comparison delete mutation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Owned paths:
-
-- `assets/src/routes/compare/saved-comparison-delete-mutation-data.ts`
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/test/routes/compare/saved-comparison-delete-mutation-data.test.ts`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-saved-comparison-delete-mutation-data.md`
-
-Current evidence: the existing saved-comparisons navigation-data and
-route-state suites pass 43 tests. Exact delete-variable construction and
-structural completion interpretation remain embedded in
-`SavedComparisonsRoute`; the extracted owner must preserve top-level GraphQL
-error precedence, payload-error success when a deleted ID is present, and all
-row-scoped Relay and state behavior.
+None.
 
 ## Ready Work
 

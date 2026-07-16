@@ -1047,17 +1047,17 @@ shared route error. `SavedComparisonsRoute` retains row-scoped in-flight
 guards, Relay commits and callbacks, pending and deleted set state, feedback,
 query retention, markup, and styling.
 
-- [ ] Write pure tests for exact delete variables; deleted-ID success; missing
+- [x] Write pure tests for exact delete variables; deleted-ID success; missing
   IDs; null payloads; payload and top-level GraphQL errors; complete payloads
   that also contain payload errors; shared default fallback; and input
   immutability; verify RED.
-- [ ] Extract only deterministic variable and completion policy while
+- [x] Extract only deterministic variable and completion policy while
   preserving the generated mutation contract, top-level error precedence,
   row-scoped concurrency and cleanup, state updates, and shared error behavior.
-- [ ] Run the pure mutation-data and existing saved-comparisons route-state
+- [x] Run the pure mutation-data and existing saved-comparisons route-state
   suites, TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
