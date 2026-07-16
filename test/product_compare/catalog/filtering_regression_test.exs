@@ -205,7 +205,12 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert sql =~ @canonical_pac_join_regex
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
-      assert plan =~ "pac_numeric_filter_idx"
+
+      assert_filter_index("pac_numeric_filter_idx", [
+        "attribute_id",
+        "value_num_base",
+        "value_num_base IS NOT NULL"
+      ])
     end
 
     test "boolean filters preserve canonical PACUR -> PAC join and bool predicate expectation" do
@@ -227,10 +232,11 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
 
-      assert Enum.any?(
-               ["pac_bool_filter_idx", "pac_attr_status_idx"],
-               &String.contains?(plan, &1)
-             )
+      assert_filter_index("pac_bool_filter_idx", [
+        "attribute_id",
+        "value_bool",
+        "value_bool IS NOT NULL"
+      ])
     end
 
     test "enum filters preserve canonical PACUR -> PAC join and enum index expectation" do
@@ -250,7 +256,12 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert sql =~ @canonical_pac_join_regex
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
-      assert plan =~ "pac_enum_filter_idx"
+
+      assert_filter_index("pac_enum_filter_idx", [
+        "attribute_id",
+        "enum_option_id",
+        "enum_option_id IS NOT NULL"
+      ])
     end
   end
 
@@ -271,6 +282,22 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       end)
 
     {sql, plan}
+  end
+
+  defp assert_filter_index(index_name, expected_fragments) do
+    %{rows: [[index_definition]]} =
+      Repo.query!(
+        """
+        SELECT indexdef
+        FROM pg_indexes
+        WHERE schemaname = current_schema()
+          AND tablename = 'product_attribute_claims'
+          AND indexname = $1
+        """,
+        [index_name]
+      )
+
+    Enum.each(expected_fragments, &assert(index_definition =~ &1))
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do
