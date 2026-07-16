@@ -103,13 +103,8 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
         </NavLink>
       </Button>
       <div {...props(styles.navigationLinks)}>
-        {primary.map(({ destinations, kind }) => (
-          kind === "auth" ? (
-            <AuthLinks destinations={destinations} key={kind} />
-          ) : (
-            <DestinationLinks destinations={destinations} key={kind} variant="ghost" />
-          )
-        ))}
+        <DestinationLinks destinations={primary.destinations} variant="ghost" />
+        <AuthLinks destinations={primary.authDestinations} />
       </div>
     </div>
   );
@@ -120,18 +115,13 @@ export function RootHomeDestinations({ viewer }: RootDestinationsProps) {
 
   return (
     <section aria-label="Home actions" {...props(styles.actionGroups)}>
-      <ShopperActions destinations={home.shopper.destinations} />
+      <ShopperActions destinations={home.shopperDestinations} />
       <nav
         aria-label="More Product Compare actions"
         {...props(styles.actions, styles.secondaryActions)}
       >
-        {home.secondary.map(({ destinations, kind }) => (
-          kind === "auth" ? (
-            <AuthLinks destinations={destinations} key={kind} />
-          ) : (
-            <DestinationLinks destinations={destinations} key={kind} variant="soft" />
-          )
-        ))}
+        <DestinationLinks destinations={home.secondary.destinations} variant="soft" />
+        <AuthLinks destinations={home.secondary.authDestinations} />
       </nav>
     </section>
   );

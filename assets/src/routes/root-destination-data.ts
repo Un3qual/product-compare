@@ -12,28 +12,16 @@ export type RootDestinationViewer = {
   readonly isOperator: boolean;
 };
 
-type RootDestinationGroupKind =
-  | "authenticated"
-  | "auth"
-  | "operator"
-  | "public"
-  | "secondary-public";
-
-export type RootDestinationGroup = {
-  kind: RootDestinationGroupKind;
+export type RootDestinationSection = {
   destinations: readonly RootDestination[];
-};
-
-export type RootShopperDestinationGroup = {
-  kind: "shopper";
-  destinations: readonly RootShopperDestination[];
+  authDestinations: readonly RootDestination[];
 };
 
 export type RootDestinationData = {
-  primary: readonly RootDestinationGroup[];
+  primary: RootDestinationSection;
   home: {
-    shopper: RootShopperDestinationGroup;
-    secondary: readonly RootDestinationGroup[];
+    shopperDestinations: readonly RootShopperDestination[];
+    secondary: RootDestinationSection;
   };
 };
 
@@ -78,44 +66,40 @@ const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
   ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to)
 );
 
-const PUBLIC_GROUP = { kind: "public", destinations: PUBLIC_DESTINATIONS } as const;
-const AUTHENTICATED_GROUP = {
-  kind: "authenticated",
-  destinations: AUTHENTICATED_DESTINATIONS
-} as const;
-const OPERATOR_GROUP = { kind: "operator", destinations: OPERATOR_DESTINATIONS } as const;
-const SHOPPER_GROUP = { kind: "shopper", destinations: SHOPPER_DESTINATIONS } as const;
-const SECONDARY_PUBLIC_GROUP = {
-  kind: "secondary-public",
-  destinations: SECONDARY_PUBLIC_DESTINATIONS
-} as const;
-const GUEST_AUTH_GROUP = {
-  kind: "auth",
-  destinations: [
-    { label: "Sign in", to: "/auth/login" },
-    { label: "Create account", to: "/auth/register" }
-  ]
-} as const satisfies RootDestinationGroup;
-const AUTHENTICATED_AUTH_GROUP = {
-  kind: "auth",
-  destinations: [{ label: "Sign out", to: "/auth/logout" }]
-} as const satisfies RootDestinationGroup;
+const GUEST_AUTH_DESTINATIONS = [
+  { label: "Sign in", to: "/auth/login" },
+  { label: "Create account", to: "/auth/register" }
+] as const satisfies readonly RootDestination[];
+const AUTHENTICATED_AUTH_DESTINATIONS = [
+  { label: "Sign out", to: "/auth/logout" }
+] as const satisfies readonly RootDestination[];
 
 export function getRootDestinationData(viewer: RootDestinationViewer | null): RootDestinationData {
-  const authenticatedGroups = viewer ? [AUTHENTICATED_GROUP] : [];
-  const operatorGroups = viewer?.isOperator ? [OPERATOR_GROUP] : [];
-  const authGroup = viewer ? AUTHENTICATED_AUTH_GROUP : GUEST_AUTH_GROUP;
+  const authenticatedDestinations = viewer ? AUTHENTICATED_DESTINATIONS : [];
+  const operatorDestinations = viewer?.isOperator ? OPERATOR_DESTINATIONS : [];
+  const authDestinations = viewer
+    ? AUTHENTICATED_AUTH_DESTINATIONS
+    : GUEST_AUTH_DESTINATIONS;
 
   return {
-    primary: [PUBLIC_GROUP, ...authenticatedGroups, ...operatorGroups, authGroup],
+    primary: {
+      destinations: [
+        ...PUBLIC_DESTINATIONS,
+        ...authenticatedDestinations,
+        ...operatorDestinations
+      ],
+      authDestinations
+    },
     home: {
-      shopper: SHOPPER_GROUP,
-      secondary: [
-        SECONDARY_PUBLIC_GROUP,
-        ...authenticatedGroups,
-        ...operatorGroups,
-        authGroup
-      ]
+      shopperDestinations: SHOPPER_DESTINATIONS,
+      secondary: {
+        destinations: [
+          ...SECONDARY_PUBLIC_DESTINATIONS,
+          ...authenticatedDestinations,
+          ...operatorDestinations
+        ],
+        authDestinations
+      }
     }
   };
 }
