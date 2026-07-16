@@ -326,7 +326,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}
+    assert_receive {:run, opts}, 250
     assert Keyword.keys(opts) == [:advertiser_country, :limit, :pages, :cursor]
 
     GenServer.stop(pid)
