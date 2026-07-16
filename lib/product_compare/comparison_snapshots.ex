@@ -42,9 +42,9 @@ defmodule ProductCompare.ComparisonSnapshots do
         user_id: user_id,
         title: normalize_title(Input.fetch_attr(attrs, :title)),
         search_indexable: Input.fetch_attr(attrs, :search_indexable) || false,
-        search_qualified: Seo.snapshot_qualified?(payload),
         payload: payload
       })
+      |> Ecto.Changeset.put_change(:search_qualified, Seo.snapshot_qualified?(payload))
       |> Repo.insert()
       |> map_snapshot()
     end

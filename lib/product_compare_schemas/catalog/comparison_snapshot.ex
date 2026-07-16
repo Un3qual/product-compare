@@ -25,8 +25,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
       :user_id,
       :title,
       :payload,
-      :search_indexable,
-      :search_qualified
+      :search_indexable
     ])
     |> validate_required([:public_token, :user_id, :payload])
     |> validate_length(:public_token, is: 43)
