@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,7 +12,8 @@
 
 ## Compare Saved-Set Mutation Data Contract
 
-- Status: ready on 2026-07-16.
+- Status: active on 2026-07-16 on
+  `codex/category-alert-recommendation-contracts`.
 - Next action: isolate the exact ordered create-saved-set input and structural
   completion result in a framework-free mutation-data module while retaining
   ready and in-flight guards, request identity, Relay callbacks, feedback,

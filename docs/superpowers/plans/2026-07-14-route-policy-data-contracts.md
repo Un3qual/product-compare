@@ -1029,6 +1029,36 @@ semantic links and time markup, empty and error states, and StyleX.
   the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 34: Saved-Comparison Delete Mutation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/saved-comparison-delete-mutation-data.ts`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Create: `assets/test/routes/compare/saved-comparison-delete-mutation-data.test.ts`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-delete-mutation-data.md`
+
+**Interfaces:** The framework-free mutation-data module owns exact delete
+variables and structural deletion completion as a deleted ID or the existing
+shared route error. `SavedComparisonsRoute` retains row-scoped in-flight
+guards, Relay commits and callbacks, pending and deleted set state, feedback,
+query retention, markup, and styling.
+
+- [ ] Write pure tests for exact delete variables; deleted-ID success; missing
+  IDs; null payloads; payload and top-level GraphQL errors; complete payloads
+  that also contain payload errors; shared default fallback; and input
+  immutability; verify RED.
+- [ ] Extract only deterministic variable and completion policy while
+  preserving the generated mutation contract, top-level error precedence,
+  row-scoped concurrency and cleanup, state updates, and shared error behavior.
+- [ ] Run the pure mutation-data and existing saved-comparisons route-state
+  suites, TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1048,6 +1078,12 @@ semantic links and time markup, empty and error states, and StyleX.
   `MerchantDetailRoute`. Its existing suite passes two tests, and the candidate
   is path-disjoint from Tasks 30-32 while leaving the completed date-formatting
   and external-destination owners unchanged.
+- Current source inspection on 2026-07-16 found delete-variable construction
+  and structural completion interpretation still embedded in
+  `SavedComparisonsRoute`; its existing navigation-data and route-state suites
+  pass 43 tests. The candidate is path-disjoint from Tasks 31-33 and preserves
+  the generated mutation, shared error policy, Relay lifecycle, and row-scoped
+  concurrency owners.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,

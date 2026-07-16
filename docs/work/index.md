@@ -546,19 +546,14 @@ the three validated successor rows remain ready.
 
 ## Active Work
 
-None.
+### Compare Saved-Set Mutation Data Contract
 
-## Ready Work
-
-### 1. Compare Saved-Set Mutation Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/category-alert-recommendation-contracts`
 Lane: Frontend compare saved-set mutation data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move exact ordered create-saved-set input and structural completion
-policy out of `CompareRoute` into a framework-free mutation-data contract while
-preserving ready and in-flight guards, request identity, Relay callbacks,
-feedback, query reads, markup, and styling.
+Next action: implement Task 31 with test-first evidence, preserving the existing
+Relay and request-lifecycle ownership in `CompareRoute`.
 Owned paths:
 
 - `assets/src/routes/compare/saved-comparison-mutation-data.ts`
@@ -568,12 +563,6 @@ Owned paths:
 - `assets/test/routes/compare/compare.route.test.tsx`
 - `docs/work/frontend-compare-saved-set-mutation-data.md`
 
-Prerequisites:
-
-- Existing saved-comparison naming and route mutation-error policies remain
-  unchanged.
-- Existing compare save-feedback and route characterization remains green.
-
 Verification:
 
 - `cd assets && bun x vitest run test/routes/compare/saved-comparison-mutation-data.test.ts test/routes/compare/compare-save-feedback.test.tsx test/routes/compare/compare.route.test.tsx`
@@ -581,12 +570,13 @@ Verification:
 - framework/transport dependency scan of the pure mutation-data module
 - `git diff --check`
 
-Exit condition: one framework-free owner composes the existing naming policy
-into exact ordered create variables and classifies structural completion with
-existing success/error semantics without mutating input; React retains Relay,
-request identity, stale-response guards, feedback, markup, and presentation.
+Exit condition: the pure contract owns exact ordered create variables and
+structural completion policy, focused verification is green, and the lane is
+closed without moving Relay or stale-response responsibilities out of React.
 
-### 2. API-Token Mutation Outcome Data Contract
+## Ready Work
+
+### 1. API-Token Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend API-token mutation outcome data
@@ -621,7 +611,7 @@ outcomes with existing token projection, truthy-plaintext, and shared error
 semantics; React retains every Relay, concurrency, secret, state, callback,
 markup, and presentation responsibility.
 
-### 3. Merchant Detail View-Data Contract
+### 2. Merchant Detail View-Data Contract
 
 Status: ready
 Lane: Frontend merchant detail view data
@@ -655,6 +645,42 @@ Exit condition: one framework-free owner returns exact merchant summaries,
 freshness copy, source-ordered offer rows, encoded product and pagination paths,
 and existing fallbacks without mutating input; React retains Relay, safe
 external-link resolution, semantic markup, feedback states, and presentation.
+
+### 3. Saved-Comparison Delete Mutation Data Contract
+
+Status: ready
+Lane: Frontend saved-comparison delete mutation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move exact delete variables and structural completion policy out
+of `SavedComparisonsRoute` into a framework-free mutation-data contract while
+preserving row-scoped in-flight guards, Relay callbacks, pending and deleted
+set state, error feedback, query retention, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/compare/saved-comparison-delete-mutation-data.ts`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/test/routes/compare/saved-comparison-delete-mutation-data.test.ts`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-saved-comparison-delete-mutation-data.md`
+
+Prerequisites:
+
+- Existing generated delete mutation shape remains unchanged.
+- Existing shared route mutation-error policy remains unchanged.
+- Existing saved-comparisons route-data and route-state characterization
+  remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparison-delete-mutation-data.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure mutation-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns exact delete variables and a
+structural deleted-or-error outcome with existing top-level and payload error
+semantics without mutating input; React retains Relay, row concurrency, state,
+callbacks, query retention, markup, and presentation.
 
 ## Needs Decision Work
 
