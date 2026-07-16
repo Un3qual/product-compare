@@ -43,14 +43,14 @@ function UseCaseFiltersFieldset({
     <fieldset>
       <legend>Use cases</legend>
       {rows.map((row) => (
-        <label key={row.inputId}>
+        <label key={row.id}>
           <input
             defaultChecked={row.selected}
             disabled={row.disabled}
-            id={row.inputId}
-            name={row.inputName}
+            id={`catalog-use-case-${row.id}`}
+            name="useCaseTaxonId"
             type="checkbox"
-            value={row.value}
+            value={row.id}
           />
           {row.label} ({row.count})
         </label>
@@ -83,24 +83,27 @@ function NumericFilterFields({
 }: {
   row: CatalogAdvancedNumericRow;
 }) {
+  const minInputId = `catalog-numeric-${row.attributeId}-min`;
+  const maxInputId = `catalog-numeric-${row.attributeId}-max`;
+
   return (
     <div>
-      <label htmlFor={row.min.inputId}>
+      <label htmlFor={minInputId}>
         {row.displayName} minimum
         <TextField
-          defaultValue={row.min.defaultValue}
-          id={row.min.inputId}
+          defaultValue={row.minValue}
+          id={minInputId}
           inputMode="decimal"
-          name={row.min.inputName}
+          name={`numeric.${row.attributeId}.min`}
         />
       </label>
-      <label htmlFor={row.max.inputId}>
+      <label htmlFor={maxInputId}>
         {row.displayName} maximum
         <TextField
-          defaultValue={row.max.defaultValue}
-          id={row.max.inputId}
+          defaultValue={row.maxValue}
+          id={maxInputId}
           inputMode="decimal"
-          name={row.max.inputName}
+          name={`numeric.${row.attributeId}.max`}
         />
       </label>
     </div>
@@ -136,8 +139,8 @@ function BooleanFilterField({
       {row.displayName}
       <select
         defaultValue={row.defaultValue}
-        id={row.inputId}
-        name={row.inputName}
+        id={`catalog-boolean-${row.attributeId}`}
+        name={`boolean.${row.attributeId}`}
       >
         <option value="">Any</option>
         <option value="true">Yes ({row.trueCount})</option>
@@ -171,28 +174,30 @@ function EnumFilterFieldset({
 }: {
   row: CatalogAdvancedEnumRow;
 }) {
+  const inputName = `enum.${row.attributeId}`;
+
   return (
     <fieldset>
       <legend>{row.displayName}</legend>
       <label>
         <input
-          defaultChecked={row.anyOption.selected}
-          id={row.anyOption.inputId}
-          name={row.anyOption.inputName}
+          defaultChecked={row.anySelected}
+          id={`catalog-enum-${row.attributeId}-any`}
+          name={inputName}
           type="radio"
-          value={row.anyOption.value}
+          value=""
         />
         Any
       </label>
       {row.options.map((option) => (
-        <label key={option.inputId}>
+        <label key={option.id}>
           <input
             defaultChecked={option.selected}
             disabled={option.disabled}
-            id={option.inputId}
-            name={option.inputName}
+            id={`catalog-enum-${row.attributeId}-${option.id}`}
+            name={inputName}
             type="radio"
-            value={option.value}
+            value={option.id}
           />
           {option.label} ({option.count})
         </label>

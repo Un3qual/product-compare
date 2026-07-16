@@ -65,42 +65,30 @@ export interface CatalogAdvancedFilterViewData {
 }
 
 export interface CatalogAdvancedUseCaseRow {
-  inputId: string;
-  inputName: "useCaseTaxonId";
-  value: string;
+  id: string;
   label: string;
   count: number;
   selected: boolean;
   disabled: boolean;
 }
 
-export interface CatalogAdvancedTextInputRow {
-  inputId: string;
-  inputName: string;
-  defaultValue: string;
-}
-
 export interface CatalogAdvancedNumericRow {
   attributeId: string;
   displayName: string;
-  min: CatalogAdvancedTextInputRow;
-  max: CatalogAdvancedTextInputRow;
+  minValue: string;
+  maxValue: string;
 }
 
 export interface CatalogAdvancedBooleanRow {
   attributeId: string;
   displayName: string;
-  inputId: string;
-  inputName: string;
   defaultValue: "" | "true" | "false";
   trueCount: number;
   falseCount: number;
 }
 
 export interface CatalogAdvancedEnumOptionRow {
-  inputId: string;
-  inputName: string;
-  value: string;
+  id: string;
   label: string;
   count: number;
   selected: boolean;
@@ -110,8 +98,7 @@ export interface CatalogAdvancedEnumOptionRow {
 export interface CatalogAdvancedEnumRow {
   attributeId: string;
   displayName: string;
-  inputName: string;
-  anyOption: CatalogAdvancedEnumOptionRow;
+  anySelected: boolean;
   options: readonly CatalogAdvancedEnumOptionRow[];
 }
 
@@ -124,9 +111,7 @@ export function catalogAdvancedFilterViewData(
       const selected = selections.useCaseTaxonIds.includes(option.id) || option.selected;
 
       return {
-        inputId: `catalog-use-case-${option.id}`,
-        inputName: "useCaseTaxonId",
-        value: option.id,
+        id: option.id,
         label: option.label,
         count: option.count,
         selected,
@@ -143,8 +128,6 @@ export function catalogAdvancedFilterViewData(
       return {
         attributeId: filter.attributeId,
         displayName: filter.displayName,
-        inputId: `catalog-boolean-${filter.attributeId}`,
-        inputName: `boolean.${filter.attributeId}`,
         defaultValue: booleanDefaultValue(value),
         trueCount: filter.trueCount,
         falseCount: filter.falseCount
@@ -154,28 +137,16 @@ export function catalogAdvancedFilterViewData(
       const selectedOptionId = selectedEnumOptionId(selections.enums, filter.attributeId);
       const effectiveSelectedOptionId =
         selectedOptionId ?? filter.options.find((option) => option.selected)?.id ?? "";
-      const inputName = `enum.${filter.attributeId}`;
 
       return {
         attributeId: filter.attributeId,
         displayName: filter.displayName,
-        inputName,
-        anyOption: {
-          inputId: `catalog-enum-${filter.attributeId}-any`,
-          inputName,
-          value: "",
-          label: "Any",
-          count: 0,
-          selected: effectiveSelectedOptionId === "",
-          disabled: false
-        },
+        anySelected: effectiveSelectedOptionId === "",
         options: filter.options.map((option) => {
           const selected = effectiveSelectedOptionId === option.id;
 
           return {
-            inputId: `catalog-enum-${filter.attributeId}-${option.id}`,
-            inputName,
-            value: option.id,
+            id: option.id,
             label: option.label,
             count: option.count,
             selected,
@@ -196,16 +167,8 @@ function catalogAdvancedNumericRow(
   return {
     attributeId: filter.attributeId,
     displayName: filter.displayName,
-    min: {
-      inputId: `catalog-numeric-${filter.attributeId}-min`,
-      inputName: `numeric.${filter.attributeId}.min`,
-      defaultValue: selectedNumericFieldValue(selected?.min, filter.selectedMin)
-    },
-    max: {
-      inputId: `catalog-numeric-${filter.attributeId}-max`,
-      inputName: `numeric.${filter.attributeId}.max`,
-      defaultValue: selectedNumericFieldValue(selected?.max, filter.selectedMax)
-    }
+    minValue: selectedNumericFieldValue(selected?.min, filter.selectedMin),
+    maxValue: selectedNumericFieldValue(selected?.max, filter.selectedMax)
   };
 }
 
