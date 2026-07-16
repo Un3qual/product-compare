@@ -761,15 +761,15 @@ paths, source-ordered product rows, nullish brand fallback, and the first three
 source-ordered specification highlights. `CategoryRoute` retains loader and
 Relay reads, route fallbacks, empty-state rendering, markup, links, and StyleX.
 
-- [ ] Write pure tests for category copy, encoded browse IDs and cursors,
+- [x] Write pure tests for category copy, encoded browse IDs and cursors,
   next-page eligibility, nullish versus empty brand names, empty products,
   source ordering, first-three highlight truncation, and input immutability;
   verify RED.
-- [ ] Extract only deterministic category view data while preserving Relay,
+- [x] Extract only deterministic category view data while preserving Relay,
   route fallbacks, empty-state behavior, markup, links, and presentation.
-- [ ] Run the pure and existing category route suites, TypeScript, the
+- [x] Run the pure and existing category route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -790,14 +790,14 @@ all other payload and GraphQL outcomes delegate to shared route mutation-error
 copy. `AlertsRoute` retains pending state, Relay commits, revalidation, failure
 catching, feedback, and presentation.
 
-- [ ] Write pure tests for all three variable shapes, toggle inversion,
+- [x] Write pure tests for all three variable shapes, toggle inversion,
   operation-specific success, payload and GraphQL failure copy, result identity
   where relevant, and input immutability; verify RED.
-- [ ] Extract only deterministic variables and outcome policy while preserving
+- [x] Extract only deterministic variables and outcome policy while preserving
   React state, Relay commit lifecycle, revalidation, feedback, and presentation.
-- [ ] Run the pure and existing alerts route suites, TypeScript, the framework/
+- [x] Run the pure and existing alerts route suites, TypeScript, the framework/
   transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -816,14 +816,14 @@ selection, supported versus no-winner reasons, and exact evidence copy with
 singular/plural accepted-claim references. `RecommendationPanel` retains Relay
 fetching, profile navigation, suspense and error handling, markup, and StyleX.
 
-- [ ] Write pure tests for a matching winner, first-match selection, missing or
+- [x] Write pure tests for a matching winner, first-match selection, missing or
   unmatched winners, supported and missing-input reason order, zero/one/many
   claim-reference copy, and input immutability; verify RED.
-- [ ] Extract only deterministic result presentation while preserving Relay,
+- [x] Extract only deterministic result presentation while preserving Relay,
   profiles, query lifecycle, fallbacks, markup, and presentation.
-- [ ] Run the pure and existing recommendation-panel suites, TypeScript, the
+- [x] Run the pure and existing recommendation-panel suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -844,15 +844,15 @@ unexpected-error copy. `RouteErrorBoundary` retains React Router error
 detection and boundary presentation and passes only normalized response,
 ordinary-error, or unknown context into the pure owner.
 
-- [ ] Write pure tests for every status branch, case-insensitive network/fetch
+- [x] Write pure tests for every status branch, case-insensitive network/fetch
   messages, `NetworkError`, qualifying and ordinary `TypeError`, generic errors,
   unknown values, resource capitalization, exact retry copy, and input
   immutability; verify RED.
-- [ ] Extract only deterministic classification and copy while preserving React
+- [x] Extract only deterministic classification and copy while preserving React
   Router detection, registration, markup, and presentation.
-- [ ] Run the pure, compare, and router suites, TypeScript, the framework/router
+- [x] Run the pure, compare, and router suites, TypeScript, the framework/router
   dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -873,16 +873,16 @@ transitions with their exact success copy. `ShareComparisonControl` retains
 form adaptation, Relay commits, pending state, query pagination, suspense and
 error handling, callbacks, markup, and StyleX.
 
-- [ ] Write pure tests for publish and revoke variables, complete and partial
+- [x] Write pure tests for publish and revoke variables, complete and partial
   publish payloads, source-node fallback, publish deduplication and prepend
   order, revoke removal and tombstones, exact success copy, and input
   immutability; verify RED where the new exports do not yet exist.
-- [ ] Extract only deterministic mutation and local-state policy while
+- [x] Extract only deterministic mutation and local-state policy while
   preserving Relay lifecycle, pagination, feedback errors, markup, and
   presentation.
-- [ ] Run the pure sharing and existing snapshot suites, TypeScript, the
+- [x] Run the pure sharing and existing snapshot suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -902,16 +902,16 @@ stable field identities, and source ordering. `CatalogAdvancedFilters`
 retains fieldset, label, input, and TextField presentation and receives only
 render-ready structural rows.
 
-- [ ] Write pure tests for URL-state precedence, metadata fallback, false and
+- [x] Write pure tests for URL-state precedence, metadata fallback, false and
   empty values, repeated enum selection last-write behavior, selected disabled
   options, stable field identities, empty groups, source ordering, and input
   immutability; verify RED.
-- [ ] Extract only deterministic advanced-filter view data while preserving
+- [x] Extract only deterministic advanced-filter view data while preserving
   form names, values, accessibility, uncontrolled input behavior, and
   presentation.
-- [ ] Run the pure and existing browse suites, TypeScript, the framework/
+- [x] Run the pure and existing browse suites, TypeScript, the framework/
   transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -931,15 +931,15 @@ specific primary and home composition. `RootDestinations` retains active-path
 matching, NavLink and Button composition, semantic navigation markup, and
 StyleX.
 
-- [ ] Write pure tests for guest, authenticated member, and operator primary
+- [x] Write pure tests for guest, authenticated member, and operator primary
   and home groups, exact destination copy, secondary-public exclusion,
   comparison end matching metadata, source ordering, and input immutability;
   verify RED.
-- [ ] Extract only deterministic destination policy while preserving active
+- [x] Extract only deterministic destination policy while preserving active
   matching, markup, button variants, accessibility labels, and presentation.
-- [ ] Run the pure and existing root-route suites, TypeScript, the framework/
+- [x] Run the pure and existing root-route suites, TypeScript, the framework/
   transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -960,15 +960,15 @@ classifies structural mutation completion as success or the existing shared
 route error. `CompareRoute` retains Relay commits, ready and in-flight guards,
 request identity, callbacks, feedback state, query reads, markup, and styling.
 
-- [ ] Write pure tests for empty, trimmed, singular, and ordered names; ordered
+- [x] Write pure tests for empty, trimmed, singular, and ordered names; ordered
   product IDs; structural success; missing IDs; payload and top-level GraphQL
   errors; exact success copy; and input immutability; verify RED.
-- [ ] Extract only deterministic create-input and completion policy while
+- [x] Extract only deterministic create-input and completion policy while
   preserving the existing naming and shared route-error owners plus every
   Relay and stale-request lifecycle guard.
-- [ ] Run the pure mutation-data, save-feedback, and compare route suites,
+- [x] Run the pure mutation-data, save-feedback, and compare route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1235,6 +1235,16 @@ state, input adaptation, feedback placement, pagination, markup, and styling.
   tests and 125 unchanged compare/router tests. TypeScript and the framework/
   router boundary passed; the three previously promoted, mutually disjoint
   successors preserve the ready-row floor.
+- Shared comparison mutation data completed on 2026-07-16 in `6c37ca1f` with
+  17 focused tests; task re-review was clean after the behavioral assertion fix.
+- Catalog advanced-filter view data completed on 2026-07-16 in `c8405e3d` with
+  67 focused tests; task re-review was clean after stable-identity coverage.
+- Root destination policy data completed on 2026-07-16 in `f78adfc2` and
+  `48771a58` with 20 focused tests; task and final re-review were clean after
+  the auth-link presentation fix, and verification blocker `ee9cc1ac` was
+  reviewed clean.
+- Compare saved-set mutation data completed on 2026-07-16 in `a16e47ed` with
+  124 focused tests; task review was approved.
 - Before the alerts claim, current source inspection confirmed and promoted
   three mutually disjoint successors: comparison snapshot mutation projection
   and local state remain in `ShareComparisonControl`, advanced filter selection
