@@ -104,7 +104,11 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
       </Button>
       <div {...props(styles.navigationLinks)}>
         {primary.map(({ destinations, kind }) => (
-          <DestinationLinks destinations={destinations} key={kind} variant="ghost" />
+          kind === "auth" ? (
+            <AuthLinks destinations={destinations} key={kind} />
+          ) : (
+            <DestinationLinks destinations={destinations} key={kind} variant="ghost" />
+          )
         ))}
       </div>
     </div>
@@ -122,7 +126,11 @@ export function RootHomeDestinations({ viewer }: RootDestinationsProps) {
         {...props(styles.actions, styles.secondaryActions)}
       >
         {home.secondary.map(({ destinations, kind }) => (
-          <DestinationLinks destinations={destinations} key={kind} variant="soft" />
+          kind === "auth" ? (
+            <AuthLinks destinations={destinations} key={kind} />
+          ) : (
+            <DestinationLinks destinations={destinations} key={kind} variant="soft" />
+          )
         ))}
       </nav>
     </section>
@@ -188,4 +196,12 @@ function DestinationLink({
       </NavLink>
     </Button>
   );
+}
+
+function AuthLinks({ destinations }: { destinations: readonly RootDestination[] }) {
+  return destinations.map(({ label, to }) => (
+    <Button asChild key={to} {...props(styles.link)}>
+      <NavLink to={to}>{label}</NavLink>
+    </Button>
+  ));
 }

@@ -194,6 +194,50 @@ test("root destinations render guest shopper paths and auth actions", () => {
   expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
 });
 
+test("guest auth links keep the default solid variant without active matching", () => {
+  render(
+    <MemoryRouter initialEntries={["/auth/login"]}>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={null} />
+      </nav>
+      <RootHomeDestinations viewer={null} />
+    </MemoryRouter>
+  );
+
+  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+
+  for (const name of ["Sign in", "Create account"]) {
+    expectSolidAuthLinkWithoutActiveState(
+      within(primaryNavigation).getByRole("link", { name })
+    );
+    expectSolidAuthLinkWithoutActiveState(within(homeActions).getByRole("link", { name }));
+  }
+});
+
+test("authenticated sign-out links keep the default solid variant without active matching", () => {
+  const viewer = { id: "viewer-1", email: "person@example.com", isOperator: false };
+
+  render(
+    <MemoryRouter initialEntries={["/auth/logout"]}>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={viewer} />
+      </nav>
+      <RootHomeDestinations viewer={viewer} />
+    </MemoryRouter>
+  );
+
+  const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
+  const homeActions = screen.getByRole("region", { name: "Home actions" });
+
+  expectSolidAuthLinkWithoutActiveState(
+    within(primaryNavigation).getByRole("link", { name: "Sign out" })
+  );
+  expectSolidAuthLinkWithoutActiveState(
+    within(homeActions).getByRole("link", { name: "Sign out" })
+  );
+});
+
 test("root destinations render authenticated account actions with the exact active link", () => {
   render(
     <MemoryRouter initialEntries={["/compare/saved"]}>
@@ -594,4 +638,9 @@ function buildAbortableRequest(url: string, signal: AbortSignal): Request {
       value: signal
     }
   );
+}
+
+function expectSolidAuthLinkWithoutActiveState(link: HTMLElement) {
+  expect(link).toHaveAttribute("data-variant", "solid");
+  expect(link).not.toHaveAttribute("data-active");
 }
