@@ -19,7 +19,7 @@ import {
   reviewStatusTone
 } from "./feed-candidate-review-data";
 import type { FeedCandidateReviewStatus } from "./feed-candidate-review-mutation-data";
-import { type FeedCandidatesPagination } from "./pagination";
+import type { FeedCandidatesPagination } from "./pagination";
 
 export type FeedCandidatesConnection = NonNullable<
   MerchantFeedCandidatesRouteQuery["response"]["merchantFeedCandidates"]

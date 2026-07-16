@@ -15,7 +15,7 @@ export function buildFeedCandidateReviewMutationInput(
   status: FeedCandidateReviewStatus,
   reviewNotes: Readonly<Record<string, string>>
 ): ReviewMerchantFeedCandidateInput {
-  const hasDraftNote = Object.prototype.hasOwnProperty.call(reviewNotes, candidate.id);
+  const hasDraftNote = Object.hasOwn(reviewNotes, candidate.id);
   const note = (hasDraftNote ? reviewNotes[candidate.id] : candidate.reviewNote ?? "").trim();
 
   return hasDraftNote || note.length > 0

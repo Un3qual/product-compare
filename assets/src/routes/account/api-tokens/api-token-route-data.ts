@@ -1,4 +1,4 @@
-import { graphQLDateTimeContext } from "../../graphql-datetime";
+import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -290,13 +290,11 @@ function formatOptionalDateTime(value: string | null, emptyLabel: string) {
 }
 
 function formatUtcDateTime(value: string) {
-  const dateTime = graphQLDateTimeContext(value)?.dateTime;
+  const date = parseGraphQLDateTime(value);
 
-  if (!dateTime) {
+  if (!date) {
     return value;
   }
-
-  const date = new Date(dateTime);
 
   return `${date.getUTCFullYear()}-${padUtcPart(date.getUTCMonth() + 1)}-${padUtcPart(
     date.getUTCDate()

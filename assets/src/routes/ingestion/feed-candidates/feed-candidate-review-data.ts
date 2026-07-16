@@ -73,7 +73,6 @@ export function formatFeedCandidateReviewStatus(reviewStatus: string | null | un
       return "Dismissed";
     case "SHORTLISTED":
       return "Shortlisted";
-    case "PENDING":
     default:
       return "Pending";
   }
