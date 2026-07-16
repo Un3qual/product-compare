@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,7 +12,8 @@
 
 ## API-Token Mutation Outcome Data Contract
 
-- Status: ready on 2026-07-16.
+- Status: active on 2026-07-16 on
+  `codex/category-alert-recommendation-contracts`.
 - Next action: isolate exact revoke variables plus structural create/rotate
   credential and revoke completion outcomes in the existing framework-free
   route-data module while retaining FormData, Relay commits, concurrency and

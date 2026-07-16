@@ -552,21 +552,25 @@ completion, callback, feedback, query-read, markup, and presentation
 responsibility. Its pure, save-feedback, and compare route suites pass 124
 tests; the three validated successor rows remain ready.
 
+Before claiming API-Token Mutation Outcome Data, the coordinator validated a
+fourth non-overlapping successor. Review, question, and answer completion copy
+and shared-error interpretation remain embedded in `ProductCommunityPanel`,
+while its existing framework-free owner already owns the corresponding input
+policy. The pure and panel suites pass eight tests; the successor has complete
+owned paths, no blockers, and does not overlap API tokens, merchant detail, or
+saved-comparison deletion.
+
 ## Active Work
 
-None.
+### API-Token Mutation Outcome Data Contract
 
-## Ready Work
-
-### 1. API-Token Mutation Outcome Data Contract
-
-Status: ready
+Status: active
+Owner: `codex/category-alert-recommendation-contracts`
 Lane: Frontend API-token mutation outcome data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move revoke variables and structural create/rotate credential plus
-revoke completion outcomes into the existing framework-free API-token route-
-data owner while preserving FormData, Relay lifecycle, concurrency guards,
-one-time-secret state, optimistic updates, dialogs, row errors, and styling.
+Next action: implement Task 32 with test-first evidence while preserving all
+FormData, Relay, concurrency, secret, optimistic-state, callback, markup, and
+presentation ownership in `ApiTokensRoute`.
 Owned paths:
 
 - `assets/src/routes/account/api-tokens/api-token-route-data.ts`
@@ -574,12 +578,6 @@ Owned paths:
 - `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
 - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `docs/work/frontend-api-token-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated create, rotate, and revoke mutation shapes remain
-  unchanged.
-- Existing API-token route-data and route characterization remains green.
 
 Verification:
 
@@ -593,7 +591,9 @@ outcomes with existing token projection, truthy-plaintext, and shared error
 semantics; React retains every Relay, concurrency, secret, state, callback,
 markup, and presentation responsibility.
 
-### 2. Merchant Detail View-Data Contract
+## Ready Work
+
+### 1. Merchant Detail View-Data Contract
 
 Status: ready
 Lane: Frontend merchant detail view data
@@ -628,7 +628,7 @@ freshness copy, source-ordered offer rows, encoded product and pagination paths,
 and existing fallbacks without mutating input; React retains Relay, safe
 external-link resolution, semantic markup, feedback states, and presentation.
 
-### 3. Saved-Comparison Delete Mutation Data Contract
+### 2. Saved-Comparison Delete Mutation Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison delete mutation data
@@ -663,6 +663,42 @@ Exit condition: one framework-free owner returns exact delete variables and a
 structural deleted-or-error outcome with existing top-level and payload error
 semantics without mutating input; React retains Relay, row concurrency, state,
 callbacks, query retention, markup, and presentation.
+
+### 3. Product Community Mutation Outcome Data Contract
+
+Status: ready
+Lane: Frontend product community mutation outcome data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move structural review, question, and answer completion messages
+out of `ProductCommunityPanel` into its existing framework-free data contract
+while preserving FormData, Relay mutation promises, pending state, authored-
+text inputs, feedback placement, pagination, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `docs/work/frontend-product-community-mutation-outcome-data.md`
+
+Prerequisites:
+
+- Existing generated review, question, and answer mutation shapes remain
+  unchanged.
+- Existing shared route mutation-error policy remains unchanged.
+- Existing product-community data and panel characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure community-data module
+- `git diff --check`
+
+Exit condition: the existing framework-free owner returns exact success or
+shared-error copy for review, question, and answer completion without mutating
+inputs; React retains Relay, pending state, input adaptation, pagination,
+feedback placement, markup, and presentation.
 
 ## Needs Decision Work
 

@@ -1059,6 +1059,35 @@ query retention, markup, and styling.
   `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 35: Product Community Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/product-community-data.ts`
+- Modify: `assets/src/routes/products/ProductCommunityPanel.tsx`
+- Modify: `assets/test/routes/products/product-community-data.test.ts`
+- Test: `assets/test/routes/products/product-community-panel.test.tsx`
+- Create: `docs/work/frontend-product-community-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free community-data module additionally
+owns exact review, question, and answer completion messages from structural
+mutation payloads and the existing shared route-error policy.
+`ProductCommunityPanel` retains FormData, Relay mutation promises, pending
+state, input adaptation, feedback placement, pagination, markup, and styling.
+
+- [ ] Write pure tests for review, question, and answer success copy; missing
+  and null completion facts; payload and top-level GraphQL errors; complete
+  facts that coexist with payload or top-level errors; shared default fallback;
+  and input immutability; verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  current fact-first success semantics, generated mutation contracts, authored-
+  text normalization, Relay promise handling, pending state, and shared errors.
+- [ ] Run the pure community-data and existing community-panel suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1084,6 +1113,12 @@ query retention, markup, and styling.
   pass 43 tests. The candidate is path-disjoint from Tasks 31-33 and preserves
   the generated mutation, shared error policy, Relay lifecycle, and row-scoped
   concurrency owners.
+- Current source inspection on 2026-07-16 found review, question, and answer
+  completion copy plus shared-error interpretation still embedded in
+  `ProductCommunityPanel`; its existing framework-free owner already owns the
+  corresponding input policy. The pure and panel suites pass eight tests, and
+  the candidate is path-disjoint from Tasks 32-34 while preserving current
+  fact-first success semantics and every Relay and presentation owner.
 - The compare picker candidate is distinct from its completed presentation
   extraction: the view owns markup and loaded-option filtering, while the new
   contract owns route reset, page accumulation, option, cursor, empty-state,
