@@ -47,6 +47,20 @@ test("resolveDeleteSavedComparisonSetMutationOutcome uses the payload error when
   ).toEqual({ deletedSavedComparisonSetId: null, error: MUTATION_ERROR.message });
 });
 
+test.each([
+  ["is omitted", { errors: [MUTATION_ERROR] }, MUTATION_ERROR.message],
+  ["is empty", { savedComparisonSet: {}, errors: [MUTATION_ERROR] }, MUTATION_ERROR.message],
+  ["has a null ID", { savedComparisonSet: { id: null }, errors: [] }, DEFAULT_ROUTE_ERROR_MESSAGE]
+])(
+  "resolveDeleteSavedComparisonSetMutationOutcome uses the shared error policy when the saved comparison set %s",
+  (_description, payload, error) => {
+    expect(resolveDeleteSavedComparisonSetMutationOutcome(payload, [])).toEqual({
+      deletedSavedComparisonSetId: null,
+      error
+    });
+  }
+);
+
 test("resolveDeleteSavedComparisonSetMutationOutcome gives top-level GraphQL errors precedence over a deleted ID", () => {
   expect(
     resolveDeleteSavedComparisonSetMutationOutcome(
