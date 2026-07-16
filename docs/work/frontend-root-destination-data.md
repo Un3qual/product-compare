@@ -6,8 +6,9 @@
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after the extracted policy, focused pure and root
-  suites, TypeScript, dependency scan, and whitespace validation.
+- Last verified: 2026-07-16 after the extracted policy, the `48771a58`
+  auth-link presentation follow-up, 20 focused pure and root tests, TypeScript,
+  dependency scan, and whitespace validation.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Root Destination Policy Data Contract
@@ -28,7 +29,7 @@
 - RED: `cd assets && bun x vitest run test/routes/root-destination-data.test.ts`
   failed as expected because `src/routes/root-destination-data.ts` was absent.
 - `cd assets && bun x vitest run test/routes/root-destination-data.test.ts test/routes/root.route.test.tsx`
-  passed: 2 files, 18 tests, 0 failures.
+  passed after `48771a58`: 2 files, 20 tests, 0 failures.
 - `cd assets && bun run typecheck` passed.
 - The framework/transport dependency scan found no React, Relay, router,
   StyleX, Radix, or generated GraphQL imports in the pure data module.

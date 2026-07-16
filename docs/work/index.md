@@ -541,8 +541,9 @@ Root Destination Policy Data then completed: one framework-free owner now
 returns exact ordered public, shopper, authenticated, operator, secondary-
 public, and auth groups for guest, member, and operator viewers. React retains
 active-path matching, NavLink/Button composition, semantic navigation,
-accessibility, variants, and StyleX. Its pure and root suites pass 18 tests;
-the three validated successor rows remain ready.
+accessibility, variants, and StyleX. Its pure and root suites pass 20 tests
+after the `48771a58` auth-link presentation follow-up, and the three validated
+successor rows remain ready.
 
 Compare Saved-Set Mutation Data then completed: one framework-free owner now
 composes the existing naming policy into exact ordered create input and
