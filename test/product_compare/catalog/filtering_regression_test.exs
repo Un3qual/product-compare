@@ -206,11 +206,7 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
 
-      assert_filter_index("pac_numeric_filter_idx", [
-        "attribute_id",
-        "value_num_base",
-        "value_num_base IS NOT NULL"
-      ])
+      assert_filter_plan_uses_index(plan, "pac_numeric_filter_idx")
     end
 
     test "boolean filters preserve canonical PACUR -> PAC join and bool predicate expectation" do
@@ -232,11 +228,7 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
 
-      assert_filter_index("pac_bool_filter_idx", [
-        "attribute_id",
-        "value_bool",
-        "value_bool IS NOT NULL"
-      ])
+      assert_filter_plan_uses_index(plan, "pac_bool_filter_idx")
     end
 
     test "enum filters preserve canonical PACUR -> PAC join and enum index expectation" do
@@ -257,11 +249,7 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
 
-      assert_filter_index("pac_enum_filter_idx", [
-        "attribute_id",
-        "enum_option_id",
-        "enum_option_id IS NOT NULL"
-      ])
+      assert_filter_plan_uses_index(plan, "pac_enum_filter_idx")
     end
   end
 
@@ -284,20 +272,8 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
     {sql, plan}
   end
 
-  defp assert_filter_index(index_name, expected_fragments) do
-    %{rows: [[index_definition]]} =
-      Repo.query!(
-        """
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = current_schema()
-          AND tablename = 'product_attribute_claims'
-          AND indexname = $1
-        """,
-        [index_name]
-      )
-
-    Enum.each(expected_fragments, &assert(index_definition =~ &1))
+  defp assert_filter_plan_uses_index(plan, index_name) do
+    assert plan =~ "using #{index_name}"
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

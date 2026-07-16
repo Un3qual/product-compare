@@ -133,24 +133,9 @@ export function catalogAdvancedFilterViewData(
         disabled: option.disabled && !selected
       };
     }),
-    numericRows: metadata.numericFilters.map((filter) => {
-      const selected = selectedNumericFilter(selections.numeric, filter.attributeId);
-
-      return {
-        attributeId: filter.attributeId,
-        displayName: filter.displayName,
-        min: {
-          inputId: `catalog-numeric-${filter.attributeId}-min`,
-          inputName: `numeric.${filter.attributeId}.min`,
-          defaultValue: selected?.min ?? filter.selectedMin ?? ""
-        },
-        max: {
-          inputId: `catalog-numeric-${filter.attributeId}-max`,
-          inputName: `numeric.${filter.attributeId}.max`,
-          defaultValue: selected?.max ?? filter.selectedMax ?? ""
-        }
-      };
-    }),
+    numericRows: metadata.numericFilters.map((filter) =>
+      catalogAdvancedNumericRow(selections.numeric, filter)
+    ),
     booleanRows: metadata.booleanFilters.map((filter) => {
       const selected = selectedBooleanFilter(selections.booleans, filter.attributeId);
       const value = selected?.value ?? filter.selectedValue;
@@ -200,6 +185,35 @@ export function catalogAdvancedFilterViewData(
       };
     })
   };
+}
+
+function catalogAdvancedNumericRow(
+  selections: readonly CatalogAdvancedNumericSelection[],
+  filter: CatalogAdvancedNumericFilterMetadata
+): CatalogAdvancedNumericRow {
+  const selected = selectedNumericFilter(selections, filter.attributeId);
+
+  return {
+    attributeId: filter.attributeId,
+    displayName: filter.displayName,
+    min: {
+      inputId: `catalog-numeric-${filter.attributeId}-min`,
+      inputName: `numeric.${filter.attributeId}.min`,
+      defaultValue: selectedNumericFieldValue(selected?.min, filter.selectedMin)
+    },
+    max: {
+      inputId: `catalog-numeric-${filter.attributeId}-max`,
+      inputName: `numeric.${filter.attributeId}.max`,
+      defaultValue: selectedNumericFieldValue(selected?.max, filter.selectedMax)
+    }
+  };
+}
+
+function selectedNumericFieldValue(
+  selectedValue: string | undefined,
+  metadataValue: string | null | undefined
+) {
+  return selectedValue ?? metadataValue ?? "";
 }
 
 function selectedNumericFilter(

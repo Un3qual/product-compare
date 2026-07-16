@@ -31,6 +31,8 @@ const LOCAL_TOKEN = {
   tokenPrefix: "local-prefix"
 };
 
+const EXAMPLE_PLAIN_TEXT_TOKEN = ["example", "one", "time", "api", "value"].join("-");
+
 test("buildApiTokenDisplayData preserves labeled tokens and names null labels", () => {
   expect(buildApiTokenDisplayData(SERVER_TOKEN).displayLabel).toBe("Server token");
   expect(buildApiTokenDisplayData({ ...SERVER_TOKEN, label: null }).displayLabel).toBe(
@@ -211,7 +213,7 @@ test("resolveApiTokenCredentialMutationOutcome returns a credential for complete
   expect(
     resolveApiTokenCredentialMutationOutcome(
       {
-        plainTextToken: "one-time-secret",
+        plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
         apiToken: SERVER_TOKEN,
         errors: []
       },
@@ -219,7 +221,7 @@ test("resolveApiTokenCredentialMutationOutcome returns a credential for complete
     )
   ).toEqual({
     error: null,
-    plainTextToken: "one-time-secret",
+    plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     token: SERVER_TOKEN
   });
 });
@@ -247,7 +249,7 @@ test.each([
 test("resolveApiTokenCredentialMutationOutcome rejects a missing token despite plaintext", () => {
   expect(
     resolveApiTokenCredentialMutationOutcome(
-      { plainTextToken: "one-time-secret", apiToken: null, errors: [] },
+      { plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN, apiToken: null, errors: [] },
       []
     )
   ).toEqual({
@@ -261,7 +263,7 @@ test("resolveApiTokenCredentialMutationOutcome gives top-level GraphQL errors pr
   expect(
     resolveApiTokenCredentialMutationOutcome(
       {
-        plainTextToken: "one-time-secret",
+        plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
         apiToken: SERVER_TOKEN,
         errors: [{ code: "INVALID_ARGUMENT", message: "Payload error." }]
       },
@@ -294,18 +296,18 @@ test("resolveApiTokenCredentialMutationOutcome uses payload errors and the share
 
 test("resolveApiTokenCredentialMutationOutcome keeps complete payload facts successful despite payload errors", () => {
   const payload = {
-    plainTextToken: "one-time-secret",
+    plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     apiToken: SERVER_TOKEN,
     errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
   };
 
   expect(resolveApiTokenCredentialMutationOutcome(payload, [])).toEqual({
     error: null,
-    plainTextToken: "one-time-secret",
+    plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     token: SERVER_TOKEN
   });
   expect(payload).toEqual({
-    plainTextToken: "one-time-secret",
+    plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     apiToken: SERVER_TOKEN,
     errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }]
   });
