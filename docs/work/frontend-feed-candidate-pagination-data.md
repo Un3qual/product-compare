@@ -2,21 +2,23 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 30 passing
-  feed-candidate review-data and route characterization tests.
+- Last verified: 2026-07-17 with 36 passing feed-candidate review-data and route
+  tests, green TypeScript and dependency checks, and the full 771-backend /
+  1,329-frontend repository gate.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Feed-Candidate Pagination Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate first-page and next-page link visibility and path
-  projection in the existing framework-free feed-candidate review-data owner
-  while retaining shared pagination markup, labels, and presentation in
-  `FeedCandidateReviewList`.
+- Status: completed on 2026-07-17 on
+  `codex/frontend-mutation-outcome-contracts`.
+- Result: the existing framework-free feed-candidate review-data owner now
+  returns exact first-page and next-page hrefs while
+  `FeedCandidateReviewList` retains empty-list behavior, shared markup, labels,
+  and presentation.
 - Candidate evidence: current source inspection found this deterministic
   projection in the React list; the existing pure and route suites pass 30
   tests and its owned paths do not overlap the verify-email, API-token, or
@@ -40,3 +42,16 @@
 - `cd assets && bun run typecheck`
 - framework/transport dependency scan of the feed-candidate review-data module
 - `git diff --check`
+
+## Completion Evidence
+
+- RED: the pure review-data suite failed six new pagination cases because
+  `buildFeedCandidatePaginationData` did not exist.
+- Focused GREEN: the pure review-data and unchanged route suites passed 36
+  tests.
+- TypeScript completed with no errors, and the review-data owner has no React,
+  React Router, Relay, generated GraphQL, or StyleX dependency.
+- `git diff --check` passed.
+- `mix ci` passed 771 backend and 1,329 frontend tests. Client production build
+  validation passed at 596,289 raw / 182,138 gzip bytes for the initial
+  JavaScript bundle.

@@ -1428,15 +1428,15 @@ additionally owns first-page and next-page link visibility and path projection
 through the existing path builders. `FeedCandidateReviewList` retains shared
 `Pagination` markup, labels, and presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
   bounds, complete and incomplete next-page facts, filter and sort
   preservation, cursor encoding, and input immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving the
+- [x] Extract only deterministic pagination projection while preserving the
   existing path builders, Relay page-info bounds, empty-list behavior, markup,
   labels, and presentation.
-- [ ] Run the pure feed-candidate review-data and route suites, TypeScript, the
+- [x] Run the pure feed-candidate review-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1494,6 +1494,34 @@ markup, labels, empty-page recovery behavior, and presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 50: Offer Discovery Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- Modify: `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-discovery-pagination-data.md`
+
+**Interfaces:** The existing framework-free offer-discovery filter-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the canonical `offerDiscoveryPath` builder. `OfferDiscoveryList`
+retains shared `Pagination` markup, labels, and presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, product, merchant, active-
+  only, page-size, and sort preservation, cursor encoding, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [ ] Run the pure offer-discovery filter-data and route suites, TypeScript,
+  the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1530,6 +1558,12 @@ markup, labels, empty-page recovery behavior, and presentation.
   existing framework-free path owner preserves filters, page size, ordered
   compare slugs, and cursor encoding. The current browse route suite passes 62
   tests, and the candidate is path-disjoint from Tasks 46-48.
+- Current source inspection on 2026-07-17 found offer-discovery first-page and
+  next-page visibility and path projection still embedded in
+  `OfferDiscoveryList`; its existing framework-free filter-data owner preserves
+  product, merchant, active-only, page-size, sort, and cursor policy. The pure
+  and route suites pass 60 tests, and the candidate is path-disjoint from Tasks
+  47-49.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the

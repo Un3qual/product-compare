@@ -7,11 +7,10 @@ import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
+  buildFeedCandidatePaginationData,
   candidateFitReasons,
   candidateFitScore,
   countByReviewStatus,
-  feedCandidatesFirstPagePath,
-  feedCandidatesNextPagePath,
   formatFeedCandidateName,
   formatFeedCandidateReviewStatus,
   formatProductCount,
@@ -71,6 +70,13 @@ export function FeedCandidateReviewList({
     return <p>No CJ feed candidates captured yet.</p>;
   }
 
+  const paginationData = buildFeedCandidatePaginationData({
+    endCursor: connection.pageInfo.endCursor ?? null,
+    hasNextPage: connection.pageInfo.hasNextPage,
+    hasPreviousPage: connection.pageInfo.hasPreviousPage,
+    pagination
+  });
+
   return (
     <>
       <SummaryStrip
@@ -95,18 +101,10 @@ export function FeedCandidateReviewList({
       </ul>
       {reviewFeedback ? <p role="status">{reviewFeedback}</p> : null}
       <Pagination
-        firstHref={
-          connection.pageInfo.hasPreviousPage && pagination.after
-            ? feedCandidatesFirstPagePath(pagination)
-            : null
-        }
+        firstHref={paginationData.firstHref}
         firstLabel="First candidates"
         label="Feed candidate pages"
-        nextHref={
-          connection.pageInfo.hasNextPage && connection.pageInfo.endCursor
-            ? feedCandidatesNextPagePath(pagination, connection.pageInfo.endCursor)
-            : null
-        }
+        nextHref={paginationData.nextHref}
         nextLabel="Next candidates"
       />
     </>

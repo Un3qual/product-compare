@@ -1,4 +1,5 @@
 import {
+  buildFeedCandidatePaginationData,
   candidateFitReasons,
   candidateFitScore,
   countByReviewStatus,
@@ -112,6 +113,99 @@ test("builds first and next paths with normalized filters", () => {
   expect(
     feedCandidatesFirstPagePath({ ...pagination, reviewStatus: null, sort: "UNSUPPORTED" as never })
   ).toBe("/ingestion/feed-candidates?first=30&sort=name_asc");
+});
+
+test("buildFeedCandidatePaginationData returns filter-preserving first and next paths", () => {
+  expect(
+    buildFeedCandidatePaginationData({
+      endCursor: "next cursor/+",
+      hasNextPage: true,
+      hasPreviousPage: true,
+      pagination: {
+        after: "current-cursor",
+        first: 30,
+        reviewStatus: "SHORTLISTED",
+        sort: "PRODUCT_COUNT_DESC"
+      }
+    })
+  ).toEqual({
+    firstHref:
+      "/ingestion/feed-candidates?first=30&reviewStatus=shortlisted&sort=product_count_desc",
+    nextHref:
+      "/ingestion/feed-candidates?first=30&after=next+cursor%2F%2B&reviewStatus=shortlisted&sort=product_count_desc"
+  });
+});
+
+test.each([
+  [false, "current-cursor"],
+  [true, null]
+] as const)(
+  "buildFeedCandidatePaginationData hides incomplete first-page facts",
+  (hasPreviousPage, after) => {
+    expect(
+      buildFeedCandidatePaginationData({
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage,
+        pagination: {
+          after,
+          first: 20,
+          reviewStatus: null,
+          sort: "NAME_ASC"
+        }
+      }).firstHref
+    ).toBeNull();
+  }
+);
+
+test.each([
+  [false, "next-cursor"],
+  [true, null]
+] as const)(
+  "buildFeedCandidatePaginationData hides incomplete next-page facts",
+  (hasNextPage, endCursor) => {
+    expect(
+      buildFeedCandidatePaginationData({
+        endCursor,
+        hasNextPage,
+        hasPreviousPage: false,
+        pagination: {
+          after: null,
+          first: 20,
+          reviewStatus: null,
+          sort: "NAME_ASC"
+        }
+      }).nextHref
+    ).toBeNull();
+  }
+);
+
+test("buildFeedCandidatePaginationData does not mutate its input", () => {
+  const input = Object.freeze({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: Object.freeze({
+      after: "current-cursor",
+      first: 50,
+      reviewStatus: "DISMISSED" as const,
+      sort: "LAST_SEEN_DESC" as const
+    })
+  });
+
+  buildFeedCandidatePaginationData(input);
+
+  expect(input).toEqual({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: {
+      after: "current-cursor",
+      first: 50,
+      reviewStatus: "DISMISSED",
+      sort: "LAST_SEEN_DESC"
+    }
+  });
 });
 
 test("does not mutate candidate arrays or pagination inputs", () => {

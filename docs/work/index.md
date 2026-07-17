@@ -807,49 +807,31 @@ and presentation. Its loader and unchanged route suites pass 33 tests; the full
 repository gate passes 771 backend and 1,323 frontend tests. The three
 validated successor rows remain ready.
 
+Before claiming Feed-Candidate Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Offer-discovery first-page and next-page
+visibility and path projection remain embedded in `OfferDiscoveryList`, while
+its framework-free filter-data owner already preserves product, merchant,
+active-only, page-size, sort, and cursor policy. Its pure and route suites pass
+60 tests. The successor has complete owned paths, no blockers, and does not
+overlap the feed-candidate, merchant-directory, or catalog-browse rows.
+
+Feed-Candidate Pagination Data then completed. The existing framework-free
+review-data owner now returns filter- and sort-preserving first-page and next-
+page hrefs through the canonical path builders while enforcing previous-page,
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+Relay's optional cursor identity, preserves the empty-list early return, and
+retains shared pagination markup, labels, and presentation. Its pure and
+unchanged route suites pass 36 tests; the full repository gate passes 771
+backend and 1,329 frontend tests. The three validated successor rows remain
+ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Feed-Candidate Pagination Data Contract
-
-Status: ready
-Lane: Frontend feed-candidate pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move first-page and next-page link visibility and path projection
-out of `FeedCandidateReviewList` into its existing framework-free review-data
-owner while preserving the existing first/next path builders and keeping
-pagination markup and labels in React.
-Owned paths:
-
-- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
-- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
-- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `docs/work/frontend-feed-candidate-pagination-data.md`
-
-Prerequisites:
-
-- Existing page-size, review-status, sort, and cursor encoding remain
-  unchanged.
-- Link visibility remains bounded to Relay previous/next-page state and the
-  corresponding current or end cursor.
-- Existing feed-candidate review-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the feed-candidate review-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free review-data owner returns exact
-first- and next-page hrefs without mutating inputs; React retains `Pagination`
-markup, labels, and presentation.
-
-### 2. Merchant Directory Pagination Data Contract
+### 1. Merchant Directory Pagination Data Contract
 
 Status: ready
 Lane: Frontend merchant-directory pagination data
@@ -886,7 +868,7 @@ Exit condition: the existing framework-free pagination owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
-### 3. Catalog Browse Pagination Data Contract
+### 2. Catalog Browse Pagination Data Contract
 
 Status: ready
 Lane: Frontend catalog-browse pagination data
@@ -922,6 +904,43 @@ Exit condition: the existing framework-free path owner returns exact first-
 and next-page hrefs without mutating filters or ordered compare slugs; React
 retains `Pagination` markup, labels, empty-page recovery behavior, and
 presentation.
+
+### 3. Offer Discovery Pagination Data Contract
+
+Status: ready
+Lane: Frontend offer-discovery pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move first-page and next-page link visibility and path projection
+out of `OfferDiscoveryList` into its existing framework-free filter-data owner
+while preserving `offerDiscoveryPath` as the canonical path builder and keeping
+pagination markup and labels in React.
+Owned paths:
+
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-pagination-data.md`
+
+Prerequisites:
+
+- Existing product, merchant, active-only, page-size, sort, and cursor encoding
+  remain unchanged.
+- First-page visibility remains bounded to previous-page state plus a current
+  cursor; next-page visibility remains bounded to next-page state plus a non-
+  empty end cursor.
+- Existing offer-discovery pure and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the offer-discovery filter-data module
+- `git diff --check`
+
+Exit condition: the existing framework-free filter-data owner returns exact
+first- and next-page hrefs without mutating filters; React retains `Pagination`
+markup, labels, and presentation.
 
 ## Needs Decision Work
 
