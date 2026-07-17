@@ -3,6 +3,7 @@ import {
   buildComparisonSnapshotPublishInput,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
+  nextComparisonSnapshotCursor,
   publishedSnapshotFromPayload,
   publishComparisonSnapshotState,
   removeComparisonSnapshotId,
@@ -94,6 +95,27 @@ test("appendComparisonSnapshotPage preserves order without duplicate state", () 
   expect(appendComparisonSnapshotPage(current, [snapshot("first", "Duplicate")])).toBe(
     current
   );
+});
+
+test("nextComparisonSnapshotCursor returns a non-empty advancing cursor for a next page", () => {
+  expect(
+    nextComparisonSnapshotCursor(
+      { pageInfo: { endCursor: "cursor-40", hasNextPage: true } },
+      "cursor-20"
+    )
+  ).toBe("cursor-40");
+});
+
+test.each([
+  ["a missing connection", undefined],
+  ["an incomplete connection", {}],
+  ["incomplete page info", { pageInfo: {} }],
+  ["a false next-page flag", { pageInfo: { endCursor: "cursor-40", hasNextPage: false } }],
+  ["a blank cursor", { pageInfo: { endCursor: "", hasNextPage: true } }],
+  ["a whitespace-only cursor", { pageInfo: { endCursor: "   ", hasNextPage: true } }],
+  ["a non-advancing cursor", { pageInfo: { endCursor: "cursor-20", hasNextPage: true } }]
+] as const)("nextComparisonSnapshotCursor rejects %s", (_case, connection) => {
+  expect(nextComparisonSnapshotCursor(connection, "cursor-20")).toBeNull();
 });
 
 test("comparison snapshot state helpers preserve fallback labels and immutable ids", () => {

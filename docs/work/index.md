@@ -1031,47 +1031,21 @@ behavior. The compare route suite passes 109 tests. The successor is path-
 disjoint from affiliate coupon result data, snapshot pagination, and API-token
 status-filter navigation.
 
+Before claiming the comparison snapshot pagination row, current source
+inspection confirmed that saved-comparison card product-count and ordered
+product-name copy remain embedded in `SavedComparisonSetList`, while the
+existing framework-free saved view-state owner already owns deterministic
+saved-set presentation policy. Its pure and route-state suites pass 54 tests.
+The successor is path-disjoint from snapshot pagination, API-token status-
+filter navigation, and compare specification-mode navigation.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Comparison Snapshot Pagination Cursor Data Contract
-
-Status: ready
-Lane: Frontend comparison snapshot pagination cursor data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move next-page cursor eligibility from `ShareComparisonControl`
-into the existing framework-free share-comparison data owner.
-Owned paths:
-
-- `assets/src/routes/compare/share-comparison-data.ts`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/share-comparison-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-comparison-snapshot-pagination-cursor-data.md`
-
-Prerequisites:
-
-- A non-empty cursor remains eligible only when Relay reports a next page.
-- Missing connections, incomplete page info, false next-page flags, and blank
-  cursors produce no next-page action.
-- Existing share-comparison data and snapshot route characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the share-comparison data module
-- `git diff --check`
-
-Exit condition: the framework-free owner selects the next snapshot cursor
-without changing Relay variables, page accumulation, actions, markup, or
-presentation.
-
-### 2. API-Token Status-Filter Navigation Data Contract
+### 1. API-Token Status-Filter Navigation Data Contract
 
 Status: ready
 Lane: Frontend API-token status-filter navigation data
@@ -1104,7 +1078,7 @@ Exit condition: the route-data owner projects stable API-token status-filter
 navigation without changing links, accessibility state, route behavior,
 markup, or presentation.
 
-### 3. Compare Specification-Mode Navigation Data Contract
+### 2. Compare Specification-Mode Navigation Data Contract
 
 Status: ready
 Lane: Frontend compare specification-mode navigation data
@@ -1137,6 +1111,41 @@ Exit condition: the framework-free owner projects stable specification-mode
 navigation without changing Radix tabs, links, panels, children, markup, or
 presentation.
 
+### 3. Saved Comparison Card Display Data Contract
+
+Status: ready
+Lane: Frontend saved comparison card display data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move product-count and ordered product-name display copy from
+`SavedComparisonSetList` into the existing framework-free saved view-state
+owner.
+Owned paths:
+
+- `assets/src/routes/compare/saved-view-state.ts`
+- `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-saved-comparison-card-display-data.md`
+
+Prerequisites:
+
+- One product uses the singular label and every other count uses the plural
+  label.
+- Product-name copy preserves source order and duplicate names.
+- Existing saved-comparison view-state and route-state characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the saved view-state
+  module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable saved-comparison card
+copy without changing links, delete actions, markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1146,6 +1155,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Comparison snapshot pagination cursor data completed on 2026-07-17. The
+framework-free share-comparison data owner now accepts only a non-empty,
+advancing cursor when Relay explicitly reports a next page; missing or
+incomplete page info, false flags, blank cursors, and repeated cursors produce
+no action. The React owner still owns Relay variables, page accumulation,
+actions, markup, and presentation. Its pure and snapshot route suites passed
+39 tests; TypeScript, dependency, and diff checks are recorded in
+`docs/work/frontend-comparison-snapshot-pagination-cursor-data.md`.
 
 Affiliate coupon result display data completed on 2026-07-17. The framework-
 free affiliate setup data owner now projects deterministic amount, percent,

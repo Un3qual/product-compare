@@ -1871,13 +1871,13 @@ and presentation.
 the eligible next snapshot cursor. The React owner retains Relay variables,
 page accumulation, actions, markup, and presentation.
 
-- [ ] Write pure tests for a valid advancing cursor plus missing, incomplete,
+- [x] Write pure tests for a valid advancing cursor plus missing, incomplete,
   false, and blank cursor cases; verify RED.
-- [ ] Move only deterministic cursor eligibility while preserving Relay
+- [x] Move only deterministic cursor eligibility while preserving Relay
   variables, page accumulation, actions, markup, and presentation.
-- [ ] Run the share-comparison data and snapshot route suites, TypeScript, the
+- [x] Run the share-comparison data and snapshot route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1927,8 +1927,36 @@ retains Radix tabs, links, panels, children, markup, and presentation.
   framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 67: Saved Comparison Card Display Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/saved-view-state.ts`
+- Modify: `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- Modify: `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-card-display-data.md`
+
+**Interfaces:** The existing framework-free saved view-state owner projects
+product-count and ordered product-name display copy for a saved comparison.
+The React owner retains links, delete actions, markup, and presentation.
+
+- [ ] Write pure tests for singular, plural, zero, ordered, duplicate, and
+  immutable product inputs; verify RED.
+- [ ] Move only deterministic card display copy while preserving links, delete
+  actions, markup, and presentation.
+- [ ] Run the saved-comparison view-state and route-state suites, TypeScript,
+  consumer and framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Comparison snapshot pagination cursor data completed on 2026-07-17 after a
+  framework-free missing-contract RED with 25 passing and 8 failing cases.
+  The pure and snapshot route suites then passed 39 tests; TypeScript, the
+  direct framework/transport dependency scan, and `git diff --check` passed.
 - Task 63 review follow-up on 2026-07-17 expanded the table-driven pure
   contract coverage for independently incomplete, blank, and nullish coupon
   facts. The 50 focused tests, TypeScript, full 1,408-test frontend gate,
