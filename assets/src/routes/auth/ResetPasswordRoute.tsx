@@ -15,7 +15,7 @@ import {
   transportMutationErrors
 } from "./errors";
 import {
-  RESET_PASSWORD_SUCCESS_MESSAGE,
+  CREDENTIAL_RESET_COMPLETION_MESSAGE,
   buildResetPasswordVariables,
   isCurrentResetPasswordRequest,
   normalizeResetPasswordToken,
@@ -71,7 +71,7 @@ export function ResetPasswordRoute() {
           const result = resolveActionMutationResult(response?.resetPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
-            setMessage(RESET_PASSWORD_SUCCESS_MESSAGE);
+            setMessage(CREDENTIAL_RESET_COMPLETION_MESSAGE);
             setIsSubmitting(false);
             return;
           }

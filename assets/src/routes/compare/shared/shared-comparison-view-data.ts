@@ -97,7 +97,7 @@ function projectProduct(product: SharedComparisonProductInput) {
     description: nonBlankText(product.description),
     brandModelLabel: modelNumber ? `${brandName} · ${modelNumber}` : brandName,
     attributes: collection(product.attributes).map((attribute) => {
-      const sourceName = nonBlankText(collection(attribute.evidence)[0]?.sourceName);
+      const sourceName = nonBlankText(attribute.evidence?.[0]?.sourceName);
 
       return {
         claimId: attribute.claimId,

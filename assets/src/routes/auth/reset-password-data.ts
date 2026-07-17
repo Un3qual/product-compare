@@ -7,14 +7,15 @@ export const RESET_PASSWORD_MISSING_TOKEN_ERROR: MutationError = Object.freeze(
   invalidTokenMutationError("This reset link is missing or invalid.")
 );
 
-export const RESET_PASSWORD_SUCCESS_MESSAGE = "Your password has been updated.";
+export const CREDENTIAL_RESET_COMPLETION_MESSAGE =
+  "Your password has been updated.";
 
 interface ResetPasswordVariablesInput {
   readonly password: string;
   readonly token: string;
 }
 
-export function normalizeResetPasswordToken(token: string | null | undefined) {
+export function normalizeResetPasswordToken(token?: string | null) {
   return token?.trim() ?? "";
 }
 

@@ -22,6 +22,10 @@ const styles = create({
   title: { fontSize: "1.35rem", margin: 0 }
 });
 
+type SharedProductViewData = ReturnType<
+  typeof buildSharedComparisonViewData
+>["products"][number];
+
 export function SharedComparisonRoute() {
   const loaderData = useLoaderData() as SharedComparisonLoaderData;
 
@@ -95,36 +99,42 @@ function ReadySharedComparison({
       </section>
       <section aria-label="Captured products" {...props(styles.grid)}>
         {viewData.products.map((product) => (
-          <article key={product.id} {...props(styles.product)}>
-            <h2 {...props(styles.title)}>{product.name}</h2>
-            <p {...props(styles.capture)}>{product.brandModelLabel}</p>
-            {product.description ? <p>{product.description}</p> : null}
-            <dl {...props(styles.attributeList)}>
-              {product.attributes.map((attribute) => (
-                <div key={attribute.claimId}>
-                  <dt>{attribute.displayName}</dt>
-                  <dd>{attribute.valueText}</dd>
-                  <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
-                </div>
-              ))}
-            </dl>
-            {product.offers.map((offer) => (
-              <p key={offer.pricePointId}>
-                {offer.label}
-                {offer.observedAt ? (
-                  <>
-                    {" "}
-                    <span {...props(styles.evidence)}>
-                      (observed {formatProductDateTimeLabel(offer.observedAt)})
-                    </span>
-                  </>
-                ) : null}
-              </p>
-            ))}
-          </article>
+          <SharedProductCard key={product.id} product={product} />
         ))}
       </section>
       <Link to={viewData.liveComparisonPath}>Open a live comparison</Link>
     </PageShell>
+  );
+}
+
+function SharedProductCard({ product }: { product: SharedProductViewData }) {
+  return (
+    <article {...props(styles.product)}>
+      <h2 {...props(styles.title)}>{product.name}</h2>
+      <p {...props(styles.capture)}>{product.brandModelLabel}</p>
+      {product.description ? <p>{product.description}</p> : null}
+      <dl {...props(styles.attributeList)}>
+        {product.attributes.map((attribute) => (
+          <div key={attribute.claimId}>
+            <dt>{attribute.displayName}</dt>
+            <dd>{attribute.valueText}</dd>
+            <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
+          </div>
+        ))}
+      </dl>
+      {product.offers.map((offer) => (
+        <p key={offer.pricePointId}>
+          {offer.label}
+          {offer.observedAt ? (
+            <>
+              {" "}
+              <span {...props(styles.evidence)}>
+                (observed {formatProductDateTimeLabel(offer.observedAt)})
+              </span>
+            </>
+          ) : null}
+        </p>
+      ))}
+    </article>
   );
 }
