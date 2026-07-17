@@ -673,52 +673,32 @@ mutation promises, product-keyed reset, rule and pending state, feedback,
 markup, and presentation. Its pure and alerts-route suites pass 22 tests; the
 three validated successor rows remain ready.
 
+Before claiming Tracked-Commerce Click Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Compare-picker filter
+normalization, case-insensitive visible-option selection, source ordering, and
+exact no-match copy remain embedded in `CompareProductPickerView`; its existing
+framework-free picker owner and compare-route suites pass 116 tests. The
+successor has complete owned paths, no blockers, and does not overlap tracked-
+commerce, reset-password, or shared-comparison view data.
+
+Tracked-Commerce Click Mutation Outcome Data then completed: the existing
+framework-free owner now returns a resolved same-origin redirect URL or the
+shared route error without mutating payload or GraphQL error inputs. Success
+requires an explicit empty payload-error list and no top-level GraphQL errors;
+unsafe and incomplete redirects fail closed. React retains event handling,
+Relay mutation orchestration, browser navigation, state, feedback, markup, and
+presentation. Its pure and offer-discovery suites pass 68 tests. Full-gate
+investigation also aligned one missed scheduler startup assertion with the
+repository's established 250 ms contention tolerance; the three validated
+successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Tracked-Commerce Click Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend tracked-commerce click mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural tracked-click completion and shared-error
-interpretation out of `TrackedCommerceClickAction` into its existing
-framework-free data owner while preserving event handling, Relay mutation
-orchestration, pending and error state, browser navigation, markup, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/offers/tracked-commerce-click-data.ts`
-- `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
-- `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-tracked-commerce-click-data.md`
-
-Prerequisites:
-
-- The existing generated tracked-commerce click mutation shape remains
-  unchanged.
-- Existing shared route mutation-error and same-origin redirect policies remain
-  unchanged.
-- Existing tracked-commerce data and offer-discovery characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/tracked-commerce-click-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure tracked-commerce data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns the resolved
-same-origin redirect URL or shared route error without mutating inputs; React
-retains event handling, Relay, browser navigation, state, feedback, markup, and
-presentation.
-
-### 2. Reset-Password Request Data Contract
+### 1. Reset-Password Request Data Contract
 
 Status: ready
 Lane: Frontend reset-password request data
@@ -754,7 +734,7 @@ missing-token state, exact success copy, and stale-response eligibility without
 mutating inputs; React retains URL and FormData adaptation, Relay, request
 versioning, state, hooks, markup, and presentation.
 
-### 3. Shared Comparison View Data Contract
+### 2. Shared Comparison View Data Contract
 
 Status: ready
 Lane: Frontend shared-comparison view data
@@ -787,6 +767,43 @@ Verification:
 Exit condition: one framework-free owner returns captured title,
 recommendation, product/offer fact rows, and the ordered live-comparison path
 without mutating query data; React retains Relay, route state, markup, and
+presentation.
+
+### 3. Compare Picker Visible-Option Data Contract
+
+Status: ready
+Lane: Frontend compare-picker visible-option data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move filter normalization, case-insensitive visible-option
+selection, source-order preservation, and exact no-match copy out of
+`CompareProductPickerView` into its existing framework-free picker owner while
+preserving local state, generated IDs, input events, actions, markup, and
+presentation.
+Owned paths:
+
+- `assets/src/routes/compare/compare-picker-data.ts`
+- `assets/src/routes/compare/CompareProductPickerView.tsx`
+- `assets/test/routes/compare/compare-picker-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-compare-picker-visible-option-data.md`
+
+Prerequisites:
+
+- Existing picker option identity, href, and pagination policy remain
+  unchanged.
+- Filtering remains bounded to already-loaded options and product names.
+- Existing compare-picker data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure compare-picker data module
+- `git diff --check`
+
+Exit condition: the existing framework-free picker owner returns normalized
+filter state, source-ordered visible options, and exact empty-state copy without
+mutating options; React retains state, IDs, input events, actions, markup, and
 presentation.
 
 ## Needs Decision Work

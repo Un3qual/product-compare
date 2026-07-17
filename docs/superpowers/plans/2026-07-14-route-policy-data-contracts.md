@@ -1199,15 +1199,15 @@ redirect URL or the existing shared route error. `TrackedCommerceClickAction`
 retains event handling, Relay mutation orchestration, pending and error state,
 browser navigation, markup, and presentation.
 
-- [ ] Write pure tests for resolved redirect success; missing and null paths
+- [x] Write pure tests for resolved redirect success; missing and null paths
   and payloads; payload and top-level GraphQL errors; unsafe redirect paths;
   shared default fallback; and input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current success requirements, the generated mutation contract, same-origin
   validation, Relay lifecycle, navigation, component state, and shared errors.
-- [ ] Run the pure tracked-commerce data and existing offer-discovery suites,
+- [x] Run the pure tracked-commerce data and existing offer-discovery suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1265,6 +1265,34 @@ and existing date formatting.
 - [ ] Run the pure shared-comparison view-data and existing snapshot-route
   suites, TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 42: Compare Picker Visible-Option Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/compare-picker-data.ts`
+- Modify: `assets/src/routes/compare/CompareProductPickerView.tsx`
+- Modify: `assets/test/routes/compare/compare-picker-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-compare-picker-visible-option-data.md`
+
+**Interfaces:** The existing framework-free compare-picker data module
+additionally owns filter normalization, case-insensitive visible-option
+selection, source-order preservation, and exact empty-state copy.
+`CompareProductPickerView` retains local state, generated IDs, input events,
+actions, markup, and presentation.
+
+- [ ] Write pure tests for trimmed and case-insensitive filtering, blank
+  filters, source order, no matches, exact empty-state copy, stable identity,
+  and deep input immutability; verify RED.
+- [ ] Extract only deterministic visible-option policy while preserving picker
+  option identity, paths, pagination, loaded-page bounds, local state, IDs,
+  events, actions, markup, and presentation.
+- [ ] Run the pure compare-picker data and existing compare-route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

@@ -2,12 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 58 passing
-  tracked-commerce data and offer-discovery characterization tests.
+- Last verified: 2026-07-16 after the extracted mutation-outcome contract and
+  offer-discovery suites passed 68 tests, TypeScript passed, and dependency,
+  sensitive-field, and diff scans were clean.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Tracked-Commerce Click Data Contract
@@ -31,16 +32,25 @@
 
 ## Tracked-Commerce Click Mutation Outcome Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate structural tracked-click completion as a resolved
+- Status: completed on 2026-07-16 on
+  `codex/frontend-mutation-outcome-contracts`.
+- Completed action: isolated structural tracked-click completion as a resolved
   same-origin redirect URL or the shared route error in the existing
   framework-free data owner.
-- Candidate evidence: current source inspection found structural redirect
-  success, payload and top-level error checks, same-origin resolution, browser
-  navigation, and feedback combined in `TrackedCommerceClickAction`; the
-  existing pure owner already owns click qualification and redirect URL policy.
-  Its focused suites pass 58 tests, and the candidate owns no paths from the
-  affiliate setup, comparison sharing, or price-watch mutation rows.
+- Evidence: success requires a non-empty redirect path, an explicit empty
+  payload-error list, no top-level GraphQL errors, and same-origin resolution;
+  incomplete and unsafe redirects fail closed through the shared error policy.
+  Payload and GraphQL error inputs remain unchanged, while React retains the
+  browser navigation side effect and its failure handling. The focused pure and
+  offer-discovery suites pass 68 tests.
+- Full repository evidence: `mix ci` passed with 771 backend tests, 1,288
+  frontend tests across 94 files, Relay validation, TypeScript, client and SSR
+  builds, and the 182,138-byte gzip initial-bundle contract under its 200,000-
+  byte budget. The existing six-clone budget remained unchanged. The first full
+  run exposed a pre-existing implicit 100 ms scheduler assertion under suite
+  contention; the exact case passed 20 isolated repetitions, its wait was
+  aligned with the repository's established 250 ms scheduler tolerance, and
+  the complete gate then passed.
 - Blockers: none.
 
 ## Mutation Outcome Boundaries

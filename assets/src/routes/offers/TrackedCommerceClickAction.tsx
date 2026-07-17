@@ -4,13 +4,9 @@ import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommer
 import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../route-errors";
-import {
-  resolveTrackedCommerceRedirectUrl,
+  resolveTrackedCommerceClickMutationOutcome,
   shouldTrackCommerceClick,
   trackedMerchantProductHref
 } from "./tracked-commerce-click-data";
@@ -45,24 +41,22 @@ export function TrackedCommerceClickAction({
           }
         },
         onCompleted: (response, graphQLErrors) => {
-          const payload = response.trackCommerceClick;
+          const outcome = resolveTrackedCommerceClickMutationOutcome(
+            response.trackCommerceClick,
+            graphQLEndpoint,
+            graphQLErrors
+          );
 
-          if (
-            payload?.redirectPath &&
-            payload.errors.length === 0 &&
-            !hasRouteGraphQLErrors(graphQLErrors)
-          ) {
+          if (outcome.redirectUrl) {
             try {
-              window.location.assign(
-                resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint)
-              );
+              window.location.assign(outcome.redirectUrl);
             } catch {
               setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
             }
             return;
           }
 
-          setErrorMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+          setErrorMessage(outcome.error);
         },
         onError: () => {
           setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);

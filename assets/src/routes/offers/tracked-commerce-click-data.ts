@@ -1,3 +1,9 @@
+import {
+  DEFAULT_ROUTE_ERROR_MESSAGE,
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
+
 type CommerceClick = {
   button: number;
   altKey: boolean;
@@ -5,6 +11,15 @@ type CommerceClick = {
   metaKey: boolean;
   shiftKey: boolean;
 };
+
+export type TrackedCommerceClickPayload = {
+  readonly errors?: unknown;
+  readonly redirectPath?: string | null;
+};
+
+export type TrackedCommerceClickMutationOutcome =
+  | { readonly error: null; readonly redirectUrl: string }
+  | { readonly error: string; readonly redirectUrl: null };
 
 export function shouldTrackCommerceClick(click: CommerceClick) {
   return (
@@ -40,4 +55,34 @@ export function resolveTrackedCommerceRedirectUrl(
   }
 
   return redirectUrl.toString();
+}
+
+export function resolveTrackedCommerceClickMutationOutcome(
+  payload: TrackedCommerceClickPayload | null | undefined,
+  graphQLEndpoint: string,
+  graphQLErrors?: readonly unknown[] | null
+): TrackedCommerceClickMutationOutcome {
+  if (
+    !payload?.redirectPath ||
+    !Array.isArray(payload.errors) ||
+    payload.errors.length > 0 ||
+    hasRouteGraphQLErrors(graphQLErrors)
+  ) {
+    return {
+      error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+      redirectUrl: null
+    };
+  }
+
+  try {
+    return {
+      error: null,
+      redirectUrl: resolveTrackedCommerceRedirectUrl(
+        payload.redirectPath,
+        graphQLEndpoint
+      )
+    };
+  } catch {
+    return { error: DEFAULT_ROUTE_ERROR_MESSAGE, redirectUrl: null };
+  }
 }

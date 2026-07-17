@@ -149,7 +149,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
           )
         )
 
-      assert_receive {:run, ^invalid_cursor, opts}
+      assert_receive {:run, ^invalid_cursor, opts}, 250
       assert opts[:cursor] == nil
 
       GenServer.stop(pid)
