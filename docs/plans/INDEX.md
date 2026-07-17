@@ -65,9 +65,10 @@ overlapping successors remain ready across category landing view data, alerts
 mutation data, recommendation result view data, and shared route-error view
 data. Trust-surface date presentation, product-attribute grouping, route-
 metadata resolution, and saved-comparison navigation data are complete.
-Product-community and affiliate-setup mutation outcome data are complete.
-Share-comparison, price-watch, and tracked-commerce click mutation outcome data
-are the three current ready successors in the live queue.
+Product-community, affiliate-setup, and share-comparison mutation outcome data
+are complete. Price-watch and tracked-commerce click mutation outcome data plus
+reset-password request data are the three current ready successors in the live
+queue.
 
 Active implementation plans:
 

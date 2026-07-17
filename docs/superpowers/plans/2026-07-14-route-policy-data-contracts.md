@@ -1138,18 +1138,18 @@ shared route error. `ShareComparisonControl` retains FormData and location
 adaptation, Relay mutation promises, hooks, component state and callbacks,
 snapshot paging, markup, and styling.
 
-- [ ] Write pure tests for complete publish projection and revoke identity;
+- [x] Write pure tests for complete publish projection and revoke identity;
   missing and null publish IDs, share paths, payloads, and revoke facts;
   payload and top-level GraphQL errors on incomplete facts; complete facts
   that coexist with payload or top-level errors; shared default fallback; and
   input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current fact-first success semantics, generated mutation contracts, Relay
   promise handling, local state transitions, callbacks, and shared errors.
-- [ ] Run the pure share-comparison and existing comparison-snapshots suites,
+- [x] Run the pure share-comparison and existing comparison-snapshots suites,
   TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1206,6 +1206,35 @@ browser navigation, markup, and presentation.
   current success requirements, the generated mutation contract, same-origin
   validation, Relay lifecycle, navigation, component state, and shared errors.
 - [ ] Run the pure tracked-commerce data and existing offer-discovery suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 40: Reset-Password Request Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/auth/reset-password-data.ts`
+- Modify: `assets/src/routes/auth/ResetPasswordRoute.tsx`
+- Create: `assets/test/routes/auth/reset-password-data.test.ts`
+- Test: `assets/test/routes/auth/recovery.route.test.tsx`
+- Create: `docs/work/frontend-reset-password-request-data.md`
+
+**Interfaces:** A framework-free reset-password data module owns token
+normalization, missing-token state, mutation-variable construction, exact
+success copy, and stale-response eligibility. `ResetPasswordRoute` retains URL
+and FormData adaptation, Relay mutation orchestration, request-version
+ownership, hooks, state, markup, and presentation; existing auth errors retain
+outcome and transport-error normalization.
+
+- [ ] Write pure tests for trimmed, blank, and missing tokens; missing-token
+  error identity; mutation variables; exact success copy; current and stale
+  request versions; and input immutability; verify RED.
+- [ ] Extract only deterministic request data while preserving the generated
+  mutation contract, auth outcome/error owners, Relay lifecycle, stale-response
+  suppression, hooks, component state, and presentation.
+- [ ] Run the pure reset-password data and existing recovery-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 

@@ -639,49 +639,32 @@ promises, in-flight and pending guards, selected state, feedback placement,
 markup, and presentation. Its pure and route suites pass 37 tests; the three
 validated successor rows remain ready.
 
+Before claiming Share-Comparison Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Reset-password token
+normalization, missing-token state, mutation-variable construction, exact
+success copy, and stale-response eligibility remain embedded in
+`ResetPasswordRoute`, while the existing auth error owner already normalizes
+mutation outcomes. Its auth-error and recovery-route suites pass 20 tests; the
+successor has complete owned paths, no blockers, does not reopen deferred email
+delivery, and does not overlap comparison sharing, price-watch, or tracked-
+commerce mutations.
+
+Share-Comparison Mutation Outcome Data then completed: the existing
+framework-free owner now returns a projected complete published snapshot or the
+original revoked snapshot, otherwise the shared route error, without mutating
+inputs. Complete facts retain precedence when payload or top-level GraphQL
+errors coexist. React retains FormData and location adaptation, Relay mutation
+promises, hooks, state and callbacks, snapshot paging, markup, and styling. Its
+pure and snapshot-control suites pass 30 tests; the three validated successor
+rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Share-Comparison Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend share-comparison mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural publish and revoke completion interpretation out
-of `ShareComparisonControl` into its existing framework-free data owner while
-preserving FormData and location adaptation, Relay mutation promises, hooks,
-state and callbacks, snapshot paging, markup, and styling.
-Owned paths:
-
-- `assets/src/routes/compare/share-comparison-data.ts`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/share-comparison-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-share-comparison-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated publish and revoke mutation shapes remain unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing share-comparison data and snapshot-control characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure share-comparison data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns the projected
-published snapshot or original revoked snapshot, or the shared route error,
-without mutating inputs; React retains Relay, hooks, state, callbacks, paging,
-markup, and presentation.
-
-### 2. Price-Watch Mutation Outcome Data Contract
+### 1. Price-Watch Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend price-watch mutation outcome data
@@ -716,7 +699,7 @@ watch success or shared-error copy without mutating inputs; React retains
 FormData, Relay, keyed reset, rule and pending state, feedback placement,
 markup, and presentation.
 
-### 3. Tracked-Commerce Click Mutation Outcome Data Contract
+### 2. Tracked-Commerce Click Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend tracked-commerce click mutation outcome data
@@ -754,6 +737,42 @@ Exit condition: the existing framework-free owner returns the resolved
 same-origin redirect URL or shared route error without mutating inputs; React
 retains event handling, Relay, browser navigation, state, feedback, markup, and
 presentation.
+
+### 3. Reset-Password Request Data Contract
+
+Status: ready
+Lane: Frontend reset-password request data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic token normalization, missing-token state,
+mutation-variable construction, exact success copy, and stale-response
+eligibility out of `ResetPasswordRoute` into a framework-free data owner while
+preserving URL adaptation, FormData, Relay mutation orchestration, request
+version ownership, hooks, state, markup, and presentation.
+Owned paths:
+
+- `assets/src/routes/auth/reset-password-data.ts`
+- `assets/src/routes/auth/ResetPasswordRoute.tsx`
+- `assets/test/routes/auth/reset-password-data.test.ts`
+- `assets/test/routes/auth/recovery.route.test.tsx`
+- `docs/work/frontend-reset-password-request-data.md`
+
+Prerequisites:
+
+- The existing generated reset-password mutation shape remains unchanged.
+- Existing auth mutation-result and error normalization remain unchanged.
+- Existing auth error and recovery-route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/auth/reset-password-data.test.ts test/routes/auth/recovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure reset-password data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns normalized token/request data,
+missing-token state, exact success copy, and stale-response eligibility without
+mutating inputs; React retains URL and FormData adaptation, Relay, request
+versioning, state, hooks, markup, and presentation.
 
 ## Needs Decision Work
 
