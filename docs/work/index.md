@@ -692,49 +692,29 @@ investigation also aligned one missed scheduler startup assertion with the
 repository's established 250 ms contention tolerance; the three validated
 successor rows remain ready.
 
+Before claiming Reset-Password Request Data, the coordinator validated a
+fourth non-overlapping successor. Exact selection-count copy, exact-slug label
+resolution with fallback, ordered removal-path projection, and open-action
+visibility remain embedded in `CompareSelectionTray`; its catalog-browse and
+product-detail consumer suites pass 117 tests. The successor has complete
+owned paths, no blockers, and avoids the compare-route test path owned by the
+higher-ranked visible-option candidate.
+
+Reset-Password Request Data then completed. The framework-free owner now owns
+trimmed token data, the exact missing-token state, mutation variables, exact
+success copy, and current-response eligibility. React retains URL and FormData
+adaptation, request-version mutation, Relay, state, hooks, markup, and
+presentation. Its pure and unchanged recovery-route suites pass 19 tests; the
+full repository gate passes 771 backend and 1,293 frontend tests. The three
+validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Reset-Password Request Data Contract
-
-Status: ready
-Lane: Frontend reset-password request data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic token normalization, missing-token state,
-mutation-variable construction, exact success copy, and stale-response
-eligibility out of `ResetPasswordRoute` into a framework-free data owner while
-preserving URL adaptation, FormData, Relay mutation orchestration, request
-version ownership, hooks, state, markup, and presentation.
-Owned paths:
-
-- `assets/src/routes/auth/reset-password-data.ts`
-- `assets/src/routes/auth/ResetPasswordRoute.tsx`
-- `assets/test/routes/auth/reset-password-data.test.ts`
-- `assets/test/routes/auth/recovery.route.test.tsx`
-- `docs/work/frontend-reset-password-request-data.md`
-
-Prerequisites:
-
-- The existing generated reset-password mutation shape remains unchanged.
-- Existing auth mutation-result and error normalization remain unchanged.
-- Existing auth error and recovery-route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/auth/reset-password-data.test.ts test/routes/auth/recovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure reset-password data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns normalized token/request data,
-missing-token state, exact success copy, and stale-response eligibility without
-mutating inputs; React retains URL and FormData adaptation, Relay, request
-versioning, state, hooks, markup, and presentation.
-
-### 2. Shared Comparison View Data Contract
+### 1. Shared Comparison View Data Contract
 
 Status: ready
 Lane: Frontend shared-comparison view data
@@ -769,7 +749,7 @@ recommendation, product/offer fact rows, and the ordered live-comparison path
 without mutating query data; React retains Relay, route state, markup, and
 presentation.
 
-### 3. Compare Picker Visible-Option Data Contract
+### 2. Compare Picker Visible-Option Data Contract
 
 Status: ready
 Lane: Frontend compare-picker visible-option data
@@ -805,6 +785,43 @@ Exit condition: the existing framework-free picker owner returns normalized
 filter state, source-ordered visible options, and exact empty-state copy without
 mutating options; React retains state, IDs, input events, actions, markup, and
 presentation.
+
+### 3. Compare-Selection Tray View Data Contract
+
+Status: ready
+Lane: Frontend compare-selection tray view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move exact selection-count copy, exact-slug label resolution with
+fallback, ordered removal-path projection, and open-action visibility out of
+`CompareSelectionTray` into a framework-free data owner while preserving
+caller-owned path policy, generated IDs, semantic markup, links, buttons,
+events, and presentation.
+Owned paths:
+
+- `assets/src/routes/compare/compare-selection-tray-data.ts`
+- `assets/src/routes/compare/CompareSelectionTray.tsx`
+- `assets/test/routes/compare/compare-selection-tray-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-compare-selection-tray-view-data.md`
+
+Prerequisites:
+
+- Existing compare-selection route path builders remain unchanged.
+- Filtering remains limited to exact slug identity and caller-supplied items.
+- Existing catalog-browse and product-detail characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/compare-selection-tray-data.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure tray data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns exact count copy, ordered
+selected rows with labels and removal paths, and open-action visibility without
+mutating inputs; React retains caller-owned route policy, IDs, markup, actions,
+events, and presentation.
 
 ## Needs Decision Work
 

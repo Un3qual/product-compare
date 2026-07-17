@@ -1228,15 +1228,15 @@ and FormData adaptation, Relay mutation orchestration, request-version
 ownership, hooks, state, markup, and presentation; existing auth errors retain
 outcome and transport-error normalization.
 
-- [ ] Write pure tests for trimmed, blank, and missing tokens; missing-token
+- [x] Write pure tests for trimmed, blank, and missing tokens; missing-token
   error identity; mutation variables; exact success copy; current and stale
   request versions; and input immutability; verify RED.
-- [ ] Extract only deterministic request data while preserving the generated
+- [x] Extract only deterministic request data while preserving the generated
   mutation contract, auth outcome/error owners, Relay lifecycle, stale-response
   suppression, hooks, component state, and presentation.
-- [ ] Run the pure reset-password data and existing recovery-route suites,
+- [x] Run the pure reset-password data and existing recovery-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1293,6 +1293,36 @@ actions, markup, and presentation.
   events, actions, markup, and presentation.
 - [ ] Run the pure compare-picker data and existing compare-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 43: Compare-Selection Tray View Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/compare-selection-tray-data.ts`
+- Modify: `assets/src/routes/compare/CompareSelectionTray.tsx`
+- Create: `assets/test/routes/compare/compare-selection-tray-data.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Create: `docs/work/frontend-compare-selection-tray-view-data.md`
+
+**Interfaces:** A framework-free compare-selection tray data module owns exact
+selection-count copy, exact-slug label resolution with slug fallback, ordered
+removal-path projection, and open-action visibility. `CompareSelectionTray`
+retains generated IDs, semantic markup, links, buttons, StyleX presentation,
+and events; callers retain open-comparison and removal-path policy.
+
+- [ ] Write pure tests for zero and bounded selection copy, exact-slug label
+  resolution and fallback, source order, projected removal paths, open-action
+  visibility, stable empty identity, and deep input immutability; verify RED.
+- [ ] Extract only deterministic tray view data while preserving caller-owned
+  route policy, selected-slug identity and order, generated IDs, semantic
+  markup, actions, events, and presentation.
+- [ ] Run the pure tray data plus existing catalog-browse and product-detail
+  consumer suites, TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -1497,6 +1527,12 @@ actions, markup, and presentation.
   asynchronous redirect-rejection boundary; route-level regression coverage
   now proves resolution or navigation failures render existing default error
   feedback without escaping the Relay completion callback.
+- Reset-password request data completed on 2026-07-16 with 5 pure contract
+  tests and 14 unchanged recovery-route tests. The framework-free owner now
+  owns normalized token/request data, missing-token error identity, exact
+  success copy, and current-response eligibility while React retains URL and
+  FormData adaptation, request-version mutation, Relay, state, and
+  presentation.
 - Before the immutable route-state claim on 2026-07-15, current source
   inspection confirmed product/status/merchant/domain/latest-price labels,
   nullable connection fallbacks, and ordered price-history view rows remain
