@@ -77,7 +77,9 @@ complete on `codex/frontend-navigation-row-contracts`. Category pagination
 navigation, saved-comparison sort input, offer selected-product context, and
 Relay query descriptor identity are also complete. Price-watch rule-type select
 input and catalog sort select input are also complete. Root viewer projection
-is also complete. Affiliate coupon result display data is also complete.
+is also complete. Affiliate coupon result display data is also complete; its
+review follow-up characterized independently incomplete, blank, and nullish
+coupon facts with 50 focused tests and the full 1,408-test frontend gate.
 Comparison snapshot pagination cursor data, API-token status-filter navigation
 data, and compare specification-mode navigation data are the current ready
 successors in the live queue.

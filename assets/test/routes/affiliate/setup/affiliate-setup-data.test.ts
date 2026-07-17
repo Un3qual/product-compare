@@ -21,14 +21,67 @@ const FIRST_MERCHANT = {
 };
 
 test.each([
-  ["formats amount discounts with a value and currency", { discountType: "AMOUNT", discountValue: "20.00", currency: "USD" }, "20.00 USD"],
-  ["hides incomplete amount discounts", { discountType: "AMOUNT", discountValue: "20.00" }, null],
-  ["formats percent discounts with a value", { discountType: "PERCENT", discountValue: "15" }, "15% off"],
-  ["hides percent discounts without a value", { discountType: "PERCENT" }, null],
+  [
+    "formats amount discounts with a value and currency",
+    { discountType: "AMOUNT", discountValue: "20.00", currency: "USD" },
+    "20.00 USD"
+  ],
+  [
+    "hides amount discounts with currency but no value",
+    { discountType: "AMOUNT", currency: "USD" },
+    null
+  ],
+  [
+    "hides amount discounts with a value but no currency",
+    { discountType: "AMOUNT", discountValue: "20.00" },
+    null
+  ],
+  [
+    "hides amount discounts with a blank value",
+    { discountType: "AMOUNT", discountValue: "", currency: "USD" },
+    null
+  ],
+  [
+    "hides amount discounts with a blank currency",
+    { discountType: "AMOUNT", discountValue: "20.00", currency: "" },
+    null
+  ],
+  [
+    "hides amount discounts with a nullish value",
+    { discountType: "AMOUNT", discountValue: null, currency: "USD" },
+    null
+  ],
+  [
+    "formats percent discounts with a value",
+    { discountType: "PERCENT", discountValue: "15" },
+    "15% off"
+  ],
+  [
+    "hides percent discounts with a blank value",
+    { discountType: "PERCENT", discountValue: "" },
+    null
+  ],
   ["formats free-shipping discounts", { discountType: "FREE_SHIPPING" }, "Free shipping"],
-  ["formats other discounts with a value", { discountType: "OTHER", discountValue: "Member reward" }, "Member reward off"],
-  ["formats other discounts without a value", { discountType: "OTHER" }, "Other discount"],
-  ["hides unknown future discount types", { discountType: "BUY_ONE_GET_ONE", discountValue: "1" }, null]
+  [
+    "formats other discounts with a value",
+    { discountType: "OTHER", discountValue: "Member reward" },
+    "Member reward off"
+  ],
+  [
+    "uses the other discount fallback for a blank value",
+    { discountType: "OTHER", discountValue: "" },
+    "Other discount"
+  ],
+  [
+    "uses the other discount fallback for a nullish value",
+    { discountType: "OTHER", discountValue: null },
+    "Other discount"
+  ],
+  [
+    "hides unknown future discount types",
+    { discountType: "BUY_ONE_GET_ONE", discountValue: "1" },
+    null
+  ]
 ] as const)("couponDiscountText %s", (_description, coupon, expected) => {
   expect(couponDiscountText(coupon)).toBe(expected);
 });

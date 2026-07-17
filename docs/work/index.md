@@ -1151,9 +1151,12 @@ Affiliate coupon result display data completed on 2026-07-17. The framework-
 free affiliate setup data owner now projects deterministic amount, percent,
 free-shipping, other, incomplete, and unknown discount copy, while the React
 form retains generated GraphQL result types, mutation orchestration, identity,
-markup, and presentation. The pure and route suites passed 45 tests; TypeScript,
-dependency scans, the full 1,403-test frontend gate, and queue validation are
-recorded in `docs/work/frontend-affiliate-coupon-result-display-data.md`.
+markup, and presentation. A review follow-up characterized independently
+incomplete, blank, and nullish coupon facts without a production change. The
+pure and route suites passed 50 tests; TypeScript, dependency scans, the full
+1,408-test frontend gate, 596,262 raw / 182,104 gzip-byte bundle contract, and
+queue validation are recorded in
+`docs/work/frontend-affiliate-coupon-result-display-data.md`.
 
 Root viewer projection completed on 2026-07-17. One framework-free owner now
 validates and projects both query and cached viewer values; focused pure and
