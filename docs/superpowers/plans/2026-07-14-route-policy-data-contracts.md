@@ -55,12 +55,6 @@ selection state, feedback, boundaries, and presentation.
   scan, and `git diff --check`.
 - [x] Record lane evidence and commit the milestone.
 
-Review follow-up on 2026-07-17 expanded Task 63's table-driven pure contract
-coverage for independently incomplete, blank, and nullish coupon facts. The
-50 focused tests, TypeScript, full 1,408-test frontend gate, 596,262 raw /
-182,104 gzip-byte client bundle contract, dependency scan, queue validation,
-and diff check passed without a production change.
-
 ---
 
 ### Task 2: Offer Discovery Filter Data Contract
@@ -1935,6 +1929,11 @@ retains Radix tabs, links, panels, children, markup, and presentation.
 
 ## Validation Evidence
 
+- Task 63 review follow-up on 2026-07-17 expanded the table-driven pure
+  contract coverage for independently incomplete, blank, and nullish coupon
+  facts. The 50 focused tests, TypeScript, full 1,408-test frontend gate,
+  596,262 raw / 182,104 gzip-byte client bundle contract, dependency scan,
+  queue validation, and diff check passed without a production change.
 - Root viewer projection completed on 2026-07-17 after a missing-module RED
   case and five pure tests covering nullish, primitive, exact valid, immutable,
   and table-driven incomplete/invalid values: missing fields, numeric/null ID,
