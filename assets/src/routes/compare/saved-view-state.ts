@@ -9,6 +9,19 @@ export type SavedComparisonSortMode =
   | "product-count-desc"
   | "product-count-asc";
 
+export function savedComparisonSortModeFromValue(
+  value: string
+): SavedComparisonSortMode {
+  switch (value) {
+    case "name-asc":
+    case "product-count-desc":
+    case "product-count-asc":
+      return value;
+    default:
+      return "current";
+  }
+}
+
 const SAVED_COMPARISON_NAME_COLLATOR = new Intl.Collator("en-US", {
   sensitivity: "base"
 });

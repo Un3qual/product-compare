@@ -944,45 +944,28 @@ cursor query value, preventing reserved slug characters from changing route
 structure. Pagination eligibility and React presentation remain unchanged. Its
 pure and route suites pass 8 tests.
 
+Before claiming Saved-Comparison Sort Input, the coordinator validated a
+fourth non-overlapping successor. `PriceWatchControl` still trusts the raw rule-
+type select value through a TypeScript assertion, while the existing framework-
+free price-watch owner defines the four supported rule types and all downstream
+amount policy. Its pure and product-detail characterization suites pass 71
+tests. The successor has complete owned paths, no blockers, and does not
+overlap saved-comparison sort input, offer selected-product context, or Relay
+query descriptor identity.
+
+Saved-Comparison Sort Input then completed. The existing framework-free view-
+state owner now normalizes all raw select values to the four supported modes,
+with blank, unknown, and future values falling back to current order. Sorting,
+filtering, React events, markup, and presentation remain unchanged. Its pure
+and route-state suites pass 55 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Saved-Comparison Sort Input Data Contract
-
-Status: ready
-Lane: Frontend saved-comparison sort input
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move raw select-value normalization from
-`SavedComparisonSetList` into its existing framework-free view-state owner.
-Owned paths:
-
-- `assets/src/routes/compare/saved-view-state.ts`
-- `assets/src/routes/compare/SavedComparisonSetList.tsx`
-- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-saved-comparison-sort-input.md`
-
-Prerequisites:
-
-- All four supported sort modes remain unchanged.
-- Blank, unknown, and future values fall back to current order.
-- Existing saved-comparison view-state and route-state characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the saved view-state module
-- `git diff --check`
-
-Exit condition: one framework-free owner normalizes saved-comparison sort input
-without changing sorting, filtering, events, markup, or presentation.
-
-### 2. Offer-Discovery Selected-Product Context Contract
+### 1. Offer-Discovery Selected-Product Context Contract
 
 Status: ready
 Lane: Frontend offer selected-product context
@@ -1016,7 +999,7 @@ Exit condition: the framework-free owner qualifies and projects selected-
 product context without changing Relay, summaries, fallbacks, markup, or
 presentation.
 
-### 3. Relay Query Descriptor Identity Contract
+### 2. Relay Query Descriptor Identity Contract
 
 Status: ready
 Lane: Frontend Relay query descriptor identity
@@ -1050,6 +1033,39 @@ Verification:
 
 Exit condition: both React retainers use the canonical Relay descriptor
 identity without changing query lifecycle, rendering, or route behavior.
+
+### 3. Price-Watch Rule-Type Select Input Contract
+
+Status: ready
+Lane: Frontend price-watch rule-type select input
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move raw rule-type select-value normalization from
+`PriceWatchControl` into its existing framework-free price-watch data owner.
+Owned paths:
+
+- `assets/src/routes/products/price-watch-data.ts`
+- `assets/src/routes/products/PriceWatchControl.tsx`
+- `assets/test/routes/products/price-watch-data.test.ts`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `docs/work/frontend-price-watch-rule-type-input.md`
+
+Prerequisites:
+
+- All four supported rule types remain unchanged.
+- Blank, unknown, and future values fall back to target price.
+- Existing price-watch data and product-detail route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/products/detail.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the price-watch data module
+- `git diff --check`
+
+Exit condition: the framework-free owner normalizes price-watch rule-type
+select input without changing form state, amount-field visibility, mutation
+inputs, events, markup, or presentation.
 
 ## Needs Decision Work
 

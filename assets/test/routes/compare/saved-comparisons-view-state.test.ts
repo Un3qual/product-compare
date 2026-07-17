@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import {
   buildSavedComparisonsViewState,
+  savedComparisonSortModeFromValue,
   type SavedComparisonSortMode
 } from "../../../src/routes/compare/saved-view-state";
 import type {
@@ -128,6 +129,18 @@ describe("filtering", () => {
 });
 
 describe("sorting", () => {
+  test.each<readonly [string, SavedComparisonSortMode]>([
+    ["current", "current"],
+    ["name-asc", "name-asc"],
+    ["product-count-desc", "product-count-desc"],
+    ["product-count-asc", "product-count-asc"],
+    ["", "current"],
+    ["unknown", "current"],
+    ["future-sort-mode", "current"]
+  ])("normalizes raw sort value %j to %s", (value, expected) => {
+    expect(savedComparisonSortModeFromValue(value)).toBe(expected);
+  });
+
   test.each<readonly [SavedComparisonSortMode, string[]]>([
     ["current", ["saved-set-1", "saved-set-2", "saved-set-3"]],
     ["name-asc", ["saved-set-2", "saved-set-1", "saved-set-3"]],

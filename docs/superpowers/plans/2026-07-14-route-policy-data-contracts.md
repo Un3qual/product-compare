@@ -1693,13 +1693,13 @@ normalizes raw select values to the four supported sort modes. The list owner
 retains select events, local state callbacks, options, markup, and
 presentation.
 
-- [ ] Write pure tests for all supported values plus blank, unknown, and future
+- [x] Write pure tests for all supported values plus blank, unknown, and future
   values falling back to current order; verify RED.
-- [ ] Move only deterministic select-value normalization while preserving
+- [x] Move only deterministic select-value normalization while preserving
   sorting, filtering, events, and presentation.
-- [ ] Run the pure saved-comparison view-state and route-state suites,
+- [x] Run the pure saved-comparison view-state and route-state suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1754,8 +1754,38 @@ lifecycle, rendering, and route orchestration.
   suites, TypeScript, a consumer scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 60: Price-Watch Rule-Type Select Input Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Modify: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-rule-type-input.md`
+
+**Interfaces:** The existing framework-free price-watch data owner normalizes
+raw select values to the four supported rule types. The form owner retains
+select events, local state, amount-field visibility, mutation orchestration,
+markup, and presentation.
+
+- [ ] Write pure tests for all supported values plus blank, unknown, and future
+  values falling back to target price; verify RED.
+- [ ] Move only deterministic rule-type normalization while preserving form
+  state, amount policy, mutation inputs, events, and presentation.
+- [ ] Run the pure price-watch data and product-detail route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Saved-comparison sort input completed on 2026-07-17 after an explicit
+  missing-contract RED case covering all four supported values and three safe-
+  fallback values. The pure and route-state suites pass 55 tests, and the full
+  frontend gate passes 1,363 tests, Relay validation, TypeScript, client and
+  SSR builds, and the bundle contract.
 - Category pagination completed on 2026-07-17 after an explicit reserved-slug
   RED case. The pure and route suites pass 8 tests, with pagination eligibility
   and React presentation unchanged. The full frontend gate passes 1,356 tests,
@@ -1765,6 +1795,11 @@ lifecycle, rendering, and route orchestration.
   while `route-preload.ts` already owns the canonical operation-name, query-
   text, and stable-variable descriptor identity. The three characterization
   suites pass 94 tests, and the candidate is path-disjoint from Tasks 56-58.
+- Before the saved-comparison sort-input claim, current source inspection found
+  `PriceWatchControl` asserting a raw select value to the rule-type union while
+  `price-watch-data.ts` already owns that union and all downstream amount
+  policy. The pure and product-detail characterization suites pass 71 tests,
+  and the candidate is path-disjoint from Tasks 57-59.
 - The existing affiliate setup, offer discovery, catalog browse, product
   detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five

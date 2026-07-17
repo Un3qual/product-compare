@@ -9,7 +9,10 @@ import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import type { SavedComparisonSetSummary } from "./saved-data";
-import type { SavedComparisonSortMode } from "./saved-view-state";
+import {
+  savedComparisonSortModeFromValue,
+  type SavedComparisonSortMode
+} from "./saved-view-state";
 
 export type SavedComparisonSetPagination = {
   firstHref: string | null;
@@ -199,15 +202,4 @@ function SavedComparisonSetItem({
       </fieldset>
     </article>
   );
-}
-
-function savedComparisonSortModeFromValue(value: string): SavedComparisonSortMode {
-  switch (value) {
-    case "name-asc":
-    case "product-count-desc":
-    case "product-count-asc":
-      return value;
-    default:
-      return "current";
-  }
 }
