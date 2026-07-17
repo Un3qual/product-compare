@@ -1,4 +1,7 @@
-import { routeMutationErrorMessage } from "../route-errors";
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
 
 export type PriceWatchRuleType =
   | "TARGET_PRICE"
@@ -33,7 +36,7 @@ export function resolveCreatePriceWatchMutationMessage(
   payload: CreatePriceWatchPayload | null | undefined,
   graphQLErrors?: readonly unknown[] | null
 ) {
-  return payload?.watch
+  return payload?.watch && !hasRouteGraphQLErrors(graphQLErrors)
     ? PRICE_WATCH_CREATED_MESSAGE
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }

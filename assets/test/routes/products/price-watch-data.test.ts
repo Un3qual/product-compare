@@ -82,12 +82,12 @@ test("buildCreatePriceWatchInput does not mutate its scalar input source", () =>
   });
 });
 
-test("create-watch completion keeps exact success copy ahead of payload and GraphQL errors", () => {
+test("create-watch completion returns success for a complete error-free payload", () => {
   const payload = Object.freeze({
     watch: Object.freeze({ id: "watch-1" }),
-    errors: Object.freeze([MUTATION_ERROR])
+    errors: Object.freeze([])
   });
-  const graphQLErrors = Object.freeze([GRAPHQL_ERROR]);
+  const graphQLErrors = Object.freeze([]);
 
   expect(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors)).toBe(
     PRICE_WATCH_CREATED_MESSAGE
@@ -95,8 +95,8 @@ test("create-watch completion keeps exact success copy ahead of payload and Grap
   expect(PRICE_WATCH_CREATED_MESSAGE).toBe(
     "Watch created. New qualifying changes will appear in your inbox."
   );
-  expect(payload).toEqual({ watch: { id: "watch-1" }, errors: [MUTATION_ERROR] });
-  expect(graphQLErrors).toEqual([GRAPHQL_ERROR]);
+  expect(payload).toEqual({ watch: { id: "watch-1" }, errors: [] });
+  expect(graphQLErrors).toEqual([]);
 });
 
 test.each([
@@ -110,8 +110,8 @@ test.each([
     MUTATION_ERROR.message
   ],
   [
-    "missing watch with a top-level GraphQL error",
-    { errors: [MUTATION_ERROR] },
+    "complete watch with a top-level GraphQL error",
+    { watch: { id: "watch-1" }, errors: [] },
     [GRAPHQL_ERROR],
     "Request failed. Please try again."
   ]

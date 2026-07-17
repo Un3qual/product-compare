@@ -131,13 +131,13 @@ test("publishedSnapshotFromPayload projects only a complete publish payload", ()
   ).toBeNull();
 });
 
-test("publish mutation outcome projects a complete snapshot ahead of payload and GraphQL errors", () => {
+test("publish mutation outcome projects a complete error-free snapshot", () => {
   const payload = Object.freeze({
-    errors: Object.freeze([MUTATION_ERROR]),
+    errors: Object.freeze([]),
     sharePath: "/compare/shared/public-token",
     snapshot: Object.freeze({ id: "snapshot-1" })
   });
-  const graphQLErrors = Object.freeze([GRAPHQL_ERROR]);
+  const graphQLErrors = Object.freeze([]);
 
   expect(
     resolvePublishComparisonSnapshotMutationOutcome(
@@ -154,11 +154,11 @@ test("publish mutation outcome projects a complete snapshot ahead of payload and
     }
   });
   expect(payload).toEqual({
-    errors: [MUTATION_ERROR],
+    errors: [],
     sharePath: "/compare/shared/public-token",
     snapshot: { id: "snapshot-1" }
   });
-  expect(graphQLErrors).toEqual([GRAPHQL_ERROR]);
+  expect(graphQLErrors).toEqual([]);
 });
 
 test.each([
@@ -188,23 +188,27 @@ test.each([
   });
 });
 
-test("incomplete publish outcomes give top-level GraphQL errors precedence", () => {
+test("publish outcomes give top-level GraphQL errors precedence over complete data", () => {
   expect(
     resolvePublishComparisonSnapshotMutationOutcome(
-      { snapshot: null, errors: [MUTATION_ERROR] },
+      {
+        snapshot: { id: "snapshot-1" },
+        sharePath: "/compare/shared/public-token",
+        errors: []
+      },
       null,
       [GRAPHQL_ERROR]
     )
   ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, snapshot: null });
 });
 
-test("revoke mutation outcome returns the original snapshot ahead of payload and GraphQL errors", () => {
+test("revoke mutation outcome returns the original snapshot for an error-free payload", () => {
   const revoked = Object.freeze(snapshot("snapshot-1", "Travel kit"));
   const payload = Object.freeze({
-    errors: Object.freeze([MUTATION_ERROR]),
+    errors: Object.freeze([]),
     revokedSnapshotId: "snapshot-1"
   });
-  const graphQLErrors = Object.freeze([GRAPHQL_ERROR]);
+  const graphQLErrors = Object.freeze([]);
   const outcome = resolveRevokeComparisonSnapshotMutationOutcome(
     payload,
     revoked,
@@ -213,8 +217,8 @@ test("revoke mutation outcome returns the original snapshot ahead of payload and
 
   expect(outcome).toEqual({ error: null, snapshot: revoked });
   expect(outcome.snapshot).toBe(revoked);
-  expect(payload).toEqual({ errors: [MUTATION_ERROR], revokedSnapshotId: "snapshot-1" });
-  expect(graphQLErrors).toEqual([GRAPHQL_ERROR]);
+  expect(payload).toEqual({ errors: [], revokedSnapshotId: "snapshot-1" });
+  expect(graphQLErrors).toEqual([]);
 });
 
 test.each([
@@ -224,7 +228,7 @@ test.each([
   ["null fact", { revokedSnapshotId: null, errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
   [
     "top-level GraphQL error",
-    { revokedSnapshotId: null, errors: [MUTATION_ERROR] },
+    { revokedSnapshotId: "snapshot-1", errors: [] },
     [GRAPHQL_ERROR],
     DEFAULT_ROUTE_ERROR_MESSAGE
   ]

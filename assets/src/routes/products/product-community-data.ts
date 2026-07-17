@@ -1,4 +1,7 @@
-import { routeMutationErrorMessage } from "../route-errors";
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
 
 type CommunityMutationPayload = {
   readonly errors?: unknown;
@@ -8,7 +11,7 @@ export function resolveProductReviewMutationMessage(
   payload: (CommunityMutationPayload & { readonly review?: unknown }) | null | undefined,
   graphQLErrors?: readonly unknown[] | null
 ) {
-  return payload?.review
+  return payload?.review && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Review submitted for moderation."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
@@ -17,7 +20,7 @@ export function resolveProductQuestionMutationMessage(
   payload: (CommunityMutationPayload & { readonly question?: unknown }) | null | undefined,
   graphQLErrors?: readonly unknown[] | null
 ) {
-  return payload?.question
+  return payload?.question && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Question submitted for moderation."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
@@ -26,7 +29,7 @@ export function resolveProductAnswerMutationMessage(
   payload: (CommunityMutationPayload & { readonly answer?: unknown }) | null | undefined,
   graphQLErrors?: readonly unknown[] | null
 ) {
-  return payload?.answer
+  return payload?.answer && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Answer submitted for moderation."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }

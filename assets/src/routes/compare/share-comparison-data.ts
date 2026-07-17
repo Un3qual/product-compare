@@ -1,4 +1,7 @@
-import { routeMutationErrorMessage } from "../route-errors";
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
 
 export interface PublishedComparisonSnapshot {
   id: string;
@@ -83,7 +86,7 @@ export function resolvePublishComparisonSnapshotMutationOutcome(
 ): ComparisonSnapshotMutationOutcome {
   const snapshot = publishedSnapshotFromPayload(payload, title);
 
-  return snapshot
+  return snapshot && !hasRouteGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
         error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
@@ -96,7 +99,7 @@ export function resolveRevokeComparisonSnapshotMutationOutcome(
   snapshot: PublishedComparisonSnapshot,
   graphQLErrors?: readonly unknown[] | null
 ): ComparisonSnapshotMutationOutcome {
-  return payload?.revokedSnapshotId
+  return payload?.revokedSnapshotId && !hasRouteGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
         error: routeMutationErrorMessage(payload?.errors, graphQLErrors),

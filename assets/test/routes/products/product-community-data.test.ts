@@ -146,17 +146,30 @@ test.each([
     "Answer submitted for moderation."
   ]
 ] as const)(
-  "%s completion keeps exact success copy ahead of payload and GraphQL errors",
+  "%s completion returns exact success copy for an error-free payload",
   (_kind, resolveMessage, completion, successMessage) => {
     const payload = Object.freeze({
       ...completion,
-      errors: Object.freeze([mutationError])
+      errors: Object.freeze([])
     });
-    const graphQLErrors = Object.freeze([graphQLError]);
+    const graphQLErrors = Object.freeze([]);
 
     expect(resolveMessage(payload, graphQLErrors)).toBe(successMessage);
-    expect(payload).toEqual({ ...completion, errors: [mutationError] });
-    expect(graphQLErrors).toEqual([graphQLError]);
+    expect(payload).toEqual({ ...completion, errors: [] });
+    expect(graphQLErrors).toEqual([]);
+  }
+);
+
+test.each([
+  ["review", resolveProductReviewMutationMessage, { review: { id: "review-1" } }],
+  ["question", resolveProductQuestionMutationMessage, { question: { id: "question-1" } }],
+  ["answer", resolveProductAnswerMutationMessage, { answer: { id: "answer-1" } }]
+] as const)(
+  "%s completion rejects partial data accompanied by top-level GraphQL errors",
+  (_kind, resolveMessage, completion) => {
+    expect(resolveMessage({ ...completion, errors: [] }, [graphQLError])).toBe(
+      "Request failed. Please try again."
+    );
   }
 );
 
