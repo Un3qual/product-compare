@@ -1643,14 +1643,14 @@ normalized uncontrolled-form values plus a collision-free reset identity.
 `RevenueSummaryView` retains form fields, labels, submission, links, markup,
 and presentation.
 
-- [ ] Write pure tests for nullish and empty values, exact value preservation,
+- [x] Write pure tests for nullish and empty values, exact value preservation,
   reset-identity stability, and delimiter-containing filter combinations that
   previously collided; verify RED.
-- [ ] Extract only deterministic filter-form projection while preserving the
+- [x] Extract only deterministic filter-form projection while preserving the
   current uncontrolled form and every presentation owner.
-- [ ] Run the pure revenue view-data and route suites, TypeScript, the
+- [x] Run the pure revenue view-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1699,6 +1699,32 @@ presentation.
   sorting, filtering, events, and presentation.
 - [ ] Run the pure saved-comparison view-state and route-state suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 58: Offer-Discovery Selected-Product Context Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
+- Modify: `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-selected-product-context.md`
+
+**Interfaces:** The existing framework-free offer-discovery filter-data owner
+qualifies a nullable transport-neutral selected-product node by `__typename`
+and projects its exact brand, ID, name, and slug context. React retains Relay
+reads, suspense and error boundaries, offer rendering, and presentation.
+
+- [ ] Write pure tests for nullish and non-product nodes, product projection
+  with present and null brands, source identity, and input immutability; verify
+  RED.
+- [ ] Extract only deterministic selected-product qualification and projection
+  while preserving Relay, route fallbacks, summaries, and presentation.
+- [ ] Run the pure offer-discovery filter-data and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

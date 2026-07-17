@@ -1,7 +1,54 @@
 import {
   buildRevenueSummaryControls,
+  buildRevenueSummaryFilterFormData,
   buildRevenueSummaryMetrics
 } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+
+test("buildRevenueSummaryFilterFormData normalizes only nullish form values", () => {
+  expect(
+    buildRevenueSummaryFilterFormData({
+      currency: undefined,
+      from: "",
+      network: null,
+      to: "2026-07-17"
+    })
+  ).toEqual({
+    key: JSON.stringify(["", "", "", "2026-07-17"]),
+    values: {
+      currency: "",
+      from: "",
+      network: "",
+      to: "2026-07-17"
+    }
+  });
+});
+
+test("buildRevenueSummaryFilterFormData preserves exact non-null values", () => {
+  expect(
+    buildRevenueSummaryFilterFormData({
+      currency: "USD",
+      network: "impact|partner"
+    }).values
+  ).toEqual({
+    currency: "USD",
+    from: "",
+    network: "impact|partner",
+    to: ""
+  });
+});
+
+test("buildRevenueSummaryFilterFormData avoids delimiter collisions", () => {
+  const firstKey = buildRevenueSummaryFilterFormData({
+    currency: "USD",
+    network: "impact|partner"
+  }).key;
+  const secondKey = buildRevenueSummaryFilterFormData({
+    currency: "partner|USD",
+    network: "impact"
+  }).key;
+
+  expect(firstKey).not.toBe(secondKey);
+});
 
 test("buildRevenueSummaryControls preserves filter ordering and local-calendar preset URLs", () => {
   const originalTimeZone = process.env.TZ;

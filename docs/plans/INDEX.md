@@ -72,10 +72,10 @@ complete. API-token, affiliate-setup, and feed-candidate pagination data are
 also complete. Merchant-directory pagination data is also complete. Catalog-
 browse and offer-discovery pagination data are also complete. Alert product
 navigation is also complete. Merchant-directory row data, product-offer
-navigation paths, and category product navigation are complete on
-`codex/frontend-navigation-row-contracts`. Revenue filter-form data, category
-pagination navigation, and saved-comparison sort input are the three current
-ready successors in the live queue.
+navigation paths, category product navigation, and revenue filter-form data are
+complete on `codex/frontend-navigation-row-contracts`. Category pagination
+navigation, saved-comparison sort input, and offer selected-product context are
+the three current ready successors in the live queue.
 
 Active implementation plans:
 

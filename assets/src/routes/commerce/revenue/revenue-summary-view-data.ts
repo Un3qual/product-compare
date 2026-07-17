@@ -8,6 +8,12 @@ export type RevenueSummaryFilters = {
 export type RevenueActiveFilter = { label: string; value: string };
 export type RevenueDatePresetLink = { label: string; to: string };
 export type RevenueSummaryMetric = { label: string; value: string };
+export type RevenueSummaryFilterFormValues = {
+  currency: string;
+  from: string;
+  network: string;
+  to: string;
+};
 
 type RevenueSummaryMetricSource = {
   metrics: {
@@ -21,6 +27,27 @@ type RevenueSummaryMetricSource = {
     suppressed: boolean;
   };
 };
+
+export function buildRevenueSummaryFilterFormData(
+  filters: RevenueSummaryFilters
+) {
+  const values: RevenueSummaryFilterFormValues = {
+    currency: filters.currency ?? "",
+    from: filters.from ?? "",
+    network: filters.network ?? "",
+    to: filters.to ?? ""
+  };
+
+  return {
+    key: JSON.stringify([
+      values.network,
+      values.currency,
+      values.from,
+      values.to
+    ]),
+    values
+  };
+}
 
 export function buildRevenueSummaryControls(
   filters: RevenueSummaryFilters,

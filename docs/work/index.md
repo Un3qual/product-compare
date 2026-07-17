@@ -916,47 +916,26 @@ one encoded slug segment instead of changing the route path or query. React
 retains link markup, labels, list order, and presentation. Its view-data and
 route suites pass eight tests.
 
+Before claiming Revenue Summary Filter-Form Data, the coordinator validated a
+fourth non-overlapping successor. Selected-product typename qualification and
+brand, ID, name, and slug projection remain embedded in
+`OfferDiscoveryRoute`, while its existing framework-free filter-data owner
+already consumes that context. The filter-data and route suites pass 68 tests.
+The successor has complete owned paths and no blockers.
+
+Revenue Summary Filter-Form Data then completed. The existing framework-free
+owner now returns exact uncontrolled-form values and a collision-free JSON
+reset identity. Distinct delimiter-containing filters can no longer reuse a
+stale form instance. React retains fields, labels, submission, links, markup,
+and presentation. Its pure and unchanged route suites pass 26 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Revenue Summary Filter-Form Data Contract
-
-Status: ready
-Lane: Frontend revenue filter-form data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move nullish form-value normalization and the reset identity from
-`RevenueSummaryView` into its existing framework-free view-data owner, using a
-collision-free identity while leaving form markup and submission unchanged.
-Owned paths:
-
-- `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
-- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
-- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `docs/work/frontend-revenue-filter-form-data.md`
-
-Prerequisites:
-
-- Exact non-null filter values remain unchanged and only nullish values become
-  empty form strings.
-- Network, currency, from, and to each participate in reset identity.
-- Existing revenue view-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the revenue view-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner returns exact form values and a
-collision-free reset identity; React retains labels, fields, submission,
-links, markup, and presentation.
-
-### 2. Category Pagination Navigation Contract
+### 1. Category Pagination Navigation Contract
 
 Status: ready
 Lane: Frontend category pagination navigation
@@ -987,7 +966,7 @@ Verification:
 Exit condition: category pagination encodes both the slug path segment and
 cursor query value without changing pagination eligibility or presentation.
 
-### 3. Saved-Comparison Sort Input Data Contract
+### 2. Saved-Comparison Sort Input Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison sort input
@@ -1018,6 +997,40 @@ Verification:
 
 Exit condition: one framework-free owner normalizes saved-comparison sort input
 without changing sorting, filtering, events, markup, or presentation.
+
+### 3. Offer-Discovery Selected-Product Context Contract
+
+Status: ready
+Lane: Frontend offer selected-product context
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move selected-product typename qualification and exact brand, ID,
+name, and slug projection from `OfferDiscoveryRoute` into its existing
+framework-free filter-data owner.
+Owned paths:
+
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-selected-product-context.md`
+
+Prerequisites:
+
+- Nullish and non-product nodes continue returning no selected context.
+- Product brand, ID, name, and slug values remain unchanged.
+- Existing offer-discovery filter-data and route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the offer-discovery filter-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner qualifies and projects selected-
+product context without changing Relay, summaries, fallbacks, markup, or
+presentation.
 
 ## Needs Decision Work
 
