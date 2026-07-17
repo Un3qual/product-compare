@@ -774,48 +774,29 @@ pure and unchanged recovery-route suites pass 22 tests; the full repository
 gate passes 771 backend and 1,312 frontend tests. The three validated successor
 rows remain ready.
 
+Before claiming API Token Pagination Data, the coordinator validated a fourth
+non-overlapping successor. Merchant-directory first-page and next-page
+visibility and path projection remain embedded in `MerchantDirectoryRoute`,
+while its framework-free pagination owner already provides canonical page-
+size- and cursor-preserving paths. Its loader and route suites pass 33 tests.
+The successor has complete owned paths, no blockers, and does not overlap the
+API-token, affiliate-setup, or feed-candidate rows.
+
+API Token Pagination Data then completed. The existing framework-free route-
+data owner now returns status-preserving first-page and next-page hrefs through
+the canonical path builder while enforcing current-cursor and complete Relay
+next-page bounds. React retains shared pagination markup, labels, and
+presentation. Its pure and unchanged route suites pass 80 tests; the full
+repository gate passes 771 backend and 1,317 frontend tests. The three
+validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. API Token Pagination Data Contract
-
-Status: ready
-Lane: Frontend API-token pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move first-page and next-page link visibility and path projection
-out of `ApiTokenPagination` into the existing framework-free API-token route-
-data owner while preserving `apiTokenPagePath` as the canonical path builder
-and keeping pagination markup and presentation in React.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-pagination-data.md`
-
-Prerequisites:
-
-- Existing API-token status and cursor path encoding remain unchanged.
-- Link visibility remains bounded to the current cursor, Relay page-info, and
-  non-empty end cursor.
-- Existing API-token route-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework dependency scan of the API-token route-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free route-data owner returns exact
-first- and next-page hrefs without mutating inputs; React retains `Pagination`
-markup, labels, and presentation.
-
-### 2. Affiliate Setup Pagination Data Contract
+### 1. Affiliate Setup Pagination Data Contract
 
 Status: ready
 Lane: Frontend affiliate-setup pagination data
@@ -851,7 +832,7 @@ Exit condition: the existing framework-free pagination owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
-### 3. Feed-Candidate Pagination Data Contract
+### 2. Feed-Candidate Pagination Data Contract
 
 Status: ready
 Lane: Frontend feed-candidate pagination data
@@ -884,6 +865,43 @@ Verification:
 - `git diff --check`
 
 Exit condition: the existing framework-free review-data owner returns exact
+first- and next-page hrefs without mutating inputs; React retains `Pagination`
+markup, labels, and presentation.
+
+### 3. Merchant Directory Pagination Data Contract
+
+Status: ready
+Lane: Frontend merchant-directory pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move first-page and next-page link visibility and path projection
+out of `MerchantDirectoryRoute` into its existing framework-free pagination
+owner while preserving `merchantDirectoryPagePath` as the canonical path
+builder and keeping pagination markup and labels in React.
+Owned paths:
+
+- `assets/src/routes/merchants/pagination.ts`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/test/routes/merchants/merchant-directory-loader.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-directory-pagination-data.md`
+
+Prerequisites:
+
+- Existing page-size and cursor encoding remain unchanged.
+- First-page visibility remains bounded to previous-page state plus a current
+  cursor; next-page visibility remains bounded to next-page state plus a non-
+  empty end cursor.
+- Existing merchant-directory loader and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-loader.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the merchant-directory pagination
+  module
+- `git diff --check`
+
+Exit condition: the existing framework-free pagination owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 

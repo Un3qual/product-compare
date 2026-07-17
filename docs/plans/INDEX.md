@@ -69,9 +69,9 @@ Product-community, affiliate-setup, and share-comparison mutation outcome data
 are complete. Price-watch, tracked-commerce click mutation outcome, reset-
 password request, shared-comparison view data, compare-picker visible-option
 data, compare-selection tray view data, and verify-email request data are also
-complete. API-token pagination data, affiliate-setup pagination data, and feed-
-candidate pagination data are the three current ready successors in the live
-queue.
+complete. API-token pagination data is also complete. Affiliate-setup, feed-
+candidate, and merchant-directory pagination data are the three current ready
+successors in the live queue.
 
 Active implementation plans:
 

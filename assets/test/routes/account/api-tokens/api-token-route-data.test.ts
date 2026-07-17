@@ -2,6 +2,7 @@ import {
   apiTokenPagePath,
   apiTokensRouteLocationIdentity,
   buildApiTokenDisplayData,
+  buildApiTokenPaginationData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
   buildRotateApiTokenVariables,
@@ -159,6 +160,66 @@ test("apiTokenPagePath preserves status and safely encodes an optional cursor", 
   expect(apiTokenPagePath("revoked", "cursor/next?")).toBe(
     "/account/api-tokens?status=revoked&after=cursor%2Fnext%3F"
   );
+});
+
+test("buildApiTokenPaginationData returns status-preserving first and next paths", () => {
+  expect(
+    buildApiTokenPaginationData({
+      after: "current-cursor",
+      endCursor: "next/cursor?",
+      hasNextPage: true,
+      tokenStatus: "revoked"
+    })
+  ).toEqual({
+    firstHref: "/account/api-tokens?status=revoked",
+    nextHref: "/account/api-tokens?status=revoked&after=next%2Fcursor%3F"
+  });
+});
+
+test("buildApiTokenPaginationData hides the first path without a current cursor", () => {
+  expect(
+    buildApiTokenPaginationData({
+      after: null,
+      endCursor: "next-cursor",
+      hasNextPage: true,
+      tokenStatus: "active"
+    }).firstHref
+  ).toBeNull();
+});
+
+test.each([
+  [false, "next-cursor"],
+  [true, null]
+] as const)(
+  "buildApiTokenPaginationData hides incomplete next-page facts",
+  (hasNextPage, endCursor) => {
+    expect(
+      buildApiTokenPaginationData({
+        after: "current-cursor",
+        endCursor,
+        hasNextPage,
+        tokenStatus: "all"
+      }).nextHref
+    ).toBeNull();
+  }
+);
+
+test("buildApiTokenPaginationData does not mutate its input", () => {
+  const input = Object.freeze({
+    after: "current-cursor",
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    tokenStatus: "active" as const
+  });
+
+  buildApiTokenPaginationData(input);
+
+  expect(input).toEqual({
+    after: "current-cursor",
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    tokenStatus: "active"
+  });
 });
 
 test("buildCreateApiTokenVariables trims input and normalizes a manual expiry", () => {

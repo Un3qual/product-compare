@@ -1373,15 +1373,15 @@ additionally owns first-page and next-page link visibility and path projection
 through the canonical `apiTokenPagePath` builder. `ApiTokenPagination` retains
 the shared `Pagination` markup, label, and presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, absent-cursor
+- [x] Write pure tests for current-cursor first-page visibility, absent-cursor
   identity, complete and incomplete next-page facts, status preservation,
   cursor encoding, and input immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving status
+- [x] Extract only deterministic pagination projection while preserving status
   and cursor path policy, Relay page-info bounds, markup, labels, and
   presentation.
-- [ ] Run the pure API-token route-data and existing route suites, TypeScript,
+- [x] Run the pure API-token route-data and existing route suites, TypeScript,
   the framework dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1438,6 +1438,34 @@ through the existing path builders. `FeedCandidateReviewList` retains shared
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 48: Merchant Directory Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/merchants/pagination.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- Modify: `assets/test/routes/merchants/merchant-directory-loader.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Create: `docs/work/frontend-merchant-directory-pagination-data.md`
+
+**Interfaces:** The existing framework-free merchant-directory pagination
+owner additionally owns first-page and next-page link visibility and path
+projection through the canonical `merchantDirectoryPagePath` builder.
+`MerchantDirectoryView` retains shared `Pagination` markup, labels, and
+presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, page-size preservation,
+  cursor encoding, and input immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [ ] Run the merchant-directory loader and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1463,6 +1491,12 @@ through the existing path builders. `FeedCandidateReviewList` retains shared
   pass 43 tests. The candidate is path-disjoint from Tasks 31-33 and preserves
   the generated mutation, shared error policy, Relay lifecycle, and row-scoped
   concurrency owners.
+- Current source inspection on 2026-07-16 found merchant first-page and next-
+  page visibility and path projection still embedded in
+  `MerchantDirectoryRoute`; its existing framework-free pagination owner
+  provides canonical page-size- and cursor-preserving paths. The current loader
+  and route suites pass 33 tests, and the candidate is path-disjoint from Tasks
+  45-47.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the

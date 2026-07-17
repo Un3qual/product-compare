@@ -120,6 +120,26 @@ export function apiTokenPagePath(tokenStatus: ApiTokenStatus, after: string | nu
   return `/account/api-tokens?${searchParams.toString()}`;
 }
 
+export function buildApiTokenPaginationData({
+  after,
+  endCursor,
+  hasNextPage,
+  tokenStatus
+}: {
+  readonly after: string | null;
+  readonly endCursor: string | null;
+  readonly hasNextPage: boolean;
+  readonly tokenStatus: ApiTokenStatus;
+}) {
+  return {
+    firstHref: after ? apiTokenPagePath(tokenStatus, null) : null,
+    nextHref:
+      hasNextPage && endCursor
+        ? apiTokenPagePath(tokenStatus, endCursor)
+        : null
+  };
+}
+
 export function buildApiTokensViewState(
   loaderData: ApiTokensRouteData,
   createdTokens: readonly ApiTokenRecord[] = [],
