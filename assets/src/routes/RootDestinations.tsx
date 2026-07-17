@@ -1,6 +1,11 @@
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { NavLink, useMatch } from "react-router-dom";
 import { Button, type ButtonProps } from "../ui/primitives/Button";
+import {
+  getRootDestinationData,
+  type RootDestination,
+  type RootShopperDestination
+} from "./root-destination-data";
 import type { RootViewer } from "./root/loader";
 
 const styles = create({
@@ -83,62 +88,13 @@ const styles = create({
   }
 });
 
-type Destination = {
-  end?: boolean;
-  label: string;
-  to: string;
-};
-
-type ShopperDestination = Destination & {
-  description: string;
-};
-
-const PUBLIC_DESTINATIONS = [
-  { label: "Browse products", to: "/products" },
-  { label: "Merchants", to: "/merchants" },
-  { label: "Offers", to: "/offers" },
-  { end: true, label: "Compare products", to: "/compare" }
-] as const satisfies readonly Destination[];
-
-const AUTHENTICATED_DESTINATIONS = [
-  { label: "Price alerts", to: "/account/alerts" },
-  { label: "Saved comparisons", to: "/compare/saved" },
-  { label: "API tokens", to: "/account/api-tokens" }
-] as const satisfies readonly Destination[];
-
-const OPERATOR_DESTINATIONS = [
-  { label: "Affiliate setup", to: "/affiliate/setup" },
-  { label: "Revenue preview", to: "/commerce/revenue" },
-  { label: "Feed candidates", to: "/ingestion/feed-candidates" }
-] as const satisfies readonly Destination[];
-
-const SHOPPER_DESTINATIONS = [
-  {
-    description: "Explore the catalog and narrow by what matters.",
-    label: "Browse products",
-    to: "/products"
-  },
-  {
-    description: "Line up the meaningful differences side by side.",
-    label: "Compare products",
-    to: "/compare"
-  },
-  {
-    description: "Check current prices, availability, and coupons.",
-    label: "Review offers",
-    to: "/offers"
-  }
-] as const satisfies readonly ShopperDestination[];
-
-const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
-  ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to)
-);
-
 type RootDestinationsProps = {
   viewer: RootViewer | null;
 };
 
 export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
+  const { primary } = getRootDestinationData(viewer);
+
   return (
     <div {...props(styles.navigation)}>
       <Button asChild {...props(styles.title)}>
@@ -147,45 +103,35 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
         </NavLink>
       </Button>
       <div {...props(styles.navigationLinks)}>
-        <DestinationLinks destinations={PUBLIC_DESTINATIONS} variant="ghost" />
-        {viewer ? (
-          <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="ghost" />
-        ) : null}
-        {viewer?.isOperator ? (
-          <DestinationLinks destinations={OPERATOR_DESTINATIONS} variant="ghost" />
-        ) : null}
-        <AuthLinks viewer={viewer} />
+        <DestinationLinks destinations={primary.destinations} variant="ghost" />
+        <AuthLinks destinations={primary.authDestinations} />
       </div>
     </div>
   );
 }
 
 export function RootHomeDestinations({ viewer }: RootDestinationsProps) {
+  const { home } = getRootDestinationData(viewer);
+
   return (
     <section aria-label="Home actions" {...props(styles.actionGroups)}>
-      <ShopperActions />
+      <ShopperActions destinations={home.shopperDestinations} />
       <nav
         aria-label="More Product Compare actions"
         {...props(styles.actions, styles.secondaryActions)}
       >
-        <DestinationLinks destinations={SECONDARY_PUBLIC_DESTINATIONS} variant="soft" />
-        {viewer ? (
-          <DestinationLinks destinations={AUTHENTICATED_DESTINATIONS} variant="soft" />
-        ) : null}
-        {viewer?.isOperator ? (
-          <DestinationLinks destinations={OPERATOR_DESTINATIONS} variant="soft" />
-        ) : null}
-        <AuthLinks viewer={viewer} />
+        <DestinationLinks destinations={home.secondary.destinations} variant="soft" />
+        <AuthLinks destinations={home.secondary.authDestinations} />
       </nav>
     </section>
   );
 }
 
-function ShopperActions() {
+function ShopperActions({ destinations }: { destinations: readonly RootShopperDestination[] }) {
   return (
     <nav aria-label="Shopper actions" {...props(styles.actions)}>
       <ul aria-label="Shopper paths" {...props(styles.shopperPaths)}>
-        {SHOPPER_DESTINATIONS.map(({ description, label, to }) => (
+        {destinations.map(({ description, label, to }) => (
           <li key={to} {...props(styles.shopperPath)}>
             <DestinationLink
               label={label}
@@ -205,7 +151,7 @@ function DestinationLinks({
   destinations,
   variant = "ghost"
 }: {
-  destinations: readonly Destination[];
+  destinations: readonly RootDestination[];
   variant?: ButtonProps["variant"];
 }) {
   return destinations.map(({ end, label, to }) => (
@@ -242,23 +188,10 @@ function DestinationLink({
   );
 }
 
-function AuthLinks({ viewer }: RootDestinationsProps) {
-  if (viewer) {
-    return (
-      <Button asChild {...props(styles.link)}>
-        <NavLink to="/auth/logout">Sign out</NavLink>
-      </Button>
-    );
-  }
-
-  return (
-    <>
-      <Button asChild {...props(styles.link)}>
-        <NavLink to="/auth/login">Sign in</NavLink>
-      </Button>
-      <Button asChild {...props(styles.link)}>
-        <NavLink to="/auth/register">Create account</NavLink>
-      </Button>
-    </>
-  );
+function AuthLinks({ destinations }: { destinations: readonly RootDestination[] }) {
+  return destinations.map(({ label, to }) => (
+    <Button asChild key={to} {...props(styles.link)}>
+      <NavLink to={to}>{label}</NavLink>
+    </Button>
+  ));
 }

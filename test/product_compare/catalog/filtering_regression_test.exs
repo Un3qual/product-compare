@@ -205,7 +205,8 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert sql =~ @canonical_pac_join_regex
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
-      assert plan =~ "pac_numeric_filter_idx"
+
+      assert_filter_plan_uses_index(plan, "pac_numeric_filter_idx")
     end
 
     test "boolean filters preserve canonical PACUR -> PAC join and bool predicate expectation" do
@@ -227,10 +228,7 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
 
-      assert Enum.any?(
-               ["pac_bool_filter_idx", "pac_attr_status_idx"],
-               &String.contains?(plan, &1)
-             )
+      assert_filter_plan_uses_index(plan, "pac_bool_filter_idx")
     end
 
     test "enum filters preserve canonical PACUR -> PAC join and enum index expectation" do
@@ -250,7 +248,8 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       assert sql =~ @canonical_pac_join_regex
       assert plan =~ "product_attribute_current"
       assert plan =~ "product_attribute_claims"
-      assert plan =~ "pac_enum_filter_idx"
+
+      assert_filter_plan_uses_index(plan, "pac_enum_filter_idx")
     end
   end
 
@@ -271,6 +270,10 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       end)
 
     {sql, plan}
+  end
+
+  defp assert_filter_plan_uses_index(plan, index_name) do
+    assert plan =~ "using #{index_name}"
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

@@ -2,25 +2,30 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after current source inspection and the passing
-  recommendation-panel characterization in the 138-test successor cohort.
+- Last verified: 2026-07-16 with the 8-test pure contract suite and 5-test
+  recommendation-panel suite passing (13 total), plus clean TypeScript,
+  dependency-boundary, and diff checks.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Recommendation Result View-Data Contract
 
-- Status: ready on 2026-07-15.
-- Next action: isolate winner selection, supported/no-winner reasons, and exact
-  evidence copy in a framework-free module while retaining Relay fetching,
-  profile navigation, suspense/error handling, markup, and styling in
-  `RecommendationPanel`.
-- Candidate evidence: current source inspection found the result presentation
-  policy embedded in the React owner and distinct from completed profile/path
-  and snapshot-publish contracts; characterization passed in the five-suite,
-  138-test successor validation run.
+- Status: done on 2026-07-16 on
+  `codex/category-alert-recommendation-contracts`.
+- Delivered `getRecommendationViewData`, a framework-free contract for
+  first-source-match winner selection, supported versus no-winner reasons in
+  source order, and exact singular/plural claim-reference evidence copy.
+  `RecommendationPanel` retains Relay fetching, profile navigation, suspense
+  and error boundaries, markup, and StyleX presentation.
+- Evidence: the pure contract suite first failed as expected because
+  `recommendation-view-data.ts` did not exist. After the minimal extraction,
+  `cd assets && bun x vitest run test/routes/compare/recommendation-view-data.test.ts test/routes/compare/recommendation-panel.test.tsx`
+  passed 13 tests; `cd assets && bun run typecheck` passed; the forbidden
+  framework/transport import scan returned no matches; and `git diff --check`
+  passed.
 - Blockers: none.
 
 ## Verification

@@ -1,11 +1,13 @@
 import { TextField } from "../../ui/primitives/TextField";
 import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
-import type {
-  CatalogBooleanFilter,
-  CatalogEnumFilter,
-  CatalogFilters,
-  CatalogNumericFilter
-} from "./filters";
+import type { CatalogFilters } from "./filters";
+import {
+  catalogAdvancedFilterViewData,
+  type CatalogAdvancedBooleanRow,
+  type CatalogAdvancedEnumRow,
+  type CatalogAdvancedNumericRow,
+  type CatalogAdvancedUseCaseRow
+} from "./catalog-advanced-filter-data";
 
 type ProductFilterMetadata = BrowseProductsRouteQuery["response"]["productFilterMetadata"];
 
@@ -16,220 +18,184 @@ export function CatalogAdvancedFilters({
   filters: CatalogFilters;
   metadata: ProductFilterMetadata;
 }) {
+  const data = catalogAdvancedFilterViewData(filters, metadata);
+
   return (
     <>
-      <UseCaseFiltersFieldset filters={filters} metadata={metadata} />
-      <NumericFiltersFieldset filters={filters} metadata={metadata} />
-      <BooleanFiltersFieldset filters={filters} metadata={metadata} />
-      <EnumFiltersFieldset filters={filters} metadata={metadata} />
+      <UseCaseFiltersFieldset rows={data.useCaseRows} />
+      <NumericFiltersFieldset rows={data.numericRows} />
+      <BooleanFiltersFieldset rows={data.booleanRows} />
+      <EnumFiltersFieldset rows={data.enumRows} />
     </>
   );
 }
 
 function UseCaseFiltersFieldset({
-  filters,
-  metadata
+  rows
 }: {
-  filters: CatalogFilters;
-  metadata: ProductFilterMetadata;
+  rows: readonly CatalogAdvancedUseCaseRow[];
 }) {
-  if (metadata.useCaseOptions.length === 0) {
+  if (rows.length === 0) {
     return null;
   }
 
   return (
     <fieldset>
       <legend>Use cases</legend>
-      {metadata.useCaseOptions.map((option) => {
-        const selected = filters.useCaseTaxonIds.includes(option.id) || option.selected;
-
-        return (
-          <label key={option.id}>
-            <input
-              defaultChecked={selected}
-              disabled={option.disabled && !selected}
-              name="useCaseTaxonId"
-              type="checkbox"
-              value={option.id}
-            />
-            {option.label} ({option.count})
-          </label>
-        );
-      })}
+      {rows.map((row) => (
+        <label key={row.id}>
+          <input
+            defaultChecked={row.selected}
+            disabled={row.disabled}
+            id={`catalog-use-case-${row.id}`}
+            name="useCaseTaxonId"
+            type="checkbox"
+            value={row.id}
+          />
+          {row.label} ({row.count})
+        </label>
+      ))}
     </fieldset>
   );
 }
 
 function NumericFiltersFieldset({
-  filters,
-  metadata
+  rows
 }: {
-  filters: CatalogFilters;
-  metadata: ProductFilterMetadata;
+  rows: readonly CatalogAdvancedNumericRow[];
 }) {
-  if (metadata.numericFilters.length === 0) {
+  if (rows.length === 0) {
     return null;
   }
 
   return (
     <fieldset>
       <legend>Numeric filters</legend>
-      {metadata.numericFilters.map((filter) => (
-        <NumericFilterFields
-          filter={filter}
-          key={filter.attributeId}
-          selectedFilter={selectedNumericFilter(filters.numeric, filter.attributeId)}
-        />
+      {rows.map((row) => (
+        <NumericFilterFields key={row.attributeId} row={row} />
       ))}
     </fieldset>
   );
 }
 
 function NumericFilterFields({
-  filter,
-  selectedFilter
+  row
 }: {
-  filter: ProductFilterMetadata["numericFilters"][number];
-  selectedFilter?: CatalogNumericFilter;
+  row: CatalogAdvancedNumericRow;
 }) {
-  const minValue = selectedNumericFieldValue(selectedFilter?.min, filter.selectedMin);
-  const maxValue = selectedNumericFieldValue(selectedFilter?.max, filter.selectedMax);
-  const minInputId = `catalog-numeric-${filter.attributeId}-min`;
-  const maxInputId = `catalog-numeric-${filter.attributeId}-max`;
+  const minInputId = `catalog-numeric-${row.attributeId}-min`;
+  const maxInputId = `catalog-numeric-${row.attributeId}-max`;
 
   return (
     <div>
       <label htmlFor={minInputId}>
-        {filter.displayName} minimum
+        {row.displayName} minimum
         <TextField
-          defaultValue={minValue}
+          defaultValue={row.minValue}
           id={minInputId}
           inputMode="decimal"
-          name={`numeric.${filter.attributeId}.min`}
+          name={`numeric.${row.attributeId}.min`}
         />
       </label>
       <label htmlFor={maxInputId}>
-        {filter.displayName} maximum
+        {row.displayName} maximum
         <TextField
-          defaultValue={maxValue}
+          defaultValue={row.maxValue}
           id={maxInputId}
           inputMode="decimal"
-          name={`numeric.${filter.attributeId}.max`}
+          name={`numeric.${row.attributeId}.max`}
         />
       </label>
     </div>
   );
 }
 
-function selectedNumericFieldValue(
-  selectedValue: string | undefined,
-  metadataValue: string | null | undefined
-) {
-  return selectedValue ?? metadataValue ?? "";
-}
-
 function BooleanFiltersFieldset({
-  filters,
-  metadata
+  rows
 }: {
-  filters: CatalogFilters;
-  metadata: ProductFilterMetadata;
+  rows: readonly CatalogAdvancedBooleanRow[];
 }) {
-  if (metadata.booleanFilters.length === 0) {
+  if (rows.length === 0) {
     return null;
   }
 
   return (
     <fieldset>
       <legend>Boolean filters</legend>
-      {metadata.booleanFilters.map((filter) => (
-        <BooleanFilterField
-          filter={filter}
-          key={filter.attributeId}
-          selectedFilter={selectedBooleanFilter(filters.booleans, filter.attributeId)}
-        />
+      {rows.map((row) => (
+        <BooleanFilterField key={row.attributeId} row={row} />
       ))}
     </fieldset>
   );
 }
 
 function BooleanFilterField({
-  filter,
-  selectedFilter
+  row
 }: {
-  filter: ProductFilterMetadata["booleanFilters"][number];
-  selectedFilter?: CatalogBooleanFilter;
+  row: CatalogAdvancedBooleanRow;
 }) {
-  const selectedValue = selectedFilter?.value ?? filter.selectedValue;
-
   return (
     <label>
-      {filter.displayName}
+      {row.displayName}
       <select
-        defaultValue={typeof selectedValue === "boolean" ? String(selectedValue) : ""}
-        name={`boolean.${filter.attributeId}`}
+        defaultValue={row.defaultValue}
+        id={`catalog-boolean-${row.attributeId}`}
+        name={`boolean.${row.attributeId}`}
       >
         <option value="">Any</option>
-        <option value="true">Yes ({filter.trueCount})</option>
-        <option value="false">No ({filter.falseCount})</option>
+        <option value="true">Yes ({row.trueCount})</option>
+        <option value="false">No ({row.falseCount})</option>
       </select>
     </label>
   );
 }
 
 function EnumFiltersFieldset({
-  filters,
-  metadata
+  rows
 }: {
-  filters: CatalogFilters;
-  metadata: ProductFilterMetadata;
+  rows: readonly CatalogAdvancedEnumRow[];
 }) {
-  if (metadata.enumFilters.length === 0) {
+  if (rows.length === 0) {
     return null;
   }
 
   return (
     <fieldset>
       <legend>Enum filters</legend>
-      {metadata.enumFilters.map((filter) => (
-        <EnumFilterFieldset
-          filter={filter}
-          key={filter.attributeId}
-          selectedOptionId={selectedEnumFilterValue(filters.enums, filter.attributeId)}
-        />
+      {rows.map((row) => (
+        <EnumFilterFieldset key={row.attributeId} row={row} />
       ))}
     </fieldset>
   );
 }
 
 function EnumFilterFieldset({
-  filter,
-  selectedOptionId
+  row
 }: {
-  filter: ProductFilterMetadata["enumFilters"][number];
-  selectedOptionId?: string;
+  row: CatalogAdvancedEnumRow;
 }) {
-  const effectiveSelectedOptionId =
-    selectedOptionId ?? filter.options.find((option) => option.selected)?.id ?? "";
+  const inputName = `enum.${row.attributeId}`;
 
   return (
     <fieldset>
-      <legend>{filter.displayName}</legend>
+      <legend>{row.displayName}</legend>
       <label>
         <input
-          defaultChecked={effectiveSelectedOptionId === ""}
-          name={`enum.${filter.attributeId}`}
+          defaultChecked={row.anySelected}
+          id={`catalog-enum-${row.attributeId}-any`}
+          name={inputName}
           type="radio"
           value=""
         />
         Any
       </label>
-      {filter.options.map((option) => (
+      {row.options.map((option) => (
         <label key={option.id}>
           <input
-            defaultChecked={effectiveSelectedOptionId === option.id}
-            disabled={option.disabled && effectiveSelectedOptionId !== option.id}
-            name={`enum.${filter.attributeId}`}
+            defaultChecked={option.selected}
+            disabled={option.disabled}
+            id={`catalog-enum-${row.attributeId}-${option.id}`}
+            name={inputName}
             type="radio"
             value={option.id}
           />
@@ -238,24 +204,4 @@ function EnumFilterFieldset({
       ))}
     </fieldset>
   );
-}
-
-function selectedNumericFilter(filters: readonly CatalogNumericFilter[], attributeId: string) {
-  return filters.find((filter) => filter.attributeId === attributeId);
-}
-
-function selectedBooleanFilter(filters: readonly CatalogBooleanFilter[], attributeId: string) {
-  return filters.find((filter) => filter.attributeId === attributeId);
-}
-
-function selectedEnumFilterValue(filters: readonly CatalogEnumFilter[], attributeId: string) {
-  let selectedOptionId: string | undefined;
-
-  for (const filter of filters) {
-    if (filter.attributeId === attributeId) {
-      selectedOptionId = filter.enumOptionId;
-    }
-  }
-
-  return selectedOptionId;
 }

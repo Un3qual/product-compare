@@ -9,7 +9,12 @@ import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { Button } from "../../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import {
+  resolveDeletePriceWatchMutationError,
+  resolveMarkAlertReadMutationError,
+  resolveTogglePriceWatchMutationError
+} from "./alerts-mutation-data";
 import deletePriceWatchMutation from "./queries/DeletePriceWatchMutation";
 import markAlertReadMutation from "./queries/MarkAlertReadMutation";
 import updatePriceWatchMutation from "./queries/UpdatePriceWatchMutation";
@@ -85,14 +90,16 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
         variables: { input: { id: watch.id, enabled: !watch.enabled } }
       });
-      return response.updatePriceWatch?.watch ? null : routeMutationErrorMessage(response.updatePriceWatch?.errors, graphQLErrors);
+      return resolveTogglePriceWatchMutationError(response.updatePriceWatch, graphQLErrors);
     });
   }
 
   function deleteWatch(watch: WatchSummary) {
     return run(watch.id, async () => {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, { variables: { id: watch.id } });
-      return response.deletePriceWatch?.deletedWatchId ? null : routeMutationErrorMessage(response.deletePriceWatch?.errors, graphQLErrors);
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitDelete, {
+        variables: { id: watch.id }
+      });
+      return resolveDeletePriceWatchMutationError(response.deletePriceWatch, graphQLErrors);
     });
   }
 
@@ -116,8 +123,10 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                   {!alert.readAt ? (
                     <div {...props(styles.actions)}>
                       <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => { run(alert.id, async () => {
-                        const { response, graphQLErrors } = await commitRouteMutationPromise(commitMarkRead, { variables: { id: alert.id } });
-                        return response.markAlertRead?.event ? null : routeMutationErrorMessage(response.markAlertRead?.errors, graphQLErrors);
+                        const { response, graphQLErrors } = await commitRouteMutationPromise(commitMarkRead, {
+                          variables: { id: alert.id }
+                        });
+                        return resolveMarkAlertReadMutationError(response.markAlertRead, graphQLErrors);
                       }); }}>Mark read</Button>
                     </div>
                   ) : null}

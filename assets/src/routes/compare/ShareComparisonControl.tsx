@@ -22,15 +22,15 @@ import {
   buildComparisonSnapshotPublishInput,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
-  removeComparisonSnapshotId,
+  publishedSnapshotFromPayload,
+  publishComparisonSnapshotState,
+  revokeComparisonSnapshotState,
+  snapshotFromNode,
+  type ComparisonSnapshotState,
   type PublishedComparisonSnapshot
 } from "./share-comparison-data";
 
 const SNAPSHOT_PAGE_SIZE = 20;
-
-type OwnedSnapshotNode = NonNullable<
-  OwnedComparisonSnapshotsQuery["response"]["viewer"]
->["comparisonSnapshots"]["edges"][number]["node"];
 
 const styles = create({
   control: { borderBlockStart: "1px solid var(--pc-border-quiet)", paddingBlockStart: "0.85rem" },
@@ -50,45 +50,45 @@ export function ShareComparisonControl({
 }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const [published, setPublished] = useState<PublishedComparisonSnapshot[]>([]);
-  const [revokedSnapshotIds, setRevokedSnapshotIds] = useState<Set<string>>(
-    () => new Set()
-  );
-  const [message, setMessage] = useState<string | null>(null);
+  const [snapshotState, setSnapshotState] = useState<ComparisonSnapshotState>(() => ({
+    message: null,
+    published: [],
+    revokedSnapshotIds: new Set()
+  }));
   const recommendationProfile = recommendationProfileFromUrl(
     `${location.pathname}${location.search}`
   );
 
   function recordPublished(snapshot: PublishedComparisonSnapshot) {
-    setPublished((current) => [snapshot, ...current.filter(({ id }) => id !== snapshot.id)]);
-    setRevokedSnapshotIds((current) => removeComparisonSnapshotId(current, snapshot.id));
-    setMessage("Public snapshot published. This link will keep the captured facts unchanged.");
+    setSnapshotState((current) => publishComparisonSnapshotState(current, snapshot));
   }
 
   function recordRevoked(snapshot: PublishedComparisonSnapshot) {
-    setPublished((current) => current.filter(({ id }) => id !== snapshot.id));
-    setRevokedSnapshotIds((current) => new Set(current).add(snapshot.id));
-    setMessage("Public snapshot revoked. The old link now returns not found.");
+    setSnapshotState((current) => revokeComparisonSnapshotState(current, snapshot));
+  }
+
+  function recordMessage(message: string | null) {
+    setSnapshotState((current) => ({ ...current, message }));
   }
 
   const [handlePublish, publishing] = useSnapshotPublisher(
     products,
     recommendationProfile,
     recordPublished,
-    setMessage
+    recordMessage
   );
-  const [handleRevoke, revoking] = useSnapshotRevoker(recordRevoked, setMessage);
+  const [handleRevoke, revoking] = useSnapshotRevoker(recordRevoked, recordMessage);
 
   return <SnapshotControlView
     handlePublish={handlePublish}
     handleRevoke={handleRevoke}
-    message={message}
+    message={snapshotState.message}
     onOpenChange={setOpen}
     open={open}
     products={products}
-    published={published}
+    published={snapshotState.published}
     publishing={publishing}
-    revokedSnapshotIds={revokedSnapshotIds}
+    revokedSnapshotIds={snapshotState.revokedSnapshotIds}
     revoking={revoking}
   />;
 }
@@ -227,7 +227,9 @@ function useSnapshotRevoker(
 
   async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, { variables: { snapshotId: snapshot.id } });
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, {
+        variables: { snapshotId: snapshot.id }
+      });
       const payload = response.revokeComparisonSnapshot;
 
       if (payload?.revokedSnapshotId) onRevoked(snapshot);
@@ -290,17 +292,4 @@ function PublishedSnapshots({
     ) : null}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more snapshots</Button> : null}
   </>;
-}
-
-function publishedSnapshotFromPayload(
-  payload: PublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"],
-  title: string | null
-) {
-  return payload?.snapshot?.id && payload.sharePath
-    ? { id: payload.snapshot.id, path: payload.sharePath, title }
-    : null;
-}
-
-function snapshotFromNode(node: OwnedSnapshotNode): PublishedComparisonSnapshot {
-  return { id: node.id, path: node.sharePath, title: node.title ?? null };
 }

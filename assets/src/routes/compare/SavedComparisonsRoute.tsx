@@ -13,9 +13,7 @@ import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
 import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
+  DEFAULT_ROUTE_ERROR_MESSAGE
 } from "../route-errors";
 import type {
   savedComparisonsLoader,
@@ -30,6 +28,7 @@ import {
   buildSavedComparisonReopenPath,
   buildSavedComparisonsPagination
 } from "./saved-comparisons-route-data";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
 import {
   buildSavedComparisonsViewState,
   type SavedComparisonSortMode
@@ -68,20 +67,18 @@ export function SavedComparisonsRoute() {
     commitRouteMutation(
       commitDeleteSavedComparisonSet,
       {
-        variables: {
-          savedComparisonSetId
-        },
+        variables: { savedComparisonSetId },
         onCompleted: (response, graphQLErrors) => {
           const payload = response.deleteSavedComparisonSet;
-          const deletedSavedSetId = payload?.savedComparisonSet?.id;
+          const outcome = resolveDeleteSavedComparisonSetMutationOutcome(payload, graphQLErrors);
 
-          if (deletedSavedSetId && !hasRouteGraphQLErrors(graphQLErrors)) {
+          if (outcome.deletedSavedComparisonSetId) {
             setDeleteError(null);
             setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
-              addSetValue(currentDeletedSavedSetIds, deletedSavedSetId)
+              addSetValue(currentDeletedSavedSetIds, outcome.deletedSavedComparisonSetId)
             );
           } else {
-            setDeleteError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+            setDeleteError(outcome.error);
           }
 
           finishDelete(savedComparisonSetId);

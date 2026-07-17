@@ -11,6 +11,7 @@ import {
   recommendationProfileFromUrl,
   type RecommendationProfile
 } from "./recommendation-route-data";
+import { getRecommendationViewData } from "./recommendation-view-data";
 import compareRecommendationQuery from "./queries/CompareRecommendationQuery";
 
 const styles = create({
@@ -76,9 +77,7 @@ function RecommendationContent({
     return null;
   }
 
-  const winner = recommendation.rankings.find(
-    (ranking) => ranking.productId === recommendation.winnerProductId
-  );
+  const viewData = getRecommendationViewData(recommendation);
 
   return (
     <section aria-labelledby="recommendation-title" {...props(styles.panel)}>
@@ -87,16 +86,16 @@ function RecommendationContent({
         <Link aria-current={profile === "lowest_current_cost" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "lowest_current_cost")}>Lowest current cost</Link>
         <Link aria-current={profile === "best_value" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "best_value")}>Best supported value</Link>
       </nav>
-      {winner ? (
+      {viewData.kind === "supported" ? (
         <>
-          <strong>{winner.productName}</strong>
-          <ul {...props(styles.reasons)}>{winner.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-          <p {...props(styles.evidence)}>Evidence: price observation {winner.pricePointId}; {winner.claimIds.length} accepted claim reference{winner.claimIds.length === 1 ? "" : "s"}. Algorithm {recommendation.algorithmVersion}.</p>
+          <strong>{viewData.productName}</strong>
+          <ul {...props(styles.reasons)}>{viewData.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+          <p {...props(styles.evidence)}>{viewData.evidence}</p>
         </>
       ) : (
         <>
           <strong>No supported winner</strong>
-          <ul {...props(styles.reasons)}>{recommendation.missingInputs.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+          <ul {...props(styles.reasons)}>{viewData.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         </>
       )}
     </section>
