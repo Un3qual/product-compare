@@ -724,50 +724,29 @@ unchanged snapshot-route suites pass 10 tests; the full repository gate passes
 771 backend and 1,297 frontend tests. The three validated successor rows
 remain ready.
 
+Before claiming Compare Picker Visible-Option Data, the coordinator validated
+a fourth non-overlapping successor. First-page visibility and path plus next-
+page visibility and path remain embedded in `ApiTokensRoute`, while its
+framework-free route-data owner already owns canonical status-preserving token
+page paths. Its pure and route suites pass 75 tests. The successor has complete
+owned paths, no blockers, and does not overlap the comparison or verify-email
+rows.
+
+Compare Picker Visible-Option Data then completed. The existing framework-free
+picker owner now returns normalized filter state, source-ordered visible
+options, and exact empty-state copy while preserving the caller's option-array
+identity for blank filters. React retains local state, generated IDs, input
+events, actions, markup, and presentation. Its pure and unchanged compare-
+route suites pass 119 tests; the full repository gate passes 771 backend and
+1,300 frontend tests. The three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Compare Picker Visible-Option Data Contract
-
-Status: ready
-Lane: Frontend compare-picker visible-option data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move filter normalization, case-insensitive visible-option
-selection, source-order preservation, and exact no-match copy out of
-`CompareProductPickerView` into its existing framework-free picker owner while
-preserving local state, generated IDs, input events, actions, markup, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/compare/compare-picker-data.ts`
-- `assets/src/routes/compare/CompareProductPickerView.tsx`
-- `assets/test/routes/compare/compare-picker-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-compare-picker-visible-option-data.md`
-
-Prerequisites:
-
-- Existing picker option identity, href, and pagination policy remain
-  unchanged.
-- Filtering remains bounded to already-loaded options and product names.
-- Existing compare-picker data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure compare-picker data module
-- `git diff --check`
-
-Exit condition: the existing framework-free picker owner returns normalized
-filter state, source-ordered visible options, and exact empty-state copy without
-mutating options; React retains state, IDs, input events, actions, markup, and
-presentation.
-
-### 2. Compare-Selection Tray View Data Contract
+### 1. Compare-Selection Tray View Data Contract
 
 Status: ready
 Lane: Frontend compare-selection tray view data
@@ -804,7 +783,7 @@ selected rows with labels and removal paths, and open-action visibility without
 mutating inputs; React retains caller-owned route policy, IDs, markup, actions,
 events, and presentation.
 
-### 3. Verify-Email Request Data Contract
+### 2. Verify-Email Request Data Contract
 
 Status: ready
 Lane: Frontend verify-email request data
@@ -839,6 +818,41 @@ Exit condition: one framework-free owner returns normalized token/request
 data, missing-token state, exact status copy, and retry eligibility without
 mutating inputs; React retains the request cache, Relay orchestration,
 cancellation, hooks, state, markup, and presentation.
+
+### 3. API Token Pagination Data Contract
+
+Status: ready
+Lane: Frontend API-token pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move first-page and next-page link visibility and path projection
+out of `ApiTokenPagination` into the existing framework-free API-token route-
+data owner while preserving `apiTokenPagePath` as the canonical path builder
+and keeping pagination markup and presentation in React.
+Owned paths:
+
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-pagination-data.md`
+
+Prerequisites:
+
+- Existing API-token status and cursor path encoding remain unchanged.
+- Link visibility remains bounded to the current cursor, Relay page-info, and
+  non-empty end cursor.
+- Existing API-token route-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework dependency scan of the API-token route-data module
+- `git diff --check`
+
+Exit condition: the existing framework-free route-data owner returns exact
+first- and next-page hrefs without mutating inputs; React retains `Pagination`
+markup, labels, and presentation.
 
 ## Needs Decision Work
 

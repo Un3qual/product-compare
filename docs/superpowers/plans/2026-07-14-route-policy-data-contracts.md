@@ -1285,15 +1285,15 @@ selection, source-order preservation, and exact empty-state copy.
 `CompareProductPickerView` retains local state, generated IDs, input events,
 actions, markup, and presentation.
 
-- [ ] Write pure tests for trimmed and case-insensitive filtering, blank
+- [x] Write pure tests for trimmed and case-insensitive filtering, blank
   filters, source order, no matches, exact empty-state copy, stable identity,
   and deep input immutability; verify RED.
-- [ ] Extract only deterministic visible-option policy while preserving picker
+- [x] Extract only deterministic visible-option policy while preserving picker
   option identity, paths, pagination, loaded-page bounds, local state, IDs,
   events, actions, markup, and presentation.
-- [ ] Run the pure compare-picker data and existing compare-route suites,
+- [x] Run the pure compare-picker data and existing compare-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1354,6 +1354,33 @@ transport-error normalization.
   presentation.
 - [ ] Run the pure verify-email data and existing recovery-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 45: API Token Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-pagination-data.md`
+
+**Interfaces:** The existing framework-free API-token route-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the canonical `apiTokenPagePath` builder. `ApiTokenPagination` retains
+the shared `Pagination` markup, label, and presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, absent-cursor
+  identity, complete and incomplete next-page facts, status preservation,
+  cursor encoding, and input immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving status
+  and cursor path policy, Relay page-info bounds, markup, labels, and
+  presentation.
+- [ ] Run the pure API-token route-data and existing route suites, TypeScript,
+  the framework dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

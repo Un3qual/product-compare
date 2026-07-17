@@ -3,6 +3,7 @@ import {
   appendUniqueComparePickerProducts,
   availableComparePickerProducts,
   buildComparePickerOptions,
+  buildComparePickerVisibleOptionsData,
   comparePickerEmptyMessage,
   comparePickerResetToken,
   isComparePickerEmpty,
@@ -117,5 +118,52 @@ describe("compare picker data", () => {
         href: "/compare?slug=first+product&slug=fifth+%26+product&specs=differences"
       }
     ]);
+  });
+
+  test("normalizes a trimmed filter and preserves matching source order", () => {
+    const options = [
+      { id: "alpha", name: "Alpha Phone" },
+      { id: "beta", name: "Beta Tablet" },
+      { id: "alpha-pro", name: "ALPHA Pro" }
+    ] as const;
+
+    const data = buildComparePickerVisibleOptionsData(options, "  aLpHa  ");
+
+    expect(data.normalizedFilterText).toBe("alpha");
+    expect(data.options).toEqual([options[0], options[2]]);
+    expect(data.options[0]).toBe(options[0]);
+    expect(data.options[1]).toBe(options[2]);
+  });
+
+  test("preserves option identity when the filter has no effective value", () => {
+    const options = [
+      { id: "alpha", name: "Alpha Phone" },
+      { id: "beta", name: "Beta Tablet" }
+    ] as const;
+
+    expect(buildComparePickerVisibleOptionsData(options, "").options).toBe(options);
+
+    const whitespaceData = buildComparePickerVisibleOptionsData(options, " \t\n ");
+
+    expect(whitespaceData.normalizedFilterText).toBe("");
+    expect(whitespaceData.options).toBe(options);
+    expect(whitespaceData.emptyMessage).toBe(
+      "No additional products are available on this page."
+    );
+  });
+
+  test("returns exact no-match copy without mutating deeply frozen options", () => {
+    const firstOption = Object.freeze({ id: "alpha", name: "Alpha Phone" });
+    const secondOption = Object.freeze({ id: "beta", name: "Beta Tablet" });
+    const options = Object.freeze([firstOption, secondOption]);
+
+    const data = buildComparePickerVisibleOptionsData(options, "camera");
+
+    expect(data).toEqual({
+      emptyMessage: "No loaded products match this filter.",
+      normalizedFilterText: "camera",
+      options: []
+    });
+    expect(options).toEqual([firstOption, secondOption]);
   });
 });
