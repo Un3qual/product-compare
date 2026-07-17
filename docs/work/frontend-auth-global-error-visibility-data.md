@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: complete
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
@@ -12,12 +12,16 @@
 
 ## Auth Global Error Visibility Data Contract
 
-- Status: complete on 2026-07-17.
+- Status: completed on 2026-07-17.
 - Delivered: `selectGlobalMutationErrors` now owns global-versus-rendered-field
   selection in the framework-free auth errors module; `AuthFormShell` delegates
-  to it while retaining field rendering and feedback markup.
+  to it while retaining field rendering and feedback markup. The errors owner
+  imports its viewer contract from the canonical pure viewer-data module rather
+  than the route loader.
 - Evidence: pure tests cover missing, null, blank, known, and unknown fields,
-  source ordering, and input immutability; focused suites pass 10 tests.
+  source ordering, and input immutability; focused suites pass 10 tests. Its
+  recursive relative-import closure contains only the errors, route-errors, and
+  root viewer-data modules.
 - Blockers: none.
 
 ## Boundaries

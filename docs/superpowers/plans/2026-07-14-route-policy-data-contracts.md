@@ -1993,13 +1993,13 @@ errors that belong in the form's global error list from the rendered field
 names. The React owner retains field rendering, error markup, accessibility
 behavior, and presentation.
 
-- [ ] Write pure tests for missing, null, blank, known, and unknown fields,
+- [x] Write pure tests for missing, null, blank, known, and unknown fields,
   stable order, and input immutability; verify RED.
-- [ ] Move only deterministic error visibility while preserving field
+- [x] Move only deterministic error visibility while preserving field
   rendering, error markup, accessibility behavior, and presentation.
-- [ ] Run the auth errors and form-shell suites, TypeScript, consumer and
+- [x] Run the auth errors and form-shell suites, TypeScript, consumer and
   framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2052,8 +2052,39 @@ offer ordering, StatusBadge markup, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 72: Product Review Row Display Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/product-community-data.ts`
+- Modify: `assets/src/routes/products/ProductCommunityPanel.tsx`
+- Modify: `assets/test/routes/products/product-community-data.test.ts`
+- Test: `assets/test/routes/products/product-community-panel.test.tsx`
+- Create: `docs/work/frontend-product-review-row-display-data.md`
+
+**Interfaces:** The existing framework-free product-community data owner
+projects title, rating-star, and author purchase-verification copy for a
+published review. The React owner retains bodies, list markup, forms,
+pagination, mutations, and presentation.
+
+- [ ] Write pure tests for explicit and fallback titles, supported rating-star
+  rows, verified and unverified author copy, and input immutability; verify RED.
+- [ ] Move only deterministic review-row copy while preserving bodies, list
+  markup, forms, pagination, mutations, and presentation.
+- [ ] Run the product-community data and panel suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Auth global-error visibility data completed on 2026-07-17 after two pure
+  selector cases failed RED because the selector was missing. The pure and
+  form-shell suites then passed 10 tests; TypeScript, consumer and dependency
+  scans, and `git diff --check` passed. A recursive dependency-closure check
+  also exposed and removed a route-loader type re-export; the pure owner now
+  reaches only route-errors and the canonical root viewer-data module.
 - Alert watch-toggle control data completed on 2026-07-17 after three pure
   cases failed RED because the projection was missing. The pure and route
   suites then passed 19 tests; TypeScript, consumer and dependency scans, and

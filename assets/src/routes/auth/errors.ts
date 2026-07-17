@@ -5,7 +5,7 @@ import {
   isRouteMutationError,
   type RouteMutationError
 } from "../route-errors";
-import type { RootViewer } from "../root/loader";
+import type { RootViewer } from "../root/viewer-data";
 
 export type MutationError = RouteMutationError;
 

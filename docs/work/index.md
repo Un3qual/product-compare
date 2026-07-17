@@ -1070,45 +1070,21 @@ already owns the same active-only status semantics. Its pure and route suites
 pass 73 tests. The successor is path-disjoint from alert toggle, auth error
 visibility, and recommendation query input.
 
+Before claiming the auth global-error visibility row, current source
+inspection confirmed that review title fallback, rating stars, and purchase-
+verification author copy remain embedded in `ProductCommunityPanel`, while the
+existing framework-free product-community data owner already owns review
+summary and mutation policy. Its pure and panel suites pass 17 tests. The
+successor is path-disjoint from auth error visibility, recommendation query
+input, and offer discovery scope badge data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Auth Global Error Visibility Data Contract
-
-Status: ready
-Lane: Frontend auth global error visibility data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move global-versus-rendered-field error selection from
-`AuthFormShell` into the existing framework-free auth errors owner.
-Owned paths:
-
-- `assets/src/routes/auth/errors.ts`
-- `assets/src/routes/auth/AuthFormShell.tsx`
-- `assets/test/routes/auth/errors.test.ts`
-- `assets/test/routes/auth/form-shell.test.tsx`
-- `docs/work/frontend-auth-global-error-visibility-data.md`
-
-Prerequisites:
-
-- Missing, null, blank, and unknown field errors remain globally visible.
-- Errors for fields rendered by the form remain excluded from the global list.
-- Error order and input values remain unchanged.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/auth/errors.test.ts test/routes/auth/form-shell.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the auth errors module
-- `git diff --check`
-
-Exit condition: the framework-free owner selects globally visible auth errors
-without changing field rendering, error markup, accessibility behavior, or
-presentation.
-
-### 2. Recommendation Query Input Data Contract
+### 1. Recommendation Query Input Data Contract
 
 Status: ready
 Lane: Frontend recommendation query input data
@@ -1144,7 +1120,7 @@ Exit condition: the framework-free owner projects stable recommendation query
 input and collision-safe reset identity without changing fetch policy,
 Suspense, error fallback, profile links, markup, or presentation.
 
-### 3. Offer Discovery Scope Badge Data Contract
+### 2. Offer Discovery Scope Badge Data Contract
 
 Status: ready
 Lane: Frontend offer discovery scope badge data
@@ -1176,6 +1152,41 @@ Verification:
 Exit condition: the framework-free owner projects stable offer-scope badge
 data without changing filtering, offer ordering, markup, or presentation.
 
+### 3. Product Review Row Display Data Contract
+
+Status: ready
+Lane: Frontend product review row display data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move review title fallback, rating-star copy, and author purchase-
+verification copy from `ProductCommunityPanel` into the existing framework-
+free product-community data owner.
+Owned paths:
+
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `docs/work/frontend-product-review-row-display-data.md`
+
+Prerequisites:
+
+- Explicit review titles remain unchanged and missing titles fall back to the
+  existing rating-out-of-five copy.
+- Ratings retain their filled and empty five-star copy.
+- Author labels retain the verified or purchase-not-verified suffix.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the product-
+  community data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable review-row copy
+without changing bodies, list markup, forms, pagination, mutations, or
+presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1185,6 +1196,16 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Auth global-error visibility data completed on 2026-07-17. The framework-free
+auth errors owner now selects missing, null, blank, and unknown-field errors
+for the global list while excluding errors rendered by named fields and
+preserving source order. React retains field rendering, error markup,
+accessibility behavior, and presentation. Its canonical viewer type now comes
+directly from the pure viewer-data owner instead of the route loader. Its pure
+and form-shell suites passed 10 tests; TypeScript, recursive dependency,
+consumer, and diff checks are recorded in
+`docs/work/frontend-auth-global-error-visibility-data.md`.
 
 Alert watch-toggle control data completed on 2026-07-17. The framework-free
 alerts view-data owner now projects the next enabled state and Pause/Resume

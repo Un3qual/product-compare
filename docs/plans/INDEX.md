@@ -83,8 +83,9 @@ coupon facts with 50 focused tests and the full 1,408-test frontend gate.
 Comparison snapshot pagination cursor data, API-token status-filter navigation
 data, and compare specification-mode navigation data (Tasks 64-66) are
 complete. Saved Comparison Card Display and Alert Watch-Toggle Control are also
-complete. Auth Global Error Visibility, Recommendation Query Input, and Offer
-Discovery Scope Badge are the current ready successors in the live queue.
+complete. Auth Global Error Visibility is also complete. Recommendation Query
+Input, Offer Discovery Scope Badge, and Product Review Row Display are the
+current ready successors in the live queue.
 
 Active implementation plans:
 
