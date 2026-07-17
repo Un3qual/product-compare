@@ -1023,46 +1023,21 @@ already owns the canonical status type and status-aware page paths. Its pure
 and route suites pass 80 tests. The successor is path-disjoint from root viewer
 projection, affiliate coupon result data, and snapshot pagination.
 
+Before claiming the affiliate coupon row, current source inspection confirmed
+that compare specification-mode order, labels, current-state policy, and
+mode-preserving paths remain embedded in `CompareRoute`, while the existing
+compare path owner already defines canonical slug and specification-mode URL
+behavior. The compare route suite passes 109 tests. The successor is path-
+disjoint from affiliate coupon result data, snapshot pagination, and API-token
+status-filter navigation.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Affiliate Coupon Result Display Data Contract
-
-Status: ready
-Lane: Frontend affiliate coupon result display data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move deterministic coupon discount copy from
-`AffiliateSetupForms` into the existing framework-free affiliate setup data
-owner.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-coupon-result-display-data.md`
-
-Prerequisites:
-
-- Amount, percent, free-shipping, other, incomplete, and unknown result values
-  retain their current visible-copy policy.
-- Generated GraphQL types remain confined to the React form owner.
-- Existing affiliate setup data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the affiliate setup data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects affiliate coupon result copy
-without changing mutation inputs, result identity, markup, or presentation.
-
-### 2. Comparison Snapshot Pagination Cursor Data Contract
+### 1. Comparison Snapshot Pagination Cursor Data Contract
 
 Status: ready
 Lane: Frontend comparison snapshot pagination cursor data
@@ -1096,7 +1071,7 @@ Exit condition: the framework-free owner selects the next snapshot cursor
 without changing Relay variables, page accumulation, actions, markup, or
 presentation.
 
-### 3. API-Token Status-Filter Navigation Data Contract
+### 2. API-Token Status-Filter Navigation Data Contract
 
 Status: ready
 Lane: Frontend API-token status-filter navigation data
@@ -1129,6 +1104,39 @@ Exit condition: the route-data owner projects stable API-token status-filter
 navigation without changing links, accessibility state, route behavior,
 markup, or presentation.
 
+### 3. Compare Specification-Mode Navigation Data Contract
+
+Status: ready
+Lane: Frontend compare specification-mode navigation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move ordered specification-mode labels, destinations, and current
+state from `CompareRoute` into a framework-free compare mode-data owner.
+Owned paths:
+
+- `assets/src/routes/compare/compare-spec-mode-data.ts`
+- `assets/src/routes/compare/CompareRoute.tsx`
+- `assets/test/routes/compare/compare-spec-mode-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-compare-spec-mode-navigation-data.md`
+
+Prerequisites:
+
+- Shared specs, Differences, and All specs retain their order and labels.
+- Canonical compare paths preserve selected-slug order, shared mode omits the
+  `specs` parameter, and exactly one mode is current.
+- Existing compare route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/compare-spec-mode-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the mode-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable specification-mode
+navigation without changing Radix tabs, links, panels, children, markup, or
+presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1138,6 +1146,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Affiliate coupon result display data completed on 2026-07-17. The framework-
+free affiliate setup data owner now projects deterministic amount, percent,
+free-shipping, other, incomplete, and unknown discount copy, while the React
+form retains generated GraphQL result types, mutation orchestration, identity,
+markup, and presentation. The pure and route suites passed 45 tests; TypeScript,
+dependency scans, the full 1,403-test frontend gate, and queue validation are
+recorded in `docs/work/frontend-affiliate-coupon-result-display-data.md`.
 
 Root viewer projection completed on 2026-07-17. One framework-free owner now
 validates and projects both query and cached viewer values; focused pure and

@@ -4,6 +4,7 @@ import {
   buildMerchantChoices,
   buildNetworkVariables,
   buildProgramVariables,
+  couponDiscountText,
   getMerchantChoiceById,
   getMerchantSummary,
   resolveAffiliateCouponMutationOutcome,
@@ -18,6 +19,19 @@ const FIRST_MERCHANT = {
   name: "Acme Market",
   domain: "acme.example"
 };
+
+test.each([
+  ["formats amount discounts with a value and currency", { discountType: "AMOUNT", discountValue: "20.00", currency: "USD" }, "20.00 USD"],
+  ["hides incomplete amount discounts", { discountType: "AMOUNT", discountValue: "20.00" }, null],
+  ["formats percent discounts with a value", { discountType: "PERCENT", discountValue: "15" }, "15% off"],
+  ["hides percent discounts without a value", { discountType: "PERCENT" }, null],
+  ["formats free-shipping discounts", { discountType: "FREE_SHIPPING" }, "Free shipping"],
+  ["formats other discounts with a value", { discountType: "OTHER", discountValue: "Member reward" }, "Member reward off"],
+  ["formats other discounts without a value", { discountType: "OTHER" }, "Other discount"],
+  ["hides unknown future discount types", { discountType: "BUY_ONE_GET_ONE", discountValue: "1" }, null]
+] as const)("couponDiscountText %s", (_description, coupon, expected) => {
+  expect(couponDiscountText(coupon)).toBe(expected);
+});
 
 const MUTATION_ERROR = {
   code: "INVALID_ARGUMENT",

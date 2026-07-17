@@ -2,23 +2,26 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 37 passing
-  affiliate setup data and route tests.
+- Last verified: 2026-07-17 after 45 passing affiliate setup data and route
+  tests, TypeScript, the full 1,403-test frontend gate, and dependency scans.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Affiliate Coupon Result Display Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move deterministic coupon discount copy into the existing
-  framework-free affiliate setup data owner.
-- Candidate evidence: `AffiliateSetupForms` currently interprets discount
-  type, value, and currency for result copy, while the data owner already owns
-  affiliate setup input and mutation-outcome policy; the focused suites pass
-  37 tests.
+- Status: done on 2026-07-17.
+- Completed action: moved deterministic coupon discount copy into the existing
+  framework-free affiliate setup data owner. `AffiliateSetupForms` retains the
+  generated GraphQL result type and passes its compatible coupon fact to the
+  pure helper.
+- RED evidence: the new eight-case pure suite failed as expected because
+  `couponDiscountText` was not exported by the data owner.
+- Green evidence: amount, percent, free-shipping, other, incomplete, and
+  unknown/future discount values preserve their visible-copy policy across 45
+  focused data and route tests.
 - Blockers: none.
 
 ## Boundaries
@@ -36,3 +39,14 @@
 - `cd assets && bun run typecheck`
 - framework/transport dependency scan of the affiliate setup data module
 - `git diff --check`
+
+## Completion Evidence
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx` — 45 tests passed.
+- `cd assets && bun run typecheck` — passed.
+- Framework/transport dependency scan — the data owner has no React, Relay,
+  router, StyleX, Radix, or generated-query imports.
+- `cd assets && bun run check` — Relay validation, TypeScript, 1,403 unit
+  tests, client/SSR builds, and bundle budget check passed.
+- `mix work_queue.validate` — passed with exactly 3 ready rows.
+- `git diff --check` — passed.

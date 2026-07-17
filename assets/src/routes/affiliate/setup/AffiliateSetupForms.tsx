@@ -7,6 +7,7 @@ import type { UpsertAffiliateProgramMutation } from "../../../__generated__/Upse
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { couponDiscountText } from "./affiliate-setup-data";
 
 export type MerchantChoice = {
   domain: string;
@@ -323,21 +324,4 @@ function CouponResultPanel({ coupon }: { coupon: CouponResult }) {
       {discountText ? <p>{discountText}</p> : null}
     </section>
   );
-}
-
-function couponDiscountText(coupon: CouponResult) {
-  const value = coupon.discountValue == null ? null : String(coupon.discountValue);
-
-  switch (coupon.discountType) {
-    case "AMOUNT":
-      return value && coupon.currency ? `${value} ${coupon.currency}` : null;
-    case "PERCENT":
-      return value ? `${value}% off` : null;
-    case "FREE_SHIPPING":
-      return "Free shipping";
-    case "OTHER":
-      return value ? `${value} off` : "Other discount";
-    default:
-      return null;
-  }
 }

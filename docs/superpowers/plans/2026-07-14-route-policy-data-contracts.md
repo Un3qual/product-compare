@@ -1847,13 +1847,13 @@ coupon result copy from discount type, value, and currency. The React form
 owner retains generated GraphQL result types, mutation orchestration, markup,
 and presentation.
 
-- [ ] Write pure tests for amount, percent, free-shipping, other, incomplete,
+- [x] Write pure tests for amount, percent, free-shipping, other, incomplete,
   and unknown values; verify RED.
-- [ ] Move only deterministic coupon result copy while preserving generated
+- [x] Move only deterministic coupon result copy while preserving generated
   type ownership, mutation inputs, result identity, markup, and presentation.
-- [ ] Run the affiliate setup data and route suites, TypeScript, the framework/
+- [x] Run the affiliate setup data and route suites, TypeScript, the framework/
   transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1900,6 +1900,30 @@ link rendering, accessibility attributes, markup, and presentation.
 - [ ] Move only deterministic status-filter navigation while preserving links,
   accessibility state, route behavior, markup, and presentation.
 - [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+  framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 66: Compare Specification-Mode Navigation Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/compare-spec-mode-data.ts`
+- Modify: `assets/src/routes/compare/CompareRoute.tsx`
+- Create: `assets/test/routes/compare/compare-spec-mode-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-compare-spec-mode-navigation-data.md`
+
+**Interfaces:** A framework-free compare mode-data owner projects stable
+ordered labels, canonical destinations, and current state. The React owner
+retains Radix tabs, links, panels, children, markup, and presentation.
+
+- [ ] Write pure tests for stable order and labels, canonical paths, exactly
+  one current mode, selected-slug order, and input immutability; verify RED.
+- [ ] Move only deterministic specification-mode navigation while preserving
+  Radix tabs, links, panels, children, markup, and presentation.
+- [ ] Run the mode-data and compare route suites, TypeScript, consumer and
   framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
