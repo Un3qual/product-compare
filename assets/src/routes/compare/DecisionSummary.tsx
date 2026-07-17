@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import { productOffersPath } from "../offers/paths";
 
 import type {
   CompareProductSummary,
@@ -130,7 +131,7 @@ function ReviewOffersRow({ products }: { products: CompareProductSummary[] }) {
       label="Review offers link"
       products={products}
       renderCell={(product) => (
-        <Link to={`/offers?productId=${encodeURIComponent(product.id)}`}>
+        <Link to={productOffersPath(product.id)}>
           Review {product.name} offers
         </Link>
       )}

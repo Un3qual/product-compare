@@ -904,15 +904,13 @@ encoded detail paths and website destinations resolved through the shared
 external-link safety policy. React retains Relay reads, pagination, filtering,
 markup, labels, and presentation. Its pure and route suites pass 33 tests.
 
+Product Offer Navigation Path then completed. One framework-free
+`productOffersPath` now owns the exact encoded product-scoped offer destination
+used by catalog browse, product detail, and comparison decision summary. React
+retains link markup, labels, and presentation. Its direct path and unchanged
+consumer suites pass 230 tests.
+
 ## Active Work
-
-### Product Offer Navigation Path Contract
-
-Status: active
-Lane: Frontend product-offer navigation paths
-Branch: `codex/frontend-navigation-row-contracts`
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: complete Task 53 and record focused verification.
 
 ### Category Product Navigation Contract
 

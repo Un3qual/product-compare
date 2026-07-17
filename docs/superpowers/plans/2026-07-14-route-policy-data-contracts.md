@@ -1595,13 +1595,13 @@ scoped discovery path that encodes the product ID as a single `productId`
 query parameter. Browse, product-detail, and decision-summary presentation
 retain link markup, labels, and presentation.
 
-- [ ] Write pure tests for ordinary, reserved-character, whitespace, and empty
+- [x] Write pure tests for ordinary, reserved-character, whitespace, and empty
   product IDs; verify RED.
-- [ ] Replace only duplicate product-scoped offer URL construction while
+- [x] Replace only duplicate product-scoped offer URL construction while
   preserving existing destinations and every React presentation owner.
-- [ ] Run the offer path, browse, product-detail, and compare route suites,
+- [x] Run the offer path, browse, product-detail, and compare route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 

@@ -73,10 +73,10 @@ also complete. Merchant-directory pagination data is also complete. Catalog-
 browse and offer-discovery pagination data are also complete. Alert product
 navigation is also complete. Merchant-directory row data, product-offer
 navigation paths, and category product navigation are claimed on
-`codex/frontend-navigation-row-contracts`; merchant-directory row data is
-complete. Revenue filter-form data, category pagination navigation, and saved-
-comparison sort input are the three current ready successors in the live
-queue.
+`codex/frontend-navigation-row-contracts`; merchant-directory row data and
+product-offer navigation paths are complete. Revenue filter-form data, category
+pagination navigation, and saved-comparison sort input are the three current
+ready successors in the live queue.
 
 Active implementation plans:
 

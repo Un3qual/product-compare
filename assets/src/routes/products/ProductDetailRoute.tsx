@@ -16,6 +16,7 @@ import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
+import { productOffersPath } from "../offers/paths";
 import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
 import {
   ProductAttributeList,
@@ -160,7 +161,7 @@ function ProductDetail({
             <ProductDecisionActions
               browseHref={routeData.browsePath}
               compareAction={routeData.compareAction}
-              offerHref={`/offers?productId=${encodeURIComponent(product.id)}`}
+              offerHref={productOffersPath(product.id)}
             />
             <PriceWatchControl productId={product.id} />
           </ContextRail>
