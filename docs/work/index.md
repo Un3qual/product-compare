@@ -842,50 +842,30 @@ and presentation. Its loader and unchanged route suites pass 39 tests; the full
 repository gate passes 771 backend and 1,335 frontend tests. The three
 validated successor rows remain ready.
 
+Before claiming Catalog Browse Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Merchant result-node projection, detail-path
+construction, and safe website-destination resolution remain embedded in
+`MerchantDirectoryRoute`, while its framework-free view-data owner currently
+owns only visible-page filtering. The view-data and route suites pass 31
+tests. The successor has complete owned paths, no blockers, and does not
+overlap the catalog-browse, offer-discovery, or alert-navigation rows.
+
+Catalog Browse Pagination Data then completed. The framework-free catalog path
+owner now returns filter-, page-size-, and compare-selection-preserving first-
+page and next-page hrefs through the canonical path builders while enforcing
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+optional Relay cursor identity and retains empty-page recovery, shared
+pagination markup, labels, and presentation. Its pure path and unchanged route
+suites pass 69 tests; the full repository gate passes 771 backend and 1,342
+frontend tests. The three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Catalog Browse Pagination Data Contract
-
-Status: ready
-Lane: Frontend catalog-browse pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move first-page and next-page link visibility and path projection
-out of `BrowseRoute` into its existing framework-free path owner while
-preserving the canonical browse path builders and keeping pagination markup and
-labels in React.
-Owned paths:
-
-- `assets/src/routes/catalog/paths.ts`
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/test/routes/catalog/paths.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-browse-pagination-data.md`
-
-Prerequisites:
-
-- Existing filter, page-size, cursor, and ordered compare-slug encoding remain
-  unchanged.
-- First-page visibility remains bounded to a current cursor; next-page
-  visibility remains bounded to next-page state plus a non-empty end cursor.
-- Existing catalog browse route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/paths.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the catalog path module
-- `git diff --check`
-
-Exit condition: the existing framework-free path owner returns exact first-
-and next-page hrefs without mutating filters or ordered compare slugs; React
-retains `Pagination` markup, labels, empty-page recovery behavior, and
-presentation.
-
-### 2. Offer Discovery Pagination Data Contract
+### 1. Offer Discovery Pagination Data Contract
 
 Status: ready
 Lane: Frontend offer-discovery pagination data
@@ -922,7 +902,7 @@ Exit condition: the existing framework-free filter-data owner returns exact
 first- and next-page hrefs without mutating filters; React retains `Pagination`
 markup, labels, and presentation.
 
-### 3. Alert Product Navigation Contract
+### 2. Alert Product Navigation Contract
 
 Status: ready
 Lane: Frontend alert product navigation
@@ -952,6 +932,43 @@ Verification:
 Exit condition: alert-event and watch links use the canonical product-detail
 path builder, including reserved-character encoding, without changing React
 presentation or mutation behavior.
+
+### 3. Merchant Directory Row Data Contract
+
+Status: ready
+Lane: Frontend merchant-directory row data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move merchant result-node projection, detail-path construction,
+and safe website-destination resolution out of `MerchantDirectoryRoute` into
+its existing framework-free view-data owner while leaving Relay reads,
+pagination, filtering, and presentation in their current owners.
+Owned paths:
+
+- `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-directory-row-data.md`
+
+Prerequisites:
+
+- Merchant order, IDs, names, and domains remain unchanged.
+- Detail paths encode the supplied slug, and website links continue using the
+  shared external-destination safety policy.
+- Existing merchant-directory view-data and route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the merchant-directory view-data
+  module
+- `git diff --check`
+
+Exit condition: the framework-free view-data owner returns exact merchant rows
+without mutating inputs; React retains Relay reads, pagination, filtering,
+markup, labels, and presentation.
 
 ## Needs Decision Work
 

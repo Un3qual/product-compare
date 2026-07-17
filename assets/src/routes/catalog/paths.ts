@@ -37,6 +37,32 @@ export function catalogBrowseNextPagePath(
   return catalogBrowsePath(filters, first, after, compareSlugs);
 }
 
+export function buildCatalogBrowsePaginationData({
+  currentAfter,
+  endCursor,
+  filters,
+  first,
+  hasNextPage,
+  selectedCompareSlugs
+}: {
+  readonly currentAfter: string | null;
+  readonly endCursor: string | null;
+  readonly filters: CatalogFilters;
+  readonly first: number;
+  readonly hasNextPage: boolean;
+  readonly selectedCompareSlugs: readonly string[];
+}) {
+  return {
+    firstHref: currentAfter
+      ? catalogBrowseFirstPagePath(filters, first, selectedCompareSlugs)
+      : null,
+    nextHref:
+      hasNextPage && endCursor
+        ? catalogBrowseNextPagePath(filters, first, endCursor, selectedCompareSlugs)
+        : null
+  };
+}
+
 export function catalogBrowseSearchWithNormalizedSort(
   search: string,
   sort: CatalogFilters["sort"]

@@ -1483,16 +1483,16 @@ owns first-page and next-page link visibility and path projection through the
 canonical browse path builders. `BrowseRoute` retains shared `Pagination`
 markup, labels, empty-page recovery behavior, and presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, absent-cursor
+- [x] Write pure tests for current-cursor first-page visibility, absent-cursor
   identity, complete and incomplete next-page facts, filter and page-size
   preservation, ordered compare-slug preservation, cursor encoding, and input
   immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving the
+- [x] Extract only deterministic pagination projection while preserving the
   canonical path builders, current-cursor and Relay next-page bounds, empty-
   result recovery, markup, labels, and presentation.
-- [ ] Run the pure catalog path and browse route suites, TypeScript, the
+- [x] Run the pure catalog path and browse route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1546,6 +1546,34 @@ view-data grouping, Relay mutations, pending/error state, and presentation.
   `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 52: Merchant Directory Row Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- Modify: `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Create: `docs/work/frontend-merchant-directory-row-data.md`
+
+**Interfaces:** The existing framework-free merchant-directory view-data owner
+additionally projects Relay result nodes into exact view rows, including
+encoded detail paths and website destinations resolved by the shared external-
+link safety policy. React retains Relay reads, pagination, visible-page
+filtering, markup, labels, and presentation.
+
+- [ ] Write pure tests for source-order preservation, field projection,
+  reserved-character slug encoding, safe and unsafe website destinations, and
+  input immutability; verify RED.
+- [ ] Extract only deterministic merchant-row projection while preserving the
+  shared external-link policy and every React, Relay, pagination, filtering,
+  and presentation owner.
+- [ ] Run the merchant-directory view-data and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1593,6 +1621,12 @@ view-data grouping, Relay mutations, pending/error state, and presentation.
   the canonical encoded path builder already exists. The alert view-data and
   route suites pass 15 tests, and the candidate is path-disjoint from Tasks
   48-50.
+- Current source inspection on 2026-07-17 found merchant result-node
+  projection, detail-path construction, and safe website-destination
+  resolution still embedded in `MerchantDirectoryRoute`; its framework-free
+  view-data owner currently owns only visible-page filtering. The view-data and
+  route suites pass 31 tests, and the candidate is path-disjoint from Tasks
+  49-51.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the

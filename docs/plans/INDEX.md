@@ -70,8 +70,9 @@ password request, shared-comparison view data, compare-picker visible-option
 data, compare-selection tray view data, and verify-email request data are also
 complete. API-token, affiliate-setup, and feed-candidate pagination data are
 also complete. Merchant-directory pagination data is also complete. Catalog-
-browse, offer-discovery pagination, and alert product navigation are the three
-current ready successors in the live queue.
+browse pagination data is also complete. Offer-discovery pagination, alert
+product navigation, and merchant-directory row data are the three current
+ready successors in the live queue.
 
 Active implementation plans:
 
