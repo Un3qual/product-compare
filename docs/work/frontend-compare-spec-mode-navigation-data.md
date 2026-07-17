@@ -2,23 +2,24 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 109 passing
-  compare route tests.
+- Last verified: 2026-07-17 with 111 passing focused compare navigation and
+  route tests plus a clean TypeScript check.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Compare Specification-Mode Navigation Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move ordered mode labels, canonical destinations, and current
-  state into a framework-free compare mode-data owner.
-- Candidate evidence: `CompareRoute` currently owns the mode rows and derives
-  current state and paths while the compare path owner already defines
-  canonical slug and specification-mode URLs; the route suite passes 109
-  tests.
+- Status: complete on 2026-07-17.
+- Completion evidence: `compare-spec-mode-data.ts` now projects the stable
+  ordered labels, canonical destinations, and exactly one current state while
+  `CompareRoute` retains Radix tabs, links, panels, children, markup, and
+  presentation.
+- Verification: the focused mode-data and compare route suites passed 111
+  tests; `bun run typecheck`, consumer/framework dependency scans, and
+  `git diff --check` passed.
 - Blockers: none.
 
 ## Boundaries

@@ -1919,13 +1919,13 @@ link rendering, accessibility attributes, markup, and presentation.
 ordered labels, canonical destinations, and current state. The React owner
 retains Radix tabs, links, panels, children, markup, and presentation.
 
-- [ ] Write pure tests for stable order and labels, canonical paths, exactly
+- [x] Write pure tests for stable order and labels, canonical paths, exactly
   one current mode, selected-slug order, and input immutability; verify RED.
-- [ ] Move only deterministic specification-mode navigation while preserving
+- [x] Move only deterministic specification-mode navigation while preserving
   Radix tabs, links, panels, children, markup, and presentation.
-- [ ] Run the mode-data and compare route suites, TypeScript, consumer and
+- [x] Run the mode-data and compare route suites, TypeScript, consumer and
   framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1976,8 +1976,37 @@ state, markup, and presentation.
   framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 69: Auth Global Error Visibility Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/auth/errors.ts`
+- Modify: `assets/src/routes/auth/AuthFormShell.tsx`
+- Modify: `assets/test/routes/auth/errors.test.ts`
+- Test: `assets/test/routes/auth/form-shell.test.tsx`
+- Create: `docs/work/frontend-auth-global-error-visibility-data.md`
+
+**Interfaces:** The existing framework-free auth errors owner selects mutation
+errors that belong in the form's global error list from the rendered field
+names. The React owner retains field rendering, error markup, accessibility
+behavior, and presentation.
+
+- [ ] Write pure tests for missing, null, blank, known, and unknown fields,
+  stable order, and input immutability; verify RED.
+- [ ] Move only deterministic error visibility while preserving field
+  rendering, error markup, accessibility behavior, and presentation.
+- [ ] Run the auth errors and form-shell suites, TypeScript, consumer and
+  framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Compare specification-mode navigation completed on 2026-07-17 after the new
+  pure test failed RED because the mode-data module did not exist. The pure and
+  compare route suites then passed 111 tests; TypeScript, consumer and direct
+  dependency scans, and `git diff --check` passed.
 - API-token status-filter navigation completed on 2026-07-17 after the pure
   contract RED failed with 35 passing and 1 failing test because the projection
   function was missing. The pure and route suites then passed 81 tests;

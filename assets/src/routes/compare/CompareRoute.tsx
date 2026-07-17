@@ -28,6 +28,7 @@ import {
   CompareProductSummaryList
 } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
+import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
 import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
@@ -39,15 +40,6 @@ import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome
 } from "./saved-comparison-mutation-data";
-
-const COMPARE_SPEC_MODE_OPTIONS: Array<{
-  label: string;
-  mode: CompareSpecMode;
-}> = [
-  { label: "Shared specs", mode: "shared" },
-  { label: "Differences", mode: "differences" },
-  { label: "All specs", mode: "all" }
-];
 
 const styles = create({
   tabList: {
@@ -297,34 +289,34 @@ function CompareSpecModeControls({
   selectedSlugs: readonly string[];
   specMode: CompareSpecMode;
 }) {
+  const navigation = buildCompareSpecModeNavigationData({ selectedSlugs, specMode });
+
   return (
     <TabsRoot value={specMode}>
       <TabsList aria-label="Specification views" {...props(styles.tabList)}>
-        {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
-          <TabsTrigger asChild key={option.mode} value={option.mode}>
+        {navigation.modes.map((item) => (
+          <TabsTrigger asChild key={item.mode} value={item.mode}>
             <Link
-              aria-current={specMode === option.mode ? "page" : undefined}
-              to={buildComparePathFromSlugs(selectedSlugs, {
-                specMode: option.mode
-              })}
+              aria-current={item.isCurrent ? "page" : undefined}
+              to={item.path}
               {...props(
                 styles.tab,
-                specMode === option.mode ? styles.tabActive : null
+                item.isCurrent ? styles.tabActive : null
               )}
             >
-              {option.label}
+              {item.label}
             </Link>
           </TabsTrigger>
         ))}
       </TabsList>
-      {COMPARE_SPEC_MODE_OPTIONS.map((option) => (
+      {navigation.modes.map((item) => (
         <TabsContent
           forceMount
-          hidden={option.mode !== specMode}
-          key={option.mode}
-          value={option.mode}
+          hidden={!item.isCurrent}
+          key={item.mode}
+          value={item.mode}
         >
-          {option.mode === specMode ? children : null}
+          {item.isCurrent ? children : null}
         </TabsContent>
       ))}
     </TabsRoot>

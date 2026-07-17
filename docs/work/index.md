@@ -1047,46 +1047,21 @@ and route suites pass 16 tests. The successor is path-disjoint from API-token
 status-filter navigation, compare specification-mode navigation, and saved-
 comparison card display data.
 
+Before claiming the compare specification-mode navigation row, current source
+inspection confirmed that auth global-error visibility policy remains embedded
+in `AuthFormShell`, while the existing framework-free auth errors owner already
+owns mutation-error lookup and normalization. Its pure and form-shell suites
+pass 8 tests. The successor is path-disjoint from compare specification-mode
+navigation, saved-comparison card display data, and alert watch-toggle control
+data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Compare Specification-Mode Navigation Data Contract
-
-Status: ready
-Lane: Frontend compare specification-mode navigation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move ordered specification-mode labels, destinations, and current
-state from `CompareRoute` into a framework-free compare mode-data owner.
-Owned paths:
-
-- `assets/src/routes/compare/compare-spec-mode-data.ts`
-- `assets/src/routes/compare/CompareRoute.tsx`
-- `assets/test/routes/compare/compare-spec-mode-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-compare-spec-mode-navigation-data.md`
-
-Prerequisites:
-
-- Shared specs, Differences, and All specs retain their order and labels.
-- Canonical compare paths preserve selected-slug order, shared mode omits the
-  `specs` parameter, and exactly one mode is current.
-- Existing compare route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/compare-spec-mode-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the mode-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable specification-mode
-navigation without changing Radix tabs, links, panels, children, markup, or
-presentation.
-
-### 2. Saved Comparison Card Display Data Contract
+### 1. Saved Comparison Card Display Data Contract
 
 Status: ready
 Lane: Frontend saved comparison card display data
@@ -1121,7 +1096,7 @@ Verification:
 Exit condition: the framework-free owner projects stable saved-comparison card
 copy without changing links, delete actions, markup, or presentation.
 
-### 3. Alert Watch-Toggle Control Data Contract
+### 2. Alert Watch-Toggle Control Data Contract
 
 Status: ready
 Lane: Frontend alert watch-toggle control data
@@ -1154,6 +1129,38 @@ Exit condition: the framework-free owner projects stable watch-toggle control
 data without changing mutation shape, grouping, pending behavior, markup, or
 presentation.
 
+### 3. Auth Global Error Visibility Data Contract
+
+Status: ready
+Lane: Frontend auth global error visibility data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move global-versus-rendered-field error selection from
+`AuthFormShell` into the existing framework-free auth errors owner.
+Owned paths:
+
+- `assets/src/routes/auth/errors.ts`
+- `assets/src/routes/auth/AuthFormShell.tsx`
+- `assets/test/routes/auth/errors.test.ts`
+- `assets/test/routes/auth/form-shell.test.tsx`
+- `docs/work/frontend-auth-global-error-visibility-data.md`
+
+Prerequisites:
+
+- Missing, null, blank, and unknown field errors remain globally visible.
+- Errors for fields rendered by the form remain excluded from the global list.
+- Error order and input values remain unchanged.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/auth/errors.test.ts test/routes/auth/form-shell.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the auth errors module
+- `git diff --check`
+
+Exit condition: the framework-free owner selects globally visible auth errors
+without changing field rendering, error markup, accessibility behavior, or
+presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1163,6 +1170,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Compare specification-mode navigation data completed on 2026-07-17. The new
+framework-free mode-data owner now projects ordered Shared specs, Differences,
+and All specs rows with canonical destinations and exactly one current state,
+while preserving selected-slug order and omitting the shared-mode `specs`
+parameter. `CompareRoute` still owns Radix tabs, links, panels, children,
+markup, and presentation. Its pure and route suites passed 111 tests;
+TypeScript, consumer, dependency, and diff checks are recorded in
+`docs/work/frontend-compare-spec-mode-navigation-data.md`.
 
 API-token status-filter navigation data completed on 2026-07-17. The
 framework-free route-data owner now projects ordered All, Active, and Revoked
