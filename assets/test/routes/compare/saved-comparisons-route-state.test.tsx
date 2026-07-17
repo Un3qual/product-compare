@@ -83,7 +83,9 @@ function buildSavedSet() {
   return {
     id: "saved-set-1",
     name: "Desk setup",
-    products: savedProducts(["chair", "desk"])
+    products: savedProducts(["chair", "desk"]),
+    productCountText: "2 products in this saved comparison",
+    productNamesText: "Ergonomic Chair, Standing Desk"
   };
 }
 

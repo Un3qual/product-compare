@@ -2,23 +2,24 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 54 passing
-  saved-comparison view-state and route-state tests.
+- Last verified: 2026-07-17 after Task 67 moved deterministic card display
+  copy into the framework-free saved view-state owner; 55 saved-comparison
+  view-state and route-state tests pass, as does `cd assets && bun run typecheck`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Saved Comparison Card Display Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move product-count and ordered product-name copy into the
-  existing framework-free saved view-state owner.
-- Candidate evidence: `SavedComparisonSetList` currently derives singular and
-  plural product-count copy and joins ordered product names while the saved
-  view-state owner already owns deterministic saved-set presentation policy;
-  the focused suites pass 54 tests.
+- Status: completed on 2026-07-17.
+- Delivered: the saved view-state owner now projects immutable card display
+  data: singular/plural/zero product-count copy and ordered product-name copy
+  that preserves duplicates.
+- Evidence: focused suites pass 55 tests; TypeScript, the saved-view-state
+  consumer scan, the framework/transport dependency scan, and `git diff --check`
+  pass.
 - Blockers: none.
 
 ## Boundaries

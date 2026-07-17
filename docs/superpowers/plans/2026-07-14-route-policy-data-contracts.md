@@ -1943,13 +1943,13 @@ retains Radix tabs, links, panels, children, markup, and presentation.
 product-count and ordered product-name display copy for a saved comparison.
 The React owner retains links, delete actions, markup, and presentation.
 
-- [ ] Write pure tests for singular, plural, zero, ordered, duplicate, and
+- [x] Write pure tests for singular, plural, zero, ordered, duplicate, and
   immutable product inputs; verify RED.
-- [ ] Move only deterministic card display copy while preserving links, delete
+- [x] Move only deterministic card display copy while preserving links, delete
   actions, markup, and presentation.
-- [ ] Run the saved-comparison view-state and route-state suites, TypeScript,
+- [x] Run the saved-comparison view-state and route-state suites, TypeScript,
   consumer and framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2001,8 +2001,39 @@ behavior, and presentation.
   framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 70: Recommendation Query Input Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/recommendation-route-data.ts`
+- Modify: `assets/src/routes/compare/RecommendationPanel.tsx`
+- Modify: `assets/test/routes/compare/recommendation-route-data.test.ts`
+- Test: `assets/test/routes/compare/recommendation-panel.test.tsx`
+- Create: `docs/work/frontend-recommendation-query-input-data.md`
+
+**Interfaces:** The existing framework-free recommendation route-data owner
+projects collision-safe error-boundary reset identity and GraphQL query
+variables from selected slugs and the current profile. The React owner retains
+Relay, fetch policy, Suspense, error fallback, links, markup, and presentation.
+
+- [ ] Write pure tests for both profile enums, selected-slug order, input
+  immutability, profile reset changes, and delimiter-containing slug-list
+  collisions; verify RED.
+- [ ] Move only deterministic recommendation query input and reset identity,
+  correcting the current delimiter collision while preserving Relay and UI
+  behavior.
+- [ ] Run the recommendation route-data and panel suites, TypeScript, consumer
+  and transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Saved comparison card display data completed on 2026-07-17 after the pure
+  projection test failed RED with one failing and 24 passing tests. The pure
+  and route-state suites then passed 55 tests; TypeScript, consumer and direct
+  dependency scans, and `git diff --check` passed.
 - Final branch review on 2026-07-17 found two transitive dependency-boundary
   regressions hidden by direct-only scans. RED closures reached `saved-data.ts`
   from the saved view owner and `loader.ts` through the API-token status helper.

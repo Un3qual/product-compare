@@ -1,11 +1,16 @@
 export interface SavedComparisonSetSummary {
   id: string;
   name: string;
-  products: Array<{
+  products: readonly {
     name: string;
     slug: string;
-  }>;
+  }[];
 }
+
+export type SavedComparisonSetViewState = SavedComparisonSetSummary & {
+  productCountText: string;
+  productNamesText: string;
+};
 
 export type SavedComparisonsViewInput = {
   readonly status: "ready" | "empty" | "unauthorized";
@@ -54,7 +59,7 @@ export function buildSavedComparisonsViewState<T extends SavedComparisonsViewInp
   );
 
   return {
-    savedSets,
+    savedSets: savedSets.map(buildSavedComparisonSetViewState),
     statusMessage: buildSavedComparisonsStatus(
       loaderData,
       savedSets,
@@ -62,6 +67,18 @@ export function buildSavedComparisonsViewState<T extends SavedComparisonsViewInp
       hasFilter,
       hasLoadedSavedSets
     )
+  };
+}
+
+function buildSavedComparisonSetViewState(
+  savedSet: SavedComparisonSetSummary
+): SavedComparisonSetViewState {
+  const productCount = savedSet.products.length;
+
+  return {
+    ...savedSet,
+    productCountText: `${productCount} ${productCount === 1 ? "product" : "products"} in this saved comparison`,
+    productNamesText: savedSet.products.map(({ name }) => name).join(", ")
   };
 }
 

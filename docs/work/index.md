@@ -1055,48 +1055,21 @@ pass 8 tests. The successor is path-disjoint from compare specification-mode
 navigation, saved-comparison card display data, and alert watch-toggle control
 data.
 
+Before claiming the saved-comparison card display row, current source
+inspection confirmed that recommendation query variables and error-boundary
+reset identity remain embedded in `RecommendationPanel`, while the existing
+framework-free recommendation route-data owner already owns profile and path
+policy. Its pure and panel suites pass 28 tests. The current joined reset token
+also aliases distinct slug lists containing `|`, so the successor has a
+source-backed correctness case and is path-disjoint from all three ready rows.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Saved Comparison Card Display Data Contract
-
-Status: ready
-Lane: Frontend saved comparison card display data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move product-count and ordered product-name display copy from
-`SavedComparisonSetList` into the existing framework-free saved view-state
-owner.
-Owned paths:
-
-- `assets/src/routes/compare/saved-view-state.ts`
-- `assets/src/routes/compare/SavedComparisonSetList.tsx`
-- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-saved-comparison-card-display-data.md`
-
-Prerequisites:
-
-- One product uses the singular label and every other count uses the plural
-  label.
-- Product-name copy preserves source order and duplicate names.
-- Existing saved-comparison view-state and route-state characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the saved view-state
-  module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable saved-comparison card
-copy without changing links, delete actions, markup, or presentation.
-
-### 2. Alert Watch-Toggle Control Data Contract
+### 1. Alert Watch-Toggle Control Data Contract
 
 Status: ready
 Lane: Frontend alert watch-toggle control data
@@ -1129,7 +1102,7 @@ Exit condition: the framework-free owner projects stable watch-toggle control
 data without changing mutation shape, grouping, pending behavior, markup, or
 presentation.
 
-### 3. Auth Global Error Visibility Data Contract
+### 2. Auth Global Error Visibility Data Contract
 
 Status: ready
 Lane: Frontend auth global error visibility data
@@ -1161,6 +1134,42 @@ Exit condition: the framework-free owner selects globally visible auth errors
 without changing field rendering, error markup, accessibility behavior, or
 presentation.
 
+### 3. Recommendation Query Input Data Contract
+
+Status: ready
+Lane: Frontend recommendation query input data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move recommendation query variables and collision-safe reset
+identity from `RecommendationPanel` into the existing framework-free
+recommendation route-data owner.
+Owned paths:
+
+- `assets/src/routes/compare/recommendation-route-data.ts`
+- `assets/src/routes/compare/RecommendationPanel.tsx`
+- `assets/test/routes/compare/recommendation-route-data.test.ts`
+- `assets/test/routes/compare/recommendation-panel.test.tsx`
+- `docs/work/frontend-recommendation-query-input-data.md`
+
+Prerequisites:
+
+- Query variables preserve selected-slug order and map each profile to its
+  existing GraphQL enum.
+- Reset identity changes for profile changes and for distinct slug lists,
+  including lists whose values contain the old `|` delimiter.
+- Existing recommendation route-data and panel characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the
+  recommendation route-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable recommendation query
+input and collision-safe reset identity without changing fetch policy,
+Suspense, error fallback, profile links, markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1170,6 +1179,13 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Saved comparison card display data completed on 2026-07-17. The framework-free
+saved view-state owner now projects singular, plural, and zero product-count
+copy plus ordered product-name copy that preserves duplicates. React retains
+links, delete actions, markup, and presentation. Its pure and route-state
+suites passed 55 tests; TypeScript, dependency, consumer, and diff checks are
+recorded in `docs/work/frontend-saved-comparison-card-display-data.md`.
 
 Compare specification-mode navigation data completed on 2026-07-17. The new
 framework-free mode-data owner now projects ordered Shared specs, Differences,

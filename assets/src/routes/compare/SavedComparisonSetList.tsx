@@ -11,6 +11,7 @@ import { tokens } from "../../ui/theme/tokens.stylex";
 import type { SavedComparisonSetSummary } from "./saved-data";
 import {
   savedComparisonSortModeFromValue,
+  type SavedComparisonSetViewState,
   type SavedComparisonSortMode
 } from "./saved-view-state";
 
@@ -82,7 +83,7 @@ export function SavedComparisonSetList({
   children?: ReactNode;
   controls: SavedComparisonSetListControls;
   pagination: SavedComparisonSetPagination;
-  savedSets: readonly SavedComparisonSetSummary[];
+  savedSets: readonly SavedComparisonSetViewState[];
 }): ReactElement {
   return (
     <WorkspaceLayout
@@ -172,18 +173,15 @@ function SavedComparisonSetItem({
   onDelete: (savedComparisonSetId: string) => void;
   onOpenComparison: (savedSet: SavedComparisonSetSummary) => string;
   pendingDeleteIds: ReadonlySet<string>;
-  savedSet: SavedComparisonSetSummary;
+  savedSet: SavedComparisonSetViewState;
 }) {
   const deletePending = pendingDeleteIds.has(savedSet.id);
-  const productCount = savedSet.products.length;
 
   return (
     <article {...props(styles.savedSet)}>
       <h2 {...props(styles.title)}>{savedSet.name}</h2>
-      <p {...props(styles.metadata)}>
-        {productCount} {productCount === 1 ? "product" : "products"} in this saved comparison
-      </p>
-      <p>{savedSet.products.map(({ name }) => name).join(", ")}</p>
+      <p {...props(styles.metadata)}>{savedSet.productCountText}</p>
+      <p>{savedSet.productNamesText}</p>
       <fieldset {...props(styles.actions)}>
         <legend>Actions for {savedSet.name}</legend>
         <Button asChild variant="soft">

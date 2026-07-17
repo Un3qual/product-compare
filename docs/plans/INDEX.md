@@ -82,8 +82,9 @@ review follow-up characterized independently incomplete, blank, and nullish
 coupon facts with 50 focused tests and the full 1,408-test frontend gate.
 Comparison snapshot pagination cursor data, API-token status-filter navigation
 data, and compare specification-mode navigation data (Tasks 64-66) are
-complete. Saved Comparison Card Display, Alert Watch-Toggle Control, and Auth
-Global Error Visibility are the current ready successors in the live queue.
+complete. Saved Comparison Card Display is also complete. Alert Watch-Toggle
+Control, Auth Global Error Visibility, and Recommendation Query Input are the
+current ready successors in the live queue.
 
 Active implementation plans:
 
