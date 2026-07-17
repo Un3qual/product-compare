@@ -179,6 +179,19 @@ test("buildApiTokenStatusFilterNavigationData projects ordered canonical navigat
   expect(input).toEqual({ tokenStatus: "active" });
 });
 
+test.each(["all", "active", "revoked"] as const)(
+  "buildApiTokenStatusFilterNavigationData marks only %s current",
+  (tokenStatus) => {
+    const currentFilters = buildApiTokenStatusFilterNavigationData({ tokenStatus }).filter(
+      (filter) => filter.isCurrent
+    );
+
+    expect(currentFilters).toEqual([
+      expect.objectContaining({ status: tokenStatus })
+    ]);
+  }
+);
+
 test("buildApiTokenPaginationData returns status-preserving first and next paths", () => {
   expect(
     buildApiTokenPaginationData({
