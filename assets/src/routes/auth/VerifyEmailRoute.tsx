@@ -7,26 +7,30 @@ import verifyEmailMutation, {
 import { commitRouteMutationPromise } from "../relay-mutations";
 import {
   type AuthActionResult,
-  invalidTokenMutationError,
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
 import { AuthFormShell } from "./AuthFormShell";
+import {
+  buildVerifyEmailRequestData,
+  buildVerifyEmailVariables,
+  verifyEmailResultIsCacheable,
+  VERIFY_EMAIL_MISSING_TOKEN_ERROR,
+  VERIFY_EMAIL_SUCCESS_MESSAGE,
+  verifyEmailStatusCopy
+} from "./verify-email-data";
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
 type VerifyEmailCommit = MutationCommitFn<VerifyEmailMutation>;
 
-const missingTokenError = invalidTokenMutationError(
-  "This verification link is missing or invalid."
-);
-
 export function VerifyEmailRoute() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token")?.trim() ?? "";
-  const [errors, setErrors] = useState<MutationError[]>(token ? [] : [missingTokenError]);
-  const [isLoading, setIsLoading] = useState(Boolean(token));
+  const requestData = buildVerifyEmailRequestData(searchParams.get("token"));
+  const token = requestData.token;
+  const [errors, setErrors] = useState<MutationError[]>(requestData.initialErrors);
+  const [isLoading, setIsLoading] = useState(requestData.isLoading);
   const [message, setMessage] = useState<string | null>(null);
   const [commitVerifyEmail] = useMutation<VerifyEmailMutation>(verifyEmailMutation);
   // Only token changes should restart verification; still call the latest Relay commit.
@@ -40,7 +44,7 @@ export function VerifyEmailRoute() {
       if (!token) {
         setIsLoading(false);
         setMessage(null);
-        setErrors([missingTokenError]);
+        setErrors([VERIFY_EMAIL_MISSING_TOKEN_ERROR]);
         return;
       }
 
@@ -58,7 +62,7 @@ export function VerifyEmailRoute() {
         }
 
         if (isSuccessfulActionResult(result)) {
-          setMessage("Your email address is verified.");
+          setMessage(VERIFY_EMAIL_SUCCESS_MESSAGE);
           setErrors([]);
         } else {
           setErrors(result.errors);
@@ -92,7 +96,7 @@ export function VerifyEmailRoute() {
       successMessage={message}
       title="Verify your email"
     >
-      <p>{isLoading ? "Checking your verification link…" : "Verification status is ready."}</p>
+      <p>{verifyEmailStatusCopy(isLoading)}</p>
     </AuthFormShell>
   );
 }
@@ -112,13 +116,13 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
   // but any failed outcome must be evicted so later mounts can retry.
   const request = commitRouteMutationPromise(commitVerifyEmail, {
-    variables: { token }
+    variables: buildVerifyEmailVariables(token)
   })
     .then(({ response, graphQLErrors }) =>
       resolveActionMutationResult(response?.verifyEmail, graphQLErrors)
     )
     .then((result) => {
-      if (!isSuccessfulActionResult(result)) {
+      if (!verifyEmailResultIsCacheable(result)) {
         verificationRequests.delete(token);
       }
 

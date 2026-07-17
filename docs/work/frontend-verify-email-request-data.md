@@ -2,23 +2,23 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 14 passing
-  recovery-route characterization tests.
+- Last verified: 2026-07-16 with 22 passing focused tests and the full
+  repository gate passing 771 backend and 1,312 frontend tests.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Verify-Email Request Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate token normalization, missing-token state and error
-  identity, mutation variables, exact success and status copy, and failed-
-  outcome retry eligibility in a framework-free data owner while retaining the
-  promise cache, single-use request deduplication, Relay orchestration,
-  cancellation lifecycle, hooks, state, markup, and presentation in
-  `VerifyEmailRoute`.
+- Status: done on 2026-07-16 on
+  `codex/frontend-mutation-outcome-contracts`.
+- Outcome: one framework-free data owner now returns normalized request data,
+  the exact shared missing-token error identity, mutation variables, exact
+  success and status copy, and success-only cache eligibility. The route
+  retains the promise cache, single-use request deduplication, Relay lifecycle,
+  cancellation, hooks, state, markup, and presentation.
 - Candidate evidence: current source inspection found those deterministic
   policies embedded in the React route; its recovery-route suite passes 14
   tests and its owned paths do not overlap the three comparison candidates.
@@ -36,7 +36,15 @@
 
 ## Verification
 
+- RED: the new pure suite failed because the framework-free verify-email data
+  module did not exist.
 - `cd assets && bun x vitest run test/routes/auth/verify-email-data.test.ts test/routes/auth/recovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure verify-email data module
-- `git diff --check`
+  passed 22 tests.
+- `cd assets && bun run typecheck` passed.
+- The framework/transport dependency scan found no React, router, Relay,
+  StyleX, transport, or browser-global dependency in the pure verify-email data
+  module.
+- `mix ci` passed 771 backend and 1,312 frontend tests, Relay validation,
+  TypeScript, client and SSR builds, the 6/6 clone budget, and the 182,143-byte
+  initial gzip bundle against the 200,000-byte budget.
+- `git diff --check` passed.

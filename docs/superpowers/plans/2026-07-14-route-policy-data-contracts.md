@@ -1345,16 +1345,16 @@ deduplication, Relay orchestration, commit ref, effect cancellation, hooks,
 state, markup, and presentation; existing auth errors retain action-outcome and
 transport-error normalization.
 
-- [ ] Write pure tests for trimmed, blank, and missing tokens; missing-token
+- [x] Write pure tests for trimmed, blank, and missing tokens; missing-token
   error identity; mutation variables; exact success, loading, and ready copy;
   successful and failed cache eligibility; and input immutability; verify RED.
-- [ ] Extract only deterministic request data while preserving the generated
+- [x] Extract only deterministic request data while preserving the generated
   mutation contract, auth outcome/error owners, successful request reuse,
   failed request eviction, Relay lifecycle, cancellation, state, and
   presentation.
-- [ ] Run the pure verify-email data and existing recovery-route suites,
+- [x] Run the pure verify-email data and existing recovery-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1408,6 +1408,33 @@ presentation.
   canonical path builder, Relay page-info bounds, markup, labels, and
   presentation.
 - [ ] Run the affiliate-setup loader and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 47: Feed-Candidate Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- Modify: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-pagination-data.md`
+
+**Interfaces:** The existing framework-free feed-candidate review-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the existing path builders. `FeedCandidateReviewList` retains shared
+`Pagination` markup, labels, and presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, filter and sort
+  preservation, cursor encoding, and input immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving the
+  existing path builders, Relay page-info bounds, empty-list behavior, markup,
+  labels, and presentation.
+- [ ] Run the pure feed-candidate review-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 

@@ -757,49 +757,30 @@ unchanged catalog-browse and product-detail suites pass 121 tests; the full
 repository gate passes 771 backend and 1,304 frontend tests. The three
 validated successor rows remain ready.
 
+Before claiming Verify-Email Request Data, the coordinator validated a fourth
+non-overlapping successor. Feed-candidate first-page and next-page visibility
+remain embedded in `FeedCandidateReviewList`, while its framework-free review-
+data owner already provides canonical page-size-, filter-, sort-, and cursor-
+preserving paths. Its pure and route suites pass 30 tests. The successor has
+complete owned paths, no blockers, and does not overlap the verify-email, API-
+token, or affiliate-setup rows.
+
+Verify-Email Request Data then completed. One framework-free owner now returns
+normalized request data, the exact shared missing-token error identity,
+mutation variables, exact success and status copy, and success-only cache
+eligibility. React retains the promise cache, single-use request deduplication,
+Relay lifecycle, cancellation, hooks, state, markup, and presentation. Its
+pure and unchanged recovery-route suites pass 22 tests; the full repository
+gate passes 771 backend and 1,312 frontend tests. The three validated successor
+rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Verify-Email Request Data Contract
-
-Status: ready
-Lane: Frontend verify-email request data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move token normalization, missing-token state and error identity,
-mutation variables, exact success and status copy, and failed-outcome retry
-eligibility out of `VerifyEmailRoute` into a framework-free data owner while
-preserving its request cache, single-use deduplication, Relay lifecycle,
-cancellation, hooks, state, markup, and presentation.
-Owned paths:
-
-- `assets/src/routes/auth/verify-email-data.ts`
-- `assets/src/routes/auth/VerifyEmailRoute.tsx`
-- `assets/test/routes/auth/verify-email-data.test.ts`
-- `assets/test/routes/auth/recovery.route.test.tsx`
-- `docs/work/frontend-verify-email-request-data.md`
-
-Prerequisites:
-
-- The generated verify-email mutation shape remains unchanged.
-- Existing auth mutation-result and error normalization remain unchanged.
-- Existing recovery-route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/auth/verify-email-data.test.ts test/routes/auth/recovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure verify-email data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns normalized token/request
-data, missing-token state, exact status copy, and retry eligibility without
-mutating inputs; React retains the request cache, Relay orchestration,
-cancellation, hooks, state, markup, and presentation.
-
-### 2. API Token Pagination Data Contract
+### 1. API Token Pagination Data Contract
 
 Status: ready
 Lane: Frontend API-token pagination data
@@ -834,7 +815,7 @@ Exit condition: the existing framework-free route-data owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
-### 3. Affiliate Setup Pagination Data Contract
+### 2. Affiliate Setup Pagination Data Contract
 
 Status: ready
 Lane: Frontend affiliate-setup pagination data
@@ -867,6 +848,42 @@ Verification:
 - `git diff --check`
 
 Exit condition: the existing framework-free pagination owner returns exact
+first- and next-page hrefs without mutating inputs; React retains `Pagination`
+markup, labels, and presentation.
+
+### 3. Feed-Candidate Pagination Data Contract
+
+Status: ready
+Lane: Frontend feed-candidate pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move first-page and next-page link visibility and path projection
+out of `FeedCandidateReviewList` into its existing framework-free review-data
+owner while preserving the existing first/next path builders and keeping
+pagination markup and labels in React.
+Owned paths:
+
+- `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `docs/work/frontend-feed-candidate-pagination-data.md`
+
+Prerequisites:
+
+- Existing page-size, review-status, sort, and cursor encoding remain
+  unchanged.
+- Link visibility remains bounded to Relay previous/next-page state and the
+  corresponding current or end cursor.
+- Existing feed-candidate review-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the feed-candidate review-data module
+- `git diff --check`
+
+Exit condition: the existing framework-free review-data owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
