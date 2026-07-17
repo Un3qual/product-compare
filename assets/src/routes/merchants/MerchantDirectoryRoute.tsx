@@ -20,7 +20,7 @@ import {
   type MerchantDirectoryLoaderData,
   type MerchantDirectoryPagination
 } from "./loader";
-import { merchantDirectoryPagePath } from "./pagination";
+import { buildMerchantDirectoryPaginationData } from "./pagination";
 
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
@@ -95,13 +95,16 @@ function MerchantDirectoryPanel({
     return <MerchantDirectoryUnavailableFallback />;
   }
 
+  const paginationData = buildMerchantDirectoryPaginationData({
+    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    hasNextPage: data.merchants.pageInfo.hasNextPage,
+    hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
+    pagination
+  });
+
   return (
     <MerchantDirectoryView
-      firstHref={
-        data.merchants.pageInfo.hasPreviousPage && pagination.after
-          ? merchantDirectoryPagePath(pagination)
-          : null
-      }
+      firstHref={paginationData.firstHref}
       merchants={data.merchants.edges.map(({ node }) => ({
         id: node.id,
         name: node.name,
@@ -109,11 +112,7 @@ function MerchantDirectoryPanel({
         detailHref: `/merchants/${node.slug}`,
         websiteHref: externalWebsiteHref(node.domain)
       }))}
-      nextHref={
-        data.merchants.pageInfo.hasNextPage && data.merchants.pageInfo.endCursor
-          ? merchantDirectoryPagePath(pagination, data.merchants.pageInfo.endCursor)
-          : null
-      }
+      nextHref={paginationData.nextHref}
     />
   );
 }

@@ -1456,15 +1456,15 @@ projection through the canonical `merchantDirectoryPagePath` builder.
 `MerchantDirectoryView` retains shared `Pagination` markup, labels, and
 presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
   bounds, complete and incomplete next-page facts, page-size preservation,
   cursor encoding, and input immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving the
+- [x] Extract only deterministic pagination projection while preserving the
   canonical path builder, Relay page-info bounds, markup, labels, and
   presentation.
-- [ ] Run the merchant-directory loader and route suites, TypeScript, the
+- [x] Run the merchant-directory loader and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1522,6 +1522,30 @@ retains shared `Pagination` markup, labels, and presentation.
   the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 51: Alert Product Navigation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-alert-product-navigation.md`
+
+**Interfaces:** Alert-event and watch links use the existing canonical
+`productDetailPath` builder. `AlertsRoute` retains link markup and labels,
+view-data grouping, Relay mutations, pending/error state, and presentation.
+
+- [ ] Add route coverage for alert-event and watch slugs containing reserved
+  characters; verify the current inline destinations characterize the same
+  encoded behavior.
+- [ ] Replace duplicate URL construction with the canonical product-detail
+  path builder without changing ordinary destinations, link labels, grouping,
+  or mutation ownership.
+- [ ] Run the alert view-data and route suites, TypeScript, and
+  `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1564,6 +1588,11 @@ retains shared `Pagination` markup, labels, and presentation.
   product, merchant, active-only, page-size, sort, and cursor policy. The pure
   and route suites pass 60 tests, and the candidate is path-disjoint from Tasks
   47-49.
+- Current source inspection on 2026-07-17 found alert-event and watch product-
+  detail paths still constructed independently in `AlertsRoute` even though
+  the canonical encoded path builder already exists. The alert view-data and
+  route suites pass 15 tests, and the candidate is path-disjoint from Tasks
+  48-50.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the
