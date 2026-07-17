@@ -6,6 +6,7 @@ import { useRoutePreloadedQuery } from "../../relay/route-preload";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import { productDetailPath } from "../products/product-detail-route-data";
 import { getCategoryViewData } from "./category-view-data";
 import type { CategoryLoaderData } from "./loader";
 import categoryRouteQuery from "./queries/CategoryRouteQuery";
@@ -41,7 +42,7 @@ function ReadyCategory({ query }: { query: Extract<CategoryLoaderData, { status:
       {viewData.productRows.length ? (
         <ul aria-label={`${category.name} products`} {...props(styles.list)}>
           {viewData.productRows.map((product) => <li key={product.id} {...props(styles.product)}>
-              <h2 {...props(styles.title)}><Link to={`/products/${product.slug}`}>{product.name}</Link></h2>
+              <h2 {...props(styles.title)}><Link to={productDetailPath(product.slug)}>{product.name}</Link></h2>
               <p {...props(styles.facts)}>{product.brandName} · current qualifying offer evidence available</p>
               <ul aria-label={`${product.name} specification highlights`} {...props(styles.specifications)}>
                 {product.specificationHighlights.map((attribute) => <li key={attribute.attributeId}><strong>{attribute.displayName}:</strong> {attribute.valueText}</li>)}

@@ -910,15 +910,15 @@ used by catalog browse, product detail, and comparison decision summary. React
 retains link markup, labels, and presentation. Its direct path and unchanged
 consumer suites pass 230 tests.
 
+Category Product Navigation then completed. Category product links now use the
+canonical product-detail path builder, so reserved characters remain inside
+one encoded slug segment instead of changing the route path or query. React
+retains link markup, labels, list order, and presentation. Its view-data and
+route suites pass eight tests.
+
 ## Active Work
 
-### Category Product Navigation Contract
-
-Status: active
-Lane: Frontend category product navigation
-Branch: `codex/frontend-navigation-row-contracts`
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: complete Task 54 after Task 53 and record focused verification.
+None.
 
 ## Ready Work
 

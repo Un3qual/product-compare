@@ -1617,14 +1617,14 @@ retain link markup, labels, and presentation.
 `productDetailPath` builder. `CategoryRoute` retains link markup and labels,
 view-data projection, list order, and presentation.
 
-- [ ] Add route coverage for a category product slug containing reserved
+- [x] Add route coverage for a category product slug containing reserved
   characters; verify RED against the current raw interpolation.
-- [ ] Replace duplicate URL construction with the canonical product-detail
+- [x] Replace duplicate URL construction with the canonical product-detail
   path builder without changing ordinary destinations, link labels, list
   order, or presentation.
-- [ ] Run the category view-data and route suites, TypeScript, and
+- [x] Run the category view-data and route suites, TypeScript, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
