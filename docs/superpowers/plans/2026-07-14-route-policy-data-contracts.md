@@ -1564,15 +1564,15 @@ encoded detail paths and website destinations resolved by the shared external-
 link safety policy. React retains Relay reads, pagination, visible-page
 filtering, markup, labels, and presentation.
 
-- [ ] Write pure tests for source-order preservation, field projection,
+- [x] Write pure tests for source-order preservation, field projection,
   reserved-character slug encoding, safe and unsafe website destinations, and
   input immutability; verify RED.
-- [ ] Extract only deterministic merchant-row projection while preserving the
+- [x] Extract only deterministic merchant-row projection while preserving the
   shared external-link policy and every React, Relay, pagination, filtering,
   and presentation owner.
-- [ ] Run the merchant-directory view-data and route suites, TypeScript, the
+- [x] Run the merchant-directory view-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1624,6 +1624,81 @@ view-data projection, list order, and presentation.
   order, or presentation.
 - [ ] Run the category view-data and route suites, TypeScript, and
   `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 55: Revenue Summary Filter-Form Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
+- Modify: `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- Modify: `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- Test: `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- Create: `docs/work/frontend-revenue-filter-form-data.md`
+
+**Interfaces:** The existing framework-free revenue view-data owner returns
+normalized uncontrolled-form values plus a collision-free reset identity.
+`RevenueSummaryView` retains form fields, labels, submission, links, markup,
+and presentation.
+
+- [ ] Write pure tests for nullish and empty values, exact value preservation,
+  reset-identity stability, and delimiter-containing filter combinations that
+  previously collided; verify RED.
+- [ ] Extract only deterministic filter-form projection while preserving the
+  current uncontrolled form and every presentation owner.
+- [ ] Run the pure revenue view-data and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 56: Category Pagination Navigation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/categories/category-view-data.ts`
+- Modify: `assets/test/routes/categories/category-view-data.test.ts`
+- Create: `docs/work/frontend-category-pagination-navigation.md`
+- Test: `assets/test/routes/categories/category.route.test.tsx`
+
+**Interfaces:** The existing framework-free category view-data owner emits a
+next-page path that encodes both the category slug path segment and Relay
+cursor. React retains route loading, pagination markup, labels, and
+presentation.
+
+- [ ] Add a pure reserved-character category-slug case; verify RED against the
+  current raw path interpolation.
+- [ ] Encode only the category path segment without changing cursor bounds,
+  product rows, or presentation.
+- [ ] Run the category view-data and route suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 57: Saved-Comparison Sort Input Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/saved-view-state.ts`
+- Modify: `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- Modify: `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-saved-comparison-sort-input.md`
+
+**Interfaces:** The existing framework-free saved-comparison view-state owner
+normalizes raw select values to the four supported sort modes. The list owner
+retains select events, local state callbacks, options, markup, and
+presentation.
+
+- [ ] Write pure tests for all supported values plus blank, unknown, and future
+  values falling back to current order; verify RED.
+- [ ] Move only deterministic select-value normalization while preserving
+  sorting, filtering, events, and presentation.
+- [ ] Run the pure saved-comparison view-state and route-state suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

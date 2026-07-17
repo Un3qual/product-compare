@@ -890,116 +890,136 @@ and route suites pass 16 tests; the standalone full backend suite passes 771
 tests, and the frontend suite passes 1,351 tests with green client and SSR
 production builds. The three validated successor rows remain ready.
 
+Before claiming Merchant Directory Row Data, the coordinator validated three
+non-overlapping successors from current source and tests. Revenue filter-form
+reset identity remains in React and can collide on delimiter-containing
+values; its focused suites pass 23 tests. Category pagination encodes the
+cursor but not the category slug; its focused suites pass eight tests. Saved-
+comparison select-value normalization remains in React; its focused suites
+pass 48 tests. All three successors have complete owned paths and no blockers.
+
+Merchant Directory Row Data then completed. The existing framework-free owner
+now projects source-ordered Relay result nodes into exact merchant rows with
+encoded detail paths and website destinations resolved through the shared
+external-link safety policy. React retains Relay reads, pagination, filtering,
+markup, labels, and presentation. Its pure and route suites pass 33 tests.
+
 ## Active Work
 
-None.
+### Product Offer Navigation Path Contract
+
+Status: active
+Lane: Frontend product-offer navigation paths
+Branch: `codex/frontend-navigation-row-contracts`
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: complete Task 53 and record focused verification.
+
+### Category Product Navigation Contract
+
+Status: active
+Lane: Frontend category product navigation
+Branch: `codex/frontend-navigation-row-contracts`
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: complete Task 54 after Task 53 and record focused verification.
 
 ## Ready Work
 
-### 1. Merchant Directory Row Data Contract
+### 1. Revenue Summary Filter-Form Data Contract
 
 Status: ready
-Lane: Frontend merchant-directory row data
+Lane: Frontend revenue filter-form data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move merchant result-node projection, detail-path construction,
-and safe website-destination resolution out of `MerchantDirectoryRoute` into
-its existing framework-free view-data owner while leaving Relay reads,
-pagination, filtering, and presentation in their current owners.
+Next action: move nullish form-value normalization and the reset identity from
+`RevenueSummaryView` into its existing framework-free view-data owner, using a
+collision-free identity while leaving form markup and submission unchanged.
 Owned paths:
 
-- `assets/src/routes/merchants/merchant-directory-view-data.ts`
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-directory-row-data.md`
+- `assets/src/routes/commerce/revenue/revenue-summary-view-data.ts`
+- `assets/src/routes/commerce/revenue/RevenueSummaryView.tsx`
+- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- `docs/work/frontend-revenue-filter-form-data.md`
 
 Prerequisites:
 
-- Merchant order, IDs, names, and domains remain unchanged.
-- Detail paths encode the supplied slug, and website links continue using the
-  shared external-destination safety policy.
-- Existing merchant-directory view-data and route characterization remains
-  green.
+- Exact non-null filter values remain unchanged and only nullish values become
+  empty form strings.
+- Network, currency, from, and to each participate in reset identity.
+- Existing revenue view-data and route characterization remains green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/commerce/revenue/revenue-summary.route.test.tsx`
 - `cd assets && bun run typecheck`
-- framework/transport dependency scan of the merchant-directory view-data
-  module
+- framework/transport dependency scan of the revenue view-data module
 - `git diff --check`
 
-Exit condition: the framework-free view-data owner returns exact merchant rows
-without mutating inputs; React retains Relay reads, pagination, filtering,
-markup, labels, and presentation.
+Exit condition: the framework-free owner returns exact form values and a
+collision-free reset identity; React retains labels, fields, submission,
+links, markup, and presentation.
 
-### 2. Product Offer Navigation Path Contract
+### 2. Category Pagination Navigation Contract
 
 Status: ready
-Lane: Frontend product-offer navigation paths
+Lane: Frontend category pagination navigation
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: replace product-scoped offer URL construction in catalog browse,
-product detail, and decision summary with one canonical encoded path builder in
-the existing offer path owner while preserving link markup and labels.
+Next action: encode the category slug as one path segment in the existing
+framework-free next-page path projection while preserving cursor and
+pagination eligibility.
 Owned paths:
 
-- `assets/src/routes/offers/paths.ts`
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/src/routes/compare/DecisionSummary.tsx`
-- `assets/test/routes/offers/paths.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-offer-navigation-paths.md`
+- `assets/src/routes/categories/category-view-data.ts`
+- `assets/test/routes/categories/category-view-data.test.ts`
+- `docs/work/frontend-category-pagination-navigation.md`
 
 Prerequisites:
 
-- Product IDs remain encoded as one `productId` query parameter.
-- Ordinary and reserved product IDs preserve their existing destinations.
-- Existing browse, product-detail, and compare route characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/paths.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the offer path module
-- `git diff --check`
-
-Exit condition: all three product-scoped offer entry points use one canonical
-path builder without changing React link markup, labels, or presentation.
-
-### 3. Category Product Navigation Contract
-
-Status: ready
-Lane: Frontend category product navigation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: replace raw category product-detail URL interpolation in
-`CategoryRoute` with the existing canonical `productDetailPath` builder while
-retaining link markup, labels, list order, and presentation in React.
-Owned paths:
-
-- `assets/src/routes/categories/CategoryRoute.tsx`
-- `assets/test/routes/categories/category.route.test.tsx`
-- `docs/work/frontend-category-product-navigation.md`
-
-Prerequisites:
-
-- Existing canonical product-slug encoding remains unchanged.
-- Category product ordering, link labels, and ordinary-slug destinations remain
-  unchanged.
+- Next-page visibility still requires both `hasNextPage` and a non-empty
+  cursor.
+- The cursor remains encoded as one query value.
 - Existing category view-data and route characterization remains green.
 
 Verification:
 
 - `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
 - `cd assets && bun run typecheck`
+- framework/transport dependency scan of the category view-data module
 - `git diff --check`
 
-Exit condition: category product links use the canonical product-detail path
-builder, including reserved-character encoding, without changing React markup,
-labels, list order, or presentation.
+Exit condition: category pagination encodes both the slug path segment and
+cursor query value without changing pagination eligibility or presentation.
+
+### 3. Saved-Comparison Sort Input Data Contract
+
+Status: ready
+Lane: Frontend saved-comparison sort input
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move raw select-value normalization from
+`SavedComparisonSetList` into its existing framework-free view-state owner.
+Owned paths:
+
+- `assets/src/routes/compare/saved-view-state.ts`
+- `assets/src/routes/compare/SavedComparisonSetList.tsx`
+- `assets/test/routes/compare/saved-comparisons-view-state.test.ts`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-saved-comparison-sort-input.md`
+
+Prerequisites:
+
+- All four supported sort modes remain unchanged.
+- Blank, unknown, and future values fall back to current order.
+- Existing saved-comparison view-state and route-state characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the saved view-state module
+- `git diff --check`
+
+Exit condition: one framework-free owner normalizes saved-comparison sort input
+without changing sorting, filtering, events, markup, or presentation.
 
 ## Needs Decision Work
 

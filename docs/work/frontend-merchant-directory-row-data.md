@@ -2,20 +2,20 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 31 passing
-  merchant-directory view-data and route characterization tests.
+- Last verified: 2026-07-17 with 33 passing merchant-directory view-data and
+  route tests, TypeScript, dependency scan, and diff hygiene.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Merchant Directory Row Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move merchant result-node projection, detail-path construction,
-  and safe website-destination resolution into the existing framework-free
-  merchant-directory view-data owner.
+- Status: done on 2026-07-17.
+- Result: the existing framework-free owner now projects source-ordered result
+  nodes into exact merchant rows with encoded detail paths and website
+  destinations resolved by the shared external-link safety policy.
 - Candidate evidence: current source inspection found this deterministic
   projection in `MerchantDirectoryRoute`; the existing view-data and route
   suites pass 31 tests, and the owned paths do not overlap the catalog-browse,
@@ -38,3 +38,12 @@
 - framework/transport dependency scan of the merchant-directory view-data
   module
 - `git diff --check`
+
+## Completion Evidence
+
+- RED: the two new pure row-projection cases failed because
+  `buildMerchantDirectoryRows` did not exist.
+- GREEN: the view-data and route suites passed 33 tests.
+- The view-data module remains free of React, Relay, router, StyleX, Radix, and
+  generated-query imports.
+- TypeScript and diff hygiene passed on 2026-07-17.

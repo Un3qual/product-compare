@@ -10,11 +10,11 @@ import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { PageShell } from "../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { externalWebsiteHref } from "../external-links";
 import {
   MerchantDirectoryControls,
   MerchantDirectoryView
 } from "./MerchantDirectoryView";
+import { buildMerchantDirectoryRows } from "./merchant-directory-view-data";
 import {
   merchantDirectoryLoader,
   type MerchantDirectoryLoaderData,
@@ -105,13 +105,9 @@ function MerchantDirectoryPanel({
   return (
     <MerchantDirectoryView
       firstHref={paginationData.firstHref}
-      merchants={data.merchants.edges.map(({ node }) => ({
-        id: node.id,
-        name: node.name,
-        domain: node.domain,
-        detailHref: `/merchants/${node.slug}`,
-        websiteHref: externalWebsiteHref(node.domain)
-      }))}
+      merchants={buildMerchantDirectoryRows(
+        data.merchants.edges.map(({ node }) => node)
+      )}
       nextHref={paginationData.nextHref}
     />
   );
