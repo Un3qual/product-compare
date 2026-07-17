@@ -2,23 +2,24 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 16 passing
-  alert view-data and route tests.
+- Last verified: 2026-07-17 with 19 passing alert view-data and route tests,
+  TypeScript, dependency scans, and `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Alert Watch-Toggle Control Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move enabled-state inversion and Pause/Resume copy into the
-  existing framework-free alerts view-data owner.
-- Candidate evidence: `AlertsRoute` currently duplicates the next enabled
-  mutation value and toggle label while the alerts view-data owner already
-  owns deterministic watch presentation policy; the focused suites pass 16
-  tests.
+- Status: completed on 2026-07-17.
+- Completed: `priceWatchToggleControl` now projects immutable next enabled
+  state plus Pause/Resume copy in the framework-free alerts view-data owner;
+  React consumes the projection while retaining mutation orchestration,
+  grouping, pending state, markup, and presentation.
+- Evidence: the pure enabled, disabled, and input-immutability cases were
+  RED (3 failures because the projection was missing), then GREEN alongside
+  the route suite (19 passing tests).
 - Blockers: none.
 
 ## Boundaries

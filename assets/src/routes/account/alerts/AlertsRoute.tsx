@@ -24,6 +24,7 @@ import {
   alertRuleLabel,
   buildAlertsViewData,
   observationDateLabel,
+  priceWatchToggleControl,
   priceWatchLabel
 } from "./alerts-view-data";
 
@@ -87,9 +88,10 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   }
 
   function toggleWatch(watch: WatchSummary) {
+    const control = priceWatchToggleControl(watch);
     return run(watch.id, async () => {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
-        variables: { input: { id: watch.id, enabled: !watch.enabled } }
+        variables: { input: { id: watch.id, enabled: control.nextEnabled } }
       });
       return resolveTogglePriceWatchMutationError(response.updatePriceWatch, graphQLErrors);
     });
@@ -171,15 +173,33 @@ function WatchList({
   return (
     <ul aria-label={ariaLabel} {...props(styles.list)}>
       {watches.map((watch) => (
-        <li key={watch.id} {...props(styles.item)}>
-          <strong><Link to={productDetailPath(watch.productSlug)}>{watch.productName}</Link></strong>
-          <p {...props(styles.meta)}><span>{priceWatchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
-          <div {...props(styles.actions)}>
-            <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{watch.enabled ? "Pause" : "Resume"}</Button>
-            <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
-          </div>
-        </li>
+        <WatchListItem key={watch.id} pendingIds={pendingIds} watch={watch} onDelete={onDelete} onToggle={onToggle} />
       ))}
     </ul>
+  );
+}
+
+function WatchListItem({
+  pendingIds,
+  watch,
+  onDelete,
+  onToggle
+}: {
+  pendingIds: ReadonlySet<string>;
+  watch: WatchSummary;
+  onDelete: (watch: WatchSummary) => Promise<void>;
+  onToggle: (watch: WatchSummary) => Promise<void>;
+}) {
+  const control = priceWatchToggleControl(watch);
+
+  return (
+    <li {...props(styles.item)}>
+      <strong><Link to={productDetailPath(watch.productSlug)}>{watch.productName}</Link></strong>
+      <p {...props(styles.meta)}><span>{priceWatchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
+      <div {...props(styles.actions)}>
+        <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{control.label}</Button>
+        <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
+      </div>
+    </li>
   );
 }

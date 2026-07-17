@@ -1968,13 +1968,13 @@ the next enabled state and Pause/Resume label for a watch-toggle control. The
 React owner retains generated types, mutation orchestration, grouping, pending
 state, markup, and presentation.
 
-- [ ] Write pure tests for enabled and disabled watches plus input
+- [x] Write pure tests for enabled and disabled watches plus input
   immutability; verify RED.
-- [ ] Move only deterministic watch-toggle control data while preserving the
+- [x] Move only deterministic watch-toggle control data while preserving the
   mutation shape, grouping, pending behavior, markup, and presentation.
-- [ ] Run the alert view-data and route suites, TypeScript, consumer and
+- [x] Run the alert view-data and route suites, TypeScript, consumer and
   framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2028,8 +2028,36 @@ Relay, fetch policy, Suspense, error fallback, links, markup, and presentation.
   and transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 71: Offer Discovery Scope Badge Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- Modify: `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-discovery-scope-badge-data.md`
+
+**Interfaces:** The existing framework-free offer filter-data owner projects
+the active/all scope label and badge tone. The React owner retains filtering,
+offer ordering, StatusBadge markup, and presentation.
+
+- [ ] Write pure tests for both active-only states and input immutability;
+  verify RED.
+- [ ] Move only deterministic scope badge data while preserving filtering,
+  ordering, markup, and presentation.
+- [ ] Run the offer filter-data and route suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Alert watch-toggle control data completed on 2026-07-17 after three pure
+  cases failed RED because the projection was missing. The pure and route
+  suites then passed 19 tests; TypeScript, consumer and dependency scans, and
+  `git diff --check` passed.
 - Saved comparison card display data completed on 2026-07-17 after the pure
   projection test failed RED with one failing and 24 passing tests. The pure
   and route-state suites then passed 55 tests; TypeScript, consumer and direct

@@ -1063,46 +1063,20 @@ policy. Its pure and panel suites pass 28 tests. The current joined reset token
 also aliases distinct slug lists containing `|`, so the successor has a
 source-backed correctness case and is path-disjoint from all three ready rows.
 
+Before claiming the alert watch-toggle control row, current source inspection
+confirmed that active/all offer scope label and badge tone remain embedded in
+`OfferDiscoveryList`, while the existing framework-free filter-data owner
+already owns the same active-only status semantics. Its pure and route suites
+pass 73 tests. The successor is path-disjoint from alert toggle, auth error
+visibility, and recommendation query input.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Alert Watch-Toggle Control Data Contract
-
-Status: ready
-Lane: Frontend alert watch-toggle control data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move enabled-state inversion and Pause/Resume copy from
-`AlertsRoute` into the existing framework-free alerts view-data owner.
-Owned paths:
-
-- `assets/src/routes/account/alerts/alerts-view-data.ts`
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-alert-watch-toggle-control-data.md`
-
-Prerequisites:
-
-- Enabled watches project a disabled mutation value and Pause label.
-- Disabled watches project an enabled mutation value and Resume label.
-- Existing alert view-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the alerts view-data
-  module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable watch-toggle control
-data without changing mutation shape, grouping, pending behavior, markup, or
-presentation.
-
-### 2. Auth Global Error Visibility Data Contract
+### 1. Auth Global Error Visibility Data Contract
 
 Status: ready
 Lane: Frontend auth global error visibility data
@@ -1134,7 +1108,7 @@ Exit condition: the framework-free owner selects globally visible auth errors
 without changing field rendering, error markup, accessibility behavior, or
 presentation.
 
-### 3. Recommendation Query Input Data Contract
+### 2. Recommendation Query Input Data Contract
 
 Status: ready
 Lane: Frontend recommendation query input data
@@ -1170,6 +1144,38 @@ Exit condition: the framework-free owner projects stable recommendation query
 input and collision-safe reset identity without changing fetch policy,
 Suspense, error fallback, profile links, markup, or presentation.
 
+### 3. Offer Discovery Scope Badge Data Contract
+
+Status: ready
+Lane: Frontend offer discovery scope badge data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move active/all offer scope label and badge-tone policy from
+`OfferDiscoveryList` into the existing framework-free offer filter-data owner.
+Owned paths:
+
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-offer-discovery-scope-badge-data.md`
+
+Prerequisites:
+
+- Active-only filters retain the Active offers label and positive tone.
+- All-offer filters retain the All offers label and neutral tone.
+- Existing offer filter-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the offer
+  filter-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable offer-scope badge
+data without changing filtering, offer ordering, markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1179,6 +1185,13 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Alert watch-toggle control data completed on 2026-07-17. The framework-free
+alerts view-data owner now projects the next enabled state and Pause/Resume
+copy. React retains generated types, mutation orchestration and shape,
+grouping, pending state, markup, and presentation. Its pure and route suites
+passed 19 tests; TypeScript, dependency, consumer, and diff checks are recorded
+in `docs/work/frontend-alert-watch-toggle-control-data.md`.
 
 Saved comparison card display data completed on 2026-07-17. The framework-free
 saved view-state owner now projects singular, plural, and zero product-count
