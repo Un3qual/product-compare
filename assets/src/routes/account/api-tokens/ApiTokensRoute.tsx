@@ -31,8 +31,8 @@ import {
 } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
 import {
-  apiTokenPagePath,
   apiTokensRouteLocationIdentity,
+  buildApiTokenPaginationData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
   buildRotateApiTokenVariables,
@@ -366,11 +366,18 @@ function ApiTokenPagination({
   hasNextPage: boolean;
   tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
 }) {
+  const paginationData = buildApiTokenPaginationData({
+    after,
+    endCursor,
+    hasNextPage,
+    tokenStatus
+  });
+
   return (
     <Pagination
-      firstHref={after ? apiTokenPagePath(tokenStatus, null) : null}
+      firstHref={paginationData.firstHref}
       label="API token pages"
-      nextHref={hasNextPage && endCursor ? apiTokenPagePath(tokenStatus, endCursor) : null}
+      nextHref={paginationData.nextHref}
     />
   );
 }

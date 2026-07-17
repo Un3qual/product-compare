@@ -21,6 +21,29 @@ export function merchantDirectoryPagePath(
   return `/merchants?${params.toString()}`;
 }
 
+export function buildMerchantDirectoryPaginationData({
+  endCursor,
+  hasNextPage,
+  hasPreviousPage,
+  pagination
+}: {
+  readonly endCursor: string | null;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+  readonly pagination: Readonly<MerchantPagination>;
+}) {
+  return {
+    firstHref:
+      hasPreviousPage && pagination.after
+        ? merchantDirectoryPagePath(pagination)
+        : null,
+    nextHref:
+      hasNextPage && endCursor
+        ? merchantDirectoryPagePath(pagination, endCursor)
+        : null
+  };
+}
+
 export function merchantPaginationFromUrl(url: URL): MerchantPagination {
   return {
     first: normalizeMerchantPageSize(url.searchParams.get("first")),

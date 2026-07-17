@@ -5,14 +5,27 @@ import {
   buildNetworkVariables,
   buildProgramVariables,
   getMerchantChoiceById,
-  getMerchantSummary
+  getMerchantSummary,
+  resolveAffiliateCouponMutationOutcome,
+  resolveAffiliateLinkMutationOutcome,
+  resolveAffiliateNetworkMutationOutcome,
+  resolveAffiliateProgramMutationOutcome
 } from "../../../../src/routes/affiliate/setup/affiliate-setup-data";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
 
 const FIRST_MERCHANT = {
   id: "merchant-1",
   name: "Acme Market",
   domain: "acme.example"
 };
+
+const MUTATION_ERROR = {
+  code: "INVALID_ARGUMENT",
+  field: "name",
+  message: "Affiliate data is invalid."
+} as const;
+
+const GRAPHQL_ERROR = { message: "Private GraphQL failure" } as const;
 
 test("buildMerchantChoices filters invalid merchant nodes while preserving valid choices", () => {
   expect(
@@ -121,4 +134,91 @@ test("buildCouponVariables preserves the full mutation shape and normalizes opti
       terms: "Select items only"
     }
   });
+});
+
+test("affiliate setup mutation outcomes preserve each complete fact and its identity", () => {
+  const network = Object.freeze({ id: "network-1", name: "Impact" });
+  const program = Object.freeze({ id: "program-1", merchantId: "merchant-1" });
+  const link = Object.freeze({ id: "link-1", affiliateUrl: "https://network.example/track" });
+  const coupon = Object.freeze({ id: "coupon-1", code: "SAVE20" });
+  const errors = Object.freeze([MUTATION_ERROR]);
+
+  const outcomes = [
+    [network, resolveAffiliateNetworkMutationOutcome({ network, errors }, [])],
+    [program, resolveAffiliateProgramMutationOutcome({ program, errors }, [])],
+    [link, resolveAffiliateLinkMutationOutcome({ link, errors }, [])],
+    [coupon, resolveAffiliateCouponMutationOutcome({ coupon, errors }, [])]
+  ] as const;
+
+  for (const [fact, outcome] of outcomes) {
+    expect(outcome).toEqual({ error: null, result: fact });
+    expect(outcome.result).toBe(fact);
+  }
+  expect(errors).toEqual([MUTATION_ERROR]);
+});
+
+test.each([
+  [
+    "network",
+    () => resolveAffiliateNetworkMutationOutcome(undefined, []),
+    () => resolveAffiliateNetworkMutationOutcome({ network: null, errors: [MUTATION_ERROR] }, [])
+  ],
+  [
+    "program",
+    () => resolveAffiliateProgramMutationOutcome(null, []),
+    () => resolveAffiliateProgramMutationOutcome({ program: null, errors: [MUTATION_ERROR] }, [])
+  ],
+  [
+    "link",
+    () => resolveAffiliateLinkMutationOutcome({}, []),
+    () => resolveAffiliateLinkMutationOutcome({ link: null, errors: [MUTATION_ERROR] }, [])
+  ],
+  [
+    "coupon",
+    () => resolveAffiliateCouponMutationOutcome(undefined, []),
+    () => resolveAffiliateCouponMutationOutcome({ coupon: null, errors: [MUTATION_ERROR] }, [])
+  ]
+] as const)(
+  "%s outcome uses shared errors for missing payloads and null facts",
+  (_kind, resolveMissing, resolveNullFact) => {
+    expect(resolveMissing()).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, result: null });
+    expect(resolveNullFact()).toEqual({ error: MUTATION_ERROR.message, result: null });
+  }
+);
+
+test.each([
+  [
+    "network",
+    () =>
+      resolveAffiliateNetworkMutationOutcome(
+        { network: { id: "network-1" }, errors: [MUTATION_ERROR] },
+        [GRAPHQL_ERROR]
+      )
+  ],
+  [
+    "program",
+    () =>
+      resolveAffiliateProgramMutationOutcome(
+        { program: { id: "program-1" }, errors: [MUTATION_ERROR] },
+        [GRAPHQL_ERROR]
+      )
+  ],
+  [
+    "link",
+    () =>
+      resolveAffiliateLinkMutationOutcome(
+        { link: { id: "link-1" }, errors: [MUTATION_ERROR] },
+        [GRAPHQL_ERROR]
+      )
+  ],
+  [
+    "coupon",
+    () =>
+      resolveAffiliateCouponMutationOutcome(
+        { coupon: { id: "coupon-1" }, errors: [MUTATION_ERROR] },
+        [GRAPHQL_ERROR]
+      )
+  ]
+] as const)("%s outcome gives top-level GraphQL errors precedence", (_kind, resolveOutcome) => {
+  expect(resolveOutcome()).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, result: null });
 });

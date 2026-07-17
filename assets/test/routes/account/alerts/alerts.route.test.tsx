@@ -112,6 +112,27 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
   expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
 });
 
+test("AlertsRoute encodes alert and watch product slugs in detail links", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [{ id: "event-1", productName: "Alert Display", productSlug: "alert /+?", merchantName: "Shop", ruleType: "TARGET_PRICE", currency: "USD", landedPrice: "90", observedAt: "2026-07-13T20:00:00Z", readAt: null }],
+    watches: [{ id: "watch-1", productName: "Watch Display", productSlug: "watch /+?", merchantName: null, ruleType: "TARGET_PRICE", currency: "USD", targetAmount: "100", percentageDrop: null, baselineLandedPrice: "120", enabled: true }],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  expect(screen.getByRole("link", { name: "Alert Display" })).toHaveAttribute(
+    "href",
+    "/products/alert%20%2F%2B%3F"
+  );
+  expect(screen.getByRole("link", { name: "Watch Display" })).toHaveAttribute(
+    "href",
+    "/products/watch%20%2F%2B%3F"
+  );
+});
+
 test("AlertsRoute keeps paused watches visible and resumes them", async () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

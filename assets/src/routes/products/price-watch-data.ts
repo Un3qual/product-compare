@@ -1,3 +1,8 @@
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
+
 export type PriceWatchRuleType =
   | "TARGET_PRICE"
   | "PERCENTAGE_DROP"
@@ -18,6 +23,23 @@ export type CreatePriceWatchInput = {
   targetAmount?: string;
   percentageDrop?: string;
 };
+
+export type CreatePriceWatchPayload = {
+  readonly errors?: unknown;
+  readonly watch?: unknown;
+};
+
+export const PRICE_WATCH_CREATED_MESSAGE =
+  "Watch created. New qualifying changes will appear in your inbox.";
+
+export function resolveCreatePriceWatchMutationMessage(
+  payload: CreatePriceWatchPayload | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return payload?.watch && !hasRouteGraphQLErrors(graphQLErrors)
+    ? PRICE_WATCH_CREATED_MESSAGE
+    : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+}
 
 export function needsPriceWatchAmount(ruleType: PriceWatchRuleType) {
   return ruleType === "TARGET_PRICE" || ruleType === "PERCENTAGE_DROP";

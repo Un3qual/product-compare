@@ -5,6 +5,7 @@ import {
   preloadRouteQuery
 } from "../../../src/relay/route-preload";
 import { merchantDirectoryLoader } from "../../../src/routes/merchants/loader";
+import { buildMerchantDirectoryPaginationData } from "../../../src/routes/merchants/pagination";
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
@@ -24,6 +25,87 @@ const MERCHANT_DIRECTORY_QUERY_TEXT =
 
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
+});
+
+test("buildMerchantDirectoryPaginationData returns page-size-preserving first and next paths", () => {
+  expect(
+    buildMerchantDirectoryPaginationData({
+      endCursor: "next cursor/+",
+      hasNextPage: true,
+      hasPreviousPage: true,
+      pagination: {
+        after: "current-cursor",
+        first: 35
+      }
+    })
+  ).toEqual({
+    firstHref: "/merchants?first=35",
+    nextHref: "/merchants?first=35&after=next+cursor%2F%2B"
+  });
+});
+
+test.each([
+  [false, "current-cursor"],
+  [true, null]
+] as const)(
+  "buildMerchantDirectoryPaginationData hides incomplete first-page facts",
+  (hasPreviousPage, after) => {
+    expect(
+      buildMerchantDirectoryPaginationData({
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage,
+        pagination: {
+          after,
+          first: 20
+        }
+      }).firstHref
+    ).toBeNull();
+  }
+);
+
+test.each([
+  [false, "next-cursor"],
+  [true, null]
+] as const)(
+  "buildMerchantDirectoryPaginationData hides incomplete next-page facts",
+  (hasNextPage, endCursor) => {
+    expect(
+      buildMerchantDirectoryPaginationData({
+        endCursor,
+        hasNextPage,
+        hasPreviousPage: false,
+        pagination: {
+          after: null,
+          first: 20
+        }
+      }).nextHref
+    ).toBeNull();
+  }
+);
+
+test("buildMerchantDirectoryPaginationData does not mutate its input", () => {
+  const input = Object.freeze({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: Object.freeze({
+      after: "current-cursor",
+      first: 50
+    })
+  });
+
+  buildMerchantDirectoryPaginationData(input);
+
+  expect(input).toEqual({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: {
+      after: "current-cursor",
+      first: 50
+    }
+  });
 });
 
 test("merchantDirectoryLoader preloads the default merchant page", async () => {

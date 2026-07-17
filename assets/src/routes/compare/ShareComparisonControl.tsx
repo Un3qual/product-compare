@@ -8,7 +8,7 @@ import type { RevokeComparisonSnapshotMutation } from "../../__generated__/Revok
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./loader";
 import {
   recommendationProfileFromUrl,
@@ -22,9 +22,10 @@ import {
   buildComparisonSnapshotPublishInput,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
-  publishedSnapshotFromPayload,
   publishComparisonSnapshotState,
   revokeComparisonSnapshotState,
+  resolvePublishComparisonSnapshotMutationOutcome,
+  resolveRevokeComparisonSnapshotMutationOutcome,
   snapshotFromNode,
   type ComparisonSnapshotState,
   type PublishedComparisonSnapshot
@@ -207,10 +208,14 @@ function useSnapshotPublisher(
         variables: { input }
       });
       const payload = response.publishComparisonSnapshot;
-      const snapshot = publishedSnapshotFromPayload(payload, input.title ?? null);
+      const outcome = resolvePublishComparisonSnapshotMutationOutcome(
+        payload,
+        input.title ?? null,
+        graphQLErrors
+      );
 
-      if (snapshot) onPublished(snapshot);
-      else onMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      if (outcome.error === null) onPublished(outcome.snapshot);
+      else onMessage(outcome.error);
     } catch {
       onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }
@@ -231,9 +236,14 @@ function useSnapshotRevoker(
         variables: { snapshotId: snapshot.id }
       });
       const payload = response.revokeComparisonSnapshot;
+      const outcome = resolveRevokeComparisonSnapshotMutationOutcome(
+        payload,
+        snapshot,
+        graphQLErrors
+      );
 
-      if (payload?.revokedSnapshotId) onRevoked(snapshot);
-      else onMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      if (outcome.error === null) onRevoked(outcome.snapshot);
+      else onMessage(outcome.error);
     } catch {
       onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }

@@ -1,3 +1,8 @@
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../../route-errors";
+
 export type AffiliateSetupFormValues = Readonly<Record<string, string | undefined>>;
 
 export type MerchantChoice = {
@@ -24,6 +29,54 @@ export type AffiliateCouponDiscountType =
   | "OTHER"
   | "PERCENT"
   | "%future added value";
+
+type AffiliateSetupMutationPayload = {
+  readonly errors?: unknown;
+};
+
+export type AffiliateSetupMutationOutcome<T> =
+  | { readonly error: null; readonly result: T }
+  | { readonly error: string; readonly result: null };
+
+export function resolveAffiliateNetworkMutationOutcome<T extends object>(
+  payload:
+    | (AffiliateSetupMutationPayload & { readonly network?: T | null })
+    | null
+    | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveAffiliateSetupMutationOutcome(payload?.network, payload?.errors, graphQLErrors);
+}
+
+export function resolveAffiliateProgramMutationOutcome<T extends object>(
+  payload:
+    | (AffiliateSetupMutationPayload & { readonly program?: T | null })
+    | null
+    | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveAffiliateSetupMutationOutcome(payload?.program, payload?.errors, graphQLErrors);
+}
+
+export function resolveAffiliateLinkMutationOutcome<T extends object>(
+  payload:
+    | (AffiliateSetupMutationPayload & { readonly link?: T | null })
+    | null
+    | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors, graphQLErrors);
+}
+
+export function resolveAffiliateCouponMutationOutcome<T extends object>(
+  payload:
+    | (AffiliateSetupMutationPayload & { readonly coupon?: T | null })
+    | null
+    | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveAffiliateSetupMutationOutcome(payload?.coupon, payload?.errors, graphQLErrors);
+}
 
 export function buildMerchantChoices(
   merchants: AffiliateSetupMerchantConnection | null | undefined
@@ -132,4 +185,19 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
   const date = new Date(value);
 
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function resolveAffiliateSetupMutationOutcome<T extends object>(
+  result: T | null | undefined,
+  errors: unknown,
+  graphQLErrors?: readonly unknown[] | null
+): AffiliateSetupMutationOutcome<T> {
+  if (result && !hasRouteGraphQLErrors(graphQLErrors)) {
+    return { error: null, result };
+  }
+
+  return {
+    error: routeMutationErrorMessage(errors, graphQLErrors),
+    result: null
+  };
 }

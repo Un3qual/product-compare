@@ -1077,16 +1077,16 @@ mutation payloads and the existing shared route-error policy.
 `ProductCommunityPanel` retains FormData, Relay mutation promises, pending
 state, input adaptation, feedback placement, pagination, markup, and styling.
 
-- [ ] Write pure tests for review, question, and answer success copy; missing
+- [x] Write pure tests for review, question, and answer success copy; missing
   and null completion facts; payload and top-level GraphQL errors; complete
   facts that coexist with payload or top-level errors; shared default fallback;
   and input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current fact-first success semantics, generated mutation contracts, authored-
   text normalization, Relay promise handling, pending state, and shared errors.
-- [ ] Run the pure community-data and existing community-panel suites,
+- [x] Run the pure community-data and existing community-panel suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1107,17 +1107,17 @@ original complete fact or the existing shared route error.
 in-flight and pending guards, selected state, feedback placement, markup, and
 presentation.
 
-- [ ] Write pure tests for each operation's complete fact and identity; missing
+- [x] Write pure tests for each operation's complete fact and identity; missing
   and null facts; top-level GraphQL-error precedence; payload and default
   errors; complete facts that also contain payload errors; and input
   immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   generated mutation contracts, top-level error precedence, current payload-
   error success behavior, Relay promise handling, guards, state, and shared
   errors.
-- [ ] Run the pure setup-data and existing affiliate setup route suites,
+- [x] Run the pure setup-data and existing affiliate setup route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1138,16 +1138,491 @@ shared route error. `ShareComparisonControl` retains FormData and location
 adaptation, Relay mutation promises, hooks, component state and callbacks,
 snapshot paging, markup, and styling.
 
-- [ ] Write pure tests for complete publish projection and revoke identity;
+- [x] Write pure tests for complete publish projection and revoke identity;
   missing and null publish IDs, share paths, payloads, and revoke facts;
   payload and top-level GraphQL errors on incomplete facts; complete facts
   that coexist with payload or top-level errors; shared default fallback; and
   input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current fact-first success semantics, generated mutation contracts, Relay
   promise handling, local state transitions, callbacks, and shared errors.
-- [ ] Run the pure share-comparison and existing comparison-snapshots suites,
+- [x] Run the pure share-comparison and existing comparison-snapshots suites,
   TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 38: Price-Watch Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Modify: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free price-watch data module
+additionally owns structural create-watch completion as the exact success copy
+or the existing shared route error. `PriceWatchControl` retains FormData
+adaptation, Relay mutation promises, product-keyed reset, rule and pending
+state, feedback placement, markup, and styling.
+
+- [x] Write pure tests for success copy; missing and null watches and payloads;
+  payload and top-level GraphQL errors; a complete watch that coexists with
+  payload or top-level errors; shared default fallback; and input immutability;
+  verify RED.
+- [x] Extract only deterministic completion interpretation while preserving
+  current fact-first success semantics, the generated mutation contract,
+  input normalization, Relay promise handling, keyed reset, pending state, and
+  shared errors.
+- [x] Run the pure price-watch and existing alerts-route suites, TypeScript,
+  the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 39: Tracked-Commerce Click Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- Modify: `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- Modify: `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Modify: `docs/work/frontend-tracked-commerce-click-data.md`
+
+**Interfaces:** The existing framework-free tracked-commerce data module
+additionally owns structural mutation completion as a resolved same-origin
+redirect URL or the existing shared route error. `TrackedCommerceClickAction`
+retains event handling, Relay mutation orchestration, pending and error state,
+browser navigation, markup, and presentation.
+
+- [x] Write pure tests for resolved redirect success; missing and null paths
+  and payloads; payload and top-level GraphQL errors; unsafe redirect paths;
+  shared default fallback; and input immutability; verify RED.
+- [x] Extract only deterministic completion interpretation while preserving
+  current success requirements, the generated mutation contract, same-origin
+  validation, Relay lifecycle, navigation, component state, and shared errors.
+- [x] Run the pure tracked-commerce data and existing offer-discovery suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 40: Reset-Password Request Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/auth/reset-password-data.ts`
+- Modify: `assets/src/routes/auth/ResetPasswordRoute.tsx`
+- Create: `assets/test/routes/auth/reset-password-data.test.ts`
+- Test: `assets/test/routes/auth/recovery.route.test.tsx`
+- Create: `docs/work/frontend-reset-password-request-data.md`
+
+**Interfaces:** A framework-free reset-password data module owns token
+normalization, missing-token state, mutation-variable construction, exact
+success copy, and stale-response eligibility. `ResetPasswordRoute` retains URL
+and FormData adaptation, Relay mutation orchestration, request-version
+ownership, hooks, state, markup, and presentation; existing auth errors retain
+outcome and transport-error normalization.
+
+- [x] Write pure tests for trimmed, blank, and missing tokens; missing-token
+  error identity; mutation variables; exact success copy; current and stale
+  request versions; and input immutability; verify RED.
+- [x] Extract only deterministic request data while preserving the generated
+  mutation contract, auth outcome/error owners, Relay lifecycle, stale-response
+  suppression, hooks, component state, and presentation.
+- [x] Run the pure reset-password data and existing recovery-route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 41: Shared Comparison View Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
+- Modify: `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
+- Create: `assets/test/routes/compare/shared-comparison-view-data.test.ts`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-shared-comparison-view-data.md`
+
+**Interfaces:** A framework-free shared-comparison view-data module owns
+captured recommendation selection, exact fallback copy, product and offer fact
+projection, and the ordered live-comparison path. `SharedComparisonRoute`
+retains route state, Relay query reads, semantic markup, StyleX presentation,
+and existing date formatting.
+
+- [x] Write pure tests for winner and unsupported states; title, brand, model,
+  claim-evidence, and offer fallbacks; ordered live-comparison paths; malformed
+  nullable collections; and deep input immutability; verify RED.
+- [x] Extract only deterministic view projection while preserving the generated
+  query contract, date and compare-path policy owners, Relay lifecycle, route
+  state, semantic markup, and presentation.
+- [x] Run the pure shared-comparison view-data and existing snapshot-route
+  suites, TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 42: Compare Picker Visible-Option Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/compare-picker-data.ts`
+- Modify: `assets/src/routes/compare/CompareProductPickerView.tsx`
+- Modify: `assets/test/routes/compare/compare-picker-data.test.ts`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-compare-picker-visible-option-data.md`
+
+**Interfaces:** The existing framework-free compare-picker data module
+additionally owns filter normalization, case-insensitive visible-option
+selection, source-order preservation, and exact empty-state copy.
+`CompareProductPickerView` retains local state, generated IDs, input events,
+actions, markup, and presentation.
+
+- [x] Write pure tests for trimmed and case-insensitive filtering, blank
+  filters, source order, no matches, exact empty-state copy, stable identity,
+  and deep input immutability; verify RED.
+- [x] Extract only deterministic visible-option policy while preserving picker
+  option identity, paths, pagination, loaded-page bounds, local state, IDs,
+  events, actions, markup, and presentation.
+- [x] Run the pure compare-picker data and existing compare-route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 43: Compare-Selection Tray View Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/compare-selection-tray-data.ts`
+- Modify: `assets/src/routes/compare/CompareSelectionTray.tsx`
+- Create: `assets/test/routes/compare/compare-selection-tray-data.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Create: `docs/work/frontend-compare-selection-tray-view-data.md`
+
+**Interfaces:** A framework-free compare-selection tray data module owns exact
+selection-count copy, exact-slug label resolution with slug fallback, ordered
+removal-path projection, and open-action visibility. `CompareSelectionTray`
+retains generated IDs, semantic markup, links, buttons, StyleX presentation,
+and events; callers retain open-comparison and removal-path policy.
+
+- [x] Write pure tests for zero and bounded selection copy, exact-slug label
+  resolution and fallback, source order, projected removal paths, open-action
+  visibility, stable empty identity, and deep input immutability; verify RED.
+- [x] Extract only deterministic tray view data while preserving caller-owned
+  route policy, selected-slug identity and order, generated IDs, semantic
+  markup, actions, events, and presentation.
+- [x] Run the pure tray data plus existing catalog-browse and product-detail
+  consumer suites, TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 44: Verify-Email Request Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/auth/verify-email-data.ts`
+- Modify: `assets/src/routes/auth/VerifyEmailRoute.tsx`
+- Create: `assets/test/routes/auth/verify-email-data.test.ts`
+- Test: `assets/test/routes/auth/recovery.route.test.tsx`
+- Create: `docs/work/frontend-verify-email-request-data.md`
+
+**Interfaces:** A framework-free verify-email data module owns token
+normalization, missing-token state and error identity, mutation-variable
+construction, exact success and status copy, and failed-outcome retry
+eligibility. `VerifyEmailRoute` retains the promise cache, successful request
+deduplication, Relay orchestration, commit ref, effect cancellation, hooks,
+state, markup, and presentation; existing auth errors retain action-outcome and
+transport-error normalization.
+
+- [x] Write pure tests for trimmed, blank, and missing tokens; missing-token
+  error identity; mutation variables; exact success, loading, and ready copy;
+  successful and failed cache eligibility; and input immutability; verify RED.
+- [x] Extract only deterministic request data while preserving the generated
+  mutation contract, auth outcome/error owners, successful request reuse,
+  failed request eviction, Relay lifecycle, cancellation, state, and
+  presentation.
+- [x] Run the pure verify-email data and existing recovery-route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 45: API Token Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-pagination-data.md`
+
+**Interfaces:** The existing framework-free API-token route-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the canonical `apiTokenPagePath` builder. `ApiTokenPagination` retains
+the shared `Pagination` markup, label, and presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, absent-cursor
+  identity, complete and incomplete next-page facts, status preservation,
+  cursor encoding, and input immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving status
+  and cursor path policy, Relay page-info bounds, markup, labels, and
+  presentation.
+- [x] Run the pure API-token route-data and existing route suites, TypeScript,
+  the framework dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 46: Affiliate Setup Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/affiliate/setup/pagination.ts`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- Modify: `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
+- Test: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- Create: `docs/work/frontend-affiliate-setup-pagination-data.md`
+
+**Interfaces:** The existing framework-free affiliate-setup pagination owner
+additionally owns merchant first-page and next-page link visibility and path
+projection through the canonical `affiliateSetupPagePath` builder.
+`AffiliateSetupRoute` retains shared `Pagination` markup, labels, and
+presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, page-size preservation,
+  cursor encoding, and input immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [x] Run the affiliate-setup loader and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 47: Feed-Candidate Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-data.ts`
+- Modify: `assets/src/routes/ingestion/feed-candidates/FeedCandidateReviewList.tsx`
+- Modify: `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
+- Test: `assets/test/routes/ingestion/feed-candidates/feed-candidates.route.test.tsx`
+- Create: `docs/work/frontend-feed-candidate-pagination-data.md`
+
+**Interfaces:** The existing framework-free feed-candidate review-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the existing path builders. `FeedCandidateReviewList` retains shared
+`Pagination` markup, labels, and presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, filter and sort
+  preservation, cursor encoding, and input immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving the
+  existing path builders, Relay page-info bounds, empty-list behavior, markup,
+  labels, and presentation.
+- [x] Run the pure feed-candidate review-data and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 48: Merchant Directory Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/merchants/pagination.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- Modify: `assets/test/routes/merchants/merchant-directory-loader.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Create: `docs/work/frontend-merchant-directory-pagination-data.md`
+
+**Interfaces:** The existing framework-free merchant-directory pagination
+owner additionally owns first-page and next-page link visibility and path
+projection through the canonical `merchantDirectoryPagePath` builder.
+`MerchantDirectoryView` retains shared `Pagination` markup, labels, and
+presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, page-size preservation,
+  cursor encoding, and input immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [x] Run the merchant-directory loader and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 49: Catalog Browse Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/catalog/paths.ts`
+- Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Create: `assets/test/routes/catalog/paths.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-browse-pagination-data.md`
+
+**Interfaces:** The existing framework-free catalog path owner additionally
+owns first-page and next-page link visibility and path projection through the
+canonical browse path builders. `BrowseRoute` retains shared `Pagination`
+markup, labels, empty-page recovery behavior, and presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, absent-cursor
+  identity, complete and incomplete next-page facts, filter and page-size
+  preservation, ordered compare-slug preservation, cursor encoding, and input
+  immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving the
+  canonical path builders, current-cursor and Relay next-page bounds, empty-
+  result recovery, markup, labels, and presentation.
+- [x] Run the pure catalog path and browse route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 50: Offer Discovery Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- Modify: `assets/src/routes/offers/OfferDiscoveryList.tsx`
+- Modify: `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Create: `docs/work/frontend-offer-discovery-pagination-data.md`
+
+**Interfaces:** The existing framework-free offer-discovery filter-data owner
+additionally owns first-page and next-page link visibility and path projection
+through the canonical `offerDiscoveryPath` builder. `OfferDiscoveryList`
+retains shared `Pagination` markup, labels, and presentation.
+
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, product, merchant, active-
+  only, page-size, and sort preservation, cursor encoding, and input
+  immutability; verify RED.
+- [x] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [x] Run the pure offer-discovery filter-data and route suites, TypeScript,
+  the framework/transport dependency scan, and `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 51: Alert Product Navigation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-alert-product-navigation.md`
+
+**Interfaces:** Alert-event and watch links use the existing canonical
+`productDetailPath` builder. `AlertsRoute` retains link markup and labels,
+view-data grouping, Relay mutations, pending/error state, and presentation.
+
+- [x] Add route coverage for alert-event and watch slugs containing reserved
+  characters; verify the current inline destinations characterize the same
+  encoded behavior.
+- [x] Replace duplicate URL construction with the canonical product-detail
+  path builder without changing ordinary destinations, link labels, grouping,
+  or mutation ownership.
+- [x] Run the alert view-data and route suites, TypeScript, and
+  `git diff --check`.
+- [x] Record lane evidence and commit the milestone.
+
+---
+
+### Task 52: Merchant Directory Row Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- Modify: `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- Modify: `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- Test: `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- Create: `docs/work/frontend-merchant-directory-row-data.md`
+
+**Interfaces:** The existing framework-free merchant-directory view-data owner
+additionally projects Relay result nodes into exact view rows, including
+encoded detail paths and website destinations resolved by the shared external-
+link safety policy. React retains Relay reads, pagination, visible-page
+filtering, markup, labels, and presentation.
+
+- [ ] Write pure tests for source-order preservation, field projection,
+  reserved-character slug encoding, safe and unsafe website destinations, and
+  input immutability; verify RED.
+- [ ] Extract only deterministic merchant-row projection while preserving the
+  shared external-link policy and every React, Relay, pagination, filtering,
+  and presentation owner.
+- [ ] Run the merchant-directory view-data and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 53: Product Offer Navigation Path Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/paths.ts`
+- Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Modify: `assets/src/routes/products/ProductDetailRoute.tsx`
+- Modify: `assets/src/routes/compare/DecisionSummary.tsx`
+- Create: `assets/test/routes/offers/paths.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-product-offer-navigation-paths.md`
+
+**Interfaces:** The existing offer path owner exposes one canonical product-
+scoped discovery path that encodes the product ID as a single `productId`
+query parameter. Browse, product-detail, and decision-summary presentation
+retain link markup, labels, and presentation.
+
+- [ ] Write pure tests for ordinary, reserved-character, whitespace, and empty
+  product IDs; verify RED.
+- [ ] Replace only duplicate product-scoped offer URL construction while
+  preserving existing destinations and every React presentation owner.
+- [ ] Run the offer path, browse, product-detail, and compare route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 54: Category Product Navigation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/categories/CategoryRoute.tsx`
+- Test: `assets/test/routes/categories/category.route.test.tsx`
+- Create: `docs/work/frontend-category-product-navigation.md`
+
+**Interfaces:** Category product links use the existing canonical
+`productDetailPath` builder. `CategoryRoute` retains link markup and labels,
+view-data projection, list order, and presentation.
+
+- [ ] Add route coverage for a category product slug containing reserved
+  characters; verify RED against the current raw interpolation.
+- [ ] Replace duplicate URL construction with the canonical product-detail
+  path builder without changing ordinary destinations, link labels, list
+  order, or presentation.
+- [ ] Run the category view-data and route suites, TypeScript, and
   `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
@@ -1176,6 +1651,43 @@ snapshot paging, markup, and styling.
   pass 43 tests. The candidate is path-disjoint from Tasks 31-33 and preserves
   the generated mutation, shared error policy, Relay lifecycle, and row-scoped
   concurrency owners.
+- Current source inspection on 2026-07-16 found merchant first-page and next-
+  page visibility and path projection still embedded in
+  `MerchantDirectoryRoute`; its existing framework-free pagination owner
+  provides canonical page-size- and cursor-preserving paths. The current loader
+  and route suites pass 33 tests, and the candidate is path-disjoint from Tasks
+  45-47.
+- Current source inspection on 2026-07-17 found catalog first-page and next-
+  page visibility and path projection still embedded in `BrowseRoute`; its
+  existing framework-free path owner preserves filters, page size, ordered
+  compare slugs, and cursor encoding. The current browse route suite passes 62
+  tests, and the candidate is path-disjoint from Tasks 46-48.
+- Current source inspection on 2026-07-17 found offer-discovery first-page and
+  next-page visibility and path projection still embedded in
+  `OfferDiscoveryList`; its existing framework-free filter-data owner preserves
+  product, merchant, active-only, page-size, sort, and cursor policy. The pure
+  and route suites pass 60 tests, and the candidate is path-disjoint from Tasks
+  47-49.
+- Current source inspection on 2026-07-17 found alert-event and watch product-
+  detail paths still constructed independently in `AlertsRoute` even though
+  the canonical encoded path builder already exists. The alert view-data and
+  route suites pass 15 tests, and the candidate is path-disjoint from Tasks
+  48-50.
+- Current source inspection on 2026-07-17 found merchant result-node
+  projection, detail-path construction, and safe website-destination
+  resolution still embedded in `MerchantDirectoryRoute`; its framework-free
+  view-data owner currently owns only visible-page filtering. The view-data and
+  route suites pass 31 tests, and the candidate is path-disjoint from Tasks
+  49-51.
+- Current source inspection on 2026-07-17 found the same product-scoped offer
+  path constructed independently in catalog browse, product detail, and the
+  comparison decision summary. Their route suites pass 226 tests, and the
+  candidate is path-disjoint from Tasks 50-52.
+- Current source inspection on 2026-07-17 found category product links still
+  interpolate raw slugs in `CategoryRoute` even though the canonical encoded
+  product-detail path builder already exists. The category view-data and route
+  suites pass eight tests, and the candidate is path-disjoint from Tasks
+  51-53.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the
@@ -1353,6 +1865,17 @@ snapshot paging, markup, and styling.
   asynchronous redirect-rejection boundary; route-level regression coverage
   now proves resolution or navigation failures render existing default error
   feedback without escaping the Relay completion callback.
+- Reset-password request data completed on 2026-07-16 with 5 pure contract
+  tests and 14 unchanged recovery-route tests. The framework-free owner now
+  owns normalized token/request data, missing-token error identity, exact
+  success copy, and current-response eligibility while React retains URL and
+  FormData adaptation, request-version mutation, Relay, state, and
+  presentation.
+- Shared-comparison view data completed on 2026-07-16 with 4 pure contract
+  tests and 6 unchanged snapshot-route tests. The framework-free owner now
+  projects captured title and metadata, recommendation state, ordered product,
+  claim, and offer facts, honest fallbacks, and the existing compare-path
+  policy while React retains Relay, date formatting, markup, and StyleX.
 - Before the immutable route-state claim on 2026-07-15, current source
   inspection confirmed product/status/merchant/domain/latest-price labels,
   nullable connection fallbacks, and ordered price-history view rows remain

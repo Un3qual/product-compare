@@ -5,11 +5,12 @@ import { useMutation } from "react-relay";
 import type { CreatePriceWatchMutation } from "../../__generated__/CreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
 import {
   buildCreatePriceWatchInput,
   needsPriceWatchAmount,
+  resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
 
@@ -58,7 +59,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, { variables: { input } });
       const payload = response.createPriceWatch;
-      setMessage(payload?.watch ? "Watch created. New qualifying changes will appear in your inbox." : routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      setMessage(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors));
     } catch {
       setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }

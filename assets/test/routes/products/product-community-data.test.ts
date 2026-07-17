@@ -5,8 +5,19 @@ import {
   buildProductQuestionInput,
   buildProductReviewInput,
   nextCommunityPageCursor,
-  publishedReviewSummary
+  publishedReviewSummary,
+  resolveProductAnswerMutationMessage,
+  resolveProductQuestionMutationMessage,
+  resolveProductReviewMutationMessage
 } from "../../../src/routes/products/product-community-data";
+
+const mutationError = {
+  code: "INVALID_ARGUMENT",
+  field: "body",
+  message: "Authored text is invalid."
+} as const;
+
+const graphQLError = { message: "Private GraphQL failure" } as const;
 
 test("community inputs trim required and optional authored text", () => {
   expect(
@@ -114,3 +125,71 @@ test("appendUniqueCommunityItems keeps first occurrences and stable references",
     appendUniqueCommunityItems(existing, [{ id: "first", value: "Duplicate" }])
   ).toBe(existing);
 });
+
+test.each([
+  [
+    "review",
+    resolveProductReviewMutationMessage,
+    { review: { id: "review-1" } },
+    "Review submitted for moderation."
+  ],
+  [
+    "question",
+    resolveProductQuestionMutationMessage,
+    { question: { id: "question-1" } },
+    "Question submitted for moderation."
+  ],
+  [
+    "answer",
+    resolveProductAnswerMutationMessage,
+    { answer: { id: "answer-1" } },
+    "Answer submitted for moderation."
+  ]
+] as const)(
+  "%s completion returns exact success copy for an error-free payload",
+  (_kind, resolveMessage, completion, successMessage) => {
+    const payload = Object.freeze({
+      ...completion,
+      errors: Object.freeze([])
+    });
+    const graphQLErrors = Object.freeze([]);
+
+    expect(resolveMessage(payload, graphQLErrors)).toBe(successMessage);
+    expect(payload).toEqual({ ...completion, errors: [] });
+    expect(graphQLErrors).toEqual([]);
+  }
+);
+
+test.each([
+  ["review", resolveProductReviewMutationMessage, { review: { id: "review-1" } }],
+  ["question", resolveProductQuestionMutationMessage, { question: { id: "question-1" } }],
+  ["answer", resolveProductAnswerMutationMessage, { answer: { id: "answer-1" } }]
+] as const)(
+  "%s completion rejects partial data accompanied by top-level GraphQL errors",
+  (_kind, resolveMessage, completion) => {
+    expect(resolveMessage({ ...completion, errors: [] }, [graphQLError])).toBe(
+      "Request failed. Please try again."
+    );
+  }
+);
+
+test.each([
+  ["review", "review", resolveProductReviewMutationMessage],
+  ["question", "question", resolveProductQuestionMutationMessage],
+  ["answer", "answer", resolveProductAnswerMutationMessage]
+] as const)(
+  "%s completion uses shared errors when its completion fact is absent",
+  (_kind, completionKey, resolveMessage) => {
+    expect(resolveMessage(undefined, [])).toBe("Request failed. Please try again.");
+    expect(resolveMessage(null, [])).toBe("Request failed. Please try again.");
+    expect(
+      resolveMessage({ [completionKey]: null, errors: [mutationError] }, [])
+    ).toBe("Authored text is invalid.");
+    expect(
+      resolveMessage(
+        { [completionKey]: null, errors: [mutationError] },
+        [graphQLError]
+      )
+    ).toBe("Request failed. Please try again.");
+  }
+);

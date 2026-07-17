@@ -3,6 +3,11 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
+import {
+  buildCompareSelectionTrayViewData,
+  type CompareSelectionTrayItem,
+  type CompareSelectionTrayRow
+} from "./compare-selection-tray-data";
 
 const styles = create({
   tray: {
@@ -48,11 +53,6 @@ const styles = create({
   }
 });
 
-interface CompareSelectionTrayItem {
-  label: string;
-  slug: string;
-}
-
 export function CompareSelectionTray({
   items,
   maxProducts,
@@ -69,6 +69,12 @@ export function CompareSelectionTray({
   title?: string;
 }) {
   const titleId = useId();
+  const viewData = buildCompareSelectionTrayViewData({
+    items,
+    maxProducts,
+    removePathForIndex,
+    selectedSlugs
+  });
 
   return (
     <section aria-labelledby={titleId} {...props(styles.tray)}>
@@ -76,47 +82,35 @@ export function CompareSelectionTray({
         <div>
           <h2 id={titleId} {...props(styles.title)}>{title}</h2>
           <p aria-live="polite" role="status" {...props(styles.status)}>
-            {selectedSlugs.length} of {maxProducts} products selected.
+            {viewData.selectionCountCopy}
           </p>
         </div>
-        {selectedSlugs.length > 0 ? (
+        {viewData.showOpenAction ? (
           <Button asChild variant="solid">
             <Link to={openComparePath}>Open comparison</Link>
           </Button>
         ) : null}
       </div>
-      <SelectionItems
-        items={items}
-        removePathForIndex={removePathForIndex}
-        selectedSlugs={selectedSlugs}
-      />
+      <SelectionItems rows={viewData.rows} />
     </section>
   );
 }
 
 function SelectionItems({
-  items,
-  removePathForIndex,
-  selectedSlugs
+  rows
 }: {
-  items: readonly CompareSelectionTrayItem[];
-  removePathForIndex: (index: number) => string;
-  selectedSlugs: readonly string[];
+  rows: readonly CompareSelectionTrayRow[];
 }) {
   return (
     <ul {...props(styles.list)}>
-      {selectedSlugs.map((slug, index) => {
-        const label = items.find((item) => item.slug === slug)?.label ?? slug;
-
-        return (
-          <li key={slug} {...props(styles.item)}>
-            <span>{label}</span>{" "}
-            <Button asChild size="1" variant="ghost">
-              <Link to={removePathForIndex(index)}>Remove {label} from selection</Link>
-            </Button>
-          </li>
-        );
-      })}
+      {rows.map(({ label, removePath, slug }) => (
+        <li key={slug} {...props(styles.item)}>
+          <span>{label}</span>{" "}
+          <Button asChild size="1" variant="ghost">
+            <Link to={removePath}>Remove {label} from selection</Link>
+          </Button>
+        </li>
+      ))}
     </ul>
   );
 }

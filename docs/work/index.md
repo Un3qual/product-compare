@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-16
+Updated: 2026-07-17
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -605,120 +605,401 @@ tests; task re-review found no issues after explicit omitted, empty, and null-ID
 generated-payload coverage, and the three validated successor rows remain
 ready.
 
+Before claiming Product Community Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Price-watch structural completion
+and shared-error interpretation remain embedded in `PriceWatchControl`, while
+the existing framework-free owner already identifies amount-bearing rules and
+builds the create input. Its pure and alerts-route suites pass 16 tests; the
+successor has complete owned paths, no blockers, and does not overlap product
+community, affiliate setup, or comparison sharing mutations.
+
+Product Community Mutation Outcome Data then completed: the existing
+framework-free owner now returns exact review, question, and answer moderation
+success copy or the shared route error while preserving fact-first completion
+semantics. React retains FormData, Relay mutation promises, pending state,
+authored-text adaptation, feedback placement, pagination, markup, and styling.
+Its pure and panel suites pass 14 tests; the three validated successor rows
+remain ready.
+
+Before claiming Affiliate Setup Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Tracked-commerce click completion
+still combines structural redirect success, payload and top-level error checks,
+same-origin resolution, browser navigation, and feedback inside
+`TrackedCommerceClickAction`, while its existing framework-free owner already
+owns click qualification and redirect URL policy. Its pure and offer-discovery
+suites pass 58 tests; the successor has complete owned paths, no blockers, and
+does not overlap affiliate setup, comparison sharing, or price-watch mutations.
+
+Affiliate Setup Mutation Outcome Data then completed: the existing
+framework-free owner now returns each original complete network, program, link,
+or coupon fact or the shared route error without mutating inputs. Top-level
+GraphQL errors retain precedence, while payload errors may coexist with a
+complete fact as before. React retains FormData adaptation, Relay mutation
+promises, in-flight and pending guards, selected state, feedback placement,
+markup, and presentation. Its pure and route suites pass 37 tests; the three
+validated successor rows remain ready.
+
+Before claiming Share-Comparison Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Reset-password token
+normalization, missing-token state, mutation-variable construction, exact
+success copy, and stale-response eligibility remain embedded in
+`ResetPasswordRoute`, while the existing auth error owner already normalizes
+mutation outcomes. Its auth-error and recovery-route suites pass 20 tests; the
+successor has complete owned paths, no blockers, does not reopen deferred email
+delivery, and does not overlap comparison sharing, price-watch, or tracked-
+commerce mutations.
+
+Share-Comparison Mutation Outcome Data then completed: the existing
+framework-free owner now returns a projected complete published snapshot or the
+original revoked snapshot, otherwise the shared route error, without mutating
+inputs. Complete facts retain precedence when payload or top-level GraphQL
+errors coexist. React retains FormData and location adaptation, Relay mutation
+promises, hooks, state and callbacks, snapshot paging, markup, and styling. Its
+pure and snapshot-control suites pass 30 tests; the three validated successor
+rows remain ready.
+
+Before claiming Price-Watch Mutation Outcome Data, the coordinator validated a
+fourth non-overlapping successor. Captured recommendation selection, fallback
+copy, product and offer fact projection, and the ordered live-comparison path
+remain embedded in `SharedComparisonRoute`; its existing snapshot route suite
+passes 6 tests. The successor has complete owned paths, no blockers, and does
+not overlap price-watch, tracked-commerce, or reset-password request data.
+
+Price-Watch Mutation Outcome Data then completed: the existing framework-free
+owner now returns the exact create-watch success or shared-error copy without
+mutating payload or GraphQL error inputs. A complete watch retains precedence
+when payload or top-level errors coexist. React retains FormData, Relay
+mutation promises, product-keyed reset, rule and pending state, feedback,
+markup, and presentation. Its pure and alerts-route suites pass 22 tests; the
+three validated successor rows remain ready.
+
+Before claiming Tracked-Commerce Click Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Compare-picker filter
+normalization, case-insensitive visible-option selection, source ordering, and
+exact no-match copy remain embedded in `CompareProductPickerView`; its existing
+framework-free picker owner and compare-route suites pass 116 tests. The
+successor has complete owned paths, no blockers, and does not overlap tracked-
+commerce, reset-password, or shared-comparison view data.
+
+Tracked-Commerce Click Mutation Outcome Data then completed: the existing
+framework-free owner now returns a resolved same-origin redirect URL or the
+shared route error without mutating payload or GraphQL error inputs. Success
+requires an explicit empty payload-error list and no top-level GraphQL errors;
+unsafe and incomplete redirects fail closed. React retains event handling,
+Relay mutation orchestration, browser navigation, state, feedback, markup, and
+presentation. Its pure and offer-discovery suites pass 68 tests. Full-gate
+investigation also aligned one missed scheduler startup assertion with the
+repository's established 250 ms contention tolerance; the three validated
+successor rows remain ready.
+
+Before claiming Reset-Password Request Data, the coordinator validated a
+fourth non-overlapping successor. Exact selection-count copy, exact-slug label
+resolution with fallback, ordered removal-path projection, and open-action
+visibility remain embedded in `CompareSelectionTray`; its catalog-browse and
+product-detail consumer suites pass 117 tests. The successor has complete
+owned paths, no blockers, and avoids the compare-route test path owned by the
+higher-ranked visible-option candidate.
+
+Reset-Password Request Data then completed. The framework-free owner now owns
+trimmed token data, the exact missing-token state, mutation variables, exact
+success copy, and current-response eligibility. React retains URL and FormData
+adaptation, request-version mutation, Relay, state, hooks, markup, and
+presentation. Its pure and unchanged recovery-route suites pass 19 tests; the
+full repository gate passes 771 backend and 1,293 frontend tests. The three
+validated successor rows remain ready.
+
+Before claiming Shared Comparison View Data, the coordinator validated a
+fourth non-overlapping successor. Verify-email token normalization, missing-
+token identity, mutation variables, exact status copy, and failed-outcome
+retry eligibility remain embedded in `VerifyEmailRoute`; its recovery-route
+suite passes 14 tests. The successor has complete owned paths, no blockers,
+and does not overlap the three comparison rows.
+
+Shared Comparison View Data then completed. One framework-free owner now
+projects captured title and metadata, winner-or-unsupported recommendation
+state, ordered product, accepted-claim, and offer facts with honest fallbacks,
+and the live path through the existing compare-path policy. React retains
+Relay, route state, date formatting, semantic markup, and StyleX. Its pure and
+unchanged snapshot-route suites pass 10 tests; the full repository gate passes
+771 backend and 1,297 frontend tests. The three validated successor rows
+remain ready.
+
+Before claiming Compare Picker Visible-Option Data, the coordinator validated
+a fourth non-overlapping successor. First-page visibility and path plus next-
+page visibility and path remain embedded in `ApiTokensRoute`, while its
+framework-free route-data owner already owns canonical status-preserving token
+page paths. Its pure and route suites pass 75 tests. The successor has complete
+owned paths, no blockers, and does not overlap the comparison or verify-email
+rows.
+
+Compare Picker Visible-Option Data then completed. The existing framework-free
+picker owner now returns normalized filter state, source-ordered visible
+options, and exact empty-state copy while preserving the caller's option-array
+identity for blank filters. React retains local state, generated IDs, input
+events, actions, markup, and presentation. Its pure and unchanged compare-
+route suites pass 119 tests; the full repository gate passes 771 backend and
+1,300 frontend tests. The three validated successor rows remain ready.
+
+Before claiming Compare-Selection Tray View Data, the coordinator validated a
+fourth non-overlapping successor. Merchant first-page and next-page visibility
+and path projection remain embedded in `AffiliateSetupRoute`, while its
+framework-free pagination owner already provides canonical page-size- and
+cursor-preserving paths. Its loader and route suites pass 27 tests. The
+successor has complete owned paths, no blockers, and does not overlap the
+comparison tray, verify-email, or API-token rows.
+
+Compare-Selection Tray View Data then completed. One framework-free owner now
+returns exact selection-count copy, ordered selected rows with exact-slug
+labels and fallbacks, caller-owned removal paths, and open-action visibility.
+Empty selections reuse one stable row identity. React retains generated IDs,
+semantic markup, links, buttons, StyleX presentation, and events. Its pure and
+unchanged catalog-browse and product-detail suites pass 121 tests; the full
+repository gate passes 771 backend and 1,304 frontend tests. The three
+validated successor rows remain ready.
+
+Before claiming Verify-Email Request Data, the coordinator validated a fourth
+non-overlapping successor. Feed-candidate first-page and next-page visibility
+remain embedded in `FeedCandidateReviewList`, while its framework-free review-
+data owner already provides canonical page-size-, filter-, sort-, and cursor-
+preserving paths. Its pure and route suites pass 30 tests. The successor has
+complete owned paths, no blockers, and does not overlap the verify-email, API-
+token, or affiliate-setup rows.
+
+Verify-Email Request Data then completed. One framework-free owner now returns
+normalized request data, the exact shared missing-token error identity,
+mutation variables, exact success and status copy, and success-only cache
+eligibility. React retains the promise cache, single-use request deduplication,
+Relay lifecycle, cancellation, hooks, state, markup, and presentation. Its
+pure and unchanged recovery-route suites pass 22 tests; the full repository
+gate passes 771 backend and 1,312 frontend tests. The three validated successor
+rows remain ready.
+
+Before claiming API Token Pagination Data, the coordinator validated a fourth
+non-overlapping successor. Merchant-directory first-page and next-page
+visibility and path projection remain embedded in `MerchantDirectoryRoute`,
+while its framework-free pagination owner already provides canonical page-
+size- and cursor-preserving paths. Its loader and route suites pass 33 tests.
+The successor has complete owned paths, no blockers, and does not overlap the
+API-token, affiliate-setup, or feed-candidate rows.
+
+API Token Pagination Data then completed. The existing framework-free route-
+data owner now returns status-preserving first-page and next-page hrefs through
+the canonical path builder while enforcing current-cursor and complete Relay
+next-page bounds. React retains shared pagination markup, labels, and
+presentation. Its pure and unchanged route suites pass 80 tests; the full
+repository gate passes 771 backend and 1,317 frontend tests. The three
+validated successor rows remain ready.
+
+Before claiming Affiliate Setup Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Catalog first-page and next-page visibility
+and path projection remain embedded in `BrowseRoute`, while its framework-free
+path owner already preserves filters, page size, ordered compare slugs, and
+encoded cursors. The current browse route suite passes 62 tests. The successor
+has complete owned paths, no blockers, and does not overlap the affiliate-
+setup, feed-candidate, or merchant-directory rows.
+
+Affiliate Setup Pagination Data then completed. The existing framework-free
+pagination owner now returns page-size-preserving first-page and next-page
+hrefs through the canonical path builder while enforcing previous-page,
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+Relay's optional cursor identity and retains shared pagination markup, labels,
+and presentation. Its loader and unchanged route suites pass 33 tests; the full
+repository gate passes 771 backend and 1,323 frontend tests. The three
+validated successor rows remain ready.
+
+Before claiming Feed-Candidate Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Offer-discovery first-page and next-page
+visibility and path projection remain embedded in `OfferDiscoveryList`, while
+its framework-free filter-data owner already preserves product, merchant,
+active-only, page-size, sort, and cursor policy. Its pure and route suites pass
+60 tests. The successor has complete owned paths, no blockers, and does not
+overlap the feed-candidate, merchant-directory, or catalog-browse rows.
+
+Feed-Candidate Pagination Data then completed. The existing framework-free
+review-data owner now returns filter- and sort-preserving first-page and next-
+page hrefs through the canonical path builders while enforcing previous-page,
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+Relay's optional cursor identity, preserves the empty-list early return, and
+retains shared pagination markup, labels, and presentation. Its pure and
+unchanged route suites pass 36 tests; the full repository gate passes 771
+backend and 1,329 frontend tests. The three validated successor rows remain
+ready.
+
+Before claiming Merchant Directory Pagination Data, the coordinator validated
+a fourth non-overlapping successor. `AlertsRoute` still constructs alert-event
+and watch product-detail links independently even though the canonical encoded
+path builder already exists in the product-detail data owner. The alert view-
+data and route suites pass 15 tests. The successor has complete owned paths, no
+blockers, and does not overlap the merchant-directory, catalog-browse, or
+offer-discovery rows.
+
+Merchant Directory Pagination Data then completed. The existing framework-free
+pagination owner now returns page-size-preserving first-page and next-page
+hrefs through the canonical path builder while enforcing previous-page,
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+Relay's optional cursor identity and retains shared pagination markup, labels,
+and presentation. Its loader and unchanged route suites pass 39 tests; the full
+repository gate passes 771 backend and 1,335 frontend tests. The three
+validated successor rows remain ready.
+
+Before claiming Catalog Browse Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Merchant result-node projection, detail-path
+construction, and safe website-destination resolution remain embedded in
+`MerchantDirectoryRoute`, while its framework-free view-data owner currently
+owns only visible-page filtering. The view-data and route suites pass 31
+tests. The successor has complete owned paths, no blockers, and does not
+overlap the catalog-browse, offer-discovery, or alert-navigation rows.
+
+Catalog Browse Pagination Data then completed. The framework-free catalog path
+owner now returns filter-, page-size-, and compare-selection-preserving first-
+page and next-page hrefs through the canonical path builders while enforcing
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+optional Relay cursor identity and retains empty-page recovery, shared
+pagination markup, labels, and presentation. Its pure path and unchanged route
+suites pass 69 tests; the full repository gate passes 771 backend and 1,342
+frontend tests. The three validated successor rows remain ready.
+
+Before claiming Offer Discovery Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Product-scoped offer links are still built
+independently in browse, product-detail, and comparison presentation even
+though they share the same encoded route contract. The three route suites pass
+226 tests. The successor has complete owned paths, no blockers, and does not
+overlap the offer-discovery pagination, alert-navigation, or merchant-row rows.
+
+Offer Discovery Pagination Data then completed. The existing framework-free
+filter-data owner now returns filter- and page-size-preserving first-page and
+next-page hrefs through the canonical offer-discovery path builder while
+enforcing previous-page, current-cursor, next-page, and non-empty end-cursor
+bounds. React normalizes Relay's optional cursor identity and retains shared
+pagination markup, labels, and presentation. Its pure filter-data and unchanged
+route suites pass 68 tests; the full repository gate passes 771 backend and
+1,350 frontend tests. The three validated successor rows remain ready.
+
+Before claiming Alert Product Navigation, the coordinator validated a fourth
+non-overlapping successor. Category product links still interpolate raw slugs
+in `CategoryRoute` even though the canonical encoded product-detail path
+builder already exists. The category view-data and route suites pass eight
+tests. The successor has complete owned paths, no blockers, and does not
+overlap the alert-navigation, merchant-row, or product-offer navigation rows.
+
+Alert Product Navigation then completed. Alert-event and watch links now use
+the canonical product-detail path builder while React retains link markup,
+labels, ordering, grouping, mutation ownership, and presentation. Route
+characterization covers ordinary and reserved-character slugs. Its view-data
+and route suites pass 16 tests; the standalone full backend suite passes 771
+tests, and the frontend suite passes 1,351 tests with green client and SSR
+production builds. The three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Product Community Mutation Outcome Data Contract
+### 1. Merchant Directory Row Data Contract
 
 Status: ready
-Lane: Frontend product community mutation outcome data
+Lane: Frontend merchant-directory row data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural review, question, and answer completion messages
-out of `ProductCommunityPanel` into its existing framework-free data contract
-while preserving FormData, Relay mutation promises, pending state, authored-
-text inputs, feedback placement, pagination, markup, and styling.
+Next action: move merchant result-node projection, detail-path construction,
+and safe website-destination resolution out of `MerchantDirectoryRoute` into
+its existing framework-free view-data owner while leaving Relay reads,
+pagination, filtering, and presentation in their current owners.
 Owned paths:
 
-- `assets/src/routes/products/product-community-data.ts`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- `assets/test/routes/products/product-community-data.test.ts`
-- `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-community-mutation-outcome-data.md`
+- `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `docs/work/frontend-merchant-directory-row-data.md`
 
 Prerequisites:
 
-- Existing generated review, question, and answer mutation shapes remain
-  unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing product-community data and panel characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure community-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns exact success or
-shared-error copy for review, question, and answer completion without mutating
-inputs; React retains Relay, pending state, input adaptation, pagination,
-feedback placement, markup, and presentation.
-
-### 2. Affiliate Setup Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend affiliate setup mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural network, program, link, and coupon completion
-interpretation out of `AffiliateSetupRoute` into its existing framework-free
-data owner while preserving FormData adaptation, Relay mutation promises,
-in-flight and pending guards, selected state, feedback placement, markup, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated network, program, link, and coupon mutation shapes remain
-  unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing affiliate setup data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure setup-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns each complete
-network, program, link, or coupon fact or the shared route error without
-mutating inputs; React retains Relay, concurrency, state, feedback, markup, and
-presentation.
-
-### 3. Share-Comparison Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend share-comparison mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural publish and revoke completion interpretation out
-of `ShareComparisonControl` into its existing framework-free data owner while
-preserving FormData and location adaptation, Relay mutation promises, hooks,
-state and callbacks, snapshot paging, markup, and styling.
-Owned paths:
-
-- `assets/src/routes/compare/share-comparison-data.ts`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/test/routes/compare/share-comparison-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-share-comparison-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated publish and revoke mutation shapes remain unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing share-comparison data and snapshot-control characterization remains
+- Merchant order, IDs, names, and domains remain unchanged.
+- Detail paths encode the supplied slug, and website links continue using the
+  shared external-destination safety policy.
+- Existing merchant-directory view-data and route characterization remains
   green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
 - `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure share-comparison data module
+- framework/transport dependency scan of the merchant-directory view-data
+  module
 - `git diff --check`
 
-Exit condition: the existing framework-free owner returns the projected
-published snapshot or original revoked snapshot, or the shared route error,
-without mutating inputs; React retains Relay, hooks, state, callbacks, paging,
-markup, and presentation.
+Exit condition: the framework-free view-data owner returns exact merchant rows
+without mutating inputs; React retains Relay reads, pagination, filtering,
+markup, labels, and presentation.
+
+### 2. Product Offer Navigation Path Contract
+
+Status: ready
+Lane: Frontend product-offer navigation paths
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: replace product-scoped offer URL construction in catalog browse,
+product detail, and decision summary with one canonical encoded path builder in
+the existing offer path owner while preserving link markup and labels.
+Owned paths:
+
+- `assets/src/routes/offers/paths.ts`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
+- `assets/test/routes/offers/paths.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-offer-navigation-paths.md`
+
+Prerequisites:
+
+- Product IDs remain encoded as one `productId` query parameter.
+- Ordinary and reserved product IDs preserve their existing destinations.
+- Existing browse, product-detail, and compare route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/paths.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the offer path module
+- `git diff --check`
+
+Exit condition: all three product-scoped offer entry points use one canonical
+path builder without changing React link markup, labels, or presentation.
+
+### 3. Category Product Navigation Contract
+
+Status: ready
+Lane: Frontend category product navigation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: replace raw category product-detail URL interpolation in
+`CategoryRoute` with the existing canonical `productDetailPath` builder while
+retaining link markup, labels, list order, and presentation in React.
+Owned paths:
+
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `docs/work/frontend-category-product-navigation.md`
+
+Prerequisites:
+
+- Existing canonical product-slug encoding remains unchanged.
+- Category product ordering, link labels, and ordinary-slug destinations remain
+  unchanged.
+- Existing category view-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: category product links use the canonical product-detail path
+builder, including reserved-character encoding, without changing React markup,
+labels, list order, or presentation.
 
 ## Needs Decision Work
 

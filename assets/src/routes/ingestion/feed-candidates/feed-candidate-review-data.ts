@@ -145,6 +145,29 @@ export function feedCandidatesNextPagePath(
   return `/ingestion/feed-candidates?${params.toString()}`;
 }
 
+export function buildFeedCandidatePaginationData({
+  endCursor,
+  hasNextPage,
+  hasPreviousPage,
+  pagination
+}: {
+  readonly endCursor: string | null;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+  readonly pagination: Readonly<FeedCandidatesPagination>;
+}) {
+  return {
+    firstHref:
+      hasPreviousPage && pagination.after
+        ? feedCandidatesFirstPagePath(pagination)
+        : null,
+    nextHref:
+      hasNextPage && endCursor
+        ? feedCandidatesNextPagePath(pagination, endCursor)
+        : null
+  };
+}
+
 function appendFeedCandidatesFilterParams(
   params: URLSearchParams,
   pagination: Pick<FeedCandidatesPagination, "reviewStatus" | "sort">

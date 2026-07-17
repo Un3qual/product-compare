@@ -1,4 +1,7 @@
-import { getOfferDiscoveryFilterData } from "../../../src/routes/offers/offer-discovery-filter-data";
+import {
+  buildOfferDiscoveryPaginationData,
+  getOfferDiscoveryFilterData
+} from "../../../src/routes/offers/offer-discovery-filter-data";
 
 const DEFAULT_FILTERS = {
   activeOnly: true,
@@ -8,6 +11,92 @@ const DEFAULT_FILTERS = {
   productId: null,
   sort: "default"
 } as const;
+
+test("buildOfferDiscoveryPaginationData preserves every filter in first and next paths", () => {
+  expect(
+    buildOfferDiscoveryPaginationData({
+      endCursor: "next cursor/+",
+      filters: {
+        activeOnly: false,
+        after: "current-cursor",
+        first: 12,
+        merchantId: "merchant/+ id",
+        productId: "product/+ id",
+        sort: "price_desc"
+      },
+      hasNextPage: true,
+      hasPreviousPage: true
+    })
+  ).toEqual({
+    firstHref:
+      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc",
+    nextHref:
+      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&after=next+cursor%2F%2B"
+  });
+});
+
+test.each([
+  [false, "current-cursor"],
+  [true, null],
+  [true, ""]
+] as const)(
+  "buildOfferDiscoveryPaginationData hides incomplete first-page facts",
+  (hasPreviousPage, after) => {
+    expect(
+      buildOfferDiscoveryPaginationData({
+        endCursor: null,
+        filters: {
+          ...DEFAULT_FILTERS,
+          after
+        },
+        hasNextPage: false,
+        hasPreviousPage
+      }).firstHref
+    ).toBeNull();
+  }
+);
+
+test.each([
+  [false, "next-cursor"],
+  [true, null],
+  [true, ""]
+] as const)(
+  "buildOfferDiscoveryPaginationData hides incomplete next-page facts",
+  (hasNextPage, endCursor) => {
+    expect(
+      buildOfferDiscoveryPaginationData({
+        endCursor,
+        filters: DEFAULT_FILTERS,
+        hasNextPage,
+        hasPreviousPage: false
+      }).nextHref
+    ).toBeNull();
+  }
+);
+
+test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
+  const input = Object.freeze({
+    endCursor: "next-cursor",
+    filters: Object.freeze({
+      ...DEFAULT_FILTERS,
+      after: "current-cursor"
+    }),
+    hasNextPage: true,
+    hasPreviousPage: true
+  });
+
+  buildOfferDiscoveryPaginationData(input);
+
+  expect(input).toEqual({
+    endCursor: "next-cursor",
+    filters: {
+      ...DEFAULT_FILTERS,
+      after: "current-cursor"
+    },
+    hasNextPage: true,
+    hasPreviousPage: true
+  });
+});
 
 test("builds the default form reset key and active-filter summary without actions", () => {
   expect(getOfferDiscoveryFilterData(DEFAULT_FILTERS)).toEqual({

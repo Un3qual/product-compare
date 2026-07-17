@@ -1,8 +1,17 @@
 import {
   buildCreatePriceWatchInput,
   needsPriceWatchAmount,
+  PRICE_WATCH_CREATED_MESSAGE,
+  resolveCreatePriceWatchMutationMessage,
   type PriceWatchInputSource
 } from "../../../src/routes/products/price-watch-data";
+
+const MUTATION_ERROR = {
+  code: "INVALID_ARGUMENT",
+  field: "targetAmount",
+  message: "Target amount is invalid."
+};
+const GRAPHQL_ERROR = { message: "Transport-level GraphQL error" };
 
 test.each([
   ["TARGET_PRICE", true],
@@ -71,4 +80,41 @@ test("buildCreatePriceWatchInput does not mutate its scalar input source", () =>
     amount: " 20 ",
     currency: " cad "
   });
+});
+
+test("create-watch completion returns success for a complete error-free payload", () => {
+  const payload = Object.freeze({
+    watch: Object.freeze({ id: "watch-1" }),
+    errors: Object.freeze([])
+  });
+  const graphQLErrors = Object.freeze([]);
+
+  expect(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors)).toBe(
+    PRICE_WATCH_CREATED_MESSAGE
+  );
+  expect(PRICE_WATCH_CREATED_MESSAGE).toBe(
+    "Watch created. New qualifying changes will appear in your inbox."
+  );
+  expect(payload).toEqual({ watch: { id: "watch-1" }, errors: [] });
+  expect(graphQLErrors).toEqual([]);
+});
+
+test.each([
+  ["missing payload", undefined, [], "Request failed. Please try again."],
+  ["null payload", null, [], "Request failed. Please try again."],
+  ["missing watch", {}, [], "Request failed. Please try again."],
+  [
+    "null watch with a payload error",
+    { watch: null, errors: [MUTATION_ERROR] },
+    [],
+    MUTATION_ERROR.message
+  ],
+  [
+    "complete watch with a top-level GraphQL error",
+    { watch: { id: "watch-1" }, errors: [] },
+    [GRAPHQL_ERROR],
+    "Request failed. Please try again."
+  ]
+] as const)("create-watch completion handles a %s", (_case, payload, graphQLErrors, message) => {
+  expect(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors)).toBe(message);
 });

@@ -9,7 +9,7 @@ import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerPr
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, routeMutationErrorMessage } from "../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import answerProductQuestionMutation from "./queries/AnswerProductQuestionMutation";
 import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
@@ -22,7 +22,10 @@ import {
   buildProductQuestionInput,
   buildProductReviewInput,
   nextCommunityPageCursor,
-  publishedReviewSummary
+  publishedReviewSummary,
+  resolveProductAnswerMutationMessage,
+  resolveProductQuestionMutationMessage,
+  resolveProductReviewMutationMessage
 } from "./product-community-data";
 
 const COMMUNITY_PAGE_SIZE = 10;
@@ -152,7 +155,7 @@ function ReviewSection({
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input } });
       const payload = response.submitProductReview;
-      setMessage(payload?.review ? "Review submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      setMessage(resolveProductReviewMutationMessage(payload, graphQLErrors));
     } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
   }
 
@@ -193,9 +196,7 @@ function QuestionSection({
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input } });
       const payload = response.askProductQuestion;
-
-      if (payload?.question) setMessage("Question submitted for moderation.");
-      else setMessage(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+      setMessage(resolveProductQuestionMutationMessage(payload, graphQLErrors));
     } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
   }
 
@@ -274,7 +275,7 @@ function AnswerView({
 function AnswerForm({ questionId }: { questionId: string }) {
   const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: buildProductAnswerInput({ questionId, body: form.get("body") }) } }); const payload = response.answerProductQuestion; setMessage(payload?.answer ? "Answer submitted for moderation." : routeMutationErrorMessage(payload?.errors, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: buildProductAnswerInput({ questionId, body: form.get("body") }) } }); const payload = response.answerProductQuestion; setMessage(resolveProductAnswerMutationMessage(payload, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
   return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>;
 }
 

@@ -1,3 +1,8 @@
+import {
+  hasRouteGraphQLErrors,
+  routeMutationErrorMessage
+} from "../route-errors";
+
 export interface PublishedComparisonSnapshot {
   id: string;
   path: string;
@@ -18,9 +23,19 @@ export interface ComparisonSnapshotState {
 }
 
 export type ComparisonSnapshotPublishPayload = {
+  readonly errors?: unknown;
   readonly snapshot?: { readonly id?: string | null } | null;
   readonly sharePath?: string | null;
 };
+
+export type ComparisonSnapshotRevokePayload = {
+  readonly errors?: unknown;
+  readonly revokedSnapshotId?: string | null;
+};
+
+export type ComparisonSnapshotMutationOutcome =
+  | { readonly error: null; readonly snapshot: PublishedComparisonSnapshot }
+  | { readonly error: string; readonly snapshot: null };
 
 export type ComparisonSnapshotSourceNode = {
   readonly id: string;
@@ -62,6 +77,35 @@ export function publishedSnapshotFromPayload(
   return payload?.snapshot?.id && payload.sharePath
     ? { id: payload.snapshot.id, path: payload.sharePath, title }
     : null;
+}
+
+export function resolvePublishComparisonSnapshotMutationOutcome(
+  payload: ComparisonSnapshotPublishPayload | null | undefined,
+  title: string | null,
+  graphQLErrors?: readonly unknown[] | null
+): ComparisonSnapshotMutationOutcome {
+  const snapshot = publishedSnapshotFromPayload(payload, title);
+
+  return snapshot && !hasRouteGraphQLErrors(graphQLErrors)
+    ? { error: null, snapshot }
+    : {
+        error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+        snapshot: null
+      };
+}
+
+export function resolveRevokeComparisonSnapshotMutationOutcome(
+  payload: ComparisonSnapshotRevokePayload | null | undefined,
+  snapshot: PublishedComparisonSnapshot,
+  graphQLErrors?: readonly unknown[] | null
+): ComparisonSnapshotMutationOutcome {
+  return payload?.revokedSnapshotId === snapshot.id &&
+    !hasRouteGraphQLErrors(graphQLErrors)
+    ? { error: null, snapshot }
+    : {
+        error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+        snapshot: null
+      };
 }
 
 export function snapshotFromNode(

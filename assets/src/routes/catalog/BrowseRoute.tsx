@@ -25,8 +25,8 @@ import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterFo
 import { BrowseProductList } from "./BrowseProductList";
 import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
+  buildCatalogBrowsePaginationData,
   catalogBrowseFirstPagePath,
-  catalogBrowseNextPagePath,
   catalogBrowseSearchWithNormalizedSort
 } from "./paths";
 import { catalogResultStatus } from "./result-status";
@@ -120,25 +120,20 @@ function BrowseProducts({
     resultCount: filterMetadata.resultCount
   });
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
-  const nextProductsPath =
-    productConnection.pageInfo.hasNextPage && productConnection.pageInfo.endCursor
-      ? catalogBrowseNextPagePath(
-          activeFilters,
-          currentPageSize,
-          productConnection.pageInfo.endCursor,
-          selectedCompareSlugs
-        )
-      : null;
+  const paginationData = buildCatalogBrowsePaginationData({
+    currentAfter: currentAfter ?? null,
+    endCursor: productConnection.pageInfo.endCursor ?? null,
+    filters: activeFilters,
+    first: currentPageSize,
+    hasNextPage: productConnection.pageInfo.hasNextPage,
+    selectedCompareSlugs
+  });
   const paginationLinks = (
     <Pagination
-      firstHref={
-        currentAfter
-          ? catalogBrowseFirstPagePath(activeFilters, currentPageSize, selectedCompareSlugs)
-          : null
-      }
+      firstHref={paginationData.firstHref}
       firstLabel="First products"
       label="Browse product pages"
-      nextHref={nextProductsPath}
+      nextHref={paginationData.nextHref}
       nextLabel="Next products"
     />
   );

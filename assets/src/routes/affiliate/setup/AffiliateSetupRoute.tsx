@@ -24,11 +24,7 @@ import { PageShell } from "../../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import {
   AffiliateCouponForm,
   AffiliateLinkForm,
@@ -47,9 +43,13 @@ import {
   buildNetworkVariables,
   buildProgramVariables,
   getMerchantChoiceById,
-  getMerchantSummary
+  getMerchantSummary,
+  resolveAffiliateCouponMutationOutcome,
+  resolveAffiliateLinkMutationOutcome,
+  resolveAffiliateNetworkMutationOutcome,
+  resolveAffiliateProgramMutationOutcome
 } from "./affiliate-setup-data";
-import { affiliateSetupPagePath } from "./pagination";
+import { buildAffiliateSetupPaginationData } from "./pagination";
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -156,12 +156,13 @@ function AffiliateSetupPanel({
         }
       );
       const payload = response.upsertAffiliateNetwork;
+      const outcome = resolveAffiliateNetworkMutationOutcome(payload, graphQLErrors);
 
-      if (payload?.network && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setNetworkResult(payload.network);
-        setAffiliateNetworkId(payload.network.id);
+      if (outcome.error === null) {
+        setNetworkResult(outcome.result);
+        setAffiliateNetworkId(outcome.result.id);
       } else {
-        setNetworkError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+        setNetworkError(outcome.error);
       }
     } catch {
       setNetworkError(DEFAULT_ROUTE_ERROR_MESSAGE);
@@ -191,11 +192,12 @@ function AffiliateSetupPanel({
         }
       );
       const payload = response.upsertAffiliateProgram;
+      const outcome = resolveAffiliateProgramMutationOutcome(payload, graphQLErrors);
 
-      if (payload?.program && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setProgramResult(payload.program);
+      if (outcome.error === null) {
+        setProgramResult(outcome.result);
       } else {
-        setProgramError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+        setProgramError(outcome.error);
       }
     } catch {
       setProgramError(DEFAULT_ROUTE_ERROR_MESSAGE);
@@ -225,11 +227,12 @@ function AffiliateSetupPanel({
         }
       );
       const payload = response.upsertAffiliateLink;
+      const outcome = resolveAffiliateLinkMutationOutcome(payload, graphQLErrors);
 
-      if (payload?.link && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setLinkResult(payload.link);
+      if (outcome.error === null) {
+        setLinkResult(outcome.result);
       } else {
-        setLinkError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+        setLinkError(outcome.error);
       }
     } catch {
       setLinkError(DEFAULT_ROUTE_ERROR_MESSAGE);
@@ -259,11 +262,12 @@ function AffiliateSetupPanel({
         }
       );
       const payload = response.createCoupon;
+      const outcome = resolveAffiliateCouponMutationOutcome(payload, graphQLErrors);
 
-      if (payload?.coupon && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setCouponResult(payload.coupon);
+      if (outcome.error === null) {
+        setCouponResult(outcome.result);
       } else {
-        setCouponError(routeMutationErrorMessage(payload?.errors, graphQLErrors));
+        setCouponError(outcome.error);
       }
     } catch {
       setCouponError(DEFAULT_ROUTE_ERROR_MESSAGE);
@@ -272,6 +276,13 @@ function AffiliateSetupPanel({
       setCouponPending(false);
     }
   }
+
+  const paginationData = buildAffiliateSetupPaginationData({
+    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    hasNextPage: data.merchants.pageInfo.hasNextPage,
+    hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
+    pagination: merchantPagination
+  });
 
   return (
     <WorkspaceLayout
@@ -337,21 +348,10 @@ function AffiliateSetupPanel({
       )}
 
       <Pagination
-        firstHref={
-          data.merchants.pageInfo.hasPreviousPage && merchantPagination.after
-            ? affiliateSetupPagePath({ ...merchantPagination, after: null })
-            : null
-        }
+        firstHref={paginationData.firstHref}
         firstLabel="First merchants"
         label="Merchant choice pages"
-        nextHref={
-          data.merchants.pageInfo.hasNextPage && data.merchants.pageInfo.endCursor
-            ? affiliateSetupPagePath({
-                ...merchantPagination,
-                after: data.merchants.pageInfo.endCursor
-              })
-            : null
-        }
+        nextHref={paginationData.nextHref}
         nextLabel="Next merchants"
       />
     </WorkspaceLayout>

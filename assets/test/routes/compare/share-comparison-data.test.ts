@@ -6,10 +6,21 @@ import {
   publishedSnapshotFromPayload,
   publishComparisonSnapshotState,
   removeComparisonSnapshotId,
+  resolvePublishComparisonSnapshotMutationOutcome,
+  resolveRevokeComparisonSnapshotMutationOutcome,
   revokeComparisonSnapshotState,
   snapshotFromNode,
   type PublishedComparisonSnapshot
 } from "../../../src/routes/compare/share-comparison-data";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+
+const MUTATION_ERROR = {
+  code: "INVALID_ARGUMENT",
+  field: "snapshotId",
+  message: "Comparison snapshot is unavailable."
+} as const;
+
+const GRAPHQL_ERROR = { message: "Private GraphQL failure" } as const;
 
 test("buildComparisonSnapshotPublishInput preserves product order and maps profiles", () => {
   expect(
@@ -119,6 +130,126 @@ test("publishedSnapshotFromPayload projects only a complete publish payload", ()
     publishedSnapshotFromPayload({ sharePath: "/compare/shared/public-token" }, "Travel kit")
   ).toBeNull();
 });
+
+test("publish mutation outcome projects a complete error-free snapshot", () => {
+  const payload = Object.freeze({
+    errors: Object.freeze([]),
+    sharePath: "/compare/shared/public-token",
+    snapshot: Object.freeze({ id: "snapshot-1" })
+  });
+  const graphQLErrors = Object.freeze([]);
+
+  expect(
+    resolvePublishComparisonSnapshotMutationOutcome(
+      payload,
+      "Travel kit",
+      graphQLErrors
+    )
+  ).toEqual({
+    error: null,
+    snapshot: {
+      id: "snapshot-1",
+      path: "/compare/shared/public-token",
+      title: "Travel kit"
+    }
+  });
+  expect(payload).toEqual({
+    errors: [],
+    sharePath: "/compare/shared/public-token",
+    snapshot: { id: "snapshot-1" }
+  });
+  expect(graphQLErrors).toEqual([]);
+});
+
+test.each([
+  ["missing payload", undefined, DEFAULT_ROUTE_ERROR_MESSAGE],
+  ["null payload", null, DEFAULT_ROUTE_ERROR_MESSAGE],
+  ["missing snapshot", { sharePath: "/compare/shared/token" }, DEFAULT_ROUTE_ERROR_MESSAGE],
+  [
+    "missing snapshot id",
+    { snapshot: {}, sharePath: "/compare/shared/token" },
+    DEFAULT_ROUTE_ERROR_MESSAGE
+  ],
+  [
+    "null snapshot id",
+    { snapshot: { id: null }, sharePath: "/compare/shared/token", errors: [MUTATION_ERROR] },
+    MUTATION_ERROR.message
+  ],
+  ["missing share path", { snapshot: { id: "snapshot-1" } }, DEFAULT_ROUTE_ERROR_MESSAGE],
+  [
+    "null share path",
+    { snapshot: { id: "snapshot-1" }, sharePath: null, errors: [MUTATION_ERROR] },
+    MUTATION_ERROR.message
+  ]
+] as const)("publish mutation outcome rejects a %s", (_case, payload, error) => {
+  expect(resolvePublishComparisonSnapshotMutationOutcome(payload, null, [])).toEqual({
+    error,
+    snapshot: null
+  });
+});
+
+test("publish outcomes give top-level GraphQL errors precedence over complete data", () => {
+  expect(
+    resolvePublishComparisonSnapshotMutationOutcome(
+      {
+        snapshot: { id: "snapshot-1" },
+        sharePath: "/compare/shared/public-token",
+        errors: []
+      },
+      null,
+      [GRAPHQL_ERROR]
+    )
+  ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, snapshot: null });
+});
+
+test("revoke mutation outcome returns the original snapshot for an error-free payload", () => {
+  const revoked = Object.freeze(snapshot("snapshot-1", "Travel kit"));
+  const payload = Object.freeze({
+    errors: Object.freeze([]),
+    revokedSnapshotId: "snapshot-1"
+  });
+  const graphQLErrors = Object.freeze([]);
+  const outcome = resolveRevokeComparisonSnapshotMutationOutcome(
+    payload,
+    revoked,
+    graphQLErrors
+  );
+
+  expect(outcome).toEqual({ error: null, snapshot: revoked });
+  expect(outcome.snapshot).toBe(revoked);
+  expect(payload).toEqual({ errors: [], revokedSnapshotId: "snapshot-1" });
+  expect(graphQLErrors).toEqual([]);
+});
+
+test.each([
+  ["missing payload", undefined, [], DEFAULT_ROUTE_ERROR_MESSAGE],
+  ["null payload", null, [], DEFAULT_ROUTE_ERROR_MESSAGE],
+  ["missing fact", { errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
+  ["null fact", { revokedSnapshotId: null, errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
+  [
+    "mismatched fact",
+    { revokedSnapshotId: "snapshot-2", errors: [] },
+    [],
+    DEFAULT_ROUTE_ERROR_MESSAGE
+  ],
+  [
+    "top-level GraphQL error",
+    { revokedSnapshotId: "snapshot-1", errors: [] },
+    [GRAPHQL_ERROR],
+    DEFAULT_ROUTE_ERROR_MESSAGE
+  ]
+] as const)(
+  "revoke mutation outcome rejects a %s",
+  (_case, payload, graphQLErrors, error) => {
+    expect(
+      resolveRevokeComparisonSnapshotMutationOutcome(
+        payload,
+        snapshot("snapshot-1", "Travel kit"),
+        graphQLErrors
+      )
+    ).toEqual({ error, snapshot: null });
+  }
+);
 
 test("snapshotFromNode projects structural source nodes and falls back to an untitled snapshot", () => {
   expect(

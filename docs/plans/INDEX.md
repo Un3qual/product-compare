@@ -60,11 +60,20 @@ saved-comparison naming data, merchant visible-page filter data, and price-watch
 input data, feed-candidate review view data, and tracked-commerce click data are
 also complete. Immutable route-state collection helpers are also complete.
 Catalog filter-form state, feed-candidate review mutation data, and offer-
-discovery card view data are also complete. Four source-verified, non-
-overlapping successors remain ready across category landing view data, alerts
+discovery card view data are also complete. Category landing view data, alerts
 mutation data, recommendation result view data, and shared route-error view
-data. Trust-surface date presentation, product-attribute grouping, route-
-metadata resolution, and saved-comparison navigation data are complete.
+data are complete. Trust-surface date presentation, product-attribute grouping,
+route-metadata resolution, and saved-comparison navigation data are complete.
+Product-community, affiliate-setup, and share-comparison mutation outcome data
+are complete. Price-watch, tracked-commerce click mutation outcome, reset-
+password request, shared-comparison view data, compare-picker visible-option
+data, compare-selection tray view data, and verify-email request data are also
+complete. API-token, affiliate-setup, and feed-candidate pagination data are
+also complete. Merchant-directory pagination data is also complete. Catalog-
+browse and offer-discovery pagination data are also complete. Alert product
+navigation is also complete. Merchant-directory row data, product-offer
+navigation paths, and category product navigation are the three current ready
+successors in the live queue.
 
 Active implementation plans:
 
@@ -150,10 +159,9 @@ batch and should not be recreated or promoted.
 - Completed reserve: catalog filter-form state, feed-candidate review mutation
   data, and offer-discovery card view data executed through that same plan; do
   not promote them again without fresh scope.
-- Ready reserve: category landing view data, alerts mutation data,
-  recommendation result view data, and shared route-error view data execute
-  through that same plan. Confirm live ownership in `docs/work/index.md` before
-  dispatch.
+- Completed reserve: category landing view data, alerts mutation data,
+  recommendation result view data, and shared route-error view data executed
+  through that same plan; do not promote them again without fresh scope.
 - Completed reserve: API-token controls, compare specification matrix, catalog
   advanced-filter presentation, and offer-discovery card presentation are
   complete through

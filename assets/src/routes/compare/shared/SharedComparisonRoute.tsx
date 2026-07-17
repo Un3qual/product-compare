@@ -7,7 +7,7 @@ import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { formatProductDateTimeLabel } from "../../product-formatting";
-import { buildComparePathFromSlugs } from "../paths";
+import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
 import type { SharedComparisonLoaderData } from "./loader";
 import sharedComparisonRouteQuery from "./queries/SharedComparisonRouteQuery";
 
@@ -22,43 +22,134 @@ const styles = create({
   title: { fontSize: "1.35rem", margin: 0 }
 });
 
+type SharedProductViewData = ReturnType<
+  typeof buildSharedComparisonViewData
+>["products"][number];
+type SharedRecommendationViewData = ReturnType<
+  typeof buildSharedComparisonViewData
+>["recommendation"];
+
 export function SharedComparisonRoute() {
   const loaderData = useLoaderData() as SharedComparisonLoaderData;
+
   if (loaderData.status !== "ready") {
-    return <PageShell eyebrow="Shared decision" title="Comparison not found"><FeedbackState kind="error" title="This snapshot is unavailable or has been revoked." /></PageShell>;
+    return (
+      <PageShell eyebrow="Shared decision" title="Comparison not found">
+        <FeedbackState
+          kind="error"
+          title="This snapshot is unavailable or has been revoked."
+        />
+      </PageShell>
+    );
   }
 
   return <ReadySharedComparison query={loaderData.query} />;
 }
 
-function ReadySharedComparison({ query }: { query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"] }) {
-  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(sharedComparisonRouteQuery, query);
-  const data = usePreloadedQuery<SharedComparisonRouteQueryType>(sharedComparisonRouteQuery, queryRef);
+function ReadySharedComparison({
+  query
+}: {
+  query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"];
+}) {
+  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(
+    sharedComparisonRouteQuery,
+    query
+  );
+  const data = usePreloadedQuery<SharedComparisonRouteQueryType>(
+    sharedComparisonRouteQuery,
+    queryRef
+  );
   const snapshot = data.comparisonSnapshot;
-  if (!snapshot) return null;
-  const winner = snapshot.recommendation.rankings.find((ranking) => ranking.productId === snapshot.recommendation.winnerProductId);
+
+  if (!snapshot) {
+    return null;
+  }
+
+  const viewData = buildSharedComparisonViewData(snapshot);
 
   return (
-    <PageShell eyebrow="Shared decision" title={snapshot.title ?? "Shared product comparison"} description="A fixed, source-backed record of the facts available when this comparison was published.">
-      <p {...props(styles.capture)}>Captured <time dateTime={snapshot.capturedAt}>{formatProductDateTimeLabel(snapshot.capturedAt)}</time></p>
-      <p role="note" {...props(styles.disclaimer)}>{snapshot.disclaimer}</p>
-      <section aria-labelledby="shared-recommendation" {...props(styles.recommendation)}>
-        <h2 id="shared-recommendation" {...props(styles.title)}>Captured recommendation</h2>
-        {winner ? <><strong>{winner.productName}</strong><ul>{winner.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></> : <><strong>No supported winner</strong><ul>{snapshot.recommendation.missingInputs.map((reason) => <li key={reason}>{reason}</li>)}</ul></>}
-        <p {...props(styles.evidence)}>Algorithm {snapshot.recommendation.algorithmVersion}; evaluated {formatProductDateTimeLabel(snapshot.recommendation.evaluatedAt)}.</p>
-      </section>
+    <PageShell
+      description="A fixed, source-backed record of the facts available when this comparison was published."
+      eyebrow="Shared decision"
+      title={viewData.title}
+    >
+      <p {...props(styles.capture)}>
+        Captured{" "}
+        <time dateTime={viewData.capturedAt}>
+          {formatProductDateTimeLabel(viewData.capturedAt)}
+        </time>
+      </p>
+      <p role="note" {...props(styles.disclaimer)}>
+        {viewData.disclaimer}
+      </p>
+      <SharedRecommendation recommendation={viewData.recommendation} />
       <section aria-label="Captured products" {...props(styles.grid)}>
-        {snapshot.products.map((product) => (
-          <article key={product.id} {...props(styles.product)}>
-            <h2 {...props(styles.title)}>{product.name}</h2>
-            <p {...props(styles.capture)}>{product.brandName ?? "Unknown brand"}{product.modelNumber ? ` · ${product.modelNumber}` : ""}</p>
-            {product.description ? <p>{product.description}</p> : null}
-            <dl {...props(styles.attributeList)}>{product.attributes.map((attribute) => <div key={attribute.claimId}><dt>{attribute.displayName}</dt><dd>{attribute.valueText}</dd><p {...props(styles.evidence)}>Accepted claim {attribute.claimId}{attribute.evidence.length ? ` · ${attribute.evidence[0].sourceName}` : ""}</p></div>)}</dl>
-            {product.offers.map((offer) => <p key={offer.pricePointId}>{offer.merchantName}: {offer.landedPrice} {offer.currency} landed <span {...props(styles.evidence)}>(observed {formatProductDateTimeLabel(offer.observedAt)})</span></p>)}
-          </article>
+        {viewData.products.map((product) => (
+          <SharedProductCard key={product.id} product={product} />
         ))}
       </section>
-      <Link to={buildComparePathFromSlugs(snapshot.products.map((product) => product.slug))}>Open a live comparison</Link>
+      <Link to={viewData.liveComparisonPath}>Open a live comparison</Link>
     </PageShell>
+  );
+}
+
+function SharedRecommendation({
+  recommendation
+}: {
+  recommendation: SharedRecommendationViewData;
+}) {
+  return (
+    <section
+      aria-labelledby="shared-recommendation"
+      {...props(styles.recommendation)}
+    >
+      <h2 id="shared-recommendation" {...props(styles.title)}>
+        Captured recommendation
+      </h2>
+      <strong>{recommendation.label}</strong>
+      <ul>
+        {recommendation.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+      </ul>
+      <p {...props(styles.evidence)}>
+        Algorithm {recommendation.algorithmVersion}; evaluated{" "}
+        {formatProductDateTimeLabel(recommendation.evaluatedAt)}.
+      </p>
+    </section>
+  );
+}
+
+function SharedProductCard({ product }: { product: SharedProductViewData }) {
+  return (
+    <article {...props(styles.product)}>
+      <h2 {...props(styles.title)}>{product.name}</h2>
+      <p {...props(styles.capture)}>{product.brandModelLabel}</p>
+      {product.description ? <p>{product.description}</p> : null}
+      <dl {...props(styles.attributeList)}>
+        {product.attributes.map((attribute) => (
+          <div key={attribute.claimId}>
+            <dt>{attribute.displayName}</dt>
+            <dd>
+              {attribute.valueText}
+              <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {product.offers.map((offer) => (
+        <p key={offer.pricePointId}>
+          {offer.label}
+          {offer.observedAt ? (
+            <>
+              {" "}
+              <span {...props(styles.evidence)}>
+                (observed {formatProductDateTimeLabel(offer.observedAt)})
+              </span>
+            </>
+          ) : null}
+        </p>
+      ))}
+    </article>
   );
 }

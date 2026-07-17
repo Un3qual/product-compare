@@ -9,20 +9,24 @@ import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   findMutationError,
-  invalidTokenMutationError,
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
   transportMutationErrors
 } from "./errors";
+import {
+  CREDENTIAL_RESET_COMPLETION_MESSAGE,
+  normalizeResetPasswordToken,
+  resetPasswordErrorsForToken
+} from "./reset-password-data";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
-
-const missingTokenError = invalidTokenMutationError("This reset link is missing or invalid.");
 
 export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token")?.trim() ?? "";
-  const [errors, setErrors] = useState<MutationError[]>(token ? [] : [missingTokenError]);
+  const token = normalizeResetPasswordToken(searchParams.get("token"));
+  const [errors, setErrors] = useState<MutationError[]>(
+    resetPasswordErrorsForToken(token)
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeRequestVersion = useRef(0);
@@ -32,14 +36,14 @@ export function ResetPasswordRoute() {
     // Bump the active request marker so late responses from an older token do not
     // overwrite the UI after navigation or a newer submit.
     activeRequestVersion.current += 1;
-    setErrors(token ? [] : [missingTokenError]);
+    setErrors(resetPasswordErrorsForToken(token));
     setMessage(null);
     setIsSubmitting(false);
   }, [token]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrors(token ? [] : [missingTokenError]);
+    setErrors(resetPasswordErrorsForToken(token));
     setMessage(null);
 
     if (!token) {
@@ -65,7 +69,7 @@ export function ResetPasswordRoute() {
           const result = resolveActionMutationResult(response?.resetPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
-            setMessage("Your password has been updated.");
+            setMessage(CREDENTIAL_RESET_COMPLETION_MESSAGE);
             setIsSubmitting(false);
             return;
           }
