@@ -18,10 +18,10 @@
 - Result: the existing framework-free offer-discovery filter-data owner now
   returns exact first-page and next-page hrefs while `OfferDiscoveryList`
   retains shared pagination markup, labels, and presentation.
-- Candidate evidence: current source inspection found this deterministic
-  projection in the React list; the existing pure and route suites pass 60
-  tests and its owned paths do not overlap the feed-candidate, merchant-
-  directory, or catalog-browse candidates.
+- Candidate evidence: source inspection found this deterministic projection in
+  the React list; before implementation, the existing pure and route suites
+  passed 60 tests. Its owned paths did not overlap the feed-candidate,
+  merchant-directory, or catalog-browse candidates.
 - Blockers: none.
 
 ## Boundaries

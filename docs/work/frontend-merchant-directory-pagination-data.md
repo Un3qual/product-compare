@@ -18,10 +18,10 @@
 - Result: the existing framework-free merchant-directory pagination owner now
   returns exact first-page and next-page hrefs while `MerchantDirectoryView`
   retains shared markup, labels, and presentation.
-- Candidate evidence: current source inspection found this deterministic
-  projection in the React route; the existing loader and route suites pass 33
-  tests and its owned paths do not overlap the API-token, affiliate-setup, or
-  feed-candidate candidates.
+- Candidate evidence: source inspection found this deterministic projection in
+  the React route; before implementation, the existing loader and route suites
+  passed 33 tests. Its owned paths did not overlap the API-token,
+  affiliate-setup, or feed-candidate candidates.
 - Blockers: none.
 
 ## Boundaries

@@ -25,6 +25,9 @@ const styles = create({
 type SharedProductViewData = ReturnType<
   typeof buildSharedComparisonViewData
 >["products"][number];
+type SharedRecommendationViewData = ReturnType<
+  typeof buildSharedComparisonViewData
+>["recommendation"];
 
 export function SharedComparisonRoute() {
   const loaderData = useLoaderData() as SharedComparisonLoaderData;
@@ -79,24 +82,7 @@ function ReadySharedComparison({
       <p role="note" {...props(styles.disclaimer)}>
         {viewData.disclaimer}
       </p>
-      <section
-        aria-labelledby="shared-recommendation"
-        {...props(styles.recommendation)}
-      >
-        <h2 id="shared-recommendation" {...props(styles.title)}>
-          Captured recommendation
-        </h2>
-        <strong>{viewData.recommendation.label}</strong>
-        <ul>
-          {viewData.recommendation.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-        <p {...props(styles.evidence)}>
-          Algorithm {viewData.recommendation.algorithmVersion}; evaluated{" "}
-          {formatProductDateTimeLabel(viewData.recommendation.evaluatedAt)}.
-        </p>
-      </section>
+      <SharedRecommendation recommendation={viewData.recommendation} />
       <section aria-label="Captured products" {...props(styles.grid)}>
         {viewData.products.map((product) => (
           <SharedProductCard key={product.id} product={product} />
@@ -104,6 +90,33 @@ function ReadySharedComparison({
       </section>
       <Link to={viewData.liveComparisonPath}>Open a live comparison</Link>
     </PageShell>
+  );
+}
+
+function SharedRecommendation({
+  recommendation
+}: {
+  recommendation: SharedRecommendationViewData;
+}) {
+  return (
+    <section
+      aria-labelledby="shared-recommendation"
+      {...props(styles.recommendation)}
+    >
+      <h2 id="shared-recommendation" {...props(styles.title)}>
+        Captured recommendation
+      </h2>
+      <strong>{recommendation.label}</strong>
+      <ul>
+        {recommendation.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+      </ul>
+      <p {...props(styles.evidence)}>
+        Algorithm {recommendation.algorithmVersion}; evaluated{" "}
+        {formatProductDateTimeLabel(recommendation.evaluatedAt)}.
+      </p>
+    </section>
   );
 }
 
@@ -117,8 +130,10 @@ function SharedProductCard({ product }: { product: SharedProductViewData }) {
         {product.attributes.map((attribute) => (
           <div key={attribute.claimId}>
             <dt>{attribute.displayName}</dt>
-            <dd>{attribute.valueText}</dd>
-            <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
+            <dd>
+              {attribute.valueText}
+              <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
+            </dd>
           </div>
         ))}
       </dl>

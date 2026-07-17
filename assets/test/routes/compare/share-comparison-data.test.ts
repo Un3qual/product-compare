@@ -227,6 +227,12 @@ test.each([
   ["missing fact", { errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
   ["null fact", { revokedSnapshotId: null, errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
   [
+    "mismatched fact",
+    { revokedSnapshotId: "snapshot-2", errors: [] },
+    [],
+    DEFAULT_ROUTE_ERROR_MESSAGE
+  ],
+  [
     "top-level GraphQL error",
     { revokedSnapshotId: "snapshot-1", errors: [] },
     [GRAPHQL_ERROR],

@@ -99,7 +99,8 @@ export function resolveRevokeComparisonSnapshotMutationOutcome(
   snapshot: PublishedComparisonSnapshot,
   graphQLErrors?: readonly unknown[] | null
 ): ComparisonSnapshotMutationOutcome {
-  return payload?.revokedSnapshotId && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload?.revokedSnapshotId === snapshot.id &&
+    !hasRouteGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
         error: routeMutationErrorMessage(payload?.errors, graphQLErrors),

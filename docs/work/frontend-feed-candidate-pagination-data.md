@@ -19,10 +19,10 @@
   returns exact first-page and next-page hrefs while
   `FeedCandidateReviewList` retains empty-list behavior, shared markup, labels,
   and presentation.
-- Candidate evidence: current source inspection found this deterministic
-  projection in the React list; the existing pure and route suites pass 30
-  tests and its owned paths do not overlap the verify-email, API-token, or
-  affiliate-setup candidates.
+- Candidate evidence: source inspection found this deterministic projection in
+  the React list; before implementation, the existing pure and route suites
+  passed 30 tests. Its owned paths did not overlap the verify-email, API-token,
+  or affiliate-setup candidates.
 - Blockers: none.
 
 ## Boundaries

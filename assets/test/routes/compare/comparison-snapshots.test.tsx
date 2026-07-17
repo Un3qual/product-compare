@@ -200,7 +200,7 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
     id: "snapshot-1", title: "Camera shortlist", capturedAt: "2026-07-13T23:00:00Z", disclaimer: "This is a captured snapshot.",
     recommendation: { profile: "LOWEST_CURRENT_COST", algorithmVersion: "lowest-v1", evaluatedAt: "2026-07-13T23:00:00Z", status: "WINNER", winnerProductId: "product-2", currency: "USD", missingInputs: [], rankings: [{ rank: 1, productId: "product-2", productName: "Second camera", landedPrice: "90", currency: "USD", pricePointId: "point-2", claimIds: [], reasons: ["Lowest current cost"] }] },
     products: [
-      { id: "product-2", name: "Second camera", slug: "second-camera", description: null, modelNumber: null, brandName: "Acme", attributes: [], offers: [{ pricePointId: "point-2", merchantProductId: "offer-2", merchantName: "Shop", merchantDomain: "shop.example", currency: "USD", itemPrice: "85", shipping: "5", landedPrice: "90", observedAt: "2026-07-13T22:00:00Z", freshness: "fresh" }] },
+      { id: "product-2", name: "Second camera", slug: "second-camera", description: null, modelNumber: null, brandName: "Acme", attributes: [{ claimId: "claim-1", displayName: "Sensor", sourceType: "official", valueText: "Full frame", evidence: [{ sourceName: "Acme specifications" }] }], offers: [{ pricePointId: "point-2", merchantProductId: "offer-2", merchantName: "Shop", merchantDomain: "shop.example", currency: "USD", itemPrice: "85", shipping: "5", landedPrice: "90", observedAt: "2026-07-13T22:00:00Z", freshness: "fresh" }] },
       { id: "product-1", name: "First camera", slug: "first-camera", description: null, modelNumber: null, brandName: "Bravo", attributes: [], offers: [] }
     ]
   } } as never);
@@ -210,6 +210,9 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
   expect(screen.getByRole("note")).toHaveTextContent("captured snapshot");
   expect(screen.getByText("Second camera", { selector: "strong" })).toBeVisible();
   expect(screen.getByText(/Shop: 90 USD landed/)).toBeVisible();
+  expect(
+    screen.getByText("Accepted claim claim-1 · Acme specifications").closest("dd")
+  ).toHaveTextContent("Full frame");
   expect(screen.getByText("Jul 13, 2026, 11:00 PM", { selector: "time" })).toHaveAttribute(
     "datetime",
     "2026-07-13T23:00:00Z"

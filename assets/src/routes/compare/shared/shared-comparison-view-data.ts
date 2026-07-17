@@ -122,7 +122,7 @@ function projectProduct(product: SharedComparisonProductInput) {
 }
 
 function nonBlankText(value: string | null | undefined) {
-  return value && value.trim() ? value : null;
+  return value?.trim() ? value : null;
 }
 
 function scalarText(value: unknown) {
