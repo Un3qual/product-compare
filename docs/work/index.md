@@ -1141,7 +1141,7 @@ None.
 
 Root viewer projection completed on 2026-07-17. One framework-free owner now
 validates and projects both query and cached viewer values; focused pure and
-root-route coverage, TypeScript, dependency scans, the full 1,388-test frontend
+root-route coverage, TypeScript, dependency scans, the full 1,395-test frontend
 gate, and queue validation are recorded in
 `docs/work/frontend-root-viewer-projection.md`.
 

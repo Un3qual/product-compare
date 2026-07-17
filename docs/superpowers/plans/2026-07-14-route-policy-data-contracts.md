@@ -1906,11 +1906,12 @@ link rendering, accessibility attributes, markup, and presentation.
 ## Validation Evidence
 
 - Root viewer projection completed on 2026-07-17 after a missing-module RED
-  case and five pure cases covering nullish, primitive, incomplete, exact valid,
-  and immutable viewer inputs. The pure and root route suites pass 21 tests;
-  TypeScript, consumer, dependency, and diff checks pass. The full frontend
-  gate passes Relay validation, 1,388 tests, client and SSR builds, and the
-  596,262 raw / 182,114 gzip-byte bundle contract.
+  case and five pure tests covering nullish, primitive, exact valid, immutable,
+  and table-driven incomplete/invalid values: missing fields, numeric/null ID,
+  numeric/null email, and a non-boolean operator state. The pure and root route
+  suites pass 28 tests; TypeScript, consumer, dependency, and diff checks pass.
+  The full frontend gate passes Relay validation, 1,395 tests, client and SSR
+  builds, and the 596,262 raw / 182,114 gzip-byte bundle contract.
 - Catalog sort select input completed on 2026-07-17 after seven RED cases
   covered all four supported values plus blank, unknown, and future catalog-
   order fallbacks. The pure and catalog route suites pass 69 tests, and the

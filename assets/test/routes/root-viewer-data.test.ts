@@ -11,17 +11,17 @@ test("projects no viewer for primitive values", () => {
   }
 });
 
-test("projects no viewer for incomplete viewer values", () => {
-  expect(projectRootViewer({ id: "viewer-1", email: "person@example.com" })).toBeNull();
-  expect(projectRootViewer({ id: "viewer-1", isOperator: false })).toBeNull();
-  expect(projectRootViewer({ email: "person@example.com", isOperator: false })).toBeNull();
-  expect(
-    projectRootViewer({
-      id: "viewer-1",
-      email: "person@example.com",
-      isOperator: "false"
-    })
-  ).toBeNull();
+test.each([
+  ["missing email", { id: "viewer-1", isOperator: false }],
+  ["missing id", { email: "person@example.com", isOperator: false }],
+  ["missing operator state", { id: "viewer-1", email: "person@example.com" }],
+  ["numeric id", { id: 1, email: "person@example.com", isOperator: false }],
+  ["null id", { id: null, email: "person@example.com", isOperator: false }],
+  ["numeric email", { id: "viewer-1", email: 1, isOperator: false }],
+  ["null email", { id: "viewer-1", email: null, isOperator: false }],
+  ["non-boolean operator state", { id: "viewer-1", email: "person@example.com", isOperator: "false" }]
+])("projects no viewer for an incomplete or invalid viewer with %s", (_, viewer) => {
+  expect(projectRootViewer(viewer)).toBeNull();
 });
 
 test("projects the exact valid viewer fields", () => {

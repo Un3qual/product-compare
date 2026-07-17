@@ -17,9 +17,10 @@
   root loader and `RootRoute` now call its validated projection; fetching,
   cached degraded fallback, abort handling, Relay reads, outlet context,
   navigation, and presentation remain in their original owners.
-- Evidence: the contract rejects nullish, primitive, and incomplete values,
-  projects exact valid fields, and does not mutate its input. The root route
-  characterization continues to cover ready Relay and degraded-cache behavior.
+- Evidence: the contract rejects nullish, primitive, incomplete, numeric/null
+  ID, numeric/null email, and non-boolean operator values; it projects exact
+  valid fields and does not mutate its input. The root route characterization
+  continues to cover ready Relay and degraded-cache behavior.
 - Blockers: none.
 
 ## Boundaries
@@ -36,13 +37,13 @@
 - RED: `cd assets && bun x vitest run test/routes/root-viewer-data.test.ts`
   failed as expected because `src/routes/root/viewer-data.ts` was absent.
 - `cd assets && bun x vitest run test/routes/root-viewer-data.test.ts test/routes/root.route.test.tsx`
-  passed: 2 files, 21 tests, 0 failures.
+  passed: 2 files, 28 tests, 0 failures.
 - `cd assets && bun run typecheck` passed.
 - Consumer scan found only the root loader, `RootRoute`, and the direct pure
   test import. The framework/transport scan found no React, router, Relay,
   StyleX, or generated-query dependency in `viewer-data.ts`.
 - `git diff --check` passed.
-- `cd assets && bun run check` passed: Relay validation, TypeScript, 1,388
+- `cd assets && bun run check` passed: Relay validation, TypeScript, 1,395
   tests, client and SSR builds, and the 596,262 raw / 182,114 gzip-byte bundle
   contract.
 - `mix work_queue.validate` passed: 3 ready rows.
