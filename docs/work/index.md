@@ -1039,46 +1039,21 @@ saved-set presentation policy. Its pure and route-state suites pass 54 tests.
 The successor is path-disjoint from snapshot pagination, API-token status-
 filter navigation, and compare specification-mode navigation.
 
+Before claiming the API-token status-filter navigation row, current source
+inspection confirmed that watch-toggle mutation state and Pause/Resume copy
+remain duplicated in `AlertsRoute`, while the existing framework-free alerts
+view-data owner already owns deterministic watch presentation policy. Its pure
+and route suites pass 16 tests. The successor is path-disjoint from API-token
+status-filter navigation, compare specification-mode navigation, and saved-
+comparison card display data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. API-Token Status-Filter Navigation Data Contract
-
-Status: ready
-Lane: Frontend API-token status-filter navigation data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move ordered status-filter labels, destinations, and current-state
-policy from `ApiTokenControls` into the existing API-token route-data owner.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-status-filter-navigation-data.md`
-
-Prerequisites:
-
-- All, Active, and Revoked filters retain their current order and labels.
-- Each filter uses the canonical status-aware API-token page path and exactly
-  one filter is current.
-- Existing API-token route-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the route-data module
-- `git diff --check`
-
-Exit condition: the route-data owner projects stable API-token status-filter
-navigation without changing links, accessibility state, route behavior,
-markup, or presentation.
-
-### 2. Compare Specification-Mode Navigation Data Contract
+### 1. Compare Specification-Mode Navigation Data Contract
 
 Status: ready
 Lane: Frontend compare specification-mode navigation data
@@ -1111,7 +1086,7 @@ Exit condition: the framework-free owner projects stable specification-mode
 navigation without changing Radix tabs, links, panels, children, markup, or
 presentation.
 
-### 3. Saved Comparison Card Display Data Contract
+### 2. Saved Comparison Card Display Data Contract
 
 Status: ready
 Lane: Frontend saved comparison card display data
@@ -1146,6 +1121,39 @@ Verification:
 Exit condition: the framework-free owner projects stable saved-comparison card
 copy without changing links, delete actions, markup, or presentation.
 
+### 3. Alert Watch-Toggle Control Data Contract
+
+Status: ready
+Lane: Frontend alert watch-toggle control data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move enabled-state inversion and Pause/Resume copy from
+`AlertsRoute` into the existing framework-free alerts view-data owner.
+Owned paths:
+
+- `assets/src/routes/account/alerts/alerts-view-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-alert-watch-toggle-control-data.md`
+
+Prerequisites:
+
+- Enabled watches project a disabled mutation value and Pause label.
+- Disabled watches project an enabled mutation value and Resume label.
+- Existing alert view-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the alerts view-data
+  module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable watch-toggle control
+data without changing mutation shape, grouping, pending behavior, markup, or
+presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1155,6 +1163,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+API-token status-filter navigation data completed on 2026-07-17. The
+framework-free route-data owner now projects ordered All, Active, and Revoked
+rows with canonical destinations and exactly one current state. The React
+owner still controls link rendering, accessibility attributes, route behavior,
+markup, and presentation. Its pure and route suites passed 81 tests;
+TypeScript, consumer, dependency, and diff checks are recorded in
+`docs/work/frontend-api-token-status-filter-navigation-data.md`.
 
 Comparison snapshot pagination cursor data completed on 2026-07-17. The
 framework-free share-comparison data owner now accepts only a non-empty,

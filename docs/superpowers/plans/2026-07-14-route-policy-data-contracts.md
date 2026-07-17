@@ -1895,13 +1895,13 @@ page accumulation, actions, markup, and presentation.
 status-filter labels, destinations, and current state. The React owner retains
 link rendering, accessibility attributes, markup, and presentation.
 
-- [ ] Write pure tests for filter order, labels, canonical paths, exactly one
+- [x] Write pure tests for filter order, labels, canonical paths, exactly one
   current state, and input immutability; verify RED.
-- [ ] Move only deterministic status-filter navigation while preserving links,
+- [x] Move only deterministic status-filter navigation while preserving links,
   accessibility state, route behavior, markup, and presentation.
-- [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+- [x] Run the API-token route-data and route suites, TypeScript, consumer and
   framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1951,8 +1951,38 @@ The React owner retains links, delete actions, markup, and presentation.
   consumer and framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 68: Alert Watch-Toggle Control Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/alerts/alerts-view-data.ts`
+- Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- Modify: `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-alert-watch-toggle-control-data.md`
+
+**Interfaces:** The existing framework-free alerts view-data owner projects
+the next enabled state and Pause/Resume label for a watch-toggle control. The
+React owner retains generated types, mutation orchestration, grouping, pending
+state, markup, and presentation.
+
+- [ ] Write pure tests for enabled and disabled watches plus input
+  immutability; verify RED.
+- [ ] Move only deterministic watch-toggle control data while preserving the
+  mutation shape, grouping, pending behavior, markup, and presentation.
+- [ ] Run the alert view-data and route suites, TypeScript, consumer and
+  framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- API-token status-filter navigation completed on 2026-07-17 after the pure
+  contract RED failed with 35 passing and 1 failing test because the projection
+  function was missing. The pure and route suites then passed 81 tests;
+  TypeScript, consumer and direct dependency scans, and `git diff --check`
+  passed.
 - Comparison snapshot pagination cursor data completed on 2026-07-17 after a
   framework-free missing-contract RED with 25 passing and 8 failing cases.
   The pure and snapshot route suites then passed 39 tests; TypeScript, the

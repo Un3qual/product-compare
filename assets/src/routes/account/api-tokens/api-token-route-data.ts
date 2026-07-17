@@ -120,6 +120,23 @@ export function apiTokenPagePath(tokenStatus: ApiTokenStatus, after: string | nu
   return `/account/api-tokens?${searchParams.toString()}`;
 }
 
+export function buildApiTokenStatusFilterNavigationData({
+  tokenStatus
+}: {
+  readonly tokenStatus: ApiTokenStatus;
+}) {
+  return ([
+    { label: "All", status: "all" },
+    { label: "Active", status: "active" },
+    { label: "Revoked", status: "revoked" }
+  ] as const).map(({ label, status }) => ({
+    href: apiTokenPagePath(status, null),
+    isCurrent: tokenStatus === status,
+    label,
+    status
+  }));
+}
+
 export function buildApiTokenPaginationData({
   after,
   endCursor,

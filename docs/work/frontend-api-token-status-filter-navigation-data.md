@@ -2,23 +2,25 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 80 passing API-
-  token route-data and route tests.
+- Last verified: 2026-07-17 after 81 passing API-token route-data and route
+  tests, TypeScript validation, dependency scans, and diff validation.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## API-Token Status-Filter Navigation Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move ordered status-filter labels, destinations, and current
-  state into the existing API-token route-data owner.
-- Candidate evidence: `ApiTokenControls` currently owns filter order, labels,
-  current-state policy, and raw destinations while the route-data owner already
-  owns the canonical status type and page paths; the focused suites pass 80
-  tests.
+- Status: complete on 2026-07-17.
+- Completed: `buildApiTokenStatusFilterNavigationData` now projects the stable
+  ordered filter labels, canonical destinations, and exactly one current state.
+  `ApiTokenControls` consumes that projection while retaining links,
+  accessibility attributes, markup, and presentation.
+- Verification evidence: the RED test failed because the projection was absent;
+  after implementation, the focused route-data and route suites pass 81 tests,
+  `bun run typecheck` passes, the route-data module has no framework or
+  transport imports, and `git diff --check` passes.
 - Blockers: none.
 
 ## Boundaries

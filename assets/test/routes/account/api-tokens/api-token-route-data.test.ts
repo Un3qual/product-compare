@@ -3,6 +3,7 @@ import {
   apiTokensRouteLocationIdentity,
   buildApiTokenDisplayData,
   buildApiTokenPaginationData,
+  buildApiTokenStatusFilterNavigationData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
   buildRotateApiTokenVariables,
@@ -160,6 +161,22 @@ test("apiTokenPagePath preserves status and safely encodes an optional cursor", 
   expect(apiTokenPagePath("revoked", "cursor/next?")).toBe(
     "/account/api-tokens?status=revoked&after=cursor%2Fnext%3F"
   );
+});
+
+test("buildApiTokenStatusFilterNavigationData projects ordered canonical navigation with one current filter", () => {
+  const input = Object.freeze({ tokenStatus: "active" as const });
+
+  expect(buildApiTokenStatusFilterNavigationData(input)).toEqual([
+    { href: "/account/api-tokens?status=all", isCurrent: false, label: "All", status: "all" },
+    { href: "/account/api-tokens?status=active", isCurrent: true, label: "Active", status: "active" },
+    {
+      href: "/account/api-tokens?status=revoked",
+      isCurrent: false,
+      label: "Revoked",
+      status: "revoked"
+    }
+  ]);
+  expect(input).toEqual({ tokenStatus: "active" });
 });
 
 test("buildApiTokenPaginationData returns status-preserving first and next paths", () => {

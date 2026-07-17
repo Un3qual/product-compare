@@ -9,13 +9,8 @@ import {
   API_TOKEN_EXPIRES_AT_PRESETS,
   buildApiTokenExpiresAtInputValue
 } from "./date-presets";
+import { buildApiTokenStatusFilterNavigationData } from "./api-token-route-data";
 import type { ApiTokensRouteLoaderData } from "./loader";
-
-const STATUS_FILTERS = [
-  { label: "All", status: "all" },
-  { label: "Active", status: "active" },
-  { label: "Revoked", status: "revoked" }
-] as const;
 
 const styles = create({
   createForm: {
@@ -155,11 +150,11 @@ function ApiTokenStatusFilters({
   return (
     <nav aria-label="API token status filters">
       <ul>
-        {STATUS_FILTERS.map((filter) => (
+        {buildApiTokenStatusFilterNavigationData({ tokenStatus }).map((filter) => (
           <li key={filter.status}>
             <Link
-              aria-current={tokenStatus === filter.status ? "page" : undefined}
-              to={`/account/api-tokens?status=${filter.status}`}
+              aria-current={filter.isCurrent ? "page" : undefined}
+              to={filter.href}
             >
               {filter.label}
             </Link>
