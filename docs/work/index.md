@@ -974,48 +974,28 @@ by typename and projects exact brand, ID, name, and slug context while
 preserving brand identity. Relay reads, route fallbacks, summaries, markup, and
 presentation remain unchanged. Its pure and route suites pass 73 tests.
 
+Before claiming Relay Query Descriptor Identity, the coordinator validated a
+fourth non-overlapping successor. Root viewer projection is duplicated between
+`RootRoute` and the root loader, while the loader's private copy already
+validates unknown cache/query values before projecting exact ID, email, and
+operator state. The root route characterization suite passes 16 tests. The
+successor has complete owned paths, no blockers, and does not overlap Relay
+query descriptor identity, price-watch rule-type input, or catalog sort input.
+
+Relay Query Descriptor Identity then completed. The preload layer now exports
+one canonical operation-name, query-text, and stable-variable identity, and
+both API-token and saved-comparison retainers consume it directly. Variable-
+order stability remains unchanged, descriptors with different query text stay
+distinct, and Relay lifecycle and rendering remain unchanged. Its preload and
+consumer suites pass 95 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Relay Query Descriptor Identity Contract
-
-Status: ready
-Lane: Frontend Relay query descriptor identity
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: export the Relay preload layer's canonical operation-name, query-
-text, and stable-variable descriptor identity and use it for retained API-token
-and saved-comparison query keys.
-Owned paths:
-
-- `assets/src/relay/route-preload.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
-- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
-- `assets/test/relay/route-preload.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `docs/work/frontend-relay-query-descriptor-identity.md`
-
-Prerequisites:
-
-- Descriptor identity remains stable across variable property order.
-- Query text remains part of identity alongside operation name and variables.
-- Existing Relay preload, API-token route, and saved-comparison route-state
-  characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/relay/route-preload.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer scan proving both retainers use the shared descriptor identity
-- `git diff --check`
-
-Exit condition: both React retainers use the canonical Relay descriptor
-identity without changing query lifecycle, rendering, or route behavior.
-
-### 2. Price-Watch Rule-Type Select Input Contract
+### 1. Price-Watch Rule-Type Select Input Contract
 
 Status: ready
 Lane: Frontend price-watch rule-type select input
@@ -1048,7 +1028,7 @@ Exit condition: the framework-free owner normalizes price-watch rule-type
 select input without changing form state, amount-field visibility, mutation
 inputs, events, markup, or presentation.
 
-### 3. Catalog Sort Select Input Contract
+### 2. Catalog Sort Select Input Contract
 
 Status: ready
 Lane: Frontend catalog sort select input
@@ -1079,6 +1059,40 @@ Verification:
 Exit condition: the framework-free filters owner normalizes catalog sort
 select input without changing form state, submitted fields, events, options,
 markup, or presentation.
+
+### 3. Root Viewer Projection Contract
+
+Status: ready
+Lane: Frontend root viewer projection
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move duplicated query/cache viewer validation and exact ID, email,
+and operator projection into one framework-free root viewer-data owner.
+Owned paths:
+
+- `assets/src/routes/root/viewer-data.ts`
+- `assets/src/routes/root/loader.ts`
+- `assets/src/routes/RootRoute.tsx`
+- `assets/test/routes/root-viewer-data.test.ts`
+- `assets/test/routes/root.route.test.tsx`
+- `docs/work/frontend-root-viewer-projection.md`
+
+Prerequisites:
+
+- Nullish, primitive, and incomplete viewer values continue returning no
+  viewer.
+- Valid ID, email, and operator values remain unchanged.
+- Existing root route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/root-viewer-data.test.ts test/routes/root.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the viewer-data module
+- `git diff --check`
+
+Exit condition: the root route and loader use one framework-free validated
+viewer projection without changing preload, cache fallback, navigation, home
+actions, or presentation.
 
 ## Needs Decision Work
 

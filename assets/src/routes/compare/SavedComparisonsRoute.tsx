@@ -7,7 +7,10 @@ import deleteSavedComparisonSetMutation, {
 import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
-import { stableJsonValue, useRoutePreloadedQuery } from "../../relay/route-preload";
+import {
+  relayRouteQueryDescriptorIdentity,
+  useRoutePreloadedQuery
+} from "../../relay/route-preload";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
@@ -155,7 +158,7 @@ function SavedComparisonSetQueryRetainers({
     <>
       {savedSetQueries.map((savedSetQuery) => (
         <SavedComparisonSetQueryRetainer
-          key={savedComparisonSetQueryKey(savedSetQuery)}
+          key={relayRouteQueryDescriptorIdentity(savedSetQuery)}
           savedSetQuery={savedSetQuery}
         />
       ))}
@@ -183,10 +186,4 @@ function SavedComparisonReturnActions() {
       <Link to="/compare">Start a new comparison</Link>
     </nav>
   );
-}
-
-export function savedComparisonSetQueryKey(savedSetQuery: SavedComparisonSetQueryDescriptor) {
-  return `${savedSetQuery.__relayQuery.operationName}:${JSON.stringify(
-    stableJsonValue(savedSetQuery.__relayQuery.variables)
-  )}`;
 }

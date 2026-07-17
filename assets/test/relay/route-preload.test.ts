@@ -15,6 +15,7 @@ import {
   getRoutePreloadedQuery,
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
+  relayRouteQueryDescriptorIdentity,
   useRoutePreloadedQuery
 } from "../../src/relay/route-preload";
 import { dehydrateRelayEnvironment } from "../../src/relay/ssr";
@@ -44,6 +45,50 @@ const flushRouteQueryRefDisposalTimers = () => {
     vi.runOnlyPendingTimers();
   });
 };
+
+test("relay route query descriptor identity is stable across variable property order", () => {
+  const firstIdentity = relayRouteQueryDescriptorIdentity({
+    __relayQuery: {
+      operationName: "BrowseProductsRouteQuery",
+      text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
+      variables: { first: 12, after: "cursor-1" }
+    }
+  });
+  const secondIdentity = relayRouteQueryDescriptorIdentity({
+    __relayQuery: {
+      operationName: "BrowseProductsRouteQuery",
+      text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
+      variables: { after: "cursor-1", first: 12 }
+    }
+  });
+
+  expect(secondIdentity).toBe(firstIdentity);
+});
+
+test("relay route query descriptor identity includes query text", () => {
+  const descriptor = {
+    __relayQuery: {
+      operationName: "BrowseProductsRouteQuery",
+      variables: { first: 12 }
+    }
+  };
+
+  expect(
+    relayRouteQueryDescriptorIdentity({
+      __relayQuery: {
+        ...descriptor.__relayQuery,
+        text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }"
+      }
+    })
+  ).not.toBe(
+    relayRouteQueryDescriptorIdentity({
+      __relayQuery: {
+        ...descriptor.__relayQuery,
+        text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { totalCount } }"
+      }
+    })
+  );
+});
 
 test("dehydrateRelayEnvironment returns the populated record source", () => {
   const environment = createRelayEnvironment({

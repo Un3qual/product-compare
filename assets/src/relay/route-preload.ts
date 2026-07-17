@@ -106,7 +106,7 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ): PreloadedQuery<TQuery> {
-  const descriptorKey = routeQueryDescriptorKey(descriptor);
+  const descriptorKey = relayRouteQueryDescriptorIdentity(descriptor);
   let routeQueryRefEntry = getRouteQueryRefEntry(environment, descriptorKey);
 
   if (!routeQueryRefEntry) {
@@ -125,7 +125,7 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
 ): PreloadedQuery<TQuery> {
   const environment = useRelayEnvironment();
-  const descriptorKey = routeQueryDescriptorKey(descriptor);
+  const descriptorKey = relayRouteQueryDescriptorIdentity(descriptor);
   const queryRef = useMemo(
     () => getRoutePreloadedQuery<TQuery>(environment, query, descriptor),
     [descriptorKey, environment, query]
@@ -259,7 +259,10 @@ function setRouteQueryRef<TQuery extends OperationType>(
     routeQueryRefs.set(environment, environmentQueryRefs);
   }
 
-  const descriptorKey = typeof descriptor === "string" ? descriptor : routeQueryDescriptorKey(descriptor);
+  const descriptorKey =
+    typeof descriptor === "string"
+      ? descriptor
+      : relayRouteQueryDescriptorIdentity(descriptor);
   const existingEntry = environmentQueryRefs.get(descriptorKey);
 
   if (existingEntry?.queryRef === queryRef) {
@@ -360,7 +363,9 @@ function createRouteQueryDescriptor<TQuery extends OperationType>(
   };
 }
 
-function routeQueryDescriptorKey<TVariables>(descriptor: RelayRouteQueryDescriptor<TVariables>) {
+export function relayRouteQueryDescriptorIdentity<TVariables>(
+  descriptor: RelayRouteQueryDescriptor<TVariables>
+) {
   return JSON.stringify([
     descriptor.__relayQuery.operationName,
     descriptor.__relayQuery.text,
@@ -368,7 +373,7 @@ function routeQueryDescriptorKey<TVariables>(descriptor: RelayRouteQueryDescript
   ]);
 }
 
-export function stableJsonValue(value: unknown): unknown {
+function stableJsonValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(stableJsonValue);
   }

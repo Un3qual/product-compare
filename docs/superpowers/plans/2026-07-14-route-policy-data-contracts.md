@@ -1746,13 +1746,13 @@ identity over operation name, query text, and stable variables. API-token and
 saved-comparison React retainers consume that identity while retaining query
 lifecycle, rendering, and route orchestration.
 
-- [ ] Add direct identity tests for property-order stability and query-text
+- [x] Add direct identity tests for property-order stability and query-text
   distinction; verify RED for the missing public contract.
-- [ ] Replace both duplicated, weaker consumer keys with the canonical identity
+- [x] Replace both duplicated, weaker consumer keys with the canonical identity
   without changing retention or rendering.
-- [ ] Run the Relay preload, API-token route, and saved-comparison route-state
+- [x] Run the Relay preload, API-token route, and saved-comparison route-state
   suites, TypeScript, a consumer scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1804,8 +1804,39 @@ presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 62: Root Viewer Projection Contract
+
+**Files:**
+
+- Create: `assets/src/routes/root/viewer-data.ts`
+- Modify: `assets/src/routes/root/loader.ts`
+- Modify: `assets/src/routes/RootRoute.tsx`
+- Create: `assets/test/routes/root-viewer-data.test.ts`
+- Test: `assets/test/routes/root.route.test.tsx`
+- Create: `docs/work/frontend-root-viewer-projection.md`
+
+**Interfaces:** One framework-free root viewer-data owner validates unknown
+query/cache values and projects exact ID, email, and operator state. The loader
+retains fetching, cache reads, degraded fallbacks, and abort handling; the root
+route retains Relay reads, outlet context, navigation, and presentation.
+
+- [ ] Write pure tests for nullish, primitive, incomplete, and valid viewer
+  values plus input immutability; verify RED.
+- [ ] Replace both duplicated projections with the validated framework-free
+  owner without changing preload or degraded-cache behavior.
+- [ ] Run the pure root viewer-data and root route suites, TypeScript, consumer
+  and dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Relay query descriptor identity completed on 2026-07-17 after an explicit
+  missing-contract RED case covering stable variable property order and query-
+  text distinction. The preload, API-token route, and saved-comparison route-
+  state suites pass 95 tests, and the full frontend gate passes 1,369 tests,
+  Relay validation, TypeScript, client and SSR builds, and the bundle contract.
 - Offer selected-product context completed on 2026-07-17 after an explicit
   missing-contract RED case covering nullish and non-product nodes, exact
   product projection, brand identity, null brands, and input immutability. The
@@ -1836,6 +1867,11 @@ presentation.
   union while `filters.ts` already owns the supported sorts and URL
   normalization policy. The catalog route characterization suite passes 62
   tests, and the candidate is path-disjoint from Tasks 58-60.
+- Before the Relay query-descriptor-identity claim, current source inspection
+  found duplicate root viewer projection in `RootRoute` and the root loader,
+  with only the loader copy validating unknown values. The root route
+  characterization suite passes 16 tests, and the candidate is path-disjoint
+  from Tasks 59-61.
 - The existing affiliate setup, offer discovery, catalog browse, product
   detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five

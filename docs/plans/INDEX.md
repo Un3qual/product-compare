@@ -74,10 +74,10 @@ browse and offer-discovery pagination data are also complete. Alert product
 navigation is also complete. Merchant-directory row data, product-offer
 navigation paths, category product navigation, and revenue filter-form data are
 complete on `codex/frontend-navigation-row-contracts`. Category pagination
-navigation, saved-comparison sort input, and offer selected-product context are
-also complete. Relay query descriptor identity, price-watch rule-type select
-input, and catalog sort select input are the current ready successors in the
-live queue.
+navigation, saved-comparison sort input, offer selected-product context, and
+Relay query descriptor identity are also complete. Price-watch rule-type select
+input, catalog sort select input, and root viewer projection are the current
+ready successors in the live queue.
 
 Active implementation plans:
 

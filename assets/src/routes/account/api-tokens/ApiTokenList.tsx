@@ -4,7 +4,10 @@ import { usePreloadedQuery } from "react-relay";
 import apiTokensRouteQuery, {
   type ApiTokensRouteQuery
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
-import { stableJsonValue, useRoutePreloadedQuery } from "../../../relay/route-preload";
+import {
+  relayRouteQueryDescriptorIdentity,
+  useRoutePreloadedQuery
+} from "../../../relay/route-preload";
 import { ApiTokenItem } from "./ApiTokenItem";
 import { applyApiTokenUpdates } from "./api-token-route-data";
 import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
@@ -73,7 +76,7 @@ function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
       {tokenQueries.map((tokenQuery) => (
         <RelayApiTokenPage
           apiTokenUpdates={apiTokenUpdates}
-          key={apiTokenQueryKey(tokenQuery)}
+          key={relayRouteQueryDescriptorIdentity(tokenQuery)}
           onRotate={onRotate}
           onRevoke={onRevoke}
           pendingRevokeIds={pendingRevokeIds}
@@ -151,10 +154,4 @@ export function ApiTokenList({
       ))}
     </ul>
   );
-}
-
-function apiTokenQueryKey(tokenQuery: ApiTokenQueryDescriptor) {
-  return `${tokenQuery.__relayQuery.operationName}:${JSON.stringify(
-    stableJsonValue(tokenQuery.__relayQuery.variables)
-  )}`;
 }
