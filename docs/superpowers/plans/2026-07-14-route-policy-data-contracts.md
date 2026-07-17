@@ -1314,16 +1314,16 @@ removal-path projection, and open-action visibility. `CompareSelectionTray`
 retains generated IDs, semantic markup, links, buttons, StyleX presentation,
 and events; callers retain open-comparison and removal-path policy.
 
-- [ ] Write pure tests for zero and bounded selection copy, exact-slug label
+- [x] Write pure tests for zero and bounded selection copy, exact-slug label
   resolution and fallback, source order, projected removal paths, open-action
   visibility, stable empty identity, and deep input immutability; verify RED.
-- [ ] Extract only deterministic tray view data while preserving caller-owned
+- [x] Extract only deterministic tray view data while preserving caller-owned
   route policy, selected-slug identity and order, generated IDs, semantic
   markup, actions, events, and presentation.
-- [ ] Run the pure tray data plus existing catalog-browse and product-detail
+- [x] Run the pure tray data plus existing catalog-browse and product-detail
   consumer suites, TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1381,6 +1381,34 @@ the shared `Pagination` markup, label, and presentation.
   presentation.
 - [ ] Run the pure API-token route-data and existing route suites, TypeScript,
   the framework dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 46: Affiliate Setup Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/affiliate/setup/pagination.ts`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- Modify: `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
+- Test: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- Create: `docs/work/frontend-affiliate-setup-pagination-data.md`
+
+**Interfaces:** The existing framework-free affiliate-setup pagination owner
+additionally owns merchant first-page and next-page link visibility and path
+projection through the canonical `affiliateSetupPagePath` builder.
+`AffiliateSetupRoute` retains shared `Pagination` markup, labels, and
+presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+  bounds, complete and incomplete next-page facts, page-size preservation,
+  cursor encoding, and input immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving the
+  canonical path builder, Relay page-info bounds, markup, labels, and
+  presentation.
+- [ ] Run the affiliate-setup loader and route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

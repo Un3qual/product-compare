@@ -67,10 +67,10 @@ data. Trust-surface date presentation, product-attribute grouping, route-
 metadata resolution, and saved-comparison navigation data are complete.
 Product-community, affiliate-setup, and share-comparison mutation outcome data
 are complete. Price-watch, tracked-commerce click mutation outcome, reset-
-password request, shared-comparison view data, and compare-picker visible-
-option data are also complete. Compare-selection tray view data, verify-email
-request data, and API-token pagination data are the three current ready
-successors in the live queue.
+password request, shared-comparison view data, compare-picker visible-option
+data, and compare-selection tray view data are also complete. Verify-email
+request data, API-token pagination data, and affiliate-setup pagination data
+are the three current ready successors in the live queue.
 
 Active implementation plans:
 

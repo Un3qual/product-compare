@@ -740,50 +740,30 @@ events, actions, markup, and presentation. Its pure and unchanged compare-
 route suites pass 119 tests; the full repository gate passes 771 backend and
 1,300 frontend tests. The three validated successor rows remain ready.
 
+Before claiming Compare-Selection Tray View Data, the coordinator validated a
+fourth non-overlapping successor. Merchant first-page and next-page visibility
+and path projection remain embedded in `AffiliateSetupRoute`, while its
+framework-free pagination owner already provides canonical page-size- and
+cursor-preserving paths. Its loader and route suites pass 27 tests. The
+successor has complete owned paths, no blockers, and does not overlap the
+comparison tray, verify-email, or API-token rows.
+
+Compare-Selection Tray View Data then completed. One framework-free owner now
+returns exact selection-count copy, ordered selected rows with exact-slug
+labels and fallbacks, caller-owned removal paths, and open-action visibility.
+Empty selections reuse one stable row identity. React retains generated IDs,
+semantic markup, links, buttons, StyleX presentation, and events. Its pure and
+unchanged catalog-browse and product-detail suites pass 121 tests; the full
+repository gate passes 771 backend and 1,304 frontend tests. The three
+validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Compare-Selection Tray View Data Contract
-
-Status: ready
-Lane: Frontend compare-selection tray view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move exact selection-count copy, exact-slug label resolution with
-fallback, ordered removal-path projection, and open-action visibility out of
-`CompareSelectionTray` into a framework-free data owner while preserving
-caller-owned path policy, generated IDs, semantic markup, links, buttons,
-events, and presentation.
-Owned paths:
-
-- `assets/src/routes/compare/compare-selection-tray-data.ts`
-- `assets/src/routes/compare/CompareSelectionTray.tsx`
-- `assets/test/routes/compare/compare-selection-tray-data.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-compare-selection-tray-view-data.md`
-
-Prerequisites:
-
-- Existing compare-selection route path builders remain unchanged.
-- Filtering remains limited to exact slug identity and caller-supplied items.
-- Existing catalog-browse and product-detail characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/compare-selection-tray-data.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure tray data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns exact count copy, ordered
-selected rows with labels and removal paths, and open-action visibility without
-mutating inputs; React retains caller-owned route policy, IDs, markup, actions,
-events, and presentation.
-
-### 2. Verify-Email Request Data Contract
+### 1. Verify-Email Request Data Contract
 
 Status: ready
 Lane: Frontend verify-email request data
@@ -819,7 +799,7 @@ data, missing-token state, exact status copy, and retry eligibility without
 mutating inputs; React retains the request cache, Relay orchestration,
 cancellation, hooks, state, markup, and presentation.
 
-### 3. API Token Pagination Data Contract
+### 2. API Token Pagination Data Contract
 
 Status: ready
 Lane: Frontend API-token pagination data
@@ -851,6 +831,42 @@ Verification:
 - `git diff --check`
 
 Exit condition: the existing framework-free route-data owner returns exact
+first- and next-page hrefs without mutating inputs; React retains `Pagination`
+markup, labels, and presentation.
+
+### 3. Affiliate Setup Pagination Data Contract
+
+Status: ready
+Lane: Frontend affiliate-setup pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move merchant first-page and next-page link visibility and path
+projection out of `AffiliateSetupRoute` into its existing framework-free
+pagination owner while preserving `affiliateSetupPagePath` as the canonical
+path builder and keeping pagination markup and labels in React.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/pagination.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-setup-pagination-data.md`
+
+Prerequisites:
+
+- Existing page-size and cursor encoding remain unchanged.
+- First-page visibility remains bounded to previous-page state plus a current
+  cursor; next-page visibility remains bounded to next-page state plus a non-
+  empty end cursor.
+- Existing affiliate-setup loader and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the affiliate-setup pagination module
+- `git diff --check`
+
+Exit condition: the existing framework-free pagination owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
