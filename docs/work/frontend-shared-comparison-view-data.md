@@ -2,25 +2,29 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 6 passing
-  shared comparison snapshot characterization tests.
+- Last verified: 2026-07-16 with 4 pure contract tests and 6 unchanged shared
+  comparison snapshot tests passing, plus the complete repository gate.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Shared Comparison View Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate captured recommendation selection, fallback copy,
-  product and offer fact projection, and ordered live-comparison path
-  construction in a framework-free view-data module while retaining route
-  state, Relay reads, semantic markup, StyleX presentation, and date formatting
-  in `SharedComparisonRoute`.
-- Candidate evidence: current source inspection found these deterministic view
-  policies in the React route owner; its existing snapshot loader and route
-  suite passes 6 tests.
+- Status: done on 2026-07-16 on
+  `codex/frontend-mutation-outcome-contracts`.
+- Delivered `shared-comparison-view-data.ts`, a framework-free owner of
+  captured title and metadata, winner-or-unsupported recommendation state,
+  ordered product, accepted-claim, and offer fact rows, exact fallbacks, and
+  the live-comparison path through the existing compare-path owner.
+- Evidence: the pure test suite first failed because the owner did not exist.
+  After the minimal extraction, its 4 tests and the 6 snapshot-route tests
+  passed. TypeScript, the framework/transport scan, and `git diff --check`
+  passed. `mix ci` passed with 771 backend tests, 1,297 frontend tests across
+  96 files, Relay validation, TypeScript, client and SSR builds, the unchanged
+  6/6 clone budget, and a 182,139-byte gzip initial bundle under the 200,000-
+  byte budget.
 - Blockers: none.
 
 ## Boundaries

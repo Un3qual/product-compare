@@ -708,48 +708,29 @@ presentation. Its pure and unchanged recovery-route suites pass 19 tests; the
 full repository gate passes 771 backend and 1,293 frontend tests. The three
 validated successor rows remain ready.
 
+Before claiming Shared Comparison View Data, the coordinator validated a
+fourth non-overlapping successor. Verify-email token normalization, missing-
+token identity, mutation variables, exact status copy, and failed-outcome
+retry eligibility remain embedded in `VerifyEmailRoute`; its recovery-route
+suite passes 14 tests. The successor has complete owned paths, no blockers,
+and does not overlap the three comparison rows.
+
+Shared Comparison View Data then completed. One framework-free owner now
+projects captured title and metadata, winner-or-unsupported recommendation
+state, ordered product, accepted-claim, and offer facts with honest fallbacks,
+and the live path through the existing compare-path policy. React retains
+Relay, route state, date formatting, semantic markup, and StyleX. Its pure and
+unchanged snapshot-route suites pass 10 tests; the full repository gate passes
+771 backend and 1,297 frontend tests. The three validated successor rows
+remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Shared Comparison View Data Contract
-
-Status: ready
-Lane: Frontend shared-comparison view data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move captured recommendation selection, fallback copy, product and
-offer fact projection, and ordered live-comparison path construction out of
-`SharedComparisonRoute` into one framework-free view-data owner while
-preserving Relay reads, route state, semantic markup, and presentation.
-Owned paths:
-
-- `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
-- `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
-- `assets/test/routes/compare/shared-comparison-view-data.test.ts`
-- `assets/test/routes/compare/comparison-snapshots.test.tsx`
-- `docs/work/frontend-shared-comparison-view-data.md`
-
-Prerequisites:
-
-- The generated shared-comparison query shape remains unchanged.
-- Existing date formatting and compare-path policy owners remain unchanged.
-- Existing shared snapshot loader and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/shared-comparison-view-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure shared-comparison view-data module
-- `git diff --check`
-
-Exit condition: one framework-free owner returns captured title,
-recommendation, product/offer fact rows, and the ordered live-comparison path
-without mutating query data; React retains Relay, route state, markup, and
-presentation.
-
-### 2. Compare Picker Visible-Option Data Contract
+### 1. Compare Picker Visible-Option Data Contract
 
 Status: ready
 Lane: Frontend compare-picker visible-option data
@@ -786,7 +767,7 @@ filter state, source-ordered visible options, and exact empty-state copy without
 mutating options; React retains state, IDs, input events, actions, markup, and
 presentation.
 
-### 3. Compare-Selection Tray View Data Contract
+### 2. Compare-Selection Tray View Data Contract
 
 Status: ready
 Lane: Frontend compare-selection tray view data
@@ -822,6 +803,42 @@ Exit condition: one framework-free owner returns exact count copy, ordered
 selected rows with labels and removal paths, and open-action visibility without
 mutating inputs; React retains caller-owned route policy, IDs, markup, actions,
 events, and presentation.
+
+### 3. Verify-Email Request Data Contract
+
+Status: ready
+Lane: Frontend verify-email request data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move token normalization, missing-token state and error identity,
+mutation variables, exact success and status copy, and failed-outcome retry
+eligibility out of `VerifyEmailRoute` into a framework-free data owner while
+preserving its request cache, single-use deduplication, Relay lifecycle,
+cancellation, hooks, state, markup, and presentation.
+Owned paths:
+
+- `assets/src/routes/auth/verify-email-data.ts`
+- `assets/src/routes/auth/VerifyEmailRoute.tsx`
+- `assets/test/routes/auth/verify-email-data.test.ts`
+- `assets/test/routes/auth/recovery.route.test.tsx`
+- `docs/work/frontend-verify-email-request-data.md`
+
+Prerequisites:
+
+- The generated verify-email mutation shape remains unchanged.
+- Existing auth mutation-result and error normalization remain unchanged.
+- Existing recovery-route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/auth/verify-email-data.test.ts test/routes/auth/recovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure verify-email data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns normalized token/request
+data, missing-token state, exact status copy, and retry eligibility without
+mutating inputs; React retains the request cache, Relay orchestration,
+cancellation, hooks, state, markup, and presentation.
 
 ## Needs Decision Work
 

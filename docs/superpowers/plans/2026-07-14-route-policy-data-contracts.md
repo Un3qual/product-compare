@@ -1256,16 +1256,16 @@ projection, and the ordered live-comparison path. `SharedComparisonRoute`
 retains route state, Relay query reads, semantic markup, StyleX presentation,
 and existing date formatting.
 
-- [ ] Write pure tests for winner and unsupported states; title, brand, model,
+- [x] Write pure tests for winner and unsupported states; title, brand, model,
   claim-evidence, and offer fallbacks; ordered live-comparison paths; malformed
   nullable collections; and deep input immutability; verify RED.
-- [ ] Extract only deterministic view projection while preserving the generated
+- [x] Extract only deterministic view projection while preserving the generated
   query contract, date and compare-path policy owners, Relay lifecycle, route
   state, semantic markup, and presentation.
-- [ ] Run the pure shared-comparison view-data and existing snapshot-route
+- [x] Run the pure shared-comparison view-data and existing snapshot-route
   suites, TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1323,6 +1323,37 @@ and events; callers retain open-comparison and removal-path policy.
 - [ ] Run the pure tray data plus existing catalog-browse and product-detail
   consumer suites, TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 44: Verify-Email Request Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/auth/verify-email-data.ts`
+- Modify: `assets/src/routes/auth/VerifyEmailRoute.tsx`
+- Create: `assets/test/routes/auth/verify-email-data.test.ts`
+- Test: `assets/test/routes/auth/recovery.route.test.tsx`
+- Create: `docs/work/frontend-verify-email-request-data.md`
+
+**Interfaces:** A framework-free verify-email data module owns token
+normalization, missing-token state and error identity, mutation-variable
+construction, exact success and status copy, and failed-outcome retry
+eligibility. `VerifyEmailRoute` retains the promise cache, successful request
+deduplication, Relay orchestration, commit ref, effect cancellation, hooks,
+state, markup, and presentation; existing auth errors retain action-outcome and
+transport-error normalization.
+
+- [ ] Write pure tests for trimmed, blank, and missing tokens; missing-token
+  error identity; mutation variables; exact success, loading, and ready copy;
+  successful and failed cache eligibility; and input immutability; verify RED.
+- [ ] Extract only deterministic request data while preserving the generated
+  mutation contract, auth outcome/error owners, successful request reuse,
+  failed request eviction, Relay lifecycle, cancellation, state, and
+  presentation.
+- [ ] Run the pure verify-email data and existing recovery-route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -1533,6 +1564,11 @@ and events; callers retain open-comparison and removal-path policy.
   success copy, and current-response eligibility while React retains URL and
   FormData adaptation, request-version mutation, Relay, state, and
   presentation.
+- Shared-comparison view data completed on 2026-07-16 with 4 pure contract
+  tests and 6 unchanged snapshot-route tests. The framework-free owner now
+  projects captured title and metadata, recommendation state, ordered product,
+  claim, and offer facts, honest fallbacks, and the existing compare-path
+  policy while React retains Relay, date formatting, markup, and StyleX.
 - Before the immutable route-state claim on 2026-07-15, current source
   inspection confirmed product/status/merchant/domain/latest-price labels,
   nullable connection fallbacks, and ordered price-history view rows remain
