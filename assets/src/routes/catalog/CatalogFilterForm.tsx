@@ -13,6 +13,7 @@ import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProduct
 import {
   CATALOG_PRODUCT_SORTS,
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
+  catalogProductSortFromValue,
   catalogProductSortLabel,
   type CatalogFilterMetadata,
   type CatalogFilters
@@ -153,7 +154,7 @@ function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
         name={selectedSort === "ID_ASC" ? undefined : "sort"}
         value={selectedSort}
         onChange={(event) =>
-          setSelectedSort(event.currentTarget.value as NonNullable<CatalogFilters["sort"]>)
+          setSelectedSort(catalogProductSortFromValue(event.currentTarget.value))
         }
       >
         {CATALOG_PRODUCT_SORTS.map((value) => (

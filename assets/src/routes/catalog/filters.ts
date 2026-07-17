@@ -92,6 +92,18 @@ export function catalogProductSortLabel(sort: CatalogProductSort) {
   return CATALOG_PRODUCT_SORT_LABELS[sort];
 }
 
+export function catalogProductSortFromValue(value: string): CatalogProductSort {
+  switch (value) {
+    case "ID_ASC":
+    case "NAME_ASC":
+    case "BRAND_NAME_ASC":
+    case "NEWEST":
+      return value;
+    default:
+      return "ID_ASC";
+  }
+}
+
 interface DecimalFilterValueParts {
   sign: -1 | 1;
   integer: string;
@@ -389,14 +401,9 @@ function catalogSearchQuery(rawValue: string | null) {
 
 function catalogProductSort(rawValue: string | null): CatalogProductSort | null {
   const value = rawValue?.trim() ?? "";
+  const sort = catalogProductSortFromValue(value);
 
-  if (value === "ID_ASC") {
-    return null;
-  }
-
-  return CATALOG_PRODUCT_SORTS.includes(value as CatalogProductSort)
-    ? (value as CatalogProductSort)
-    : null;
+  return sort === "ID_ASC" ? null : sort;
 }
 
 function nonBlankParam(url: URL, name: string) {

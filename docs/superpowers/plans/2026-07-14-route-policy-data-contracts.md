@@ -1796,13 +1796,13 @@ raw select values to the four supported catalog sorts. The form owner retains
 select events, local state, submitted-field omission, options, markup, and
 presentation.
 
-- [ ] Write pure tests for all supported values plus blank, unknown, and future
+- [x] Write pure tests for all supported values plus blank, unknown, and future
   values falling back to catalog order; verify RED.
-- [ ] Move only deterministic select-value normalization while preserving form
+- [x] Move only deterministic select-value normalization while preserving form
   state, submitted fields, events, options, and presentation.
-- [ ] Run the pure catalog sort-input and catalog route suites, TypeScript, the
+- [x] Run the pure catalog sort-input and catalog route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1855,8 +1855,37 @@ and presentation.
   transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 64: Comparison Snapshot Pagination Cursor Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/compare/share-comparison-data.ts`
+- Modify: `assets/src/routes/compare/ShareComparisonControl.tsx`
+- Modify: `assets/test/routes/compare/share-comparison-data.test.ts`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-comparison-snapshot-pagination-cursor-data.md`
+
+**Interfaces:** The existing framework-free share-comparison data owner selects
+the eligible next snapshot cursor. The React owner retains Relay variables,
+page accumulation, actions, markup, and presentation.
+
+- [ ] Write pure tests for a valid advancing cursor plus missing, incomplete,
+  false, and blank cursor cases; verify RED.
+- [ ] Move only deterministic cursor eligibility while preserving Relay
+  variables, page accumulation, actions, markup, and presentation.
+- [ ] Run the share-comparison data and snapshot route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Catalog sort select input completed on 2026-07-17 after seven RED cases
+  covered all four supported values plus blank, unknown, and future catalog-
+  order fallbacks. The pure and catalog route suites pass 69 tests, and the
+  full frontend gate passes 1,383 tests, Relay validation, TypeScript, client
+  and SSR builds, and the 596,339 raw / 182,139 gzip-byte bundle contract.
 - Price-watch rule-type select input completed on 2026-07-17 after seven RED
   cases covered all four supported values plus blank, unknown, and future safe
   fallbacks. The pure and product-detail route suites pass 78 tests, and the

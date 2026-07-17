@@ -76,9 +76,9 @@ navigation paths, category product navigation, and revenue filter-form data are
 complete on `codex/frontend-navigation-row-contracts`. Category pagination
 navigation, saved-comparison sort input, offer selected-product context, and
 Relay query descriptor identity are also complete. Price-watch rule-type select
-input is also complete. Catalog sort select input, root viewer projection, and
-affiliate coupon result display data are the current ready successors in the
-live queue.
+input and catalog sort select input are also complete. Root viewer projection,
+affiliate coupon result display data, and comparison snapshot pagination cursor
+data are the current ready successors in the live queue.
 
 Active implementation plans:
 

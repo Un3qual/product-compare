@@ -1003,45 +1003,26 @@ for blank, unknown, or future values. Form state, amount-field visibility,
 mutation inputs, events, markup, and presentation remain unchanged. Its pure
 and product-detail route suites pass 78 tests.
 
+Catalog Sort Select Input then completed. The framework-free filters owner now
+normalizes all four supported raw sort values and falls back to catalog order
+for blank, unknown, or future values. Form state, submitted-field omission,
+events, options, markup, and presentation remain unchanged. Its pure and
+catalog route suites pass 69 tests.
+
+Before claiming the catalog sort row, current source inspection confirmed that
+comparison snapshot pagination still selects the next Relay cursor inside
+`ShareComparisonControl`, while the existing framework-free share-comparison
+data owner already owns snapshot page merging and state policy. Its pure and
+snapshot route suites pass 31 tests. The successor is path-disjoint from
+catalog sort input, root viewer projection, and affiliate coupon result data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Catalog Sort Select Input Contract
-
-Status: ready
-Lane: Frontend catalog sort select input
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move raw catalog sort select-value normalization from
-`CatalogFilterForm` into its existing framework-free filters owner.
-Owned paths:
-
-- `assets/src/routes/catalog/filters.ts`
-- `assets/src/routes/catalog/CatalogFilterForm.tsx`
-- `assets/test/routes/catalog/catalog-sort-input.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `docs/work/frontend-catalog-sort-input.md`
-
-Prerequisites:
-
-- All four supported catalog sorts remain unchanged.
-- Blank, unknown, and future values fall back to catalog order.
-- Existing catalog route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/catalog/catalog-sort-input.test.ts test/routes/catalog/browse.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the catalog filters module
-- `git diff --check`
-
-Exit condition: the framework-free filters owner normalizes catalog sort
-select input without changing form state, submitted fields, events, options,
-markup, or presentation.
-
-### 2. Root Viewer Projection Contract
+### 1. Root Viewer Projection Contract
 
 Status: ready
 Lane: Frontend root viewer projection
@@ -1075,7 +1056,7 @@ Exit condition: the root route and loader use one framework-free validated
 viewer projection without changing preload, cache fallback, navigation, home
 actions, or presentation.
 
-### 3. Affiliate Coupon Result Display Data Contract
+### 2. Affiliate Coupon Result Display Data Contract
 
 Status: ready
 Lane: Frontend affiliate coupon result display data
@@ -1107,6 +1088,40 @@ Verification:
 
 Exit condition: the framework-free owner projects affiliate coupon result copy
 without changing mutation inputs, result identity, markup, or presentation.
+
+### 3. Comparison Snapshot Pagination Cursor Data Contract
+
+Status: ready
+Lane: Frontend comparison snapshot pagination cursor data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move next-page cursor eligibility from `ShareComparisonControl`
+into the existing framework-free share-comparison data owner.
+Owned paths:
+
+- `assets/src/routes/compare/share-comparison-data.ts`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/share-comparison-data.test.ts`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-comparison-snapshot-pagination-cursor-data.md`
+
+Prerequisites:
+
+- A non-empty cursor remains eligible only when Relay reports a next page.
+- Missing connections, incomplete page info, false next-page flags, and blank
+  cursors produce no next-page action.
+- Existing share-comparison data and snapshot route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the share-comparison data module
+- `git diff --check`
+
+Exit condition: the framework-free owner selects the next snapshot cursor
+without changing Relay variables, page accumulation, actions, markup, or
+presentation.
 
 ## Needs Decision Work
 
