@@ -71,8 +71,9 @@ data, compare-selection tray view data, and verify-email request data are also
 complete. API-token, affiliate-setup, and feed-candidate pagination data are
 also complete. Merchant-directory pagination data is also complete. Catalog-
 browse and offer-discovery pagination data are also complete. Alert product
-navigation, merchant-directory row data, and product-offer navigation paths
-are the three current ready successors in the live queue.
+navigation is also complete. Merchant-directory row data, product-offer
+navigation paths, and category product navigation are the three current ready
+successors in the live queue.
 
 Active implementation plans:
 

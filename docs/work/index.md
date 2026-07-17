@@ -875,44 +875,28 @@ pagination markup, labels, and presentation. Its pure filter-data and unchanged
 route suites pass 68 tests; the full repository gate passes 771 backend and
 1,350 frontend tests. The three validated successor rows remain ready.
 
+Before claiming Alert Product Navigation, the coordinator validated a fourth
+non-overlapping successor. Category product links still interpolate raw slugs
+in `CategoryRoute` even though the canonical encoded product-detail path
+builder already exists. The category view-data and route suites pass eight
+tests. The successor has complete owned paths, no blockers, and does not
+overlap the alert-navigation, merchant-row, or product-offer navigation rows.
+
+Alert Product Navigation then completed. Alert-event and watch links now use
+the canonical product-detail path builder while React retains link markup,
+labels, ordering, grouping, mutation ownership, and presentation. Route
+characterization covers ordinary and reserved-character slugs. Its view-data
+and route suites pass 16 tests; the standalone full backend suite passes 771
+tests, and the frontend suite passes 1,351 tests with green client and SSR
+production builds. The three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Alert Product Navigation Contract
-
-Status: ready
-Lane: Frontend alert product navigation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: replace alert-event and watch product-detail URL construction in
-`AlertsRoute` with the existing canonical `productDetailPath` builder while
-retaining link markup, labels, grouping, and mutation ownership in React.
-Owned paths:
-
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-alert-product-navigation.md`
-
-Prerequisites:
-
-- Existing canonical product-slug encoding remains unchanged.
-- Alert and watch ordering, grouping, link labels, and destinations remain
-  unchanged for ordinary slugs.
-- Existing alert view-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `git diff --check`
-
-Exit condition: alert-event and watch links use the canonical product-detail
-path builder, including reserved-character encoding, without changing React
-presentation or mutation behavior.
-
-### 2. Merchant Directory Row Data Contract
+### 1. Merchant Directory Row Data Contract
 
 Status: ready
 Lane: Frontend merchant-directory row data
@@ -949,7 +933,7 @@ Exit condition: the framework-free view-data owner returns exact merchant rows
 without mutating inputs; React retains Relay reads, pagination, filtering,
 markup, labels, and presentation.
 
-### 3. Product Offer Navigation Path Contract
+### 2. Product Offer Navigation Path Contract
 
 Status: ready
 Lane: Frontend product-offer navigation paths
@@ -985,6 +969,37 @@ Verification:
 
 Exit condition: all three product-scoped offer entry points use one canonical
 path builder without changing React link markup, labels, or presentation.
+
+### 3. Category Product Navigation Contract
+
+Status: ready
+Lane: Frontend category product navigation
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: replace raw category product-detail URL interpolation in
+`CategoryRoute` with the existing canonical `productDetailPath` builder while
+retaining link markup, labels, list order, and presentation in React.
+Owned paths:
+
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `docs/work/frontend-category-product-navigation.md`
+
+Prerequisites:
+
+- Existing canonical product-slug encoding remains unchanged.
+- Category product ordering, link labels, and ordinary-slug destinations remain
+  unchanged.
+- Existing category view-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `git diff --check`
+
+Exit condition: category product links use the canonical product-detail path
+builder, including reserved-character encoding, without changing React markup,
+labels, list order, or presentation.
 
 ## Needs Decision Work
 

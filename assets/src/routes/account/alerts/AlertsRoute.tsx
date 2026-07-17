@@ -8,6 +8,7 @@ import type { UpdatePriceWatchMutation } from "../../../__generated__/UpdatePric
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { Button } from "../../../ui/primitives/Button";
+import { productDetailPath } from "../../products/product-detail-route-data";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import {
@@ -113,7 +114,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
             <ol aria-label="Price alert events" {...props(styles.list)}>
               {viewData.alerts.map((alert) => (
                 <li key={alert.id} {...props(styles.item, alert.readAt ? null : styles.unread)}>
-                  <strong><Link to={`/products/${encodeURIComponent(alert.productSlug)}`}>{alert.productName}</Link></strong>
+                  <strong><Link to={productDetailPath(alert.productSlug)}>{alert.productName}</Link></strong>
                   <p {...props(styles.meta)}>
                     <span>{alertRuleLabel(alert.ruleType)}</span>
                     <span>{alert.landedPrice} {alert.currency} landed</span>
@@ -171,7 +172,7 @@ function WatchList({
     <ul aria-label={ariaLabel} {...props(styles.list)}>
       {watches.map((watch) => (
         <li key={watch.id} {...props(styles.item)}>
-          <strong><Link to={`/products/${encodeURIComponent(watch.productSlug)}`}>{watch.productName}</Link></strong>
+          <strong><Link to={productDetailPath(watch.productSlug)}>{watch.productName}</Link></strong>
           <p {...props(styles.meta)}><span>{priceWatchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
           <div {...props(styles.actions)}>
             <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{watch.enabled ? "Pause" : "Resume"}</Button>

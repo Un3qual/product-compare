@@ -1536,15 +1536,15 @@ retains shared `Pagination` markup, labels, and presentation.
 `productDetailPath` builder. `AlertsRoute` retains link markup and labels,
 view-data grouping, Relay mutations, pending/error state, and presentation.
 
-- [ ] Add route coverage for alert-event and watch slugs containing reserved
+- [x] Add route coverage for alert-event and watch slugs containing reserved
   characters; verify the current inline destinations characterize the same
   encoded behavior.
-- [ ] Replace duplicate URL construction with the canonical product-detail
+- [x] Replace duplicate URL construction with the canonical product-detail
   path builder without changing ordinary destinations, link labels, grouping,
   or mutation ownership.
-- [ ] Run the alert view-data and route suites, TypeScript, and
+- [x] Run the alert view-data and route suites, TypeScript, and
   `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1601,6 +1601,29 @@ retain link markup, labels, and presentation.
   preserving existing destinations and every React presentation owner.
 - [ ] Run the offer path, browse, product-detail, and compare route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 54: Category Product Navigation Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/categories/CategoryRoute.tsx`
+- Test: `assets/test/routes/categories/category.route.test.tsx`
+- Create: `docs/work/frontend-category-product-navigation.md`
+
+**Interfaces:** Category product links use the existing canonical
+`productDetailPath` builder. `CategoryRoute` retains link markup and labels,
+view-data projection, list order, and presentation.
+
+- [ ] Add route coverage for a category product slug containing reserved
+  characters; verify RED against the current raw interpolation.
+- [ ] Replace duplicate URL construction with the canonical product-detail
+  path builder without changing ordinary destinations, link labels, list
+  order, or presentation.
+- [ ] Run the category view-data and route suites, TypeScript, and
+  `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -1660,6 +1683,11 @@ retain link markup, labels, and presentation.
   path constructed independently in catalog browse, product detail, and the
   comparison decision summary. Their route suites pass 226 tests, and the
   candidate is path-disjoint from Tasks 50-52.
+- Current source inspection on 2026-07-17 found category product links still
+  interpolate raw slugs in `CategoryRoute` even though the canonical encoded
+  product-detail path builder already exists. The category view-data and route
+  suites pass eight tests, and the candidate is path-disjoint from Tasks
+  51-53.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the
