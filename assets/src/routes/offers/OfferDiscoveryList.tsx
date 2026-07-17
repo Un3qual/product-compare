@@ -15,8 +15,8 @@ import {
   type OfferConnection,
   type RenderableOffer
 } from "./offer-discovery-data";
+import { buildOfferDiscoveryPaginationData } from "./offer-discovery-filter-data";
 import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./loader";
-import { offerDiscoveryPath } from "./paths";
 import { VisibleMerchantFilters } from "./VisibleMerchantFilters";
 import { OfferDiscoveryCard } from "./OfferDiscoveryCard";
 
@@ -112,20 +112,19 @@ function OfferPagination({
   connection: OfferConnection;
   filters: OfferDiscoveryFilters;
 }) {
+  const paginationData = buildOfferDiscoveryPaginationData({
+    endCursor: connection.pageInfo.endCursor ?? null,
+    filters,
+    hasNextPage: connection.pageInfo.hasNextPage,
+    hasPreviousPage: connection.pageInfo.hasPreviousPage
+  });
+
   return (
     <Pagination
-      firstHref={
-        connection.pageInfo.hasPreviousPage && filters.after
-          ? offerDiscoveryPath(filters, null)
-          : null
-      }
+      firstHref={paginationData.firstHref}
       firstLabel="First offers"
       label="Offer pages"
-      nextHref={
-        connection.pageInfo.hasNextPage && connection.pageInfo.endCursor
-          ? offerDiscoveryPath(filters, connection.pageInfo.endCursor)
-          : null
-      }
+      nextHref={paginationData.nextHref}
       nextLabel="Next offers"
     />
   );

@@ -75,6 +75,29 @@ export function offerDiscoveryPath(
   return `/offers?${params.toString()}`;
 }
 
+export function buildOfferDiscoveryPaginationData({
+  endCursor,
+  filters,
+  hasNextPage,
+  hasPreviousPage
+}: {
+  readonly endCursor: string | null;
+  readonly filters: OfferDiscoveryFilterDataInput;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+}) {
+  return {
+    firstHref:
+      hasPreviousPage && filters.after
+        ? offerDiscoveryPath(filters, null)
+        : null,
+    nextHref:
+      hasNextPage && endCursor
+        ? offerDiscoveryPath(filters, endCursor)
+        : null
+  };
+}
+
 export function offerDiscoveryResetPath(filters: OfferDiscoveryFilterDataInput) {
   const canonicalFilters = canonicalizeFilters(filters);
   const params = new URLSearchParams();

@@ -1511,16 +1511,16 @@ additionally owns first-page and next-page link visibility and path projection
 through the canonical `offerDiscoveryPath` builder. `OfferDiscoveryList`
 retains shared `Pagination` markup, labels, and presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
   bounds, complete and incomplete next-page facts, product, merchant, active-
   only, page-size, and sort preservation, cursor encoding, and input
   immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving the
+- [x] Extract only deterministic pagination projection while preserving the
   canonical path builder, Relay page-info bounds, markup, labels, and
   presentation.
-- [ ] Run the pure offer-discovery filter-data and route suites, TypeScript,
+- [x] Run the pure offer-discovery filter-data and route suites, TypeScript,
   the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1572,6 +1572,35 @@ filtering, markup, labels, and presentation.
   and presentation owner.
 - [ ] Run the merchant-directory view-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 53: Product Offer Navigation Path Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/paths.ts`
+- Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Modify: `assets/src/routes/products/ProductDetailRoute.tsx`
+- Modify: `assets/src/routes/compare/DecisionSummary.tsx`
+- Create: `assets/test/routes/offers/paths.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Test: `assets/test/routes/products/detail.route.test.tsx`
+- Test: `assets/test/routes/compare/compare.route.test.tsx`
+- Create: `docs/work/frontend-product-offer-navigation-paths.md`
+
+**Interfaces:** The existing offer path owner exposes one canonical product-
+scoped discovery path that encodes the product ID as a single `productId`
+query parameter. Browse, product-detail, and decision-summary presentation
+retain link markup, labels, and presentation.
+
+- [ ] Write pure tests for ordinary, reserved-character, whitespace, and empty
+  product IDs; verify RED.
+- [ ] Replace only duplicate product-scoped offer URL construction while
+  preserving existing destinations and every React presentation owner.
+- [ ] Run the offer path, browse, product-detail, and compare route suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
@@ -1627,6 +1656,10 @@ filtering, markup, labels, and presentation.
   view-data owner currently owns only visible-page filtering. The view-data and
   route suites pass 31 tests, and the candidate is path-disjoint from Tasks
   49-51.
+- Current source inspection on 2026-07-17 found the same product-scoped offer
+  path constructed independently in catalog browse, product detail, and the
+  comparison decision summary. Their route suites pass 226 tests, and the
+  candidate is path-disjoint from Tasks 50-52.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the

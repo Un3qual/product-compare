@@ -859,50 +859,29 @@ pagination markup, labels, and presentation. Its pure path and unchanged route
 suites pass 69 tests; the full repository gate passes 771 backend and 1,342
 frontend tests. The three validated successor rows remain ready.
 
+Before claiming Offer Discovery Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Product-scoped offer links are still built
+independently in browse, product-detail, and comparison presentation even
+though they share the same encoded route contract. The three route suites pass
+226 tests. The successor has complete owned paths, no blockers, and does not
+overlap the offer-discovery pagination, alert-navigation, or merchant-row rows.
+
+Offer Discovery Pagination Data then completed. The existing framework-free
+filter-data owner now returns filter- and page-size-preserving first-page and
+next-page hrefs through the canonical offer-discovery path builder while
+enforcing previous-page, current-cursor, next-page, and non-empty end-cursor
+bounds. React normalizes Relay's optional cursor identity and retains shared
+pagination markup, labels, and presentation. Its pure filter-data and unchanged
+route suites pass 68 tests; the full repository gate passes 771 backend and
+1,350 frontend tests. The three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Offer Discovery Pagination Data Contract
-
-Status: ready
-Lane: Frontend offer-discovery pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move first-page and next-page link visibility and path projection
-out of `OfferDiscoveryList` into its existing framework-free filter-data owner
-while preserving `offerDiscoveryPath` as the canonical path builder and keeping
-pagination markup and labels in React.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-filter-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryList.tsx`
-- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-pagination-data.md`
-
-Prerequisites:
-
-- Existing product, merchant, active-only, page-size, sort, and cursor encoding
-  remain unchanged.
-- First-page visibility remains bounded to previous-page state plus a current
-  cursor; next-page visibility remains bounded to next-page state plus a non-
-  empty end cursor.
-- Existing offer-discovery pure and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the offer-discovery filter-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free filter-data owner returns exact
-first- and next-page hrefs without mutating filters; React retains `Pagination`
-markup, labels, and presentation.
-
-### 2. Alert Product Navigation Contract
+### 1. Alert Product Navigation Contract
 
 Status: ready
 Lane: Frontend alert product navigation
@@ -933,7 +912,7 @@ Exit condition: alert-event and watch links use the canonical product-detail
 path builder, including reserved-character encoding, without changing React
 presentation or mutation behavior.
 
-### 3. Merchant Directory Row Data Contract
+### 2. Merchant Directory Row Data Contract
 
 Status: ready
 Lane: Frontend merchant-directory row data
@@ -969,6 +948,43 @@ Verification:
 Exit condition: the framework-free view-data owner returns exact merchant rows
 without mutating inputs; React retains Relay reads, pagination, filtering,
 markup, labels, and presentation.
+
+### 3. Product Offer Navigation Path Contract
+
+Status: ready
+Lane: Frontend product-offer navigation paths
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: replace product-scoped offer URL construction in catalog browse,
+product detail, and decision summary with one canonical encoded path builder in
+the existing offer path owner while preserving link markup and labels.
+Owned paths:
+
+- `assets/src/routes/offers/paths.ts`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/src/routes/products/ProductDetailRoute.tsx`
+- `assets/src/routes/compare/DecisionSummary.tsx`
+- `assets/test/routes/offers/paths.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-product-offer-navigation-paths.md`
+
+Prerequisites:
+
+- Product IDs remain encoded as one `productId` query parameter.
+- Ordinary and reserved product IDs preserve their existing destinations.
+- Existing browse, product-detail, and compare route characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/paths.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the offer path module
+- `git diff --check`
+
+Exit condition: all three product-scoped offer entry points use one canonical
+path builder without changing React link markup, labels, or presentation.
 
 ## Needs Decision Work
 
