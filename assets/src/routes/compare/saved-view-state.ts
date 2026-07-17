@@ -1,7 +1,16 @@
-import type {
-  SavedComparisonSetSummary,
-  SavedComparisonsRouteLoaderData
-} from "./saved-data";
+export interface SavedComparisonSetSummary {
+  id: string;
+  name: string;
+  products: Array<{
+    name: string;
+    slug: string;
+  }>;
+}
+
+export type SavedComparisonsViewInput = {
+  readonly status: "ready" | "empty" | "unauthorized";
+  readonly savedSets: readonly SavedComparisonSetSummary[];
+};
 
 export type SavedComparisonSortMode =
   | "current"
@@ -26,8 +35,8 @@ const SAVED_COMPARISON_NAME_COLLATOR = new Intl.Collator("en-US", {
   sensitivity: "base"
 });
 
-export function buildSavedComparisonsViewState(
-  loaderData: SavedComparisonsRouteLoaderData,
+export function buildSavedComparisonsViewState<T extends SavedComparisonsViewInput>(
+  loaderData: T,
   deletedSavedSetIds: ReadonlySet<string>,
   filterText: string,
   sortMode: SavedComparisonSortMode
@@ -57,7 +66,7 @@ export function buildSavedComparisonsViewState(
 }
 
 function buildSavedComparisonsStatus(
-  loaderData: SavedComparisonsRouteLoaderData,
+  loaderData: SavedComparisonsViewInput,
   visibleSavedSets: SavedComparisonSetSummary[],
   hasLocalDeletion: boolean,
   hasFilter: boolean,

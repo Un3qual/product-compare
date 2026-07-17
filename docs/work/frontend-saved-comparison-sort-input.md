@@ -6,8 +6,9 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after the explicit RED regression, 55 passing
-  saved-comparison tests, and the full frontend gate.
+- Last verified: 2026-07-17 after the final branch-review dependency fix, 54
+  passing saved-comparison tests, TypeScript validation, and a transitive
+  dependency scan.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Saved-Comparison Sort Input Contract
@@ -36,8 +37,13 @@
 - GREEN: `cd assets && bun x vitest run test/routes/compare/saved-comparisons-view-state.test.ts test/routes/compare/saved-comparisons-route-state.test.tsx`
   passed 55 tests.
 - `cd assets && bun run typecheck` passed.
-- The framework/transport dependency scan found no React, router, Relay,
-  StyleX, Radix, or generated-query imports in the saved view-state module.
+- Final branch-review fix: a RED transitive scan showed that the saved
+  view-state owner still reached router, Relay, and generated-query imports
+  through `saved-data.ts`. The pure owner now defines the transport-neutral
+  saved-set summary and minimal view input, while `saved-data.ts` imports and
+  re-exports the summary type for existing consumers. The fresh closure
+  contains only `saved-view-state.ts`, with zero prohibited imports; the two
+  focused suites pass 54 tests.
 - `cd assets && bun run check` passed Relay validation, TypeScript, all 1,363
   frontend tests, client and SSR production builds, and the client-bundle
   contract at 596,339 raw / 182,138 gzip bytes.

@@ -10,15 +10,9 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { isRouteRecord } from "../route-errors";
+import type { SavedComparisonSetSummary } from "./saved-view-state";
 
-export interface SavedComparisonSetSummary {
-  id: string;
-  name: string;
-  products: Array<{
-    name: string;
-    slug: string;
-  }>;
-}
+export type { SavedComparisonSetSummary } from "./saved-view-state";
 
 export type SavedComparisonSetQueryDescriptor = RelayRouteQueryDescriptor<
   SavedComparisonsRouteQuery["variables"]

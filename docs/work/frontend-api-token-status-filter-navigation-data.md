@@ -6,8 +6,9 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after 81 passing API-token route-data and route
-  tests, TypeScript validation, dependency scans, and diff validation.
+- Last verified: 2026-07-17 after the final branch-review dependency fix, 84
+  passing API-token route-data and route tests, TypeScript validation, and a
+  transitive dependency scan.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## API-Token Status-Filter Navigation Data Contract
@@ -17,10 +18,14 @@
   ordered filter labels, canonical destinations, and exactly one current state.
   `ApiTokenControls` consumes that projection while retaining links,
   accessibility attributes, markup, and presentation.
-- Verification evidence: the RED test failed because the projection was absent;
-  after implementation, the focused route-data and route suites pass 81 tests,
-  `bun run typecheck` passes, the route-data module has no framework or
-  transport imports, and `git diff --check` passes.
+- Verification evidence: the original RED test failed because the projection
+  was absent. A final branch-review RED transitive scan then showed that the
+  route-data owner still reached router, Relay, and generated-query imports
+  through `api-token-status.ts` and `loader.ts`. The status helper now accepts
+  only readonly `expiresAt` and `revokedAt` facts. The remaining explicit
+  closure is `api-token-route-data.ts`, `api-token-status.ts`,
+  `graphql-datetime.ts`, and `route-errors.ts`, with zero prohibited imports;
+  the focused suites pass 84 tests.
 - Blockers: none.
 
 ## Boundaries

@@ -1,6 +1,9 @@
-import type { ApiTokenSummary } from "./loader";
+export type ApiTokenStatusFacts = {
+  readonly expiresAt: string | null;
+  readonly revokedAt: string | null;
+};
 
-export function apiTokenIsActive(token: ApiTokenSummary) {
+export function apiTokenIsActive(token: ApiTokenStatusFacts) {
   if (token.revokedAt) {
     return false;
   }

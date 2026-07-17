@@ -2003,6 +2003,13 @@ behavior, and presentation.
 
 ## Validation Evidence
 
+- Final branch review on 2026-07-17 found two transitive dependency-boundary
+  regressions hidden by direct-only scans. RED closures reached `saved-data.ts`
+  from the saved view owner and `loader.ts` through the API-token status helper.
+  Transport-neutral saved-set/view-input types now live in the pure saved view
+  owner, and the status helper accepts only readonly expiry/revocation facts.
+  The fresh closures contain zero React, router, Relay, StyleX, Radix, or
+  generated-query imports; the focused suites pass 54 and 84 tests.
 - Compare specification-mode navigation completed on 2026-07-17 after the new
   pure test failed RED because the mode-data module did not exist. The pure and
   compare route suites then passed 111 tests; TypeScript, consumer and direct

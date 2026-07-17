@@ -81,8 +81,9 @@ is also complete. Affiliate coupon result display data is also complete; its
 review follow-up characterized independently incomplete, blank, and nullish
 coupon facts with 50 focused tests and the full 1,408-test frontend gate.
 Comparison snapshot pagination cursor data, API-token status-filter navigation
-data, and compare specification-mode navigation data are the current ready
-successors in the live queue.
+data, and compare specification-mode navigation data (Tasks 64-66) are
+complete. Saved Comparison Card Display, Alert Watch-Toggle Control, and Auth
+Global Error Visibility are the current ready successors in the live queue.
 
 Active implementation plans:
 
