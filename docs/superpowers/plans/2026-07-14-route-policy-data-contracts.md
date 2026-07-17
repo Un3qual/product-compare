@@ -1107,17 +1107,17 @@ original complete fact or the existing shared route error.
 in-flight and pending guards, selected state, feedback placement, markup, and
 presentation.
 
-- [ ] Write pure tests for each operation's complete fact and identity; missing
+- [x] Write pure tests for each operation's complete fact and identity; missing
   and null facts; top-level GraphQL-error precedence; payload and default
   errors; complete facts that also contain payload errors; and input
   immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   generated mutation contracts, top-level error precedence, current payload-
   error success behavior, Relay promise handling, guards, state, and shared
   errors.
-- [ ] Run the pure setup-data and existing affiliate setup route suites,
+- [x] Run the pure setup-data and existing affiliate setup route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1179,6 +1179,34 @@ state, feedback placement, markup, and styling.
   shared errors.
 - [ ] Run the pure price-watch and existing alerts-route suites, TypeScript,
   the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 39: Tracked-Commerce Click Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- Modify: `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- Modify: `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- Test: `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- Modify: `docs/work/frontend-tracked-commerce-click-data.md`
+
+**Interfaces:** The existing framework-free tracked-commerce data module
+additionally owns structural mutation completion as a resolved same-origin
+redirect URL or the existing shared route error. `TrackedCommerceClickAction`
+retains event handling, Relay mutation orchestration, pending and error state,
+browser navigation, markup, and presentation.
+
+- [ ] Write pure tests for resolved redirect success; missing and null paths
+  and payloads; payload and top-level GraphQL errors; unsafe redirect paths;
+  shared default fallback; and input immutability; verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  current success requirements, the generated mutation contract, same-origin
+  validation, Relay lifecycle, navigation, component state, and shared errors.
+- [ ] Run the pure tracked-commerce data and existing offer-discovery suites,
+  TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

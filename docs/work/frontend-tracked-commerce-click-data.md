@@ -2,13 +2,12 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: ready
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-15 after the extracted pure contract suite (6 tests),
-  52 passing offer-discovery route tests, TypeScript, required policy scans,
-  and `git diff --check`.
+- Last verified: 2026-07-16 after current source inspection and 58 passing
+  tracked-commerce data and offer-discovery characterization tests.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Tracked-Commerce Click Data Contract
@@ -29,6 +28,32 @@
   GraphQL errors does not escape the completion callback and renders the
   existing default route error.
 - Blockers: none.
+
+## Tracked-Commerce Click Mutation Outcome Data Contract
+
+- Status: ready on 2026-07-16.
+- Next action: isolate structural tracked-click completion as a resolved
+  same-origin redirect URL or the shared route error in the existing
+  framework-free data owner.
+- Candidate evidence: current source inspection found structural redirect
+  success, payload and top-level error checks, same-origin resolution, browser
+  navigation, and feedback combined in `TrackedCommerceClickAction`; the
+  existing pure owner already owns click qualification and redirect URL policy.
+  Its focused suites pass 58 tests, and the candidate owns no paths from the
+  affiliate setup, comparison sharing, or price-watch mutation rows.
+- Blockers: none.
+
+## Mutation Outcome Boundaries
+
+- Preserve the generated tracked-commerce click mutation shape.
+- Preserve current success requirements: a non-empty redirect path, no payload
+  errors, and no top-level GraphQL errors.
+- Preserve same-origin and same-protocol redirect validation in the existing
+  pure resolver; rejected redirects use the default route error.
+- Preserve `routeMutationErrorMessage` as the shared error-policy owner.
+- Leave event handling, Relay mutation orchestration, pending and error state,
+  browser navigation, markup, and presentation in
+  `TrackedCommerceClickAction`.
 
 ## Verification
 

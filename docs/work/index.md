@@ -621,50 +621,31 @@ authored-text adaptation, feedback placement, pagination, markup, and styling.
 Its pure and panel suites pass 14 tests; the three validated successor rows
 remain ready.
 
+Before claiming Affiliate Setup Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Tracked-commerce click completion
+still combines structural redirect success, payload and top-level error checks,
+same-origin resolution, browser navigation, and feedback inside
+`TrackedCommerceClickAction`, while its existing framework-free owner already
+owns click qualification and redirect URL policy. Its pure and offer-discovery
+suites pass 58 tests; the successor has complete owned paths, no blockers, and
+does not overlap affiliate setup, comparison sharing, or price-watch mutations.
+
+Affiliate Setup Mutation Outcome Data then completed: the existing
+framework-free owner now returns each original complete network, program, link,
+or coupon fact or the shared route error without mutating inputs. Top-level
+GraphQL errors retain precedence, while payload errors may coexist with a
+complete fact as before. React retains FormData adaptation, Relay mutation
+promises, in-flight and pending guards, selected state, feedback placement,
+markup, and presentation. Its pure and route suites pass 37 tests; the three
+validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Affiliate Setup Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend affiliate setup mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural network, program, link, and coupon completion
-interpretation out of `AffiliateSetupRoute` into its existing framework-free
-data owner while preserving FormData adaptation, Relay mutation promises,
-in-flight and pending guards, selected state, feedback placement, markup, and
-presentation.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated network, program, link, and coupon mutation shapes remain
-  unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing affiliate setup data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure setup-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns each complete
-network, program, link, or coupon fact or the shared route error without
-mutating inputs; React retains Relay, concurrency, state, feedback, markup, and
-presentation.
-
-### 2. Share-Comparison Mutation Outcome Data Contract
+### 1. Share-Comparison Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend share-comparison mutation outcome data
@@ -700,7 +681,7 @@ published snapshot or original revoked snapshot, or the shared route error,
 without mutating inputs; React retains Relay, hooks, state, callbacks, paging,
 markup, and presentation.
 
-### 3. Price-Watch Mutation Outcome Data Contract
+### 2. Price-Watch Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend price-watch mutation outcome data
@@ -734,6 +715,45 @@ Exit condition: the existing framework-free owner returns the exact create-
 watch success or shared-error copy without mutating inputs; React retains
 FormData, Relay, keyed reset, rule and pending state, feedback placement,
 markup, and presentation.
+
+### 3. Tracked-Commerce Click Mutation Outcome Data Contract
+
+Status: ready
+Lane: Frontend tracked-commerce click mutation outcome data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move structural tracked-click completion and shared-error
+interpretation out of `TrackedCommerceClickAction` into its existing
+framework-free data owner while preserving event handling, Relay mutation
+orchestration, pending and error state, browser navigation, markup, and
+presentation.
+Owned paths:
+
+- `assets/src/routes/offers/tracked-commerce-click-data.ts`
+- `assets/src/routes/offers/TrackedCommerceClickAction.tsx`
+- `assets/test/routes/offers/tracked-commerce-click-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `docs/work/frontend-tracked-commerce-click-data.md`
+
+Prerequisites:
+
+- The existing generated tracked-commerce click mutation shape remains
+  unchanged.
+- Existing shared route mutation-error and same-origin redirect policies remain
+  unchanged.
+- Existing tracked-commerce data and offer-discovery characterization remains
+  green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/offers/tracked-commerce-click-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure tracked-commerce data module
+- `git diff --check`
+
+Exit condition: the existing framework-free owner returns the resolved
+same-origin redirect URL or shared route error without mutating inputs; React
+retains event handling, Relay, browser navigation, state, feedback, markup, and
+presentation.
 
 ## Needs Decision Work
 
