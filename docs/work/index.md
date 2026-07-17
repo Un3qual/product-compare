@@ -1016,47 +1016,20 @@ data owner already owns snapshot page merging and state policy. Its pure and
 snapshot route suites pass 31 tests. The successor is path-disjoint from
 catalog sort input, root viewer projection, and affiliate coupon result data.
 
+Before claiming the root viewer row, current source inspection confirmed that
+API-token status-filter order, labels, current-state policy, and destinations
+remain embedded in `ApiTokenControls`, while the existing route-data owner
+already owns the canonical status type and status-aware page paths. Its pure
+and route suites pass 80 tests. The successor is path-disjoint from root viewer
+projection, affiliate coupon result data, and snapshot pagination.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Root Viewer Projection Contract
-
-Status: ready
-Lane: Frontend root viewer projection
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move duplicated query/cache viewer validation and exact ID, email,
-and operator projection into one framework-free root viewer-data owner.
-Owned paths:
-
-- `assets/src/routes/root/viewer-data.ts`
-- `assets/src/routes/root/loader.ts`
-- `assets/src/routes/RootRoute.tsx`
-- `assets/test/routes/root-viewer-data.test.ts`
-- `assets/test/routes/root.route.test.tsx`
-- `docs/work/frontend-root-viewer-projection.md`
-
-Prerequisites:
-
-- Nullish, primitive, and incomplete viewer values continue returning no
-  viewer.
-- Valid ID, email, and operator values remain unchanged.
-- Existing root route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/root-viewer-data.test.ts test/routes/root.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and framework/transport dependency scans of the viewer-data module
-- `git diff --check`
-
-Exit condition: the root route and loader use one framework-free validated
-viewer projection without changing preload, cache fallback, navigation, home
-actions, or presentation.
-
-### 2. Affiliate Coupon Result Display Data Contract
+### 1. Affiliate Coupon Result Display Data Contract
 
 Status: ready
 Lane: Frontend affiliate coupon result display data
@@ -1089,7 +1062,7 @@ Verification:
 Exit condition: the framework-free owner projects affiliate coupon result copy
 without changing mutation inputs, result identity, markup, or presentation.
 
-### 3. Comparison Snapshot Pagination Cursor Data Contract
+### 2. Comparison Snapshot Pagination Cursor Data Contract
 
 Status: ready
 Lane: Frontend comparison snapshot pagination cursor data
@@ -1123,6 +1096,39 @@ Exit condition: the framework-free owner selects the next snapshot cursor
 without changing Relay variables, page accumulation, actions, markup, or
 presentation.
 
+### 3. API-Token Status-Filter Navigation Data Contract
+
+Status: ready
+Lane: Frontend API-token status-filter navigation data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move ordered status-filter labels, destinations, and current-state
+policy from `ApiTokenControls` into the existing API-token route-data owner.
+Owned paths:
+
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-status-filter-navigation-data.md`
+
+Prerequisites:
+
+- All, Active, and Revoked filters retain their current order and labels.
+- Each filter uses the canonical status-aware API-token page path and exactly
+  one filter is current.
+- Existing API-token route-data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and framework/transport dependency scans of the route-data module
+- `git diff --check`
+
+Exit condition: the route-data owner projects stable API-token status-filter
+navigation without changing links, accessibility state, route behavior,
+markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1132,6 +1138,12 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Root viewer projection completed on 2026-07-17. One framework-free owner now
+validates and projects both query and cached viewer values; focused pure and
+root-route coverage, TypeScript, dependency scans, the full 1,388-test frontend
+gate, and queue validation are recorded in
+`docs/work/frontend-root-viewer-projection.md`.
 
 The 2026-07-12 control-and-matrix batch is complete. API-token controls,
 comparison matrix presentation, catalog advanced filters, and per-offer

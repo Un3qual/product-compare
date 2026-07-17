@@ -1822,13 +1822,13 @@ query/cache values and projects exact ID, email, and operator state. The loader
 retains fetching, cache reads, degraded fallbacks, and abort handling; the root
 route retains Relay reads, outlet context, navigation, and presentation.
 
-- [ ] Write pure tests for nullish, primitive, incomplete, and valid viewer
+- [x] Write pure tests for nullish, primitive, incomplete, and valid viewer
   values plus input immutability; verify RED.
-- [ ] Replace both duplicated projections with the validated framework-free
+- [x] Replace both duplicated projections with the validated framework-free
   owner without changing preload or degraded-cache behavior.
-- [ ] Run the pure root viewer-data and root route suites, TypeScript, consumer
+- [x] Run the pure root viewer-data and root route suites, TypeScript, consumer
   and dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1879,8 +1879,38 @@ page accumulation, actions, markup, and presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 65: API-Token Status-Filter Navigation Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenControls.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-status-filter-navigation-data.md`
+
+**Interfaces:** The existing API-token route-data owner projects stable ordered
+status-filter labels, destinations, and current state. The React owner retains
+link rendering, accessibility attributes, markup, and presentation.
+
+- [ ] Write pure tests for filter order, labels, canonical paths, exactly one
+  current state, and input immutability; verify RED.
+- [ ] Move only deterministic status-filter navigation while preserving links,
+  accessibility state, route behavior, markup, and presentation.
+- [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+  framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Root viewer projection completed on 2026-07-17 after a missing-module RED
+  case and five pure cases covering nullish, primitive, incomplete, exact valid,
+  and immutable viewer inputs. The pure and root route suites pass 21 tests;
+  TypeScript, consumer, dependency, and diff checks pass. The full frontend
+  gate passes Relay validation, 1,388 tests, client and SSR builds, and the
+  596,262 raw / 182,114 gzip-byte bundle contract.
 - Catalog sort select input completed on 2026-07-17 after seven RED cases
   covered all four supported values plus blank, unknown, and future catalog-
   order fallbacks. The pure and catalog route suites pass 69 tests, and the
