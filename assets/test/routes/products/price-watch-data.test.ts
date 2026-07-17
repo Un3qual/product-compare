@@ -2,6 +2,7 @@ import {
   buildCreatePriceWatchInput,
   needsPriceWatchAmount,
   PRICE_WATCH_CREATED_MESSAGE,
+  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchInputSource
 } from "../../../src/routes/products/price-watch-data";
@@ -12,6 +13,22 @@ const MUTATION_ERROR = {
   message: "Target amount is invalid."
 };
 const GRAPHQL_ERROR = { message: "Transport-level GraphQL error" };
+
+test.each([
+  "TARGET_PRICE",
+  "PERCENTAGE_DROP",
+  "BACK_IN_STOCK",
+  "NEWLY_AVAILABLE"
+] as const)("priceWatchRuleTypeFromValue preserves supported value %s", (value) => {
+  expect(priceWatchRuleTypeFromValue(value)).toBe(value);
+});
+
+test.each(["", "UNKNOWN", "FUTURE_RULE"])(
+  "priceWatchRuleTypeFromValue falls back for unsupported value %s",
+  (value) => {
+    expect(priceWatchRuleTypeFromValue(value)).toBe("TARGET_PRICE");
+  }
+);
 
 test.each([
   ["TARGET_PRICE", true],

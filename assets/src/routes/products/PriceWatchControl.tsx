@@ -10,6 +10,7 @@ import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatch
 import {
   buildCreatePriceWatchInput,
   needsPriceWatchAmount,
+  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
@@ -73,7 +74,15 @@ function PriceWatchForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} {...props(styles.form)}>
         <label htmlFor={ruleId} {...props(styles.field)}>
           Alert when
-          <select id={ruleId} name="ruleType" value={ruleType} onChange={(event) => setRuleType(event.target.value as PriceWatchRuleType)} {...props(styles.input)}>
+          <select
+            id={ruleId}
+            name="ruleType"
+            value={ruleType}
+            onChange={(event) =>
+              setRuleType(priceWatchRuleTypeFromValue(event.currentTarget.value))
+            }
+            {...props(styles.input)}
+          >
             <option value="TARGET_PRICE">Landed price reaches a target</option>
             <option value="PERCENTAGE_DROP">Landed price drops by a percentage</option>
             <option value="BACK_IN_STOCK">An offer returns in stock</option>

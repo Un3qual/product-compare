@@ -32,6 +32,18 @@ export type CreatePriceWatchPayload = {
 export const PRICE_WATCH_CREATED_MESSAGE =
   "Watch created. New qualifying changes will appear in your inbox.";
 
+export function priceWatchRuleTypeFromValue(value: string): PriceWatchRuleType {
+  switch (value) {
+    case "TARGET_PRICE":
+    case "PERCENTAGE_DROP":
+    case "BACK_IN_STOCK":
+    case "NEWLY_AVAILABLE":
+      return value;
+    default:
+      return "TARGET_PRICE";
+  }
+}
+
 export function resolveCreatePriceWatchMutationMessage(
   payload: CreatePriceWatchPayload | null | undefined,
   graphQLErrors?: readonly unknown[] | null

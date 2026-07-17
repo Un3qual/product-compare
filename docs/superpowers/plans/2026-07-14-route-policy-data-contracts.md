@@ -1771,13 +1771,13 @@ raw select values to the four supported rule types. The form owner retains
 select events, local state, amount-field visibility, mutation orchestration,
 markup, and presentation.
 
-- [ ] Write pure tests for all supported values plus blank, unknown, and future
+- [x] Write pure tests for all supported values plus blank, unknown, and future
   values falling back to target price; verify RED.
-- [ ] Move only deterministic rule-type normalization while preserving form
+- [x] Move only deterministic rule-type normalization while preserving form
   state, amount policy, mutation inputs, events, and presentation.
-- [ ] Run the pure price-watch data and product-detail route suites,
+- [x] Run the pure price-watch data and product-detail route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1830,8 +1830,38 @@ route retains Relay reads, outlet context, navigation, and presentation.
   and dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 63: Affiliate Coupon Result Display Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- Modify: `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- Test: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- Create: `docs/work/frontend-affiliate-coupon-result-display-data.md`
+
+**Interfaces:** The existing framework-free affiliate setup data owner projects
+coupon result copy from discount type, value, and currency. The React form
+owner retains generated GraphQL result types, mutation orchestration, markup,
+and presentation.
+
+- [ ] Write pure tests for amount, percent, free-shipping, other, incomplete,
+  and unknown values; verify RED.
+- [ ] Move only deterministic coupon result copy while preserving generated
+  type ownership, mutation inputs, result identity, markup, and presentation.
+- [ ] Run the affiliate setup data and route suites, TypeScript, the framework/
+  transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Price-watch rule-type select input completed on 2026-07-17 after seven RED
+  cases covered all four supported values plus blank, unknown, and future safe
+  fallbacks. The pure and product-detail route suites pass 78 tests, and the
+  full frontend gate passes 1,376 tests, Relay validation, TypeScript, client
+  and SSR builds, and the 596,339 raw / 182,136 gzip-byte bundle contract.
 - Relay query descriptor identity completed on 2026-07-17 after an explicit
   missing-contract RED case covering stable variable property order and query-
   text distinction. The preload, API-token route, and saved-comparison route-

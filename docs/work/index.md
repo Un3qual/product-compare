@@ -989,46 +989,27 @@ order stability remains unchanged, descriptors with different query text stay
 distinct, and Relay lifecycle and rendering remain unchanged. Its preload and
 consumer suites pass 95 tests.
 
+Before claiming the price-watch rule-type row, current source inspection
+confirmed that affiliate coupon result copy still interprets discount type,
+value, and currency inside `AffiliateSetupForms`, while the existing
+framework-free affiliate setup data owner already owns the surrounding input
+and outcome policy. Its data and route characterization suites pass 37 tests.
+The successor is path-disjoint from price-watch input, catalog sort input, and
+root viewer projection.
+
+Price-Watch Rule-Type Select Input then completed. The framework-free owner
+now accepts every supported select value and safely falls back to target price
+for blank, unknown, or future values. Form state, amount-field visibility,
+mutation inputs, events, markup, and presentation remain unchanged. Its pure
+and product-detail route suites pass 78 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Price-Watch Rule-Type Select Input Contract
-
-Status: ready
-Lane: Frontend price-watch rule-type select input
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move raw rule-type select-value normalization from
-`PriceWatchControl` into its existing framework-free price-watch data owner.
-Owned paths:
-
-- `assets/src/routes/products/price-watch-data.ts`
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/test/routes/products/price-watch-data.test.ts`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `docs/work/frontend-price-watch-rule-type-input.md`
-
-Prerequisites:
-
-- All four supported rule types remain unchanged.
-- Blank, unknown, and future values fall back to target price.
-- Existing price-watch data and product-detail route characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/products/detail.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the price-watch data module
-- `git diff --check`
-
-Exit condition: the framework-free owner normalizes price-watch rule-type
-select input without changing form state, amount-field visibility, mutation
-inputs, events, markup, or presentation.
-
-### 2. Catalog Sort Select Input Contract
+### 1. Catalog Sort Select Input Contract
 
 Status: ready
 Lane: Frontend catalog sort select input
@@ -1060,7 +1041,7 @@ Exit condition: the framework-free filters owner normalizes catalog sort
 select input without changing form state, submitted fields, events, options,
 markup, or presentation.
 
-### 3. Root Viewer Projection Contract
+### 2. Root Viewer Projection Contract
 
 Status: ready
 Lane: Frontend root viewer projection
@@ -1093,6 +1074,39 @@ Verification:
 Exit condition: the root route and loader use one framework-free validated
 viewer projection without changing preload, cache fallback, navigation, home
 actions, or presentation.
+
+### 3. Affiliate Coupon Result Display Data Contract
+
+Status: ready
+Lane: Frontend affiliate coupon result display data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move deterministic coupon discount copy from
+`AffiliateSetupForms` into the existing framework-free affiliate setup data
+owner.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-coupon-result-display-data.md`
+
+Prerequisites:
+
+- Amount, percent, free-shipping, other, incomplete, and unknown result values
+  retain their current visible-copy policy.
+- Generated GraphQL types remain confined to the React form owner.
+- Existing affiliate setup data and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the affiliate setup data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects affiliate coupon result copy
+without changing mutation inputs, result identity, markup, or presentation.
 
 ## Needs Decision Work
 
