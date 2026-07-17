@@ -32,7 +32,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-16
+Updated: 2026-07-17
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -790,49 +790,30 @@ presentation. Its pure and unchanged route suites pass 80 tests; the full
 repository gate passes 771 backend and 1,317 frontend tests. The three
 validated successor rows remain ready.
 
+Before claiming Affiliate Setup Pagination Data, the coordinator validated a
+fourth non-overlapping successor. Catalog first-page and next-page visibility
+and path projection remain embedded in `BrowseRoute`, while its framework-free
+path owner already preserves filters, page size, ordered compare slugs, and
+encoded cursors. The current browse route suite passes 62 tests. The successor
+has complete owned paths, no blockers, and does not overlap the affiliate-
+setup, feed-candidate, or merchant-directory rows.
+
+Affiliate Setup Pagination Data then completed. The existing framework-free
+pagination owner now returns page-size-preserving first-page and next-page
+hrefs through the canonical path builder while enforcing previous-page,
+current-cursor, next-page, and non-empty end-cursor bounds. React normalizes
+Relay's optional cursor identity and retains shared pagination markup, labels,
+and presentation. Its loader and unchanged route suites pass 33 tests; the full
+repository gate passes 771 backend and 1,323 frontend tests. The three
+validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Affiliate Setup Pagination Data Contract
-
-Status: ready
-Lane: Frontend affiliate-setup pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move merchant first-page and next-page link visibility and path
-projection out of `AffiliateSetupRoute` into its existing framework-free
-pagination owner while preserving `affiliateSetupPagePath` as the canonical
-path builder and keeping pagination markup and labels in React.
-Owned paths:
-
-- `assets/src/routes/affiliate/setup/pagination.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-loader.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-setup-pagination-data.md`
-
-Prerequisites:
-
-- Existing page-size and cursor encoding remain unchanged.
-- First-page visibility remains bounded to previous-page state plus a current
-  cursor; next-page visibility remains bounded to next-page state plus a non-
-  empty end cursor.
-- Existing affiliate-setup loader and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-loader.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the affiliate-setup pagination module
-- `git diff --check`
-
-Exit condition: the existing framework-free pagination owner returns exact
-first- and next-page hrefs without mutating inputs; React retains `Pagination`
-markup, labels, and presentation.
-
-### 2. Feed-Candidate Pagination Data Contract
+### 1. Feed-Candidate Pagination Data Contract
 
 Status: ready
 Lane: Frontend feed-candidate pagination data
@@ -868,7 +849,7 @@ Exit condition: the existing framework-free review-data owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
 
-### 3. Merchant Directory Pagination Data Contract
+### 2. Merchant Directory Pagination Data Contract
 
 Status: ready
 Lane: Frontend merchant-directory pagination data
@@ -904,6 +885,43 @@ Verification:
 Exit condition: the existing framework-free pagination owner returns exact
 first- and next-page hrefs without mutating inputs; React retains `Pagination`
 markup, labels, and presentation.
+
+### 3. Catalog Browse Pagination Data Contract
+
+Status: ready
+Lane: Frontend catalog-browse pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move first-page and next-page link visibility and path projection
+out of `BrowseRoute` into its existing framework-free path owner while
+preserving the canonical browse path builders and keeping pagination markup and
+labels in React.
+Owned paths:
+
+- `assets/src/routes/catalog/paths.ts`
+- `assets/src/routes/catalog/BrowseRoute.tsx`
+- `assets/test/routes/catalog/paths.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-browse-pagination-data.md`
+
+Prerequisites:
+
+- Existing filter, page-size, cursor, and ordered compare-slug encoding remain
+  unchanged.
+- First-page visibility remains bounded to a current cursor; next-page
+  visibility remains bounded to next-page state plus a non-empty end cursor.
+- Existing catalog browse route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/paths.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the catalog path module
+- `git diff --check`
+
+Exit condition: the existing framework-free path owner returns exact first-
+and next-page hrefs without mutating filters or ordered compare slugs; React
+retains `Pagination` markup, labels, empty-page recovery behavior, and
+presentation.
 
 ## Needs Decision Work
 

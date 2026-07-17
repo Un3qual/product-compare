@@ -1401,15 +1401,15 @@ projection through the canonical `affiliateSetupPagePath` builder.
 `AffiliateSetupRoute` retains shared `Pagination` markup, labels, and
 presentation.
 
-- [ ] Write pure tests for current-cursor first-page visibility, previous-page
+- [x] Write pure tests for current-cursor first-page visibility, previous-page
   bounds, complete and incomplete next-page facts, page-size preservation,
   cursor encoding, and input immutability; verify RED.
-- [ ] Extract only deterministic pagination projection while preserving the
+- [x] Extract only deterministic pagination projection while preserving the
   canonical path builder, Relay page-info bounds, markup, labels, and
   presentation.
-- [ ] Run the affiliate-setup loader and route suites, TypeScript, the
+- [x] Run the affiliate-setup loader and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1466,6 +1466,34 @@ presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 49: Catalog Browse Pagination Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/catalog/paths.ts`
+- Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
+- Create: `assets/test/routes/catalog/paths.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-browse-pagination-data.md`
+
+**Interfaces:** The existing framework-free catalog path owner additionally
+owns first-page and next-page link visibility and path projection through the
+canonical browse path builders. `BrowseRoute` retains shared `Pagination`
+markup, labels, empty-page recovery behavior, and presentation.
+
+- [ ] Write pure tests for current-cursor first-page visibility, absent-cursor
+  identity, complete and incomplete next-page facts, filter and page-size
+  preservation, ordered compare-slug preservation, cursor encoding, and input
+  immutability; verify RED.
+- [ ] Extract only deterministic pagination projection while preserving the
+  canonical path builders, current-cursor and Relay next-page bounds, empty-
+  result recovery, markup, labels, and presentation.
+- [ ] Run the pure catalog path and browse route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
 - The existing affiliate setup, offer discovery, catalog browse, product
@@ -1497,6 +1525,11 @@ presentation.
   provides canonical page-size- and cursor-preserving paths. The current loader
   and route suites pass 33 tests, and the candidate is path-disjoint from Tasks
   45-47.
+- Current source inspection on 2026-07-17 found catalog first-page and next-
+  page visibility and path projection still embedded in `BrowseRoute`; its
+  existing framework-free path owner preserves filters, page size, ordered
+  compare slugs, and cursor encoding. The current browse route suite passes 62
+  tests, and the candidate is path-disjoint from Tasks 46-48.
 - Current source inspection on 2026-07-16 found review, question, and answer
   completion copy plus shared-error interpretation still embedded in
   `ProductCommunityPanel`; its existing framework-free owner already owns the

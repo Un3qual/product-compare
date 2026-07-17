@@ -5,7 +5,10 @@ import {
   preloadRouteQuery
 } from "../../../../src/relay/route-preload";
 import { affiliateSetupLoader } from "../../../../src/routes/affiliate/setup/loader";
-import { affiliateSetupPagePath } from "../../../../src/routes/affiliate/setup/pagination";
+import {
+  affiliateSetupPagePath,
+  buildAffiliateSetupPaginationData
+} from "../../../../src/routes/affiliate/setup/pagination";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -88,6 +91,75 @@ test("affiliateSetupPagePath serializes normalized merchant pagination", () => {
       after: null
     })
   ).toBe("/affiliate/setup?first=35");
+});
+
+test("buildAffiliateSetupPaginationData returns page-size-preserving first and next paths", () => {
+  expect(
+    buildAffiliateSetupPaginationData({
+      endCursor: "next cursor/+",
+      hasNextPage: true,
+      hasPreviousPage: true,
+      pagination: {
+        first: 35,
+        after: "current-cursor"
+      }
+    })
+  ).toEqual({
+    firstHref: "/affiliate/setup?first=35",
+    nextHref: "/affiliate/setup?first=35&after=next+cursor%2F%2B"
+  });
+});
+
+test.each([
+  [false, "current-cursor"],
+  [true, null]
+] as const)(
+  "buildAffiliateSetupPaginationData hides incomplete first-page facts",
+  (hasPreviousPage, after) => {
+    expect(
+      buildAffiliateSetupPaginationData({
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage,
+        pagination: { first: 20, after }
+      }).firstHref
+    ).toBeNull();
+  }
+);
+
+test.each([
+  [false, "next-cursor"],
+  [true, null]
+] as const)(
+  "buildAffiliateSetupPaginationData hides incomplete next-page facts",
+  (hasNextPage, endCursor) => {
+    expect(
+      buildAffiliateSetupPaginationData({
+        endCursor,
+        hasNextPage,
+        hasPreviousPage: false,
+        pagination: { first: 20, after: null }
+      }).nextHref
+    ).toBeNull();
+  }
+);
+
+test("buildAffiliateSetupPaginationData does not mutate its input", () => {
+  const input = Object.freeze({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: Object.freeze({ first: 50, after: "current-cursor" })
+  });
+
+  buildAffiliateSetupPaginationData(input);
+
+  expect(input).toEqual({
+    endCursor: "next-cursor",
+    hasNextPage: true,
+    hasPreviousPage: true,
+    pagination: { first: 50, after: "current-cursor" }
+  });
 });
 
 test("affiliateSetupLoader drops invalid merchant page-size params", async () => {

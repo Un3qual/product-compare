@@ -49,7 +49,7 @@ import {
   resolveAffiliateNetworkMutationOutcome,
   resolveAffiliateProgramMutationOutcome
 } from "./affiliate-setup-data";
-import { affiliateSetupPagePath } from "./pagination";
+import { buildAffiliateSetupPaginationData } from "./pagination";
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -277,6 +277,13 @@ function AffiliateSetupPanel({
     }
   }
 
+  const paginationData = buildAffiliateSetupPaginationData({
+    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    hasNextPage: data.merchants.pageInfo.hasNextPage,
+    hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
+    pagination: merchantPagination
+  });
+
   return (
     <WorkspaceLayout
       context={
@@ -341,21 +348,10 @@ function AffiliateSetupPanel({
       )}
 
       <Pagination
-        firstHref={
-          data.merchants.pageInfo.hasPreviousPage && merchantPagination.after
-            ? affiliateSetupPagePath({ ...merchantPagination, after: null })
-            : null
-        }
+        firstHref={paginationData.firstHref}
         firstLabel="First merchants"
         label="Merchant choice pages"
-        nextHref={
-          data.merchants.pageInfo.hasNextPage && data.merchants.pageInfo.endCursor
-            ? affiliateSetupPagePath({
-                ...merchantPagination,
-                after: data.merchants.pageInfo.endCursor
-              })
-            : null
-        }
+        nextHref={paginationData.nextHref}
         nextLabel="Next merchants"
       />
     </WorkspaceLayout>
