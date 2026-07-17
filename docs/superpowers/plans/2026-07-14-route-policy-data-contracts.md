@@ -1077,16 +1077,16 @@ mutation payloads and the existing shared route-error policy.
 `ProductCommunityPanel` retains FormData, Relay mutation promises, pending
 state, input adaptation, feedback placement, pagination, markup, and styling.
 
-- [ ] Write pure tests for review, question, and answer success copy; missing
+- [x] Write pure tests for review, question, and answer success copy; missing
   and null completion facts; payload and top-level GraphQL errors; complete
   facts that coexist with payload or top-level errors; shared default fallback;
   and input immutability; verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current fact-first success semantics, generated mutation contracts, authored-
   text normalization, Relay promise handling, pending state, and shared errors.
-- [ ] Run the pure community-data and existing community-panel suites,
+- [x] Run the pure community-data and existing community-panel suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1149,6 +1149,36 @@ snapshot paging, markup, and styling.
 - [ ] Run the pure share-comparison and existing comparison-snapshots suites,
   TypeScript, the framework/transport dependency scan, and
   `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 38: Price-Watch Mutation Outcome Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Modify: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-mutation-outcome-data.md`
+
+**Interfaces:** The existing framework-free price-watch data module
+additionally owns structural create-watch completion as the exact success copy
+or the existing shared route error. `PriceWatchControl` retains FormData
+adaptation, Relay mutation promises, product-keyed reset, rule and pending
+state, feedback placement, markup, and styling.
+
+- [ ] Write pure tests for success copy; missing and null watches and payloads;
+  payload and top-level GraphQL errors; a complete watch that coexists with
+  payload or top-level errors; shared default fallback; and input immutability;
+  verify RED.
+- [ ] Extract only deterministic completion interpretation while preserving
+  current fact-first success semantics, the generated mutation contract,
+  input normalization, Relay promise handling, keyed reset, pending state, and
+  shared errors.
+- [ ] Run the pure price-watch and existing alerts-route suites, TypeScript,
+  the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence

@@ -605,49 +605,29 @@ tests; task re-review found no issues after explicit omitted, empty, and null-ID
 generated-payload coverage, and the three validated successor rows remain
 ready.
 
+Before claiming Product Community Mutation Outcome Data, the coordinator
+validated a fourth non-overlapping successor. Price-watch structural completion
+and shared-error interpretation remain embedded in `PriceWatchControl`, while
+the existing framework-free owner already identifies amount-bearing rules and
+builds the create input. Its pure and alerts-route suites pass 16 tests; the
+successor has complete owned paths, no blockers, and does not overlap product
+community, affiliate setup, or comparison sharing mutations.
+
+Product Community Mutation Outcome Data then completed: the existing
+framework-free owner now returns exact review, question, and answer moderation
+success copy or the shared route error while preserving fact-first completion
+semantics. React retains FormData, Relay mutation promises, pending state,
+authored-text adaptation, feedback placement, pagination, markup, and styling.
+Its pure and panel suites pass 14 tests; the three validated successor rows
+remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Product Community Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend product community mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural review, question, and answer completion messages
-out of `ProductCommunityPanel` into its existing framework-free data contract
-while preserving FormData, Relay mutation promises, pending state, authored-
-text inputs, feedback placement, pagination, markup, and styling.
-Owned paths:
-
-- `assets/src/routes/products/product-community-data.ts`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- `assets/test/routes/products/product-community-data.test.ts`
-- `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-community-mutation-outcome-data.md`
-
-Prerequisites:
-
-- Existing generated review, question, and answer mutation shapes remain
-  unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing product-community data and panel characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure community-data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns exact success or
-shared-error copy for review, question, and answer completion without mutating
-inputs; React retains Relay, pending state, input adaptation, pagination,
-feedback placement, markup, and presentation.
-
-### 2. Affiliate Setup Mutation Outcome Data Contract
+### 1. Affiliate Setup Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend affiliate setup mutation outcome data
@@ -684,7 +664,7 @@ network, program, link, or coupon fact or the shared route error without
 mutating inputs; React retains Relay, concurrency, state, feedback, markup, and
 presentation.
 
-### 3. Share-Comparison Mutation Outcome Data Contract
+### 2. Share-Comparison Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend share-comparison mutation outcome data
@@ -718,6 +698,41 @@ Verification:
 Exit condition: the existing framework-free owner returns the projected
 published snapshot or original revoked snapshot, or the shared route error,
 without mutating inputs; React retains Relay, hooks, state, callbacks, paging,
+markup, and presentation.
+
+### 3. Price-Watch Mutation Outcome Data Contract
+
+Status: ready
+Lane: Frontend price-watch mutation outcome data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move structural create-watch completion interpretation out of
+`PriceWatchControl` into its existing framework-free data owner while
+preserving FormData adaptation, Relay mutation promises, product-keyed reset,
+rule state, pending state, feedback placement, markup, and styling.
+Owned paths:
+
+- `assets/src/routes/products/price-watch-data.ts`
+- `assets/src/routes/products/PriceWatchControl.tsx`
+- `assets/test/routes/products/price-watch-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-price-watch-mutation-outcome-data.md`
+
+Prerequisites:
+
+- The existing generated create-price-watch mutation shape remains unchanged.
+- Existing shared route mutation-error policy remains unchanged.
+- Existing price-watch data and alerts-route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure price-watch data module
+- `git diff --check`
+
+Exit condition: the existing framework-free owner returns the exact create-
+watch success or shared-error copy without mutating inputs; React retains
+FormData, Relay, keyed reset, rule and pending state, feedback placement,
 markup, and presentation.
 
 ## Needs Decision Work
