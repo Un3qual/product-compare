@@ -2,25 +2,31 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-16 after current source inspection and 16 passing
-  price-watch data and alerts-route characterization tests.
+- Last verified: 2026-07-16 after the extracted pure contract and alerts-route
+  suites passed 22 tests, TypeScript passed, and dependency and diff scans were
+  clean.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Price-Watch Mutation Outcome Data Contract
 
-- Status: ready on 2026-07-16.
-- Next action: isolate exact create-watch completion interpretation in the
-  existing framework-free price-watch data module while retaining FormData,
+- Status: completed on 2026-07-16 on
+  `codex/frontend-mutation-outcome-contracts`.
+- Completed action: isolated exact create-watch completion interpretation in
+  the existing framework-free price-watch data module while retaining FormData,
   Relay mutation promises, product-keyed reset, rule state, pending state,
   feedback placement, markup, and styling in `PriceWatchControl`.
-- Candidate evidence: current source inspection found structural completion
-  and shared-error interpretation in the React owner; the existing pure owner
-  already identifies amount-bearing rules and builds the create input, and its
-  pure and alerts-route suites pass 16 tests.
+- Evidence: a complete watch returns the exact existing success copy even when
+  payload or top-level GraphQL errors coexist; missing and null facts delegate
+  to the shared route-error owner; the resolver does not mutate payload or
+  GraphQL error inputs. The focused pure and alerts-route suites pass 22 tests.
+- Full repository evidence: `mix ci` passed with 771 backend tests, 1,278
+  frontend tests across 94 files, Relay validation, TypeScript, client and SSR
+  builds, and the 182,145-byte gzip initial-bundle contract under its 200,000-
+  byte budget. The existing six-clone budget remained unchanged.
 - Blockers: none.
 
 ## Boundaries

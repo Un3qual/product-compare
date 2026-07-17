@@ -658,48 +658,28 @@ promises, hooks, state and callbacks, snapshot paging, markup, and styling. Its
 pure and snapshot-control suites pass 30 tests; the three validated successor
 rows remain ready.
 
+Before claiming Price-Watch Mutation Outcome Data, the coordinator validated a
+fourth non-overlapping successor. Captured recommendation selection, fallback
+copy, product and offer fact projection, and the ordered live-comparison path
+remain embedded in `SharedComparisonRoute`; its existing snapshot route suite
+passes 6 tests. The successor has complete owned paths, no blockers, and does
+not overlap price-watch, tracked-commerce, or reset-password request data.
+
+Price-Watch Mutation Outcome Data then completed: the existing framework-free
+owner now returns the exact create-watch success or shared-error copy without
+mutating payload or GraphQL error inputs. A complete watch retains precedence
+when payload or top-level errors coexist. React retains FormData, Relay
+mutation promises, product-keyed reset, rule and pending state, feedback,
+markup, and presentation. Its pure and alerts-route suites pass 22 tests; the
+three validated successor rows remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Price-Watch Mutation Outcome Data Contract
-
-Status: ready
-Lane: Frontend price-watch mutation outcome data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move structural create-watch completion interpretation out of
-`PriceWatchControl` into its existing framework-free data owner while
-preserving FormData adaptation, Relay mutation promises, product-keyed reset,
-rule state, pending state, feedback placement, markup, and styling.
-Owned paths:
-
-- `assets/src/routes/products/price-watch-data.ts`
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/test/routes/products/price-watch-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-price-watch-mutation-outcome-data.md`
-
-Prerequisites:
-
-- The existing generated create-price-watch mutation shape remains unchanged.
-- Existing shared route mutation-error policy remains unchanged.
-- Existing price-watch data and alerts-route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the pure price-watch data module
-- `git diff --check`
-
-Exit condition: the existing framework-free owner returns the exact create-
-watch success or shared-error copy without mutating inputs; React retains
-FormData, Relay, keyed reset, rule and pending state, feedback placement,
-markup, and presentation.
-
-### 2. Tracked-Commerce Click Mutation Outcome Data Contract
+### 1. Tracked-Commerce Click Mutation Outcome Data Contract
 
 Status: ready
 Lane: Frontend tracked-commerce click mutation outcome data
@@ -738,7 +718,7 @@ same-origin redirect URL or shared route error without mutating inputs; React
 retains event handling, Relay, browser navigation, state, feedback, markup, and
 presentation.
 
-### 3. Reset-Password Request Data Contract
+### 2. Reset-Password Request Data Contract
 
 Status: ready
 Lane: Frontend reset-password request data
@@ -773,6 +753,41 @@ Exit condition: one framework-free owner returns normalized token/request data,
 missing-token state, exact success copy, and stale-response eligibility without
 mutating inputs; React retains URL and FormData adaptation, Relay, request
 versioning, state, hooks, markup, and presentation.
+
+### 3. Shared Comparison View Data Contract
+
+Status: ready
+Lane: Frontend shared-comparison view data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move captured recommendation selection, fallback copy, product and
+offer fact projection, and ordered live-comparison path construction out of
+`SharedComparisonRoute` into one framework-free view-data owner while
+preserving Relay reads, route state, semantic markup, and presentation.
+Owned paths:
+
+- `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
+- `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
+- `assets/test/routes/compare/shared-comparison-view-data.test.ts`
+- `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- `docs/work/frontend-shared-comparison-view-data.md`
+
+Prerequisites:
+
+- The generated shared-comparison query shape remains unchanged.
+- Existing date formatting and compare-path policy owners remain unchanged.
+- Existing shared snapshot loader and route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/shared-comparison-view-data.test.ts test/routes/compare/comparison-snapshots.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the pure shared-comparison view-data module
+- `git diff --check`
+
+Exit condition: one framework-free owner returns captured title,
+recommendation, product/offer fact rows, and the ordered live-comparison path
+without mutating query data; React retains Relay, route state, markup, and
+presentation.
 
 ## Needs Decision Work
 

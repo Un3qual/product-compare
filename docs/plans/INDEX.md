@@ -66,9 +66,9 @@ mutation data, recommendation result view data, and shared route-error view
 data. Trust-surface date presentation, product-attribute grouping, route-
 metadata resolution, and saved-comparison navigation data are complete.
 Product-community, affiliate-setup, and share-comparison mutation outcome data
-are complete. Price-watch and tracked-commerce click mutation outcome data plus
-reset-password request data are the three current ready successors in the live
-queue.
+are complete. Price-watch mutation outcome data is also complete. Tracked-
+commerce click mutation outcome, reset-password request, and shared-comparison
+view data are the three current ready successors in the live queue.
 
 Active implementation plans:
 

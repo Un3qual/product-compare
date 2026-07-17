@@ -1169,17 +1169,17 @@ or the existing shared route error. `PriceWatchControl` retains FormData
 adaptation, Relay mutation promises, product-keyed reset, rule and pending
 state, feedback placement, markup, and styling.
 
-- [ ] Write pure tests for success copy; missing and null watches and payloads;
+- [x] Write pure tests for success copy; missing and null watches and payloads;
   payload and top-level GraphQL errors; a complete watch that coexists with
   payload or top-level errors; shared default fallback; and input immutability;
   verify RED.
-- [ ] Extract only deterministic completion interpretation while preserving
+- [x] Extract only deterministic completion interpretation while preserving
   current fact-first success semantics, the generated mutation contract,
   input normalization, Relay promise handling, keyed reset, pending state, and
   shared errors.
-- [ ] Run the pure price-watch and existing alerts-route suites, TypeScript,
+- [x] Run the pure price-watch and existing alerts-route suites, TypeScript,
   the framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1236,6 +1236,35 @@ outcome and transport-error normalization.
   suppression, hooks, component state, and presentation.
 - [ ] Run the pure reset-password data and existing recovery-route suites,
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
+---
+
+### Task 41: Shared Comparison View Data Contract
+
+**Files:**
+
+- Create: `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
+- Modify: `assets/src/routes/compare/shared/SharedComparisonRoute.tsx`
+- Create: `assets/test/routes/compare/shared-comparison-view-data.test.ts`
+- Test: `assets/test/routes/compare/comparison-snapshots.test.tsx`
+- Create: `docs/work/frontend-shared-comparison-view-data.md`
+
+**Interfaces:** A framework-free shared-comparison view-data module owns
+captured recommendation selection, exact fallback copy, product and offer fact
+projection, and the ordered live-comparison path. `SharedComparisonRoute`
+retains route state, Relay query reads, semantic markup, StyleX presentation,
+and existing date formatting.
+
+- [ ] Write pure tests for winner and unsupported states; title, brand, model,
+  claim-evidence, and offer fallbacks; ordered live-comparison paths; malformed
+  nullable collections; and deep input immutability; verify RED.
+- [ ] Extract only deterministic view projection while preserving the generated
+  query contract, date and compare-path policy owners, Relay lifecycle, route
+  state, semantic markup, and presentation.
+- [ ] Run the pure shared-comparison view-data and existing snapshot-route
+  suites, TypeScript, the framework/transport dependency scan, and
+  `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
 ## Validation Evidence
