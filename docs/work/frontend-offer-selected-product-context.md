@@ -2,23 +2,23 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 68 passing
-  offer-discovery filter-data and route tests.
+- Last verified: 2026-07-17 after the explicit RED regression, 73 passing
+  offer-discovery tests, and the full frontend gate.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Offer-Discovery Selected-Product Context Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move selected-product typename qualification and exact context
-  projection from `OfferDiscoveryRoute` into its existing framework-free
-  filter-data owner.
-- Candidate evidence: the route currently projects brand, ID, name, and slug
-  after a `Product` typename check; the focused suites pass 68 tests and the
-  owned paths do not overlap the category-pagination or saved-sort rows.
+- Status: completed on 2026-07-17.
+- Result: the framework-free filter-data owner now qualifies nullable selected-
+  product nodes by typename and projects exact brand, ID, name, and slug
+  context while preserving the source brand object.
+- Candidate evidence: before this batch, the route projected brand, ID, name,
+  and slug after a `Product` typename check; the baseline focused suites passed
+  68 tests.
 - Blockers: none.
 
 ## Boundaries
@@ -32,7 +32,14 @@
 
 ## Verification
 
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the offer-discovery filter-data module
-- `git diff --check`
+- RED: five qualification and projection cases failed because the framework-
+  free function did not exist.
+- GREEN: `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
+  passed 73 tests.
+- `cd assets && bun run typecheck` passed.
+- The framework/transport dependency scan found no React, Relay, router,
+  StyleX, Radix, or generated-query imports in the filter-data module.
+- `cd assets && bun run check` passed Relay validation, TypeScript, all 1,368
+  frontend tests, client and SSR production builds, and the client-bundle
+  contract at 596,339 raw / 182,150 gzip bytes.
+- `git diff --check` passed.

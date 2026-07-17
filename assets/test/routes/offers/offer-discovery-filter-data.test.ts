@@ -1,5 +1,6 @@
 import {
   buildOfferDiscoveryPaginationData,
+  offerDiscoverySelectedProductContext,
   getOfferDiscoveryFilterData
 } from "../../../src/routes/offers/offer-discovery-filter-data";
 
@@ -11,6 +12,59 @@ const DEFAULT_FILTERS = {
   productId: null,
   sort: "default"
 } as const;
+
+test.each([
+  null,
+  undefined,
+  { __typename: "Brand" }
+])("returns no selected-product context for %j", (node) => {
+  expect(offerDiscoverySelectedProductContext(node)).toBeNull();
+});
+
+test("projects exact selected-product context and preserves brand identity", () => {
+  const brand = Object.freeze({ id: "brand-1", name: "Example Brand" });
+  const node = Object.freeze({
+    __typename: "Product" as const,
+    brand,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+
+  const context = offerDiscoverySelectedProductContext(node);
+
+  expect(context).toEqual({
+    brand: { id: "brand-1", name: "Example Brand" },
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+  expect(context?.brand).toBe(brand);
+});
+
+test("projects a selected product with no brand without mutating its input", () => {
+  const node = Object.freeze({
+    __typename: "Product" as const,
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+
+  expect(offerDiscoverySelectedProductContext(node)).toEqual({
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+  expect(node).toEqual({
+    __typename: "Product",
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+});
 
 test("buildOfferDiscoveryPaginationData preserves every filter in first and next paths", () => {
   expect(

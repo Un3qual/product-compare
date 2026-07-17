@@ -959,47 +959,28 @@ with blank, unknown, and future values falling back to current order. Sorting,
 filtering, React events, markup, and presentation remain unchanged. Its pure
 and route-state suites pass 55 tests.
 
+Before claiming Offer-Discovery Selected-Product Context, the coordinator
+validated a fourth non-overlapping successor. `CatalogFilterForm` still trusts
+the raw sort select value through a TypeScript assertion, while the existing
+framework-free catalog filters owner defines all four supported sorts and the
+URL normalization policy. The catalog route characterization suite passes 62
+tests. The successor has complete owned paths, no blockers, and does not
+overlap offer selected-product context, Relay query descriptor identity, or
+price-watch rule-type input.
+
+Offer-Discovery Selected-Product Context then completed. The existing
+framework-free filter-data owner now qualifies nullable selected-product nodes
+by typename and projects exact brand, ID, name, and slug context while
+preserving brand identity. Relay reads, route fallbacks, summaries, markup, and
+presentation remain unchanged. Its pure and route suites pass 73 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Offer-Discovery Selected-Product Context Contract
-
-Status: ready
-Lane: Frontend offer selected-product context
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move selected-product typename qualification and exact brand, ID,
-name, and slug projection from `OfferDiscoveryRoute` into its existing
-framework-free filter-data owner.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-filter-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryRoute.tsx`
-- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-selected-product-context.md`
-
-Prerequisites:
-
-- Nullish and non-product nodes continue returning no selected context.
-- Product brand, ID, name, and slug values remain unchanged.
-- Existing offer-discovery filter-data and route characterization remains
-  green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the offer-discovery filter-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner qualifies and projects selected-
-product context without changing Relay, summaries, fallbacks, markup, or
-presentation.
-
-### 2. Relay Query Descriptor Identity Contract
+### 1. Relay Query Descriptor Identity Contract
 
 Status: ready
 Lane: Frontend Relay query descriptor identity
@@ -1034,7 +1015,7 @@ Verification:
 Exit condition: both React retainers use the canonical Relay descriptor
 identity without changing query lifecycle, rendering, or route behavior.
 
-### 3. Price-Watch Rule-Type Select Input Contract
+### 2. Price-Watch Rule-Type Select Input Contract
 
 Status: ready
 Lane: Frontend price-watch rule-type select input
@@ -1066,6 +1047,38 @@ Verification:
 Exit condition: the framework-free owner normalizes price-watch rule-type
 select input without changing form state, amount-field visibility, mutation
 inputs, events, markup, or presentation.
+
+### 3. Catalog Sort Select Input Contract
+
+Status: ready
+Lane: Frontend catalog sort select input
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: move raw catalog sort select-value normalization from
+`CatalogFilterForm` into its existing framework-free filters owner.
+Owned paths:
+
+- `assets/src/routes/catalog/filters.ts`
+- `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- `assets/test/routes/catalog/catalog-sort-input.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `docs/work/frontend-catalog-sort-input.md`
+
+Prerequisites:
+
+- All four supported catalog sorts remain unchanged.
+- Blank, unknown, and future values fall back to catalog order.
+- Existing catalog route characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/catalog/catalog-sort-input.test.ts test/routes/catalog/browse.route.test.tsx`
+- `cd assets && bun run typecheck`
+- framework/transport dependency scan of the catalog filters module
+- `git diff --check`
+
+Exit condition: the framework-free filters owner normalizes catalog sort
+select input without changing form state, submitted fields, events, options,
+markup, or presentation.
 
 ## Needs Decision Work
 

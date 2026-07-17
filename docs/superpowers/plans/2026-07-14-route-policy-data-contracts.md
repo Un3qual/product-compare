@@ -1718,14 +1718,14 @@ qualifies a nullable transport-neutral selected-product node by `__typename`
 and projects its exact brand, ID, name, and slug context. React retains Relay
 reads, suspense and error boundaries, offer rendering, and presentation.
 
-- [ ] Write pure tests for nullish and non-product nodes, product projection
+- [x] Write pure tests for nullish and non-product nodes, product projection
   with present and null brands, source identity, and input immutability; verify
   RED.
-- [ ] Extract only deterministic selected-product qualification and projection
+- [x] Extract only deterministic selected-product qualification and projection
   while preserving Relay, route fallbacks, summaries, and presentation.
-- [ ] Run the pure offer-discovery filter-data and route suites, TypeScript, the
+- [x] Run the pure offer-discovery filter-data and route suites, TypeScript, the
   framework/transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1779,8 +1779,39 @@ markup, and presentation.
   TypeScript, the framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 61: Catalog Sort Select Input Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/catalog/filters.ts`
+- Modify: `assets/src/routes/catalog/CatalogFilterForm.tsx`
+- Create: `assets/test/routes/catalog/catalog-sort-input.test.ts`
+- Test: `assets/test/routes/catalog/browse.route.test.tsx`
+- Create: `docs/work/frontend-catalog-sort-input.md`
+
+**Interfaces:** The existing framework-free catalog filters owner normalizes
+raw select values to the four supported catalog sorts. The form owner retains
+select events, local state, submitted-field omission, options, markup, and
+presentation.
+
+- [ ] Write pure tests for all supported values plus blank, unknown, and future
+  values falling back to catalog order; verify RED.
+- [ ] Move only deterministic select-value normalization while preserving form
+  state, submitted fields, events, options, and presentation.
+- [ ] Run the pure catalog sort-input and catalog route suites, TypeScript, the
+  framework/transport dependency scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Offer selected-product context completed on 2026-07-17 after an explicit
+  missing-contract RED case covering nullish and non-product nodes, exact
+  product projection, brand identity, null brands, and input immutability. The
+  pure and route suites pass 73 tests, and the full frontend gate passes 1,368
+  tests, Relay validation, TypeScript, client and SSR builds, and the bundle
+  contract.
 - Saved-comparison sort input completed on 2026-07-17 after an explicit
   missing-contract RED case covering all four supported values and three safe-
   fallback values. The pure and route-state suites pass 55 tests, and the full
@@ -1800,6 +1831,11 @@ markup, and presentation.
   `price-watch-data.ts` already owns that union and all downstream amount
   policy. The pure and product-detail characterization suites pass 71 tests,
   and the candidate is path-disjoint from Tasks 57-59.
+- Before the offer selected-product-context claim, current source inspection
+  found `CatalogFilterForm` asserting a raw select value to the catalog-sort
+  union while `filters.ts` already owns the supported sorts and URL
+  normalization policy. The catalog route characterization suite passes 62
+  tests, and the candidate is path-disjoint from Tasks 58-60.
 - The existing affiliate setup, offer discovery, catalog browse, product
   detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five
