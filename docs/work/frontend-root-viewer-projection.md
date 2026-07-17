@@ -6,7 +6,7 @@
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after the extracted contract, focused 21-test
+- Last verified: 2026-07-17 after the extracted contract, focused 28-test
   suite, TypeScript, dependency, full frontend, and queue validation.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
