@@ -929,44 +929,28 @@ reset identity. Distinct delimiter-containing filters can no longer reuse a
 stale form instance. React retains fields, labels, submission, links, markup,
 and presentation. Its pure and unchanged route suites pass 26 tests.
 
+Before claiming Category Pagination Navigation, the coordinator validated a
+fourth non-overlapping successor. API-token and saved-comparison React
+retainers duplicate an operation-name plus stable-variables key, while the
+Relay preload layer already owns the canonical descriptor identity over
+operation name, query text, and stable variables. Its preload, API-token, and
+saved-comparison characterization suites pass 94 tests. The successor has
+complete owned paths, no blockers, and does not overlap category pagination,
+saved-comparison sort input, or offer selected-product context.
+
+Category Pagination Navigation then completed. The existing framework-free
+owner now encodes the category slug as one path segment as well as encoding the
+cursor query value, preventing reserved slug characters from changing route
+structure. Pagination eligibility and React presentation remain unchanged. Its
+pure and route suites pass 8 tests.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Category Pagination Navigation Contract
-
-Status: ready
-Lane: Frontend category pagination navigation
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: encode the category slug as one path segment in the existing
-framework-free next-page path projection while preserving cursor and
-pagination eligibility.
-Owned paths:
-
-- `assets/src/routes/categories/category-view-data.ts`
-- `assets/test/routes/categories/category-view-data.test.ts`
-- `docs/work/frontend-category-pagination-navigation.md`
-
-Prerequisites:
-
-- Next-page visibility still requires both `hasNextPage` and a non-empty
-  cursor.
-- The cursor remains encoded as one query value.
-- Existing category view-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
-- `cd assets && bun run typecheck`
-- framework/transport dependency scan of the category view-data module
-- `git diff --check`
-
-Exit condition: category pagination encodes both the slug path segment and
-cursor query value without changing pagination eligibility or presentation.
-
-### 2. Saved-Comparison Sort Input Data Contract
+### 1. Saved-Comparison Sort Input Data Contract
 
 Status: ready
 Lane: Frontend saved-comparison sort input
@@ -998,7 +982,7 @@ Verification:
 Exit condition: one framework-free owner normalizes saved-comparison sort input
 without changing sorting, filtering, events, markup, or presentation.
 
-### 3. Offer-Discovery Selected-Product Context Contract
+### 2. Offer-Discovery Selected-Product Context Contract
 
 Status: ready
 Lane: Frontend offer selected-product context
@@ -1031,6 +1015,41 @@ Verification:
 Exit condition: the framework-free owner qualifies and projects selected-
 product context without changing Relay, summaries, fallbacks, markup, or
 presentation.
+
+### 3. Relay Query Descriptor Identity Contract
+
+Status: ready
+Lane: Frontend Relay query descriptor identity
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: export the Relay preload layer's canonical operation-name, query-
+text, and stable-variable descriptor identity and use it for retained API-token
+and saved-comparison query keys.
+Owned paths:
+
+- `assets/src/relay/route-preload.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
+- `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- `assets/test/relay/route-preload.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `docs/work/frontend-relay-query-descriptor-identity.md`
+
+Prerequisites:
+
+- Descriptor identity remains stable across variable property order.
+- Query text remains part of identity alongside operation name and variables.
+- Existing Relay preload, API-token route, and saved-comparison route-state
+  characterization remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/relay/route-preload.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer scan proving both retainers use the shared descriptor identity
+- `git diff --check`
+
+Exit condition: both React retainers use the canonical Relay descriptor
+identity without changing query lifecycle, rendering, or route behavior.
 
 ## Needs Decision Work
 

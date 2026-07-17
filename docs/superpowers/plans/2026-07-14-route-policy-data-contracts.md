@@ -1668,13 +1668,13 @@ next-page path that encodes both the category slug path segment and Relay
 cursor. React retains route loading, pagination markup, labels, and
 presentation.
 
-- [ ] Add a pure reserved-character category-slug case; verify RED against the
+- [x] Add a pure reserved-character category-slug case; verify RED against the
   current raw path interpolation.
-- [ ] Encode only the category path segment without changing cursor bounds,
+- [x] Encode only the category path segment without changing cursor bounds,
   product rows, or presentation.
-- [ ] Run the category view-data and route suites, TypeScript, the framework/
+- [x] Run the category view-data and route suites, TypeScript, the framework/
   transport dependency scan, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -1727,8 +1727,44 @@ reads, suspense and error boundaries, offer rendering, and presentation.
   framework/transport dependency scan, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 59: Relay Query Descriptor Identity Contract
+
+**Files:**
+
+- Modify: `assets/src/relay/route-preload.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenList.tsx`
+- Modify: `assets/src/routes/compare/SavedComparisonsRoute.tsx`
+- Modify: `assets/test/relay/route-preload.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Test: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Create: `docs/work/frontend-relay-query-descriptor-identity.md`
+
+**Interfaces:** The Relay preload owner exports one canonical descriptor
+identity over operation name, query text, and stable variables. API-token and
+saved-comparison React retainers consume that identity while retaining query
+lifecycle, rendering, and route orchestration.
+
+- [ ] Add direct identity tests for property-order stability and query-text
+  distinction; verify RED for the missing public contract.
+- [ ] Replace both duplicated, weaker consumer keys with the canonical identity
+  without changing retention or rendering.
+- [ ] Run the Relay preload, API-token route, and saved-comparison route-state
+  suites, TypeScript, a consumer scan, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Category pagination completed on 2026-07-17 after an explicit reserved-slug
+  RED case. The pure and route suites pass 8 tests, with pagination eligibility
+  and React presentation unchanged. The full frontend gate passes 1,356 tests,
+  Relay validation, TypeScript, client and SSR builds, and the bundle contract.
+- Before the category-pagination claim, current source inspection found that
+  API-token and saved-comparison retainers duplicate a weaker query identity
+  while `route-preload.ts` already owns the canonical operation-name, query-
+  text, and stable-variable descriptor identity. The three characterization
+  suites pass 94 tests, and the candidate is path-disjoint from Tasks 56-58.
 - The existing affiliate setup, offer discovery, catalog browse, product
   detail, and compare route suites passed 299 tests on 2026-07-14.
 - Current source inspection found the named deterministic policies in five

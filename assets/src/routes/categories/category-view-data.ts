@@ -46,6 +46,6 @@ function categoryNextPagePath(category: CategoryViewDataInput) {
   const { endCursor, hasNextPage } = category.products.pageInfo;
 
   return hasNextPage && endCursor
-    ? `/categories/${category.slug}?after=${encodeURIComponent(endCursor)}`
+    ? `/categories/${encodeURIComponent(category.slug)}?after=${encodeURIComponent(endCursor)}`
     : null;
 }
