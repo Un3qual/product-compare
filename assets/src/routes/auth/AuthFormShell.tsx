@@ -1,7 +1,7 @@
-import { useId, useMemo, type ComponentProps, type PropsWithChildren } from "react";
+import { useId, type ComponentProps, type PropsWithChildren } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import type { MutationError } from "./errors";
+import { selectGlobalMutationErrors, type MutationError } from "./errors";
 import { Button } from "../../ui/primitives/Button";
 import { Label } from "../../ui/primitives/Label";
 import { Slot } from "../../ui/primitives/Slot";
@@ -130,12 +130,7 @@ export function AuthFormShell({
   title
 }: AuthFormShellProps) {
   const titleId = useId();
-  const fieldNameSet = useMemo(() => new Set(fieldNames), [fieldNames]);
-  const visibleErrors = errors.filter((error: MutationError) => {
-    const field = error.field;
-
-    return field === undefined || field === null || field === "" || !fieldNameSet.has(field);
-  });
+  const visibleErrors = selectGlobalMutationErrors(errors, fieldNames);
 
   return (
     <section aria-labelledby={titleId} {...props(styles.section)}>

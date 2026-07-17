@@ -2,22 +2,22 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 8 passing auth
-  errors and form-shell tests.
+- Last verified: 2026-07-17 with 10 passing focused auth errors and form-shell
+  tests, TypeScript, dependency-boundary scans, and `git diff --check`.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Auth Global Error Visibility Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move global-versus-rendered-field error selection into the
-  existing framework-free auth errors owner.
-- Candidate evidence: `AuthFormShell` currently creates the rendered-field set
-  and filters global errors while `errors.ts` already owns mutation-error
-  lookup and normalization; the focused suites pass 8 tests.
+- Status: complete on 2026-07-17.
+- Delivered: `selectGlobalMutationErrors` now owns global-versus-rendered-field
+  selection in the framework-free auth errors module; `AuthFormShell` delegates
+  to it while retaining field rendering and feedback markup.
+- Evidence: pure tests cover missing, null, blank, known, and unknown fields,
+  source ordering, and input immutability; focused suites pass 10 tests.
 - Blockers: none.
 
 ## Boundaries

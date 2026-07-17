@@ -5,6 +5,7 @@ import {
   resolveActionMutationResult,
   resolveSessionMutationResult,
   sanitizeTransportError,
+  selectGlobalMutationErrors,
   transportMutationError,
   transportMutationErrors
 } from "../../../src/routes/auth/errors";
@@ -97,4 +98,39 @@ test("invalid token mutation errors use the shared token field shape", () => {
     field: "token",
     message: "This link is missing or invalid."
   });
+});
+
+test("global mutation errors retain missing, null, blank, and unknown fields", () => {
+  const errors = [
+    { code: "MISSING", message: "Missing field." },
+    { code: "NULL", field: null, message: "Null field." },
+    { code: "BLANK", field: "", message: "Blank field." },
+    { code: "UNKNOWN", field: "username", message: "Unknown field." },
+    { code: "EMAIL", field: "email", message: "Email error." }
+  ];
+
+  expect(selectGlobalMutationErrors(errors, ["email", "password"])).toEqual([
+    { code: "MISSING", message: "Missing field." },
+    { code: "NULL", field: null, message: "Null field." },
+    { code: "BLANK", field: "", message: "Blank field." },
+    { code: "UNKNOWN", field: "username", message: "Unknown field." }
+  ]);
+});
+
+test("global mutation errors preserve source order and inputs", () => {
+  const errors = [
+    { code: "USERNAME", field: "username", message: "Username error." },
+    { code: "GLOBAL", field: null, message: "Global error." },
+    { code: "EMAIL", field: "email", message: "Email error." }
+  ];
+  const fieldNames = ["email"];
+  const expectedErrors = structuredClone(errors);
+  const expectedFieldNames = structuredClone(fieldNames);
+
+  expect(selectGlobalMutationErrors(errors, fieldNames)).toEqual([
+    { code: "USERNAME", field: "username", message: "Username error." },
+    { code: "GLOBAL", field: null, message: "Global error." }
+  ]);
+  expect(errors).toEqual(expectedErrors);
+  expect(fieldNames).toEqual(expectedFieldNames);
 });

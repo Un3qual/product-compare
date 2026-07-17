@@ -23,6 +23,19 @@ export function findMutationError(errors: MutationError[], field: string) {
   return errors.find((error) => error.field === field)?.message ?? null;
 }
 
+export function selectGlobalMutationErrors(
+  errors: readonly MutationError[],
+  fieldNames: readonly string[]
+): MutationError[] {
+  const renderedFields = new Set(fieldNames);
+
+  return errors.filter((error) => {
+    const field = error.field;
+
+    return field === undefined || field === null || field === "" || !renderedFields.has(field);
+  });
+}
+
 export function sanitizeTransportError(_error: unknown) {
   return DEFAULT_ROUTE_ERROR_MESSAGE;
 }
