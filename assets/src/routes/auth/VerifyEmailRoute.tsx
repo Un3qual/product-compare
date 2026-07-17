@@ -15,11 +15,8 @@ import {
 import { AuthFormShell } from "./AuthFormShell";
 import {
   buildVerifyEmailRequestData,
-  buildVerifyEmailVariables,
-  verifyEmailResultIsCacheable,
   VERIFY_EMAIL_MISSING_TOKEN_ERROR,
-  VERIFY_EMAIL_SUCCESS_MESSAGE,
-  verifyEmailStatusCopy
+  VERIFY_EMAIL_SUCCESS_MESSAGE
 } from "./verify-email-data";
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
@@ -96,7 +93,11 @@ export function VerifyEmailRoute() {
       successMessage={message}
       title="Verify your email"
     >
-      <p>{verifyEmailStatusCopy(isLoading)}</p>
+      <p>
+        {isLoading
+          ? "Checking your verification link…"
+          : "Verification status is ready."}
+      </p>
     </AuthFormShell>
   );
 }
@@ -116,13 +117,13 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
   // but any failed outcome must be evicted so later mounts can retry.
   const request = commitRouteMutationPromise(commitVerifyEmail, {
-    variables: buildVerifyEmailVariables(token)
+    variables: { token }
   })
     .then(({ response, graphQLErrors }) =>
       resolveActionMutationResult(response?.verifyEmail, graphQLErrors)
     )
     .then((result) => {
-      if (!verifyEmailResultIsCacheable(result)) {
+      if (!isSuccessfulActionResult(result)) {
         verificationRequests.delete(token);
       }
 

@@ -1,68 +1,65 @@
-import {
-  buildSharedComparisonViewData,
-  type SharedComparisonSnapshotInput
-} from "../../../src/routes/compare/shared/shared-comparison-view-data";
+import { buildSharedComparisonViewData } from "../../../src/routes/compare/shared/shared-comparison-view-data";
+
+type SnapshotInput = Parameters<typeof buildSharedComparisonViewData>[0];
 
 test("projects the captured winner, source-backed facts, and ordered live path", () => {
-  const snapshot = deepFreeze(
-    snapshotInput({
-      products: [
-        {
-          id: "product-2",
-          name: "Second camera",
-          slug: "second-camera",
-          description: "Compact travel camera",
-          brandName: "Acme",
-          modelNumber: "C2",
-          attributes: [
-            {
-              claimId: "claim-2",
-              displayName: "Weight",
-              valueText: "400 g",
-              evidence: [{ sourceName: "Acme specifications" }]
-            }
-          ],
-          offers: [
-            {
-              pricePointId: "point-2",
-              merchantName: "Camera Shop",
-              landedPrice: "90",
-              currency: "USD",
-              observedAt: "2026-07-13T22:00:00Z"
-            }
-          ]
-        },
-        {
-          id: "product-1",
-          name: "First camera",
-          slug: "first-camera",
-          description: null,
-          brandName: "Bravo",
-          modelNumber: null,
-          attributes: [],
-          offers: []
-        }
-      ],
-      recommendation: {
-        algorithmVersion: "lowest-v1",
-        evaluatedAt: "2026-07-13T23:00:00Z",
-        winnerProductId: "product-2",
-        missingInputs: [],
-        rankings: [
+  const snapshot = snapshotInput({
+    products: [
+      {
+        id: "product-2",
+        name: "Second camera",
+        slug: "second-camera",
+        description: "Compact travel camera",
+        brandName: "Acme",
+        modelNumber: "C2",
+        attributes: [
           {
-            productId: "product-1",
-            productName: "First camera",
-            reasons: ["Higher current cost"]
-          },
+            claimId: "claim-2",
+            displayName: "Weight",
+            valueText: "400 g",
+            evidence: [{ sourceName: "Acme specifications" }]
+          }
+        ],
+        offers: [
           {
-            productId: "product-2",
-            productName: "Second camera",
-            reasons: ["Lowest current cost", "Fresh observation"]
+            pricePointId: "point-2",
+            merchantName: "Camera Shop",
+            landedPrice: "90",
+            currency: "USD",
+            observedAt: "2026-07-13T22:00:00Z"
           }
         ]
+      },
+      {
+        id: "product-1",
+        name: "First camera",
+        slug: "first-camera",
+        description: null,
+        brandName: "Bravo",
+        modelNumber: null,
+        attributes: [],
+        offers: []
       }
-    })
-  );
+    ],
+    recommendation: {
+      algorithmVersion: "lowest-v1",
+      evaluatedAt: "2026-07-13T23:00:00Z",
+      winnerProductId: "product-2",
+      missingInputs: [],
+      rankings: [
+        {
+          productId: "product-1",
+          productName: "First camera",
+          reasons: ["Higher current cost"]
+        },
+        {
+          productId: "product-2",
+          productName: "Second camera",
+          reasons: ["Lowest current cost", "Fresh observation"]
+        }
+      ]
+    }
+  });
 
   expect(buildSharedComparisonViewData(snapshot)).toEqual({
     capturedAt: "2026-07-13T23:00:00Z",
@@ -117,7 +114,7 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
       recommendation: {
         algorithmVersion: "best-value-v1",
         evaluatedAt: "2026-07-13T23:00:00Z",
-        winnerProductId: "missing-product",
+        winnerProductId: null,
         missingInputs: ["Accepted specification evidence is unavailable"],
         rankings: []
       },
@@ -128,7 +125,7 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
           slug: "unbranded-camera",
           description: "",
           brandName: null,
-          modelNumber: "",
+          modelNumber: null,
           attributes: [
             {
               claimId: "claim-1",
@@ -140,10 +137,10 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
           offers: [
             {
               pricePointId: "point-1",
-              merchantName: null,
-              landedPrice: null,
-              currency: null,
-              observedAt: null
+              merchantName: " ",
+              landedPrice: " ",
+              currency: " ",
+              observedAt: " "
             }
           ]
         }
@@ -184,55 +181,14 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
   ]);
 });
 
-test("treats nullable collections as empty without mutating nested input", () => {
-  const snapshot = deepFreeze(
-    snapshotInput({
-      products: [
-        {
-          id: "product-1",
-          name: "Camera",
-          slug: "camera",
-          description: null,
-          brandName: null,
-          modelNumber: null,
-          attributes: null,
-          offers: undefined
-        }
-      ],
-      recommendation: {
-        algorithmVersion: "lowest-v1",
-        evaluatedAt: "2026-07-13T23:00:00Z",
-        winnerProductId: null,
-        missingInputs: null,
-        rankings: undefined
-      }
-    })
-  );
-  const before = structuredClone(snapshot);
-
-  const viewData = buildSharedComparisonViewData(snapshot);
-
-  expect(viewData.recommendation).toMatchObject({
-    kind: "unsupported",
-    reasons: []
-  });
-  expect(viewData.products[0]).toMatchObject({ attributes: [], offers: [] });
-  expect(viewData.liveComparisonPath).toBe("/compare?slug=camera");
-  expect(snapshot).toEqual(before);
-});
-
-test("returns empty product facts and the base compare path for a missing collection", () => {
-  const viewData = buildSharedComparisonViewData(
-    snapshotInput({ products: null })
-  );
+test("returns the base compare path for a valid empty product collection", () => {
+  const viewData = buildSharedComparisonViewData(snapshotInput());
 
   expect(viewData.products).toEqual([]);
   expect(viewData.liveComparisonPath).toBe("/compare");
 });
 
-function snapshotInput(
-  overrides: Partial<SharedComparisonSnapshotInput> = {}
-): SharedComparisonSnapshotInput {
+function snapshotInput(overrides: Partial<SnapshotInput> = {}): SnapshotInput {
   return {
     capturedAt: "2026-07-13T23:00:00Z",
     disclaimer: "This is a captured snapshot.",
@@ -247,16 +203,4 @@ function snapshotInput(
     },
     ...overrides
   };
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-
-    for (const nestedValue of Object.values(value)) {
-      deepFreeze(nestedValue);
-    }
-  }
-
-  return value;
 }

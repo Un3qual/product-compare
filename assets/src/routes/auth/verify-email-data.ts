@@ -1,7 +1,5 @@
 import {
-  type AuthActionResult,
   invalidTokenMutationError,
-  isSuccessfulActionResult,
   type MutationError
 } from "./errors";
 
@@ -27,20 +25,6 @@ export function buildVerifyEmailRequestData(
     isLoading: Boolean(token),
     token
   };
-}
-
-export function buildVerifyEmailVariables(rawToken: string | null | undefined) {
-  return { token: normalizeVerifyEmailToken(rawToken) };
-}
-
-export function verifyEmailStatusCopy(isLoading: boolean) {
-  return isLoading
-    ? "Checking your verification link…"
-    : "Verification status is ready.";
-}
-
-export function verifyEmailResultIsCacheable(result: AuthActionResult) {
-  return isSuccessfulActionResult(result);
 }
 
 function normalizeVerifyEmailToken(rawToken: string | null | undefined) {

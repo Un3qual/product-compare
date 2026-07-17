@@ -1,63 +1,59 @@
+import type { SharedComparisonRouteQuery } from "../../../__generated__/SharedComparisonRouteQuery.graphql";
 import { buildComparePathFromSlugs } from "../paths";
 
-interface SharedComparisonRankingInput {
-  readonly productId: string;
-  readonly productName: string;
-  readonly reasons?: readonly string[] | null;
-}
+type SharedComparisonSnapshotNode = NonNullable<
+  SharedComparisonRouteQuery["response"]["comparisonSnapshot"]
+>;
+type SharedComparisonProductNode = SharedComparisonSnapshotNode["products"][number];
+type SharedComparisonAttributeNode = SharedComparisonProductNode["attributes"][number];
+type SharedComparisonEvidenceNode = SharedComparisonAttributeNode["evidence"][number];
+type SharedComparisonOfferNode = SharedComparisonProductNode["offers"][number];
+type SharedComparisonRecommendationNode = SharedComparisonSnapshotNode["recommendation"];
+type SharedComparisonRankingNode = SharedComparisonRecommendationNode["rankings"][number];
 
-interface SharedComparisonEvidenceInput {
-  readonly sourceName?: string | null;
-}
+type SharedComparisonAttributeInput = Pick<
+  SharedComparisonAttributeNode,
+  "claimId" | "displayName" | "valueText"
+> & {
+  readonly evidence: ReadonlyArray<Pick<SharedComparisonEvidenceNode, "sourceName">>;
+};
 
-interface SharedComparisonAttributeInput {
-  readonly claimId: string;
-  readonly displayName: string;
-  readonly valueText: string;
-  readonly evidence?: readonly SharedComparisonEvidenceInput[] | null;
-}
+type SharedComparisonOfferInput = Pick<
+  SharedComparisonOfferNode,
+  "currency" | "landedPrice" | "merchantName" | "observedAt" | "pricePointId"
+>;
 
-interface SharedComparisonOfferInput {
-  readonly pricePointId: string;
-  readonly merchantName?: string | null;
-  readonly landedPrice?: unknown;
-  readonly currency?: string | null;
-  readonly observedAt?: string | null;
-}
+type SharedComparisonProductInput = Pick<
+  SharedComparisonProductNode,
+  "brandName" | "description" | "id" | "modelNumber" | "name" | "slug"
+> & {
+  readonly attributes: readonly SharedComparisonAttributeInput[];
+  readonly offers: readonly SharedComparisonOfferInput[];
+};
 
-interface SharedComparisonProductInput {
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-  readonly description?: string | null;
-  readonly brandName?: string | null;
-  readonly modelNumber?: string | null;
-  readonly attributes?: readonly SharedComparisonAttributeInput[] | null;
-  readonly offers?: readonly SharedComparisonOfferInput[] | null;
-}
+type SharedComparisonRecommendationInput = Pick<
+  SharedComparisonRecommendationNode,
+  "algorithmVersion" | "evaluatedAt" | "missingInputs" | "winnerProductId"
+> & {
+  readonly rankings: ReadonlyArray<
+    Pick<SharedComparisonRankingNode, "productId" | "productName" | "reasons">
+  >;
+};
 
-interface SharedComparisonRecommendationInput {
-  readonly algorithmVersion: string;
-  readonly evaluatedAt: string;
-  readonly winnerProductId?: string | null;
-  readonly missingInputs?: readonly string[] | null;
-  readonly rankings?: readonly SharedComparisonRankingInput[] | null;
-}
-
-export interface SharedComparisonSnapshotInput {
-  readonly capturedAt: string;
-  readonly disclaimer: string;
-  readonly title?: string | null;
-  readonly products?: readonly SharedComparisonProductInput[] | null;
+type SharedComparisonSnapshotInput = Pick<
+  SharedComparisonSnapshotNode,
+  "capturedAt" | "disclaimer" | "title"
+> & {
+  readonly products: readonly SharedComparisonProductInput[];
   readonly recommendation: SharedComparisonRecommendationInput;
-}
+};
 
 export function buildSharedComparisonViewData(
   snapshot: SharedComparisonSnapshotInput
 ) {
-  const products = collection(snapshot.products);
+  const products = snapshot.products;
   const recommendation = snapshot.recommendation;
-  const winner = collection(recommendation.rankings).find(
+  const winner = recommendation.rankings.find(
     ({ productId }) => productId === recommendation.winnerProductId
   );
 
@@ -74,14 +70,14 @@ export function buildSharedComparisonViewData(
           evaluatedAt: recommendation.evaluatedAt,
           kind: "winner" as const,
           label: winner.productName,
-          reasons: [...collection(winner.reasons)]
+          reasons: [...winner.reasons]
         }
       : {
           algorithmVersion: recommendation.algorithmVersion,
           evaluatedAt: recommendation.evaluatedAt,
           kind: "unsupported" as const,
           label: "No supported winner",
-          reasons: [...collection(recommendation.missingInputs)]
+          reasons: [...recommendation.missingInputs]
         },
     title: nonBlankText(snapshot.title) ?? "Shared product comparison"
   };
@@ -96,8 +92,8 @@ function projectProduct(product: SharedComparisonProductInput) {
     name: product.name,
     description: nonBlankText(product.description),
     brandModelLabel: modelNumber ? `${brandName} · ${modelNumber}` : brandName,
-    attributes: collection(product.attributes).map((attribute) => {
-      const sourceName = nonBlankText(attribute.evidence?.[0]?.sourceName);
+    attributes: product.attributes.map((attribute) => {
+      const sourceName = nonBlankText(attribute.evidence[0]?.sourceName);
 
       return {
         claimId: attribute.claimId,
@@ -108,7 +104,7 @@ function projectProduct(product: SharedComparisonProductInput) {
           : `Accepted claim ${attribute.claimId}`
       };
     }),
-    offers: collection(product.offers).map((offer) => {
+    offers: product.offers.map((offer) => {
       const merchantName = nonBlankText(offer.merchantName) ?? "Unknown merchant";
       const landedPrice = scalarText(offer.landedPrice);
       const currency = nonBlankText(offer.currency);
@@ -123,10 +119,6 @@ function projectProduct(product: SharedComparisonProductInput) {
       };
     })
   };
-}
-
-function collection<T>(value: readonly T[] | null | undefined): readonly T[] {
-  return Array.isArray(value) ? value : [];
 }
 
 function nonBlankText(value: string | null | undefined) {

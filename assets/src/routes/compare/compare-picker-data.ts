@@ -24,12 +24,6 @@ export type ComparePickerPageInfo = {
   readonly hasNextPage: boolean;
 };
 
-export type ComparePickerVisibleOptionsData<Option> = {
-  readonly emptyMessage: string;
-  readonly normalizedFilterText: string;
-  readonly options: readonly Option[];
-};
-
 export function comparePickerResetToken(
   specMode: CompareSpecMode,
   selectedSlugs: readonly string[]
@@ -81,23 +75,6 @@ export function buildComparePickerOptions(
     id: product.id,
     name: product.name
   }));
-}
-
-export function buildComparePickerVisibleOptionsData<Option extends { readonly name: string }>(
-  options: readonly Option[],
-  filterText: string
-): ComparePickerVisibleOptionsData<Option> {
-  const normalizedFilterText = filterText.trim().toLowerCase();
-
-  return {
-    emptyMessage: normalizedFilterText
-      ? "No loaded products match this filter."
-      : "No additional products are available on this page.",
-    normalizedFilterText,
-    options: normalizedFilterText
-      ? options.filter((option) => option.name.toLowerCase().includes(normalizedFilterText))
-      : options
-  };
 }
 
 export function nextComparePickerPageCursor(

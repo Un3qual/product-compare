@@ -5,7 +5,6 @@ import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { Button } from "../../ui/primitives/Button";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { buildComparePickerVisibleOptionsData } from "./compare-picker-data";
 
 const styles = create({
   picker: {
@@ -53,7 +52,10 @@ export function CompareProductPickerView({
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();
   const filterLabelId = `${filterInputId}-label`;
-  const visibleOptionsData = buildComparePickerVisibleOptionsData(options, filterText);
+  const normalizedFilterText = filterText.trim().toLowerCase();
+  const visibleOptions = normalizedFilterText
+    ? options.filter((option) => option.name.toLowerCase().includes(normalizedFilterText))
+    : options;
 
   return (
     <section {...props(styles.picker)}>
@@ -69,11 +71,15 @@ export function CompareProductPickerView({
           value={filterText}
         />
       </div>
-      {visibleOptionsData.options.length === 0 ? (
-        <p>{visibleOptionsData.emptyMessage}</p>
+      {visibleOptions.length === 0 ? (
+        <p>
+          {normalizedFilterText
+            ? "No loaded products match this filter."
+            : "No additional products are available on this page."}
+        </p>
       ) : (
         <DataList label="Products available to compare">
-          {visibleOptionsData.options.map((option) => (
+          {visibleOptions.map((option) => (
             <DataListItem
               actions={
                 <Button asChild variant="soft">

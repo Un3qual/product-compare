@@ -16,8 +16,6 @@ import {
 } from "./errors";
 import {
   CREDENTIAL_RESET_COMPLETION_MESSAGE,
-  buildResetPasswordVariables,
-  isCurrentResetPasswordRequest,
   normalizeResetPasswordToken,
   resetPasswordErrorsForToken
 } from "./reset-password-data";
@@ -62,9 +60,9 @@ export function ResetPasswordRoute() {
     commitRouteMutation(
       commitResetPassword,
       {
-        variables: buildResetPasswordVariables({ token, password }),
+        variables: { token, password },
         onCompleted(response, graphQLErrors) {
-          if (!isCurrentResetPasswordRequest(requestVersion, activeRequestVersion.current)) {
+          if (requestVersion !== activeRequestVersion.current) {
             return;
           }
 
@@ -80,7 +78,7 @@ export function ResetPasswordRoute() {
           setIsSubmitting(false);
         },
         onError(error) {
-          if (!isCurrentResetPasswordRequest(requestVersion, activeRequestVersion.current)) {
+          if (requestVersion !== activeRequestVersion.current) {
             return;
           }
 
@@ -89,7 +87,7 @@ export function ResetPasswordRoute() {
         }
       },
       (error) => {
-        if (!isCurrentResetPasswordRequest(requestVersion, activeRequestVersion.current)) {
+        if (requestVersion !== activeRequestVersion.current) {
           return;
         }
 
