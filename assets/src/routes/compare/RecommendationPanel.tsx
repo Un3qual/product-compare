@@ -7,6 +7,7 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import type { CompareSpecMode } from "./loader";
 import {
+  buildRecommendationQueryInput,
   buildRecommendationProfilePath,
   recommendationProfileFromUrl,
   type RecommendationProfile
@@ -31,7 +32,7 @@ export function RecommendationPanel({
 }) {
   const location = useLocation();
   const profile = recommendationProfileFromUrl(`${location.pathname}${location.search}`);
-  const resetToken = `${slugs.join("|")}:${profile}`;
+  const recommendationQueryInput = buildRecommendationQueryInput(slugs, profile);
 
   if (slugs.length < 2) {
     return null;
@@ -39,13 +40,14 @@ export function RecommendationPanel({
 
   return (
     <ResettableErrorBoundary
-      resetToken={resetToken}
+      resetToken={recommendationQueryInput.resetToken}
       fallback={<FeedbackState kind="error" title="Decision recommendation unavailable." />}
     >
       <Suspense fallback={<FeedbackState kind="loading" title="Loading recommendation..." />}>
         <RecommendationContent
-          key={resetToken}
+          key={recommendationQueryInput.resetToken}
           profile={profile}
+          queryVariables={recommendationQueryInput.queryVariables}
           slugs={slugs}
           specMode={specMode}
         />
@@ -56,19 +58,18 @@ export function RecommendationPanel({
 
 function RecommendationContent({
   profile,
+  queryVariables,
   slugs,
   specMode
 }: {
   profile: RecommendationProfile;
+  queryVariables: ReturnType<typeof buildRecommendationQueryInput>["queryVariables"];
   slugs: readonly string[];
   specMode: CompareSpecMode;
 }) {
   const data = useLazyLoadQuery<CompareRecommendationQuery>(
     compareRecommendationQuery,
-    {
-      slugs: [...slugs],
-      profile: profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST"
-    },
+    queryVariables,
     { fetchPolicy: "store-or-network" }
   );
   const recommendation = data.comparisonRecommendation;

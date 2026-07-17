@@ -2018,15 +2018,15 @@ projects collision-safe error-boundary reset identity and GraphQL query
 variables from selected slugs and the current profile. The React owner retains
 Relay, fetch policy, Suspense, error fallback, links, markup, and presentation.
 
-- [ ] Write pure tests for both profile enums, selected-slug order, input
+- [x] Write pure tests for both profile enums, selected-slug order, input
   immutability, profile reset changes, and delimiter-containing slug-list
   collisions; verify RED.
-- [ ] Move only deterministic recommendation query input and reset identity,
+- [x] Move only deterministic recommendation query input and reset identity,
   correcting the current delimiter collision while preserving Relay and UI
   behavior.
-- [ ] Run the recommendation route-data and panel suites, TypeScript, consumer
+- [x] Run the recommendation route-data and panel suites, TypeScript, consumer
   and transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2077,8 +2077,39 @@ pagination, mutations, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 73: API Token Status Badge Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-status-badge-data.md`
+
+**Interfaces:** The existing framework-free API-token route-data owner
+projects the lifecycle status label and matching positive or neutral badge
+tone. The React owner retains timestamps, actions, mutations, StatusBadge
+markup, and presentation.
+
+- [ ] Write pure tests for active, revoked, and expired status labels and
+  tones, revocation precedence, and input immutability; verify RED.
+- [ ] Move only deterministic badge-tone policy while preserving timestamps,
+  actions, mutations, markup, and presentation.
+- [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Recommendation query-input data completed on 2026-07-17 after five new pure
+  contract tests failed RED because the projection was missing. The pure and
+  panel suites then passed 33 tests; TypeScript, consumer, recursive dependency
+  closure, and `git diff --check` passed. The reset identity uses structural
+  JSON over the profile and complete ordered slug array, eliminating the old
+  delimiter collision without reserving a replacement delimiter.
 - Auth global-error visibility data completed on 2026-07-17 after two pure
   selector cases failed RED because the selector was missing. The pure and
   form-shell suites then passed 10 tests; TypeScript, consumer and dependency

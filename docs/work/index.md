@@ -1078,49 +1078,21 @@ summary and mutation policy. Its pure and panel suites pass 17 tests. The
 successor is path-disjoint from auth error visibility, recommendation query
 input, and offer discovery scope badge data.
 
+Before claiming the recommendation query-input row, current source inspection
+confirmed that API-token status labels come from `buildApiTokenDisplayData`
+while `ApiTokenItem` still independently derives the matching positive or
+neutral badge tone. The framework-free API-token route-data owner already owns
+the lifecycle status policy, and its pure and route suites pass 84 tests. The
+successor is path-disjoint from recommendation query input, offer discovery
+scope badge data, and product review row display data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Recommendation Query Input Data Contract
-
-Status: ready
-Lane: Frontend recommendation query input data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move recommendation query variables and collision-safe reset
-identity from `RecommendationPanel` into the existing framework-free
-recommendation route-data owner.
-Owned paths:
-
-- `assets/src/routes/compare/recommendation-route-data.ts`
-- `assets/src/routes/compare/RecommendationPanel.tsx`
-- `assets/test/routes/compare/recommendation-route-data.test.ts`
-- `assets/test/routes/compare/recommendation-panel.test.tsx`
-- `docs/work/frontend-recommendation-query-input-data.md`
-
-Prerequisites:
-
-- Query variables preserve selected-slug order and map each profile to its
-  existing GraphQL enum.
-- Reset identity changes for profile changes and for distinct slug lists,
-  including lists whose values contain the old `|` delimiter.
-- Existing recommendation route-data and panel characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/compare/recommendation-route-data.test.ts test/routes/compare/recommendation-panel.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the
-  recommendation route-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable recommendation query
-input and collision-safe reset identity without changing fetch policy,
-Suspense, error fallback, profile links, markup, or presentation.
-
-### 2. Offer Discovery Scope Badge Data Contract
+### 1. Offer Discovery Scope Badge Data Contract
 
 Status: ready
 Lane: Frontend offer discovery scope badge data
@@ -1152,7 +1124,7 @@ Verification:
 Exit condition: the framework-free owner projects stable offer-scope badge
 data without changing filtering, offer ordering, markup, or presentation.
 
-### 3. Product Review Row Display Data Contract
+### 2. Product Review Row Display Data Contract
 
 Status: ready
 Lane: Frontend product review row display data
@@ -1187,6 +1159,41 @@ Exit condition: the framework-free owner projects stable review-row copy
 without changing bodies, list markup, forms, pagination, mutations, or
 presentation.
 
+### 3. API Token Status Badge Data Contract
+
+Status: ready
+Lane: Frontend API token status badge data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: project the lifecycle-consistent status badge tone alongside the
+existing status label in the framework-free API-token route-data owner.
+Owned paths:
+
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-status-badge-data.md`
+
+Prerequisites:
+
+- Active tokens retain the Active token label and positive badge tone.
+- Revoked and expired tokens retain their existing labels and neutral badge
+  tone, with revocation precedence unchanged.
+- Existing timestamp, action, mutation, markup, and presentation behavior
+  remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the API-
+  token route-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects lifecycle-consistent status
+badge data without changing timestamps, actions, mutations, StatusBadge
+markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1196,6 +1203,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Recommendation query-input data completed on 2026-07-17. The framework-free
+recommendation route-data owner now projects ordered copied GraphQL variables,
+both existing profile enums, and a structured reset identity that cannot alias
+distinct delimiter-containing slug lists. React retains Relay, fetch policy,
+Suspense, error fallback, profile links, markup, and presentation. Its pure and
+panel suites passed 33 tests; TypeScript, recursive dependency, consumer, and
+diff checks are recorded in
+`docs/work/frontend-recommendation-query-input-data.md`.
 
 Auth global-error visibility data completed on 2026-07-17. The framework-free
 auth errors owner now selects missing, null, blank, and unknown-field errors
