@@ -122,27 +122,25 @@ test.each([
   });
 });
 
-test("buildApiTokenDisplayData gives revoked status precedence over active and expired", () => {
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2000-01-01T00:00:00Z",
-      revokedAt: "2026-07-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Revoked token");
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2999-01-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Active token");
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2000-01-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Expired token");
-});
+test.each([
+  ["active", { expiresAt: "2999-01-01T00:00:00Z", revokedAt: null }, "Active token", "positive"],
+  ["revoked", { expiresAt: null, revokedAt: "2026-07-01T00:00:00Z" }, "Revoked token", "neutral"],
+  ["expired", { expiresAt: "2000-01-01T00:00:00Z", revokedAt: null }, "Expired token", "neutral"],
+  [
+    "revoked expired token",
+    { expiresAt: "2000-01-01T00:00:00Z", revokedAt: "2026-07-01T00:00:00Z" },
+    "Revoked token",
+    "neutral"
+  ]
+] as const)(
+  "buildApiTokenDisplayData projects the %s lifecycle label and badge tone without mutating input",
+  (_caseName, lifecycleFacts, statusLabel, statusTone) => {
+    const token = Object.freeze({ ...SERVER_TOKEN, ...lifecycleFacts });
+
+    expect(buildApiTokenDisplayData(token)).toMatchObject({ statusLabel, statusTone });
+    expect(token).toEqual({ ...SERVER_TOKEN, ...lifecycleFacts });
+  }
+);
 
 test("apiTokensRouteLocationIdentity separates authorization, status, and cursor state", () => {
   expect(apiTokensRouteLocationIdentity({

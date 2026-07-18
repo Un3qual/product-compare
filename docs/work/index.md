@@ -1101,48 +1101,21 @@ normalizes indexability and image facts. Its pure and component suites pass 9
 tests. The successor is path-disjoint from product review row display data,
 API-token status badge data, and price-watch amount field data.
 
+Before claiming the API-token status-badge row, current source inspection
+confirmed that selected-merchant copy remains repeated across three affiliate
+forms and current-merchant copy remains inline in `AffiliateSetupRoute`, while
+the framework-free affiliate setup data owner already projects the canonical
+merchant summary. Its pure and route suites pass 50 tests. The successor is
+path-disjoint from API-token status badge data, price-watch amount field data,
+and route metadata tag policy data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. API Token Status Badge Data Contract
-
-Status: ready
-Lane: Frontend API token status badge data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project the lifecycle-consistent status badge tone alongside the
-existing status label in the framework-free API-token route-data owner.
-Owned paths:
-
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-status-badge-data.md`
-
-Prerequisites:
-
-- Active tokens retain the Active token label and positive badge tone.
-- Revoked and expired tokens retain their existing labels and neutral badge
-  tone, with revocation precedence unchanged.
-- Existing timestamp, action, mutation, markup, and presentation behavior
-  remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the API-
-  token route-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects lifecycle-consistent status
-badge data without changing timestamps, actions, mutations, StatusBadge
-markup, or presentation.
-
-### 2. Price Watch Amount Field Data Contract
+### 1. Price Watch Amount Field Data Contract
 
 Status: ready
 Lane: Frontend price watch amount field data
@@ -1177,7 +1150,7 @@ Exit condition: the framework-free owner projects stable amount-field data
 without changing input construction, mutation orchestration, form reset,
 markup, or presentation.
 
-### 3. Route Metadata Tag Policy Data Contract
+### 2. Route Metadata Tag Policy Data Contract
 
 Status: ready
 Lane: Frontend route metadata tag policy data
@@ -1213,6 +1186,43 @@ Exit condition: the framework-free owner projects stable route tag policy
 without changing metadata selection, canonical, Open Graph, image, structured-
 data, markup, or router behavior.
 
+### 3. Affiliate Merchant Context Copy Data Contract
+
+Status: ready
+Lane: Frontend affiliate merchant context copy data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: project selected-merchant and current-merchant copy from the
+canonical merchant choice in the existing framework-free affiliate setup data
+owner.
+Owned paths:
+
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-merchant-context-copy-data.md`
+
+Prerequisites:
+
+- Program, link, and coupon forms retain `Selected merchant: <name> (<domain>)`.
+- The setup context rail retains `Current merchant: <name> (<domain>)`.
+- Missing selections retain no merchant context copy.
+- Existing merchant selection, pagination, forms, mutations, results, markup,
+  and presentation remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the
+  affiliate setup data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable merchant context copy
+without changing selection, pagination, forms, mutations, results, markup, or
+presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1222,6 +1232,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+API-token status badge data completed on 2026-07-17. The framework-free API-
+token route-data owner now projects the positive active tone and neutral
+revoked/expired tone alongside the existing lifecycle label, preserving
+revocation precedence. React retains timestamps, actions, mutations,
+StatusBadge markup, and presentation. Its pure and route suites passed 87
+tests; TypeScript, recursive dependency, consumer, and diff checks are
+recorded in `docs/work/frontend-api-token-status-badge-data.md`.
 
 Product review row-display data completed on 2026-07-17. The framework-free
 product-community data owner now projects explicit or rating-fallback titles,

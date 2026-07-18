@@ -2094,13 +2094,13 @@ projects the lifecycle status label and matching positive or neutral badge
 tone. The React owner retains timestamps, actions, mutations, StatusBadge
 markup, and presentation.
 
-- [ ] Write pure tests for active, revoked, and expired status labels and
+- [x] Write pure tests for active, revoked, and expired status labels and
   tones, revocation precedence, and input immutability; verify RED.
-- [ ] Move only deterministic badge-tone policy while preserving timestamps,
+- [x] Move only deterministic badge-tone policy while preserving timestamps,
   actions, mutations, markup, and presentation.
-- [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+- [x] Run the API-token route-data and route suites, TypeScript, consumer and
   transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2154,8 +2154,40 @@ markup, and router behavior.
   and transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 76: Affiliate Merchant Context Copy Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- Modify: `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- Modify: `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- Test: `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- Create: `docs/work/frontend-affiliate-merchant-context-copy-data.md`
+
+**Interfaces:** The existing framework-free affiliate setup data owner
+projects selected-merchant and current-merchant copy from the canonical
+merchant choice. React retains selection, pagination, forms, mutations,
+results, markup, and presentation.
+
+- [ ] Write pure tests for selected and current copy, missing selection, and
+  input immutability; verify RED.
+- [ ] Move only deterministic merchant context copy while preserving
+  selection, pagination, forms, mutations, results, markup, and presentation.
+- [ ] Run the affiliate setup data and route suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- API-token status badge data completed on 2026-07-17 after four lifecycle
+  cases failed RED because the display projection did not include a tone. The
+  pure and route suites then passed 87 tests; TypeScript, consumer, recursive
+  dependency closure, and `git diff --check` passed. Active tokens remain
+  positive, revoked and expired tokens remain neutral, and revocation keeps
+  precedence over expiry.
 - Product review row-display data completed on 2026-07-17 after the new pure
   contract test failed RED because the projection was missing. The expanded
   pure suite then covered explicit and fallback titles, ratings one through

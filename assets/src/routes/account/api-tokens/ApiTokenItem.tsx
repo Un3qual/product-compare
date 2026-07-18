@@ -114,7 +114,7 @@ function ApiTokenDetails({
       <div>
         <dt>Status</dt>
         <dd>
-          <StatusBadge tone={apiTokenIsActive(token) ? "positive" : "neutral"}>
+          <StatusBadge tone={displayData.statusTone}>
             {displayData.statusLabel}
           </StatusBadge>
         </dd>

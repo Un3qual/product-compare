@@ -95,7 +95,8 @@ export function buildApiTokenDisplayData(token: ApiTokenRecord) {
     expiresAtLabel: formatOptionalDateTime(token.expiresAt, "Never expires"),
     lastUsedAtLabel: formatOptionalDateTime(token.lastUsedAt, "Never used"),
     insertedAtLabel: formatUtcDateTime(token.insertedAt),
-    statusLabel: apiTokenStatusLabel(token)
+    statusLabel: apiTokenStatusLabel(token),
+    statusTone: apiTokenIsActive(token) ? ("positive" as const) : ("neutral" as const)
   };
 }
 
