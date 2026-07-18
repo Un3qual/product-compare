@@ -168,11 +168,11 @@ export function buildCouponVariables(formValues: AffiliateSetupFormValues) {
 }
 
 export function couponDiscountText(coupon: AffiliateCouponResultCopyFact) {
-  const value = coupon.discountValue == null ? null : String(coupon.discountValue);
+  const value = couponDiscountValue(coupon.discountValue);
 
   switch (coupon.discountType) {
     case "AMOUNT":
-      return value && coupon.currency ? `${value} ${coupon.currency}` : null;
+      return amountCouponDiscountText(value, coupon.currency);
     case "PERCENT":
       return value ? `${value}% off` : null;
     case "FREE_SHIPPING":
@@ -182,6 +182,17 @@ export function couponDiscountText(coupon: AffiliateCouponResultCopyFact) {
     default:
       return null;
   }
+}
+
+function couponDiscountValue(discountValue: unknown | null | undefined) {
+  return discountValue == null ? null : String(discountValue);
+}
+
+function amountCouponDiscountText(
+  value: string | null,
+  currency: string | null | undefined
+) {
+  return value && currency ? `${value} ${currency}` : null;
 }
 
 function requiredFormString(formValues: AffiliateSetupFormValues, name: string) {

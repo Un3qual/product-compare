@@ -14,8 +14,6 @@
 
 - Status: completed on `codex/frontend-navigation-row-contracts` on
   2026-07-17.
-- Next action: project amount-field visibility and label from the selected rule
-  type in the existing framework-free price-watch data owner.
 - Result: `getPriceWatchAmountFieldData` now projects a discriminated amount-
   field contract for all four rule types, and `PriceWatchControl` consumes its
   visibility and exact label without retaining a second policy decision.

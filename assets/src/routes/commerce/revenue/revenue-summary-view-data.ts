@@ -32,10 +32,10 @@ export function buildRevenueSummaryFilterFormData(
   filters: RevenueSummaryFilters
 ) {
   const values: RevenueSummaryFilterFormValues = {
-    currency: filters.currency ?? "",
-    from: filters.from ?? "",
-    network: filters.network ?? "",
-    to: filters.to ?? ""
+    currency: revenueFilterFormValue(filters.currency),
+    from: revenueFilterFormValue(filters.from),
+    network: revenueFilterFormValue(filters.network),
+    to: revenueFilterFormValue(filters.to)
   };
 
   return {
@@ -47,6 +47,10 @@ export function buildRevenueSummaryFilterFormData(
     ]),
     values
   };
+}
+
+function revenueFilterFormValue(value: string | null | undefined) {
+  return value ?? "";
 }
 
 export function buildRevenueSummaryControls(

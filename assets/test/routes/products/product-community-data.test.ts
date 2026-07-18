@@ -141,6 +141,27 @@ test.each([
   ).toBe(ratingStars);
 });
 
+test.each([
+  [-1, "☆☆☆☆☆", "0 out of 5"],
+  [2.6, "★★★☆☆", "3 out of 5"],
+  [8, "★★★★★", "5 out of 5"],
+  [Number.NaN, "☆☆☆☆☆", "0 out of 5"],
+  [Number.POSITIVE_INFINITY, "★★★★★", "5 out of 5"],
+  [Number.NEGATIVE_INFINITY, "☆☆☆☆☆", "0 out of 5"]
+])(
+  "publishedReviewRowDisplayData safely normalizes an invalid rating of %s",
+  (rating, ratingStars, fallbackTitle) => {
+    expect(
+      publishedReviewRowDisplayData({
+        authorLabel: "Community member",
+        rating,
+        title: null,
+        verifiedPurchase: false
+      })
+    ).toMatchObject({ ratingStars, title: fallbackTitle });
+  }
+);
+
 test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
   expect(acceptedAnswerAuthorLabel("answer-1", "answer-1", "Community member")).toBe(
     "Accepted answer · Community member"

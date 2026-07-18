@@ -1,8 +1,7 @@
 import { projectRootViewer } from "../../src/routes/root/viewer-data";
 
-test("projects no viewer for nullish values", () => {
-  expect(projectRootViewer(null)).toBeNull();
-  expect(projectRootViewer(undefined)).toBeNull();
+test.each([null, undefined])("projects no viewer for a nullish value", (viewer) => {
+  expect(projectRootViewer(viewer)).toBeNull();
 });
 
 test("projects no viewer for primitive values", () => {

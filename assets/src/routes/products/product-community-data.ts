@@ -20,11 +20,21 @@ export function publishedReviewRowDisplayData({
   title,
   verifiedPurchase
 }: PublishedReviewRowFacts) {
+  const normalizedRating = normalizePublishedReviewRating(rating);
+
   return {
     authorCopy: `${authorLabel} · ${verifiedPurchase ? "Verified purchase" : "Purchase not verified"}`,
-    ratingStars: `${"★".repeat(rating)}${"☆".repeat(5 - rating)}`,
-    title: title ?? `${rating} out of 5`
+    ratingStars: `${"★".repeat(normalizedRating)}${"☆".repeat(5 - normalizedRating)}`,
+    title: title ?? `${normalizedRating} out of 5`
   };
+}
+
+function normalizePublishedReviewRating(rating: number) {
+  if (Number.isNaN(rating)) {
+    return 0;
+  }
+
+  return Math.min(5, Math.max(0, Math.round(rating)));
 }
 
 export function resolveProductReviewMutationMessage(
