@@ -1,4 +1,7 @@
-import { resolveRouteDocumentMetadata } from "../../src/routes/route-metadata-data";
+import {
+  projectRouteMetadataTagPolicy,
+  resolveRouteDocumentMetadata
+} from "../../src/routes/route-metadata-data";
 
 function metadata(title: string) {
   return {
@@ -6,6 +9,58 @@ function metadata(title: string) {
     title
   };
 }
+
+test("projectRouteMetadataTagPolicy only indexes explicitly indexable metadata", () => {
+  expect(projectRouteMetadataTagPolicy({ indexable: true })).toEqual({
+    robots: "index,follow",
+    twitterCard: "summary"
+  });
+  expect(projectRouteMetadataTagPolicy({})).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary"
+  });
+  expect(projectRouteMetadataTagPolicy({ indexable: false })).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary"
+  });
+});
+
+test("projectRouteMetadataTagPolicy uses a large Twitter card only for a non-empty image URL", () => {
+  expect(
+    projectRouteMetadataTagPolicy({ imageUrl: "https://example.test/product.jpg" })
+  ).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary_large_image"
+  });
+  expect(projectRouteMetadataTagPolicy({ imageUrl: undefined })).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary"
+  });
+  expect(projectRouteMetadataTagPolicy({ imageUrl: null })).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary"
+  });
+  expect(projectRouteMetadataTagPolicy({ imageUrl: "" })).toEqual({
+    robots: "noindex,follow",
+    twitterCard: "summary"
+  });
+});
+
+test("projectRouteMetadataTagPolicy does not mutate frozen normalized metadata", () => {
+  const normalizedMetadata = Object.freeze({
+    imageUrl: "https://example.test/product.jpg",
+    indexable: true
+  });
+
+  expect(projectRouteMetadataTagPolicy(normalizedMetadata)).toEqual({
+    robots: "index,follow",
+    twitterCard: "summary_large_image"
+  });
+  expect(normalizedMetadata).toEqual({
+    imageUrl: "https://example.test/product.jpg",
+    indexable: true
+  });
+});
 
 test("resolveRouteDocumentMetadata selects the deepest valid route metadata", () => {
   const matches = [

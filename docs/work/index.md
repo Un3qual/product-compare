@@ -1109,49 +1109,21 @@ merchant summary. Its pure and route suites pass 50 tests. The successor is
 path-disjoint from API-token status badge data, price-watch amount field data,
 and route metadata tag policy data.
 
+Before claiming the route-metadata tag-policy row, current source inspection
+confirmed that initial and additional product-answer pagination still derive
+cursor policy independently in `ProductCommunityPanel`, bypassing the existing
+framework-free community cursor owner. Additional pages can accept the current
+cursor again instead of requiring forward progress. The pure and panel suites
+pass 23 tests. The successor is path-disjoint from route metadata tag policy,
+affiliate merchant context copy, and API-token lifecycle action policy data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Route Metadata Tag Policy Data Contract
-
-Status: ready
-Lane: Frontend route metadata tag policy data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project robots and Twitter-card tag values from normalized route
-metadata in the existing framework-free route-metadata data owner.
-Owned paths:
-
-- `assets/src/routes/route-metadata-data.ts`
-- `assets/src/routes/RouteMetadata.tsx`
-- `assets/test/routes/route-metadata-data.test.ts`
-- `assets/test/routes/route-metadata.test.tsx`
-- `docs/work/frontend-route-metadata-tag-policy-data.md`
-
-Prerequisites:
-
-- Explicitly indexable routes retain `index,follow`; every other route retains
-  `noindex,follow`.
-- Metadata with a non-empty image URL retains `summary_large_image`; metadata
-  without one retains `summary`.
-- Existing canonical, Open Graph, image, structured-data, markup, and router
-  behavior remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/route-metadata-data.test.ts test/routes/route-metadata.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the route-
-  metadata data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable route tag policy
-without changing metadata selection, canonical, Open Graph, image, structured-
-data, markup, or router behavior.
-
-### 2. Affiliate Merchant Context Copy Data Contract
+### 1. Affiliate Merchant Context Copy Data Contract
 
 Status: ready
 Lane: Frontend affiliate merchant context copy data
@@ -1188,7 +1160,7 @@ Exit condition: the framework-free owner projects stable merchant context copy
 without changing selection, pagination, forms, mutations, results, markup, or
 presentation.
 
-### 3. API Token Lifecycle Action Policy Data Contract
+### 2. API Token Lifecycle Action Policy Data Contract
 
 Status: ready
 Lane: Frontend API token lifecycle action policy data
@@ -1226,6 +1198,41 @@ Exit condition: the framework-free owner projects stable lifecycle action
 policy without changing variables, one-time-token handling, forms,
 accessibility labels, mutation orchestration, markup, or presentation.
 
+### 3. Product Community Answer Pagination Cursor Data Contract
+
+Status: ready
+Lane: Frontend product-community answer pagination data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: make the existing framework-free community cursor owner project
+initial and advancing answer-page cursors for the product-community panel.
+Owned paths:
+
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `docs/work/frontend-product-community-answer-pagination-data.md`
+
+Prerequisites:
+
+- Initial answer pagination retains a cursor only when another page exists and
+  the server supplied a non-empty end cursor.
+- Additional answer pagination requires a non-empty cursor different from the
+  cursor that produced the current page.
+- Existing answer ordering, deduplication, accepted-answer labels, suspense,
+  error handling, queries, mutations, markup, and presentation remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the product-
+  community data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects safe answer-page cursor
+progression without changing question or answer behavior outside pagination.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1235,6 +1242,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Route-metadata tag policy data completed on 2026-07-17. The framework-free
+route-metadata data owner now projects exact robots and Twitter-card values
+from normalized indexability and image facts. React retains route-match
+access, canonical, Open Graph, image, structured-data, markup, and router
+behavior. Its pure and component suites passed 12 tests; TypeScript, recursive
+dependency, consumer, and diff checks are recorded in
+`docs/work/frontend-route-metadata-tag-policy-data.md`.
 
 Price-watch amount-field data completed on 2026-07-17. The framework-free
 price-watch data owner now projects amount-field visibility and exact label

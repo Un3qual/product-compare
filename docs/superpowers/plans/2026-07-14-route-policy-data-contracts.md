@@ -2145,14 +2145,14 @@ robots and Twitter-card values from normalized metadata. The React owner
 retains route-match access, canonical, Open Graph, image, structured-data,
 markup, and router behavior.
 
-- [ ] Write pure tests for explicit indexability, default noindex behavior,
+- [x] Write pure tests for explicit indexability, default noindex behavior,
   image and no-image card values, and input immutability; verify RED.
-- [ ] Move only deterministic robots and Twitter-card policy while preserving
+- [x] Move only deterministic robots and Twitter-card policy while preserving
   metadata selection, canonical, Open Graph, image, structured-data, markup,
   and router behavior.
-- [ ] Run the route-metadata data and component suites, TypeScript, consumer
+- [x] Run the route-metadata data and component suites, TypeScript, consumer
   and transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2208,8 +2208,41 @@ handlers and orchestration, errors, markup, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 78: Product Community Answer Pagination Cursor Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/product-community-data.ts`
+- Modify: `assets/src/routes/products/ProductCommunityPanel.tsx`
+- Modify: `assets/test/routes/products/product-community-data.test.ts`
+- Test: `assets/test/routes/products/product-community-panel.test.tsx`
+- Create: `docs/work/frontend-product-community-answer-pagination-data.md`
+
+**Interfaces:** The existing framework-free product-community data owner
+projects initial and advancing answer-page cursors from page information and
+the cursor that produced the current page. React retains answer accumulation,
+deduplication, accepted-answer labels, suspense and error boundaries, queries,
+mutations, markup, and presentation.
+
+- [ ] Write pure tests for initial, missing, blank, terminal, advancing, and
+  repeated answer-page cursors plus input immutability; verify RED.
+- [ ] Move only deterministic answer cursor progression while preserving
+  ordering, deduplication, accepted-answer labels, suspense, errors, queries,
+  mutations, markup, and presentation.
+- [ ] Run the product-community data and panel suites, TypeScript, consumer
+  and transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Route-metadata tag policy data completed on 2026-07-17 after three pure
+  cases failed RED because the projection did not exist. The pure and
+  component suites then passed 12 tests; TypeScript, consumer, recursive
+  dependency closure, and `git diff --check` passed. Explicit indexability and
+  non-empty image URLs retain the established robots and Twitter-card values;
+  default, false, missing, null, and empty facts retain their safe fallbacks.
 - Price-watch amount-field data completed on 2026-07-17 after four pure cases
   failed RED because the projection did not exist. The pure and alert-route
   suites then passed 30 tests; TypeScript, consumer, recursive dependency

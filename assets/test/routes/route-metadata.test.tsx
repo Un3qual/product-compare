@@ -10,6 +10,7 @@ test("RouteMetadata updates canonical, robots, social, and structured metadata f
         metadata: {
           canonicalUrl: "https://app.example/product",
           description: "A factual product description.",
+          imageUrl: "https://app.example/product.jpg",
           indexable: true,
           structuredData: '{"@type":"Product"}',
           title: "Factual product | Product Compare"
@@ -26,6 +27,8 @@ test("RouteMetadata updates canonical, robots, social, and structured metadata f
   expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute("href", "https://app.example/product");
   expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
   expect(document.head.querySelector('meta[property="og:url"]')).toHaveAttribute("content", "https://app.example/product");
+  expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+  expect(document.head.querySelector('meta[name="twitter:image"]')).toHaveAttribute("content", "https://app.example/product.jpg");
   expect(document.querySelector('script[type="application/ld+json"]')?.textContent).toBe('{"@type":"Product"}');
 });
 
@@ -41,4 +44,5 @@ test("RouteMetadata defaults non-public static routes to noindex", async () => {
   render(<RouterProvider router={router} />);
   expect(await screen.findByText("Account body")).toBeVisible();
   expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute("content", "noindex,follow");
+  expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute("content", "summary");
 });

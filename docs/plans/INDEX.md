@@ -86,9 +86,9 @@ complete. Saved Comparison Card Display and Alert Watch-Toggle Control are also
 complete. Auth Global Error Visibility, Recommendation Query Input, and Offer
 Discovery Scope Badge are also complete. Product Review Row Display is also
 complete. API Token Status Badge and Price Watch Amount Field are also
-complete. Route Metadata Tag Policy, Affiliate Merchant Context Copy, and API
-Token Lifecycle Action Policy are the current ready successors in the live
-queue.
+complete. Route Metadata Tag Policy is also complete. Affiliate Merchant
+Context Copy, API Token Lifecycle Action Policy, and Product Community Answer
+Pagination Cursor are the current ready successors in the live queue.
 
 Active implementation plans:
 
