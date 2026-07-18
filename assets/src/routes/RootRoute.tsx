@@ -9,7 +9,8 @@ import { PageShell } from "../ui/components/layout/PageShell";
 import { AppProviders } from "../ui/providers/AppProviders";
 import { RootHomeDestinations, RootPrimaryNavigation } from "./RootDestinations";
 import { RouteMetadata } from "./RouteMetadata";
-import type { RootLoaderData, RootViewer } from "./root/loader";
+import type { RootLoaderData } from "./root/loader";
+import { projectRootViewer, type RootViewer } from "./root/viewer-data";
 
 type RootOutletContext = {
   viewer: RootViewer | null;
@@ -36,7 +37,7 @@ function ReadyRootLayout({
   );
   const data = usePreloadedQuery<RootViewerRouteQuery>(rootViewerRouteQuery, queryRef);
 
-  return <RootLayoutShell viewer={rootViewerFromQuery(data.viewer)} />;
+  return <RootLayoutShell viewer={projectRootViewer(data.viewer)} />;
 }
 
 function RootLayoutShell({ viewer }: RootOutletContext) {
@@ -65,18 +66,4 @@ export function RootRoute() {
       <RootHomeDestinations viewer={viewer} />
     </PageShell>
   );
-}
-
-function rootViewerFromQuery(
-  viewer: RootViewerRouteQuery["response"]["viewer"]
-): RootViewer | null {
-  if (!viewer) {
-    return null;
-  }
-
-  return {
-    id: viewer.id,
-    email: viewer.email,
-    isOperator: viewer.isOperator
-  };
 }

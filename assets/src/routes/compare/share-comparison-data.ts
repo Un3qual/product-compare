@@ -22,6 +22,13 @@ export interface ComparisonSnapshotState {
   revokedSnapshotIds: ReadonlySet<string>;
 }
 
+export interface ComparisonSnapshotPageConnection {
+  readonly pageInfo?: {
+    readonly endCursor?: string | null;
+    readonly hasNextPage?: boolean | null;
+  } | null;
+}
+
 export type ComparisonSnapshotPublishPayload = {
   readonly errors?: unknown;
   readonly snapshot?: { readonly id?: string | null } | null;
@@ -170,6 +177,21 @@ export function appendComparisonSnapshotPage(
   }
 
   return additions.length ? [...current, ...additions] : current;
+}
+
+export function nextComparisonSnapshotCursor(
+  connection: ComparisonSnapshotPageConnection | null | undefined,
+  after: string | null
+) {
+  const pageInfo = connection?.pageInfo;
+  const endCursor = pageInfo?.endCursor;
+
+  return pageInfo?.hasNextPage === true &&
+    typeof endCursor === "string" &&
+    endCursor.trim() &&
+    endCursor !== after
+    ? endCursor
+    : null;
 }
 
 export function removeComparisonSnapshotId(ids: ReadonlySet<string>, id: string) {

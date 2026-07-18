@@ -194,7 +194,7 @@ test("API token item presents token lifecycle details and delegates actions", ()
   expect(screen.getByText("2026-08-29 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Never used")).toBeInTheDocument();
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
-  expect(screen.getByText("Active token")).toBeInTheDocument();
+  expect(screen.getByText("Active token")).toHaveAttribute("data-tone", "positive");
   expect(screen.getAllByRole("button", { name: /30 days|90 days|1 year|No expiration/ })).toHaveLength(
     4
   );
@@ -359,7 +359,7 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Active token")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Old automation" })).toBeInTheDocument();
-  expect(screen.getByText("Revoked token")).toBeInTheDocument();
+  expect(screen.getByText("Revoked token")).toHaveAttribute("data-tone", "neutral");
 
   const replacementLabel = screen.getByLabelText("Replacement label for CLI");
 

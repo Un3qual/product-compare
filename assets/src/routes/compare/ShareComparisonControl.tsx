@@ -22,6 +22,7 @@ import {
   buildComparisonSnapshotPublishInput,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
+  nextComparisonSnapshotCursor,
   publishComparisonSnapshotState,
   revokeComparisonSnapshotState,
   resolvePublishComparisonSnapshotMutationOutcome,
@@ -279,7 +280,7 @@ function PublishedSnapshots({
     [localSnapshots, loadedSnapshots, pageSnapshots],
     revokedSnapshotIds
   );
-  const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
+  const next = nextComparisonSnapshotCursor(connection, after);
 
   useEffect(() => {
     setLoadedSnapshots((current) => appendComparisonSnapshotPage(current, pageSnapshots));

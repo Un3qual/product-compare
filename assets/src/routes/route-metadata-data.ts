@@ -16,6 +16,20 @@ export type RouteMetadataMatch = {
   readonly handle?: unknown;
 };
 
+export type RouteMetadataTagPolicy = {
+  robots: "index,follow" | "noindex,follow";
+  twitterCard: "summary" | "summary_large_image";
+};
+
+export function projectRouteMetadataTagPolicy(
+  metadata: Pick<RouteDocumentMetadata, "imageUrl" | "indexable">
+): RouteMetadataTagPolicy {
+  return {
+    robots: metadata.indexable === true ? "index,follow" : "noindex,follow",
+    twitterCard: metadata.imageUrl ? "summary_large_image" : "summary"
+  };
+}
+
 export function resolveRouteDocumentMetadata(
   matches: ReadonlyArray<RouteMetadataMatch>
 ): RouteDocumentMetadata | null {

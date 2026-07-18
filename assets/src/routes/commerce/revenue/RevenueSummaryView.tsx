@@ -7,11 +7,13 @@ import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
-import type {
-  RevenueActiveFilter,
-  RevenueDatePresetLink,
-  RevenueSummaryFilters,
-  RevenueSummaryMetric
+import {
+  buildRevenueSummaryFilterFormData,
+  type RevenueActiveFilter,
+  type RevenueDatePresetLink,
+  type RevenueSummaryFilterFormValues,
+  type RevenueSummaryFilters,
+  type RevenueSummaryMetric
 } from "./revenue-summary-view-data";
 
 type RevenueFilters = RevenueSummaryFilters;
@@ -75,19 +77,28 @@ function RevenueSummaryControls({
   datePresetLinks: readonly RevenueDatePresetLink[];
   filters: RevenueFilters;
 }): ReactElement {
+  const filterFormData = buildRevenueSummaryFilterFormData(filters);
+
   return (
     <ContextRail
       description="Filter recorded attribution by network, currency, or date range."
       label="Revenue controls"
     >
-      <RevenueSummaryFilterForm key={revenueSummaryFilterKey(filters)} filters={filters} />
+      <RevenueSummaryFilterForm
+        key={filterFormData.key}
+        values={filterFormData.values}
+      />
       <RevenueDatePresetList links={datePresetLinks} />
       <RevenueActiveFilterList filters={activeFilters} />
     </ContextRail>
   );
 }
 
-function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): ReactElement {
+function RevenueSummaryFilterForm({
+  values
+}: {
+  values: RevenueSummaryFilterFormValues;
+}): ReactElement {
   return (
     <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
       <div {...props(styles.filterField)}>
@@ -95,7 +106,7 @@ function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): Rea
         <TextField
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.network}
           autoComplete="off"
-          defaultValue={filterFieldValue(filters.network)}
+          defaultValue={values.network}
           name="network"
           type="text"
         />
@@ -105,7 +116,7 @@ function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): Rea
         <TextField
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.currency}
           autoComplete="off"
-          defaultValue={filterFieldValue(filters.currency)}
+          defaultValue={values.currency}
           maxLength={3}
           name="currency"
           type="text"
@@ -115,7 +126,7 @@ function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): Rea
         <span id={REVENUE_FILTER_LABEL_IDS.from}>From</span>
         <input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.from}
-          defaultValue={filterFieldValue(filters.from)}
+          defaultValue={values.from}
           name="from"
           type="date"
         />
@@ -124,7 +135,7 @@ function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): Rea
         <span id={REVENUE_FILTER_LABEL_IDS.to}>To</span>
         <input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.to}
-          defaultValue={filterFieldValue(filters.to)}
+          defaultValue={values.to}
           name="to"
           type="date"
         />
@@ -133,10 +144,6 @@ function RevenueSummaryFilterForm({ filters }: { filters: RevenueFilters }): Rea
       <Link to="/commerce/revenue">Clear filters</Link>
     </form>
   );
-}
-
-function filterFieldValue(value: string | null | undefined) {
-  return value ?? "";
 }
 
 function RevenueDatePresetList({
@@ -178,10 +185,6 @@ function RevenueActiveFilterList({
       ))}
     </ul>
   );
-}
-
-function revenueSummaryFilterKey(filters: RevenueFilters) {
-  return [filters.network, filters.currency, filters.from, filters.to].join("|");
 }
 
 export function RevenueSummaryMetrics({

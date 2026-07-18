@@ -2,6 +2,14 @@ import type { CompareSpecMode } from "./paths";
 
 export type RecommendationProfile = "lowest_current_cost" | "best_value";
 
+export type RecommendationQueryInput = {
+  queryVariables: {
+    profile: "BEST_VALUE" | "LOWEST_CURRENT_COST";
+    slugs: string[];
+  };
+  resetToken: string;
+};
+
 interface RecommendationRevalidationArgs {
   currentUrl: URL;
   defaultShouldRevalidate: boolean;
@@ -30,6 +38,21 @@ export function buildRecommendationProfilePath(
   if (profile === "best_value") params.set("recommend", profile);
 
   return `/compare?${params.toString()}`;
+}
+
+export function buildRecommendationQueryInput(
+  slugs: readonly string[],
+  profile: RecommendationProfile
+): RecommendationQueryInput {
+  const selectedSlugs = [...slugs];
+
+  return {
+    queryVariables: {
+      slugs: selectedSlugs,
+      profile: profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST"
+    },
+    resetToken: JSON.stringify({ profile, slugs: selectedSlugs })
+  };
 }
 
 export function shouldRevalidateCompareLoader({

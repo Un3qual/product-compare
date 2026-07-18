@@ -3,7 +3,7 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
-import { SavedComparisonsRoute, savedComparisonSetQueryKey } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
 import { SavedComparisonSetList } from "../../../src/routes/compare/SavedComparisonSetList";
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
@@ -83,7 +83,9 @@ function buildSavedSet() {
   return {
     id: "saved-set-1",
     name: "Desk setup",
-    products: savedProducts(["chair", "desk"])
+    products: savedProducts(["chair", "desk"]),
+    productCountText: "2 products in this saved comparison",
+    productNamesText: "Ergonomic Chair, Standing Desk"
   };
 }
 
@@ -1140,29 +1142,4 @@ test("saved comparisons route reports Relay mutation network failures", async ()
 
   expect(screen.getByText("Desk setup")).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-});
-
-test("saved comparison query keys are stable across variable property order", () => {
-  const firstKey = savedComparisonSetQueryKey({
-    __relayQuery: {
-      operationName: "SavedComparisonsRouteQuery",
-      text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-      variables: {
-        first: 20,
-        after: "cursor-1"
-      }
-    }
-  });
-  const secondKey = savedComparisonSetQueryKey({
-    __relayQuery: {
-      operationName: "SavedComparisonsRouteQuery",
-      text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-      variables: {
-        after: "cursor-1",
-        first: 20
-      }
-    }
-  });
-
-  expect(secondKey).toBe(firstKey);
 });

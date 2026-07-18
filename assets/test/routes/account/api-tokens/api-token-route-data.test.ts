@@ -3,6 +3,7 @@ import {
   apiTokensRouteLocationIdentity,
   buildApiTokenDisplayData,
   buildApiTokenPaginationData,
+  buildApiTokenStatusFilterNavigationData,
   buildApiTokensViewState,
   buildCreateApiTokenVariables,
   buildRotateApiTokenVariables,
@@ -121,26 +122,42 @@ test.each([
   });
 });
 
-test("buildApiTokenDisplayData gives revoked status precedence over active and expired", () => {
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2000-01-01T00:00:00Z",
-      revokedAt: "2026-07-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Revoked token");
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2999-01-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Active token");
-  expect(
-    buildApiTokenDisplayData({
-      ...SERVER_TOKEN,
-      expiresAt: "2000-01-01T00:00:00Z"
-    }).statusLabel
-  ).toBe("Expired token");
+test.each([
+  ["active", { expiresAt: "2999-01-01T00:00:00Z", revokedAt: null }, "Active token", "positive"],
+  ["revoked", { expiresAt: null, revokedAt: "2026-07-01T00:00:00Z" }, "Revoked token", "neutral"],
+  ["expired", { expiresAt: "2000-01-01T00:00:00Z", revokedAt: null }, "Expired token", "neutral"],
+  [
+    "revoked expired token",
+    { expiresAt: "2000-01-01T00:00:00Z", revokedAt: "2026-07-01T00:00:00Z" },
+    "Revoked token",
+    "neutral"
+  ]
+] as const)(
+  "buildApiTokenDisplayData projects the %s lifecycle label and badge tone without mutating input",
+  (_caseName, lifecycleFacts, statusLabel, statusTone) => {
+    const token = Object.freeze({ ...SERVER_TOKEN, ...lifecycleFacts });
+
+    expect(buildApiTokenDisplayData(token)).toMatchObject({ statusLabel, statusTone });
+    expect(token).toEqual({ ...SERVER_TOKEN, ...lifecycleFacts });
+  }
+);
+
+test("buildApiTokenDisplayData derives status label and tone from one lifecycle snapshot", () => {
+  const expiresAt = "2026-07-17T00:00:00Z";
+  const dateNowSpy = vi.spyOn(Date, "now")
+    .mockReturnValueOnce(Date.parse(expiresAt) - 1)
+    .mockReturnValue(Date.parse(expiresAt));
+
+  try {
+    expect(
+      buildApiTokenDisplayData(Object.freeze({ ...SERVER_TOKEN, expiresAt }))
+    ).toMatchObject({
+      statusLabel: "Active token",
+      statusTone: "positive"
+    });
+  } finally {
+    dateNowSpy.mockRestore();
+  }
 });
 
 test("apiTokensRouteLocationIdentity separates authorization, status, and cursor state", () => {
@@ -161,6 +178,35 @@ test("apiTokenPagePath preserves status and safely encodes an optional cursor", 
     "/account/api-tokens?status=revoked&after=cursor%2Fnext%3F"
   );
 });
+
+test("buildApiTokenStatusFilterNavigationData projects ordered canonical navigation with one current filter", () => {
+  const input = Object.freeze({ tokenStatus: "active" as const });
+
+  expect(buildApiTokenStatusFilterNavigationData(input)).toEqual([
+    { href: "/account/api-tokens?status=all", isCurrent: false, label: "All", status: "all" },
+    { href: "/account/api-tokens?status=active", isCurrent: true, label: "Active", status: "active" },
+    {
+      href: "/account/api-tokens?status=revoked",
+      isCurrent: false,
+      label: "Revoked",
+      status: "revoked"
+    }
+  ]);
+  expect(input).toEqual({ tokenStatus: "active" });
+});
+
+test.each(["all", "active", "revoked"] as const)(
+  "buildApiTokenStatusFilterNavigationData marks only %s current",
+  (tokenStatus) => {
+    const currentFilters = buildApiTokenStatusFilterNavigationData({ tokenStatus }).filter(
+      (filter) => filter.isCurrent
+    );
+
+    expect(currentFilters).toEqual([
+      expect.objectContaining({ status: tokenStatus })
+    ]);
+  }
+);
 
 test("buildApiTokenPaginationData returns status-preserving first and next paths", () => {
   expect(

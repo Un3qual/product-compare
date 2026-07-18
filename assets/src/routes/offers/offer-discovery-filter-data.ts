@@ -33,9 +33,26 @@ export interface OfferDiscoveryProductContext {
   slug: string;
 }
 
+type OfferDiscoveryProductNode = Readonly<{
+  __typename: "Product";
+  brand: OfferDiscoveryProductContext["brand"] | undefined;
+  id: string;
+  name: string;
+  slug: string;
+}>;
+
+export type OfferDiscoverySelectedProductNode =
+  | OfferDiscoveryProductNode
+  | Readonly<{ __typename: string }>;
+
 export interface OfferDiscoveryFilterSummaryItem {
   label: string;
   value: string;
+}
+
+export interface OfferDiscoveryScopeBadgeData {
+  label: string;
+  tone: "neutral" | "positive";
 }
 
 export function normalizeOfferDiscoverySort(
@@ -44,6 +61,21 @@ export function normalizeOfferDiscoverySort(
   const option = OFFER_DISCOVERY_SORT_OPTIONS.find((option) => option.value === sort);
 
   return option?.value ?? DEFAULT_OFFER_DISCOVERY_SORT_OPTION.value;
+}
+
+export function offerDiscoverySelectedProductContext(
+  node: OfferDiscoverySelectedProductNode | null | undefined
+): OfferDiscoveryProductContext | null {
+  if (!node || !isOfferDiscoveryProductNode(node)) {
+    return null;
+  }
+
+  return {
+    brand: node.brand ?? null,
+    id: node.id,
+    name: node.name,
+    slug: node.slug
+  };
 }
 
 export function offerDiscoveryPath(
@@ -135,13 +167,28 @@ export function getOfferDiscoveryFilterData(
     ]),
     productDetailsPath: selectedProduct ? `/products/${encodeURIComponent(selectedProduct.slug)}` : null,
     showReset: hasNonDefaultOfferFilters(canonicalFilters),
+    scopeBadge: offerDiscoveryScopeBadgeData(canonicalFilters),
     sortLabel,
     summaryItems: buildSummaryItems(canonicalFilters, selectedProduct, sortLabel)
   };
 }
 
+function offerDiscoveryScopeBadgeData(
+  filters: OfferDiscoveryFilters
+): OfferDiscoveryScopeBadgeData {
+  return filters.activeOnly
+    ? { label: "Active offers", tone: "positive" }
+    : { label: "All offers", tone: "neutral" };
+}
+
 function canonicalizeFilters(filters: OfferDiscoveryFilterDataInput): OfferDiscoveryFilters {
   return { ...filters, sort: normalizeOfferDiscoverySort(filters.sort) };
+}
+
+function isOfferDiscoveryProductNode(
+  node: OfferDiscoverySelectedProductNode
+): node is OfferDiscoveryProductNode {
+  return node.__typename === "Product";
 }
 
 function sortLabelFor(sort: OfferDiscoverySort) {

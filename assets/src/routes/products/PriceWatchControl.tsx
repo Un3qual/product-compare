@@ -9,7 +9,8 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
 import {
   buildCreatePriceWatchInput,
-  needsPriceWatchAmount,
+  getPriceWatchAmountFieldData,
+  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
@@ -65,7 +66,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
     }
   }
 
-  const needsAmount = needsPriceWatchAmount(ruleType);
+  const amountField = getPriceWatchAmountFieldData(ruleType);
 
   return (
     <details {...props(styles.details)}>
@@ -73,7 +74,15 @@ function PriceWatchForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} {...props(styles.form)}>
         <label htmlFor={ruleId} {...props(styles.field)}>
           Alert when
-          <select id={ruleId} name="ruleType" value={ruleType} onChange={(event) => setRuleType(event.target.value as PriceWatchRuleType)} {...props(styles.input)}>
+          <select
+            id={ruleId}
+            name="ruleType"
+            value={ruleType}
+            onChange={(event) =>
+              setRuleType(priceWatchRuleTypeFromValue(event.currentTarget.value))
+            }
+            {...props(styles.input)}
+          >
             <option value="TARGET_PRICE">Landed price reaches a target</option>
             <option value="PERCENTAGE_DROP">Landed price drops by a percentage</option>
             <option value="BACK_IN_STOCK">An offer returns in stock</option>
@@ -84,9 +93,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
           Currency
           <input id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
         </label>
-        {needsAmount ? (
+        {amountField.visible ? (
           <label htmlFor={amountId} {...props(styles.field)}>
-            {ruleType === "TARGET_PRICE" ? "Target landed price" : "Percentage drop"}
+            {amountField.label}
             <input id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
           </label>
         ) : null}

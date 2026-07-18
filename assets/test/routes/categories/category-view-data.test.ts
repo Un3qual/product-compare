@@ -21,11 +21,11 @@ test("returns an encoded next-page path only when a next page and cursor are bot
   expect(
     getCategoryViewData(
       buildCategory({
-        slug: "cameras",
+        slug: "cameras / mirrorless?",
         products: buildProducts([], { hasNextPage: true, endCursor: "cursor + /?" })
       })
     ).nextPagePath
-  ).toBe("/categories/cameras?after=cursor%20%2B%20%2F%3F");
+  ).toBe("/categories/cameras%20%2F%20mirrorless%3F?after=cursor%20%2B%20%2F%3F");
 
   expect(
     getCategoryViewData(

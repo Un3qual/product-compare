@@ -1,7 +1,8 @@
 import {
   buildCreatePriceWatchInput,
-  needsPriceWatchAmount,
+  getPriceWatchAmountFieldData,
   PRICE_WATCH_CREATED_MESSAGE,
+  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchInputSource
 } from "../../../src/routes/products/price-watch-data";
@@ -14,12 +15,28 @@ const MUTATION_ERROR = {
 const GRAPHQL_ERROR = { message: "Transport-level GraphQL error" };
 
 test.each([
-  ["TARGET_PRICE", true],
-  ["PERCENTAGE_DROP", true],
-  ["BACK_IN_STOCK", false],
-  ["NEWLY_AVAILABLE", false]
-] as const)("needsPriceWatchAmount identifies whether %s needs an amount", (ruleType, expected) => {
-  expect(needsPriceWatchAmount(ruleType)).toBe(expected);
+  "TARGET_PRICE",
+  "PERCENTAGE_DROP",
+  "BACK_IN_STOCK",
+  "NEWLY_AVAILABLE"
+] as const)("priceWatchRuleTypeFromValue preserves supported value %s", (value) => {
+  expect(priceWatchRuleTypeFromValue(value)).toBe(value);
+});
+
+test.each(["", "UNKNOWN", "FUTURE_RULE"])(
+  "priceWatchRuleTypeFromValue falls back for unsupported value %s",
+  (value) => {
+    expect(priceWatchRuleTypeFromValue(value)).toBe("TARGET_PRICE");
+  }
+);
+
+test.each([
+  ["TARGET_PRICE", { visible: true, label: "Target landed price" }],
+  ["PERCENTAGE_DROP", { visible: true, label: "Percentage drop" }],
+  ["BACK_IN_STOCK", { visible: false, label: null }],
+  ["NEWLY_AVAILABLE", { visible: false, label: null }]
+] as const)("getPriceWatchAmountFieldData projects the %s amount field", (ruleType, expected) => {
+  expect(getPriceWatchAmountFieldData(ruleType)).toEqual(expected);
 });
 
 test.each([

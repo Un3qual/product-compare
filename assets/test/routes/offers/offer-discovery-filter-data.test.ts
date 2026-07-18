@@ -1,5 +1,6 @@
 import {
   buildOfferDiscoveryPaginationData,
+  offerDiscoverySelectedProductContext,
   getOfferDiscoveryFilterData
 } from "../../../src/routes/offers/offer-discovery-filter-data";
 
@@ -11,6 +12,72 @@ const DEFAULT_FILTERS = {
   productId: null,
   sort: "default"
 } as const;
+
+test.each([
+  [true, { label: "Active offers", tone: "positive" }],
+  [false, { label: "All offers", tone: "neutral" }]
+] as const)(
+  "projects the %s offer-discovery scope badge without mutating filters",
+  (activeOnly, scopeBadge) => {
+    const filters = Object.freeze({ ...DEFAULT_FILTERS, activeOnly });
+
+    expect(getOfferDiscoveryFilterData(filters).scopeBadge).toEqual(scopeBadge);
+    expect(filters).toEqual({ ...DEFAULT_FILTERS, activeOnly });
+  }
+);
+
+test.each([
+  null,
+  undefined,
+  { __typename: "Brand" }
+])("returns no selected-product context for %j", (node) => {
+  expect(offerDiscoverySelectedProductContext(node)).toBeNull();
+});
+
+test("projects exact selected-product context and preserves brand identity", () => {
+  const brand = Object.freeze({ id: "brand-1", name: "Example Brand" });
+  const node = Object.freeze({
+    __typename: "Product" as const,
+    brand,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+
+  const context = offerDiscoverySelectedProductContext(node);
+
+  expect(context).toEqual({
+    brand: { id: "brand-1", name: "Example Brand" },
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+  expect(context?.brand).toBe(brand);
+});
+
+test("projects a selected product with no brand without mutating its input", () => {
+  const node = Object.freeze({
+    __typename: "Product" as const,
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+
+  expect(offerDiscoverySelectedProductContext(node)).toEqual({
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+  expect(node).toEqual({
+    __typename: "Product",
+    brand: null,
+    id: "product-1",
+    name: "Detail Product",
+    slug: "detail-product"
+  });
+});
 
 test("buildOfferDiscoveryPaginationData preserves every filter in first and next paths", () => {
   expect(
@@ -104,6 +171,7 @@ test("builds the default form reset key and active-filter summary without action
     formKey: JSON.stringify([null, null, true, 6, "default"]),
     productDetailsPath: null,
     showReset: false,
+    scopeBadge: { label: "Active offers", tone: "positive" },
     sortLabel: "Default order",
     summaryItems: [
       { label: "Product ID", value: "Not selected" },
@@ -138,6 +206,7 @@ test("orders selected-product, brand, merchant, and filter summaries with route 
     formKey: JSON.stringify(["product-1", "merchant-1", false, 12, "price_asc"]),
     productDetailsPath: "/products/detail%20product%20%2F%202026",
     showReset: true,
+    scopeBadge: { label: "All offers", tone: "neutral" },
     sortLabel: "Price: low to high",
     summaryItems: [
       { label: "Product", value: "Detail Product" },

@@ -90,12 +90,15 @@ export type RevokeApiTokenMutationOutcome =
     };
 
 export function buildApiTokenDisplayData(token: ApiTokenRecord) {
+  const isActive = apiTokenIsActive(token);
+
   return {
     displayLabel: token.label ?? "Unlabeled token",
     expiresAtLabel: formatOptionalDateTime(token.expiresAt, "Never expires"),
     lastUsedAtLabel: formatOptionalDateTime(token.lastUsedAt, "Never used"),
     insertedAtLabel: formatUtcDateTime(token.insertedAt),
-    statusLabel: apiTokenStatusLabel(token)
+    statusLabel: apiTokenStatusLabel(token, isActive),
+    statusTone: isActive ? ("positive" as const) : ("neutral" as const)
   };
 }
 
@@ -118,6 +121,23 @@ export function apiTokenPagePath(tokenStatus: ApiTokenStatus, after: string | nu
   }
 
   return `/account/api-tokens?${searchParams.toString()}`;
+}
+
+export function buildApiTokenStatusFilterNavigationData({
+  tokenStatus
+}: {
+  readonly tokenStatus: ApiTokenStatus;
+}) {
+  return ([
+    { label: "All", status: "all" },
+    { label: "Active", status: "active" },
+    { label: "Revoked", status: "revoked" }
+  ] as const).map(({ label, status }) => ({
+    href: apiTokenPagePath(status, null),
+    isCurrent: tokenStatus === status,
+    label,
+    status
+  }));
 }
 
 export function buildApiTokenPaginationData({
@@ -415,10 +435,10 @@ function padUtcPart(value: number) {
   return value.toString().padStart(2, "0");
 }
 
-function apiTokenStatusLabel(token: ApiTokenRecord) {
+function apiTokenStatusLabel(token: ApiTokenRecord, isActive: boolean) {
   if (token.revokedAt) {
     return "Revoked token";
   }
 
-  return apiTokenIsActive(token) ? "Active token" : "Expired token";
+  return isActive ? "Active token" : "Expired token";
 }

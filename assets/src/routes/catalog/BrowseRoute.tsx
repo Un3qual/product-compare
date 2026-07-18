@@ -16,6 +16,7 @@ import {
   buildComparePathFromSlugs
 } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
+import { productOffersPath } from "../offers/paths";
 import { createBrowseRouteData } from "./browse-route-data";
 import {
   hasActiveCatalogFilters,
@@ -188,7 +189,7 @@ function BrowseProducts({
           browseRouteData.compareActionFor(product.slug)
         }
         detailHrefFor={(product) => browseRouteData.productDetailPathFor(product.slug)}
-        offerHrefFor={(product) => `/offers?productId=${encodeURIComponent(product.id)}`}
+        offerHrefFor={(product) => productOffersPath(product.id)}
         products={products}
       />
       {paginationLinks}

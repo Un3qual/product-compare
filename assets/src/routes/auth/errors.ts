@@ -5,7 +5,7 @@ import {
   isRouteMutationError,
   type RouteMutationError
 } from "../route-errors";
-import type { RootViewer } from "../root/loader";
+import type { RootViewer } from "../root/viewer-data";
 
 export type MutationError = RouteMutationError;
 
@@ -21,6 +21,19 @@ export interface AuthActionResult {
 
 export function findMutationError(errors: MutationError[], field: string) {
   return errors.find((error) => error.field === field)?.message ?? null;
+}
+
+export function selectGlobalMutationErrors(
+  errors: readonly MutationError[],
+  fieldNames: readonly string[]
+): MutationError[] {
+  const renderedFields = new Set(fieldNames);
+
+  return errors.filter((error) => {
+    const field = error.field;
+
+    return field === undefined || field === null || field === "" || !renderedFields.has(field);
+  });
 }
 
 export function sanitizeTransportError(_error: unknown) {

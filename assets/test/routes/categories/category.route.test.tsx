@@ -43,12 +43,12 @@ test("CategoryRoute renders curated copy, trusted inventory, and browse links", 
   mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
   mockedUsePreloadedQuery.mockReturnValue({ category: {
     id: "taxon-1", name: "Cameras", slug: "cameras", description: "Compare curated camera specifications with current complete offer evidence.", qualifiedProductCount: 3, indexable: true,
-    products: { edges: [{ node: { id: "product-1", name: "Field Camera", slug: "field-camera", description: "A camera", brand: { id: "brand-1", name: "Acme" }, currentAttributes: [{ attributeId: "attribute-1", displayName: "Resolution", valueText: "24 MP", sortOrder: 1 }] } }], pageInfo: { hasNextPage: false, endCursor: null } }
+    products: { edges: [{ node: { id: "product-1", name: "Field Camera", slug: "field / camera?", description: "A camera", brand: { id: "brand-1", name: "Acme" }, currentAttributes: [{ attributeId: "attribute-1", displayName: "Resolution", valueText: "24 MP", sortOrder: 1 }] } }], pageInfo: { hasNextPage: false, endCursor: null } }
   } } as never);
 
   render(<MemoryRouter><CategoryRoute /></MemoryRouter>);
   expect(screen.getByRole("heading", { name: "Compare Cameras" })).toBeVisible();
   expect(screen.getByText(/3 products currently meet/)).toBeVisible();
-  expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute("href", "/products/field-camera");
+  expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute("href", "/products/field%20%2F%20camera%3F");
   expect(screen.getByRole("link", { name: "Explore every product and filter" })).toHaveAttribute("href", "/products?typeTaxonId=taxon-1&includeTypeDescendants=1");
 });

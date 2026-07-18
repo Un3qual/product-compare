@@ -7,6 +7,36 @@ type CommunityMutationPayload = {
   readonly errors?: unknown;
 };
 
+export type PublishedReviewRowFacts = {
+  readonly authorLabel: string;
+  readonly rating: number;
+  readonly title: string | null | undefined;
+  readonly verifiedPurchase: boolean;
+};
+
+export function publishedReviewRowDisplayData({
+  authorLabel,
+  rating,
+  title,
+  verifiedPurchase
+}: PublishedReviewRowFacts) {
+  const normalizedRating = normalizePublishedReviewRating(rating);
+
+  return {
+    authorCopy: `${authorLabel} · ${verifiedPurchase ? "Verified purchase" : "Purchase not verified"}`,
+    ratingStars: `${"★".repeat(normalizedRating)}${"☆".repeat(5 - normalizedRating)}`,
+    title: title ?? `${normalizedRating} out of 5`
+  };
+}
+
+function normalizePublishedReviewRating(rating: number) {
+  if (Number.isNaN(rating)) {
+    return 0;
+  }
+
+  return Math.min(5, Math.max(0, Math.round(rating)));
+}
+
 export function resolveProductReviewMutationMessage(
   payload: (CommunityMutationPayload & { readonly review?: unknown }) | null | undefined,
   graphQLErrors?: readonly unknown[] | null

@@ -18,9 +18,9 @@ import {
 } from "./loader";
 import {
   OfferDiscoveryFilterForm,
-  OfferDiscoveryFilterSummary,
-  type OfferDiscoveryProductContext
+  OfferDiscoveryFilterSummary
 } from "./OfferDiscoveryFilterForm";
+import { offerDiscoverySelectedProductContext } from "./offer-discovery-filter-data";
 import { OfferDiscoveryList } from "./OfferDiscoveryList";
 
 export function OfferDiscoveryRoute() {
@@ -77,7 +77,7 @@ function OfferDiscoveryPanel({
     query
   );
   const data = usePreloadedQuery<OfferDiscoveryRouteQuery>(offerDiscoveryRouteQuery, queryRef);
-  const selectedProduct = selectedProductContext(data.selectedProduct);
+  const selectedProduct = offerDiscoverySelectedProductContext(data.selectedProduct);
 
   return (
     <>
@@ -89,21 +89,6 @@ function OfferDiscoveryPanel({
       )}
     </>
   );
-}
-
-function selectedProductContext(
-  node: OfferDiscoveryRouteQuery["response"]["selectedProduct"]
-): OfferDiscoveryProductContext | null {
-  if (!node || node.__typename !== "Product") {
-    return null;
-  }
-
-  return {
-    brand: node.brand ?? null,
-    id: node.id,
-    name: node.name,
-    slug: node.slug
-  };
 }
 
 function MissingProductState() {

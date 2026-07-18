@@ -22,6 +22,7 @@ import {
   buildProductQuestionInput,
   buildProductReviewInput,
   nextCommunityPageCursor,
+  publishedReviewRowDisplayData,
   publishedReviewSummary,
   resolveProductAnswerMutationMessage,
   resolveProductQuestionMutationMessage,
@@ -162,7 +163,10 @@ function ReviewSection({
   return <section aria-labelledby="reviews-heading" {...props(styles.content)}>
     <h2 id="reviews-heading" {...props(styles.title)}>Reviews</h2>
     <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
-    <ul aria-label="Published product reviews" {...props(styles.list)}>{reviews.map((review) => <li key={review.id} {...props(styles.item)}><strong>{review.title ?? `${review.rating} out of 5`}</strong><span>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span>{review.body ? <p>{review.body}</p> : null}<p {...props(styles.metadata)}>{review.authorLabel}{review.verifiedPurchase ? " · Verified purchase" : " · Purchase not verified"}</p></li>)}</ul>
+    <ul aria-label="Published product reviews" {...props(styles.list)}>{reviews.map((review) => {
+      const display = publishedReviewRowDisplayData(review);
+      return <li key={review.id} {...props(styles.item)}><strong>{display.title}</strong><span>{display.ratingStars}</span>{review.body ? <p>{review.body}</p> : null}<p {...props(styles.metadata)}>{display.authorCopy}</p></li>;
+    })}</ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
       <label htmlFor={ratingId} {...props(styles.field)}>Rating<select id={ratingId} name="rating" defaultValue="5" {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>

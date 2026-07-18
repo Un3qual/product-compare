@@ -5,6 +5,7 @@ import {
   buildProductQuestionInput,
   buildProductReviewInput,
   nextCommunityPageCursor,
+  publishedReviewRowDisplayData,
   publishedReviewSummary,
   resolveProductAnswerMutationMessage,
   resolveProductQuestionMutationMessage,
@@ -84,6 +85,82 @@ test("publishedReviewSummary preserves empty, singular, and plural copy", () => 
     "4.50 out of 5 from 2 published reviews."
   );
 });
+
+test("publishedReviewRowDisplayData projects explicit and fallback titles with purchase verification copy", () => {
+  const explicitTitleReview = Object.freeze({
+    authorLabel: "Community member",
+    rating: 4,
+    title: "Useful outdoors",
+    verifiedPurchase: true
+  });
+  const fallbackTitleReview = Object.freeze({
+    authorLabel: "Guest reviewer",
+    rating: 2,
+    title: null,
+    verifiedPurchase: false
+  });
+
+  expect(publishedReviewRowDisplayData(explicitTitleReview)).toEqual({
+    authorCopy: "Community member · Verified purchase",
+    ratingStars: "★★★★☆",
+    title: "Useful outdoors"
+  });
+  expect(publishedReviewRowDisplayData(fallbackTitleReview)).toEqual({
+    authorCopy: "Guest reviewer · Purchase not verified",
+    ratingStars: "★★☆☆☆",
+    title: "2 out of 5"
+  });
+  expect(explicitTitleReview).toEqual({
+    authorLabel: "Community member",
+    rating: 4,
+    title: "Useful outdoors",
+    verifiedPurchase: true
+  });
+  expect(fallbackTitleReview).toEqual({
+    authorLabel: "Guest reviewer",
+    rating: 2,
+    title: null,
+    verifiedPurchase: false
+  });
+});
+
+test.each([
+  [1, "★☆☆☆☆"],
+  [2, "★★☆☆☆"],
+  [3, "★★★☆☆"],
+  [4, "★★★★☆"],
+  [5, "★★★★★"]
+])("publishedReviewRowDisplayData renders %i-star ratings", (rating, ratingStars) => {
+  expect(
+    publishedReviewRowDisplayData({
+      authorLabel: "Community member",
+      rating,
+      title: "Rated review",
+      verifiedPurchase: true
+    }).ratingStars
+  ).toBe(ratingStars);
+});
+
+test.each([
+  [-1, "☆☆☆☆☆", "0 out of 5"],
+  [2.6, "★★★☆☆", "3 out of 5"],
+  [8, "★★★★★", "5 out of 5"],
+  [Number.NaN, "☆☆☆☆☆", "0 out of 5"],
+  [Number.POSITIVE_INFINITY, "★★★★★", "5 out of 5"],
+  [Number.NEGATIVE_INFINITY, "☆☆☆☆☆", "0 out of 5"]
+])(
+  "publishedReviewRowDisplayData safely normalizes an invalid rating of %s",
+  (rating, ratingStars, fallbackTitle) => {
+    expect(
+      publishedReviewRowDisplayData({
+        authorLabel: "Community member",
+        rating,
+        title: null,
+        verifiedPurchase: false
+      })
+    ).toMatchObject({ ratingStars, title: fallbackTitle });
+  }
+);
 
 test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
   expect(acceptedAnswerAuthorLabel("answer-1", "answer-1", "Community member")).toBe(

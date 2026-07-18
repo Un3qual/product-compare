@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import {
   buildSavedComparisonsViewState,
+  savedComparisonSortModeFromValue,
   type SavedComparisonSortMode
 } from "../../../src/routes/compare/saved-view-state";
 import type {
@@ -109,6 +110,53 @@ test("reports the empty status when no saved sets are loaded", () => {
   expect(viewState.statusMessage).toBe("No saved comparisons yet.");
 });
 
+describe("saved comparison card display data", () => {
+  test("projects singular, plural, zero, ordered, and duplicate product display copy without mutating products", () => {
+    const products = Object.freeze([
+      Object.freeze({ name: "Desk Chair", slug: "chair" }),
+      Object.freeze({ name: "Standing Desk", slug: "desk" }),
+      Object.freeze({ name: "Desk Chair", slug: "chair-duplicate" })
+    ]);
+    const input = [
+      { id: "single", name: "Single", products: [products[0]] },
+      { id: "many", name: "Many", products },
+      { id: "empty", name: "Empty", products: [] }
+    ];
+
+    const viewState = buildSavedComparisonsViewState(
+      readyLoaderData(input),
+      new Set(),
+      "",
+      "current"
+    );
+
+    expect(
+      viewState.savedSets.map(({ productCountText, productNamesText }) => ({
+        productCountText,
+        productNamesText
+      }))
+    ).toEqual([
+      {
+        productCountText: "1 product in this saved comparison",
+        productNamesText: "Desk Chair"
+      },
+      {
+        productCountText: "3 products in this saved comparison",
+        productNamesText: "Desk Chair, Standing Desk, Desk Chair"
+      },
+      {
+        productCountText: "0 products in this saved comparison",
+        productNamesText: ""
+      }
+    ]);
+    expect(products).toEqual([
+      { name: "Desk Chair", slug: "chair" },
+      { name: "Standing Desk", slug: "desk" },
+      { name: "Desk Chair", slug: "chair-duplicate" }
+    ]);
+  });
+});
+
 describe("filtering", () => {
   test.each([
     ["saved-set name", "SETUP", ["saved-set-1"]],
@@ -128,6 +176,18 @@ describe("filtering", () => {
 });
 
 describe("sorting", () => {
+  test.each<readonly [string, SavedComparisonSortMode]>([
+    ["current", "current"],
+    ["name-asc", "name-asc"],
+    ["product-count-desc", "product-count-desc"],
+    ["product-count-asc", "product-count-asc"],
+    ["", "current"],
+    ["unknown", "current"],
+    ["future-sort-mode", "current"]
+  ])("normalizes raw sort value %j to %s", (value, expected) => {
+    expect(savedComparisonSortModeFromValue(value)).toBe(expected);
+  });
+
   test.each<readonly [SavedComparisonSortMode, string[]]>([
     ["current", ["saved-set-1", "saved-set-2", "saved-set-3"]],
     ["name-asc", ["saved-set-2", "saved-set-1", "saved-set-3"]],

@@ -2,6 +2,7 @@ import {
   alertRuleLabel,
   buildAlertsViewData,
   observationDateLabel,
+  priceWatchToggleControl,
   priceWatchLabel
 } from "../../../../src/routes/account/alerts/alerts-view-data";
 
@@ -70,6 +71,21 @@ test("priceWatchLabel reuses rule labels for availability and unknown watches", 
   expect(priceWatchLabel({ ...watches[0], ruleType: "BACK_IN_STOCK" })).toBe("Back in stock");
   expect(priceWatchLabel({ ...watches[0], ruleType: "NEWLY_AVAILABLE" })).toBe("Newly available");
   expect(priceWatchLabel({ ...watches[0], ruleType: "SOMETHING_NEW" })).toBe("Watch matched");
+});
+
+test.each([
+  [watches[0], { nextEnabled: false, label: "Pause" }],
+  [watches[1], { nextEnabled: true, label: "Resume" }]
+])("priceWatchToggleControl projects the next state and label for a watch", (watch, expected) => {
+  expect(priceWatchToggleControl(watch)).toEqual(expected);
+});
+
+test("priceWatchToggleControl does not change the input watch", () => {
+  const watch = { ...watches[0] };
+
+  priceWatchToggleControl(watch);
+
+  expect(watch).toEqual(watches[0]);
 });
 
 test("observationDateLabel formats valid timestamps and leaves invalid source values visible", () => {

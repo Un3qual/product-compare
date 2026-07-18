@@ -46,6 +46,13 @@ export function priceWatchLabel(watch: PriceWatchViewSource) {
   return alertRuleLabel(watch.ruleType);
 }
 
+export function priceWatchToggleControl(watch: PriceWatchViewSource) {
+  return {
+    nextEnabled: !watch.enabled,
+    label: watch.enabled ? "Pause" : "Resume"
+  };
+}
+
 export function observationDateLabel(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? value : date.toISOString().slice(0, 10);

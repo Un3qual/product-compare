@@ -8,16 +8,13 @@ import {
   getRelayEnvironmentFromRouterContext,
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
+import { projectRootViewer, type RootViewer } from "./viewer-data";
+
+export type { RootViewer } from "./viewer-data";
 
 export const ROOT_ROUTE_ID = "root";
 const RELAY_ROOT_ID = "client:root";
 const RELAY_LINKED_RECORD_REF_KEY = "__ref";
-
-export type RootViewer = {
-  id: string;
-  email: string;
-  isOperator: boolean;
-};
 
 export type RootViewerQueryDescriptor = RelayRouteQueryDescriptor<
   RootViewerRouteQuery["variables"]
@@ -51,7 +48,7 @@ export async function rootLoader({
 
     return {
       status: "ready",
-      viewer: normalizeViewer(fetchedViewer.data.viewer),
+      viewer: projectRootViewer(fetchedViewer.data.viewer),
       viewerQuery: fetchedViewer.descriptor
     };
   } catch {
@@ -74,7 +71,7 @@ function readCachedRootViewer(environment: Environment): RootViewer | null {
     return null;
   }
 
-  return normalizeViewer(source.get(viewerRecordId));
+  return projectRootViewer(source.get(viewerRecordId));
 }
 
 function linkedRecordId(value: unknown) {
@@ -107,26 +104,4 @@ function normalizeAbortReason(reason: unknown) {
   }
 
   return new Error(String(reason));
-}
-
-function normalizeViewer(viewer: unknown): RootViewer | null {
-  if (!viewer || typeof viewer !== "object") {
-    return null;
-  }
-
-  const candidate = viewer as { email?: unknown; id?: unknown; isOperator?: unknown };
-
-  if (
-    typeof candidate.id !== "string" ||
-    typeof candidate.email !== "string" ||
-    typeof candidate.isOperator !== "boolean"
-  ) {
-    return null;
-  }
-
-  return {
-    id: candidate.id,
-    email: candidate.email,
-    isOperator: candidate.isOperator
-  };
 }

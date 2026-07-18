@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  buildRecommendationQueryInput,
   buildRecommendationProfilePath,
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader
@@ -30,6 +31,39 @@ describe("buildRecommendationProfilePath", () => {
     [["first", "second"], "shared", "best_value", "/compare?slug=first&slug=second&recommend=best_value"]
   ] as const)("builds %s with %s specs and %s profile", (slugs, specMode, profile, path) => {
     expect(buildRecommendationProfilePath(slugs, specMode, profile)).toBe(path);
+  });
+});
+
+describe("buildRecommendationQueryInput", () => {
+  test.each([
+    ["lowest_current_cost", "LOWEST_CURRENT_COST"],
+    ["best_value", "BEST_VALUE"]
+  ] as const)("maps %s to the %s GraphQL profile enum", (profile, queryProfile) => {
+    expect(buildRecommendationQueryInput(["chair", "desk"], profile).queryVariables).toEqual({
+      slugs: ["chair", "desk"],
+      profile: queryProfile
+    });
+  });
+
+  test("preserves selected-slug order without mutating the input", () => {
+    const slugs = ["third", "first", "second"];
+    const { queryVariables } = buildRecommendationQueryInput(slugs, "best_value");
+
+    expect(queryVariables.slugs).toEqual(["third", "first", "second"]);
+    expect(queryVariables.slugs).not.toBe(slugs);
+    expect(slugs).toEqual(["third", "first", "second"]);
+  });
+
+  test("changes reset identity when the profile changes", () => {
+    expect(
+      buildRecommendationQueryInput(["chair", "desk"], "lowest_current_cost").resetToken
+    ).not.toBe(buildRecommendationQueryInput(["chair", "desk"], "best_value").resetToken);
+  });
+
+  test("distinguishes delimiter-containing slug lists in reset identity", () => {
+    expect(
+      buildRecommendationQueryInput(["one|two", "three"], "best_value").resetToken
+    ).not.toBe(buildRecommendationQueryInput(["one", "two|three"], "best_value").resetToken);
   });
 });
 

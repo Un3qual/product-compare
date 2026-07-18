@@ -29,8 +29,24 @@ export type CreatePriceWatchPayload = {
   readonly watch?: unknown;
 };
 
+export type PriceWatchAmountFieldData =
+  | Readonly<{ visible: true; label: "Target landed price" | "Percentage drop" }>
+  | Readonly<{ visible: false; label: null }>;
+
 export const PRICE_WATCH_CREATED_MESSAGE =
   "Watch created. New qualifying changes will appear in your inbox.";
+
+export function priceWatchRuleTypeFromValue(value: string): PriceWatchRuleType {
+  switch (value) {
+    case "TARGET_PRICE":
+    case "PERCENTAGE_DROP":
+    case "BACK_IN_STOCK":
+    case "NEWLY_AVAILABLE":
+      return value;
+    default:
+      return "TARGET_PRICE";
+  }
+}
 
 export function resolveCreatePriceWatchMutationMessage(
   payload: CreatePriceWatchPayload | null | undefined,
@@ -41,8 +57,17 @@ export function resolveCreatePriceWatchMutationMessage(
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
 
-export function needsPriceWatchAmount(ruleType: PriceWatchRuleType) {
-  return ruleType === "TARGET_PRICE" || ruleType === "PERCENTAGE_DROP";
+export function getPriceWatchAmountFieldData(
+  ruleType: PriceWatchRuleType
+): PriceWatchAmountFieldData {
+  switch (ruleType) {
+    case "TARGET_PRICE":
+      return { visible: true, label: "Target landed price" };
+    case "PERCENTAGE_DROP":
+      return { visible: true, label: "Percentage drop" };
+    default:
+      return { visible: false, label: null };
+  }
 }
 
 export function buildCreatePriceWatchInput({

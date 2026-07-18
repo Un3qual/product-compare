@@ -890,116 +890,348 @@ and route suites pass 16 tests; the standalone full backend suite passes 771
 tests, and the frontend suite passes 1,351 tests with green client and SSR
 production builds. The three validated successor rows remain ready.
 
+Before claiming Merchant Directory Row Data, the coordinator validated three
+non-overlapping successors from current source and tests. Revenue filter-form
+reset identity remains in React and can collide on delimiter-containing
+values; its focused suites pass 23 tests. Category pagination encodes the
+cursor but not the category slug; its focused suites pass eight tests. Saved-
+comparison select-value normalization remains in React; its focused suites
+pass 48 tests. All three successors have complete owned paths and no blockers.
+
+Merchant Directory Row Data then completed. The existing framework-free owner
+now projects source-ordered Relay result nodes into exact merchant rows with
+encoded detail paths and website destinations resolved through the shared
+external-link safety policy. React retains Relay reads, pagination, filtering,
+markup, labels, and presentation. Its pure and route suites pass 33 tests.
+
+Product Offer Navigation Path then completed. One framework-free
+`productOffersPath` now owns the exact encoded product-scoped offer destination
+used by catalog browse, product detail, and comparison decision summary. React
+retains link markup, labels, and presentation. Its direct path and unchanged
+consumer suites pass 230 tests.
+
+Category Product Navigation then completed. Category product links now use the
+canonical product-detail path builder, so reserved characters remain inside
+one encoded slug segment instead of changing the route path or query. React
+retains link markup, labels, list order, and presentation. Its view-data and
+route suites pass eight tests.
+
+Before claiming Revenue Summary Filter-Form Data, the coordinator validated a
+fourth non-overlapping successor. Selected-product typename qualification and
+brand, ID, name, and slug projection remain embedded in
+`OfferDiscoveryRoute`, while its existing framework-free filter-data owner
+already consumes that context. The filter-data and route suites pass 68 tests.
+The successor has complete owned paths and no blockers.
+
+Revenue Summary Filter-Form Data then completed. The existing framework-free
+owner now returns exact uncontrolled-form values and a collision-free JSON
+reset identity. Distinct delimiter-containing filters can no longer reuse a
+stale form instance. React retains fields, labels, submission, links, markup,
+and presentation. Its pure and unchanged route suites pass 26 tests.
+
+Before claiming Category Pagination Navigation, the coordinator validated a
+fourth non-overlapping successor. API-token and saved-comparison React
+retainers duplicate an operation-name plus stable-variables key, while the
+Relay preload layer already owns the canonical descriptor identity over
+operation name, query text, and stable variables. Its preload, API-token, and
+saved-comparison characterization suites pass 94 tests. The successor has
+complete owned paths, no blockers, and does not overlap category pagination,
+saved-comparison sort input, or offer selected-product context.
+
+Category Pagination Navigation then completed. The existing framework-free
+owner now encodes the category slug as one path segment as well as encoding the
+cursor query value, preventing reserved slug characters from changing route
+structure. Pagination eligibility and React presentation remain unchanged. Its
+pure and route suites pass 8 tests.
+
+Before claiming Saved-Comparison Sort Input, the coordinator validated a
+fourth non-overlapping successor. `PriceWatchControl` still trusts the raw rule-
+type select value through a TypeScript assertion, while the existing framework-
+free price-watch owner defines the four supported rule types and all downstream
+amount policy. Its pure and product-detail characterization suites pass 71
+tests. The successor has complete owned paths, no blockers, and does not
+overlap saved-comparison sort input, offer selected-product context, or Relay
+query descriptor identity.
+
+Saved-Comparison Sort Input then completed. The existing framework-free view-
+state owner now normalizes all raw select values to the four supported modes,
+with blank, unknown, and future values falling back to current order. Sorting,
+filtering, React events, markup, and presentation remain unchanged. Its pure
+and route-state suites pass 55 tests.
+
+Before claiming Offer-Discovery Selected-Product Context, the coordinator
+validated a fourth non-overlapping successor. `CatalogFilterForm` still trusts
+the raw sort select value through a TypeScript assertion, while the existing
+framework-free catalog filters owner defines all four supported sorts and the
+URL normalization policy. The catalog route characterization suite passes 62
+tests. The successor has complete owned paths, no blockers, and does not
+overlap offer selected-product context, Relay query descriptor identity, or
+price-watch rule-type input.
+
+Offer-Discovery Selected-Product Context then completed. The existing
+framework-free filter-data owner now qualifies nullable selected-product nodes
+by typename and projects exact brand, ID, name, and slug context while
+preserving brand identity. Relay reads, route fallbacks, summaries, markup, and
+presentation remain unchanged. Its pure and route suites pass 73 tests.
+
+Before claiming Relay Query Descriptor Identity, the coordinator validated a
+fourth non-overlapping successor. Root viewer projection is duplicated between
+`RootRoute` and the root loader, while the loader's private copy already
+validates unknown cache/query values before projecting exact ID, email, and
+operator state. The root route characterization suite passes 16 tests. The
+successor has complete owned paths, no blockers, and does not overlap Relay
+query descriptor identity, price-watch rule-type input, or catalog sort input.
+
+Relay Query Descriptor Identity then completed. The preload layer now exports
+one canonical operation-name, query-text, and stable-variable identity, and
+both API-token and saved-comparison retainers consume it directly. Variable-
+order stability remains unchanged, descriptors with different query text stay
+distinct, and Relay lifecycle and rendering remain unchanged. Its preload and
+consumer suites pass 95 tests.
+
+Before claiming the price-watch rule-type row, current source inspection
+confirmed that affiliate coupon result copy still interprets discount type,
+value, and currency inside `AffiliateSetupForms`, while the existing
+framework-free affiliate setup data owner already owns the surrounding input
+and outcome policy. Its data and route characterization suites pass 37 tests.
+The successor is path-disjoint from price-watch input, catalog sort input, and
+root viewer projection.
+
+Price-Watch Rule-Type Select Input then completed. The framework-free owner
+now accepts every supported select value and safely falls back to target price
+for blank, unknown, or future values. Form state, amount-field visibility,
+mutation inputs, events, markup, and presentation remain unchanged. Its pure
+and product-detail route suites pass 78 tests.
+
+Catalog Sort Select Input then completed. The framework-free filters owner now
+normalizes all four supported raw sort values and falls back to catalog order
+for blank, unknown, or future values. Form state, submitted-field omission,
+events, options, markup, and presentation remain unchanged. Its pure and
+catalog route suites pass 69 tests.
+
+Before claiming the catalog sort row, current source inspection confirmed that
+comparison snapshot pagination still selects the next Relay cursor inside
+`ShareComparisonControl`, while the existing framework-free share-comparison
+data owner already owns snapshot page merging and state policy. Its pure and
+snapshot route suites pass 31 tests. The successor is path-disjoint from
+catalog sort input, root viewer projection, and affiliate coupon result data.
+
+Before claiming the root viewer row, current source inspection confirmed that
+API-token status-filter order, labels, current-state policy, and destinations
+remain embedded in `ApiTokenControls`, while the existing route-data owner
+already owns the canonical status type and status-aware page paths. Its pure
+and route suites pass 80 tests. The successor is path-disjoint from root viewer
+projection, affiliate coupon result data, and snapshot pagination.
+
+Before claiming the affiliate coupon row, current source inspection confirmed
+that compare specification-mode order, labels, current-state policy, and
+mode-preserving paths remain embedded in `CompareRoute`, while the existing
+compare path owner already defines canonical slug and specification-mode URL
+behavior. The compare route suite passes 109 tests. The successor is path-
+disjoint from affiliate coupon result data, snapshot pagination, and API-token
+status-filter navigation.
+
+Before claiming the comparison snapshot pagination row, current source
+inspection confirmed that saved-comparison card product-count and ordered
+product-name copy remain embedded in `SavedComparisonSetList`, while the
+existing framework-free saved view-state owner already owns deterministic
+saved-set presentation policy. Its pure and route-state suites pass 54 tests.
+The successor is path-disjoint from snapshot pagination, API-token status-
+filter navigation, and compare specification-mode navigation.
+
+Before claiming the API-token status-filter navigation row, current source
+inspection confirmed that watch-toggle mutation state and Pause/Resume copy
+remain duplicated in `AlertsRoute`, while the existing framework-free alerts
+view-data owner already owns deterministic watch presentation policy. Its pure
+and route suites pass 16 tests. The successor is path-disjoint from API-token
+status-filter navigation, compare specification-mode navigation, and saved-
+comparison card display data.
+
+Before claiming the compare specification-mode navigation row, current source
+inspection confirmed that auth global-error visibility policy remains embedded
+in `AuthFormShell`, while the existing framework-free auth errors owner already
+owns mutation-error lookup and normalization. Its pure and form-shell suites
+pass 8 tests. The successor is path-disjoint from compare specification-mode
+navigation, saved-comparison card display data, and alert watch-toggle control
+data.
+
+Before claiming the saved-comparison card display row, current source
+inspection confirmed that recommendation query variables and error-boundary
+reset identity remain embedded in `RecommendationPanel`, while the existing
+framework-free recommendation route-data owner already owns profile and path
+policy. Its pure and panel suites pass 28 tests. The current joined reset token
+also aliases distinct slug lists containing `|`, so the successor has a
+source-backed correctness case and is path-disjoint from all three ready rows.
+
+Before claiming the alert watch-toggle control row, current source inspection
+confirmed that active/all offer scope label and badge tone remain embedded in
+`OfferDiscoveryList`, while the existing framework-free filter-data owner
+already owns the same active-only status semantics. Its pure and route suites
+pass 73 tests. The successor is path-disjoint from alert toggle, auth error
+visibility, and recommendation query input.
+
+Before claiming the auth global-error visibility row, current source
+inspection confirmed that review title fallback, rating stars, and purchase-
+verification author copy remain embedded in `ProductCommunityPanel`, while the
+existing framework-free product-community data owner already owns review
+summary and mutation policy. Its pure and panel suites pass 17 tests. The
+successor is path-disjoint from auth error visibility, recommendation query
+input, and offer discovery scope badge data.
+
+Before claiming the recommendation query-input row, current source inspection
+confirmed that API-token status labels come from `buildApiTokenDisplayData`
+while `ApiTokenItem` still independently derives the matching positive or
+neutral badge tone. The framework-free API-token route-data owner already owns
+the lifecycle status policy, and its pure and route suites pass 84 tests. The
+successor is path-disjoint from recommendation query input, offer discovery
+scope badge data, and product review row display data.
+
+Before claiming the offer discovery scope-badge row, current source inspection
+confirmed that amount-field visibility and the target-versus-percentage label
+remain split between `needsPriceWatchAmount` and `PriceWatchControl`. The
+framework-free price-watch data owner already owns rule-type policy, and its
+pure and alert-route suites pass 30 tests. The successor is path-disjoint from
+offer discovery scope badge data, product review row display data, and API-
+token status badge data.
+
+Before claiming the product review row-display row, current source inspection
+confirmed that robots and Twitter-card values remain derived inline in
+`RouteMetadata`, while the framework-free route-metadata data owner already
+normalizes indexability and image facts. Its pure and component suites pass 9
+tests. The successor is path-disjoint from product review row display data,
+API-token status badge data, and price-watch amount field data.
+
+Before claiming the API-token status-badge row, current source inspection
+confirmed that selected-merchant copy remains repeated across three affiliate
+forms and current-merchant copy remains inline in `AffiliateSetupRoute`, while
+the framework-free affiliate setup data owner already projects the canonical
+merchant summary. Its pure and route suites pass 50 tests. The successor is
+path-disjoint from API-token status badge data, price-watch amount field data,
+and route metadata tag policy data.
+
+Before claiming the route-metadata tag-policy row, current source inspection
+confirmed that initial and additional product-answer pagination still derive
+cursor policy independently in `ProductCommunityPanel`, bypassing the existing
+framework-free community cursor owner. Additional pages can accept the current
+cursor again instead of requiring forward progress. The pure and panel suites
+pass 23 tests. The successor is path-disjoint from route metadata tag policy,
+affiliate merchant context copy, and API-token lifecycle action policy data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Merchant Directory Row Data Contract
+### 1. Affiliate Merchant Context Copy Data Contract
 
 Status: ready
-Lane: Frontend merchant-directory row data
+Lane: Frontend affiliate merchant context copy data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move merchant result-node projection, detail-path construction,
-and safe website-destination resolution out of `MerchantDirectoryRoute` into
-its existing framework-free view-data owner while leaving Relay reads,
-pagination, filtering, and presentation in their current owners.
+Next action: project selected-merchant and current-merchant copy from the
+canonical merchant choice in the existing framework-free affiliate setup data
+owner.
 Owned paths:
 
-- `assets/src/routes/merchants/merchant-directory-view-data.ts`
-- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
-- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
-- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
-- `docs/work/frontend-merchant-directory-row-data.md`
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-affiliate-merchant-context-copy-data.md`
 
 Prerequisites:
 
-- Merchant order, IDs, names, and domains remain unchanged.
-- Detail paths encode the supplied slug, and website links continue using the
-  shared external-destination safety policy.
-- Existing merchant-directory view-data and route characterization remains
-  green.
+- Program, link, and coupon forms retain `Selected merchant: <name> (<domain>)`.
+- The setup context rail retains `Current merchant: <name> (<domain>)`.
+- Missing selections retain no merchant context copy.
+- Existing merchant selection, pagination, forms, mutations, results, markup,
+  and presentation remain green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun run typecheck`
-- framework/transport dependency scan of the merchant-directory view-data
-  module
+- consumer and transitive framework/transport dependency scans of the
+  affiliate setup data module
 - `git diff --check`
 
-Exit condition: the framework-free view-data owner returns exact merchant rows
-without mutating inputs; React retains Relay reads, pagination, filtering,
-markup, labels, and presentation.
+Exit condition: the framework-free owner projects stable merchant context copy
+without changing selection, pagination, forms, mutations, results, markup, or
+presentation.
 
-### 2. Product Offer Navigation Path Contract
+### 2. API Token Lifecycle Action Policy Data Contract
 
 Status: ready
-Lane: Frontend product-offer navigation paths
+Lane: Frontend API token lifecycle action policy data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: replace product-scoped offer URL construction in catalog browse,
-product detail, and decision summary with one canonical encoded path builder in
-the existing offer path owner while preserving link markup and labels.
+Next action: project lifecycle action availability, disabled state, and button
+copy from token status and row-scoped mutation state in the existing
+framework-free API-token route-data owner.
 Owned paths:
 
-- `assets/src/routes/offers/paths.ts`
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/src/routes/compare/DecisionSummary.tsx`
-- `assets/test/routes/offers/paths.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/test/routes/products/detail.route.test.tsx`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-product-offer-navigation-paths.md`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-lifecycle-action-policy-data.md`
 
 Prerequisites:
 
-- Product IDs remain encoded as one `productId` query parameter.
-- Ordinary and reserved product IDs preserve their existing destinations.
-- Existing browse, product-detail, and compare route characterization remains
-  green.
+- Revoked tokens retain no lifecycle actions.
+- Expired, unrevoked tokens retain revoke but not rotate.
+- Active tokens retain rotate and revoke.
+- A pending rotate or revoke keeps all available actions for that row disabled,
+  with exact pending button copy.
+- Existing variables, one-time-token handling, forms, accessibility labels,
+  mutation orchestration, markup, and presentation remain green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/offers/paths.test.ts test/routes/catalog/browse.route.test.tsx test/routes/products/detail.route.test.tsx test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
-- framework/transport dependency scan of the offer path module
+- consumer and transitive framework/transport dependency scans of the API-
+  token route-data module
 - `git diff --check`
 
-Exit condition: all three product-scoped offer entry points use one canonical
-path builder without changing React link markup, labels, or presentation.
+Exit condition: the framework-free owner projects stable lifecycle action
+policy without changing variables, one-time-token handling, forms,
+accessibility labels, mutation orchestration, markup, or presentation.
 
-### 3. Category Product Navigation Contract
+### 3. Product Community Answer Pagination Cursor Data Contract
 
 Status: ready
-Lane: Frontend category product navigation
+Lane: Frontend product-community answer pagination data
 Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: replace raw category product-detail URL interpolation in
-`CategoryRoute` with the existing canonical `productDetailPath` builder while
-retaining link markup, labels, list order, and presentation in React.
+Next action: make the existing framework-free community cursor owner project
+initial and advancing answer-page cursors for the product-community panel.
 Owned paths:
 
-- `assets/src/routes/categories/CategoryRoute.tsx`
-- `assets/test/routes/categories/category.route.test.tsx`
-- `docs/work/frontend-category-product-navigation.md`
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `docs/work/frontend-product-community-answer-pagination-data.md`
 
 Prerequisites:
 
-- Existing canonical product-slug encoding remains unchanged.
-- Category product ordering, link labels, and ordinary-slug destinations remain
-  unchanged.
-- Existing category view-data and route characterization remains green.
+- Initial answer pagination retains a cursor only when another page exists and
+  the server supplied a non-empty end cursor.
+- Additional answer pagination requires a non-empty cursor different from the
+  cursor that produced the current page.
+- Existing answer ordering, deduplication, accepted-answer labels, suspense,
+  error handling, queries, mutations, markup, and presentation remain green.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
 - `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the product-
+  community data module
 - `git diff --check`
 
-Exit condition: category product links use the canonical product-detail path
-builder, including reserved-character encoding, without changing React markup,
-labels, list order, or presentation.
+Exit condition: the framework-free owner projects safe answer-page cursor
+progression without changing question or answer behavior outside pagination.
 
 ## Needs Decision Work
 
@@ -1010,6 +1242,123 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Route-metadata tag policy data completed on 2026-07-17. The framework-free
+route-metadata data owner now projects exact robots and Twitter-card values
+from normalized indexability and image facts. React retains route-match
+access, canonical, Open Graph, image, structured-data, markup, and router
+behavior. Its pure and component suites passed 12 tests; TypeScript, recursive
+dependency, consumer, and diff checks are recorded in
+`docs/work/frontend-route-metadata-tag-policy-data.md`.
+
+Price-watch amount-field data completed on 2026-07-17. The framework-free
+price-watch data owner now projects amount-field visibility and exact label
+copy for all four supported rule types. React retains input construction,
+mutation orchestration, product-scoped form reset, markup, and presentation.
+Its pure and alert-route suites passed 30 tests; TypeScript, recursive
+dependency, consumer, and diff checks are recorded in
+`docs/work/frontend-price-watch-amount-field-data.md`.
+
+API-token status badge data completed on 2026-07-17. The framework-free API-
+token route-data owner now projects the positive active tone and neutral
+revoked/expired tone alongside the existing lifecycle label, preserving
+revocation precedence. React retains timestamps, actions, mutations,
+StatusBadge markup, and presentation. Its pure and route suites passed 87
+tests; TypeScript, recursive dependency, consumer, and diff checks are
+recorded in `docs/work/frontend-api-token-status-badge-data.md`.
+
+Product review row-display data completed on 2026-07-17. The framework-free
+product-community data owner now projects explicit or rating-fallback titles,
+one-through-five star copy, and verified or unverified author copy from a
+structural facts type. React retains review bodies, list markup, forms,
+pagination, mutations, generated Relay types, and presentation. Its pure and
+panel suites passed 23 tests; TypeScript, recursive dependency, consumer, and
+diff checks are recorded in
+`docs/work/frontend-product-review-row-display-data.md`.
+
+Offer discovery scope-badge data completed on 2026-07-17. The framework-free
+offer filter-data owner now projects the Active offers/positive and All
+offers/neutral badge contract from the canonical active-only filter state.
+React retains filtering, offer ordering, StatusBadge markup, and presentation.
+Its pure and route suites passed 75 tests; TypeScript, recursive dependency,
+consumer, and diff checks are recorded in
+`docs/work/frontend-offer-discovery-scope-badge-data.md`.
+
+Recommendation query-input data completed on 2026-07-17. The framework-free
+recommendation route-data owner now projects ordered copied GraphQL variables,
+both existing profile enums, and a structured reset identity that cannot alias
+distinct delimiter-containing slug lists. React retains Relay, fetch policy,
+Suspense, error fallback, profile links, markup, and presentation. Its pure and
+panel suites passed 33 tests; TypeScript, recursive dependency, consumer, and
+diff checks are recorded in
+`docs/work/frontend-recommendation-query-input-data.md`.
+
+Auth global-error visibility data completed on 2026-07-17. The framework-free
+auth errors owner now selects missing, null, blank, and unknown-field errors
+for the global list while excluding errors rendered by named fields and
+preserving source order. React retains field rendering, error markup,
+accessibility behavior, and presentation. Its canonical viewer type now comes
+directly from the pure viewer-data owner instead of the route loader. Its pure
+and form-shell suites passed 10 tests; TypeScript, recursive dependency,
+consumer, and diff checks are recorded in
+`docs/work/frontend-auth-global-error-visibility-data.md`.
+
+Alert watch-toggle control data completed on 2026-07-17. The framework-free
+alerts view-data owner now projects the next enabled state and Pause/Resume
+copy. React retains generated types, mutation orchestration and shape,
+grouping, pending state, markup, and presentation. Its pure and route suites
+passed 19 tests; TypeScript, dependency, consumer, and diff checks are recorded
+in `docs/work/frontend-alert-watch-toggle-control-data.md`.
+
+Saved comparison card display data completed on 2026-07-17. The framework-free
+saved view-state owner now projects singular, plural, and zero product-count
+copy plus ordered product-name copy that preserves duplicates. React retains
+links, delete actions, markup, and presentation. Its pure and route-state
+suites passed 55 tests; TypeScript, dependency, consumer, and diff checks are
+recorded in `docs/work/frontend-saved-comparison-card-display-data.md`.
+
+Compare specification-mode navigation data completed on 2026-07-17. The new
+framework-free mode-data owner now projects ordered Shared specs, Differences,
+and All specs rows with canonical destinations and exactly one current state,
+while preserving selected-slug order and omitting the shared-mode `specs`
+parameter. `CompareRoute` still owns Radix tabs, links, panels, children,
+markup, and presentation. Its pure and route suites passed 111 tests;
+TypeScript, consumer, dependency, and diff checks are recorded in
+`docs/work/frontend-compare-spec-mode-navigation-data.md`.
+
+API-token status-filter navigation data completed on 2026-07-17. The
+framework-free route-data owner now projects ordered All, Active, and Revoked
+rows with canonical destinations and exactly one current state. The React
+owner still controls link rendering, accessibility attributes, route behavior,
+markup, and presentation. Its pure and route suites passed 81 tests;
+TypeScript, consumer, dependency, and diff checks are recorded in
+`docs/work/frontend-api-token-status-filter-navigation-data.md`.
+
+Comparison snapshot pagination cursor data completed on 2026-07-17. The
+framework-free share-comparison data owner now accepts only a non-empty,
+advancing cursor when Relay explicitly reports a next page; missing or
+incomplete page info, false flags, blank cursors, and repeated cursors produce
+no action. The React owner still owns Relay variables, page accumulation,
+actions, markup, and presentation. Its pure and snapshot route suites passed
+39 tests; TypeScript, dependency, and diff checks are recorded in
+`docs/work/frontend-comparison-snapshot-pagination-cursor-data.md`.
+
+Affiliate coupon result display data completed on 2026-07-17. The framework-
+free affiliate setup data owner now projects deterministic amount, percent,
+free-shipping, other, incomplete, and unknown discount copy, while the React
+form retains generated GraphQL result types, mutation orchestration, identity,
+markup, and presentation. A review follow-up characterized independently
+incomplete, blank, and nullish coupon facts without a production change. The
+pure and route suites passed 50 tests; TypeScript, dependency scans, the full
+1,408-test frontend gate, 596,262 raw / 182,104 gzip-byte bundle contract, and
+queue validation are recorded in
+`docs/work/frontend-affiliate-coupon-result-display-data.md`.
+
+Root viewer projection completed on 2026-07-17. One framework-free owner now
+validates and projects both query and cached viewer values; focused pure and
+root-route coverage, TypeScript, dependency scans, the full 1,395-test frontend
+gate, and queue validation are recorded in
+`docs/work/frontend-root-viewer-projection.md`.
 
 The 2026-07-12 control-and-matrix batch is complete. API-token controls,
 comparison matrix presentation, catalog advanced filters, and per-offer

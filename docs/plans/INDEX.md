@@ -72,8 +72,23 @@ complete. API-token, affiliate-setup, and feed-candidate pagination data are
 also complete. Merchant-directory pagination data is also complete. Catalog-
 browse and offer-discovery pagination data are also complete. Alert product
 navigation is also complete. Merchant-directory row data, product-offer
-navigation paths, and category product navigation are the three current ready
-successors in the live queue.
+navigation paths, category product navigation, and revenue filter-form data are
+complete on `codex/frontend-navigation-row-contracts`. Category pagination
+navigation, saved-comparison sort input, offer selected-product context, and
+Relay query descriptor identity are also complete. Price-watch rule-type select
+input and catalog sort select input are also complete. Root viewer projection
+is also complete. Affiliate coupon result display data is also complete; its
+review follow-up characterized independently incomplete, blank, and nullish
+coupon facts with 50 focused tests and the full 1,408-test frontend gate.
+Comparison snapshot pagination cursor data, API-token status-filter navigation
+data, and compare specification-mode navigation data (Tasks 64-66) are
+complete. Saved Comparison Card Display and Alert Watch-Toggle Control are also
+complete. Auth Global Error Visibility, Recommendation Query Input, and Offer
+Discovery Scope Badge are also complete. Product Review Row Display is also
+complete. API Token Status Badge and Price Watch Amount Field are also
+complete. Route Metadata Tag Policy is also complete. Affiliate Merchant
+Context Copy, API Token Lifecycle Action Policy, and Product Community Answer
+Pagination Cursor are the current ready successors in the live queue.
 
 Active implementation plans:
 
