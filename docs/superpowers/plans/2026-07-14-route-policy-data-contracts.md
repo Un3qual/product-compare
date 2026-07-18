@@ -2044,13 +2044,13 @@ Relay, fetch policy, Suspense, error fallback, links, markup, and presentation.
 the active/all scope label and badge tone. The React owner retains filtering,
 offer ordering, StatusBadge markup, and presentation.
 
-- [ ] Write pure tests for both active-only states and input immutability;
+- [x] Write pure tests for both active-only states and input immutability;
   verify RED.
-- [ ] Move only deterministic scope badge data while preserving filtering,
+- [x] Move only deterministic scope badge data while preserving filtering,
   ordering, markup, and presentation.
-- [ ] Run the offer filter-data and route suites, TypeScript, consumer and
+- [x] Run the offer filter-data and route suites, TypeScript, consumer and
   transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2102,8 +2102,38 @@ markup, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 74: Price Watch Amount Field Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/products/price-watch-data.ts`
+- Modify: `assets/src/routes/products/PriceWatchControl.tsx`
+- Modify: `assets/test/routes/products/price-watch-data.test.ts`
+- Test: `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- Create: `docs/work/frontend-price-watch-amount-field-data.md`
+
+**Interfaces:** The existing framework-free price-watch data owner projects
+amount-field visibility and label from the selected rule type. The React owner
+retains input construction, mutation orchestration, product-scoped form reset,
+markup, and presentation.
+
+- [ ] Write pure tests for target-price, percentage-drop, back-in-stock, and
+  newly-available amount-field data; verify RED.
+- [ ] Move only deterministic amount-field visibility and label policy while
+  preserving input construction, mutation orchestration, reset, markup, and
+  presentation.
+- [ ] Run the price-watch data and alert-route suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Offer discovery scope-badge data completed on 2026-07-17 after both new pure
+  cases failed RED because the scope-badge projection was missing. The pure and
+  route suites then passed 75 tests; TypeScript, consumer, recursive dependency
+  closure, and `git diff --check` passed.
 - Recommendation query-input data completed on 2026-07-17 after five new pure
   contract tests failed RED because the projection was missing. The pure and
   panel suites then passed 33 tests; TypeScript, consumer, recursive dependency

@@ -50,6 +50,11 @@ export interface OfferDiscoveryFilterSummaryItem {
   value: string;
 }
 
+export interface OfferDiscoveryScopeBadgeData {
+  label: string;
+  tone: "neutral" | "positive";
+}
+
 export function normalizeOfferDiscoverySort(
   sort: string | null | undefined
 ): OfferDiscoverySort {
@@ -162,9 +167,18 @@ export function getOfferDiscoveryFilterData(
     ]),
     productDetailsPath: selectedProduct ? `/products/${encodeURIComponent(selectedProduct.slug)}` : null,
     showReset: hasNonDefaultOfferFilters(canonicalFilters),
+    scopeBadge: offerDiscoveryScopeBadgeData(canonicalFilters),
     sortLabel,
     summaryItems: buildSummaryItems(canonicalFilters, selectedProduct, sortLabel)
   };
+}
+
+function offerDiscoveryScopeBadgeData(
+  filters: OfferDiscoveryFilters
+): OfferDiscoveryScopeBadgeData {
+  return filters.activeOnly
+    ? { label: "Active offers", tone: "positive" }
+    : { label: "All offers", tone: "neutral" };
 }
 
 function canonicalizeFilters(filters: OfferDiscoveryFilterDataInput): OfferDiscoveryFilters {

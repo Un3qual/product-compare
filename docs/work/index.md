@@ -1086,45 +1086,21 @@ the lifecycle status policy, and its pure and route suites pass 84 tests. The
 successor is path-disjoint from recommendation query input, offer discovery
 scope badge data, and product review row display data.
 
+Before claiming the offer discovery scope-badge row, current source inspection
+confirmed that amount-field visibility and the target-versus-percentage label
+remain split between `needsPriceWatchAmount` and `PriceWatchControl`. The
+framework-free price-watch data owner already owns rule-type policy, and its
+pure and alert-route suites pass 30 tests. The successor is path-disjoint from
+offer discovery scope badge data, product review row display data, and API-
+token status badge data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Offer Discovery Scope Badge Data Contract
-
-Status: ready
-Lane: Frontend offer discovery scope badge data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move active/all offer scope label and badge-tone policy from
-`OfferDiscoveryList` into the existing framework-free offer filter-data owner.
-Owned paths:
-
-- `assets/src/routes/offers/offer-discovery-filter-data.ts`
-- `assets/src/routes/offers/OfferDiscoveryList.tsx`
-- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
-- `assets/test/routes/offers/offer-discovery.route.test.tsx`
-- `docs/work/frontend-offer-discovery-scope-badge-data.md`
-
-Prerequisites:
-
-- Active-only filters retain the Active offers label and positive tone.
-- All-offer filters retain the All offers label and neutral tone.
-- Existing offer filter-data and route characterization remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the offer
-  filter-data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable offer-scope badge
-data without changing filtering, offer ordering, markup, or presentation.
-
-### 2. Product Review Row Display Data Contract
+### 1. Product Review Row Display Data Contract
 
 Status: ready
 Lane: Frontend product review row display data
@@ -1159,7 +1135,7 @@ Exit condition: the framework-free owner projects stable review-row copy
 without changing bodies, list markup, forms, pagination, mutations, or
 presentation.
 
-### 3. API Token Status Badge Data Contract
+### 2. API Token Status Badge Data Contract
 
 Status: ready
 Lane: Frontend API token status badge data
@@ -1194,6 +1170,41 @@ Exit condition: the framework-free owner projects lifecycle-consistent status
 badge data without changing timestamps, actions, mutations, StatusBadge
 markup, or presentation.
 
+### 3. Price Watch Amount Field Data Contract
+
+Status: ready
+Lane: Frontend price watch amount field data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: project amount-field visibility and label from the selected watch
+rule in the existing framework-free price-watch data owner.
+Owned paths:
+
+- `assets/src/routes/products/price-watch-data.ts`
+- `assets/src/routes/products/PriceWatchControl.tsx`
+- `assets/test/routes/products/price-watch-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-price-watch-amount-field-data.md`
+
+Prerequisites:
+
+- Target-price rules retain the Target landed price amount field.
+- Percentage-drop rules retain the Percentage drop amount field.
+- Back-in-stock and newly-available rules retain no amount field.
+- Existing input construction, mutation, form reset, markup, and presentation
+  behavior remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the price-
+  watch data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable amount-field data
+without changing input construction, mutation orchestration, form reset,
+markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1203,6 +1214,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Offer discovery scope-badge data completed on 2026-07-17. The framework-free
+offer filter-data owner now projects the Active offers/positive and All
+offers/neutral badge contract from the canonical active-only filter state.
+React retains filtering, offer ordering, StatusBadge markup, and presentation.
+Its pure and route suites passed 75 tests; TypeScript, recursive dependency,
+consumer, and diff checks are recorded in
+`docs/work/frontend-offer-discovery-scope-badge-data.md`.
 
 Recommendation query-input data completed on 2026-07-17. The framework-free
 recommendation route-data owner now projects ordered copied GraphQL variables,

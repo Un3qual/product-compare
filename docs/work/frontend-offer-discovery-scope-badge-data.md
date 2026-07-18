@@ -2,22 +2,24 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 73 passing
-  offer filter-data and route tests.
+- Last verified: 2026-07-17 after Task 71 implementation: 75 passing offer
+  filter-data and route tests plus TypeScript and dependency-boundary checks.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Offer Discovery Scope Badge Data Contract
 
-- Status: ready on 2026-07-17.
-- Next action: move active/all scope label and badge-tone policy into the
-  existing framework-free offer filter-data owner.
-- Candidate evidence: `OfferDiscoveryList` currently derives label and tone
-  directly from `activeOnly`, while the filter-data owner already owns the
-  same status semantics; the focused suites pass 73 tests.
+- Status: completed on 2026-07-17.
+- Delivered: `getOfferDiscoveryFilterData` now projects a deterministic
+  `scopeBadge` with the active/all label and tone, and `OfferDiscoveryList`
+  passes that data to the existing `StatusBadge` markup.
+- Evidence: behavior tests cover both scope states and frozen input;
+  `bun x vitest run test/routes/offers/offer-discovery-filter-data.test.ts
+  test/routes/offers/offer-discovery.route.test.tsx` passed 75 tests and
+  `bun run typecheck` passed.
 - Blockers: none.
 
 ## Boundaries
@@ -36,3 +38,12 @@
 - consumer and transitive framework/transport dependency scans of the offer
   filter-data module
 - `git diff --check`
+
+## Completion Evidence
+
+- The pure owner has no relative imports, so its recursive relative-import
+  closure is the owner itself; the checked closure contains no React, router,
+  Relay, StyleX, Radix, generated-query, or transport dependencies.
+- Consumer scan confirms `OfferDiscoveryList` consumes the pure owner while
+  retaining filtering, ordering, and `StatusBadge` presentation.
+- `git diff --check` passed.

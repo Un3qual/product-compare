@@ -15,7 +15,10 @@ import {
   type OfferConnection,
   type RenderableOffer
 } from "./offer-discovery-data";
-import { buildOfferDiscoveryPaginationData } from "./offer-discovery-filter-data";
+import {
+  buildOfferDiscoveryPaginationData,
+  getOfferDiscoveryFilterData
+} from "./offer-discovery-filter-data";
 import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./loader";
 import { VisibleMerchantFilters } from "./VisibleMerchantFilters";
 import { OfferDiscoveryCard } from "./OfferDiscoveryCard";
@@ -30,12 +33,11 @@ export function OfferDiscoveryList({
   const renderableOfferRows = renderableOffers(connection);
   const canComparePrices = priceSortUsesSingleCurrency(renderableOfferRows);
   const offers = sortedRenderableOffers(renderableOfferRows, filters.sort, canComparePrices);
+  const { scopeBadge } = getOfferDiscoveryFilterData(filters);
 
   return (
     <>
-      <StatusBadge tone={filters.activeOnly ? "positive" : "neutral"}>
-        {filters.activeOnly ? "Active offers" : "All offers"}
-      </StatusBadge>
+      <StatusBadge tone={scopeBadge.tone}>{scopeBadge.label}</StatusBadge>
       {offers.length === 0 ? (
         <FeedbackState kind="empty" title="No offers match these filters." />
       ) : (
