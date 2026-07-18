@@ -85,9 +85,10 @@ data, and compare specification-mode navigation data (Tasks 64-66) are
 complete. Saved Comparison Card Display and Alert Watch-Toggle Control are also
 complete. Auth Global Error Visibility, Recommendation Query Input, and Offer
 Discovery Scope Badge are also complete. Product Review Row Display is also
-complete. API Token Status Badge is also complete. Price Watch Amount Field,
-Route Metadata Tag Policy, and Affiliate Merchant Context Copy are the current
-ready successors in the live queue.
+complete. API Token Status Badge and Price Watch Amount Field are also
+complete. Route Metadata Tag Policy, Affiliate Merchant Context Copy, and API
+Token Lifecycle Action Policy are the current ready successors in the live
+queue.
 
 Active implementation plans:
 

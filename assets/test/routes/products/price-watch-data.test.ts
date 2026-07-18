@@ -1,6 +1,6 @@
 import {
   buildCreatePriceWatchInput,
-  needsPriceWatchAmount,
+  getPriceWatchAmountFieldData,
   PRICE_WATCH_CREATED_MESSAGE,
   priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
@@ -31,12 +31,12 @@ test.each(["", "UNKNOWN", "FUTURE_RULE"])(
 );
 
 test.each([
-  ["TARGET_PRICE", true],
-  ["PERCENTAGE_DROP", true],
-  ["BACK_IN_STOCK", false],
-  ["NEWLY_AVAILABLE", false]
-] as const)("needsPriceWatchAmount identifies whether %s needs an amount", (ruleType, expected) => {
-  expect(needsPriceWatchAmount(ruleType)).toBe(expected);
+  ["TARGET_PRICE", { visible: true, label: "Target landed price" }],
+  ["PERCENTAGE_DROP", { visible: true, label: "Percentage drop" }],
+  ["BACK_IN_STOCK", { visible: false, label: null }],
+  ["NEWLY_AVAILABLE", { visible: false, label: null }]
+] as const)("getPriceWatchAmountFieldData projects the %s amount field", (ruleType, expected) => {
+  expect(getPriceWatchAmountFieldData(ruleType)).toEqual(expected);
 });
 
 test.each([

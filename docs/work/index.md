@@ -1115,42 +1115,7 @@ None.
 
 ## Ready Work
 
-### 1. Price Watch Amount Field Data Contract
-
-Status: ready
-Lane: Frontend price watch amount field data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project amount-field visibility and label from the selected watch
-rule in the existing framework-free price-watch data owner.
-Owned paths:
-
-- `assets/src/routes/products/price-watch-data.ts`
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/test/routes/products/price-watch-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-price-watch-amount-field-data.md`
-
-Prerequisites:
-
-- Target-price rules retain the Target landed price amount field.
-- Percentage-drop rules retain the Percentage drop amount field.
-- Back-in-stock and newly-available rules retain no amount field.
-- Existing input construction, mutation, form reset, markup, and presentation
-  behavior remains green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/price-watch-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the price-
-  watch data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable amount-field data
-without changing input construction, mutation orchestration, form reset,
-markup, or presentation.
-
-### 2. Route Metadata Tag Policy Data Contract
+### 1. Route Metadata Tag Policy Data Contract
 
 Status: ready
 Lane: Frontend route metadata tag policy data
@@ -1186,7 +1151,7 @@ Exit condition: the framework-free owner projects stable route tag policy
 without changing metadata selection, canonical, Open Graph, image, structured-
 data, markup, or router behavior.
 
-### 3. Affiliate Merchant Context Copy Data Contract
+### 2. Affiliate Merchant Context Copy Data Contract
 
 Status: ready
 Lane: Frontend affiliate merchant context copy data
@@ -1223,6 +1188,44 @@ Exit condition: the framework-free owner projects stable merchant context copy
 without changing selection, pagination, forms, mutations, results, markup, or
 presentation.
 
+### 3. API Token Lifecycle Action Policy Data Contract
+
+Status: ready
+Lane: Frontend API token lifecycle action policy data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: project lifecycle action availability, disabled state, and button
+copy from token status and row-scoped mutation state in the existing
+framework-free API-token route-data owner.
+Owned paths:
+
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-api-token-lifecycle-action-policy-data.md`
+
+Prerequisites:
+
+- Revoked tokens retain no lifecycle actions.
+- Expired, unrevoked tokens retain revoke but not rotate.
+- Active tokens retain rotate and revoke.
+- A pending rotate or revoke keeps all available actions for that row disabled,
+  with exact pending button copy.
+- Existing variables, one-time-token handling, forms, accessibility labels,
+  mutation orchestration, markup, and presentation remain green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the API-
+  token route-data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable lifecycle action
+policy without changing variables, one-time-token handling, forms,
+accessibility labels, mutation orchestration, markup, or presentation.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1232,6 +1235,14 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Price-watch amount-field data completed on 2026-07-17. The framework-free
+price-watch data owner now projects amount-field visibility and exact label
+copy for all four supported rule types. React retains input construction,
+mutation orchestration, product-scoped form reset, markup, and presentation.
+Its pure and alert-route suites passed 30 tests; TypeScript, recursive
+dependency, consumer, and diff checks are recorded in
+`docs/work/frontend-price-watch-amount-field-data.md`.
 
 API-token status badge data completed on 2026-07-17. The framework-free API-
 token route-data owner now projects the positive active tone and neutral

@@ -2119,14 +2119,14 @@ amount-field visibility and label from the selected rule type. The React owner
 retains input construction, mutation orchestration, product-scoped form reset,
 markup, and presentation.
 
-- [ ] Write pure tests for target-price, percentage-drop, back-in-stock, and
+- [x] Write pure tests for target-price, percentage-drop, back-in-stock, and
   newly-available amount-field data; verify RED.
-- [ ] Move only deterministic amount-field visibility and label policy while
+- [x] Move only deterministic amount-field visibility and label policy while
   preserving input construction, mutation orchestration, reset, markup, and
   presentation.
-- [ ] Run the price-watch data and alert-route suites, TypeScript, consumer and
+- [x] Run the price-watch data and alert-route suites, TypeScript, consumer and
   transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2180,8 +2180,42 @@ results, markup, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 77: API Token Lifecycle Action Policy Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- Test: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- Create: `docs/work/frontend-api-token-lifecycle-action-policy-data.md`
+
+**Interfaces:** The existing framework-free API-token route-data owner
+projects lifecycle action availability, shared disabled state, and exact
+button copy from token status plus row-scoped mutation state. React retains
+refs, expiry-preset interaction, forms, accessibility labels, mutation
+handlers and orchestration, errors, markup, and presentation.
+
+- [ ] Write pure tests for revoked, expired, and active action availability;
+  rotate-pending and revoke-pending disabled state; exact button copy; and
+  input immutability; verify RED.
+- [ ] Move only deterministic lifecycle action policy while preserving
+  variables, one-time-token handling, forms, accessibility labels, mutations,
+  errors, markup, and presentation.
+- [ ] Run the API-token route-data and route suites, TypeScript, consumer and
+  transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Price-watch amount-field data completed on 2026-07-17 after four pure cases
+  failed RED because the projection did not exist. The pure and alert-route
+  suites then passed 30 tests; TypeScript, consumer, recursive dependency
+  closure, and `git diff --check` passed. Target-price and percentage-drop
+  rules retain their exact labels, while availability rules retain no amount
+  field.
 - API-token status badge data completed on 2026-07-17 after four lifecycle
   cases failed RED because the display projection did not include a tone. The
   pure and route suites then passed 87 tests; TypeScript, consumer, recursive

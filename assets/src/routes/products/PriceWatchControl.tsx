@@ -9,7 +9,7 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
 import {
   buildCreatePriceWatchInput,
-  needsPriceWatchAmount,
+  getPriceWatchAmountFieldData,
   priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
@@ -66,7 +66,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
     }
   }
 
-  const needsAmount = needsPriceWatchAmount(ruleType);
+  const amountField = getPriceWatchAmountFieldData(ruleType);
 
   return (
     <details {...props(styles.details)}>
@@ -93,9 +93,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
           Currency
           <input id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
         </label>
-        {needsAmount ? (
+        {amountField.visible ? (
           <label htmlFor={amountId} {...props(styles.field)}>
-            {ruleType === "TARGET_PRICE" ? "Target landed price" : "Percentage drop"}
+            {amountField.label}
             <input id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
           </label>
         ) : null}

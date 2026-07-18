@@ -2,22 +2,23 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: completed
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-17 after current source inspection and 30 passing
-  price-watch data and alert-route tests.
+- Last verified: 2026-07-17 after 30 passing price-watch data and alert-route
+  tests, TypeScript, consumer and recursive dependency scans, and diff hygiene.
 - Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
 ## Price Watch Amount Field Data Contract
 
-- Status: ready on 2026-07-17.
+- Status: completed on `codex/frontend-navigation-row-contracts` on
+  2026-07-17.
 - Next action: project amount-field visibility and label from the selected rule
   type in the existing framework-free price-watch data owner.
-- Candidate evidence: visibility currently comes from
-  `needsPriceWatchAmount`, while `PriceWatchControl` separately chooses the
-  amount label; the focused suites pass 30 tests.
+- Result: `getPriceWatchAmountFieldData` now projects a discriminated amount-
+  field contract for all four rule types, and `PriceWatchControl` consumes its
+  visibility and exact label without retaining a second policy decision.
 - Blockers: none.
 
 ## Boundaries
@@ -37,3 +38,16 @@
 - consumer and transitive framework/transport dependency scans of the price-
   watch data module
 - `git diff --check`
+
+## Evidence
+
+- RED: the four new pure cases failed with
+  `getPriceWatchAmountFieldData is not a function` while 19 existing cases
+  passed.
+- GREEN: the price-watch data and alert-route suites passed 30 tests.
+- `bun run typecheck` passed.
+- The consumer scan found the projection in the pure test and
+  `PriceWatchControl`; the recursive closure contains only
+  `price-watch-data.ts` and `route-errors.ts`, with no React, router, Relay,
+  StyleX, Radix, generated-query, or transport imports.
+- `git diff --check` passed.
