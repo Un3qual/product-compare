@@ -144,16 +144,20 @@ test.each([
 
 test("buildApiTokenDisplayData derives status label and tone from one lifecycle snapshot", () => {
   const expiresAt = "2026-07-17T00:00:00Z";
-  vi.spyOn(Date, "now")
+  const dateNowSpy = vi.spyOn(Date, "now")
     .mockReturnValueOnce(Date.parse(expiresAt) - 1)
     .mockReturnValue(Date.parse(expiresAt));
 
-  expect(
-    buildApiTokenDisplayData(Object.freeze({ ...SERVER_TOKEN, expiresAt }))
-  ).toMatchObject({
-    statusLabel: "Active token",
-    statusTone: "positive"
-  });
+  try {
+    expect(
+      buildApiTokenDisplayData(Object.freeze({ ...SERVER_TOKEN, expiresAt }))
+    ).toMatchObject({
+      statusLabel: "Active token",
+      statusTone: "positive"
+    });
+  } finally {
+    dateNowSpy.mockRestore();
+  }
 });
 
 test("apiTokensRouteLocationIdentity separates authorization, status, and cursor state", () => {
