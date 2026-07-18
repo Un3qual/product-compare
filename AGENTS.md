@@ -14,6 +14,18 @@
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
+- Treat a queue row as an independently shippable and reviewable outcome, not
+  as one helper, component, file, or test-sized implementation step.
+- Group source-backed changes that enforce the same invariant across adjacent
+  surfaces into one batch. Track path-disjoint or serial implementation work
+  as internal slices and milestone commits inside that batch; internal slices
+  do not count toward the ready-row floor.
+- Parallel ownership is a way to execute slices inside a coherent batch, not
+  sufficient reason by itself to create separate queue rows.
+- Never split work into micro-batches or invent filler merely to reach a
+  requested batch count or the ready-row floor. If fewer coherent batches are
+  available, return the smaller truthful set and record the coordinator or
+  product decision needed to create more.
 - Before a claim would leave fewer than three other `ready` rows, the
   coordinator replenishes the queue in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence

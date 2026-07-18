@@ -88,10 +88,15 @@ Discovery Scope Badge are also complete. Product Review Row Display is also
 complete. API Token Status Badge and Price Watch Amount Field are also
 complete. Route Metadata Tag Policy is also complete. Affiliate Merchant
 Context Copy, API Token Lifecycle Action Policy, and Product Community Answer
-Pagination Cursor are the current ready successors in the live queue.
+Pagination Cursor were regrouped before execution on 2026-07-18 because they
+were implementation slices rather than independently shippable batches. The
+live queue now carries four coherent outcomes: account/setup presentation
+contracts, frontend cursor forward-progress hardening, strict temporal
+presentation, and row-scoped asynchronous action state.
 
 Active implementation plans:
 
+- `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -102,7 +107,9 @@ Active implementation plans:
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
-validated candidate.
+validated candidate. Internal slices, per-route steps, and milestone commits do
+not count as separate candidates or ready rows; batch coherence takes priority
+over requested counts and replenishment depth.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -119,6 +126,13 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
+- Current coherent frontend correctness program: account/setup presentation
+  contracts, cross-surface cursor forward-progress hardening, strict temporal
+  presentation, and row-scoped asynchronous action state execute through
+  `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`.
+  The affiliate merchant-copy, API-token lifecycle-action, and community
+  answer-cursor docs are retained as internal slice evidence and must not be
+  promoted again as standalone rows.
 - Product comparison: disclose that relative price uses already-loaded offers,
   then add a local name filter over already-loaded picker products. These plans
   share test and lane paths and execute serially.

@@ -2,17 +2,19 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: grouped into the account and setup presentation batch
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-17 after current source inspection and 50 passing
   affiliate setup data and route tests.
-- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+- Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
 
 ## Affiliate Merchant Context Copy Data Contract
 
-- Status: ready on 2026-07-17.
+- Status: retained as internal slice A of
+  `docs/work/frontend-account-setup-presentation-contracts.md`; it is not a
+  standalone queue row.
 - Next action: project selected-merchant and current-merchant copy from the
   canonical merchant choice in the existing framework-free affiliate setup
   data owner.

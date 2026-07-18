@@ -13,6 +13,14 @@ For the operating rules, prompt templates, and handoff format, read
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
+- A queue row is one independently shippable and reviewable outcome. Per-file,
+  per-route, path-disjoint, or test-sized implementation steps belong under
+  internal slices in the linked plan and lane doc.
+- Group candidates that enforce the same invariant and share one acceptance
+  boundary. Parallel safety alone does not justify separate queue rows.
+- Numeric batch requests and the ready-row floor never justify micro-batches or
+  filler. Return fewer coherent batches and record the missing decision when
+  the repository does not support the requested count.
 - Before a claim would leave fewer than three other ready rows, the coordinator
   validates and promotes more work in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
@@ -32,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-17
+Updated: 2026-07-18
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1117,20 +1125,33 @@ cursor again instead of requiring forward progress. The pure and panel suites
 pass 23 tests. The successor is path-disjoint from route metadata tag policy,
 affiliate merchant context copy, and API-token lifecycle action policy data.
 
+On 2026-07-18, coordinator review found that the rolling reserve had confused
+parallel-safe implementation slices with independently shippable batches. The
+three unclaimed micro-rows and their validated follow-up evidence were regrouped
+into four reviewer-sized outcomes: account/setup presentation contracts,
+cross-surface cursor forward-progress hardening, strict temporal presentation,
+and row-scoped asynchronous action state. The former rows remain lane evidence
+only. `AGENTS.md`, the operating model, plan guidance, and coordinator prompt
+now require internal slices to stay inside their parent batch and prohibit
+subdivision merely to satisfy a numeric request or the ready-row floor. The
+queue validator enforces the batch outcome and internal-slice fields.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Affiliate Merchant Context Copy Data Contract
+### 1. Account And Setup Presentation Contracts
 
 Status: ready
-Lane: Frontend affiliate merchant context copy data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project selected-merchant and current-merchant copy from the
-canonical merchant choice in the existing framework-free affiliate setup data
-owner.
+Lane: Frontend account and setup presentation contracts
+Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+Batch outcome: authenticated setup and account surfaces obtain deterministic
+merchant-context copy and API-token lifecycle actions from framework-free
+owners without changing forms, mutations, accessibility, or presentation.
+Next action: execute the affiliate merchant-context and API-token lifecycle
+policy slices as separate test/commit milestones inside one reviewer batch.
 Owned paths:
 
 - `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
@@ -1138,100 +1159,199 @@ Owned paths:
 - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
 - `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
 - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-merchant-context-copy-data.md`
-
-Prerequisites:
-
-- Program, link, and coupon forms retain `Selected merchant: <name> (<domain>)`.
-- The setup context rail retains `Current merchant: <name> (<domain>)`.
-- Missing selections retain no merchant context copy.
-- Existing merchant selection, pagination, forms, mutations, results, markup,
-  and presentation remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the
-  affiliate setup data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable merchant context copy
-without changing selection, pagination, forms, mutations, results, markup, or
-presentation.
-
-### 2. API Token Lifecycle Action Policy Data Contract
-
-Status: ready
-Lane: Frontend API token lifecycle action policy data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project lifecycle action availability, disabled state, and button
-copy from token status and row-scoped mutation state in the existing
-framework-free API-token route-data owner.
-Owned paths:
-
 - `assets/src/routes/account/api-tokens/api-token-route-data.ts`
 - `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
 - `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
 - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-lifecycle-action-policy-data.md`
+- `docs/work/frontend-account-setup-presentation-contracts.md`
+
+Internal slices:
+
+- Affiliate selected/current merchant-context copy.
+- API-token lifecycle action visibility, disabled state, and pending copy.
 
 Prerequisites:
 
-- Revoked tokens retain no lifecycle actions.
-- Expired, unrevoked tokens retain revoke but not rotate.
-- Active tokens retain rotate and revoke.
-- A pending rotate or revoke keeps all available actions for that row disabled,
-  with exact pending button copy.
-- Existing variables, one-time-token handling, forms, accessibility labels,
-  mutation orchestration, markup, and presentation remain green.
+- Existing affiliate and API-token focused characterization suites remain the
+  baseline.
+- All normal-path copy and row-scoped API-token mutual exclusion stay stable.
+- React retains Relay, forms, refs, callbacks, markup, and styling.
 
 Verification:
 
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the API-
-  token route-data module
+- pure-module dependency scans
+- `cd assets && bun run check`
 - `git diff --check`
 
-Exit condition: the framework-free owner projects stable lifecycle action
-policy without changing variables, one-time-token handling, forms,
-accessibility labels, mutation orchestration, markup, or presentation.
+Exit condition: both internal slices pass their focused gates and the combined
+frontend gate as one independently reviewable account/setup outcome.
 
-### 3. Product Community Answer Pagination Cursor Data Contract
+### 2. Frontend Cursor Forward-Progress Hardening
 
 Status: ready
-Lane: Frontend product-community answer pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: make the existing framework-free community cursor owner project
-initial and advancing answer-page cursors for the product-community panel.
+Lane: Frontend cursor forward progress
+Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+Batch outcome: every in-scope frontend Relay pagination surface suppresses
+blank or repeated cursors, preventing self-links and repeated stateful fetches.
+Next action: introduce the shared framework-free advancing-cursor invariant,
+then migrate the community, compare, product-offer, public, and account/setup
+pagination slices with focused milestones.
 Owned paths:
 
+- `assets/src/routes/relay-pagination.ts`
+- `assets/test/routes/relay-pagination.test.ts`
 - `assets/src/routes/products/product-community-data.ts`
 - `assets/src/routes/products/ProductCommunityPanel.tsx`
 - `assets/test/routes/products/product-community-data.test.ts`
 - `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-community-answer-pagination-data.md`
+- `assets/src/routes/compare/compare-picker-data.ts`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- `assets/test/routes/compare/compare-picker-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/src/routes/products/product-offer-panel-data.ts`
+- `assets/src/routes/products/ProductOfferPanel.tsx`
+- `assets/test/routes/products/product-offer-panel-data.test.ts`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `assets/src/routes/categories/category-view-data.ts`
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/src/routes/categories/loader.ts`
+- `assets/test/routes/categories/category-view-data.test.ts`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `assets/src/routes/merchants/pagination.ts`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
+- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- `assets/src/routes/merchants/detail/loader.ts`
+- `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `assets/src/routes/affiliate/setup/pagination.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-cursor-forward-progress.md`
+
+Internal slices:
+
+- Shared invariant plus community answer/review/question pagination.
+- Stateful compare-picker and product-offer pagination.
+- Public URL pagination for catalog, offers, categories, and merchants.
+- Account/setup URL pagination for API tokens and affiliate merchants.
 
 Prerequisites:
 
-- Initial answer pagination retains a cursor only when another page exists and
-  the server supplied a non-empty end cursor.
-- Additional answer pagination requires a non-empty cursor different from the
-  cursor that produced the current page.
-- Existing answer ordering, deduplication, accepted-answer labels, suspense,
-  error handling, queries, mutations, markup, and presentation remain green.
+- Saved-comparison and snapshot-history cursor contracts remain reference
+  behavior, not migration targets.
+- Cursor values remain exact; whitespace is only a validity check.
+- Deferred feed-candidate operator surfaces stay out of scope.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun x vitest run test/routes/relay-pagination.test.ts test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail-view-data.test.ts test/routes/merchants/merchant-detail.route.test.tsx test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the product-
-  community data module
+- shared-helper dependency scan
+- `cd assets && bun run check`
 - `git diff --check`
 
-Exit condition: the framework-free owner projects safe answer-page cursor
-progression without changing question or answer behavior outside pagination.
+Exit condition: every in-scope surface rejects blank and non-advancing cursors
+while preserving normal pagination, URL state, Relay timing, and presentation.
+
+### 3. Strict Temporal Presentation
+
+Status: ready
+Lane: Frontend strict temporal presentation
+Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+Batch outcome: alert and comparison observation dates use the strict GraphQL
+DateTime contract for factual labels and recency selection.
+Next action: migrate alert labels and comparison labels/selection to
+`graphQLDateTimeLabel` and `parseGraphQLDateTime` with impossible-date and
+missing-offset regressions.
+Owned paths:
+
+- `assets/src/routes/account/alerts/alerts-view-data.ts`
+- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `assets/src/routes/compare/decision-summary-data.ts`
+- `assets/src/routes/compare/loader.ts`
+- `assets/test/routes/compare/decision-summary-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/frontend-strict-temporal-presentation.md`
+
+Internal slices:
+
+- Strict price-alert observation labels.
+- Strict comparison recency labels and most-recent observation selection.
+
+Prerequisites:
+
+- Existing valid observation labels and ordering remain unchanged.
+- Invalid source values remain visible only where the current surface promises
+  exact fallback; invalid values never become a different date.
+- The existing GraphQL DateTime parser remains the single validation owner.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run check`
+- `git diff --check`
+
+Exit condition: impossible, offset-free, and malformed timestamps cannot
+produce a false factual label or win comparison recency selection.
+
+### 4. Row-Scoped Asynchronous Action State
+
+Status: ready
+Lane: Frontend row-scoped action state
+Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+Batch outcome: comparison-snapshot and price-alert list mutations expose
+pending and failure feedback only on the affected row.
+Next action: replace global snapshot revocation state and global alert mutation
+errors with row-keyed state while preserving successful mutation handling.
+Owned paths:
+
+- `assets/src/routes/compare/share-comparison-data.ts`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/share-comparison-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/frontend-row-scoped-action-state.md`
+
+Internal slices:
+
+- Row-scoped snapshot revocation pending state and duplicate guard.
+- Row-scoped alert and watch mutation error feedback.
+
+Prerequisites:
+
+- Existing snapshot and alert mutation outcome contracts remain unchanged.
+- Successful alert/watch operations still revalidate route data.
+- Independent rows remain actionable while one row is pending.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/compare.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run typecheck`
+- `cd assets && bun run check`
+- `git diff --check`
+
+Exit condition: pending and failure UI is row-specific across both surfaces,
+with duplicate same-row actions suppressed and independent rows left usable.
 
 ## Needs Decision Work
 
@@ -1571,6 +1691,9 @@ Process the highest-ranked non-ready row when a decision or blocker exists.
 Otherwise curate source-backed candidates from docs/plans/INDEX.md and the directly affected lane docs.
 Before a stable boundary would leave fewer than three ready rows, validate new implementation candidates from current product, code, test, architecture, and lane evidence.
 Three is the floor, not a cap; promote every additional useful validated row found in the same pass.
+Treat a row as one independently shippable reviewer outcome. Group candidates that enforce the same invariant and share one acceptance boundary.
+Keep per-surface, per-file, path-disjoint, or test-sized work as internal slices with focused milestone commits; do not count slices as ready rows.
+If a numeric request or the ready floor exceeds the coherent source-backed batch set, return the smaller truthful set and record the decision needed for more work instead of creating micro-batches.
 Validate every promoted row's owned paths, verification, prerequisites, and exit condition.
 Update only the live queue plus the directly affected lane or plan docs.
 End with at least three complete ready implementation rows and keep every additional useful validated row.
@@ -1586,6 +1709,7 @@ Read docs/work/operating-model.md.
 Claim the highest-ranked compatible ready row only when three other ready rows will remain.
 Leave other ready rows unchanged.
 Open only that row's Work Doc, linked active plan if any, Owned paths, and immediate tests.
+Treat the row's internal slices as one batch status. Use slice-level tests and milestone commits without promoting or closing slices as standalone queue rows.
 Update the lane work doc as the batch changes.
 Do not edit coordinator-owned docs unless the ready row names them under Owned paths.
 Stop if the row is blocked, stale, or needs a decision.
