@@ -2069,13 +2069,13 @@ projects title, rating-star, and author purchase-verification copy for a
 published review. The React owner retains bodies, list markup, forms,
 pagination, mutations, and presentation.
 
-- [ ] Write pure tests for explicit and fallback titles, supported rating-star
+- [x] Write pure tests for explicit and fallback titles, supported rating-star
   rows, verified and unverified author copy, and input immutability; verify RED.
-- [ ] Move only deterministic review-row copy while preserving bodies, list
+- [x] Move only deterministic review-row copy while preserving bodies, list
   markup, forms, pagination, mutations, and presentation.
-- [ ] Run the product-community data and panel suites, TypeScript, consumer and
+- [x] Run the product-community data and panel suites, TypeScript, consumer and
   transitive framework/transport dependency scans, and `git diff --check`.
-- [ ] Record lane evidence and commit the milestone.
+- [x] Record lane evidence and commit the milestone.
 
 ---
 
@@ -2128,8 +2128,40 @@ markup, and presentation.
   transitive framework/transport dependency scans, and `git diff --check`.
 - [ ] Record lane evidence and commit the milestone.
 
+---
+
+### Task 75: Route Metadata Tag Policy Data Contract
+
+**Files:**
+
+- Modify: `assets/src/routes/route-metadata-data.ts`
+- Modify: `assets/src/routes/RouteMetadata.tsx`
+- Modify: `assets/test/routes/route-metadata-data.test.ts`
+- Test: `assets/test/routes/route-metadata.test.tsx`
+- Create: `docs/work/frontend-route-metadata-tag-policy-data.md`
+
+**Interfaces:** The existing framework-free route-metadata data owner projects
+robots and Twitter-card values from normalized metadata. The React owner
+retains route-match access, canonical, Open Graph, image, structured-data,
+markup, and router behavior.
+
+- [ ] Write pure tests for explicit indexability, default noindex behavior,
+  image and no-image card values, and input immutability; verify RED.
+- [ ] Move only deterministic robots and Twitter-card policy while preserving
+  metadata selection, canonical, Open Graph, image, structured-data, markup,
+  and router behavior.
+- [ ] Run the route-metadata data and component suites, TypeScript, consumer
+  and transitive framework/transport dependency scans, and `git diff --check`.
+- [ ] Record lane evidence and commit the milestone.
+
 ## Validation Evidence
 
+- Product review row-display data completed on 2026-07-17 after the new pure
+  contract test failed RED because the projection was missing. The expanded
+  pure suite then covered explicit and fallback titles, ratings one through
+  five, verified and unverified author copy, and frozen inputs. The pure and
+  panel suites passed 23 tests; TypeScript, consumer, recursive dependency
+  closure, and `git diff --check` passed.
 - Offer discovery scope-badge data completed on 2026-07-17 after both new pure
   cases failed RED because the scope-badge projection was missing. The pure and
   route suites then passed 75 tests; TypeScript, consumer, recursive dependency

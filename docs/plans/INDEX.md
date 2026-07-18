@@ -84,9 +84,9 @@ Comparison snapshot pagination cursor data, API-token status-filter navigation
 data, and compare specification-mode navigation data (Tasks 64-66) are
 complete. Saved Comparison Card Display and Alert Watch-Toggle Control are also
 complete. Auth Global Error Visibility, Recommendation Query Input, and Offer
-Discovery Scope Badge are also complete. Product Review Row Display, API Token
-Status Badge, and Price Watch Amount Field are the current ready successors in
-the live queue.
+Discovery Scope Badge are also complete. Product Review Row Display is also
+complete. API Token Status Badge, Price Watch Amount Field, and Route Metadata
+Tag Policy are the current ready successors in the live queue.
 
 Active implementation plans:
 

@@ -1094,48 +1094,20 @@ pure and alert-route suites pass 30 tests. The successor is path-disjoint from
 offer discovery scope badge data, product review row display data, and API-
 token status badge data.
 
+Before claiming the product review row-display row, current source inspection
+confirmed that robots and Twitter-card values remain derived inline in
+`RouteMetadata`, while the framework-free route-metadata data owner already
+normalizes indexability and image facts. Its pure and component suites pass 9
+tests. The successor is path-disjoint from product review row display data,
+API-token status badge data, and price-watch amount field data.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Product Review Row Display Data Contract
-
-Status: ready
-Lane: Frontend product review row display data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: move review title fallback, rating-star copy, and author purchase-
-verification copy from `ProductCommunityPanel` into the existing framework-
-free product-community data owner.
-Owned paths:
-
-- `assets/src/routes/products/product-community-data.ts`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- `assets/test/routes/products/product-community-data.test.ts`
-- `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-review-row-display-data.md`
-
-Prerequisites:
-
-- Explicit review titles remain unchanged and missing titles fall back to the
-  existing rating-out-of-five copy.
-- Ratings retain their filled and empty five-star copy.
-- Author labels retain the verified or purchase-not-verified suffix.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the product-
-  community data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable review-row copy
-without changing bodies, list markup, forms, pagination, mutations, or
-presentation.
-
-### 2. API Token Status Badge Data Contract
+### 1. API Token Status Badge Data Contract
 
 Status: ready
 Lane: Frontend API token status badge data
@@ -1170,7 +1142,7 @@ Exit condition: the framework-free owner projects lifecycle-consistent status
 badge data without changing timestamps, actions, mutations, StatusBadge
 markup, or presentation.
 
-### 3. Price Watch Amount Field Data Contract
+### 2. Price Watch Amount Field Data Contract
 
 Status: ready
 Lane: Frontend price watch amount field data
@@ -1205,6 +1177,42 @@ Exit condition: the framework-free owner projects stable amount-field data
 without changing input construction, mutation orchestration, form reset,
 markup, or presentation.
 
+### 3. Route Metadata Tag Policy Data Contract
+
+Status: ready
+Lane: Frontend route metadata tag policy data
+Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+Next action: project robots and Twitter-card tag values from normalized route
+metadata in the existing framework-free route-metadata data owner.
+Owned paths:
+
+- `assets/src/routes/route-metadata-data.ts`
+- `assets/src/routes/RouteMetadata.tsx`
+- `assets/test/routes/route-metadata-data.test.ts`
+- `assets/test/routes/route-metadata.test.tsx`
+- `docs/work/frontend-route-metadata-tag-policy-data.md`
+
+Prerequisites:
+
+- Explicitly indexable routes retain `index,follow`; every other route retains
+  `noindex,follow`.
+- Metadata with a non-empty image URL retains `summary_large_image`; metadata
+  without one retains `summary`.
+- Existing canonical, Open Graph, image, structured-data, markup, and router
+  behavior remains green.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/route-metadata-data.test.ts test/routes/route-metadata.test.tsx`
+- `cd assets && bun run typecheck`
+- consumer and transitive framework/transport dependency scans of the route-
+  metadata data module
+- `git diff --check`
+
+Exit condition: the framework-free owner projects stable route tag policy
+without changing metadata selection, canonical, Open Graph, image, structured-
+data, markup, or router behavior.
+
 ## Needs Decision Work
 
 None. Shopper decision confidence was selected on 2026-07-09.
@@ -1214,6 +1222,15 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+Product review row-display data completed on 2026-07-17. The framework-free
+product-community data owner now projects explicit or rating-fallback titles,
+one-through-five star copy, and verified or unverified author copy from a
+structural facts type. React retains review bodies, list markup, forms,
+pagination, mutations, generated Relay types, and presentation. Its pure and
+panel suites passed 23 tests; TypeScript, recursive dependency, consumer, and
+diff checks are recorded in
+`docs/work/frontend-product-review-row-display-data.md`.
 
 Offer discovery scope-badge data completed on 2026-07-17. The framework-free
 offer filter-data owner now projects the Active offers/positive and All
