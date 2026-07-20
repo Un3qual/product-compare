@@ -52,3 +52,48 @@ changing offer, review, specification, or metadata truth.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+Verified fresh on 2026-07-20 after the set-based evidence APIs and
+request-scoped GraphQL Dataloader sources landed in:
+
+- `2a15854b perf: batch product evidence reads`
+- `d3bbd63d perf: batch product seo metadata`
+- `34087286 perf: bound product evidence graphql reads`
+
+### Query-budget regression
+
+The pre-batching RED baseline grew with product parents. Counts are ordered as
+`product_media`, `product_attribute_current`, `product_reviews`,
+`merchant_products`, and `price_points`:
+
+| Product parents | RED baseline | GREEN fixed budget |
+| --- | --- | --- |
+| 3 | `{3, 3, 6, 6, 4}` | `{1, 1, 2, 2, 2}` |
+| 6 | `{6, 6, 12, 12, 8}` | `{1, 1, 2, 2, 2}` |
+
+The current growing-parent GraphQL regression executes the same product
+connection at three and six parents, asserts the fixed GREEN table counts at
+both sizes, and checks that the six-parent budget equals the three-parent
+budget.
+
+### Semantic coverage
+
+The same regression verifies reviewed, unreviewed, and missing-evidence product
+groups at both parent counts. It preserves current offer truth (including a
+shared `asOf` value), accepted-current specification claim values and source
+artifacts, published-only review summaries with two-decimal averages, and the
+SEO title, description, canonical path, indexability, image, and structured
+data contract. The focused Pricing, Discussions, and SEO suites retain the
+underlying eligibility, freshness, review-publication, and acquisition
+qualification behavior.
+
+### Fresh gate results
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/seo_test.exs` — 36 tests, 0 failures (seed `25916`).
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs` — 4 tests, 0 failures (seed `992357`).
+- `mix typecheck` — passed.
+- `mix format --check-formatted` — passed.
+- `mix work_queue.validate` — passed: `work queue valid: 4 ready rows`. The initial sandbox run was blocked only by `Mix.PubSub` TCP `:eperm`; the same command passed when rerun with the required local-socket permission.
+- `git diff --check` — passed after this evidence update, before the documentation-only commit.
