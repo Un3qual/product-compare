@@ -6,6 +6,7 @@ import {
   type RelayRouteQueryDescriptor
 } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
+import { parseGraphQLDateTime } from "../graphql-datetime";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import {
   MAX_COMPARE_PRODUCTS,
@@ -312,11 +313,13 @@ function mostRecentObservedAt(offerNodes: CompareOfferContextNode[]) {
       continue;
     }
 
-    const observedTime = Date.parse(observedAt);
+    const observedDate = parseGraphQLDateTime(observedAt);
 
-    if (Number.isNaN(observedTime)) {
+    if (!observedDate) {
       continue;
     }
+
+    const observedTime = observedDate.getTime();
 
     if (observedTime > mostRecentTime) {
       mostRecent = observedAt;
