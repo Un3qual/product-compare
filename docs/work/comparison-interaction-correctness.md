@@ -2,13 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - Plan: `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
-- Last verified: 2026-07-20 against comparison timestamp selection, snapshot
-  revocation state, and focused route-data/component tests.
+- Last verified: 2026-07-20 against the implemented strict timestamp selection,
+  row-scoped snapshot revocation state, and full frontend gate.
 
 ## Batch Outcome
 
@@ -39,8 +39,18 @@ pending/failure state applies only to the affected snapshot row.
 
 ## Verification
 
-- Comparison decision-summary and route suites.
-- Share-comparison data and route suites.
-- `cd assets && bun run check`
-- `mix work_queue.validate`
-- `git diff --check`
+- RED: two invalid recency labels and one invalid most-recent winner failed under
+  permissive JavaScript parsing.
+- GREEN: decision-summary and compare-route suites passed (119 tests),
+  including impossible dates, missing offsets, malformed values, and
+  chronological comparison across explicit offsets.
+- RED: the two-row snapshot suite showed the selected row stayed enabled while
+  its revoke mutation was in flight, and the pure row policy was absent.
+- GREEN: share-comparison data and comparison-snapshot suites passed (41
+  tests); pending copy, duplicate suppression, and failure feedback are keyed
+  by snapshot ID while independent rows stay enabled.
+- The combined comparison cohort passed (4 files, 160 tests).
+- `cd assets && bun run check` passed (104 files, 1505 tests, Relay,
+  TypeScript, client/SSR builds, and 182,154-byte gzip initial bundle).
+- `mix work_queue.validate` passed with 7 ready rows.
+- `git diff --check` passed.
