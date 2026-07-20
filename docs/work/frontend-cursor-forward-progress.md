@@ -5,7 +5,7 @@
 - Status: ready
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
-- Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+- Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
 - Last verified: 2026-07-18 from current pagination owners and existing focused
   tests. Saved comparisons and snapshot history already demonstrate the target
   repeated-cursor rejection behavior.

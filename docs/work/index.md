@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-18
+Updated: 2026-07-20
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1136,69 +1136,207 @@ now require internal slices to stay inside their parent batch and prohibit
 subdivision merely to satisfy a numeric request or the ready-row floor. The
 queue validator enforces the batch outcome and internal-slice fields.
 
+On 2026-07-20, a live source/contract audit found three immediately executable
+backend correctness outcomes and one policy-gated community lifecycle outcome.
+The community policy was approved, and all backend plus existing frontend work
+was regrouped into seven domain-oriented rows. Alert correctness is now one
+cross-stack lifecycle batch; comparison temporal/action work is one product
+batch; the shared cursor invariant remains cross-surface. This is one shared
+queue, not separate frontend and backend ledgers.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Account And Setup Presentation Contracts
+### 1. Durable Ingestion Recurrence
 
 Status: ready
-Lane: Frontend account and setup presentation contracts
-Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
-Batch outcome: authenticated setup and account surfaces obtain deterministic
-merchant-context copy and API-token lifecycle actions from framework-free
-owners without changing forms, mutations, accessibility, or presentation.
-Next action: execute the affiliate merchant-context and API-token lifecycle
-policy slices as separate test/commit milestones inside one reviewer batch.
+Lane: Durable ingestion recurrence
+Plan: `docs/superpowers/plans/2026-07-20-durable-ingestion-recurrence-implementation-plan.md`
+Batch outcome: scheduled CJ imports and feed discovery deduplicate within one
+explicit schedule window while the same normalized scope remains runnable in
+later windows.
+Next action: correct both worker uniqueness projections, then pass stable
+explicit windows from both schedulers with focused recurrence tests.
 Owned paths:
 
-- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
-- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
-- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
-- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
-- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
-- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-account-setup-presentation-contracts.md`
+- `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
+- `lib/product_compare/ingestion/jobs/cj_feed_discovery_worker.ex`
+- `lib/product_compare/ingestion/scheduler_support.ex`
+- `lib/product_compare/ingestion/cj_product_import_scheduler.ex`
+- `lib/product_compare/ingestion/cj_feed_discovery_scheduler.ex`
+- `test/product_compare/ingestion/jobs/durable_jobs_test.exs`
+- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+- `test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- `docs/work/durable-ingestion-recurrence.md`
 
 Internal slices:
 
-- Affiliate selected/current merchant-context copy.
-- API-token lifecycle action visibility, disabled state, and pending copy.
+- Same-window conflict and later-window insertion identity for both workers.
+- Stable scheduler windows with an injectable clock.
+- Recurrence, cursor, retry, normalization, and redaction regression evidence.
 
 Prerequisites:
 
-- Existing affiliate and API-token focused characterization suites remain the
-  baseline.
-- All normal-path copy and row-scoped API-token mutual exclusion stay stable.
-- React retains Relay, forms, refs, callbacks, markup, and styling.
+- Existing Oban migration, ingestion queue, and normalized argument contract.
+- Accepted 2026-07-13 durable-ingestion design and 2026-07-20 cross-stack design.
+- Deferred ingestion dashboard/operator and eBay work remain excluded.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `cd assets && bun run typecheck`
-- pure-module dependency scans
-- `cd assets && bun run check`
+- `mix test test/product_compare/ingestion/jobs/durable_jobs_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: both internal slices pass their focused gates and the combined
-frontend gate as one independently reviewable account/setup outcome.
+Exit condition: same-window duplicates resolve to one Oban job, a later window
+creates a distinct job for the same scope, both schedulers pass stable windows,
+and focused plus repository gates pass.
 
-### 2. Frontend Cursor Forward-Progress Hardening
+### 2. Alert Lifecycle Reliability
+
+Status: ready
+Lane: Alert lifecycle reliability
+Plan: `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
+Batch outcome: every persisted price observation evaluates every applicable
+watch asynchronously, and the alert interface presents truthful timestamps plus
+row-local pending and failure state.
+Next action: make watch evaluation fault-isolated and replay-safe, then complete
+the strict-date and row-local frontend slices.
+Owned paths:
+
+- `lib/product_compare/alerts.ex`
+- `lib/product_compare/alerts/jobs/alert_evaluation_worker.ex`
+- `test/product_compare/alerts/alerts_test.exs`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `assets/src/routes/account/alerts/alerts-view-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/alert-lifecycle-reliability.md`
+
+Internal slices:
+
+- Full watch evaluation with deterministic failure aggregation.
+- Strict alert observation labels.
+- Row-scoped alert/watch mutation feedback.
+
+Prerequisites:
+
+- Price-point persistence and Oban enqueue remain atomic.
+- Existing watch locks, event uniqueness, cooldown, and delivery-attempt models.
+- Existing strict GraphQL DateTime helpers remain the sole frontend date policy.
+
+Verification:
+
+- `mix test test/product_compare/alerts/alerts_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run check`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: one failed watch cannot prevent later watches from evaluating,
+retries cannot duplicate successful events, invalid timestamps cannot produce
+false labels, and frontend action state stays on the affected row.
+
+### 3. Community Content Lifecycle
+
+Status: ready
+Lane: Community content lifecycle
+Plan: `docs/superpowers/plans/2026-07-20-community-content-lifecycle-implementation-plan.md`
+Batch outcome: authenticated reviews, questions, and answers have a complete
+owner-controlled, abuse-resistant lifecycle through durable backend policy,
+typed GraphQL, and accessible Relay controls.
+Next action: land durable receipt/window storage, then implement owner lifecycle,
+GraphQL contracts, and frontend controls as separate milestones.
+Owned paths:
+
+- `priv/repo/migrations/20260720120000_add_community_write_controls.exs`
+- `lib/product_compare_schemas/discussions/community_write_receipt.ex`
+- `lib/product_compare_schemas/discussions/community_write_window.ex`
+- `lib/product_compare_schemas/discussions/product_review.ex`
+- `lib/product_compare_schemas/discussions/product_thread.ex`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare_web/schema.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/graphql/errors.ex`
+- `config/config.exs`
+- `config/test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/discussions/product_review_immutability_test.exs`
+- `test/product_compare/discussions/thread_crud_test.exs`
+- `test/product_compare/discussions/thread_post_validation_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `assets/schema.graphql`
+- `assets/src/routes/products/queries/SubmitProductReviewMutation.ts`
+- `assets/src/routes/products/queries/AskProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/AnswerProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductReviewMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductAnswerMutation.ts`
+- `assets/src/routes/products/queries/RemoveCommunityContentMutation.ts`
+- `assets/src/routes/products/queries/ProductCommunityQuery.ts`
+- `assets/src/routes/products/queries/ProductQuestionAnswersQuery.ts`
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `assets/src/__generated__/SubmitProductReviewMutation.graphql.ts`
+- `assets/src/__generated__/AskProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/AnswerProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductReviewMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductAnswerMutation.graphql.ts`
+- `assets/src/__generated__/RemoveCommunityContentMutation.graphql.ts`
+- `assets/src/__generated__/ProductCommunityQuery.graphql.ts`
+- `assets/src/__generated__/ProductQuestionAnswersQuery.graphql.ts`
+- `docs/work/community-content-lifecycle.md`
+
+Internal slices:
+
+- Durable write receipts, UTC-hour counters, and retained removal state.
+- Owner update/remove, idempotency, limits, and accepted-answer cleanup.
+- Typed GraphQL mutations, errors, viewer capabilities, and schema snapshot.
+- Relay idempotency plus owner edit/remove controls.
+
+Prerequisites:
+
+- Approved community limits and lifecycle policy in the 2026-07-20 design.
+- Existing published-only public reads and operator moderation remain intact.
+- Browser community writes remain GraphQL-only over `/api/graphql`.
+
+Verification:
+
+- `mix test test/product_compare/discussions test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun run check`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: owner lifecycle, audit retention, idempotent replay/conflict,
+exact rate boundaries, typed errors, accepted-answer cleanup, schema/Relay
+artifacts, and accessible owner controls all pass behavior coverage.
+
+### 4. Relay Cursor Forward Progress
 
 Status: ready
 Lane: Frontend cursor forward progress
-Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
 Batch outcome: every in-scope frontend Relay pagination surface suppresses
 blank or repeated cursors, preventing self-links and repeated stateful fetches.
 Next action: introduce the shared framework-free advancing-cursor invariant,
-then migrate the community, compare, product-offer, public, and account/setup
-pagination slices with focused milestones.
+then migrate community, product/compare, public, and account/setup consumers as
+internal milestones.
 Owned paths:
 
 - `assets/src/routes/relay-pagination.ts`
@@ -1245,113 +1383,161 @@ Owned paths:
 
 Internal slices:
 
-- Shared invariant plus community answer/review/question pagination.
+- Shared invariant plus community review/question/answer pagination.
 - Stateful compare-picker and product-offer pagination.
 - Public URL pagination for catalog, offers, categories, and merchants.
 - Account/setup URL pagination for API tokens and affiliate merchants.
 
 Prerequisites:
 
-- Saved-comparison and snapshot-history cursor contracts remain reference
-  behavior, not migration targets.
+- Saved-comparison and snapshot-history cursor contracts remain reference behavior.
 - Cursor values remain exact; whitespace is only a validity check.
 - Deferred feed-candidate operator surfaces stay out of scope.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/relay-pagination.test.ts test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx test/routes/compare/compare-picker-data.test.ts test/routes/compare/compare.route.test.tsx test/routes/products/product-offer-panel-data.test.ts test/routes/products/detail.route.test.tsx test/routes/catalog/browse.route.test.tsx test/routes/offers/offer-discovery-filter-data.test.ts test/routes/offers/offer-discovery.route.test.tsx test/routes/categories/category-view-data.test.ts test/routes/categories/category.route.test.tsx test/routes/merchants/merchant-directory-view-data.test.ts test/routes/merchants/merchant-directory.route.test.tsx test/routes/merchants/merchant-detail-view-data.test.ts test/routes/merchants/merchant-detail.route.test.tsx test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- All focused suites named in the linked plan.
 - `cd assets && bun run typecheck`
 - shared-helper dependency scan
 - `cd assets && bun run check`
+- `mix work_queue.validate`
 - `git diff --check`
 
 Exit condition: every in-scope surface rejects blank and non-advancing cursors
 while preserving normal pagination, URL state, Relay timing, and presentation.
 
-### 3. Strict Temporal Presentation
+### 5. Bounded Merchant GraphQL Reads
 
 Status: ready
-Lane: Frontend strict temporal presentation
-Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
-Batch outcome: alert and comparison observation dates use the strict GraphQL
-DateTime contract for factual labels and recency selection.
-Next action: migrate alert labels and comparison labels/selection to
-`graphQLDateTimeLabel` and `parseGraphQLDateTime` with impossible-date and
-missing-offset regressions.
+Lane: Bounded merchant GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-graphql-reads-implementation-plan.md`
+Batch outcome: merchant detail summaries requested through a GraphQL connection
+use set-based reads whose query count remains constant as merchant parent count
+increases.
+Next action: add the set-based Pricing batch, delegate the KV Dataloader source,
+and extend query-budget regression coverage.
 Owned paths:
 
-- `assets/src/routes/account/alerts/alerts-view-data.ts`
-- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `assets/src/routes/compare/decision-summary-data.ts`
-- `assets/src/routes/compare/loader.ts`
-- `assets/test/routes/compare/decision-summary-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `docs/work/frontend-strict-temporal-presentation.md`
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/pricing/merchant_detail_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `docs/work/bounded-merchant-graphql-reads.md`
 
 Internal slices:
 
-- Strict price-alert observation labels.
-- Strict comparison recency labels and most-recent observation selection.
+- Set-based active-offer and latest-price merchant detail read model.
+- Dataloader delegation and constant query-budget regression.
 
 Prerequisites:
 
-- Existing valid observation labels and ordering remain unchanged.
-- Invalid source values remain visible only where the current surface promises
-  exact fallback; invalid values never become a different date.
-- The existing GraphQL DateTime parser remains the single validation owner.
+- Existing OfferTruth freshness and eligibility semantics.
+- Existing Merchant `detailSummary` GraphQL shape remains unchanged.
+- Active offers must be complete independent of Relay page size.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
-- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun run typecheck`
-- `cd assets && bun run check`
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/pricing/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/merchant_detail_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: impossible, offset-free, and malformed timestamps cannot
-produce a false factual label or win comparison recency selection.
+Exit condition: single- and multi-merchant summaries remain semantically equal
+to the current contract and relevant SELECT counts stay fixed as parent count
+grows.
 
-### 4. Row-Scoped Asynchronous Action State
+### 6. Account And Setup Interaction Contracts
 
 Status: ready
-Lane: Frontend row-scoped action state
-Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
-Batch outcome: comparison-snapshot and price-alert list mutations expose
-pending and failure feedback only on the affected row.
-Next action: replace global snapshot revocation state and global alert mutation
-errors with row-keyed state while preserving successful mutation handling.
+Lane: Frontend account and setup interaction contracts
+Plan: `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`
+Batch outcome: authenticated setup and account surfaces derive deterministic
+merchant-context copy and API-token lifecycle actions from framework-free
+owners without changing forms, mutations, accessibility, or presentation.
+Next action: execute affiliate merchant-context and API-token lifecycle policy
+as separate test/commit milestones inside one reviewer batch.
 Owned paths:
 
+- `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupForms.tsx`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `docs/work/frontend-account-setup-presentation-contracts.md`
+
+Internal slices:
+
+- Affiliate selected/current merchant-context copy.
+- API-token lifecycle action visibility, disabled state, and pending copy.
+
+Prerequisites:
+
+- Existing affiliate and API-token characterization suites remain the baseline.
+- Normal-path copy and row-scoped API-token mutual exclusion stay stable.
+- React retains Relay, forms, refs, callbacks, markup, and styling.
+
+Verification:
+
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `cd assets && bun run typecheck`
+- pure-module dependency scans
+- `cd assets && bun run check`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: both policy slices pass focused and combined frontend gates as
+one independently reviewable account/setup outcome.
+
+### 7. Comparison Interaction Correctness
+
+Status: ready
+Lane: Comparison interaction correctness
+Plan: `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
+Batch outcome: comparison observations use strict temporal truth and snapshot
+revocation pending/failure state applies only to the affected snapshot row.
+Next action: complete strict comparison timestamp selection, then row-key
+snapshot revocation state as separate milestones.
+Owned paths:
+
+- `assets/src/routes/compare/decision-summary-data.ts`
+- `assets/src/routes/compare/loader.ts`
+- `assets/test/routes/compare/decision-summary-data.test.ts`
 - `assets/src/routes/compare/share-comparison-data.ts`
 - `assets/src/routes/compare/ShareComparisonControl.tsx`
 - `assets/test/routes/compare/share-comparison-data.test.ts`
 - `assets/test/routes/compare/compare.route.test.tsx`
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- `assets/test/routes/account/alerts/alerts.route.test.tsx`
-- `docs/work/frontend-row-scoped-action-state.md`
+- `docs/work/comparison-interaction-correctness.md`
 
 Internal slices:
 
-- Row-scoped snapshot revocation pending state and duplicate guard.
-- Row-scoped alert and watch mutation error feedback.
+- Strict comparison recency labels and most-recent observation selection.
+- Row-scoped snapshot revocation pending, duplicate, and failure state.
 
 Prerequisites:
 
-- Existing snapshot and alert mutation outcome contracts remain unchanged.
-- Successful alert/watch operations still revalidate route data.
-- Independent rows remain actionable while one row is pending.
+- Existing strict GraphQL DateTime helpers remain the sole date policy.
+- Valid observation ordering and labels remain unchanged.
+- Successful snapshot mutation handling and accessibility remain stable.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/compare/share-comparison-data.test.ts test/routes/compare/compare.route.test.tsx`
-- `cd assets && bun x vitest run test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/share-comparison-data.test.ts test/routes/compare/compare.route.test.tsx`
 - `cd assets && bun run typecheck`
 - `cd assets && bun run check`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: pending and failure UI is row-specific across both surfaces,
-with duplicate same-row actions suppressed and independent rows left usable.
+Exit condition: invalid timestamps cannot win recency selection or produce false
+labels, and one snapshot action cannot disable, relabel, or leak errors to
+another row.
 
 ## Needs Decision Work
 

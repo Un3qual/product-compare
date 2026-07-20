@@ -221,6 +221,9 @@ Recommendations are deterministic and evidence-backed.
 - Newly persisted price points enqueue unique Oban evaluation jobs in the same
   database transaction for both direct pricing and ingestion paths. Replayed
   observations and jobs cannot duplicate events.
+- A 2026-07-20 audit found that evaluation stops at the first failed watch, so
+  later watches can be starved across every retry. The corrective cross-stack
+  batch is ready in `docs/work/alert-lifecycle-reliability.md`.
 - Evaluation locks each rule, uses only active in-stock fresh/aging offers with
   complete shipping-inclusive prices, records false/true state, and creates an
   event only on a new edge or a new qualifying observation after cooldown.
@@ -367,9 +370,11 @@ Recommendations are deterministic and evidence-backed.
 
 - Added Oban 2.23 with its PostgreSQL migration, supervised ingestion queue,
   bounded concurrency, daily pruning, and manual test mode.
-- CJ product imports and feed discovery now enqueue normalized, non-secret jobs
-  keyed by an explicit schedule window. Duplicate windows resolve to the
-  existing job instead of executing twice.
+- CJ product imports and feed discovery enqueue normalized, non-secret jobs
+  containing an explicit schedule-window argument. A 2026-07-20 audit found
+  that both worker uniqueness projections omit that argument, so later windows
+  can incorrectly resolve to the earlier job. The corrective batch is ready in
+  `docs/work/durable-ingestion-recurrence.md`.
 - Jobs call the existing bounded runners, retry transient provider failures,
   stop safely on configuration/auth failures, and persist only redacted failure
   categories.

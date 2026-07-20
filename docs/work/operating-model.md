@@ -49,6 +49,10 @@ own reviewer decision. It is not the smallest edit an agent can make.
 
 - Group changes when they enforce the same invariant, share one acceptance
   boundary, and would normally be approved or rejected together.
+- Frontend and backend are implementation layers, not separate queues. Group
+  cross-stack slices when they close one lifecycle invariant—for example,
+  fault-isolated alert evaluation plus truthful alert presentation—but keep
+  unrelated backend ingestion and frontend account policy as separate rows.
 - Put per-surface, per-file, or path-disjoint work under `Internal slices` in
   the batch plan and lane doc. Use focused test cycles and milestone commits
   for those slices without promoting each slice as a separate queue row.
@@ -71,6 +75,10 @@ Before promotion, the coordinator should be able to answer both questions:
 1. What independently shippable outcome does this row deliver?
 2. Could a reviewer reasonably approve this row while rejecting its nearest
    candidate? If not, group them.
+
+The same test applies across lanes. A frontend-only queue is valid only when a
+live source/contract audit finds no ready backend outcome; lane labels alone are
+never evidence that the backend has no work.
 
 ## Continuously Replenished Ready Work
 

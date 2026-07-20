@@ -20,6 +20,9 @@
   surfaces into one batch. Track path-disjoint or serial implementation work
   as internal slices and milestone commits inside that batch; internal slices
   do not count toward the ready-row floor.
+- Frontend and backend share this one queue. Layer or lane labels do not prevent
+  grouping when both sides close one lifecycle invariant, and a frontend-only
+  replenishment pass must verify that no ready backend outcome was overlooked.
 - Parallel ownership is a way to execute slices inside a coherent batch, not
   sufficient reason by itself to create separate queue rows.
 - Never split work into micro-batches or invent filler merely to reach a

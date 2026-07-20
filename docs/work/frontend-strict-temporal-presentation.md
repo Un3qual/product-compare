@@ -2,10 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: grouped into alert lifecycle reliability and comparison interaction
+  correctness
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
-- Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+- Plans:
+  - `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
+  - `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
 - Last verified: 2026-07-18 from current alert and comparison observation
   formatting and recency-selection source.
 
@@ -20,6 +23,9 @@ the most recent observation.
 
 1. Price-alert observation labels with exact invalid-source fallback.
 2. Comparison recency labels and most-recent observation selection.
+
+These remain lane evidence. They are dispatched through their domain batches,
+not as a separate live queue row.
 
 ## Boundaries
 

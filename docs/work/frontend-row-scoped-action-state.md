@@ -2,10 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: grouped into alert lifecycle reliability and comparison interaction
+  correctness
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
-- Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+- Plans:
+  - `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
+  - `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
 - Last verified: 2026-07-18 from current comparison-snapshot and price-alert
   mutation state source.
 
@@ -19,6 +22,9 @@ and a failed alert/watch mutation is associated with the row that failed.
 
 1. Row-scoped comparison-snapshot revocation pending state and duplicate guard.
 2. Row-scoped alert and price-watch mutation error feedback.
+
+These remain lane evidence. They are dispatched through their domain batches,
+not as a separate live queue row.
 
 ## Boundaries
 

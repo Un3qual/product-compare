@@ -9,6 +9,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-05-frontend-fullstack-design.md`
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
+- `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 
 ## Active Plan Catalog
 
@@ -34,8 +35,8 @@ data-product boundary with canonical specification-rich ingestion, complete
 and fresh offers, durable ingestion, watches and in-app alerts, public
 comparison snapshots, source-backed recommendations, provenance/corrections,
 reviews and Q&A, merchant pages, and SEO/acquisition surfaces. The live queue
-now carries bounded frontend maintainability follow-ups over those completed
-truth contracts.
+now carries source-backed cross-stack corrections and bounded frontend
+maintainability follow-ups over those completed truth contracts.
 
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
@@ -89,14 +90,23 @@ complete. API Token Status Badge and Price Watch Amount Field are also
 complete. Route Metadata Tag Policy is also complete. Affiliate Merchant
 Context Copy, API Token Lifecycle Action Policy, and Product Community Answer
 Pagination Cursor were regrouped before execution on 2026-07-18 because they
-were implementation slices rather than independently shippable batches. The
-live queue now carries four coherent outcomes: account/setup presentation
-contracts, frontend cursor forward-progress hardening, strict temporal
-presentation, and row-scoped asynchronous action state.
+were implementation slices rather than independently shippable batches. Those
+four frontend rows were curated again with live backend findings on 2026-07-20.
+Strict temporal and row-scoped action slices now live in alert and comparison
+domain batches. The shared queue carries seven outcomes: durable ingestion
+recurrence, alert lifecycle reliability, community content lifecycle, Relay
+cursor forward progress, bounded merchant GraphQL reads, account/setup
+interaction contracts, and comparison interaction correctness.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
+- `docs/superpowers/plans/2026-07-20-durable-ingestion-recurrence-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-community-content-lifecycle-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-merchant-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -126,13 +136,12 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Current coherent frontend correctness program: account/setup presentation
-  contracts, cross-surface cursor forward-progress hardening, strict temporal
-  presentation, and row-scoped asynchronous action state execute through
-  `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`.
-  The affiliate merchant-copy, API-token lifecycle-action, and community
-  answer-cursor docs are retained as internal slice evidence and must not be
-  promoted again as standalone rows.
+- Current cross-stack ready-work program: the seven domain-oriented outcomes
+  execute through the 2026-07-20 design and active plans above. The 2026-07-18
+  coherent frontend plan is retained as superseded grouping evidence, not an
+  active dispatch source. Affiliate merchant-copy, API-token lifecycle-action,
+  strict temporal, row-scoped action, and community answer-cursor docs remain
+  slice evidence and must not be promoted again as standalone rows.
 - Product comparison: disclose that relative price uses already-loaded offers,
   then add a local name filter over already-loaded picker products. These plans
   share test and lane paths and execute serially.
