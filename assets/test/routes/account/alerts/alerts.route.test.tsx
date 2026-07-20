@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation } from "react-relay";
 import { AlertsRoute } from "../../../../src/routes/account/alerts/AlertsRoute";
@@ -173,6 +173,105 @@ test("AlertsRoute keeps paused watches visible and resumes them", async () => {
   })));
 });
 
+test("mark-read pending and failure feedback stay on the affected alert row", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [alertSummary("alert-one", "First alert"), alertSummary("alert-two", "Second alert")],
+    watches: [],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  const rows = within(screen.getByRole("list", { name: "Price alert events" })).getAllByRole("listitem");
+  const firstButton = within(rows[0]).getByRole("button", { name: "Mark read" });
+  const secondButton = within(rows[1]).getByRole("button", { name: "Mark read" });
+
+  fireEvent.click(firstButton);
+
+  await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(1));
+  expect(firstButton).toBeDisabled();
+  expect(secondButton).not.toBeDisabled();
+
+  await completeMutationAt(0, {
+    markAlertRead: {
+      event: null,
+      errors: [{ code: "INVALID_ARGUMENT", field: "id", message: "First alert could not be marked read." }]
+    }
+  });
+
+  expect(await within(rows[0]).findByRole("alert")).toHaveTextContent("First alert could not be marked read.");
+  expect(within(rows[1]).queryByRole("alert")).not.toBeInTheDocument();
+  expect(secondButton).not.toBeDisabled();
+});
+
+test("toggle pending and failure feedback stay on the affected watch row", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [],
+    watches: [watchSummary("watch-one", "First watch"), watchSummary("watch-two", "Second watch")],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  const rows = within(screen.getByRole("list", { name: "Active price watches" })).getAllByRole("listitem");
+  const firstButton = within(rows[0]).getByRole("button", { name: "Pause" });
+  const secondButton = within(rows[1]).getByRole("button", { name: "Pause" });
+
+  fireEvent.click(firstButton);
+
+  await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(1));
+  expect(firstButton).toBeDisabled();
+  expect(secondButton).not.toBeDisabled();
+
+  await completeMutationAt(0, {
+    updatePriceWatch: {
+      watch: null,
+      errors: [{ code: "INVALID_ARGUMENT", field: "id", message: "First watch could not be paused." }]
+    }
+  });
+
+  expect(await within(rows[0]).findByRole("alert")).toHaveTextContent("First watch could not be paused.");
+  expect(within(rows[1]).queryByRole("alert")).not.toBeInTheDocument();
+  expect(secondButton).not.toBeDisabled();
+});
+
+test("delete pending and failure feedback stay on the affected watch row", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [],
+    watches: [watchSummary("watch-one", "First watch"), watchSummary("watch-two", "Second watch")],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  const rows = within(screen.getByRole("list", { name: "Active price watches" })).getAllByRole("listitem");
+  const firstButton = within(rows[0]).getByRole("button", { name: "Delete" });
+  const secondButton = within(rows[1]).getByRole("button", { name: "Delete" });
+
+  fireEvent.click(firstButton);
+
+  await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(1));
+  expect(firstButton).toBeDisabled();
+  expect(secondButton).not.toBeDisabled();
+
+  await completeMutationAt(0, {
+    deletePriceWatch: {
+      deletedWatchId: null,
+      errors: [{ code: "INVALID_ARGUMENT", field: "id", message: "First watch could not be deleted." }]
+    }
+  });
+
+  expect(await within(rows[0]).findByRole("alert")).toHaveTextContent("First watch could not be deleted.");
+  expect(within(rows[1]).queryByRole("alert")).not.toBeInTheDocument();
+  expect(secondButton).not.toBeDisabled();
+});
+
 test("PriceWatchControl reveals relevant input and submits one typed rule", async () => {
   render(<MemoryRouter><PriceWatchControl productId="product-id" /></MemoryRouter>);
 
@@ -214,3 +313,38 @@ test("PriceWatchControl resets all product-scoped form state when the product ch
   expect(screen.getByLabelText("Target landed price")).toHaveValue("");
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
+
+function alertSummary(id: string, productName: string) {
+  return {
+    id,
+    productName,
+    productSlug: id,
+    merchantName: "Shop",
+    ruleType: "TARGET_PRICE",
+    currency: "USD",
+    landedPrice: "90",
+    observedAt: "2026-07-13T20:00:00Z",
+    readAt: null
+  };
+}
+
+function watchSummary(id: string, productName: string) {
+  return {
+    id,
+    productName,
+    productSlug: id,
+    merchantName: null,
+    ruleType: "TARGET_PRICE",
+    currency: "USD",
+    targetAmount: "100",
+    percentageDrop: null,
+    baselineLandedPrice: "120",
+    enabled: true
+  };
+}
+
+async function completeMutationAt(index: number, payload: object) {
+  await act(async () => {
+    commitMutationMock.mock.calls[index]?.[0]?.onCompleted(payload, []);
+  });
+}

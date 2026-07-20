@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented; awaiting queue closeout
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
@@ -43,10 +43,23 @@ interface presents truthful timestamps and row-local action feedback.
 
 ## Verification
 
-- Alert context, worker, and GraphQL suites.
-- Alert view-data and route Vitest suites.
-- `cd assets && bun run check`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
+- Backend RED: the alert context suite reported 7 tests, 2 failures. The
+  existing reducer returned after the first failed watch, and the replay
+  evaluator could not delegate successful watches to the real transaction.
+- Backend GREEN: the alert context and GraphQL suites report 10 tests,
+  0 failures. All three ordered watches run after an early failure; retry adds
+  only the previously failed watch's event, leaving three events and three
+  delivery attempts rather than duplicating the two earlier successes.
+- Date RED: alert view-data and route suites reported 24 tests, 4 failures for
+  an impossible date, an offset-free timestamp, and an explicit offset whose
+  source calendar day differed from its UTC day.
+- Row-state RED: the alert route suite reported 11 tests, 3 failures because
+  mark-read, toggle, and delete errors rendered outside their affected rows.
+- Frontend GREEN: alert view-data and route suites report 27 tests,
+  0 failures. Strict labels preserve valid source dates and fall back to exact
+  invalid input; all three action families keep pending and failure state local
+  to the keyed row.
+- Batch gates: focused backend alert and GraphQL suites,
+  `cd assets && bun run check`, `mix typecheck`,
+  `mix format --check-formatted`, `mix work_queue.validate`, and
+  `git diff --check`.

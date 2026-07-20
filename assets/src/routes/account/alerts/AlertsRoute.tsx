@@ -62,7 +62,7 @@ export function AlertsRoute() {
 
 function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { alerts: AlertSummary[]; watches: WatchSummary[]; hasMoreAlerts: boolean; hasMoreWatches: boolean }) {
   const revalidator = useRevalidator();
-  const [error, setError] = useState<string | null>(null);
+  const [errorsById, setErrorsById] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
   const [commitMarkRead] = useMutation<MarkAlertReadMutation>(markAlertReadMutation);
   const [commitUpdate] = useMutation<UpdatePriceWatchMutation>(updatePriceWatchMutation);
@@ -71,13 +71,13 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
 
   async function run(id: string, operation: () => Promise<string | null>) {
     setPendingIds((current) => new Set(current).add(id));
-    setError(null);
+    setErrorsById((current) => withoutKey(current, id));
     try {
       const operationError = await operation();
-      if (operationError) setError(operationError);
+      if (operationError) setErrorsById((current) => withError(current, id, operationError));
       else await revalidator.revalidate();
     } catch {
-      setError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setErrorsById((current) => withError(current, id, DEFAULT_ROUTE_ERROR_MESSAGE));
     } finally {
       setPendingIds((current) => {
         const next = new Set(current);
@@ -109,7 +109,6 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   return (
     <PageShell eyebrow="Account" title="Price alerts" description="Changes are recorded only from fresh, in-stock offers with complete landed prices.">
       <div {...props(styles.workspace)}>
-        {error ? <FeedbackState kind="error" title={error} /> : null}
         <section aria-labelledby="alert-events-title" {...props(styles.section)}>
           <h2 id="alert-events-title" {...props(styles.sectionTitle)}>Recent changes</h2>
           {viewData.alerts.length === 0 ? <p {...props(styles.aside)}>No qualifying price or availability changes yet.</p> : (
@@ -123,6 +122,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                     <span>{alert.merchantName}</span>
                     <time dateTime={alert.observedAt}>{observationDateLabel(alert.observedAt)}</time>
                   </p>
+                  {errorsById.get(alert.id) ? <FeedbackState kind="error" title={errorsById.get(alert.id)!} /> : null}
                   {!alert.readAt ? (
                     <div {...props(styles.actions)}>
                       <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => { run(alert.id, async () => {
@@ -142,14 +142,14 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
         <section aria-labelledby="active-watches-title" {...props(styles.section)}>
           <h2 id="active-watches-title" {...props(styles.sectionTitle)}>Active watches</h2>
           {viewData.activeWatches.length === 0 ? <p {...props(styles.aside)}>Create a watch from any product detail page, or resume one below.</p> : (
-            <WatchList ariaLabel="Active price watches" watches={viewData.activeWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
+            <WatchList ariaLabel="Active price watches" watches={viewData.activeWatches} errorsById={errorsById} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
           )}
           {hasMoreWatches ? <p {...props(styles.aside)}>Showing the 50 newest watches.</p> : null}
         </section>
         {viewData.pausedWatches.length > 0 ? (
           <section aria-labelledby="paused-watches-title" {...props(styles.section)}>
             <h2 id="paused-watches-title" {...props(styles.sectionTitle)}>Paused watches</h2>
-            <WatchList ariaLabel="Paused price watches" watches={viewData.pausedWatches} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
+            <WatchList ariaLabel="Paused price watches" watches={viewData.pausedWatches} errorsById={errorsById} pendingIds={pendingIds} onDelete={deleteWatch} onToggle={toggleWatch} />
           </section>
         ) : null}
       </div>
@@ -159,12 +159,14 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
 
 function WatchList({
   ariaLabel,
+  errorsById,
   watches,
   pendingIds,
   onDelete,
   onToggle
 }: {
   ariaLabel: string;
+  errorsById: ReadonlyMap<string, string>;
   watches: readonly WatchSummary[];
   pendingIds: ReadonlySet<string>;
   onDelete: (watch: WatchSummary) => Promise<void>;
@@ -173,18 +175,20 @@ function WatchList({
   return (
     <ul aria-label={ariaLabel} {...props(styles.list)}>
       {watches.map((watch) => (
-        <WatchListItem key={watch.id} pendingIds={pendingIds} watch={watch} onDelete={onDelete} onToggle={onToggle} />
+        <WatchListItem key={watch.id} error={errorsById.get(watch.id) ?? null} pendingIds={pendingIds} watch={watch} onDelete={onDelete} onToggle={onToggle} />
       ))}
     </ul>
   );
 }
 
 function WatchListItem({
+  error,
   pendingIds,
   watch,
   onDelete,
   onToggle
 }: {
+  error: string | null;
   pendingIds: ReadonlySet<string>;
   watch: WatchSummary;
   onDelete: (watch: WatchSummary) => Promise<void>;
@@ -196,10 +200,24 @@ function WatchListItem({
     <li {...props(styles.item)}>
       <strong><Link to={productDetailPath(watch.productSlug)}>{watch.productName}</Link></strong>
       <p {...props(styles.meta)}><span>{priceWatchLabel(watch)}</span>{watch.merchantName ? <span>{watch.merchantName}</span> : null}</p>
+      {error ? <FeedbackState kind="error" title={error} /> : null}
       <div {...props(styles.actions)}>
         <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{control.label}</Button>
         <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
       </div>
     </li>
   );
+}
+
+function withError(current: ReadonlyMap<string, string>, id: string, error: string) {
+  const next = new Map(current);
+  next.set(id, error);
+  return next;
+}
+
+function withoutKey(current: ReadonlyMap<string, string>, id: string) {
+  if (!current.has(id)) return current;
+  const next = new Map(current);
+  next.delete(id);
+  return next;
 }
