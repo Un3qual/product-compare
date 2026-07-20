@@ -10,7 +10,7 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
     field :kind, Ecto.Enum, values: [:question], default: :question
 
     field :moderation_status, Ecto.Enum,
-      values: [:pending, :published, :hidden, :rejected],
+      values: [:pending, :published, :hidden, :rejected, :removed],
       default: :pending
 
     field :moderation_note, :string

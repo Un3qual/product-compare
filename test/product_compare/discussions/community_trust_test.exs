@@ -5,6 +5,84 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
+  alias ProductCompareSchemas.Discussions.CommunityWriteWindow
+  alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Discussions.ProductThread
+  alias ProductCompareSchemas.Discussions.ThreadPost
+
+  test "community content schemas accept retained owner removal" do
+    for schema <- [ProductReview, ProductThread, ThreadPost] do
+      changeset =
+        Ecto.Changeset.cast(struct(schema), %{moderation_status: "removed"}, [:moderation_status])
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :moderation_status) == :removed
+    end
+  end
+
+  test "durable write receipts enforce one idempotency key per user and mutation kind" do
+    user = AccountsFixtures.user_fixture()
+    content_entropy_id = Ecto.UUID.generate()
+
+    attrs = %{
+      user_id: user.id,
+      mutation_kind: :review,
+      idempotency_key: "community-key-0001",
+      payload_digest: :crypto.hash(:sha256, "payload"),
+      content_type: :review,
+      content_entropy_id: content_entropy_id
+    }
+
+    assert {:ok, receipt} =
+             %CommunityWriteReceipt{} |> CommunityWriteReceipt.changeset(attrs) |> Repo.insert()
+
+    assert receipt.content_entropy_id == content_entropy_id
+
+    assert {:error, duplicate_changeset} =
+             %CommunityWriteReceipt{} |> CommunityWriteReceipt.changeset(attrs) |> Repo.insert()
+
+    assert "has already been taken" in errors_on(duplicate_changeset).idempotency_key
+
+    invalid_key_attrs = %{attrs | idempotency_key: "short"}
+
+    assert {:error, invalid_key_changeset} =
+             %CommunityWriteReceipt{}
+             |> CommunityWriteReceipt.changeset(invalid_key_attrs)
+             |> Repo.insert()
+
+    assert "should be at least 16 character(s)" in errors_on(invalid_key_changeset).idempotency_key
+  end
+
+  test "durable write windows enforce one counter per action and UTC hour" do
+    user = AccountsFixtures.user_fixture()
+    window_started_at = ~U[2026-07-20 19:00:00Z]
+
+    attrs = %{
+      user_id: user.id,
+      action_kind: :question,
+      window_started_at: window_started_at,
+      count: 1
+    }
+
+    assert {:ok, window} =
+             %CommunityWriteWindow{} |> CommunityWriteWindow.changeset(attrs) |> Repo.insert()
+
+    assert window.count == 1
+
+    assert {:error, duplicate_changeset} =
+             %CommunityWriteWindow{} |> CommunityWriteWindow.changeset(attrs) |> Repo.insert()
+
+    assert "has already been taken" in errors_on(duplicate_changeset).window_started_at
+
+    assert {:error, count_changeset} =
+             %CommunityWriteWindow{}
+             |> CommunityWriteWindow.changeset(%{attrs | action_kind: :answer, count: -1})
+             |> Repo.insert()
+
+    assert "must be greater than or equal to 0" in errors_on(count_changeset).count
+  end
 
   test "only published reviews affect public lists and aggregates, and offer selection is not purchase proof" do
     user = AccountsFixtures.user_fixture()

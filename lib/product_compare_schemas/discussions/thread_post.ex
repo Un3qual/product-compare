@@ -8,7 +8,7 @@ defmodule ProductCompareSchemas.Discussions.ThreadPost do
     field :body_md, :string
 
     field :moderation_status, Ecto.Enum,
-      values: [:pending, :published, :hidden, :rejected],
+      values: [:pending, :published, :hidden, :rejected, :removed],
       default: :pending
 
     field :moderation_note, :string
